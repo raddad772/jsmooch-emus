@@ -36,7 +36,7 @@ void NES_memmap_map(NES_memmap *mmap, u32 shift, u32 range_start, u32 range_end,
     }
 }
 
-void NES_memmap_init_empty(struct NES_memmap *map, u32 addr_start, u32 addr_end, u32 shift)
+void NES_memmap_init_empty(NES_memmap *map, u32 addr_start, u32 addr_end, u32 shift)
 {
     for (u32 i = addr_start; i < addr_end; i += (1 << shift)) {
         NES_memmap *m = &map[i >> shift];

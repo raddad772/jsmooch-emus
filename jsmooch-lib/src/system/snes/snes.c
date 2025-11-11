@@ -19,7 +19,7 @@
 #define TAG_SCANLINE 1
 #define TAG_FRAME 2
 
-#define JTHIS struct SNES* this = (struct SNES*)jsm->ptr
+#define JTHIS struct SNES* this = (SNES*)jsm->ptr
 #define JSM struct jsm_system* jsm
 
 #define THIS struct SNES* this
@@ -36,11 +36,11 @@ static void SNESJ_load_BIOS(JSM, multi_file_set* mfs);
 static void SNESJ_describe_io(JSM, cvec* IOs);
 
 u32 read_trace_wdc65816(void *ptr, u32 addr) {
-    struct SNES* this = (struct SNES*)ptr;
+    struct SNES* this = (SNES*)ptr;
     return SNES_wdc65816_read(this, addr, 0, 0);
 }
 
-static void setup_debug_waveform(struct SNES *snes, debug_waveform *dw)
+static void setup_debug_waveform(SNES *snes, debug_waveform *dw)
 {
     if (dw->samples_requested == 0) return;
     dw->samples_rendered = dw->samples_requested;
@@ -48,7 +48,7 @@ static void setup_debug_waveform(struct SNES *snes, debug_waveform *dw)
     dw->user.buf_pos = 0;
 }
 
-void SNESJ_set_audiobuf(struct jsm_system* jsm, audiobuf *ab)
+void SNESJ_set_audiobuf(jsm_system* jsm, audiobuf *ab)
 {
     JTHIS;
     this->audio.buf = ab;
@@ -58,7 +58,7 @@ void SNESJ_set_audiobuf(struct jsm_system* jsm, audiobuf *ab)
         struct debug_waveform *wf = cpg(this->dbg.waveforms.main);
         this->audio.master_cycles_per_max_sample = (float)this->clock.timing.frame.master_cycles / (float)wf->samples_requested;
 
-        wf = (struct debug_waveform *)cpg(this->dbg.waveforms.chan[0]);
+        wf = (debug_waveform *)cpg(this->dbg.waveforms.chan[0]);
         this->audio.master_cycles_per_min_sample = (float)this->clock.timing.frame.master_cycles / (float)wf->samples_requested;
     }
 
@@ -66,14 +66,14 @@ void SNESJ_set_audiobuf(struct jsm_system* jsm, audiobuf *ab)
     setup_debug_waveform(this, wf);
     this->apu.dsp.ext_enable = wf->ch_output_enabled;
     for (u32 i = 0; i < 8; i++) {
-        wf = (struct debug_waveform *)cpg(this->dbg.waveforms.chan[i]);
+        wf = (debug_waveform *)cpg(this->dbg.waveforms.chan[i]);
         setup_debug_waveform(this, wf);
         this->apu.dsp.channel[i].ext_enable = wf->ch_output_enabled;
     }
 
 }
 
-static void populate_opts(struct jsm_system *jsm)
+static void populate_opts(jsm_system *jsm)
 {
     /*debugger_widgets_add_checkbox(&jsm->opts, "VDP: Enable Layer A", 1, 1, 0);
     debugger_widgets_add_checkbox(&jsm->opts, "VDP: Enable Layer B", 1, 1, 0);
@@ -81,7 +81,7 @@ static void populate_opts(struct jsm_system *jsm)
     debugger_widgets_add_checkbox(&jsm->opts, "VDP: trace", 1, 0, 0);*/
 }
 
-static void read_opts(struct jsm_system *jsm, SNES* this)
+static void read_opts(jsm_system *jsm, SNES* this)
 {
     /*struct debugger_widget *w = cvec_get(&jsm->opts, 0);
     this->opts.vdp.enable_A = w->checkbox.value;
@@ -98,7 +98,7 @@ static void read_opts(struct jsm_system *jsm, SNES* this)
 
 static void run_block(void *ptr, u64 key, u64 clock, u32 jitter)
 {
-    struct SNES *this = (struct SNES *)ptr;
+    struct SNES *this = (SNES *)ptr;
 
     R5A22_cycle(this, 0, 0, 0);
 }
@@ -111,7 +111,7 @@ static inline float i16_to_float(i16 val)
 
 static void sample_audio(void *ptr, u64 key, u64 clock, u32 jitter)
 {
-    struct SNES* this = (struct SNES *)ptr;
+    struct SNES* this = (SNES *)ptr;
     // TODO: make this stereo!
     // TODO: make debug waveform also stereo
     if (this->audio.buf) {
@@ -126,7 +126,7 @@ static void sample_audio(void *ptr, u64 key, u64 clock, u32 jitter)
 
 void SNES_new(JSM)
 {
-    struct SNES* this = (struct SNES*)malloc(sizeof(struct SNES));
+    struct SNES* this = (SNES*)malloc(sizeof(SNES));
     memset(this, 0, sizeof(*this));
     populate_opts(jsm);
     scheduler_init(&this->scheduler, &this->clock.master_cycle_count, &this->clock.nothing);
@@ -201,7 +201,7 @@ void SNES_delete(JSM) {
 
 static void sample_audio_debug_max(void *ptr, u64 key, u64 clock, u32 jitter)
 {
-    struct SNES *this = (struct SNES *)ptr;
+    struct SNES *this = (SNES *)ptr;
 
     struct debug_waveform *dw = cpg(this->dbg.waveforms.main);
     if (dw->user.buf_pos < dw->samples_requested) {
@@ -216,7 +216,7 @@ static void sample_audio_debug_max(void *ptr, u64 key, u64 clock, u32 jitter)
 
 static void sample_audio_debug_min(void *ptr, u64 key, u64 clock, u32 jitter)
 {
-    struct SNES *this = (struct SNES *)ptr;
+    struct SNES *this = (SNES *)ptr;
 
     // PSG
     struct debug_waveform *dw = cpg(this->dbg.waveforms.chan[0]);
@@ -234,7 +234,7 @@ static void sample_audio_debug_min(void *ptr, u64 key, u64 clock, u32 jitter)
 }
 
 
-static void schedule_first(struct SNES *this)
+static void schedule_first(SNES *this)
 {
     scheduler_only_add_abs(&this->scheduler, (i64)this->audio.next_sample_cycle_max, 0, this, &sample_audio_debug_max, NULL);
     scheduler_only_add_abs(&this->scheduler, (i64)this->audio.next_sample_cycle_min, 0, this, &sample_audio_debug_min, NULL);
@@ -258,7 +258,7 @@ static void SNESIO_unload_cart(JSM)
 {
 }
 
-static void setup_crt(struct JSM_DISPLAY *d)
+static void setup_crt(JSM_DISPLAY *d)
 {
     d->standard = JSS_NTSC;
     d->enabled = 1;
@@ -285,7 +285,7 @@ static void setup_crt(struct JSM_DISPLAY *d)
     d->pixelometry.overscan.top = d->pixelometry.overscan.bottom = 0;
 }
 
-static void setup_audio(struct cvec* IOs)
+static void setup_audio(cvec* IOs)
 {
     struct physical_io_device *pio = cvec_push_back(IOs);
     pio->kind = HID_AUDIO_CHANNEL;
@@ -350,7 +350,7 @@ void SNESJ_describe_io(JSM, cvec *IOs)
 
     setup_audio(IOs);
 
-    this->ppu.display = &((struct physical_io_device *)cpg(this->ppu.display_ptr))->display;
+    this->ppu.display = &((physical_io_device *)cpg(this->ppu.display_ptr))->display;
     SNES_controllerport_connect(&this->r5a22.controller_port[0], SNES_CK_standard, &this->controller1);
     //SNES_controllerport_connect(&this->io.controller_port2, SNES_controller_3button, &this->controller2);
 }

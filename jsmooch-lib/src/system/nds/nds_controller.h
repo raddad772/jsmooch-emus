@@ -19,7 +19,7 @@ struct NDS_controller {
 };
 
 struct NDS;
-void NDS_controller_setup_pio(struct physical_io_device *d);
-u32 NDS_get_controller_state(struct NDS *, u32 byte);
+void NDS_controller_setup_pio(physical_io_device *d);
+u32 NDS_get_controller_state(NDS *, u32 byte);
 
 #endif //JSMOOCH_EMUS_NDS_CONTROLLER_H

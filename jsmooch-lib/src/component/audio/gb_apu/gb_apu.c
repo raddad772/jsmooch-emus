@@ -11,9 +11,9 @@
 
 static i32 PWR_WAVES[16] = { 0x84, 0x40, 0x43, 0xAA, 0x2D, 0x78, 0x92, 0x3C, 0x60, 0x59, 0x59, 0xB0, 0x34, 0xB8, 0x2E, 0xDA };
 
-void GB_APU_init(struct GB_APU* this)
+void GB_APU_init(GB_APU* this)
 {
-    memset(this, 0, sizeof(struct GB_APU));
+    memset(this, 0, sizeof(GB_APU));
     for (u32 i = 0; i < 4; i++) {
         this->channels[i].ext_enable = 1;
         this->channels[i].number = i;
@@ -23,7 +23,7 @@ void GB_APU_init(struct GB_APU* this)
     this->ext_enable = 1;
 }
 
-static inline u8 read_NRx0(struct GBSNDCHAN *chan)
+static inline u8 read_NRx0(GBSNDCHAN *chan)
 {
     u8 r = 0;
     r |= chan->sweep.pace << 4;
@@ -32,7 +32,7 @@ static inline u8 read_NRx0(struct GBSNDCHAN *chan)
     return r;
 }
 
-static inline u8 read_NRx1(struct GBSNDCHAN *chan)
+static inline u8 read_NRx1(GBSNDCHAN *chan)
 {
     u8 r = 0;
     switch(chan->number) {
@@ -48,7 +48,7 @@ static inline u8 read_NRx1(struct GBSNDCHAN *chan)
     return 0;
 }
 
-static inline u8 read_NRx2(struct GBSNDCHAN *chan)
+static inline u8 read_NRx2(GBSNDCHAN *chan)
 {
     u8 r = 0;
     switch(chan->number) {
@@ -71,7 +71,7 @@ static inline u8 read_NRx2(struct GBSNDCHAN *chan)
     return 0;
 }
 
-static inline u8 read_NRx3(struct GBSNDCHAN* chan)
+static inline u8 read_NRx3(GBSNDCHAN* chan)
 {
     if (chan->number == 3) {
         u8 r = 0;
@@ -88,7 +88,7 @@ static inline u8 read_NRx3(struct GBSNDCHAN* chan)
 #define C1 &this->channels[1]
 #define C2 &this->channels[2]
 #define C3 &this->channels[3]
-u8 GB_APU_read_IO(struct GB_APU* this, u32 addr, u8 old_val, u32 has_effect)
+u8 GB_APU_read_IO(GB_APU* this, u32 addr, u8 old_val, u32 has_effect)
 {
     u8 r = 0;
     switch(addr) {
@@ -150,7 +150,7 @@ u8 GB_APU_read_IO(struct GB_APU* this, u32 addr, u8 old_val, u32 has_effect)
 
 static u32 noise_periods[8] = { 8, 16, 32, 48, 64, 80, 96, 112};
 
-static inline void trigger_channel(struct GBSNDCHAN* chan) {
+static inline void trigger_channel(GBSNDCHAN* chan) {
     chan->on = chan->dac_on;
     chan->env.on = 1;
     chan->period_counter = 0;
@@ -177,14 +177,14 @@ static inline void trigger_channel(struct GBSNDCHAN* chan) {
     }
 }
 
-static inline void write_NRx0(struct GBSNDCHAN* chan, u8 val)
+static inline void write_NRx0(GBSNDCHAN* chan, u8 val)
 {
     chan->sweep.pace = (val >> 4) & 7;
     chan->sweep.direction = (val >> 3) & 1;
     chan->sweep.individual_step = val & 7;
 }
 
-static inline void write_NRx1(struct GBSNDCHAN* chan, u8 val)
+static inline void write_NRx1(GBSNDCHAN* chan, u8 val)
 {
     switch(chan->number) {
         case 0:
@@ -202,7 +202,7 @@ static inline void write_NRx1(struct GBSNDCHAN* chan, u8 val)
     assert(1==2);
 }
 
-static inline void write_NRx2(struct GBSNDCHAN* chan, u8 val)
+static inline void write_NRx2(GBSNDCHAN* chan, u8 val)
 {
     switch(chan->number) {
         case 0:
@@ -239,7 +239,7 @@ static inline void write_NRx2(struct GBSNDCHAN* chan, u8 val)
     }
 }
 
-static inline void write_NRx3(struct GBSNDCHAN* chan, u8 val)
+static inline void write_NRx3(GBSNDCHAN* chan, u8 val)
 {
     switch(chan->number) {
         case 0:
@@ -260,7 +260,7 @@ static inline void write_NRx3(struct GBSNDCHAN* chan, u8 val)
     assert(1==2);
 }
 
-static inline void write_NRx4(struct GBSNDCHAN *chan, u8 val)
+static inline void write_NRx4(GBSNDCHAN *chan, u8 val)
 {
     switch(chan->number) {
         case 0:
@@ -287,7 +287,7 @@ static inline void write_NRx4(struct GBSNDCHAN *chan, u8 val)
 #define C1 &this->channels[1], val
 #define C2 &this->channels[2], val
 #define C3 &this->channels[3], val
-void GB_APU_write_IO(struct GB_APU* this, u32 addr, u8 val)
+void GB_APU_write_IO(GB_APU* this, u32 addr, u8 val)
 {
     switch(addr) {
         case 0xFF10: // CH0 sweep
@@ -349,7 +349,7 @@ void GB_APU_write_IO(struct GB_APU* this, u32 addr, u8 val)
 }
 
 
-static void tick_sweep(struct GB_APU* this, u32 cnum)
+static void tick_sweep(GB_APU* this, u32 cnum)
 {
     struct GBSNDCHAN *chan = &this->channels[cnum];
     if (chan->sweep.pace != 0) {
@@ -369,7 +369,7 @@ static void tick_sweep(struct GB_APU* this, u32 cnum)
 
 }
 
-static void tick_length_timer(struct GB_APU *this, u32 cnum)
+static void tick_length_timer(GB_APU *this, u32 cnum)
 {
     struct GBSNDCHAN *chan = &this->channels[cnum];
     if (chan->length_enable) {
@@ -388,7 +388,7 @@ static i32 sq_duty[4][8] = {
         { 0, 1, 1, 1, 1, 1, 1, 0 }, // 11 - 75%
 };
 
-static void tick_env(struct GB_APU *this, u32 cnum)
+static void tick_env(GB_APU *this, u32 cnum)
 {
     struct GBSNDCHAN *chan = &this->channels[cnum];
     if (chan->env.period != 0 && chan->env.on) {
@@ -407,7 +407,7 @@ static void tick_env(struct GB_APU *this, u32 cnum)
     }
 }
 
-static void tick_wave_period_twice(struct GB_APU *this) {
+static void tick_wave_period_twice(GB_APU *this) {
     struct GBSNDCHAN *chan = &this->channels[2];
     for (u32 i = 0; i < 2; i++) {
         if (chan->on) {
@@ -427,7 +427,7 @@ static void tick_wave_period_twice(struct GB_APU *this) {
     }
 }
 
-static void tick_noise_period(struct GB_APU *this)
+static void tick_noise_period(GB_APU *this)
 {
     struct GBSNDCHAN *chan = &this->channels[3];
     if (chan->on && (chan->clock_shift < 14) && (chan->period != 0)) {
@@ -447,7 +447,7 @@ static void tick_noise_period(struct GB_APU *this)
     }
 }
 
-static void tick_pulse_period(struct GB_APU *this, int cnum)
+static void tick_pulse_period(GB_APU *this, int cnum)
 {
     struct GBSNDCHAN *chan = &this->channels[cnum];
     if (chan->on) {
@@ -460,7 +460,7 @@ static void tick_pulse_period(struct GB_APU *this, int cnum)
     }
 }
 
-void GB_APU_cycle(struct GB_APU* this)
+void GB_APU_cycle(GB_APU* this)
 {
     tick_pulse_period(this, 0);
     tick_pulse_period(this, 1);
@@ -491,7 +491,7 @@ void GB_APU_cycle(struct GB_APU* this)
     }
 }
 
-float GB_APU_mix_sample(struct GB_APU* this, u32 is_debug)
+float GB_APU_mix_sample(GB_APU* this, u32 is_debug)
 {
     float output = 0;
     struct GBSNDCHAN *chan;
@@ -525,7 +525,7 @@ float GB_APU_mix_sample(struct GB_APU* this, u32 is_debug)
     return output;
 }
 
-float GB_APU_sample_channel(struct GB_APU* this, int cnum) {
+float GB_APU_sample_channel(GB_APU* this, int cnum) {
     struct GBSNDCHAN *chan = &this->channels[cnum];
     float output = 0;
 

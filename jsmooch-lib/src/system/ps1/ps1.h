@@ -10,7 +10,7 @@
 #include "helpers/int.h"
 #include "helpers/sys_interface.h"
 
-void PS1_new(struct jsm_system*);
-void PS1_delete(struct jsm_system* system);
+void PS1_new(jsm_system*);
+void PS1_delete(jsm_system* system);
 
 #endif //JSMOOCH_EMUS_PS1_H

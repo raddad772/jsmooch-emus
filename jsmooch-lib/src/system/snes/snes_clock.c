@@ -5,7 +5,7 @@
 
 #include "snes_clock.h"
 
-static void fill_timing_ntsc(struct SNES_clock *this)
+static void fill_timing_ntsc(SNES_clock *this)
 {
     this->timing.master_hz = 21477270;
     this->timing.apu_master_hz = 24576000;
@@ -30,7 +30,7 @@ static void fill_timing_ntsc(struct SNES_clock *this)
     this->cpu.divider = 6;
 }
 
-void SNES_clock_init(struct SNES_clock *this)
+void SNES_clock_init(SNES_clock *this)
 {
     memset(this, 0, sizeof(*this));
     this->rev = 0;

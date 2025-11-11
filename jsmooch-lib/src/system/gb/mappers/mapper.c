@@ -9,9 +9,9 @@
 #include "mbc3.h"
 #include "mbc5.h"
 
-struct GB_mapper* new_GB_mapper(struct GB_clock* clock, GB_bus* bus, enum GB_mappers which)
+struct GB_mapper* new_GB_mapper(GB_clock* clock, GB_bus* bus, enum GB_mappers which)
 {
-	struct GB_mapper* mapper = malloc(sizeof(struct GB_mapper));
+	struct GB_mapper* mapper = malloc(sizeof(GB_mapper));
 	mapper->which = which;
     mapper->ptr = NULL;
 	switch (which) {
@@ -43,7 +43,7 @@ struct GB_mapper* new_GB_mapper(struct GB_clock* clock, GB_bus* bus, enum GB_map
 	return mapper;
 }
 
-void delete_GB_mapper(struct GB_mapper* whom)
+void delete_GB_mapper(GB_mapper* whom)
 {
 	switch (whom->which) {
 	case NONE: // No-mapper!

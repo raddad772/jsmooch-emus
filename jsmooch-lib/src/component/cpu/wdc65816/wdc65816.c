@@ -20,12 +20,12 @@ to an IRQB input.
 
 extern WDC65816_ins_func wdc65816_decoded_opcodes[5][0x104];
 
-static void eval_WAI(struct WDC65816 *this)
+static void eval_WAI(WDC65816 *this)
 {
     if (this->regs.interrupt_pending) this->regs.WAI = 0;
 }
 
-void WDC65816_set_IRQ_level(struct WDC65816 *this, u32 level)
+void WDC65816_set_IRQ_level(WDC65816 *this, u32 level)
 {
     this->regs.IRQ_pending = level;
     if (level)
@@ -35,7 +35,7 @@ void WDC65816_set_IRQ_level(struct WDC65816 *this, u32 level)
     eval_WAI(this);
 }
 
-void WDC65816_set_NMI_level(struct WDC65816 *this, u32 level)
+void WDC65816_set_NMI_level(WDC65816 *this, u32 level)
 {
     if ((this->regs.NMI_old == 0) && level) { // 0->1
         this->regs.NMI_pending = 1;
@@ -45,7 +45,7 @@ void WDC65816_set_NMI_level(struct WDC65816 *this, u32 level)
     eval_WAI(this);
 }
 
-static WDC65816_ins_func get_decoded_opcode(struct WDC65816 *this)
+static WDC65816_ins_func get_decoded_opcode(WDC65816 *this)
 {
     if (this->regs.E) {
         return wdc65816_decoded_opcodes[4][this->regs.IR];
@@ -57,7 +57,7 @@ static WDC65816_ins_func get_decoded_opcode(struct WDC65816 *this)
     return ret;
 }
 
-static void pprint_context(struct WDC65816 *this, jsm_string *out)
+static void pprint_context(WDC65816 *this, jsm_string *out)
 {
     jsm_string_sprintf(out, "%c%c  A:%04x  D:%04x  X:%04x  Y:%04x  DBR:%02x  PBR:%02x  S:%04x, P:%c%c%c%c%c%c",
         this->regs.P.M ? 'M' : 'm',
@@ -75,7 +75,7 @@ static void pprint_context(struct WDC65816 *this, jsm_string *out)
         );
 }
 
-static void wdc_trace_format(struct WDC65816 *this)
+static void wdc_trace_format(WDC65816 *this)
 {
     if (this->trace.dbglog.view && this->trace.dbglog.view->ids_enabled[this->trace.dbglog.id]) {
         // addr, regs, e, m, x, rt, out
@@ -116,12 +116,12 @@ static void wdc_trace_format(struct WDC65816 *this)
     }
 }
 
-static void irqdump(struct WDC65816 *this, u32 nmi)
+static void irqdump(WDC65816 *this, u32 nmi)
 {
     printf("\nAT %s. PC:%06x  D:%04x  X:%04x  Y:%04x  S:%04x  E:%d  WAI:%d  cyc:%lld", nmi ? "NMI" : "IRQ", (this->regs.PBR << 16) | this->regs.PC, this->regs.D, this->regs.X, this->regs.Y, this->regs.S, this->regs.E, this->regs.WAI, *this->master_clock);
 }
 
-void WDC65816_cycle(struct WDC65816* this)
+void WDC65816_cycle(WDC65816* this)
 {
     this->int_clock++;
     if (this->regs.STP) return;
@@ -160,7 +160,7 @@ void WDC65816_cycle(struct WDC65816* this)
     this->ins(&this->regs, &this->pins);
 }
 
-void WDC65816_init(struct WDC65816* this, u64 *master_clock)
+void WDC65816_init(WDC65816* this, u64 *master_clock)
 {
     memset(this, 0, sizeof(*this));
     this->master_clock = master_clock;
@@ -175,13 +175,13 @@ void WDC65816_init(struct WDC65816* this, u64 *master_clock)
     this->regs.S = 0x1FF;
 }
 
-void WDC65816_delete(struct WDC65816* this)
+void WDC65816_delete(WDC65816* this)
 {
     jsm_string_delete(&this->trace.str);
     jsm_string_delete(&this->trace.str2);
 }
 
-void WDC65816_reset(struct WDC65816* this)
+void WDC65816_reset(WDC65816* this)
 {
     this->pins.RES = 0;
     this->regs.RES_pending = 0;
@@ -194,7 +194,7 @@ void WDC65816_reset(struct WDC65816* this)
     }
 }
 
-void WDC65816_setup_tracing(struct WDC65816* this, jsm_debug_read_trace *strct)
+void WDC65816_setup_tracing(WDC65816* this, jsm_debug_read_trace *strct)
 {
     this->trace.strct.read_trace_m68k = strct->read_trace_m68k;
     this->trace.strct.ptr = strct->ptr;

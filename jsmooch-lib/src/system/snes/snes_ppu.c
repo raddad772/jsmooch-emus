@@ -18,23 +18,23 @@
 #define PPU_src_OBJ2 5
 #define PPU_src_COL 6
 
-void SNES_PPU_init(struct SNES *snes)
+void SNES_PPU_init(SNES *snes)
 {
 }
 
-void SNES_PPU_delete(struct SNES *this)
+void SNES_PPU_delete(SNES *this)
 {
     
 }
 
-void SNES_PPU_reset(struct SNES *snes)
+void SNES_PPU_reset(SNES *snes)
 {
     struct SNES_PPU *this = &snes->ppu;
     this->mode7.a = this->mode7.d = 0x100;
     this->mode7.b = this->mode7.c = 0;
 }
 
-static u32 read_oam(struct SNES_PPU *this, u32 addr)
+static u32 read_oam(SNES_PPU *this, u32 addr)
 {
     u32 n;
     if (!(addr & 0x200)) {
@@ -62,7 +62,7 @@ static u32 read_oam(struct SNES_PPU *this, u32 addr)
     }
 }
 
-static void write_oam(struct SNES *snes, SNES_PPU *this, u32 addr, u32 val) {
+static void write_oam(SNES *snes, SNES_PPU *this, u32 addr, u32 val) {
     if (!snes->clock.ppu.vblank_active && !this->io.force_blank) {
         printf("\nWARN OAM BAD WRITE TIME");
         return;
@@ -110,7 +110,7 @@ static void write_oam(struct SNES *snes, SNES_PPU *this, u32 addr, u32 val) {
     }
 }
 
-static u32 get_addr_by_map(struct SNES_PPU *this)
+static u32 get_addr_by_map(SNES_PPU *this)
 {
     u32 addr = this->io.vram.addr;
     switch(this->io.vram.mapping) {
@@ -125,7 +125,7 @@ static u32 get_addr_by_map(struct SNES_PPU *this)
     return 0x8000;
 }
 
-static void update_video_mode(struct SNES_PPU *this)
+static void update_video_mode(SNES_PPU *this)
 {
 		//snes->clock.scanline.bottom_scanline = this->overscan ? 240 : 225;
 #define BGP(num, lo, hi) this->bg[num-1].priority[0] = lo; this->bg[num-1].priority[1] = hi
@@ -265,7 +265,7 @@ static void update_video_mode(struct SNES_PPU *this)
         }
 }
 
-static void write_VRAM(struct SNES *snes, u32 addr, u32 val)
+static void write_VRAM(SNES *snes, u32 addr, u32 val)
 {
     addr &= 0x7FFF;
     DBG_EVENT(DBG_SNES_EVENT_WRITE_VRAM);
@@ -273,7 +273,7 @@ static void write_VRAM(struct SNES *snes, u32 addr, u32 val)
     snes->ppu.VRAM[addr] = val;
 }
 
-void SNES_PPU_write(struct SNES *snes, u32 addr, u32 val, SNES_memmap_block *bl) {
+void SNES_PPU_write(SNES *snes, u32 addr, u32 val, SNES_memmap_block *bl) {
     addr &= 0xFFFF;
     u32 addre;
     struct SNES_PPU *this = &snes->ppu;
@@ -613,12 +613,12 @@ void SNES_PPU_write(struct SNES *snes, u32 addr, u32 val, SNES_memmap_block *bl)
     }
 }
 
-static u32 mode7_mul(struct SNES_PPU *this)
+static u32 mode7_mul(SNES_PPU *this)
 {
     return (u32)((i32)(this->mode7.a) * (i32)(i8)(this->mode7.b >> 8));
 }
 
-u32 SNES_PPU_read(struct SNES *snes, u32 addr, u32 old, u32 has_effect, SNES_memmap_block *bl)
+u32 SNES_PPU_read(SNES *snes, u32 addr, u32 old, u32 has_effect, SNES_memmap_block *bl)
 {
     addr &= 0xFFFF;
     struct SNES_PPU *this = &snes->ppu;
@@ -708,7 +708,7 @@ u32 SNES_PPU_read(struct SNES *snes, u32 addr, u32 old, u32 has_effect, SNES_mem
 // Two states: regular, or paused for RAM refresh.
 // I think I'll just use a "ram_refresh" kinda function that just advances the clock!? Maybe?
 
-static void new_scanline(struct SNES* this, u64 cur_clock)
+static void new_scanline(SNES* this, u64 cur_clock)
 {
     // TODO: this
     // TODO: hblank exit here too
@@ -722,7 +722,7 @@ static void new_scanline(struct SNES* this, u64 cur_clock)
 
 static void dram_refresh(void *ptr, u64 key, u64 clock, u32 jitter)
 {
-    struct SNES *this = (struct SNES *)ptr;
+    struct SNES *this = (SNES *)ptr;
     scheduler_from_event_adjust_master_clock(&this->scheduler, 40);
 }
 
@@ -748,7 +748,7 @@ static inline void setpx(union SNES_PPU_px *px, u32 source, u32 priority, u32 co
     px->dbg_priority = dbg_priority;
 }
 
-static void draw_bg_line_mode7(struct SNES *snes, u32 source, i32 y)
+static void draw_bg_line_mode7(SNES *snes, u32 source, i32 y)
 {
     struct SNES_PPU *this = &snes->ppu;
     struct SNES_PPU_BG *bg = &this->bg[source];
@@ -814,7 +814,7 @@ static void draw_bg_line_mode7(struct SNES *snes, u32 source, i32 y)
     }
 }
 
-static u32 get_tile(struct SNES *snes, SNES_PPU_BG *bg, i32 hoffset, i32 voffset)
+static u32 get_tile(SNES *snes, SNES_PPU_BG *bg, i32 hoffset, i32 voffset)
 {
     u32 hires = snes->ppu.io.bg_mode == 5 || snes->ppu.io.bg_mode == 6;
     u32 tile_height = 3 + bg->io.tile_size;
@@ -830,7 +830,7 @@ static u32 get_tile(struct SNES *snes, SNES_PPU_BG *bg, i32 hoffset, i32 voffset
     return snes->ppu.VRAM[addr];
 }
 
-static void draw_bg_line(struct SNES *snes, u32 source, u32 y)
+static void draw_bg_line(SNES *snes, u32 source, u32 y)
 {
     struct SNES_PPU *this = &snes->ppu;
     struct SNES_PPU_BG *bg = &this->bg[source];
@@ -979,7 +979,7 @@ static void draw_bg_line(struct SNES *snes, u32 source, u32 y)
     }
 }
 
-static void color_math(struct SNES_PPU *this, union SNES_PPU_px *main, union SNES_PPU_px *sub)
+static void color_math(SNES_PPU *this, union SNES_PPU_px *main, union SNES_PPU_px *sub)
 {
     main->color_math_flags = 1;
     i32 mr = main->color & 0x1F;
@@ -1016,7 +1016,7 @@ static void color_math(struct SNES_PPU *this, union SNES_PPU_px *main, union SNE
     main->color = mr | (mg << 5) | (mb << 10);
 }
 
-static void draw_sprite_line(struct SNES *snes, i32 ppu_y)
+static void draw_sprite_line(SNES *snes, i32 ppu_y)
 {
     struct SNES_PPU *this = &snes->ppu;
     memset(this->obj.line, 0, sizeof(this->obj.line));
@@ -1123,7 +1123,7 @@ static void draw_sprite_line(struct SNES *snes, i32 ppu_y)
 #define SRC_OBJ_PAL47 5
 #define SRC_BACK 6
 
-static void draw_line(struct SNES *snes)
+static void draw_line(SNES *snes)
 {
     // Draw sprite line
     struct SNES_PPU *this = &snes->ppu;
@@ -1207,7 +1207,7 @@ static void draw_line(struct SNES *snes)
 
 static void hblank(void *ptr, u64 key, u64 clock, u32 jitter)
 {
-    struct SNES *snes = (struct SNES *)ptr;
+    struct SNES *snes = (SNES *)ptr;
     snes->clock.ppu.hblank_active = key;
 
     R5A22_hblank(snes, key);
@@ -1226,12 +1226,12 @@ static void hblank(void *ptr, u64 key, u64 clock, u32 jitter)
 
 }
 
-static inline u32 ch_hdma_is_active(struct R5A22_DMA_CHANNEL *ch)
+static inline u32 ch_hdma_is_active(R5A22_DMA_CHANNEL *ch)
 {
     return ch->hdma_enable && !ch->hdma_completed;
 }
 
-static u32 hdma_is_finished(struct R5A22_DMA_CHANNEL *this)
+static u32 hdma_is_finished(R5A22_DMA_CHANNEL *this)
 {
     struct R5A22_DMA_CHANNEL *ch = this->next;
     while(ch != NULL) {
@@ -1242,7 +1242,7 @@ static u32 hdma_is_finished(struct R5A22_DMA_CHANNEL *this)
 
 }
 
-u32 SNES_hdma_reload_ch(struct SNES *snes, R5A22_DMA_CHANNEL *ch)
+u32 SNES_hdma_reload_ch(SNES *snes, R5A22_DMA_CHANNEL *ch)
 {
     u32 cn = 8;
     u32 data = SNES_wdc65816_read(snes, (ch->source_bank << 16 | ch->hdma_address), 0, 1);
@@ -1270,7 +1270,7 @@ u32 SNES_hdma_reload_ch(struct SNES *snes, R5A22_DMA_CHANNEL *ch)
     return cn;
 }
 
-static u32 hdma_setup_ch(struct SNES *snes, R5A22_DMA_CHANNEL *ch)
+static u32 hdma_setup_ch(SNES *snes, R5A22_DMA_CHANNEL *ch)
 {
     ch->hdma_do_transfer = 1;
     if (!ch->hdma_enable) return 0;
@@ -1283,7 +1283,7 @@ static u32 hdma_setup_ch(struct SNES *snes, R5A22_DMA_CHANNEL *ch)
 
 static void hdma_setup(void *ptr, u64 key, u64 clock, u32 jitter)
 {
-    struct SNES *snes = (struct SNES *)ptr;
+    struct SNES *snes = (SNES *)ptr;
     u32 cn = 8;
     for (u32 n = 0; n < 8; n++) {
         cn += hdma_setup_ch(snes, &snes->r5a22.dma.channels[n]);
@@ -1291,7 +1291,7 @@ static void hdma_setup(void *ptr, u64 key, u64 clock, u32 jitter)
     scheduler_from_event_adjust_master_clock(&snes->scheduler, cn);
 }
 
-static u32 hdma_is_enabled(struct SNES *snes)
+static u32 hdma_is_enabled(SNES *snes)
 {
     for (u32 n = 0; n < 8; n++) {
         if (snes->r5a22.dma.channels[n].hdma_enable) return 1;
@@ -1301,7 +1301,7 @@ static u32 hdma_is_enabled(struct SNES *snes)
 
 static void hdma(void *ptr, u64 key, u64 clock, u32 jitter)
 {
-    struct SNES *snes = (struct SNES *)ptr;
+    struct SNES *snes = (SNES *)ptr;
     if (hdma_is_enabled(snes)) {
         snes->r5a22.status.dma_running = 1;
     }
@@ -1309,7 +1309,7 @@ static void hdma(void *ptr, u64 key, u64 clock, u32 jitter)
 
 static void assert_hirq(void *ptr, u64 key, u64 clock, u32 jitter)
 {
-    struct SNES *snes = (struct SNES *)ptr;
+    struct SNES *snes = (SNES *)ptr;
     struct R5A22 *this = &snes->r5a22;
     this->status.hirq_line = key;
     R5A22_update_irq(snes);
@@ -1318,7 +1318,7 @@ static void assert_hirq(void *ptr, u64 key, u64 clock, u32 jitter)
 
 static void schedule_scanline(void *ptr, u64 key, u64 clock, u32 jitter)
 {
-    struct SNES *snes = (struct SNES*)ptr;
+    struct SNES *snes = (SNES*)ptr;
     u64 cur = clock - jitter;
     u32 vblank = snes->clock.ppu.y >= 224;
     new_scanline(snes, cur);
@@ -1358,7 +1358,7 @@ static void schedule_scanline(void *ptr, u64 key, u64 clock, u32 jitter)
 
 static void vblank(void *ptr, u64 key, u64 cur_clock, u32 jitter)
 {
-    struct SNES *snes = (struct SNES *)ptr;
+    struct SNES *snes = (SNES *)ptr;
     snes->clock.ppu.vblank_active = key;
     snes->r5a22.status.nmi_flag = key;
     if (!key) { // VBLANK off at start of frame
@@ -1375,7 +1375,7 @@ static void new_frame(void* ptr, u64 key, u64 cur_clock, u32 jitter)
 {
     u64 cur = cur_clock - jitter;
     //printf("\nNEW FRAME @%lld", cur);
-    struct SNES* snes = (struct SNES*)ptr;
+    struct SNES* snes = (SNES*)ptr;
 
     if (snes->dbg.events.view.vec) {
         debugger_report_frame(snes->dbg.interface);
@@ -1408,7 +1408,7 @@ static void new_frame(void* ptr, u64 key, u64 cur_clock, u32 jitter)
 }
 
 
-void SNES_PPU_schedule_first(struct SNES *this)
+void SNES_PPU_schedule_first(SNES *this)
 {
     schedule_scanline(this, 0, 0, 0);
     scheduler_only_add_abs_w_tag(&this->scheduler, this->clock.timing.frame.master_cycles, 0, this, &new_frame, NULL, 2);

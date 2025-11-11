@@ -8,12 +8,12 @@
 
 #include "sram.h"
 
-void persistent_store_init(struct persistent_store*this)
+void persistent_store_init(persistent_store*this)
 {
-    memset(this, 0, sizeof(struct persistent_store));
+    memset(this, 0, sizeof(persistent_store));
 }
 
-void persistent_store_delete(struct persistent_store*this)
+void persistent_store_delete(persistent_store*this)
 {
     if (this->dirty && this->requested_size > 0){
         printf("\nWARNING: DELETING DIRTY PERSISTENT STORE!");

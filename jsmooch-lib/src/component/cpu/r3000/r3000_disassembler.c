@@ -14,22 +14,22 @@
 #pragma warning(disable: 4293) // warning C4293: '<<': shift count negative or too big, undefined behavior
 #endif
 
-static void add_r_context(struct R3000ctxt *t, u32 rnum)
+static void add_r_context(R3000ctxt *t, u32 rnum)
 {
     if (t) t->regs |= (1L << rnum);
 }
 
-static void add_PC_context(struct R3000ctxt *t, u32 rnum)
+static void add_PC_context(R3000ctxt *t, u32 rnum)
 {
     t->regs |= (1L << 32);
 }
 
-static void add_gte_context(struct R3000ctxt *t, u32 rnum)
+static void add_gte_context(R3000ctxt *t, u32 rnum)
 {
     t->gte |= (1L << rnum);
 }
 
-static void add_cop_context(struct R3000ctxt *t, u32 rnum)
+static void add_cop_context(R3000ctxt *t, u32 rnum)
 {
     t->cop |= (1L << rnum);
 }

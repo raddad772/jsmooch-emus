@@ -7,6 +7,6 @@
 
 struct NES_mapper;
 struct NES;
-void NROM_init(struct NES_mapper *bus, NES *nes);
+void NROM_init(NES_mapper *bus, NES *nes);
 
 #endif //JSMOOCH_EMUS_NROM_H

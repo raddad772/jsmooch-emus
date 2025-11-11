@@ -7,16 +7,16 @@
 
 #include "audiobuf.h"
 
-void audiobuf::allocate(u32 num_channels, float num_samples)
+void audiobuf::allocate(u32 innum_channels, float num_samples)
 {
     samples_len = num_samples;
-    alloc_len = ((u32)num_samples + 1) * 4 * num_channels;
-    num_channels = num_channels;
+    alloc_len = ((u32)num_samples + 1) * 4 * innum_channels;
+    num_channels = innum_channels;
     fpos = 0;
     upos = 0;
     if (ptr) {
         free(ptr);
-        ptr = NULL;
+        ptr = nullptr;
     }
     ptr = malloc(alloc_len);
 }

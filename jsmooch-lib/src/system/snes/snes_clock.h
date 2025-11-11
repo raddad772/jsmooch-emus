@@ -68,6 +68,6 @@ struct SNES_clock {
 };
 
 
-void SNES_clock_init(struct SNES_clock *);
+void SNES_clock_init(SNES_clock *);
 
 #endif //JSMOOCH_EMUS_SNES_CLOCK_H

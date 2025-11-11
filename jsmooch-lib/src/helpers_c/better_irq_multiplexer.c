@@ -8,13 +8,13 @@
 #include "better_irq_multiplexer.h"
 #include "helpers/debug.h"
 
-void IRQ_multiplexer_b_init(struct IRQ_multiplexer_b *this, u32 max_IRQ)
+void IRQ_multiplexer_b_init(IRQ_multiplexer_b *this, u32 max_IRQ)
 {
     memset(this, 0, sizeof(*this));
     this->max_irq = max_IRQ;
 }
 
-void IRQ_multiplexer_b_set_level(struct IRQ_multiplexer_b *this, u32 num, u32 new_level)
+void IRQ_multiplexer_b_set_level(IRQ_multiplexer_b *this, u32 num, u32 new_level)
 {
     struct IRQ_multiplexer_b_irq *irq = &this->irqs[num];
     this->IF &= ~(1 << num);
@@ -36,7 +36,7 @@ void IRQ_multiplexer_b_set_level(struct IRQ_multiplexer_b *this, u32 num, u32 ne
     printif(better_irq_multiplexer, "\nirq_multiplexer: %d set to %d, new IF: %lld", num, new_level, this->IF);
 }
 
-void IRQ_multiplexer_b_reset(struct IRQ_multiplexer_b *this)
+void IRQ_multiplexer_b_reset(IRQ_multiplexer_b *this)
 {
     this->IF = 0;
     for (u32 i = 0; i < MAX_IRQS_MULTIPLEXED; i++) {
@@ -46,7 +46,7 @@ void IRQ_multiplexer_b_reset(struct IRQ_multiplexer_b *this)
 }
 
 // Basically this is for R3000 writes to I_STAT
-void IRQ_multiplexer_b_mask(struct IRQ_multiplexer_b *this, u64 val)
+void IRQ_multiplexer_b_mask(IRQ_multiplexer_b *this, u64 val)
 {
     this->IF &= val;
     for (u64 i = 0; i < this->max_irq; i++) {
@@ -56,7 +56,7 @@ void IRQ_multiplexer_b_mask(struct IRQ_multiplexer_b *this, u64 val)
     //printf("\nIRQs masked to %02llx", this->IF);
 }
 
-void IRQ_multiplexer_b_setup_irq(struct IRQ_multiplexer_b *this, u32 num, const char *name, enum IRQ_multiplexer_b_kind kind)
+void IRQ_multiplexer_b_setup_irq(IRQ_multiplexer_b *this, u32 num, const char *name, enum IRQ_multiplexer_b_kind kind)
 {
     assert(num < MAX_IRQS_MULTIPLEXED);
     this->irqs[num].kind = kind;

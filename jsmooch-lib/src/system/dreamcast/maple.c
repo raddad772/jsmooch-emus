@@ -10,7 +10,7 @@
 #include "maple.h"
 #include "controller.h"
 
-void MAPLE_port_init(struct MAPLE_port* this)
+void MAPLE_port_init(MAPLE_port* this)
 {
     this->device_kind = MAPLE_NONE;
     this->device_ptr = NULL;
@@ -19,7 +19,7 @@ void MAPLE_port_init(struct MAPLE_port* this)
     this->write_device = NULL;
 }
 
-void maple_write(struct DC* this, u32 addr, u64 val, u32 sz, u32* success)
+void maple_write(DC* this, u32 addr, u64 val, u32 sz, u32* success)
 {
     addr &= 0x1FFFFFFF;
     switch(addr) {
@@ -33,7 +33,7 @@ void maple_write(struct DC* this, u32 addr, u64 val, u32 sz, u32* success)
     *success = 0;
 }
 
-u64 maple_read(struct DC* this, u32 addr, enum DC_MEM_SIZE sz, u32* success)
+u64 maple_read(DC* this, u32 addr, enum DC_MEM_SIZE sz, u32* success)
 {
     addr &= 0x1FFFFFFF;
     switch(addr) {
@@ -45,7 +45,7 @@ u64 maple_read(struct DC* this, u32 addr, enum DC_MEM_SIZE sz, u32* success)
     return 0;
 }
 
-static u32 maple_port_in(struct DC* this, u32 port, u32* more)
+static u32 maple_port_in(DC* this, u32 port, u32* more)
 {
     struct MAPLE_port* p = &this->maple.ports[port];
     switch(p->device_kind) {
@@ -59,7 +59,7 @@ static u32 maple_port_in(struct DC* this, u32 port, u32* more)
     return 0;
 }
 
-static void maple_port_out(struct DC* this, u32 port, u32 data)
+static void maple_port_out(DC* this, u32 port, u32 data)
 {
     struct MAPLE_port* p = &this->maple.ports[port];
     switch(p->device_kind) {
@@ -96,7 +96,7 @@ u32 bin3[8] = {
 };
 
 
-void maple_dma_init(struct DC* this)
+void maple_dma_init(DC* this)
 {
     if (this->maple.SB_MDEN == 0) {
         printf("\nCan't enable maple dma if disabled globally!");

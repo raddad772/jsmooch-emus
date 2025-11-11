@@ -23,7 +23,7 @@ struct NES_controllerport {
 };
 
 struct r2A03 {
-    explicit r2A03(struct NES *nes);
+    explicit r2A03(NES *nes);
     M6502 cpu;
     NES *nes;
 
@@ -55,8 +55,8 @@ struct r2A03 {
     NES_joypad joypad1{0};
     NES_joypad joypad2{1};
 
-    void serialize(struct serialized_state &state);
-    void deserialize(struct serialized_state &state);
+    void serialize(serialized_state &state);
+    void deserialize(serialized_state &state);
 };
 
 #endif //JSMOOCH_EMUS_NES_CPU_H

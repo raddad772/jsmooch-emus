@@ -178,15 +178,15 @@ struct SNES_PPU {
 
 struct SNES;
 struct SNES_memmap_block;
-void SNES_PPU_init(struct SNES *);
-void SNES_PPU_delete(struct SNES *);
-void SNES_PPU_reset(struct SNES *);
-void SNES_PPU_write(struct SNES *, u32 addr, u32 val, SNES_memmap_block *bl);
-u32 SNES_PPU_read(struct SNES *, u32 addr, u32 old, u32 has_effect, SNES_memmap_block *bl);
-void SNES_PPU_schedule_first(struct SNES *);
+void SNES_PPU_init(SNES *);
+void SNES_PPU_delete(SNES *);
+void SNES_PPU_reset(SNES *);
+void SNES_PPU_write(SNES *, u32 addr, u32 val, SNES_memmap_block *bl);
+u32 SNES_PPU_read(SNES *, u32 addr, u32 old, u32 has_effect, SNES_memmap_block *bl);
+void SNES_PPU_schedule_first(SNES *);
 struct R5A22_DMA_CHANNEL;
-u32 SNES_hdma_reload_ch(struct SNES *snes, R5A22_DMA_CHANNEL *ch);
+u32 SNES_hdma_reload_ch(SNES *snes, R5A22_DMA_CHANNEL *ch);
 
-i32 SNES_PPU_hpos(struct SNES *);
+i32 SNES_PPU_hpos(SNES *);
 
 #endif //JSMOOCH_EMUS_SNES_PPU_H

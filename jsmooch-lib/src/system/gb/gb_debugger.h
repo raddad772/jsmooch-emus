@@ -32,6 +32,6 @@
 
 #define DBG_GB_EVENT_MAX 15
 
-void GBJ_setup_debugger_interface(struct jsm_system *, debugger_interface *dbgr);
+void GBJ_setup_debugger_interface(jsm_system *, debugger_interface *dbgr);
 
 #endif //JSMOOCH_EMUS_GB_DEBUGGER_H

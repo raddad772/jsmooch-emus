@@ -220,15 +220,15 @@ struct genesis_vdp {
 };
 
 struct genesis;
-void genesis_VDP_init(struct genesis*);
-void genesis_VDP_delete(struct genesis*);
-u16 genesis_VDP_mainbus_read(struct genesis*, u32 addr, u16 old, u16 mask, u32 has_effect);
-void genesis_VDP_mainbus_write(struct genesis*, u32 addr, u16 val, u16 mask);
-void genesis_VDP_cycle(struct genesis*);
-u8 genesis_VDP_z80_read(struct genesis*, u32 addr, u8 old, u32 has_effect);
-void genesis_VDP_z80_write(struct genesis*, u32 addr, u8 val);
-void genesis_VDP_reset(struct genesis*);
-void genesis_VDP_vblank(struct genesis*, u32 new_value);
-void genesis_VDP_schedule_first(struct genesis *);
+void genesis_VDP_init(genesis*);
+void genesis_VDP_delete(genesis*);
+u16 genesis_VDP_mainbus_read(genesis*, u32 addr, u16 old, u16 mask, u32 has_effect);
+void genesis_VDP_mainbus_write(genesis*, u32 addr, u16 val, u16 mask);
+void genesis_VDP_cycle(genesis*);
+u8 genesis_VDP_z80_read(genesis*, u32 addr, u8 old, u32 has_effect);
+void genesis_VDP_z80_write(genesis*, u32 addr, u8 val);
+void genesis_VDP_reset(genesis*);
+void genesis_VDP_vblank(genesis*, u32 new_value);
+void genesis_VDP_schedule_first(genesis *);
 
 #endif //JSMOOCH_EMUS_GENESIS_VDP_H

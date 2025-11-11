@@ -30,7 +30,7 @@
 //#define GENSCHED_SWITCH
 struct genesis;
 struct gensched_item;
-typedef void (*gensched_callback)(struct genesis *, gensched_item *);
+typedef void (*gensched_callback)(genesis *, gensched_item *);
 
 struct gensched_item {
     u16 next_index;
@@ -163,12 +163,12 @@ struct genesis {
     } opts;
 };
 
-void genesis_cycle_m68k(struct genesis*);
-void genesis_cycle_z80(struct genesis*);
-void gen_test_dbg_break(struct genesis*, const char *where);
-u16 genesis_mainbus_read(struct genesis*, u32 addr, u32 UDS, u32 LDS, u16 old, u32 has_effect);
-void genesis_z80_interrupt(struct genesis*, u32 level);
-u8 genesis_z80_bus_read(struct genesis*, u16 addr, u8 old, u32 has_effect);
-void genesis_bus_update_irqs(struct genesis* this);
+void genesis_cycle_m68k(genesis*);
+void genesis_cycle_z80(genesis*);
+void gen_test_dbg_break(genesis*, const char *where);
+u16 genesis_mainbus_read(genesis*, u32 addr, u32 UDS, u32 LDS, u16 old, u32 has_effect);
+void genesis_z80_interrupt(genesis*, u32 level);
+u8 genesis_z80_bus_read(genesis*, u16 addr, u8 old, u32 has_effect);
+void genesis_bus_update_irqs(genesis* this);
 
 #endif //JSMOOCH_EMUS_GENESIS_BUS_H

@@ -21,8 +21,8 @@
 #include "component/cpu/arm946es/arm946es.h"
 
 struct NDS;
-typedef u32 (*NDS_rdfunc)(struct NDS *, u32 addr, u32 sz, u32 access, u32 has_effect);
-typedef void (*NDS_wrfunc)(struct NDS *, u32 addr, u32 sz, u32 access, u32 val);
+typedef u32 (*NDS_rdfunc)(NDS *, u32 addr, u32 sz, u32 access, u32 has_effect);
+typedef void (*NDS_wrfunc)(NDS *, u32 addr, u32 sz, u32 access, u32 val);
 
 #define NDSVRAMSHIFT(nda) (((nda) & 0xFFFFFF) >> 14)
 #define NDSVRAMMASK 0x3FF
@@ -457,14 +457,14 @@ void NDS_mainbus_write9(void *ptr, u32 addr, u32 sz, u32 access, u32 val);
 u32 NDS_mainbus_fetchins9(void *ptr, u32 addr, u32 sz, u32 access);
 
 
-void NDS_bus_init(struct NDS *);
-void NDS_eval_irqs(struct NDS *);
-void NDS_check_dma9_at_hblank(struct NDS *);
-void NDS_check_dma7_at_vblank(struct NDS *);
-void NDS_check_dma9_at_vblank(struct NDS *);
-u32 NDS_open_bus_byte(struct NDS *, u32 addr);
-u32 NDS_open_bus(struct NDS *this, u32 addr, u32 sz);
-u64 NDS_clock_current7(struct NDS *);
-u64 NDS_clock_current9(struct NDS *);
-void NDS_bus_reset(struct NDS *);
+void NDS_bus_init(NDS *);
+void NDS_eval_irqs(NDS *);
+void NDS_check_dma9_at_hblank(NDS *);
+void NDS_check_dma7_at_vblank(NDS *);
+void NDS_check_dma9_at_vblank(NDS *);
+u32 NDS_open_bus_byte(NDS *, u32 addr);
+u32 NDS_open_bus(NDS *this, u32 addr, u32 sz);
+u64 NDS_clock_current7(NDS *);
+u64 NDS_clock_current9(NDS *);
+void NDS_bus_reset(NDS *);
 #endif //JSMOOCH_EMUS_NDS_BUS_H

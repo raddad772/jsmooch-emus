@@ -20,9 +20,9 @@ struct Z80_regs_F {
     u32 S, Z, Y, H, X, PV, N, C;
 };
 
-void Z80_regs_F_init(struct Z80_regs_F*);
-void Z80_regs_F_setbyte(struct Z80_regs_F*, u32 val);
-u32 Z80_regs_F_getbyte(struct Z80_regs_F*);
+void Z80_regs_F_init(Z80_regs_F*);
+void Z80_regs_F_setbyte(Z80_regs_F*, u32 val);
+u32 Z80_regs_F_getbyte(Z80_regs_F*);
 
 enum Z80P {
   Z80P_HL,
@@ -88,10 +88,10 @@ struct Z80_regs {
     u32 poll_IRQ;
 };
 
-void Z80_regs_init(struct Z80_regs*);
-void Z80_regs_exchange_shadow_af(struct Z80_regs*);
-void Z80_regs_exchange_de_hl(struct Z80_regs*);
-void Z80_regs_exchange_shadow(struct Z80_regs*);
+void Z80_regs_init(Z80_regs*);
+void Z80_regs_exchange_shadow_af(Z80_regs*);
+void Z80_regs_exchange_de_hl(Z80_regs*);
+void Z80_regs_exchange_shadow(Z80_regs*);
 
 struct Z80_pins {
     u32 Addr;
@@ -103,9 +103,9 @@ struct Z80_pins {
     u32 M1, WAIT; // M1 pin
 };
 
-void Z80_pins_init(struct Z80_pins*);
+void Z80_pins_init(Z80_pins*);
 
-typedef void (*Z80_ins_func)(struct Z80_regs*, Z80_pins*);
+typedef void (*Z80_ins_func)(Z80_regs*, Z80_pins*);
 
 struct Z80 {
     struct Z80_regs regs;
@@ -133,16 +133,16 @@ struct Z80 {
     u32 PCO;
 };
 
-void Z80_init(struct Z80*, u32 CMOS);
+void Z80_init(Z80*, u32 CMOS);
 u32 Z80_parity(u32 val);
-void Z80_reset(struct Z80*);
-void Z80_cycle(struct Z80*);
-void Z80_notify_NMI(struct Z80*, u32 level);
-void Z80_notify_IRQ(struct Z80*, u32 level);
-void Z80_setup_tracing(struct Z80*, jsm_debug_read_trace* dbg_read_trace, u64 *trace_cycle_pointer);
-void Z80_serialize(struct Z80*, serialized_state *state);
-void Z80_deserialize(struct Z80*, serialized_state *state);
-void Z80_trace_format(struct Z80 *);
-void Z80_printf_trace(struct Z80* this);
+void Z80_reset(Z80*);
+void Z80_cycle(Z80*);
+void Z80_notify_NMI(Z80*, u32 level);
+void Z80_notify_IRQ(Z80*, u32 level);
+void Z80_setup_tracing(Z80*, jsm_debug_read_trace* dbg_read_trace, u64 *trace_cycle_pointer);
+void Z80_serialize(Z80*, serialized_state *state);
+void Z80_deserialize(Z80*, serialized_state *state);
+void Z80_trace_format(Z80 *);
+void Z80_printf_trace(Z80* this);
 
 #endif //JSMOOCH_EMUS_Z80_H

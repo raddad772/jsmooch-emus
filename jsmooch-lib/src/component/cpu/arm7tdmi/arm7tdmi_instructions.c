@@ -28,7 +28,7 @@ static u32 align_val(u32 addr, u32 tmp)
 
 }
 
-static u32 *get_SPSR_by_mode(struct ARM7TDMI *this){
+static u32 *get_SPSR_by_mode(ARM7TDMI *this){
     switch(this->regs.CPSR.mode) {
         case ARM7_user:
             return &this->regs.CPSR.u;
@@ -49,7 +49,7 @@ static u32 *get_SPSR_by_mode(struct ARM7TDMI *this){
     }
 }
 
-static inline u32 *old_getR(struct ARM7TDMI *this, u32 num) {
+static inline u32 *old_getR(ARM7TDMI *this, u32 num) {
     // valid modes are,
     // 16-19, 23, 27, 31
     u32 m = this->regs.CPSR.mode;
@@ -102,7 +102,7 @@ static inline u32 *old_getR(struct ARM7TDMI *this, u32 num) {
     }
 }
 
-static inline u32 *getR(struct ARM7TDMI *this, u32 num) {
+static inline u32 *getR(ARM7TDMI *this, u32 num) {
     return this->regmap[num];
 }
 
@@ -134,20 +134,20 @@ static inline u32 *getR(struct ARM7TDMI *this, u32 num) {
 }*/
 
 
-void ARM7TDMI_fill_regmap(struct ARM7TDMI *this) {
+void ARM7TDMI_fill_regmap(ARM7TDMI *this) {
     for (u32 i = 8; i < 15; i++) {
         this->regmap[i] = old_getR(this, i);
     }
 }
 
-static inline void write_reg(struct ARM7TDMI *this, u32 *r, u32 v) {
+static inline void write_reg(ARM7TDMI *this, u32 *r, u32 v) {
     *r = v;
     if (r == &this->regs.PC) {
         ARM7TDMI_flush_pipeline(this);
     }
 }
 
-static u32 MUL(struct ARM7TDMI *this, u32 product, u32 multiplicand, u32 multiplier, u32 S)
+static u32 MUL(ARM7TDMI *this, u32 product, u32 multiplicand, u32 multiplier, u32 S)
 {
     u32 n = 1;
 
@@ -163,7 +163,7 @@ static u32 MUL(struct ARM7TDMI *this, u32 product, u32 multiplicand, u32 multipl
     return product;
 }
 
-void ARM7TDMI_ins_MUL_MLA(struct ARM7TDMI *this, u32 opcode)
+void ARM7TDMI_ins_MUL_MLA(ARM7TDMI *this, u32 opcode)
 {
     u32 accumulate = OBIT(21);
     if (accumulate) ARM7TDMI_idle(this, 1);
@@ -181,7 +181,7 @@ void ARM7TDMI_ins_MUL_MLA(struct ARM7TDMI *this, u32 opcode)
     write_reg(this, Rd, MUL(this, accumulate ? Rn : 0, Rm, Rs, S));
 }
 
-void ARM7TDMI_ins_MULL_MLAL(struct ARM7TDMI *this, u32 opcode)
+void ARM7TDMI_ins_MULL_MLAL(ARM7TDMI *this, u32 opcode)
 {
     u32 S = OBIT(20);
     u32 Rdd = (opcode >> 16) & 15;
@@ -222,7 +222,7 @@ void ARM7TDMI_ins_MULL_MLAL(struct ARM7TDMI *this, u32 opcode)
     }
 }
 
-void ARM7TDMI_ins_SWP(struct ARM7TDMI *this, u32 opcode)
+void ARM7TDMI_ins_SWP(ARM7TDMI *this, u32 opcode)
 {
     u32 B = OBIT(22);
     u32 Rnd = (opcode >> 16) & 15;
@@ -247,7 +247,7 @@ void ARM7TDMI_ins_SWP(struct ARM7TDMI *this, u32 opcode)
     write_reg(this, Rd, tmp); // Rd = [Rn]
 }
 
-void ARM7TDMI_ins_LDRH_STRH(struct ARM7TDMI *this, u32 opcode)
+void ARM7TDMI_ins_LDRH_STRH(ARM7TDMI *this, u32 opcode)
 {
     u32 P = OBIT(24); // pre or post. 0=post
     u32 U = OBIT(23); // up/down, 0=down
@@ -301,7 +301,7 @@ void ARM7TDMI_ins_LDRH_STRH(struct ARM7TDMI *this, u32 opcode)
 
 }
 
-void ARM7TDMI_ins_LDRSB_LDRSH(struct ARM7TDMI *this, u32 opcode)
+void ARM7TDMI_ins_LDRSB_LDRSH(ARM7TDMI *this, u32 opcode)
 {
     u32 P = OBIT(24); // pre or post. 0=post
     u32 U = OBIT(23); // up/down, 0=down
@@ -345,7 +345,7 @@ void ARM7TDMI_ins_LDRSB_LDRSH(struct ARM7TDMI *this, u32 opcode)
     write_reg(this, Rd, val);
 }
 
-void ARM7TDMI_ins_MRS(struct ARM7TDMI *this, u32 opcode)
+void ARM7TDMI_ins_MRS(ARM7TDMI *this, u32 opcode)
 {
     u32 PSR = OBIT(22); // 0 = CPSR, 1 = SPSR(current)
     u32 Rdd = (opcode >> 12) & 15;
@@ -362,7 +362,7 @@ void ARM7TDMI_ins_MRS(struct ARM7TDMI *this, u32 opcode)
     this->regs.PC += 4;
 }
 
-void ARM7TDMI_ins_MSR_reg(struct ARM7TDMI *this, u32 opcode)
+void ARM7TDMI_ins_MSR_reg(ARM7TDMI *this, u32 opcode)
 {
     u32 PSR = OBIT(22); // 0 = CPSR, 1 = SPSR(current)
     u32 f = OBIT(19);
@@ -397,7 +397,7 @@ void ARM7TDMI_ins_MSR_reg(struct ARM7TDMI *this, u32 opcode)
     this->regs.PC += 4;
 }
 
-void ARM7TDMI_ins_MSR_imm(struct ARM7TDMI *this, u32 opcode)
+void ARM7TDMI_ins_MSR_imm(ARM7TDMI *this, u32 opcode)
 {
     // something -> MSR or CPSR
     u32 PSR = OBIT(22); // 0 = CPSR, 1 = SPSR(current)
@@ -434,7 +434,7 @@ void ARM7TDMI_ins_MSR_imm(struct ARM7TDMI *this, u32 opcode)
     this->pipeline.access = ARM7P_sequential | ARM7P_code;
 }
 
-void ARM7TDMI_ins_BX(struct ARM7TDMI *this, u32 opcode)
+void ARM7TDMI_ins_BX(ARM7TDMI *this, u32 opcode)
 {
     u32 Rnd = opcode & 15;
     u32 addr = *getR(this, Rnd);
@@ -445,7 +445,7 @@ void ARM7TDMI_ins_BX(struct ARM7TDMI *this, u32 opcode)
 }
 
 
-static u32 TEST(struct ARM7TDMI *this, u32 v, u32 S)
+static u32 TEST(ARM7TDMI *this, u32 v, u32 S)
 {
     if (this->regs.CPSR.T || S) {
         this->regs.CPSR.N = (v >> 31) & 1;
@@ -455,7 +455,7 @@ static u32 TEST(struct ARM7TDMI *this, u32 v, u32 S)
     return v;
 }
 
-static u32 ADD(struct ARM7TDMI *this, u32 Rnd, u32 Rmd, u32 carry, u32 S)
+static u32 ADD(ARM7TDMI *this, u32 Rnd, u32 Rmd, u32 carry, u32 S)
 {
     u32 result = Rnd + Rmd + carry;
     if (this->regs.CPSR.T || S) {
@@ -469,14 +469,14 @@ static u32 ADD(struct ARM7TDMI *this, u32 Rnd, u32 Rmd, u32 carry, u32 S)
 }
 
 
-static u32 SUB(struct ARM7TDMI *this, u32 Rn, u32 Rm, u32 carry, u32 S)
+static u32 SUB(ARM7TDMI *this, u32 Rn, u32 Rm, u32 carry, u32 S)
 {
     u32 iRm = Rm ^ 0xFFFFFFFF;
     u32 r = ADD(this, Rn, iRm, carry, S);
     return r;
 }
 
-static u32 ALU(struct ARM7TDMI *this, u32 Rn, u32 Rm, u32 alu_opcode, u32 S, u32 *out) {
+static u32 ALU(ARM7TDMI *this, u32 Rn, u32 Rm, u32 alu_opcode, u32 S, u32 *out) {
     switch(alu_opcode) {
         case 0: write_reg(this, out, TEST(this, Rn & Rm, S)); break;
         case 1: write_reg(this, out, TEST(this, Rn ^ Rm, S)); break;
@@ -502,7 +502,7 @@ static u32 ALU(struct ARM7TDMI *this, u32 Rn, u32 Rm, u32 alu_opcode, u32 S, u32
 
 // Logical shift left
 
-static u32 LSL(struct ARM7TDMI *this, u32 v, u32 amount) {
+static u32 LSL(ARM7TDMI *this, u32 v, u32 amount) {
     this->carry = this->regs.CPSR.C;
     if (amount == 0) return v;
     this->carry = amount > 32 ? 0 : !!(v & 1 << (32 - amount));
@@ -511,7 +511,7 @@ static u32 LSL(struct ARM7TDMI *this, u32 v, u32 amount) {
 }
 
 // Logical shift right
-static u32 LSR(struct ARM7TDMI *this, u32 v, u32 amount)
+static u32 LSR(ARM7TDMI *this, u32 v, u32 amount)
 {
     this->carry = this->regs.CPSR.C;
     if (amount == 0) return v;
@@ -521,7 +521,7 @@ static u32 LSR(struct ARM7TDMI *this, u32 v, u32 amount)
 }
 
 // Arithemtic (sign-extend) shift right
-static u32 ASR(struct ARM7TDMI *this, u32 v, u32 amount)
+static u32 ASR(ARM7TDMI *this, u32 v, u32 amount)
 {
  //   carry = cpsr().c;
     this->carry = this->regs.CPSR.C;
@@ -539,7 +539,7 @@ static u32 ASR(struct ARM7TDMI *this, u32 v, u32 amount)
     return v;
 }
 
-static u32 ROR(struct ARM7TDMI *this, u32 v, u32 amount)
+static u32 ROR(ARM7TDMI *this, u32 v, u32 amount)
 {
     this->carry = this->regs.CPSR.C;
     if (amount == 0) return v;
@@ -550,13 +550,13 @@ static u32 ROR(struct ARM7TDMI *this, u32 v, u32 amount)
 }
 
 // Rotate right thru carry
-static u32 RRX(struct ARM7TDMI *this, u32 v)
+static u32 RRX(ARM7TDMI *this, u32 v)
 {
     this->carry = v & 1;
     return (v >> 1) | (this->regs.CPSR.C << 31);
 }
 
-void ARM7TDMI_ins_data_proc_immediate_shift(struct ARM7TDMI *this, u32 opcode)
+void ARM7TDMI_ins_data_proc_immediate_shift(ARM7TDMI *this, u32 opcode)
 {
     u32 alu_opcode = (opcode >> 21) & 15;
     u32 S = (opcode >> 20) & 1; // set condition codes. 0=no, 1=yes. must be 1 for 8-B
@@ -605,7 +605,7 @@ void ARM7TDMI_ins_data_proc_immediate_shift(struct ARM7TDMI *this, u32 opcode)
     }
 }
 
-void ARM7TDMI_ins_data_proc_register_shift(struct ARM7TDMI *this, u32 opcode)
+void ARM7TDMI_ins_data_proc_register_shift(ARM7TDMI *this, u32 opcode)
 {
     u32 alu_opcode = (opcode >> 21) & 15;
     u32 S = (opcode >> 20) & 1; // set condition codes. 0=no, 1=yes. must be 1 for 8-B
@@ -651,7 +651,7 @@ void ARM7TDMI_ins_data_proc_register_shift(struct ARM7TDMI *this, u32 opcode)
     }
 }
 
-void ARM7TDMI_ins_undefined_instruction(struct ARM7TDMI *this, u32 opcode)
+void ARM7TDMI_ins_undefined_instruction(ARM7TDMI *this, u32 opcode)
 {
     printf("\nARM UNDEFINED INS!");
     assert(1==2);
@@ -664,7 +664,7 @@ void ARM7TDMI_ins_undefined_instruction(struct ARM7TDMI *this, u32 opcode)
     ARM7TDMI_flush_pipeline(this);
 }
 
-void ARM7TDMI_ins_data_proc_immediate(struct ARM7TDMI *this, u32 opcode)
+void ARM7TDMI_ins_data_proc_immediate(ARM7TDMI *this, u32 opcode)
 {
     u32 alu_opcode = (opcode >> 21) & 15;
     u32 S = (opcode >> 20) & 1; // set condition codes. 0=no, 1=yes. must be 1 for 8-B
@@ -691,7 +691,7 @@ void ARM7TDMI_ins_data_proc_immediate(struct ARM7TDMI *this, u32 opcode)
     }
 }
 
-void ARM7TDMI_ins_LDR_STR_immediate_offset(struct ARM7TDMI *this, u32 opcode)
+void ARM7TDMI_ins_LDR_STR_immediate_offset(ARM7TDMI *this, u32 opcode)
 {
     u32 P = OBIT(24); // Pre/post. 0 = after-transfer, post
     u32 U = OBIT(23); // 0 = down, 1 = up
@@ -743,7 +743,7 @@ void ARM7TDMI_ins_LDR_STR_immediate_offset(struct ARM7TDMI *this, u32 opcode)
     }
 }
 
-void ARM7TDMI_ins_LDR_STR_register_offset(struct ARM7TDMI *this, u32 opcode)
+void ARM7TDMI_ins_LDR_STR_register_offset(ARM7TDMI *this, u32 opcode)
 {
     u32 P = OBIT(24);
     u32 U = OBIT(23);
@@ -809,7 +809,7 @@ void ARM7TDMI_ins_LDR_STR_register_offset(struct ARM7TDMI *this, u32 opcode)
     }
 }
 
-void ARM7TDMI_ins_LDM_STM(struct ARM7TDMI *this, u32 opcode)
+void ARM7TDMI_ins_LDM_STM(ARM7TDMI *this, u32 opcode)
 {
     u32 P = OBIT(24); // P=0 add offset after. P=1 add offset first
     u32 U = OBIT(23); // 0=subtract offset, 1 =add
@@ -935,7 +935,7 @@ void ARM7TDMI_ins_LDM_STM(struct ARM7TDMI *this, u32 opcode)
     }
 }
 
-void ARM7TDMI_ins_B_BL(struct ARM7TDMI *this, u32 opcode)
+void ARM7TDMI_ins_B_BL(ARM7TDMI *this, u32 opcode)
 {
     u32 link = OBIT(24);
     i32 offset = SIGNe24to32(opcode & 0xFFFFFF);
@@ -948,24 +948,24 @@ void ARM7TDMI_ins_B_BL(struct ARM7TDMI *this, u32 opcode)
     ARM7TDMI_flush_pipeline(this);
 }
 
-void ARM7TDMI_ins_STC_LDC(struct ARM7TDMI *this, u32 opcode)
+void ARM7TDMI_ins_STC_LDC(ARM7TDMI *this, u32 opcode)
 {
     printf("\nWARNING STC/LDC");
     this->regs.PC += 4;
 }
 
-void ARM7TDMI_ins_CDP(struct ARM7TDMI *this, u32 opcode)
+void ARM7TDMI_ins_CDP(ARM7TDMI *this, u32 opcode)
 {
     UNIMPLEMENTED;
 }
 
-void ARM7TDMI_ins_MCR_MRC(struct ARM7TDMI *this, u32 opcode)
+void ARM7TDMI_ins_MCR_MRC(ARM7TDMI *this, u32 opcode)
 {
     dbg_break("BAD ARM OP", *this->trace.cycles);
     //UNIMPLEMENTED;
 }
 
-void ARM7TDMI_ins_SWI(struct ARM7TDMI *this, u32 opcode)
+void ARM7TDMI_ins_SWI(ARM7TDMI *this, u32 opcode)
 {
     this->regs.R_svc[1] = this->regs.PC - 4;
     this->regs.SPSR_svc = this->regs.CPSR.u;
@@ -977,7 +977,7 @@ void ARM7TDMI_ins_SWI(struct ARM7TDMI *this, u32 opcode)
     //printf("\nWARNING SWI %d", opcode & 0xFF);
 }
 
-void ARM7TDMI_ins_INVALID(struct ARM7TDMI *this, u32 opcode)
+void ARM7TDMI_ins_INVALID(ARM7TDMI *this, u32 opcode)
 {
     UNIMPLEMENTED;
 }

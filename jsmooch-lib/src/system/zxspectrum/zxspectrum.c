@@ -11,7 +11,7 @@
 
 #include "zxspectrum.h"
 
-#define JTHIS struct ZXSpectrum* this = (struct ZXSpectrum*)jsm->ptr
+#define JTHIS struct ZXSpectrum* this = (ZXSpectrum*)jsm->ptr
 #define JSM struct jsm_system* jsm
 
 #define THIS struct ZXSpectrum* this
@@ -32,12 +32,12 @@ static void ZXSpectrumJ_describe_io(JSM, cvec* IOs);
 
 static u32 ZXSpectrum_CPU_read_trace(void *ptr, u32 addr);
 
-static void ZXSpectrum_CPU_cycle(struct ZXSpectrum* this);
+static void ZXSpectrum_CPU_cycle(ZXSpectrum* this);
 static void ZXSpectrumJ_setup_debugger_interface(JSM, debugger_interface *intf);
 
 void ZXSpectrum_new(JSM, enum ZXSpectrum_variants variant)
 {
-    struct ZXSpectrum* this = (struct ZXSpectrum*)malloc(sizeof(struct ZXSpectrum));
+    struct ZXSpectrum* this = (ZXSpectrum*)malloc(sizeof(ZXSpectrum));
     this->variant = variant;
     this->described_inputs = 0;
 
@@ -99,7 +99,7 @@ void ZXSpectrum_new(JSM, enum ZXSpectrum_variants variant)
     jsm->setup_debugger_interface = &ZXSpectrumJ_setup_debugger_interface;
 }
 
-void ZXSpectrum_notify_IRQ(struct ZXSpectrum* this, u32 level)
+void ZXSpectrum_notify_IRQ(ZXSpectrum* this, u32 level)
 {
     Z80_notify_IRQ(&this->cpu, level);
 }
@@ -134,7 +134,7 @@ static void ZXSpectrumJ_setup_debugger_interface(JSM, debugger_interface *intf)
     printf("\nWARNING: debugger interface not supported on core: zxspectrum");
 }
 
-static void new_button(struct JSM_CONTROLLER* cnt, const char* name, enum JKEYS common_id)
+static void new_button(JSM_CONTROLLER* cnt, const char* name, enum JKEYS common_id)
 {
     struct HID_digital_button *b = cvec_push_back(&cnt->digital_buttons);
     snprintf(b->name, sizeof(b->name), "%s", name);
@@ -156,7 +156,7 @@ static const u32 ZXSpectrum_keyboard_keymap[40] = {
         JK_SPACE, JK_SHIFT, JK_M, JK_N, JK_B
 };
 
-static void setup_keyboard(struct ZXSpectrum* this)
+static void setup_keyboard(ZXSpectrum* this)
 {
     struct physical_io_device *d = cvec_push_back(this->IOs);
     physical_io_device_init(d, HID_KEYBOARD, 0, 0, 1, 1);
@@ -167,7 +167,7 @@ static void setup_keyboard(struct ZXSpectrum* this)
     d->enabled = 1;
 
     struct JSM_KEYBOARD* kbd = &d->keyboard;
-    memset(kbd, 0, sizeof(struct JSM_KEYBOARD));
+    memset(kbd, 0, sizeof(JSM_KEYBOARD));
     kbd->num_keys = 40;
 
     for (u32 i = 0; i < 40; i++) {
@@ -178,13 +178,13 @@ static void setup_keyboard(struct ZXSpectrum* this)
     }
 }
 
-static u8 cpu_readmem(struct ZXSpectrum* this, u16 addr)
+static u8 cpu_readmem(ZXSpectrum* this, u16 addr)
 {
     if (addr < 0x4000) return this->bank.ROM[addr];
     return this->bank.RAM[(addr >> 14)][addr & 0x3FFF];
 }
 
-static void cpu_writemem(struct ZXSpectrum* this, u16 addr, u8 val)
+static void cpu_writemem(ZXSpectrum* this, u16 addr, u8 val)
 {
     if (addr < 0x4000) return;
     this->bank.RAM[(addr >> 14)][addr & 0x3FFF] = (u8)val;
@@ -192,11 +192,11 @@ static void cpu_writemem(struct ZXSpectrum* this, u16 addr, u8 val)
 
 static u32 ZXSpectrum_CPU_read_trace(void *ptr, u32 addr)
 {
-    struct ZXSpectrum* this = (struct ZXSpectrum*)ptr;
+    struct ZXSpectrum* this = (ZXSpectrum*)ptr;
     return cpu_readmem(this, addr);
 }
 
-static void ZXSpectrum_fast_load(struct ZXSpectrum* this)
+static void ZXSpectrum_fast_load(ZXSpectrum* this)
 {
     struct Z80* cpu = &this->cpu;
     struct ZXSpectrum_tape_deck *td = &this->tape_deck;
@@ -252,7 +252,7 @@ static void ZXSpectrum_fast_load(struct ZXSpectrum* this)
 #define SR(reg, pos) this->cpu.regs. reg = infil[pos]
 #define SR2(reg, pos) this->cpu.regs. reg = infil[pos] | (infil[pos] << 8)
 
-static void load_Z80_file(struct ZXSpectrum* this, multi_file_set* mfs) {
+static void load_Z80_file(ZXSpectrum* this, multi_file_set* mfs) {
     struct buf *b = &mfs->files[0].buf;
     u8 *infil = b->ptr;
 
@@ -303,7 +303,7 @@ static void load_Z80_file(struct ZXSpectrum* this, multi_file_set* mfs) {
     }
 }
 
-static void load_SNA_file(struct ZXSpectrum* this, multi_file_set* mfs)
+static void load_SNA_file(ZXSpectrum* this, multi_file_set* mfs)
 {
     struct buf* b = &mfs->files[0].buf;
     u8 *infil = b->ptr;
@@ -402,7 +402,7 @@ static void ZXSpectrumIO_remove_tape(JSM)
     ZXSpectrum_tape_deck_remove(this);
 }
 
-static void setup_crt48(struct JSM_DISPLAY *d)
+static void setup_crt48(JSM_DISPLAY *d)
 {
     d->standard = JSS_NTSC;
     d->enabled = 1;
@@ -433,7 +433,7 @@ static void setup_crt48(struct JSM_DISPLAY *d)
     d->pixelometry.overscan.left = d->pixelometry.overscan.right = d->pixelometry.overscan.top = d->pixelometry.overscan.bottom = 0;
 }
 
-static void setup_crt128(struct JSM_DISPLAY *d)
+static void setup_crt128(JSM_DISPLAY *d)
 {
     d->standard = JSS_NTSC;
 
@@ -515,7 +515,7 @@ static void setup_crt128(struct JSM_DISPLAY *d)
     this->ula.cur_output = (u8 *)d->display.output[0];
     d->display.last_written = 1;
 
-    this->ula.display = &((struct physical_io_device *)cpg(this->ula.display_ptr))->display;
+    this->ula.display = &((physical_io_device *)cpg(this->ula.display_ptr))->display;
 }
 
 static void ZXSpectrumJ_enable_tracing(JSM)
@@ -606,7 +606,7 @@ static u32 ZXSpectrumJ_finish_scanline(JSM)
     return 0;
 }
 
-static void ZXSpectrum_CPU_cycle(struct ZXSpectrum* this)
+static void ZXSpectrum_CPU_cycle(ZXSpectrum* this)
 {
     if (this->clock.contended && ((this->cpu.pins.Addr - 0x4000) < 0x4000)) return;
     Z80_cycle(&this->cpu);

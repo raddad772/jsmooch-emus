@@ -24,10 +24,10 @@
 #endif
 
 
-static void ch_update_pitches(struct ym2612* ym, YM2612_CHANNEL *ch);
-static void op_update_level(struct ym2612* ym, YM2612_CHANNEL *ch, YM2612_OPERATOR *this);
-static void env_update(struct ym2612_env *this, u16 pitch, u16 octave);
-static void ch_update_pitch(struct ym2612* ym, YM2612_CHANNEL *ch, YM2612_OPERATOR *op);
+static void ch_update_pitches(ym2612* ym, YM2612_CHANNEL *ch);
+static void op_update_level(ym2612* ym, YM2612_CHANNEL *ch, YM2612_OPERATOR *this);
+static void env_update(ym2612_env *this, u16 pitch, u16 octave);
+static void ch_update_pitch(ym2612* ym, YM2612_CHANNEL *ch, YM2612_OPERATOR *op);
 
 static int init_tables = 0;
 
@@ -63,7 +63,7 @@ static const u32 vibratos[8][16] = {
     {0, 0, 4, 6, 8, 8,10,12,12,10, 8, 8, 6, 4, 0, 0}, {0, 0, 8,12,16,16,20,24,24,20,16,16,12, 8, 0, 0},
 };
 
-static void update_key_state(struct ym2612* ym, YM2612_CHANNEL *ch, YM2612_OPERATOR *op)
+static void update_key_state(ym2612* ym, YM2612_CHANNEL *ch, YM2612_OPERATOR *op)
 {
     if (op->key == op->key_on) return;
     op->key = op->key_on;
@@ -150,7 +150,7 @@ static void do_init_tables() {
     }
 }
 
-void ym2612_init(struct ym2612* this)
+void ym2612_init(ym2612* this)
 {
     memset(this, 0, sizeof(*this));
     if (!init_tables) {
@@ -166,17 +166,17 @@ void ym2612_init(struct ym2612* this)
     this->dac.sample = 0x80;
 }
 
-void ym2612_delete(struct ym2612* this)
+void ym2612_delete(ym2612* this)
 {
 
 }
 
-static void write_addr(struct ym2612* this, u16 val)
+static void write_addr(ym2612* this, u16 val)
 {
     this->io.address = val;
 }
 
-static void op_update_phase(struct ym2612 *ym, YM2612_CHANNEL *ch, YM2612_OPERATOR *this)
+static void op_update_phase(ym2612 *ym, YM2612_CHANNEL *ch, YM2612_OPERATOR *this)
 {
     u32 key = MIN(MAX((u32)this->pitch.value, 0x300), 0x4ff);
     u32 ksr = (this->octave.value << 2) + ((key - 0x300) >> 7);
@@ -190,7 +190,7 @@ static void op_update_phase(struct ym2612 *ym, YM2612_CHANNEL *ch, YM2612_OPERAT
     this->phase.delta = (this->multiple ? this->phase.delta * this->multiple : this->phase.delta >> 1) & 0xfffff;
 }
 
-static void write_data(struct ym2612* this, u8 val) {
+static void write_data(ym2612* this, u8 val) {
     switch (this->io.address) {
         case 0x022:
             this->lfo.rate = val & 7;
@@ -358,7 +358,7 @@ static void write_data(struct ym2612* this, u8 val) {
 
 static u32 tremolo_table[4] = {7, 3, 1, 0};
 
-static void op_update_level(struct ym2612 *ym, YM2612_CHANNEL *ch, YM2612_OPERATOR *this) {
+static void op_update_level(ym2612 *ym, YM2612_CHANNEL *ch, YM2612_OPERATOR *this) {
     u32 invert_clock = (((ym->lfo.clock >> 6) & 1) ^ 1) * 0x3F;
     u32 lfo = (ym->lfo.clock ^ invert_clock) & 0x3F;
 
@@ -375,7 +375,7 @@ static void op_update_level(struct ym2612 *ym, YM2612_CHANNEL *ch, YM2612_OPERAT
     this->output_level = (this->output_level << 3) & 0x3FFF;
 }
 
-void ym2612_write(struct ym2612 *this, u32 addr, u8 val) {
+void ym2612_write(ym2612 *this, u32 addr, u8 val) {
     addr &= 3;
     switch (0x4000 | addr) {
         case 0x4000:
@@ -389,15 +389,15 @@ void ym2612_write(struct ym2612 *this, u32 addr, u8 val) {
     }
 }
 
-void ym2612_reset(struct ym2612 *this) {
+void ym2612_reset(ym2612 *this) {
 
 }
 
-u8 ym2612_read(struct ym2612 *this, u32 addr, u32 old, u32 has_effect) {
+u8 ym2612_read(ym2612 *this, u32 addr, u32 old, u32 has_effect) {
     return this->timer_a.line | (this->timer_b.line << 1);
 }
 
-static void tick_timers(struct ym2612 *this) {
+static void tick_timers(ym2612 *this) {
     if (this->timer_a.enabled) {
         this->timer_a.counter = (this->timer_a.counter + 1) & 0x3FF;
         if (this->timer_a.counter == 0) {
@@ -418,7 +418,7 @@ static void tick_timers(struct ym2612 *this) {
     }
 }
 
-static void env_update(struct ym2612_env *this, u16 pitch, u16 octave) {
+static void env_update(ym2612_env *this, u16 pitch, u16 octave) {
 
     // "The envelope generator performs the rate calculation once, as the operator enters a new phase of the ADSR envelope."
     u32 key = MIN(MAX((u32) pitch, 0x300), 0x4FF);
@@ -447,7 +447,7 @@ static void env_update(struct ym2612_env *this, u16 pitch, u16 octave) {
     this->steps = env_steps[this->rate];
 }
 
-static void ch_update_pitch(struct ym2612* ym, YM2612_CHANNEL *ch, YM2612_OPERATOR *op) {
+static void ch_update_pitch(ym2612* ym, YM2612_CHANNEL *ch, YM2612_OPERATOR *op) {
     struct YM2612_OPERATOR *op3 = &ch->operator[3];
     op->pitch.value = ch->mode ? op->pitch.reload : op3->pitch.reload;
     op->octave.value = ch->mode ? op->octave.reload : op3->octave.reload;
@@ -456,7 +456,7 @@ static void ch_update_pitch(struct ym2612* ym, YM2612_CHANNEL *ch, YM2612_OPERAT
     env_update(&op->env, op->pitch.value, op->octave.value);
 }
 
-static void ch_update_pitches(struct ym2612* ym, YM2612_CHANNEL *ch) {
+static void ch_update_pitches(ym2612* ym, YM2612_CHANNEL *ch) {
     //only channel[2] allows per-operator frequencies
     //implemented by forcing mode to zero (single frequency) for other channels
     //in single frequency mode, operator[3] frequency is used for all operators
@@ -467,7 +467,7 @@ static void ch_update_pitches(struct ym2612* ym, YM2612_CHANNEL *ch) {
 }
 
 
-static void ch_keyon(struct ym2612 *ym, YM2612_CHANNEL *ch)
+static void ch_keyon(ym2612 *ym, YM2612_CHANNEL *ch)
 {
     for (u32 i = 0; i < 4; i++) {
         struct YM2612_OPERATOR *op = &ch->operator[i];
@@ -478,7 +478,7 @@ static void ch_keyon(struct ym2612 *ym, YM2612_CHANNEL *ch)
     }
 }
 
-static void ch_keyoff(struct ym2612 *ym, YM2612_CHANNEL *ch)
+static void ch_keyoff(ym2612 *ym, YM2612_CHANNEL *ch)
 {
     for (u32 i = 0; i < 4; i++) {
         struct YM2612_OPERATOR *op = &ch->operator[i];
@@ -488,7 +488,7 @@ static void ch_keyoff(struct ym2612 *ym, YM2612_CHANNEL *ch)
     }
 }
 
-static void do_env_tick(struct ym2612 *ym, ym2612_env *this, u16 pitch, u16 octave)
+static void do_env_tick(ym2612 *ym, ym2612_env *this, u16 pitch, u16 octave)
 {
     this->divider.counter = (this->divider.counter + 1);
     if (this->divider.counter >= this->divider.period) {
@@ -551,7 +551,7 @@ static u16 calculate_operator(u16 phase, u16 phase_modulation, u16 env_input)
     return (num ^ sign_xor) | (sign_bit << 13);
 }
 
-static void tick_envs(struct ym2612 *this)
+static void tick_envs(ym2612 *this)
 {
     for (u32 ch_num = 0; ch_num < 6; ch_num++) {
         for (u32 op_num = 0; op_num < 4; op_num++) {
@@ -564,7 +564,7 @@ static void tick_envs(struct ym2612 *this)
 #define SIGNe14to32(x) (((((x) >> 13) & 1) * 0xFFFFC000) | ((x) & 0x3FFF))
 
 
-static void update_mix(struct ym2612* this)
+static void update_mix(ym2612* this)
 {
     i32 accumulator = 0;
     for (u32 i = 0; i < 6; i++) {
@@ -581,7 +581,7 @@ static void update_mix(struct ym2612* this)
     this->output = accumulator;
 }
 
-i16 ym2612_sample_channel(struct ym2612* this, u32 ch)
+i16 ym2612_sample_channel(ym2612* this, u32 ch)
 {
     return (i16)((SIGNe14to32(this->channel[ch].ext_output.mono)) * 4);
 }
@@ -590,7 +590,7 @@ i16 ym2612_sample_channel(struct ym2612* this, u32 ch)
 #define op_mod(n) (ch->operator[n].output_level & 0xFFFFFFFD)
 #define op_out(n) (ch->operator[n].output_level & 0xFFFFFFDF)
 
-static void tick_channels(struct ym2612* this)
+static void tick_channels(ym2612* this)
 {
     // Go through all the operators and synthesize th sound...
     struct YM2612_OPERATOR *op[4];
@@ -672,7 +672,7 @@ static void tick_channels(struct ym2612* this)
     }
 }
 
-static void tick_lfo(struct ym2612* this)
+static void tick_lfo(ym2612* this)
 {
     if (this->lfo.enable) {
         this->lfo.divider++;
@@ -692,7 +692,7 @@ static void tick_lfo(struct ym2612* this)
 }
 
 
-void ym2612_cycle(struct ym2612* this)
+void ym2612_cycle(ym2612* this)
 {
     this->clock.div144++;
     this->clock.div24++;

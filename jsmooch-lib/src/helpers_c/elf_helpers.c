@@ -5,19 +5,19 @@
 #include "elf_helpers.h"
 #include <stdio.h>
 
-void elf_symbol_list32_init(struct elf_symbol_list32* this)
+void elf_symbol_list32_init(elf_symbol_list32* this)
 {
-    cvec_init(&this->symbols, sizeof(struct elf_symbol32), 2000);
+    cvec_init(&this->symbols, sizeof(elf_symbol32), 2000);
     this->num = 0;
 }
 
-void elf_symbol_list32_delete(struct elf_symbol_list32* this)
+void elf_symbol_list32_delete(elf_symbol_list32* this)
 {
     cvec_delete(&this->symbols);
 }
 
 
-struct elf_symbol32* elf_symbol_list32_find(struct elf_symbol_list32* this, u32 addr, u32 mask)
+struct elf_symbol32* elf_symbol_list32_find(elf_symbol_list32* this, u32 addr, u32 mask)
 {
     for (u32 i = 0; i < this->num; i++) {
         struct elf_symbol32* sym = cvec_get(&this->symbols, i);
@@ -27,7 +27,7 @@ struct elf_symbol32* elf_symbol_list32_find(struct elf_symbol_list32* this, u32 
     return NULL;
 }
 
-void elf_symbol_list32_add(struct elf_symbol_list32* this, u32 offset, const char* fname, const char*name, enum elf_symbol32_kind kind)
+void elf_symbol_list32_add(elf_symbol_list32* this, u32 offset, const char* fname, const char*name, enum elf_symbol32_kind kind)
 {
     /*struct elf_symbol32* sym = elf_symbol_list32_find(this, offset, 0xFFFFFFFF);
     if (sym != NULL) {

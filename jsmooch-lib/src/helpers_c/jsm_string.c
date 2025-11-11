@@ -11,7 +11,7 @@
 #include "jsm_string.h"
 #include "debug.h"
 
-void jsm_string_init(struct jsm_string *this, u32 sz)
+void jsm_string_init(jsm_string *this, u32 sz)
 {
     this->ptr = this->cur = NULL;
     this->allocated_len = sz;
@@ -19,7 +19,7 @@ void jsm_string_init(struct jsm_string *this, u32 sz)
     memset(this->ptr, 0, sz);
 }
 
-void jsm_string_delete(struct jsm_string *this)
+void jsm_string_delete(jsm_string *this)
 {
     if (this->ptr != NULL) {
         free(this->ptr);
@@ -29,13 +29,13 @@ void jsm_string_delete(struct jsm_string *this)
     this->allocated_len = 0;
 }
 
-void jsm_string_seek(struct jsm_string *this, i32 pos)
+void jsm_string_seek(jsm_string *this, i32 pos)
 {
     assert(pos < this->allocated_len);
     this->cur = this->ptr + pos;
 }
 
-int jsm_string_vsprintf(struct jsm_string *this, const char* format, va_list va)
+int jsm_string_vsprintf(jsm_string *this, const char* format, va_list va)
 {
     int num;
     num = vsnprintf(this->cur, this->allocated_len - (this->cur - this->ptr), format, va);
@@ -44,7 +44,7 @@ int jsm_string_vsprintf(struct jsm_string *this, const char* format, va_list va)
     return num;
 }
 
-int jsm_string_sprintf(struct jsm_string *this, const char* format, ...)
+int jsm_string_sprintf(jsm_string *this, const char* format, ...)
 {
     if (this->ptr == NULL) {
         assert(1==0);
@@ -58,7 +58,7 @@ int jsm_string_sprintf(struct jsm_string *this, const char* format, ...)
     return num;
 }
 
-void jsm_string_empty(struct jsm_string *this)
+void jsm_string_empty(jsm_string *this)
 {
     if (this->ptr == NULL) {
         assert(1==0);
@@ -68,7 +68,7 @@ void jsm_string_empty(struct jsm_string *this)
     memset(this->ptr, 0, this->allocated_len);
 }
 
-void jsm_string_quickempty(struct jsm_string *this)
+void jsm_string_quickempty(jsm_string *this)
 {
     if (this->ptr == NULL) {
         assert(1==0);

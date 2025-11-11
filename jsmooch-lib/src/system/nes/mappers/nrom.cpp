@@ -22,54 +22,54 @@ struct NROM {
 #define READONLY 1
 #define READWRITE 0
 
-static void remap(struct NES_mapper *bus)
+static void remap(NES_mapper *bus)
 {
     NES_bus_map_PRG32K(bus, 0x8000, 0xFFFF, &bus->PRG_ROM, 0, READONLY);
     NES_bus_map_CHR1K(bus, 0x0000, 0x1FFF, &bus->CHR_ROM, 0, READONLY);
     NES_bus_PPU_mirror_set(bus);
 }
 
-static void serialize(struct NES_mapper *bus, serialized_state &state)
+static void serialize(NES_mapper *bus, serialized_state &state)
 {
 
 }
 
-static void deserialize(struct NES_mapper *bus, serialized_state &state)
+static void deserialize(NES_mapper *bus, serialized_state &state)
 {
 
 }
 
-static void NROM_destruct(struct NES_mapper *bus)
+static void NROM_destruct(NES_mapper *bus)
 {
 
 }
 
-static void NROM_reset(struct NES_mapper *bus)
+static void NROM_reset(NES_mapper *bus)
 {
     printf("\nNROM Resetting, so remapping bus...");
     remap(bus);
 }
 
-static void NROM_writecart(struct NES_mapper *bus, u32 addr, u32 val, u32 *do_write)
+static void NROM_writecart(NES_mapper *bus, u32 addr, u32 val, u32 *do_write)
 {
     *do_write = 1;
 }
 
-static u32 NROM_readcart(struct NES_mapper *bus, u32 addr, u32 old_val, u32 has_effect, u32 *do_read)
+static u32 NROM_readcart(NES_mapper *bus, u32 addr, u32 old_val, u32 has_effect, u32 *do_read)
 {
     *do_read = 1;
     return old_val;
 }
 
-static void NROM_setcart(struct NES_mapper *bus, NES_cart *cart)
+static void NROM_setcart(NES_mapper *bus, NES_cart *cart)
 {
     bus->ppu_mirror_mode = cart->header.mirroring;
 }
 
-void NROM_init(struct NES_mapper *bus, NES *nes)
+void NROM_init(NES_mapper *bus, NES *nes)
 {
     if (bus->ptr != NULL) free(bus->ptr);
-    bus->ptr = malloc(sizeof(struct NROM));
+    bus->ptr = malloc(sizeof(NROM));
     THISM;
 
     mp->nes = nes;

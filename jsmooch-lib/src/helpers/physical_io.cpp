@@ -121,7 +121,7 @@ physical_io_device::~physical_io_device()
     destroy_active_member();
 }
 
-void pio_new_button(struct JSM_CONTROLLER* cnt, const char* name, enum JKEYS common_id)
+void pio_new_button(JSM_CONTROLLER* cnt, const char* name, enum JKEYS common_id)
 {
     HID_digital_button &b = cnt->digital_buttons.emplace_back();
     snprintf(b.name, sizeof(b.name), "%s", name);

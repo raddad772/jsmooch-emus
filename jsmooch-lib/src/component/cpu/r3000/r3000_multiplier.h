@@ -63,7 +63,7 @@ struct R3000_multiplier {
     u64 clock_start, clock_end;
 };
 
-void R3000_multiplier_set(struct R3000_multiplier *, u32 hi, u32 lo, u32 op1, u32 op2, u32 op_kind, u32 cycles, u64 current_clock);
-void R3000_multiplier_finish(struct R3000_multiplier *);
+void R3000_multiplier_set(R3000_multiplier *, u32 hi, u32 lo, u32 op1, u32 op2, u32 op_kind, u32 cycles, u64 current_clock);
+void R3000_multiplier_finish(R3000_multiplier *);
 
 #endif //JSMOOCH_EMUS_R3000_MULTIPLIER_H

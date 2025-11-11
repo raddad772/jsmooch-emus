@@ -28,9 +28,9 @@ struct M6532 {
     } io;
 };
 
-void M6532_init(struct M6532*);
-void M6532_reset(struct M6532*);
-void M6532_cycle(struct M6532*);
-void M6532_bus_cycle(struct M6532*, u32 addr, u32 *data, u32 rw);
+void M6532_init(M6532*);
+void M6532_reset(M6532*);
+void M6532_cycle(M6532*);
+void M6532_bus_cycle(M6532*, u32 addr, u32 *data, u32 rw);
 
 #endif //JSMOOCH_EMUS_M6532_H

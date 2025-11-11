@@ -56,12 +56,12 @@ struct ay_3_8910 {
     } io_ports;
 };
 
-void ay_3_8910_init(struct ay_3_8910*, enum ay_3_8910_variants variant);
-void ay_3_8910_delete(struct ay_3_8910*);
+void ay_3_8910_init(ay_3_8910*, enum ay_3_8910_variants variant);
+void ay_3_8910_delete(ay_3_8910*);
 
-void ay_3_8910_reset(struct ay_3_8910*);
+void ay_3_8910_reset(ay_3_8910*);
 
-void ay_3_8910_write(struct ay_3_8910*, u8 addr, u8 val);
-u8 ay_3_8910_read(struct ay_3_8910*, u8 addr);
+void ay_3_8910_write(ay_3_8910*, u8 addr, u8 val);
+u8 ay_3_8910_read(ay_3_8910*, u8 addr);
 
 #endif //JSMOOCH_EMUS_AY_3_8910_H

@@ -7,7 +7,7 @@
 #include "r5a22.h"
 #include "snes_debugger.h"
 
-void R5A22_init(struct R5A22 *this, u64 *master_cycle_count)
+void R5A22_init(R5A22 *this, u64 *master_cycle_count)
 {
     memset(this, 0, sizeof(*this));
     WDC65816_init(&this->cpu, master_cycle_count);
@@ -17,7 +17,7 @@ void R5A22_init(struct R5A22 *this, u64 *master_cycle_count)
     }
 }
 
-static void dma_reset(struct R5A22 *this)
+static void dma_reset(R5A22 *this)
 {
     for (u32 i = 0; i < 8; i++) {
         struct R5A22_DMA_CHANNEL *ch = &this->dma.channels[i];
@@ -27,7 +27,7 @@ static void dma_reset(struct R5A22 *this)
     }
 }
 
-void R5A22_reset(struct R5A22 *this)
+void R5A22_reset(R5A22 *this)
 {
     WDC65816_reset(&this->cpu);
     this->cpu.regs.TCU = 0;
@@ -47,12 +47,12 @@ void R5A22_reset(struct R5A22 *this)
     this->io.vtime = 0x1FF; // VIRQ time
 }
 
-void R5A22_delete(struct R5A22 *this)
+void R5A22_delete(R5A22 *this)
 {
     WDC65816_delete(&this->cpu);
 }
 
-static u32 dma_reg_read(struct SNES *snes, u32 addr, u32 old, u32 has_effect)
+static u32 dma_reg_read(SNES *snes, u32 addr, u32 old, u32 has_effect)
 {
     struct R5A22_DMA_CHANNEL *ch = &snes->r5a22.dma.channels[(addr >> 4) & 7];
     switch(addr & 0xFF8F) {
@@ -88,7 +88,7 @@ static u32 dma_reg_read(struct SNES *snes, u32 addr, u32 old, u32 has_effect)
 }
 
 
-static void dma_reg_write(struct SNES *snes, u32 addr, u32 val)
+static void dma_reg_write(SNES *snes, u32 addr, u32 val)
 {
     u32 cnum = (addr >> 4) & 7;
     struct R5A22_DMA_CHANNEL *ch = &snes->r5a22.dma.channels[cnum];
@@ -140,7 +140,7 @@ static void dma_reg_write(struct SNES *snes, u32 addr, u32 val)
     }
 }
 
-void R5A22_update_irq(struct SNES *snes) {
+void R5A22_update_irq(SNES *snes) {
     struct R5A22 *this = &snes->r5a22;
     // HIRQs are handled in a
     u32 old_h_irq = this->status.hirq_status;
@@ -169,13 +169,13 @@ void R5A22_update_irq(struct SNES *snes) {
     WDC65816_set_IRQ_level(&this->cpu, this->status.irq_line);
 }
 
-void R5A22_update_nmi(struct SNES *snes)
+void R5A22_update_nmi(SNES *snes)
 {
     struct R5A22 *this = &snes->r5a22;
     WDC65816_set_NMI_level(&this->cpu, this->io.nmi_enable && this->status.nmi_flag);
 }
 
-void SNES_latch_ppu_counters(struct SNES *snes)
+void SNES_latch_ppu_counters(SNES *snes)
 {
     struct R5A22 *this = &snes->r5a22;
     snes->ppu.io.vcounter = snes->clock.ppu.y;
@@ -183,7 +183,7 @@ void SNES_latch_ppu_counters(struct SNES *snes)
     snes->ppu.latch.counters = 1;
 }
 
-static void dma_start(struct SNES *snes)
+static void dma_start(SNES *snes)
 {
     struct R5A22 *this = &snes->r5a22;
     for (u32 n = 0; n < 8; n++) {
@@ -197,7 +197,7 @@ static void dma_start(struct SNES *snes)
 
 static void dma_pending_setup(void *ptr, u64 key, u64 clock, u32 jitter)
 {
-    struct SNES *snes = (struct SNES *)ptr;
+    struct SNES *snes = (SNES *)ptr;
     struct R5A22 *this = &snes->r5a22;
 
     if (!this->status.dma_running) {
@@ -209,7 +209,7 @@ static void dma_pending_setup(void *ptr, u64 key, u64 clock, u32 jitter)
 
 static void auto_joypad_edge(void *ptr, u64 key, u64 clock, u32 jitter)
 {
-    struct SNES *snes = (struct SNES *)ptr;
+    struct SNES *snes = (SNES *)ptr;
     struct R5A22 *this = &snes->r5a22;
 
     if (!this->io.auto_joypad_poll) return;
@@ -247,7 +247,7 @@ static void auto_joypad_edge(void *ptr, u64 key, u64 clock, u32 jitter)
 
 }
 
-void R5A22_reg_write(struct SNES *snes, u32 addr, u32 val, SNES_memmap_block *bl)
+void R5A22_reg_write(SNES *snes, u32 addr, u32 val, SNES_memmap_block *bl)
 {
     addr &= 0xFFFF;
     if ((addr >= 0x4300) && (addr <= 0x43FF)) { return dma_reg_write(snes, addr, val); return; }
@@ -352,7 +352,7 @@ void R5A22_reg_write(struct SNES *snes, u32 addr, u32 val, SNES_memmap_block *bl
     printf("\nR5A22 MISS WRITE TO %04x %02x", addr, val);
 }
 
-void R5A22_hblank(struct SNES *snes, u32 which)
+void R5A22_hblank(SNES *snes, u32 which)
 {
     // evaluate hblank dma
     if (which) {
@@ -360,7 +360,7 @@ void R5A22_hblank(struct SNES *snes, u32 which)
     }
 }
 
-u32 R5A22_reg_read(struct SNES *snes, u32 addr, u32 old, u32 has_effect, SNES_memmap_block *bl)
+u32 R5A22_reg_read(SNES *snes, u32 addr, u32 old, u32 has_effect, SNES_memmap_block *bl)
 {
     addr &= 0xFFFF;
     if ((addr >= 0x4300) && (addr <= 0x43FF)) return dma_reg_read(snes, addr, old, has_effect );
@@ -425,7 +425,7 @@ u32 R5A22_reg_read(struct SNES *snes, u32 addr, u32 old, u32 has_effect, SNES_me
     return 0;
 }
 
-void R5A22_setup_tracing(struct R5A22* this, jsm_debug_read_trace *strct)
+void R5A22_setup_tracing(R5A22* this, jsm_debug_read_trace *strct)
 {
     WDC65816_setup_tracing(&this->cpu, strct);
 }
@@ -447,7 +447,7 @@ static u32 mem_timing(u32 addr, u32 ROMspeed) {
     return 12;
 }
 
-static void cycle_alu(struct SNES *snes)
+static void cycle_alu(SNES *snes)
 {
     struct R5A22 *this = &snes->r5a22;
     if (!this->alu.mpyctr  && !this->alu.divctr) return;
@@ -469,7 +469,7 @@ static void cycle_alu(struct SNES *snes)
     }
 }
 
-static void cycle_cpu(struct SNES *snes)
+static void cycle_cpu(SNES *snes)
 {
     struct R5A22 *this = &snes->r5a22;
     WDC65816_cycle(&this->cpu);
@@ -505,28 +505,28 @@ static inline u32 validA(u32 addr)
     return (addr & 0x40FF80) != 0x4300;
 }
 
-static inline u32 dma_readA(struct SNES *snes, u32 addr) {
+static inline u32 dma_readA(SNES *snes, u32 addr) {
     //scheduler_from_event_adjust_master_clock(&snes->scheduler, 8);
     return validA(addr) ? SNES_wdc65816_read(snes, addr, 0, 1) : 0;
 }
 
-static inline u32 dma_readB(struct SNES *snes, u32 addr, u32 valid) {
+static inline u32 dma_readB(SNES *snes, u32 addr, u32 valid) {
     //scheduler_from_event_adjust_master_clock(&snes->scheduler, 8);
     return valid ? SNES_wdc65816_read(snes, 0x2100 | addr, 0, 1) : 0;
 }
 
-static inline void dma_writeA(struct SNES *snes, u32 addr, u32 val) {
+static inline void dma_writeA(SNES *snes, u32 addr, u32 val) {
     if (validA(addr)) {
         SNES_wdc65816_write(snes, addr, val);
     }
 }
 
-static inline void dma_writeB(struct SNES *snes, u32 addr, u32 val, u32 valid)
+static inline void dma_writeB(SNES *snes, u32 addr, u32 val, u32 valid)
 {
     if (valid) SNES_wdc65816_write(snes, 0x2100 | addr, val);
 }
 
-static void dma_transfer(struct SNES *snes, R5A22_DMA_CHANNEL *ch, u32 addrA, u32 index, u32 hdma_mode)
+static void dma_transfer(SNES *snes, R5A22_DMA_CHANNEL *ch, u32 addrA, u32 index, u32 hdma_mode)
 {
     u32 addrB = ch->target_address;
     switch(ch->transfer_mode) {
@@ -578,7 +578,7 @@ static void dma_transfer(struct SNES *snes, R5A22_DMA_CHANNEL *ch, u32 addrA, u3
     }
 }
 
-static u32 dma_run_ch(struct SNES *snes, R5A22_DMA_CHANNEL *this)
+static u32 dma_run_ch(SNES *snes, R5A22_DMA_CHANNEL *this)
 {
     u32 nc = 0;
     if (this->transfer_size > 0) {
@@ -608,7 +608,7 @@ static u32 dma_run_ch(struct SNES *snes, R5A22_DMA_CHANNEL *this)
     return 0;
 }
 
-static void hdma_transfer_ch(struct SNES *snes, R5A22_DMA_CHANNEL *ch)
+static void hdma_transfer_ch(SNES *snes, R5A22_DMA_CHANNEL *ch)
 {
     static const int HDMA_LENGTHS[8] = {1, 2, 2, 4, 4, 4, 2, 4};
     ch->dma_enable = 0;
@@ -629,7 +629,7 @@ static void hdma_transfer_ch(struct SNES *snes, R5A22_DMA_CHANNEL *ch)
     }
 }
 
-static void hdma_advance_ch(struct SNES *snes, R5A22_DMA_CHANNEL *ch)
+static void hdma_advance_ch(SNES *snes, R5A22_DMA_CHANNEL *ch)
 {
     if (!(ch->hdma_enable && !ch->hdma_completed)) return;
     ch->line_counter--;
@@ -637,7 +637,7 @@ static void hdma_advance_ch(struct SNES *snes, R5A22_DMA_CHANNEL *ch)
     SNES_hdma_reload_ch(snes, ch);
 }
 
-static u32 dma_run(struct SNES *snes)
+static u32 dma_run(SNES *snes)
 {
     struct R5A22 *this = &snes->r5a22;
     u32 any_going = 0;
@@ -660,7 +660,7 @@ static u32 dma_run(struct SNES *snes)
 
 void R5A22_cycle(void *ptr, u64 key, u64 clock, u32 jitter)
 {
-    struct SNES *snes = (struct SNES *)ptr;
+    struct SNES *snes = (SNES *)ptr;
     struct R5A22 *this = &snes->r5a22;
     //u64 cur = clock - jitter;
     //scheduler_only_add_abs(&snes->scheduler, cur + snes->clock.cpu.divider, 0, snes, &R5A22_cycle, NULL);
@@ -679,7 +679,7 @@ void R5A22_cycle(void *ptr, u64 key, u64 clock, u32 jitter)
 
 }
 
-void R5A22_schedule_first(struct SNES *snes)
+void R5A22_schedule_first(SNES *snes)
 {
     //snes->r5a22.status.auto_joypad.sch_id = scheduler_only_add_abs(&snes->scheduler, 128, 0, snes, &auto_joypad_edge, &snes->r5a22.status.auto_joypad.still_sched);
 }

@@ -26,13 +26,13 @@ struct bitbuf {
 
 };
 
-void bitbuf_init(struct bitbuf *, u32 num_bits_preallocate, u32 lsb_first);
-void bitbuf_delete(struct bitbuf *);
-void bitbuf_clear(struct bitbuf *);
+void bitbuf_init(bitbuf *, u32 num_bits_preallocate, u32 lsb_first);
+void bitbuf_delete(bitbuf *);
+void bitbuf_clear(bitbuf *);
 
-u32 bitbuf_read_bits(struct bitbuf*, u32 pos, u32 num);
-void bitbuf_write_bits(struct bitbuf*, u32 num, u32 val);
-int bitbuf_write_final(struct bitbuf *this);
+u32 bitbuf_read_bits(bitbuf*, u32 pos, u32 num);
+void bitbuf_write_bits(bitbuf*, u32 num, u32 val);
+int bitbuf_write_final(bitbuf *this);
 
 #ifdef __cplusplus
 }

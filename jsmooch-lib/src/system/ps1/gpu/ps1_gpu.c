@@ -16,27 +16,27 @@
 //#define LOG_GP0
 //#define DBG_GP0
 
-static void gp0_cmd(struct PS1_GPU *this, u32 cmd);
+static void gp0_cmd(PS1_GPU *this, u32 cmd);
 
-static inline void xy_from_cmd(struct RT_POINT2D *this, u32 cmd){
+static inline void xy_from_cmd(RT_POINT2D *this, u32 cmd){
     this->x = (i32)(cmd & 0xFFFF);
     this->y = (i32)(cmd >> 16);
 }
 
-static inline void color24_from_cmd(struct RT_POINT2D *this, u32 cmd)
+static inline void color24_from_cmd(RT_POINT2D *this, u32 cmd)
 {
     this->r = cmd & 0xFF;
     this->g = (cmd >> 8) & 0xFF;
     this->b = (cmd >> 16) & 0xFF;
 }
 
-static inline void uv_from_cmd(struct RT_POINT2D *this, u32 cmd)
+static inline void uv_from_cmd(RT_POINT2D *this, u32 cmd)
 {
     this->u = cmd & 0xFF;
     this->v = (cmd >> 8) & 0xFF;
 }
 
-void PS1_GPU_texture_sampler_new(struct PS1_GPU_TEXTURE_SAMPLER *this, u32 page_x, u32 page_y, u32 clut_addr, PS1_GPU *ctrl)
+void PS1_GPU_texture_sampler_new(PS1_GPU_TEXTURE_SAMPLER *this, u32 page_x, u32 page_y, u32 clut_addr, PS1_GPU *ctrl)
 {
     this->page_x = (page_x & 0x0F) << 6; // * 64
     this->page_y = (page_y & 1) * 256;
@@ -52,7 +52,7 @@ void PS1_GPU_texture_sampler_new(struct PS1_GPU_TEXTURE_SAMPLER *this, u32 page_
 #define R_GPUREAD 4
 #define R_LASTUSED 23
 
-void PS1_GPU_init(struct PS1 *this)
+void PS1_GPU_init(PS1 *this)
 {
     memset(this->gpu.VRAM, 0, 1024*1024);
     this->gpu.scheduler = &this->scheduler;
@@ -64,12 +64,12 @@ void PS1_GPU_init(struct PS1 *this)
     this->gpu.handle_gp0 = &gp0_cmd;
 }
 
-static void ins_null(struct PS1_GPU *this)
+static void ins_null(PS1_GPU *this)
 {
 
 }
 
-static inline void unready_cmd(struct PS1_GPU *this)
+static inline void unready_cmd(PS1_GPU *this)
 {
     //static u32 e = 0;
     //e++;
@@ -77,51 +77,51 @@ static inline void unready_cmd(struct PS1_GPU *this)
     this->io.GPUSTAT &= 0xFBFFFFFF;
 }
 
-static inline void unready_recv_dma(struct PS1_GPU *this)
+static inline void unready_recv_dma(PS1_GPU *this)
 {
     //dbg_printf("\nUNREADY DMA");
     this->io.GPUSTAT &= 0xEFFFFFFF;
 }
 
-static inline void unready_vram_to_CPU(struct PS1_GPU *this)
+static inline void unready_vram_to_CPU(PS1_GPU *this)
 {
     //printf("\nUNREADY VRAM_TO_CPU");
     this->io.GPUSTAT &= 0xF7FFFFFF;
 }
 
-static inline void unready_all(struct PS1_GPU *this)
+static inline void unready_all(PS1_GPU *this)
 {
     unready_cmd(this);
     unready_recv_dma(this);
     unready_vram_to_CPU(this);
 }
 
-static inline void ready_cmd(struct PS1_GPU *this)
+static inline void ready_cmd(PS1_GPU *this)
 {
     //printf("\nREADY CMD");
     this->io.GPUSTAT |= 0x4000000;
 }
 
-static inline void ready_recv_dma(struct PS1_GPU *this)
+static inline void ready_recv_dma(PS1_GPU *this)
 {
     //dbg_printf("\nREADY DMA");
     this->io.GPUSTAT |= 0x10000000;
 }
 
-static inline void ready_vram_to_CPU(struct PS1_GPU *this)
+static inline void ready_vram_to_CPU(PS1_GPU *this)
 {
     //printf("\nREADY VRAM_TO_CPU");
     this->io.GPUSTAT |= 0x8000000;
 }
 
-static inline void ready_all(struct PS1_GPU *this)
+static inline void ready_all(PS1_GPU *this)
 {
     ready_cmd(this);
     ready_recv_dma(this);
     ready_vram_to_CPU(this);
 }
 
-static void cmd02_quick_rect(struct PS1_GPU *this)
+static void cmd02_quick_rect(PS1_GPU *this)
 {
     unready_all(this);
     u32 ysize = (this->cmd[2] >> 16) & 0xFFFF;
@@ -150,7 +150,7 @@ static inline i32 mksigned11(u32 v)
     return SIGNe11to32(v);
 }
 
-static void cmd28_draw_flat4untex(struct PS1_GPU *this)
+static void cmd28_draw_flat4untex(PS1_GPU *this)
 {
     // Flat 4-vertex untextured poly
     xy_from_cmd(&this->v0, this->cmd[1]);
@@ -167,7 +167,7 @@ static void cmd28_draw_flat4untex(struct PS1_GPU *this)
 }
 
 
-static u16 sample_tex_4bit(struct PS1_GPU_TEXTURE_SAMPLER *ts, i32 u, i32 v)
+static u16 sample_tex_4bit(PS1_GPU_TEXTURE_SAMPLER *ts, i32 u, i32 v)
 {
     u32 addr = ts->base_addr;
     addr += ((v&0xFF)*2048); // 2048 bytes per line
@@ -182,19 +182,19 @@ static u16 sample_tex_4bit(struct PS1_GPU_TEXTURE_SAMPLER *ts, i32 u, i32 v)
     return r;
 }
 
-static u16 sample_tex_8bit(struct PS1_GPU_TEXTURE_SAMPLER *ts, i32 u, i32 v)
+static u16 sample_tex_8bit(PS1_GPU_TEXTURE_SAMPLER *ts, i32 u, i32 v)
 {
     u32 d = ts->VRAM[(ts->base_addr + ((v&0xFF)<<11) + (u&0x7F)) & 0xFFFFF];
     return cR16(ts->VRAM, (ts->clut_addr + (d*2)) & 0xFFFFF);
 }
 
-static u16 sample_tex_15bit(struct PS1_GPU_TEXTURE_SAMPLER *ts, i32 u, i32 v)
+static u16 sample_tex_15bit(PS1_GPU_TEXTURE_SAMPLER *ts, i32 u, i32 v)
 {
     u32 addr = ts->base_addr + ((v&0xFF)<<11) + ((u&0x7F)<<1);
     return cR16(ts->VRAM, addr & 0xFFFFF);
 }
 
-static void get_texture_sampler_from_texpage_and_palette(struct PS1_GPU *this, u32 texpage, u32 palette, PS1_GPU_TEXTURE_SAMPLER *ts)
+static void get_texture_sampler_from_texpage_and_palette(PS1_GPU *this, u32 texpage, u32 palette, PS1_GPU_TEXTURE_SAMPLER *ts)
 {
     u32 clx = (palette & 0x3F) << 4;
     u32 cly = (palette >> 6) & 0x1FF;
@@ -221,7 +221,7 @@ static void get_texture_sampler_from_texpage_and_palette(struct PS1_GPU *this, u
     }
 }
 
-static void cmd20_tri_flat(struct PS1_GPU *this)
+static void cmd20_tri_flat(PS1_GPU *this)
 {
     xy_from_cmd(&this->v0, this->cmd[1]);
     xy_from_cmd(&this->v1, this->cmd[2]);
@@ -233,7 +233,7 @@ static void cmd20_tri_flat(struct PS1_GPU *this)
     RT_draw_flat_triangle(this, &this->v0, &this->v1, &this->v2, color);
 }
 
-static void cmd22_tri_flat_semi_transparent(struct PS1_GPU *this)
+static void cmd22_tri_flat_semi_transparent(PS1_GPU *this)
 {
     xy_from_cmd(&this->v0, this->cmd[1]);
     xy_from_cmd(&this->v1, this->cmd[2]);
@@ -246,7 +246,7 @@ static void cmd22_tri_flat_semi_transparent(struct PS1_GPU *this)
     RT_draw_flat_triangle_semi(this, &this->v0, &this->v1, &this->v2, this->v0.r, this->v0.g, this->v0.b);
 }
 
-static void cmd24_tri_raw_modulated(struct PS1_GPU *this)
+static void cmd24_tri_raw_modulated(PS1_GPU *this)
 {
     /*
   0 WRIOW GP0,(0x24<<24)+(COLOR&0xFFFFFF)        ; Write GP0 Command Word (Color+Command)
@@ -270,7 +270,7 @@ static void cmd24_tri_raw_modulated(struct PS1_GPU *this)
     RT_draw_flat_tex_triangle_modulated(this, &this->v0, &this->v1, &this->v2, color, &ts);
 }
 
-static void cmd25_tri_raw(struct PS1_GPU *this)
+static void cmd25_tri_raw(PS1_GPU *this)
 {
     /*
   0 WRIOW GP0,(0x25<<24)                         ; Write GP0 Command Word (Command)
@@ -294,7 +294,7 @@ static void cmd25_tri_raw(struct PS1_GPU *this)
     RT_draw_flat_tex_triangle(this, &this->v0, &this->v1, &this->v2, &ts);
 }
 
-static void cmd26_tri_modulated_semi_transparent(struct PS1_GPU *this)
+static void cmd26_tri_modulated_semi_transparent(PS1_GPU *this)
 {
     /*
   0 WRIOW GP0,(0x26<<24)+(COLOR&0xFFFFFF)        ; Write GP0 Command Word (Color+Command)
@@ -319,7 +319,7 @@ static void cmd26_tri_modulated_semi_transparent(struct PS1_GPU *this)
     RT_draw_flat_tex_triangle_modulated_semi(this, &this->v0, &this->v1, &this->v2, color, &ts);
 }
 
-static void cmd27_tri_raw_semi_transparent(struct PS1_GPU *this)
+static void cmd27_tri_raw_semi_transparent(PS1_GPU *this)
 {
     /*
   0 WRIOW GP0,(0x27<<24)                         ; Write GP0 Command Word (Command)
@@ -343,7 +343,7 @@ static void cmd27_tri_raw_semi_transparent(struct PS1_GPU *this)
 }
 
 
-static void cmd2a_quad_flat_semi_transparent(struct PS1_GPU *this)
+static void cmd2a_quad_flat_semi_transparent(PS1_GPU *this)
 {
     xy_from_cmd(&this->v0, this->cmd[1]);
     xy_from_cmd(&this->v1, this->cmd[2]);
@@ -359,7 +359,7 @@ static void cmd2a_quad_flat_semi_transparent(struct PS1_GPU *this)
 }
 
 
-static void cmd2c_quad_opaque_flat_textured_modulated(struct PS1_GPU *this) {
+static void cmd2c_quad_opaque_flat_textured_modulated(PS1_GPU *this) {
     // 0 WRIOW GP0,(0x2C<<24)+(COLOR&0xFFFFFF)        ; Write GP0 Command Word (Color+Command)
     // 1 WRIOW GP0,(Y1<<16)+(X1&0xFFFF)               ; Write GP0  Packet Word (Vertex1)
     // 2 WRIOW GP0,(PAL<<16)+((V1&0xFF)<<8)+(U1&0xFF) ; Write GP0  Packet Word (Texcoord1+Palette)
@@ -389,7 +389,7 @@ static void cmd2c_quad_opaque_flat_textured_modulated(struct PS1_GPU *this) {
     RT_draw_flat_tex_triangle_modulated(this, &this->t2, &this->t3, &this->t4, col, &ts);
 }
 
-static void cmd2d_quad_opaque_flat_textured(struct PS1_GPU *this) {
+static void cmd2d_quad_opaque_flat_textured(PS1_GPU *this) {
     /*
 WRIOW GP0,(0x2D<<24)                         ; Write GP0 Command Word (Command)
   WRIOW GP0,(Y1<<16)+(X1&0xFFFF)               ; Write GP0  Packet Word (Vertex1)
@@ -421,7 +421,7 @@ WRIOW GP0,(0x2D<<24)                         ; Write GP0 Command Word (Command)
     RT_draw_flat_tex_triangle(this, &this->t2, &this->t3, &this->t4, &ts);
 }
 
-static void cmd2e_quad_flat_textured_modulated(struct PS1_GPU *this) {
+static void cmd2e_quad_flat_textured_modulated(PS1_GPU *this) {
 /*
   WRIOW GP0,(0x2E<<24)+(COLOR&0xFFFFFF)        ; Write GP0 Command Word (Color+Command)
   WRIOW GP0,(Y1<<16)+(X1&0xFFFF)               ; Write GP0  Packet Word (Vertex1)
@@ -453,7 +453,7 @@ static void cmd2e_quad_flat_textured_modulated(struct PS1_GPU *this) {
     RT_draw_flat_tex_triangle_modulated_semi(this, &this->t2, &this->t3, &this->t4, col, &ts);
 }
 
-static void cmd2f_quad_flat_textured_semi(struct PS1_GPU *this) {
+static void cmd2f_quad_flat_textured_semi(PS1_GPU *this) {
 /*
   WRIOW GP0,(0x2F<<24)                         ; Write GP0 Command Word (Command)
   WRIOW GP0,(Y1<<16)+(X1&0xFFFF)               ; Write GP0  Packet Word (Vertex1)
@@ -485,7 +485,7 @@ static void cmd2f_quad_flat_textured_semi(struct PS1_GPU *this) {
 }
 
 
-static void cmd30_tri_shaded_opaque(struct PS1_GPU *this)
+static void cmd30_tri_shaded_opaque(PS1_GPU *this)
 {
     // 0 WRIOW GP0,(0x30<<24)+(COLOR1&0xFFFFFF)       ; Write GP0 Command Word (Color1+Command)
     // 1 WRIOW GP0,(Y1<<16)+(X1&0xFFFF)               ; Write GP0  Packet Word (Vertex1)
@@ -508,7 +508,7 @@ static void cmd30_tri_shaded_opaque(struct PS1_GPU *this)
     RT_draw_shaded_triangle(this, &this->v1, &this->v2, &this->v3);
 }
 
-static void cmd34_tri_shaded_opaque_tex_modulated(struct PS1_GPU *this)
+static void cmd34_tri_shaded_opaque_tex_modulated(PS1_GPU *this)
 {
     // 0 WRIOW GP0,(0x34<<24)+(COLOR1&0xFFFFFF)       ; Write GP0 Command Word (Color1+Command)
     // 1 WRIOW GP0,(Y1<<16)+(X1&0xFFFF)               ; Write GP0  Packet Word (Vertex1)
@@ -535,7 +535,7 @@ static void cmd34_tri_shaded_opaque_tex_modulated(struct PS1_GPU *this)
     RT_draw_shaded_tex_triangle_modulated(this, &this->v1, &this->v2, &this->v3, &ts);
 }
 
-static void cmd36_tri_shaded_opaque_tex_modulated_semi(struct PS1_GPU *this)
+static void cmd36_tri_shaded_opaque_tex_modulated_semi(PS1_GPU *this)
 {
     // 0 WRIOW GP0,(0x34<<24)+(COLOR1&0xFFFFFF)       ; Write GP0 Command Word (Color1+Command)
     // 1 WRIOW GP0,(Y1<<16)+(X1&0xFFFF)               ; Write GP0  Packet Word (Vertex1)
@@ -563,7 +563,7 @@ static void cmd36_tri_shaded_opaque_tex_modulated_semi(struct PS1_GPU *this)
     RT_draw_shaded_tex_triangle_modulated_semi(this, &this->v1, &this->v2, &this->v3, &ts);
 }
 
-static void cmd32_tri_shaded_semi_transparent(struct PS1_GPU *this)
+static void cmd32_tri_shaded_semi_transparent(PS1_GPU *this)
 {
     // 0 WRIOW GP0,(0x30<<24)+(COLOR1&0xFFFFFF)       ; Write GP0 Command Word (Color1+Command)
     // 1 WRIOW GP0,(Y1<<16)+(X1&0xFFFF)               ; Write GP0  Packet Word (Vertex1)
@@ -590,7 +590,7 @@ static void cmd32_tri_shaded_semi_transparent(struct PS1_GPU *this)
 }
 
 
-static void cmd38_quad_shaded_opaque(struct PS1_GPU *this)
+static void cmd38_quad_shaded_opaque(PS1_GPU *this)
 {
     // WRIOW GP0,(0x38<<24)+(COLOR1&0xFFFFFF)       ; Write GP0 Command Word (Color1+Command)
     // WRIOW GP0,(Y1<<16)+(X1&0xFFFF)               ; Write GP0  Packet Word (Vertex1)
@@ -621,7 +621,7 @@ static void cmd38_quad_shaded_opaque(struct PS1_GPU *this)
     RT_draw_shaded_triangle(this, &this->t2, &this->t3, &this->t4);
 }
 
-static void cmd3a_quad_shaded_semi_transparent(struct PS1_GPU *this)
+static void cmd3a_quad_shaded_semi_transparent(PS1_GPU *this)
 {
     // WRIOW GP0,(0x38<<24)+(COLOR1&0xFFFFFF)       ; Write GP0 Command Word (Color1+Command)
     // WRIOW GP0,(Y1<<16)+(X1&0xFFFF)               ; Write GP0  Packet Word (Vertex1)
@@ -652,7 +652,7 @@ static void cmd3a_quad_shaded_semi_transparent(struct PS1_GPU *this)
     RT_draw_shaded_triangle_semi(this, &this->t2, &this->t3, &this->t4);
 }
 
-static void cmd3c_quad_opaque_shaded_textured_modulated(struct PS1_GPU *this) {
+static void cmd3c_quad_opaque_shaded_textured_modulated(PS1_GPU *this) {
     //  0 WRIOW GP0,(0x3C<<24)+(COLOR1&0xFFFFFF)       ; Write GP0 Command Word (Color1+Command)
     //  1 WRIOW GP0,(Y1<<16)+(X1&0xFFFF)               ; Write GP0  Packet Word (Vertex1)
     //  2 WRIOW GP0,(PAL<<16)+((V1&0xFF)<<8)+(U1&0xFF) ; Write GP0  Packet Word (Texcoord1+Palette)
@@ -689,7 +689,7 @@ static void cmd3c_quad_opaque_shaded_textured_modulated(struct PS1_GPU *this) {
     RT_draw_shaded_tex_triangle_modulated(this, &this->t2, &this->t3, &this->t4, &ts);
 }
 
-static void cmd3e_quad_opaque_shaded_textured_modulated_semi(struct PS1_GPU *this) {
+static void cmd3e_quad_opaque_shaded_textured_modulated_semi(PS1_GPU *this) {
     //  0 WRIOW GP0,(0x3C<<24)+(COLOR1&0xFFFFFF)       ; Write GP0 Command Word (Color1+Command)
     //  1 WRIOW GP0,(Y1<<16)+(X1&0xFFFF)               ; Write GP0  Packet Word (Vertex1)
     //  2 WRIOW GP0,(PAL<<16)+((V1&0xFF)<<8)+(U1&0xFF) ; Write GP0  Packet Word (Texcoord1+Palette)
@@ -726,7 +726,7 @@ static void cmd3e_quad_opaque_shaded_textured_modulated_semi(struct PS1_GPU *thi
     RT_draw_shaded_tex_triangle_modulated_semi(this, &this->t2, &this->t3, &this->t4, &ts);
 }
 
-static void cmd40_line_opaque(struct PS1_GPU *this) {
+static void cmd40_line_opaque(PS1_GPU *this) {
     // WRIOW GP0,(0x40<<24)+(COLOR&0xFFFFFF)  ; Write GP0 Command Word (Color+Command)
     // WRIOW GP0,(Y1<<16)+(X1&0xFFFF)         ; Write GP0  Packet Word (Vertex1)
     // WRIOW GP0,(Y2<<16)+(X2&0xFFFF)         ; Write GP0  Packet Word (Vertex2)
@@ -736,7 +736,7 @@ static void cmd40_line_opaque(struct PS1_GPU *this) {
     bresenham_opaque(this, &this->v0, &this->v1, color);
 }
 
-static void cmd60_rect_opaque_flat(struct PS1_GPU *this)
+static void cmd60_rect_opaque_flat(PS1_GPU *this)
 {
     u32 color = BGR24to15(this->cmd[0] & 0xFFFFFF);
     u32 xstart = this->cmd[1] & 0xFFFF;
@@ -761,7 +761,7 @@ static void cmd60_rect_opaque_flat(struct PS1_GPU *this)
     }
 }
 
-static void cmd64_rect_opaque_flat_textured_modulated(struct PS1_GPU *this)
+static void cmd64_rect_opaque_flat_textured_modulated(PS1_GPU *this)
 {
     // WRIOW GP0,(0x64<<24)+(COLOR&0xFFFFFF)      ; Write GP0 Command Word (Color+Command)
 
@@ -815,7 +815,7 @@ static void cmd64_rect_opaque_flat_textured_modulated(struct PS1_GPU *this)
     }
 }
 
-static void cmd65_rect_opaque_flat_textured(struct PS1_GPU *this)
+static void cmd65_rect_opaque_flat_textured(PS1_GPU *this)
 {
     // 0 WRIOW GP0,(0x64<<24)+(COLOR&0xFFFFFF)      ; Write GP0 Command Word (Color+Command)
     // 1 WRIOW GP0,(Y<<16)+(X&0xFFFF)               ; Write GP0  Packet Word (Vertex)
@@ -856,7 +856,7 @@ static void cmd65_rect_opaque_flat_textured(struct PS1_GPU *this)
     }
 }
 
-static void cmd66_rect_semi_flat_textured_modulated(struct PS1_GPU *this)
+static void cmd66_rect_semi_flat_textured_modulated(PS1_GPU *this)
 {
     // WRIOW GP0,(0x64<<24)+(COLOR&0xFFFFFF)      ; Write GP0 Command Word (Color+Command)
 
@@ -912,7 +912,7 @@ static void cmd66_rect_semi_flat_textured_modulated(struct PS1_GPU *this)
 }
 
 
-static void cmd67_rect_semi_flat_textured(struct PS1_GPU *this)
+static void cmd67_rect_semi_flat_textured(PS1_GPU *this)
 {
     // 0 WRIOW GP0,(0x64<<24)+(COLOR&0xFFFFFF)      ; Write GP0 Command Word (Color+Command)
     // 1 WRIOW GP0,(Y<<16)+(X&0xFFFF)               ; Write GP0  Packet Word (Vertex)
@@ -953,7 +953,7 @@ static void cmd67_rect_semi_flat_textured(struct PS1_GPU *this)
     }
 }
 
-static void cmd68_rect_1x1(struct PS1_GPU *this)
+static void cmd68_rect_1x1(PS1_GPU *this)
 {
     u32 y = (this->cmd[1] & 0xFFFF0000) >> 16;
     u32 x = ((this->cmd[1] & 0xFFFF) << 16) >> 16;
@@ -961,7 +961,7 @@ static void cmd68_rect_1x1(struct PS1_GPU *this)
     setpix(this, y, x, color, 0, 0);
 }
 
-static void cmd6d_rect_1x1_tex(struct PS1_GPU *this)
+static void cmd6d_rect_1x1_tex(PS1_GPU *this)
 {
     u32 y = (this->cmd[1] & 0xFFFF0000) >> 16;
     u32 x = ((this->cmd[1] & 0xFFFF) << 16) >> 16;
@@ -974,7 +974,7 @@ static void cmd6d_rect_1x1_tex(struct PS1_GPU *this)
     setpix(this, y, x, color & 0x7FFF, 1, color & 0x8000);
 }
 
-static void cmd6c_rect_1x1_tex_modulated(struct PS1_GPU *this)
+static void cmd6c_rect_1x1_tex_modulated(PS1_GPU *this)
 {
     u32 y = (this->cmd[1] & 0xFFFF0000) >> 16;
     u32 x = ((this->cmd[1] & 0xFFFF) << 16) >> 16;
@@ -1004,7 +1004,7 @@ static void cmd6c_rect_1x1_tex_modulated(struct PS1_GPU *this)
     setpix(this, y, x, color & 0x7FFF, 1, hbit);
 }
 
-static void cmd6e_rect_1x1_tex_semi_modulated(struct PS1_GPU *this)
+static void cmd6e_rect_1x1_tex_semi_modulated(PS1_GPU *this)
 {
     u32 y = (this->cmd[1] & 0xFFFF0000) >> 16;
     u32 x = ((this->cmd[1] & 0xFFFF) << 16) >> 16;
@@ -1032,7 +1032,7 @@ static void cmd6e_rect_1x1_tex_semi_modulated(struct PS1_GPU *this)
 }
 
 
-static void cmd6f_rect_1x1_tex_semi(struct PS1_GPU *this)
+static void cmd6f_rect_1x1_tex_semi(PS1_GPU *this)
 {
     u32 y = (this->cmd[1] & 0xFFFF0000) >> 16;
     u32 x = ((this->cmd[1] & 0xFFFF) << 16) >> 16;
@@ -1046,7 +1046,7 @@ static void cmd6f_rect_1x1_tex_semi(struct PS1_GPU *this)
 }
 
 
-static void cmd80_vram_copy(struct PS1_GPU *this)
+static void cmd80_vram_copy(PS1_GPU *this)
 {
     u32 y1 = this->cmd[1] >> 16;
     u32 x1 = this->cmd[1] & 0xFFFF;
@@ -1075,7 +1075,7 @@ static void cmd80_vram_copy(struct PS1_GPU *this)
     //printf("\nCOPY VRAM %d,%d to %d,%d size:%d,%d")
 }
 
-static void rect_opaque_flat_textured_modulated_xx(struct PS1_GPU *this, u32 wh)
+static void rect_opaque_flat_textured_modulated_xx(PS1_GPU *this, u32 wh)
 {
     // WRIOW GP0,(0x64<<24)+(COLOR&0xFFFFFF)      ; Write GP0 Command Word (Color+Command)
     //let color24 = this->cmd[0] & 0xFFFFFF;
@@ -1129,17 +1129,17 @@ static void rect_opaque_flat_textured_modulated_xx(struct PS1_GPU *this, u32 wh)
     }
 }
 
-static void cmd7c_rect_opaque_flat_textured_modulated_16x16(struct PS1_GPU *this)
+static void cmd7c_rect_opaque_flat_textured_modulated_16x16(PS1_GPU *this)
 {
     rect_opaque_flat_textured_modulated_xx(this, 16);
 }
 
-static void cmd74_rect_opaque_flat_textured_modulated_8x8(struct PS1_GPU *this)
+static void cmd74_rect_opaque_flat_textured_modulated_8x8(PS1_GPU *this)
 {
     rect_opaque_flat_textured_modulated_xx(this, 8);
 }
 
-static void rect_opaque_flat_textured_xx(struct PS1_GPU *this, u32 wh)
+static void rect_opaque_flat_textured_xx(PS1_GPU *this, u32 wh)
 {
     // WRIOW GP0,(0x64<<24)+(COLOR&0xFFFFFF)      ; Write GP0 Command Word (Color+Command)
     //let color24 = this->cmd[0] & 0xFFFFFF;
@@ -1180,18 +1180,18 @@ static void rect_opaque_flat_textured_xx(struct PS1_GPU *this, u32 wh)
     }
 }
 
-static void cmd75_rect_opaque_flat_textured_8x8(struct PS1_GPU *this)
+static void cmd75_rect_opaque_flat_textured_8x8(PS1_GPU *this)
 {
     rect_opaque_flat_textured_xx(this, 8);
 }
 
-static void cmd7d_rect_opaque_flat_textured_16x16(struct PS1_GPU *this)
+static void cmd7d_rect_opaque_flat_textured_16x16(PS1_GPU *this)
 {
     rect_opaque_flat_textured_xx(this, 16);
 }
 
 
-static void rect_semi_flat_textured_modulated_xx(struct PS1_GPU *this, u32 wh)
+static void rect_semi_flat_textured_modulated_xx(PS1_GPU *this, u32 wh)
 {
     // WRIOW GP0,(0x64<<24)+(COLOR&0xFFFFFF)      ; Write GP0 Command Word (Color+Command)
     //let color24 = this->cmd[0] & 0xFFFFFF;
@@ -1245,17 +1245,17 @@ static void rect_semi_flat_textured_modulated_xx(struct PS1_GPU *this, u32 wh)
     }
 }
 
-static void cmd76_rect_semi_flat_textured_modulated_8x8(struct PS1_GPU *this)
+static void cmd76_rect_semi_flat_textured_modulated_8x8(PS1_GPU *this)
 {
     rect_semi_flat_textured_modulated_xx(this, 8);
 }
 
-static void cmd7e_rect_semi_flat_textured_modulated_16x16(struct PS1_GPU *this)
+static void cmd7e_rect_semi_flat_textured_modulated_16x16(PS1_GPU *this)
 {
     rect_semi_flat_textured_modulated_xx(this, 16);
 }
 
-static void rect_semi_flat_textured_xx(struct PS1_GPU *this, u32 wh)
+static void rect_semi_flat_textured_xx(PS1_GPU *this, u32 wh)
 {
 // WRIOW GP0,(0x64<<24)+(COLOR&0xFFFFFF)      ; Write GP0 Command Word (Color+Command)
     //let color24 = this->cmd[0] & 0xFFFFFF;
@@ -1296,17 +1296,17 @@ static void rect_semi_flat_textured_xx(struct PS1_GPU *this, u32 wh)
     }
 }
 
-static void cmd77_rect_semi_flat_textured_8x8(struct PS1_GPU *this)
+static void cmd77_rect_semi_flat_textured_8x8(PS1_GPU *this)
 {
     rect_semi_flat_textured_xx(this, 8);
 }
 
-static void cmd7f_rect_semi_flat_textured_16x16(struct PS1_GPU *this)
+static void cmd7f_rect_semi_flat_textured_16x16(PS1_GPU *this)
 {
     rect_semi_flat_textured_xx(this, 16);
 }
 
-static void load_buffer_reset(struct PS1_GPU *this, u32 x, u32 y, u32 width, u32 height)
+static void load_buffer_reset(PS1_GPU *this, u32 x, u32 y, u32 width, u32 height)
 {
     this->load_buffer.x = x;
     this->load_buffer.y = y;
@@ -1316,7 +1316,7 @@ static void load_buffer_reset(struct PS1_GPU *this, u32 x, u32 y, u32 width, u32
     this->load_buffer.img_x = this->load_buffer.img_y = 0;
 }
 
-static void gp0_image_load_continue(struct PS1_GPU *this, u32 cmd)
+static void gp0_image_load_continue(PS1_GPU *this, u32 cmd)
 {
     /*this->recv_gp0[this->recv_gp0_len] = cmd;
     this->recv_gp0_len++;
@@ -1358,7 +1358,7 @@ static void gp0_image_load_continue(struct PS1_GPU *this, u32 cmd)
     }
 }
 
-static void gp0_image_load_start(struct PS1_GPU *this)
+static void gp0_image_load_start(PS1_GPU *this)
 {
     unready_cmd(this);
     ready_recv_dma(this);
@@ -1387,12 +1387,12 @@ static void gp0_image_load_start(struct PS1_GPU *this)
     }
 }
 
-static void gp0_cmd_unhandled(struct PS1_GPU *this)
+static void gp0_cmd_unhandled(PS1_GPU *this)
 {
 
 }
 
-static void GPUSTAT_update(struct PS1_GPU *this)
+static void GPUSTAT_update(PS1_GPU *this)
 {
     u32 o = this->page_base_x;
     o |= (this->page_base_y) << 4;
@@ -1437,12 +1437,12 @@ static void GPUSTAT_update(struct PS1_GPU *this)
     this->io.GPUSTAT = o | (this->io.GPUSTAT & 0x1C000000);
 }
 
-void PS1_GPU_write_gp0(struct PS1_GPU *this, u32 cmd) {
+void PS1_GPU_write_gp0(PS1_GPU *this, u32 cmd) {
     this->handle_gp0(this, cmd);
 }
 
 
-static void gp0_cmd(struct PS1_GPU *this, u32 cmd) {
+static void gp0_cmd(PS1_GPU *this, u32 cmd) {
     this->gp0_buffer[this->recv_gp0_len] = cmd;
     this->recv_gp0_len++;
     assert(this->recv_gp0_len < 256);
@@ -1727,7 +1727,7 @@ static void gp0_cmd(struct PS1_GPU *this, u32 cmd) {
     }
 }
 
-static void setup_dotclock(struct PS1 *this)
+static void setup_dotclock(PS1 *this)
 {
     if (this->gpu.hr2) {
         this->gpu.hres = 368;
@@ -1746,7 +1746,7 @@ static void setup_dotclock(struct PS1 *this)
     this->clock.dot.ratio.cpu_to_dotclock = this->clock.dot.ratio.cpu_to_gpu / cycles_per_px;
 }
 
-static void dotclock_change(struct PS1 *this)
+static void dotclock_change(PS1 *this)
 {
     this->clock.dot.start.value = PS1_dotclock(this);
     this->clock.dot.start.time = PS1_clock_current(this);
@@ -1754,12 +1754,12 @@ static void dotclock_change(struct PS1 *this)
 }
 
 
-void PS1_GPU_reset(struct PS1_GPU *this)
+void PS1_GPU_reset(PS1_GPU *this)
 {
     dotclock_change(this->bus);
 }
 
-void PS1_GPU_write_gp1(struct PS1_GPU *this, u32 cmd)
+void PS1_GPU_write_gp1(PS1_GPU *this, u32 cmd)
 {
     switch(cmd >> 24) {
         case 0:
@@ -1865,11 +1865,11 @@ void PS1_GPU_write_gp1(struct PS1_GPU *this, u32 cmd)
     }
 }
 
-u32 PS1_GPU_get_gpuread(struct PS1_GPU *this)
+u32 PS1_GPU_get_gpuread(PS1_GPU *this)
 {
     return this->io.GPUREAD;
 }
-u32 PS1_GPU_get_gpustat(struct PS1_GPU *this)
+u32 PS1_GPU_get_gpustat(PS1_GPU *this)
 {
     return this->io.GPUSTAT | 0x10000000;
 }

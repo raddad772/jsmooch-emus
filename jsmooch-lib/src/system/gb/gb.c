@@ -17,16 +17,16 @@
 #include "gb_debugger.h"
 #include "gb_serialize.h"
 
-#define JTHIS struct GB* this = (struct GB*)jsm->ptr
+#define JTHIS struct GB* this = (GB*)jsm->ptr
 #define JSM struct jsm_system* jsm
 
 #define THIS struct GB* this
 
 #define GB_QUICK_BOOT true
 
-u32 GB_bus_DMA_read(struct GB_bus* this, u32 addr);
-void GB_bus_IRQ_vblank_up(struct GB_bus* this);
-void GB_bus_IRQ_vblank_down(struct GB_bus* this);
+u32 GB_bus_DMA_read(GB_bus* this, u32 addr);
+void GB_bus_IRQ_vblank_up(GB_bus* this);
+void GB_bus_IRQ_vblank_down(GB_bus* this);
 void GBJ_play(JSM);
 void GBJ_pause(JSM);
 void GBJ_stop(JSM);
@@ -37,8 +37,8 @@ u32 GBJ_finish_frame(JSM);
 u32 GBJ_finish_scanline(JSM);
 u32 GBJ_step_master(JSM, u32 howmany);
 void GBJ_load_BIOS(JSM, multi_file_set* mfs);
-void GB_write_IO(struct GB_bus* bus, u32 addr, u32 val);
-u32 GB_read_IO(struct GB_bus* bus, u32 addr, u32 val);
+void GB_write_IO(GB_bus* bus, u32 addr, u32 val);
+u32 GB_read_IO(GB_bus* bus, u32 addr, u32 val);
 void GBJ_enable_tracing(JSM);
 void GBJ_disable_tracing(JSM);
 void GBJ_describe_io(JSM, cvec* IOs);
@@ -46,7 +46,7 @@ static void GBIO_unload_cart(JSM);
 static void GBIO_load_cart(JSM, multi_file_set *mfs, physical_io_device *pio);
 
 #define MASTER_CYCLES_PER_FRAME GB_CYCLES_PER_FRAME
-static void setup_debug_waveform(struct debug_waveform *dw)
+static void setup_debug_waveform(debug_waveform *dw)
 {
     if (dw->samples_requested == 0) return;
     dw->samples_rendered = dw->samples_requested;
@@ -54,27 +54,27 @@ static void setup_debug_waveform(struct debug_waveform *dw)
     dw->user.buf_pos = 0;
 }
 
-static void GBJ_set_audiobuf(struct jsm_system* jsm, audiobuf *ab)
+static void GBJ_set_audiobuf(jsm_system* jsm, audiobuf *ab)
 {
     JTHIS;
     this->audio.buf = ab;
     if (this->audio.master_cycles_per_audio_sample == 0) {
         this->audio.master_cycles_per_audio_sample = (MASTER_CYCLES_PER_FRAME / (float)ab->samples_len);
         this->audio.next_sample_cycle = 0;
-        struct debug_waveform *wf = (struct debug_waveform *)cpg(this->dbg.waveforms.main);
+        struct debug_waveform *wf = (debug_waveform *)cpg(this->dbg.waveforms.main);
         this->apu.ext_enable = wf->ch_output_enabled;
     }
     setup_debug_waveform(cpg(this->dbg.waveforms.main));
     for (u32 i = 0; i < 4; i++) {
         setup_debug_waveform(cpg(this->dbg.waveforms.chan[i]));
-        struct debug_waveform *wf = (struct debug_waveform *)cpg(this->dbg.waveforms.chan[i]);
+        struct debug_waveform *wf = (debug_waveform *)cpg(this->dbg.waveforms.chan[i]);
         this->apu.channels[i].ext_enable = wf->ch_output_enabled;
     }
 }
 
 void GB_new(JSM, enum GB_variants variant)
 {
-	struct GB* this = (struct GB*)malloc(sizeof(struct GB));
+	struct GB* this = (GB*)malloc(sizeof(GB));
     this->described_inputs = 0;
     GB_clock_init(&this->clock);
 	GB_bus_init(&this->bus, &this->clock);
@@ -129,7 +129,7 @@ void GB_new(JSM, enum GB_variants variant)
     jsm->setup_debugger_interface = &GBJ_setup_debugger_interface;
 }
 
-u32 GB_read_IO(struct GB_bus* bus, u32 addr, u32 val) {
+u32 GB_read_IO(GB_bus* bus, u32 addr, u32 val) {
     //u32 out = 0xFF;
     //if (addr == 0xFF44) printf("\nFF44 STARTING VALUE %02x", out);
     u32 out = GB_CPU_bus_read_IO(bus, addr, 0xFF);
@@ -139,7 +139,7 @@ u32 GB_read_IO(struct GB_bus* bus, u32 addr, u32 val) {
     return out;
 }
 
-void GB_write_IO(struct GB_bus* bus, u32 addr, u32 val) {
+void GB_write_IO(GB_bus* bus, u32 addr, u32 val) {
     GB_CPU_bus_write_IO(bus, addr, val);
     GB_PPU_bus_write_IO(bus, addr, val);
 }
@@ -159,7 +159,7 @@ void GB_delete(JSM)
     jsm_clearfuncs(jsm);
 }
 
-static void new_button(struct JSM_CONTROLLER* cnt, const char* name, enum JKEYS common_id)
+static void new_button(JSM_CONTROLLER* cnt, const char* name, enum JKEYS common_id)
 {
     struct HID_digital_button *b = cvec_push_back(&cnt->digital_buttons);
     snprintf(b->name, 40, "%s", name);
@@ -169,7 +169,7 @@ static void new_button(struct JSM_CONTROLLER* cnt, const char* name, enum JKEYS 
     b->common_id = common_id;
 }
 
-static void setup_lcd(struct JSM_DISPLAY *d)
+static void setup_lcd(JSM_DISPLAY *d)
 {
     d->standard = JSS_LCD;
     d->enabled = 1;
@@ -198,7 +198,7 @@ static void setup_lcd(struct JSM_DISPLAY *d)
 }
 
 
-static void setup_audio(struct cvec* IOs)
+static void setup_audio(cvec* IOs)
 {
     struct physical_io_device *pio = cvec_push_back(IOs);
     pio->kind = HID_AUDIO_CHANNEL;
@@ -275,7 +275,7 @@ void GBJ_describe_io(JSM, cvec *IOs)
 
     setup_audio(IOs);
 
-    this->ppu.display = &((struct physical_io_device *)cpg(this->ppu.display_ptr))->display;
+    this->ppu.display = &((physical_io_device *)cpg(this->ppu.display_ptr))->display;
 }
 
 void GBJ_killall(JSM) {
@@ -295,7 +295,7 @@ u32 GBJ_finish_scanline(JSM) {
 	return this->ppu.last_used_buffer ^ 1;
 }
 
-static void sample_audio(struct GB* this)
+static void sample_audio(GB* this)
 {
     if (this->audio.buf && (this->clock.master_clock >= (u64)this->audio.next_sample_cycle)) {
         this->audio.next_sample_cycle += this->audio.master_cycles_per_audio_sample;
@@ -359,7 +359,7 @@ u32 GBJ_step_master(JSM, u32 howmany) {
 
 }
 
-u32 GB_bus_DMA_read(struct GB_bus* this, u32 addr)
+u32 GB_bus_DMA_read(GB_bus* this, u32 addr)
 {
 	return GB_bus_CPU_read(this, addr, 0, 1);
 
@@ -371,12 +371,12 @@ u32 GB_bus_DMA_read(struct GB_bus* this, u32 addr)
 	}
 }
 
-void GB_bus_IRQ_vblank_up(struct GB_bus* this)
+void GB_bus_IRQ_vblank_up(GB_bus* this)
 {
 	this->cpu->cpu.regs.IF |= 1;
 }
 
-void GB_bus_IRQ_vblank_down(struct GB_bus* this)
+void GB_bus_IRQ_vblank_down(GB_bus* this)
 {
 	// Do nothin!
 }

@@ -4,7 +4,7 @@
 
 #include "gba_controller.h"
 
-u32 GBA_get_controller_state(struct physical_io_device *d)
+u32 GBA_get_controller_state(physical_io_device *d)
 {
     struct JSM_CONTROLLER* cnt = &d->controller;
     struct cvec* bl = &cnt->digital_buttons;
@@ -27,7 +27,7 @@ u32 GBA_get_controller_state(struct physical_io_device *d)
 }
 
 
-void GBA_controller_setup_pio(struct physical_io_device *d)
+void GBA_controller_setup_pio(physical_io_device *d)
 {
     physical_io_device_init(d, HID_CONTROLLER, 0, 0, 1, 1);
 

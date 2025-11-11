@@ -10,13 +10,13 @@
 
 #include "buf.h"
 
-void buf_init(struct buf* this)
+void buf_init(buf* this)
 {
     this->ptr = NULL;
     this->size = 0;
 }
 
-void buf_allocate(struct buf* this, u64 size)
+void buf_allocate(buf* this, u64 size)
 {
     if (this->ptr != NULL) {
         free(this->ptr);
@@ -32,7 +32,7 @@ void buf_allocate(struct buf* this, u64 size)
     this->size = size;
 }
 
-void buf_delete(struct buf* this)
+void buf_delete(buf* this)
 {
     if (this->ptr != NULL)
         free(this->ptr);
@@ -40,7 +40,7 @@ void buf_delete(struct buf* this)
     this->size = 0;
 }
 
-void buf_copy(struct buf* dst, buf* src) {
+void buf_copy(buf* dst, buf* src) {
     if (src->ptr == NULL) {
         buf_delete(dst);
         return;
@@ -50,7 +50,7 @@ void buf_copy(struct buf* dst, buf* src) {
         memcpy(dst->ptr, src->ptr, src->size);
 }
 
-void rfb_init(struct read_file_buf* this){
+void rfb_init(read_file_buf* this){
     buf_init(&this->buf);
     this->path[0] = 0;
     this->name[0] = 0;
@@ -86,12 +86,12 @@ int rfb_read(const char *fname, const char *fpath, read_file_buf *rfb)
     return 1;
 }
 
-void rfb_delete(struct read_file_buf *rfb)
+void rfb_delete(read_file_buf *rfb)
 {
     buf_delete(&rfb->buf);
 }
 
-void mfs_init(struct multi_file_set* this)
+void mfs_init(multi_file_set* this)
 {
     this->num_files = 0;
     for (u32 i = 0; i < MFS_MAX; i++) {
@@ -99,7 +99,7 @@ void mfs_init(struct multi_file_set* this)
     }
 }
 
-void mfs_delete(struct multi_file_set* this)
+void mfs_delete(multi_file_set* this)
 {
     for (u32 i = 0; i < this->num_files; i++) {
         rfb_delete(&this->files[i]);

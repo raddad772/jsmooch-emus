@@ -16,8 +16,10 @@ enum NES_PPU_mirror_modes {
     PPUM_ScreenBOnly
 };
 
+struct NES;
+
 struct NES_cart {
-    explicit NES_cart(struct NES *nes) : nes(nes) {};
+    explicit NES_cart(NES *nes) : nes(nes) {};
     u32 read_ines1_header(const char *fil, size_t fil_sz);
     u32 read_ines2_header(const char *fil, size_t fil_sz);
     void read_ROM_RAM(const char* inp, size_t inp_size);
@@ -45,6 +47,6 @@ struct NES_cart {
         u32 chr_nvram_size{};
     } header{};
 
-    void serialize(struct serialized_state &state);
-    void deserialize(struct serialized_state &state);
+    void serialize(serialized_state &state);
+    void deserialize(serialized_state &state);
 };

@@ -4,7 +4,7 @@
 
 
 
-static void WDC65816_opcode_00_mx(struct WDC65816_regs *regs, WDC65816_pins *pins) { // BRK s
+static void WDC65816_opcode_00_mx(WDC65816_regs *regs, WDC65816_pins *pins) { // BRK s
         switch(regs->TCU) {
         // BRK s E=0 M=0 X=0
         // instruction code follows
@@ -62,7 +62,7 @@ static void WDC65816_opcode_00_mx(struct WDC65816_regs *regs, WDC65816_pins *pin
 }
 
 
-static void WDC65816_opcode_01_mx(struct WDC65816_regs *regs, WDC65816_pins *pins) { // ORA (d,x)
+static void WDC65816_opcode_01_mx(WDC65816_regs *regs, WDC65816_pins *pins) { // ORA (d,x)
         switch(regs->TCU) {
         // ORA (d,x) E=0 M=0 X=0
             case 1: // fetch_D0_and_skip_cycle 2
@@ -114,7 +114,7 @@ static void WDC65816_opcode_01_mx(struct WDC65816_regs *regs, WDC65816_pins *pin
 }
 
 
-static void WDC65816_opcode_02_mx(struct WDC65816_regs *regs, WDC65816_pins *pins) { // COP s
+static void WDC65816_opcode_02_mx(WDC65816_regs *regs, WDC65816_pins *pins) { // COP s
         switch(regs->TCU) {
         // COP s E=0 M=0 X=0
         // instruction code follows
@@ -172,7 +172,7 @@ static void WDC65816_opcode_02_mx(struct WDC65816_regs *regs, WDC65816_pins *pin
 }
 
 
-static void WDC65816_opcode_03_mx(struct WDC65816_regs *regs, WDC65816_pins *pins) { // ORA d,s
+static void WDC65816_opcode_03_mx(WDC65816_regs *regs, WDC65816_pins *pins) { // ORA d,s
         switch(regs->TCU) {
         // ORA d,s E=0 M=0 X=0
             case 1: // 2
@@ -208,7 +208,7 @@ static void WDC65816_opcode_03_mx(struct WDC65816_regs *regs, WDC65816_pins *pin
 }
 
 
-static void WDC65816_opcode_04_mx(struct WDC65816_regs *regs, WDC65816_pins *pins) { // TSB d
+static void WDC65816_opcode_04_mx(WDC65816_regs *regs, WDC65816_pins *pins) { // TSB d
         switch(regs->TCU) {
         // TSB d E=0 M=0 X=0
             case 1: // fetch_D0_and_skip_cycle 2
@@ -261,7 +261,7 @@ static void WDC65816_opcode_04_mx(struct WDC65816_regs *regs, WDC65816_pins *pin
 }
 
 
-static void WDC65816_opcode_05_mx(struct WDC65816_regs *regs, WDC65816_pins *pins) { // ORA d
+static void WDC65816_opcode_05_mx(WDC65816_regs *regs, WDC65816_pins *pins) { // ORA d
         switch(regs->TCU) {
         // ORA d E=0 M=0 X=0
             case 1: // fetch_D0_and_skip_cycle 2
@@ -303,7 +303,7 @@ static void WDC65816_opcode_05_mx(struct WDC65816_regs *regs, WDC65816_pins *pin
 }
 
 
-static void WDC65816_opcode_06_mx(struct WDC65816_regs *regs, WDC65816_pins *pins) { // ASL d
+static void WDC65816_opcode_06_mx(WDC65816_regs *regs, WDC65816_pins *pins) { // ASL d
         switch(regs->TCU) {
         // ASL d E=0 M=0 X=0
             case 1: // fetch_D0_and_skip_cycle 2
@@ -358,7 +358,7 @@ static void WDC65816_opcode_06_mx(struct WDC65816_regs *regs, WDC65816_pins *pin
 }
 
 
-static void WDC65816_opcode_07_mx(struct WDC65816_regs *regs, WDC65816_pins *pins) { // ORA [d]
+static void WDC65816_opcode_07_mx(WDC65816_regs *regs, WDC65816_pins *pins) { // ORA [d]
         switch(regs->TCU) {
         // ORA [d] E=0 M=0 X=0
             case 1: // fetch_D0_and_skip_cycle 2
@@ -413,7 +413,7 @@ static void WDC65816_opcode_07_mx(struct WDC65816_regs *regs, WDC65816_pins *pin
 }
 
 
-static void WDC65816_opcode_08_mx(struct WDC65816_regs *regs, WDC65816_pins *pins) { // PHP s
+static void WDC65816_opcode_08_mx(WDC65816_regs *regs, WDC65816_pins *pins) { // PHP s
         switch(regs->TCU) {
         // PHP s E=0 M=0 X=0
             case 1: // 2
@@ -442,7 +442,7 @@ static void WDC65816_opcode_08_mx(struct WDC65816_regs *regs, WDC65816_pins *pin
 }
 
 
-static void WDC65816_opcode_09_mx(struct WDC65816_regs *regs, WDC65816_pins *pins) { // ORA #
+static void WDC65816_opcode_09_mx(WDC65816_regs *regs, WDC65816_pins *pins) { // ORA #
         switch(regs->TCU) {
         // ORA # E=0 M=0 X=0
             case 1: // 2
@@ -471,7 +471,7 @@ static void WDC65816_opcode_09_mx(struct WDC65816_regs *regs, WDC65816_pins *pin
 }
 
 
-static void WDC65816_opcode_0A_mx(struct WDC65816_regs *regs, WDC65816_pins *pins) { // ASL A
+static void WDC65816_opcode_0A_mx(WDC65816_regs *regs, WDC65816_pins *pins) { // ASL A
         switch(regs->TCU) {
         // ASL A E=0 M=0 X=0
             case 1: // 2
@@ -498,7 +498,7 @@ static void WDC65816_opcode_0A_mx(struct WDC65816_regs *regs, WDC65816_pins *pin
 }
 
 
-static void WDC65816_opcode_0B_mx(struct WDC65816_regs *regs, WDC65816_pins *pins) { // PHD s
+static void WDC65816_opcode_0B_mx(WDC65816_regs *regs, WDC65816_pins *pins) { // PHD s
         switch(regs->TCU) {
         // PHD s E=0 M=0 X=0
             case 1: // 2
@@ -531,7 +531,7 @@ static void WDC65816_opcode_0B_mx(struct WDC65816_regs *regs, WDC65816_pins *pin
 }
 
 
-static void WDC65816_opcode_0C_mx(struct WDC65816_regs *regs, WDC65816_pins *pins) { // TSB a
+static void WDC65816_opcode_0C_mx(WDC65816_regs *regs, WDC65816_pins *pins) { // TSB a
         switch(regs->TCU) {
         // TSB a E=0 M=0 X=0
         //case AM.Ad
@@ -580,7 +580,7 @@ static void WDC65816_opcode_0C_mx(struct WDC65816_regs *regs, WDC65816_pins *pin
 }
 
 
-static void WDC65816_opcode_0D_mx(struct WDC65816_regs *regs, WDC65816_pins *pins) { // ORA a
+static void WDC65816_opcode_0D_mx(WDC65816_regs *regs, WDC65816_pins *pins) { // ORA a
         switch(regs->TCU) {
         // ORA a E=0 M=0 X=0
             case 1: // 2
@@ -616,7 +616,7 @@ static void WDC65816_opcode_0D_mx(struct WDC65816_regs *regs, WDC65816_pins *pin
 }
 
 
-static void WDC65816_opcode_0E_mx(struct WDC65816_regs *regs, WDC65816_pins *pins) { // ASL a
+static void WDC65816_opcode_0E_mx(WDC65816_regs *regs, WDC65816_pins *pins) { // ASL a
         switch(regs->TCU) {
         // ASL a E=0 M=0 X=0
         //case AM.Ad
@@ -667,7 +667,7 @@ static void WDC65816_opcode_0E_mx(struct WDC65816_regs *regs, WDC65816_pins *pin
 }
 
 
-static void WDC65816_opcode_0F_mx(struct WDC65816_regs *regs, WDC65816_pins *pins) { // ORA al
+static void WDC65816_opcode_0F_mx(WDC65816_regs *regs, WDC65816_pins *pins) { // ORA al
         switch(regs->TCU) {
         // ORA al E=0 M=0 X=0
             case 1: // 2
@@ -708,7 +708,7 @@ static void WDC65816_opcode_0F_mx(struct WDC65816_regs *regs, WDC65816_pins *pin
 }
 
 
-static void WDC65816_opcode_10_mx(struct WDC65816_regs *regs, WDC65816_pins *pins) { // BPL r
+static void WDC65816_opcode_10_mx(WDC65816_regs *regs, WDC65816_pins *pins) { // BPL r
         switch(regs->TCU) {
         // BPL r E=0 M=0 X=0
             case 1: // 2
@@ -740,7 +740,7 @@ static void WDC65816_opcode_10_mx(struct WDC65816_regs *regs, WDC65816_pins *pin
 }
 
 
-static void WDC65816_opcode_11_mx(struct WDC65816_regs *regs, WDC65816_pins *pins) { // ORA (d),y
+static void WDC65816_opcode_11_mx(WDC65816_regs *regs, WDC65816_pins *pins) { // ORA (d),y
         switch(regs->TCU) {
         // ORA (d),y E=0 M=0 X=0
             case 1: // fetch_D0_and_skip_cycle 2
@@ -801,7 +801,7 @@ static void WDC65816_opcode_11_mx(struct WDC65816_regs *regs, WDC65816_pins *pin
 }
 
 
-static void WDC65816_opcode_12_mx(struct WDC65816_regs *regs, WDC65816_pins *pins) { // ORA (d)
+static void WDC65816_opcode_12_mx(WDC65816_regs *regs, WDC65816_pins *pins) { // ORA (d)
         switch(regs->TCU) {
         // ORA (d) E=0 M=0 X=0
             case 1: // fetch_D0_and_skip_cycle 2
@@ -850,7 +850,7 @@ static void WDC65816_opcode_12_mx(struct WDC65816_regs *regs, WDC65816_pins *pin
 }
 
 
-static void WDC65816_opcode_13_mx(struct WDC65816_regs *regs, WDC65816_pins *pins) { // ORA (d,s),y
+static void WDC65816_opcode_13_mx(WDC65816_regs *regs, WDC65816_pins *pins) { // ORA (d,s),y
         switch(regs->TCU) {
         // ORA (d,s),y E=0 M=0 X=0
             case 1: // 2
@@ -900,7 +900,7 @@ static void WDC65816_opcode_13_mx(struct WDC65816_regs *regs, WDC65816_pins *pin
 }
 
 
-static void WDC65816_opcode_14_mx(struct WDC65816_regs *regs, WDC65816_pins *pins) { // TRB d
+static void WDC65816_opcode_14_mx(WDC65816_regs *regs, WDC65816_pins *pins) { // TRB d
         switch(regs->TCU) {
         // TRB d E=0 M=0 X=0
             case 1: // fetch_D0_and_skip_cycle 2
@@ -953,7 +953,7 @@ static void WDC65816_opcode_14_mx(struct WDC65816_regs *regs, WDC65816_pins *pin
 }
 
 
-static void WDC65816_opcode_15_mx(struct WDC65816_regs *regs, WDC65816_pins *pins) { // ORA d,x
+static void WDC65816_opcode_15_mx(WDC65816_regs *regs, WDC65816_pins *pins) { // ORA d,x
         switch(regs->TCU) {
         // ORA d,x E=0 M=0 X=0
             case 1: // fetch_D0_and_skip_cycle 2
@@ -997,7 +997,7 @@ static void WDC65816_opcode_15_mx(struct WDC65816_regs *regs, WDC65816_pins *pin
 }
 
 
-static void WDC65816_opcode_16_mx(struct WDC65816_regs *regs, WDC65816_pins *pins) { // ASL d,x
+static void WDC65816_opcode_16_mx(WDC65816_regs *regs, WDC65816_pins *pins) { // ASL d,x
         switch(regs->TCU) {
         // ASL d,x E=0 M=0 X=0
             case 1: // fetch_D0_and_skip_cycle 2
@@ -1054,7 +1054,7 @@ static void WDC65816_opcode_16_mx(struct WDC65816_regs *regs, WDC65816_pins *pin
 }
 
 
-static void WDC65816_opcode_17_mx(struct WDC65816_regs *regs, WDC65816_pins *pins) { // ORA [d],y
+static void WDC65816_opcode_17_mx(WDC65816_regs *regs, WDC65816_pins *pins) { // ORA [d],y
         switch(regs->TCU) {
         // ORA [d],y E=0 M=0 X=0
             case 1: // fetch_D0_and_skip_cycle 2
@@ -1109,7 +1109,7 @@ static void WDC65816_opcode_17_mx(struct WDC65816_regs *regs, WDC65816_pins *pin
 }
 
 
-static void WDC65816_opcode_18_mx(struct WDC65816_regs *regs, WDC65816_pins *pins) { // CLC i
+static void WDC65816_opcode_18_mx(WDC65816_regs *regs, WDC65816_pins *pins) { // CLC i
         switch(regs->TCU) {
         // CLC i E=0 M=0 X=0
             case 1: // 2
@@ -1131,7 +1131,7 @@ static void WDC65816_opcode_18_mx(struct WDC65816_regs *regs, WDC65816_pins *pin
 }
 
 
-static void WDC65816_opcode_19_mx(struct WDC65816_regs *regs, WDC65816_pins *pins) { // ORA a,y
+static void WDC65816_opcode_19_mx(WDC65816_regs *regs, WDC65816_pins *pins) { // ORA a,y
         switch(regs->TCU) {
         // ORA a,y E=0 M=0 X=0
             case 1: // 2
@@ -1179,7 +1179,7 @@ static void WDC65816_opcode_19_mx(struct WDC65816_regs *regs, WDC65816_pins *pin
 }
 
 
-static void WDC65816_opcode_1A_mx(struct WDC65816_regs *regs, WDC65816_pins *pins) { // INC A
+static void WDC65816_opcode_1A_mx(WDC65816_regs *regs, WDC65816_pins *pins) { // INC A
         switch(regs->TCU) {
         // INC A E=0 M=0 X=0
             case 1: // 2
@@ -1205,7 +1205,7 @@ static void WDC65816_opcode_1A_mx(struct WDC65816_regs *regs, WDC65816_pins *pin
 }
 
 
-static void WDC65816_opcode_1B_mx(struct WDC65816_regs *regs, WDC65816_pins *pins) { // TCS i
+static void WDC65816_opcode_1B_mx(WDC65816_regs *regs, WDC65816_pins *pins) { // TCS i
         switch(regs->TCU) {
         // TCS i E=0 M=0 X=0
             case 1: // 2
@@ -1227,7 +1227,7 @@ static void WDC65816_opcode_1B_mx(struct WDC65816_regs *regs, WDC65816_pins *pin
 }
 
 
-static void WDC65816_opcode_1C_mx(struct WDC65816_regs *regs, WDC65816_pins *pins) { // TRB a
+static void WDC65816_opcode_1C_mx(WDC65816_regs *regs, WDC65816_pins *pins) { // TRB a
         switch(regs->TCU) {
         // TRB a E=0 M=0 X=0
         //case AM.Ad
@@ -1276,7 +1276,7 @@ static void WDC65816_opcode_1C_mx(struct WDC65816_regs *regs, WDC65816_pins *pin
 }
 
 
-static void WDC65816_opcode_1D_mx(struct WDC65816_regs *regs, WDC65816_pins *pins) { // ORA a,x
+static void WDC65816_opcode_1D_mx(WDC65816_regs *regs, WDC65816_pins *pins) { // ORA a,x
         switch(regs->TCU) {
         // ORA a,x E=0 M=0 X=0
             case 1: // 2
@@ -1324,7 +1324,7 @@ static void WDC65816_opcode_1D_mx(struct WDC65816_regs *regs, WDC65816_pins *pin
 }
 
 
-static void WDC65816_opcode_1E_mx(struct WDC65816_regs *regs, WDC65816_pins *pins) { // ASL a,x
+static void WDC65816_opcode_1E_mx(WDC65816_regs *regs, WDC65816_pins *pins) { // ASL a,x
         switch(regs->TCU) {
         // ASL a,x E=0 M=0 X=0
             case 1: // 2
@@ -1381,7 +1381,7 @@ static void WDC65816_opcode_1E_mx(struct WDC65816_regs *regs, WDC65816_pins *pin
 }
 
 
-static void WDC65816_opcode_1F_mx(struct WDC65816_regs *regs, WDC65816_pins *pins) { // ORA al,x
+static void WDC65816_opcode_1F_mx(WDC65816_regs *regs, WDC65816_pins *pins) { // ORA al,x
         switch(regs->TCU) {
         // ORA al,x E=0 M=0 X=0
             case 1: // 2
@@ -1423,7 +1423,7 @@ static void WDC65816_opcode_1F_mx(struct WDC65816_regs *regs, WDC65816_pins *pin
 }
 
 
-static void WDC65816_opcode_20_mx(struct WDC65816_regs *regs, WDC65816_pins *pins) { // JSR a
+static void WDC65816_opcode_20_mx(WDC65816_regs *regs, WDC65816_pins *pins) { // JSR a
         switch(regs->TCU) {
         // JSR a E=0 M=0 X=0
             case 1: // 2
@@ -1466,7 +1466,7 @@ static void WDC65816_opcode_20_mx(struct WDC65816_regs *regs, WDC65816_pins *pin
 }
 
 
-static void WDC65816_opcode_21_mx(struct WDC65816_regs *regs, WDC65816_pins *pins) { // AND (d,x)
+static void WDC65816_opcode_21_mx(WDC65816_regs *regs, WDC65816_pins *pins) { // AND (d,x)
         switch(regs->TCU) {
         // AND (d,x) E=0 M=0 X=0
             case 1: // fetch_D0_and_skip_cycle 2
@@ -1518,7 +1518,7 @@ static void WDC65816_opcode_21_mx(struct WDC65816_regs *regs, WDC65816_pins *pin
 }
 
 
-static void WDC65816_opcode_22_mx(struct WDC65816_regs *regs, WDC65816_pins *pins) { // JSL al
+static void WDC65816_opcode_22_mx(WDC65816_regs *regs, WDC65816_pins *pins) { // JSL al
         switch(regs->TCU) {
         // JSL al E=0 M=0 X=0
             case 1: // 2
@@ -1574,7 +1574,7 @@ static void WDC65816_opcode_22_mx(struct WDC65816_regs *regs, WDC65816_pins *pin
 }
 
 
-static void WDC65816_opcode_23_mx(struct WDC65816_regs *regs, WDC65816_pins *pins) { // AND d,s
+static void WDC65816_opcode_23_mx(WDC65816_regs *regs, WDC65816_pins *pins) { // AND d,s
         switch(regs->TCU) {
         // AND d,s E=0 M=0 X=0
             case 1: // 2
@@ -1610,7 +1610,7 @@ static void WDC65816_opcode_23_mx(struct WDC65816_regs *regs, WDC65816_pins *pin
 }
 
 
-static void WDC65816_opcode_24_mx(struct WDC65816_regs *regs, WDC65816_pins *pins) { // BIT d
+static void WDC65816_opcode_24_mx(WDC65816_regs *regs, WDC65816_pins *pins) { // BIT d
         switch(regs->TCU) {
         // BIT d E=0 M=0 X=0
             case 1: // fetch_D0_and_skip_cycle 2
@@ -1652,7 +1652,7 @@ static void WDC65816_opcode_24_mx(struct WDC65816_regs *regs, WDC65816_pins *pin
 }
 
 
-static void WDC65816_opcode_25_mx(struct WDC65816_regs *regs, WDC65816_pins *pins) { // AND d
+static void WDC65816_opcode_25_mx(WDC65816_regs *regs, WDC65816_pins *pins) { // AND d
         switch(regs->TCU) {
         // AND d E=0 M=0 X=0
             case 1: // fetch_D0_and_skip_cycle 2
@@ -1694,7 +1694,7 @@ static void WDC65816_opcode_25_mx(struct WDC65816_regs *regs, WDC65816_pins *pin
 }
 
 
-static void WDC65816_opcode_26_mx(struct WDC65816_regs *regs, WDC65816_pins *pins) { // ROL d
+static void WDC65816_opcode_26_mx(WDC65816_regs *regs, WDC65816_pins *pins) { // ROL d
         switch(regs->TCU) {
         // ROL d E=0 M=0 X=0
             case 1: // fetch_D0_and_skip_cycle 2
@@ -1750,7 +1750,7 @@ static void WDC65816_opcode_26_mx(struct WDC65816_regs *regs, WDC65816_pins *pin
 }
 
 
-static void WDC65816_opcode_27_mx(struct WDC65816_regs *regs, WDC65816_pins *pins) { // AND [d]
+static void WDC65816_opcode_27_mx(WDC65816_regs *regs, WDC65816_pins *pins) { // AND [d]
         switch(regs->TCU) {
         // AND [d] E=0 M=0 X=0
             case 1: // fetch_D0_and_skip_cycle 2
@@ -1805,7 +1805,7 @@ static void WDC65816_opcode_27_mx(struct WDC65816_regs *regs, WDC65816_pins *pin
 }
 
 
-static void WDC65816_opcode_28_mx(struct WDC65816_regs *regs, WDC65816_pins *pins) { // PLP s
+static void WDC65816_opcode_28_mx(WDC65816_regs *regs, WDC65816_pins *pins) { // PLP s
         switch(regs->TCU) {
         // PLP s E=0 M=0 X=0
             case 1: // 2
@@ -1839,7 +1839,7 @@ static void WDC65816_opcode_28_mx(struct WDC65816_regs *regs, WDC65816_pins *pin
 }
 
 
-static void WDC65816_opcode_29_mx(struct WDC65816_regs *regs, WDC65816_pins *pins) { // AND #
+static void WDC65816_opcode_29_mx(WDC65816_regs *regs, WDC65816_pins *pins) { // AND #
         switch(regs->TCU) {
         // AND # E=0 M=0 X=0
             case 1: // 2
@@ -1868,7 +1868,7 @@ static void WDC65816_opcode_29_mx(struct WDC65816_regs *regs, WDC65816_pins *pin
 }
 
 
-static void WDC65816_opcode_2A_mx(struct WDC65816_regs *regs, WDC65816_pins *pins) { // ROL A
+static void WDC65816_opcode_2A_mx(WDC65816_regs *regs, WDC65816_pins *pins) { // ROL A
         switch(regs->TCU) {
         // ROL A E=0 M=0 X=0
             case 1: // 2
@@ -1896,7 +1896,7 @@ static void WDC65816_opcode_2A_mx(struct WDC65816_regs *regs, WDC65816_pins *pin
 }
 
 
-static void WDC65816_opcode_2B_mx(struct WDC65816_regs *regs, WDC65816_pins *pins) { // PLD s
+static void WDC65816_opcode_2B_mx(WDC65816_regs *regs, WDC65816_pins *pins) { // PLD s
         switch(regs->TCU) {
         // PLD s E=0 M=0 X=0
             case 1: // 2
@@ -1932,7 +1932,7 @@ static void WDC65816_opcode_2B_mx(struct WDC65816_regs *regs, WDC65816_pins *pin
 }
 
 
-static void WDC65816_opcode_2C_mx(struct WDC65816_regs *regs, WDC65816_pins *pins) { // BIT a
+static void WDC65816_opcode_2C_mx(WDC65816_regs *regs, WDC65816_pins *pins) { // BIT a
         switch(regs->TCU) {
         // BIT a E=0 M=0 X=0
             case 1: // 2
@@ -1968,7 +1968,7 @@ static void WDC65816_opcode_2C_mx(struct WDC65816_regs *regs, WDC65816_pins *pin
 }
 
 
-static void WDC65816_opcode_2D_mx(struct WDC65816_regs *regs, WDC65816_pins *pins) { // AND a
+static void WDC65816_opcode_2D_mx(WDC65816_regs *regs, WDC65816_pins *pins) { // AND a
         switch(regs->TCU) {
         // AND a E=0 M=0 X=0
             case 1: // 2
@@ -2004,7 +2004,7 @@ static void WDC65816_opcode_2D_mx(struct WDC65816_regs *regs, WDC65816_pins *pin
 }
 
 
-static void WDC65816_opcode_2E_mx(struct WDC65816_regs *regs, WDC65816_pins *pins) { // ROL a
+static void WDC65816_opcode_2E_mx(WDC65816_regs *regs, WDC65816_pins *pins) { // ROL a
         switch(regs->TCU) {
         // ROL a E=0 M=0 X=0
         //case AM.Ad
@@ -2056,7 +2056,7 @@ static void WDC65816_opcode_2E_mx(struct WDC65816_regs *regs, WDC65816_pins *pin
 }
 
 
-static void WDC65816_opcode_2F_mx(struct WDC65816_regs *regs, WDC65816_pins *pins) { // AND al
+static void WDC65816_opcode_2F_mx(WDC65816_regs *regs, WDC65816_pins *pins) { // AND al
         switch(regs->TCU) {
         // AND al E=0 M=0 X=0
             case 1: // 2
@@ -2097,7 +2097,7 @@ static void WDC65816_opcode_2F_mx(struct WDC65816_regs *regs, WDC65816_pins *pin
 }
 
 
-static void WDC65816_opcode_30_mx(struct WDC65816_regs *regs, WDC65816_pins *pins) { // BMI r
+static void WDC65816_opcode_30_mx(WDC65816_regs *regs, WDC65816_pins *pins) { // BMI r
         switch(regs->TCU) {
         // BMI r E=0 M=0 X=0
             case 1: // 2
@@ -2129,7 +2129,7 @@ static void WDC65816_opcode_30_mx(struct WDC65816_regs *regs, WDC65816_pins *pin
 }
 
 
-static void WDC65816_opcode_31_mx(struct WDC65816_regs *regs, WDC65816_pins *pins) { // AND (d),y
+static void WDC65816_opcode_31_mx(WDC65816_regs *regs, WDC65816_pins *pins) { // AND (d),y
         switch(regs->TCU) {
         // AND (d),y E=0 M=0 X=0
             case 1: // fetch_D0_and_skip_cycle 2
@@ -2190,7 +2190,7 @@ static void WDC65816_opcode_31_mx(struct WDC65816_regs *regs, WDC65816_pins *pin
 }
 
 
-static void WDC65816_opcode_32_mx(struct WDC65816_regs *regs, WDC65816_pins *pins) { // AND (d)
+static void WDC65816_opcode_32_mx(WDC65816_regs *regs, WDC65816_pins *pins) { // AND (d)
         switch(regs->TCU) {
         // AND (d) E=0 M=0 X=0
             case 1: // fetch_D0_and_skip_cycle 2
@@ -2239,7 +2239,7 @@ static void WDC65816_opcode_32_mx(struct WDC65816_regs *regs, WDC65816_pins *pin
 }
 
 
-static void WDC65816_opcode_33_mx(struct WDC65816_regs *regs, WDC65816_pins *pins) { // AND (d,s),y
+static void WDC65816_opcode_33_mx(WDC65816_regs *regs, WDC65816_pins *pins) { // AND (d,s),y
         switch(regs->TCU) {
         // AND (d,s),y E=0 M=0 X=0
             case 1: // 2
@@ -2289,7 +2289,7 @@ static void WDC65816_opcode_33_mx(struct WDC65816_regs *regs, WDC65816_pins *pin
 }
 
 
-static void WDC65816_opcode_34_mx(struct WDC65816_regs *regs, WDC65816_pins *pins) { // BIT d,x
+static void WDC65816_opcode_34_mx(WDC65816_regs *regs, WDC65816_pins *pins) { // BIT d,x
         switch(regs->TCU) {
         // BIT d,x E=0 M=0 X=0
             case 1: // fetch_D0_and_skip_cycle 2
@@ -2333,7 +2333,7 @@ static void WDC65816_opcode_34_mx(struct WDC65816_regs *regs, WDC65816_pins *pin
 }
 
 
-static void WDC65816_opcode_35_mx(struct WDC65816_regs *regs, WDC65816_pins *pins) { // AND d,x
+static void WDC65816_opcode_35_mx(WDC65816_regs *regs, WDC65816_pins *pins) { // AND d,x
         switch(regs->TCU) {
         // AND d,x E=0 M=0 X=0
             case 1: // fetch_D0_and_skip_cycle 2
@@ -2377,7 +2377,7 @@ static void WDC65816_opcode_35_mx(struct WDC65816_regs *regs, WDC65816_pins *pin
 }
 
 
-static void WDC65816_opcode_36_mx(struct WDC65816_regs *regs, WDC65816_pins *pins) { // ROL d,x
+static void WDC65816_opcode_36_mx(WDC65816_regs *regs, WDC65816_pins *pins) { // ROL d,x
         switch(regs->TCU) {
         // ROL d,x E=0 M=0 X=0
             case 1: // fetch_D0_and_skip_cycle 2
@@ -2435,7 +2435,7 @@ static void WDC65816_opcode_36_mx(struct WDC65816_regs *regs, WDC65816_pins *pin
 }
 
 
-static void WDC65816_opcode_37_mx(struct WDC65816_regs *regs, WDC65816_pins *pins) { // AND [d],y
+static void WDC65816_opcode_37_mx(WDC65816_regs *regs, WDC65816_pins *pins) { // AND [d],y
         switch(regs->TCU) {
         // AND [d],y E=0 M=0 X=0
             case 1: // fetch_D0_and_skip_cycle 2
@@ -2490,7 +2490,7 @@ static void WDC65816_opcode_37_mx(struct WDC65816_regs *regs, WDC65816_pins *pin
 }
 
 
-static void WDC65816_opcode_38_mx(struct WDC65816_regs *regs, WDC65816_pins *pins) { // SEC i
+static void WDC65816_opcode_38_mx(WDC65816_regs *regs, WDC65816_pins *pins) { // SEC i
         switch(regs->TCU) {
         // SEC i E=0 M=0 X=0
             case 1: // 2
@@ -2512,7 +2512,7 @@ static void WDC65816_opcode_38_mx(struct WDC65816_regs *regs, WDC65816_pins *pin
 }
 
 
-static void WDC65816_opcode_39_mx(struct WDC65816_regs *regs, WDC65816_pins *pins) { // AND a,y
+static void WDC65816_opcode_39_mx(WDC65816_regs *regs, WDC65816_pins *pins) { // AND a,y
         switch(regs->TCU) {
         // AND a,y E=0 M=0 X=0
             case 1: // 2
@@ -2560,7 +2560,7 @@ static void WDC65816_opcode_39_mx(struct WDC65816_regs *regs, WDC65816_pins *pin
 }
 
 
-static void WDC65816_opcode_3A_mx(struct WDC65816_regs *regs, WDC65816_pins *pins) { // DEC A
+static void WDC65816_opcode_3A_mx(WDC65816_regs *regs, WDC65816_pins *pins) { // DEC A
         switch(regs->TCU) {
         // DEC A E=0 M=0 X=0
             case 1: // 2
@@ -2586,7 +2586,7 @@ static void WDC65816_opcode_3A_mx(struct WDC65816_regs *regs, WDC65816_pins *pin
 }
 
 
-static void WDC65816_opcode_3B_mx(struct WDC65816_regs *regs, WDC65816_pins *pins) { // TSC i
+static void WDC65816_opcode_3B_mx(WDC65816_regs *regs, WDC65816_pins *pins) { // TSC i
         switch(regs->TCU) {
         // TSC i E=0 M=0 X=0
             case 1: // 2
@@ -2610,7 +2610,7 @@ static void WDC65816_opcode_3B_mx(struct WDC65816_regs *regs, WDC65816_pins *pin
 }
 
 
-static void WDC65816_opcode_3C_mx(struct WDC65816_regs *regs, WDC65816_pins *pins) { // BIT a,x
+static void WDC65816_opcode_3C_mx(WDC65816_regs *regs, WDC65816_pins *pins) { // BIT a,x
         switch(regs->TCU) {
         // BIT a,x E=0 M=0 X=0
             case 1: // 2
@@ -2658,7 +2658,7 @@ static void WDC65816_opcode_3C_mx(struct WDC65816_regs *regs, WDC65816_pins *pin
 }
 
 
-static void WDC65816_opcode_3D_mx(struct WDC65816_regs *regs, WDC65816_pins *pins) { // AND a,x
+static void WDC65816_opcode_3D_mx(WDC65816_regs *regs, WDC65816_pins *pins) { // AND a,x
         switch(regs->TCU) {
         // AND a,x E=0 M=0 X=0
             case 1: // 2
@@ -2706,7 +2706,7 @@ static void WDC65816_opcode_3D_mx(struct WDC65816_regs *regs, WDC65816_pins *pin
 }
 
 
-static void WDC65816_opcode_3E_mx(struct WDC65816_regs *regs, WDC65816_pins *pins) { // ROL a,x
+static void WDC65816_opcode_3E_mx(WDC65816_regs *regs, WDC65816_pins *pins) { // ROL a,x
         switch(regs->TCU) {
         // ROL a,x E=0 M=0 X=0
             case 1: // 2
@@ -2764,7 +2764,7 @@ static void WDC65816_opcode_3E_mx(struct WDC65816_regs *regs, WDC65816_pins *pin
 }
 
 
-static void WDC65816_opcode_3F_mx(struct WDC65816_regs *regs, WDC65816_pins *pins) { // AND al,x
+static void WDC65816_opcode_3F_mx(WDC65816_regs *regs, WDC65816_pins *pins) { // AND al,x
         switch(regs->TCU) {
         // AND al,x E=0 M=0 X=0
             case 1: // 2
@@ -2806,7 +2806,7 @@ static void WDC65816_opcode_3F_mx(struct WDC65816_regs *regs, WDC65816_pins *pin
 }
 
 
-static void WDC65816_opcode_40_mx(struct WDC65816_regs *regs, WDC65816_pins *pins) { // RTI s
+static void WDC65816_opcode_40_mx(WDC65816_regs *regs, WDC65816_pins *pins) { // RTI s
         switch(regs->TCU) {
         // RTI s E=0 M=0 X=0
             case 1: // 2
@@ -2857,7 +2857,7 @@ static void WDC65816_opcode_40_mx(struct WDC65816_regs *regs, WDC65816_pins *pin
 }
 
 
-static void WDC65816_opcode_41_mx(struct WDC65816_regs *regs, WDC65816_pins *pins) { // EOR (d,x)
+static void WDC65816_opcode_41_mx(WDC65816_regs *regs, WDC65816_pins *pins) { // EOR (d,x)
         switch(regs->TCU) {
         // EOR (d,x) E=0 M=0 X=0
             case 1: // fetch_D0_and_skip_cycle 2
@@ -2909,7 +2909,7 @@ static void WDC65816_opcode_41_mx(struct WDC65816_regs *regs, WDC65816_pins *pin
 }
 
 
-static void WDC65816_opcode_42_mx(struct WDC65816_regs *regs, WDC65816_pins *pins) { // WDM i
+static void WDC65816_opcode_42_mx(WDC65816_regs *regs, WDC65816_pins *pins) { // WDM i
         switch(regs->TCU) {
         // WDM i E=0 M=0 X=0
             case 1: // 2
@@ -2931,7 +2931,7 @@ static void WDC65816_opcode_42_mx(struct WDC65816_regs *regs, WDC65816_pins *pin
 }
 
 
-static void WDC65816_opcode_43_mx(struct WDC65816_regs *regs, WDC65816_pins *pins) { // EOR d,s
+static void WDC65816_opcode_43_mx(WDC65816_regs *regs, WDC65816_pins *pins) { // EOR d,s
         switch(regs->TCU) {
         // EOR d,s E=0 M=0 X=0
             case 1: // 2
@@ -2967,7 +2967,7 @@ static void WDC65816_opcode_43_mx(struct WDC65816_regs *regs, WDC65816_pins *pin
 }
 
 
-static void WDC65816_opcode_44_mx(struct WDC65816_regs *regs, WDC65816_pins *pins) { // MVP xyc
+static void WDC65816_opcode_44_mx(WDC65816_regs *regs, WDC65816_pins *pins) { // MVP xyc
         switch(regs->TCU) {
         // MVP xyc E=0 M=0 X=0
             case 1: // 2
@@ -3008,7 +3008,7 @@ static void WDC65816_opcode_44_mx(struct WDC65816_regs *regs, WDC65816_pins *pin
 }
 
 
-static void WDC65816_opcode_45_mx(struct WDC65816_regs *regs, WDC65816_pins *pins) { // EOR d
+static void WDC65816_opcode_45_mx(WDC65816_regs *regs, WDC65816_pins *pins) { // EOR d
         switch(regs->TCU) {
         // EOR d E=0 M=0 X=0
             case 1: // fetch_D0_and_skip_cycle 2
@@ -3050,7 +3050,7 @@ static void WDC65816_opcode_45_mx(struct WDC65816_regs *regs, WDC65816_pins *pin
 }
 
 
-static void WDC65816_opcode_46_mx(struct WDC65816_regs *regs, WDC65816_pins *pins) { // LSR d
+static void WDC65816_opcode_46_mx(WDC65816_regs *regs, WDC65816_pins *pins) { // LSR d
         switch(regs->TCU) {
         // LSR d E=0 M=0 X=0
             case 1: // fetch_D0_and_skip_cycle 2
@@ -3105,7 +3105,7 @@ static void WDC65816_opcode_46_mx(struct WDC65816_regs *regs, WDC65816_pins *pin
 }
 
 
-static void WDC65816_opcode_47_mx(struct WDC65816_regs *regs, WDC65816_pins *pins) { // EOR [d]
+static void WDC65816_opcode_47_mx(WDC65816_regs *regs, WDC65816_pins *pins) { // EOR [d]
         switch(regs->TCU) {
         // EOR [d] E=0 M=0 X=0
             case 1: // fetch_D0_and_skip_cycle 2
@@ -3160,7 +3160,7 @@ static void WDC65816_opcode_47_mx(struct WDC65816_regs *regs, WDC65816_pins *pin
 }
 
 
-static void WDC65816_opcode_48_mx(struct WDC65816_regs *regs, WDC65816_pins *pins) { // PHA s
+static void WDC65816_opcode_48_mx(WDC65816_regs *regs, WDC65816_pins *pins) { // PHA s
         switch(regs->TCU) {
         // PHA s E=0 M=0 X=0
             case 1: // 2
@@ -3195,7 +3195,7 @@ static void WDC65816_opcode_48_mx(struct WDC65816_regs *regs, WDC65816_pins *pin
 }
 
 
-static void WDC65816_opcode_49_mx(struct WDC65816_regs *regs, WDC65816_pins *pins) { // EOR #
+static void WDC65816_opcode_49_mx(WDC65816_regs *regs, WDC65816_pins *pins) { // EOR #
         switch(regs->TCU) {
         // EOR # E=0 M=0 X=0
             case 1: // 2
@@ -3224,7 +3224,7 @@ static void WDC65816_opcode_49_mx(struct WDC65816_regs *regs, WDC65816_pins *pin
 }
 
 
-static void WDC65816_opcode_4A_mx(struct WDC65816_regs *regs, WDC65816_pins *pins) { // LSR A
+static void WDC65816_opcode_4A_mx(WDC65816_regs *regs, WDC65816_pins *pins) { // LSR A
         switch(regs->TCU) {
         // LSR A E=0 M=0 X=0
             case 1: // 2
@@ -3251,7 +3251,7 @@ static void WDC65816_opcode_4A_mx(struct WDC65816_regs *regs, WDC65816_pins *pin
 }
 
 
-static void WDC65816_opcode_4B_mx(struct WDC65816_regs *regs, WDC65816_pins *pins) { // PHK s
+static void WDC65816_opcode_4B_mx(WDC65816_regs *regs, WDC65816_pins *pins) { // PHK s
         switch(regs->TCU) {
         // PHK s E=0 M=0 X=0
             case 1: // 2
@@ -3280,7 +3280,7 @@ static void WDC65816_opcode_4B_mx(struct WDC65816_regs *regs, WDC65816_pins *pin
 }
 
 
-static void WDC65816_opcode_4C_mx(struct WDC65816_regs *regs, WDC65816_pins *pins) { // JMP a
+static void WDC65816_opcode_4C_mx(WDC65816_regs *regs, WDC65816_pins *pins) { // JMP a
         switch(regs->TCU) {
         // JMP a E=0 M=0 X=0
             case 1: // 2
@@ -3304,7 +3304,7 @@ static void WDC65816_opcode_4C_mx(struct WDC65816_regs *regs, WDC65816_pins *pin
 }
 
 
-static void WDC65816_opcode_4D_mx(struct WDC65816_regs *regs, WDC65816_pins *pins) { // EOR a
+static void WDC65816_opcode_4D_mx(WDC65816_regs *regs, WDC65816_pins *pins) { // EOR a
         switch(regs->TCU) {
         // EOR a E=0 M=0 X=0
             case 1: // 2
@@ -3340,7 +3340,7 @@ static void WDC65816_opcode_4D_mx(struct WDC65816_regs *regs, WDC65816_pins *pin
 }
 
 
-static void WDC65816_opcode_4E_mx(struct WDC65816_regs *regs, WDC65816_pins *pins) { // LSR a
+static void WDC65816_opcode_4E_mx(WDC65816_regs *regs, WDC65816_pins *pins) { // LSR a
         switch(regs->TCU) {
         // LSR a E=0 M=0 X=0
         //case AM.Ad
@@ -3391,7 +3391,7 @@ static void WDC65816_opcode_4E_mx(struct WDC65816_regs *regs, WDC65816_pins *pin
 }
 
 
-static void WDC65816_opcode_4F_mx(struct WDC65816_regs *regs, WDC65816_pins *pins) { // EOR al
+static void WDC65816_opcode_4F_mx(WDC65816_regs *regs, WDC65816_pins *pins) { // EOR al
         switch(regs->TCU) {
         // EOR al E=0 M=0 X=0
             case 1: // 2
@@ -3432,7 +3432,7 @@ static void WDC65816_opcode_4F_mx(struct WDC65816_regs *regs, WDC65816_pins *pin
 }
 
 
-static void WDC65816_opcode_50_mx(struct WDC65816_regs *regs, WDC65816_pins *pins) { // BVC r
+static void WDC65816_opcode_50_mx(WDC65816_regs *regs, WDC65816_pins *pins) { // BVC r
         switch(regs->TCU) {
         // BVC r E=0 M=0 X=0
             case 1: // 2
@@ -3464,7 +3464,7 @@ static void WDC65816_opcode_50_mx(struct WDC65816_regs *regs, WDC65816_pins *pin
 }
 
 
-static void WDC65816_opcode_51_mx(struct WDC65816_regs *regs, WDC65816_pins *pins) { // EOR (d),y
+static void WDC65816_opcode_51_mx(WDC65816_regs *regs, WDC65816_pins *pins) { // EOR (d),y
         switch(regs->TCU) {
         // EOR (d),y E=0 M=0 X=0
             case 1: // fetch_D0_and_skip_cycle 2
@@ -3525,7 +3525,7 @@ static void WDC65816_opcode_51_mx(struct WDC65816_regs *regs, WDC65816_pins *pin
 }
 
 
-static void WDC65816_opcode_52_mx(struct WDC65816_regs *regs, WDC65816_pins *pins) { // EOR (d)
+static void WDC65816_opcode_52_mx(WDC65816_regs *regs, WDC65816_pins *pins) { // EOR (d)
         switch(regs->TCU) {
         // EOR (d) E=0 M=0 X=0
             case 1: // fetch_D0_and_skip_cycle 2
@@ -3574,7 +3574,7 @@ static void WDC65816_opcode_52_mx(struct WDC65816_regs *regs, WDC65816_pins *pin
 }
 
 
-static void WDC65816_opcode_53_mx(struct WDC65816_regs *regs, WDC65816_pins *pins) { // EOR (d,s),y
+static void WDC65816_opcode_53_mx(WDC65816_regs *regs, WDC65816_pins *pins) { // EOR (d,s),y
         switch(regs->TCU) {
         // EOR (d,s),y E=0 M=0 X=0
             case 1: // 2
@@ -3624,7 +3624,7 @@ static void WDC65816_opcode_53_mx(struct WDC65816_regs *regs, WDC65816_pins *pin
 }
 
 
-static void WDC65816_opcode_54_mx(struct WDC65816_regs *regs, WDC65816_pins *pins) { // MVN xyc
+static void WDC65816_opcode_54_mx(WDC65816_regs *regs, WDC65816_pins *pins) { // MVN xyc
         switch(regs->TCU) {
         // MVN xyc E=0 M=0 X=0
             case 1: // 2
@@ -3665,7 +3665,7 @@ static void WDC65816_opcode_54_mx(struct WDC65816_regs *regs, WDC65816_pins *pin
 }
 
 
-static void WDC65816_opcode_55_mx(struct WDC65816_regs *regs, WDC65816_pins *pins) { // EOR d,x
+static void WDC65816_opcode_55_mx(WDC65816_regs *regs, WDC65816_pins *pins) { // EOR d,x
         switch(regs->TCU) {
         // EOR d,x E=0 M=0 X=0
             case 1: // fetch_D0_and_skip_cycle 2
@@ -3709,7 +3709,7 @@ static void WDC65816_opcode_55_mx(struct WDC65816_regs *regs, WDC65816_pins *pin
 }
 
 
-static void WDC65816_opcode_56_mx(struct WDC65816_regs *regs, WDC65816_pins *pins) { // LSR d,x
+static void WDC65816_opcode_56_mx(WDC65816_regs *regs, WDC65816_pins *pins) { // LSR d,x
         switch(regs->TCU) {
         // LSR d,x E=0 M=0 X=0
             case 1: // fetch_D0_and_skip_cycle 2
@@ -3766,7 +3766,7 @@ static void WDC65816_opcode_56_mx(struct WDC65816_regs *regs, WDC65816_pins *pin
 }
 
 
-static void WDC65816_opcode_57_mx(struct WDC65816_regs *regs, WDC65816_pins *pins) { // EOR [d],y
+static void WDC65816_opcode_57_mx(WDC65816_regs *regs, WDC65816_pins *pins) { // EOR [d],y
         switch(regs->TCU) {
         // EOR [d],y E=0 M=0 X=0
             case 1: // fetch_D0_and_skip_cycle 2
@@ -3821,7 +3821,7 @@ static void WDC65816_opcode_57_mx(struct WDC65816_regs *regs, WDC65816_pins *pin
 }
 
 
-static void WDC65816_opcode_58_mx(struct WDC65816_regs *regs, WDC65816_pins *pins) { // CLI i
+static void WDC65816_opcode_58_mx(WDC65816_regs *regs, WDC65816_pins *pins) { // CLI i
         switch(regs->TCU) {
         // CLI i E=0 M=0 X=0
             case 1: // 2
@@ -3843,7 +3843,7 @@ static void WDC65816_opcode_58_mx(struct WDC65816_regs *regs, WDC65816_pins *pin
 }
 
 
-static void WDC65816_opcode_59_mx(struct WDC65816_regs *regs, WDC65816_pins *pins) { // EOR a,y
+static void WDC65816_opcode_59_mx(WDC65816_regs *regs, WDC65816_pins *pins) { // EOR a,y
         switch(regs->TCU) {
         // EOR a,y E=0 M=0 X=0
             case 1: // 2
@@ -3891,7 +3891,7 @@ static void WDC65816_opcode_59_mx(struct WDC65816_regs *regs, WDC65816_pins *pin
 }
 
 
-static void WDC65816_opcode_5A_mx(struct WDC65816_regs *regs, WDC65816_pins *pins) { // PHY s
+static void WDC65816_opcode_5A_mx(WDC65816_regs *regs, WDC65816_pins *pins) { // PHY s
         switch(regs->TCU) {
         // PHY s E=0 M=0 X=0
             case 1: // 2
@@ -3926,7 +3926,7 @@ static void WDC65816_opcode_5A_mx(struct WDC65816_regs *regs, WDC65816_pins *pin
 }
 
 
-static void WDC65816_opcode_5B_mx(struct WDC65816_regs *regs, WDC65816_pins *pins) { // TCD i
+static void WDC65816_opcode_5B_mx(WDC65816_regs *regs, WDC65816_pins *pins) { // TCD i
         switch(regs->TCU) {
         // TCD i E=0 M=0 X=0
             case 1: // 2
@@ -3950,7 +3950,7 @@ static void WDC65816_opcode_5B_mx(struct WDC65816_regs *regs, WDC65816_pins *pin
 }
 
 
-static void WDC65816_opcode_5C_mx(struct WDC65816_regs *regs, WDC65816_pins *pins) { // JMP al
+static void WDC65816_opcode_5C_mx(WDC65816_regs *regs, WDC65816_pins *pins) { // JMP al
         switch(regs->TCU) {
         // JMP al E=0 M=0 X=0
             case 1: // 2
@@ -3978,7 +3978,7 @@ static void WDC65816_opcode_5C_mx(struct WDC65816_regs *regs, WDC65816_pins *pin
 }
 
 
-static void WDC65816_opcode_5D_mx(struct WDC65816_regs *regs, WDC65816_pins *pins) { // EOR a,x
+static void WDC65816_opcode_5D_mx(WDC65816_regs *regs, WDC65816_pins *pins) { // EOR a,x
         switch(regs->TCU) {
         // EOR a,x E=0 M=0 X=0
             case 1: // 2
@@ -4026,7 +4026,7 @@ static void WDC65816_opcode_5D_mx(struct WDC65816_regs *regs, WDC65816_pins *pin
 }
 
 
-static void WDC65816_opcode_5E_mx(struct WDC65816_regs *regs, WDC65816_pins *pins) { // LSR a,x
+static void WDC65816_opcode_5E_mx(WDC65816_regs *regs, WDC65816_pins *pins) { // LSR a,x
         switch(regs->TCU) {
         // LSR a,x E=0 M=0 X=0
             case 1: // 2
@@ -4083,7 +4083,7 @@ static void WDC65816_opcode_5E_mx(struct WDC65816_regs *regs, WDC65816_pins *pin
 }
 
 
-static void WDC65816_opcode_5F_mx(struct WDC65816_regs *regs, WDC65816_pins *pins) { // EOR al,x
+static void WDC65816_opcode_5F_mx(WDC65816_regs *regs, WDC65816_pins *pins) { // EOR al,x
         switch(regs->TCU) {
         // EOR al,x E=0 M=0 X=0
             case 1: // 2
@@ -4125,7 +4125,7 @@ static void WDC65816_opcode_5F_mx(struct WDC65816_regs *regs, WDC65816_pins *pin
 }
 
 
-static void WDC65816_opcode_60_mx(struct WDC65816_regs *regs, WDC65816_pins *pins) { // RTS s
+static void WDC65816_opcode_60_mx(WDC65816_regs *regs, WDC65816_pins *pins) { // RTS s
         switch(regs->TCU) {
         // RTS s E=0 M=0 X=0
             case 1: // 2
@@ -4162,7 +4162,7 @@ static void WDC65816_opcode_60_mx(struct WDC65816_regs *regs, WDC65816_pins *pin
 }
 
 
-static void WDC65816_opcode_61_mx(struct WDC65816_regs *regs, WDC65816_pins *pins) { // ADC (d,x)
+static void WDC65816_opcode_61_mx(WDC65816_regs *regs, WDC65816_pins *pins) { // ADC (d,x)
         switch(regs->TCU) {
         // ADC (d,x) E=0 M=0 X=0
             case 1: // fetch_D0_and_skip_cycle 2
@@ -4231,7 +4231,7 @@ static void WDC65816_opcode_61_mx(struct WDC65816_regs *regs, WDC65816_pins *pin
 }
 
 
-static void WDC65816_opcode_62_mx(struct WDC65816_regs *regs, WDC65816_pins *pins) { // PER s
+static void WDC65816_opcode_62_mx(WDC65816_regs *regs, WDC65816_pins *pins) { // PER s
         switch(regs->TCU) {
         // PER s E=0 M=0 X=0
             case 1: // 2
@@ -4270,7 +4270,7 @@ static void WDC65816_opcode_62_mx(struct WDC65816_regs *regs, WDC65816_pins *pin
 }
 
 
-static void WDC65816_opcode_63_mx(struct WDC65816_regs *regs, WDC65816_pins *pins) { // ADC d,s
+static void WDC65816_opcode_63_mx(WDC65816_regs *regs, WDC65816_pins *pins) { // ADC d,s
         switch(regs->TCU) {
         // ADC d,s E=0 M=0 X=0
             case 1: // 2
@@ -4323,7 +4323,7 @@ static void WDC65816_opcode_63_mx(struct WDC65816_regs *regs, WDC65816_pins *pin
 }
 
 
-static void WDC65816_opcode_64_mx(struct WDC65816_regs *regs, WDC65816_pins *pins) { // STZ d
+static void WDC65816_opcode_64_mx(WDC65816_regs *regs, WDC65816_pins *pins) { // STZ d
         switch(regs->TCU) {
         // STZ d E=0 M=0 X=0
             case 1: // fetch_D0_and_skip_cycle 2
@@ -4364,7 +4364,7 @@ static void WDC65816_opcode_64_mx(struct WDC65816_regs *regs, WDC65816_pins *pin
 }
 
 
-static void WDC65816_opcode_65_mx(struct WDC65816_regs *regs, WDC65816_pins *pins) { // ADC d
+static void WDC65816_opcode_65_mx(WDC65816_regs *regs, WDC65816_pins *pins) { // ADC d
         switch(regs->TCU) {
         // ADC d E=0 M=0 X=0
             case 1: // fetch_D0_and_skip_cycle 2
@@ -4423,7 +4423,7 @@ static void WDC65816_opcode_65_mx(struct WDC65816_regs *regs, WDC65816_pins *pin
 }
 
 
-static void WDC65816_opcode_66_mx(struct WDC65816_regs *regs, WDC65816_pins *pins) { // ROR d
+static void WDC65816_opcode_66_mx(WDC65816_regs *regs, WDC65816_pins *pins) { // ROR d
         switch(regs->TCU) {
         // ROR d E=0 M=0 X=0
             case 1: // fetch_D0_and_skip_cycle 2
@@ -4479,7 +4479,7 @@ static void WDC65816_opcode_66_mx(struct WDC65816_regs *regs, WDC65816_pins *pin
 }
 
 
-static void WDC65816_opcode_67_mx(struct WDC65816_regs *regs, WDC65816_pins *pins) { // ADC [d]
+static void WDC65816_opcode_67_mx(WDC65816_regs *regs, WDC65816_pins *pins) { // ADC [d]
         switch(regs->TCU) {
         // ADC [d] E=0 M=0 X=0
             case 1: // fetch_D0_and_skip_cycle 2
@@ -4551,7 +4551,7 @@ static void WDC65816_opcode_67_mx(struct WDC65816_regs *regs, WDC65816_pins *pin
 }
 
 
-static void WDC65816_opcode_68_mx(struct WDC65816_regs *regs, WDC65816_pins *pins) { // PLA s
+static void WDC65816_opcode_68_mx(WDC65816_regs *regs, WDC65816_pins *pins) { // PLA s
         switch(regs->TCU) {
         // PLA s E=0 M=0 X=0
             case 1: // 2
@@ -4589,7 +4589,7 @@ static void WDC65816_opcode_68_mx(struct WDC65816_regs *regs, WDC65816_pins *pin
 }
 
 
-static void WDC65816_opcode_69_mx(struct WDC65816_regs *regs, WDC65816_pins *pins) { // ADC #
+static void WDC65816_opcode_69_mx(WDC65816_regs *regs, WDC65816_pins *pins) { // ADC #
         switch(regs->TCU) {
         // ADC # E=0 M=0 X=0
             case 1: // 2
@@ -4635,7 +4635,7 @@ static void WDC65816_opcode_69_mx(struct WDC65816_regs *regs, WDC65816_pins *pin
 }
 
 
-static void WDC65816_opcode_6A_mx(struct WDC65816_regs *regs, WDC65816_pins *pins) { // ROR A
+static void WDC65816_opcode_6A_mx(WDC65816_regs *regs, WDC65816_pins *pins) { // ROR A
         switch(regs->TCU) {
         // ROR A E=0 M=0 X=0
             case 1: // 2
@@ -4663,7 +4663,7 @@ static void WDC65816_opcode_6A_mx(struct WDC65816_regs *regs, WDC65816_pins *pin
 }
 
 
-static void WDC65816_opcode_6B_mx(struct WDC65816_regs *regs, WDC65816_pins *pins) { // RTL s
+static void WDC65816_opcode_6B_mx(WDC65816_regs *regs, WDC65816_pins *pins) { // RTL s
         switch(regs->TCU) {
         // RTL s E=0 M=0 X=0
             case 1: // 2
@@ -4702,7 +4702,7 @@ static void WDC65816_opcode_6B_mx(struct WDC65816_regs *regs, WDC65816_pins *pin
 }
 
 
-static void WDC65816_opcode_6C_mx(struct WDC65816_regs *regs, WDC65816_pins *pins) { // JMP (a)
+static void WDC65816_opcode_6C_mx(WDC65816_regs *regs, WDC65816_pins *pins) { // JMP (a)
         switch(regs->TCU) {
         // JMP (a) E=0 M=0 X=0
             case 1: // 2
@@ -4733,7 +4733,7 @@ static void WDC65816_opcode_6C_mx(struct WDC65816_regs *regs, WDC65816_pins *pin
 }
 
 
-static void WDC65816_opcode_6D_mx(struct WDC65816_regs *regs, WDC65816_pins *pins) { // ADC a
+static void WDC65816_opcode_6D_mx(WDC65816_regs *regs, WDC65816_pins *pins) { // ADC a
         switch(regs->TCU) {
         // ADC a E=0 M=0 X=0
             case 1: // 2
@@ -4786,7 +4786,7 @@ static void WDC65816_opcode_6D_mx(struct WDC65816_regs *regs, WDC65816_pins *pin
 }
 
 
-static void WDC65816_opcode_6E_mx(struct WDC65816_regs *regs, WDC65816_pins *pins) { // ROR a
+static void WDC65816_opcode_6E_mx(WDC65816_regs *regs, WDC65816_pins *pins) { // ROR a
         switch(regs->TCU) {
         // ROR a E=0 M=0 X=0
         //case AM.Ad
@@ -4838,7 +4838,7 @@ static void WDC65816_opcode_6E_mx(struct WDC65816_regs *regs, WDC65816_pins *pin
 }
 
 
-static void WDC65816_opcode_6F_mx(struct WDC65816_regs *regs, WDC65816_pins *pins) { // ADC al
+static void WDC65816_opcode_6F_mx(WDC65816_regs *regs, WDC65816_pins *pins) { // ADC al
         switch(regs->TCU) {
         // ADC al E=0 M=0 X=0
             case 1: // 2
@@ -4896,7 +4896,7 @@ static void WDC65816_opcode_6F_mx(struct WDC65816_regs *regs, WDC65816_pins *pin
 }
 
 
-static void WDC65816_opcode_70_mx(struct WDC65816_regs *regs, WDC65816_pins *pins) { // BVS r
+static void WDC65816_opcode_70_mx(WDC65816_regs *regs, WDC65816_pins *pins) { // BVS r
         switch(regs->TCU) {
         // BVS r E=0 M=0 X=0
             case 1: // 2
@@ -4928,7 +4928,7 @@ static void WDC65816_opcode_70_mx(struct WDC65816_regs *regs, WDC65816_pins *pin
 }
 
 
-static void WDC65816_opcode_71_mx(struct WDC65816_regs *regs, WDC65816_pins *pins) { // ADC (d),y
+static void WDC65816_opcode_71_mx(WDC65816_regs *regs, WDC65816_pins *pins) { // ADC (d),y
         switch(regs->TCU) {
         // ADC (d),y E=0 M=0 X=0
             case 1: // fetch_D0_and_skip_cycle 2
@@ -5006,7 +5006,7 @@ static void WDC65816_opcode_71_mx(struct WDC65816_regs *regs, WDC65816_pins *pin
 }
 
 
-static void WDC65816_opcode_72_mx(struct WDC65816_regs *regs, WDC65816_pins *pins) { // ADC (d)
+static void WDC65816_opcode_72_mx(WDC65816_regs *regs, WDC65816_pins *pins) { // ADC (d)
         switch(regs->TCU) {
         // ADC (d) E=0 M=0 X=0
             case 1: // fetch_D0_and_skip_cycle 2
@@ -5072,7 +5072,7 @@ static void WDC65816_opcode_72_mx(struct WDC65816_regs *regs, WDC65816_pins *pin
 }
 
 
-static void WDC65816_opcode_73_mx(struct WDC65816_regs *regs, WDC65816_pins *pins) { // ADC (d,s),y
+static void WDC65816_opcode_73_mx(WDC65816_regs *regs, WDC65816_pins *pins) { // ADC (d,s),y
         switch(regs->TCU) {
         // ADC (d,s),y E=0 M=0 X=0
             case 1: // 2
@@ -5139,7 +5139,7 @@ static void WDC65816_opcode_73_mx(struct WDC65816_regs *regs, WDC65816_pins *pin
 }
 
 
-static void WDC65816_opcode_74_mx(struct WDC65816_regs *regs, WDC65816_pins *pins) { // STZ d,x
+static void WDC65816_opcode_74_mx(WDC65816_regs *regs, WDC65816_pins *pins) { // STZ d,x
         switch(regs->TCU) {
         // STZ d,x E=0 M=0 X=0
             case 1: // fetch_D0_and_skip_cycle 2
@@ -5182,7 +5182,7 @@ static void WDC65816_opcode_74_mx(struct WDC65816_regs *regs, WDC65816_pins *pin
 }
 
 
-static void WDC65816_opcode_75_mx(struct WDC65816_regs *regs, WDC65816_pins *pins) { // ADC d,x
+static void WDC65816_opcode_75_mx(WDC65816_regs *regs, WDC65816_pins *pins) { // ADC d,x
         switch(regs->TCU) {
         // ADC d,x E=0 M=0 X=0
             case 1: // fetch_D0_and_skip_cycle 2
@@ -5243,7 +5243,7 @@ static void WDC65816_opcode_75_mx(struct WDC65816_regs *regs, WDC65816_pins *pin
 }
 
 
-static void WDC65816_opcode_76_mx(struct WDC65816_regs *regs, WDC65816_pins *pins) { // ROR d,x
+static void WDC65816_opcode_76_mx(WDC65816_regs *regs, WDC65816_pins *pins) { // ROR d,x
         switch(regs->TCU) {
         // ROR d,x E=0 M=0 X=0
             case 1: // fetch_D0_and_skip_cycle 2
@@ -5301,7 +5301,7 @@ static void WDC65816_opcode_76_mx(struct WDC65816_regs *regs, WDC65816_pins *pin
 }
 
 
-static void WDC65816_opcode_77_mx(struct WDC65816_regs *regs, WDC65816_pins *pins) { // ADC [d],y
+static void WDC65816_opcode_77_mx(WDC65816_regs *regs, WDC65816_pins *pins) { // ADC [d],y
         switch(regs->TCU) {
         // ADC [d],y E=0 M=0 X=0
             case 1: // fetch_D0_and_skip_cycle 2
@@ -5373,7 +5373,7 @@ static void WDC65816_opcode_77_mx(struct WDC65816_regs *regs, WDC65816_pins *pin
 }
 
 
-static void WDC65816_opcode_78_mx(struct WDC65816_regs *regs, WDC65816_pins *pins) { // SEI i
+static void WDC65816_opcode_78_mx(WDC65816_regs *regs, WDC65816_pins *pins) { // SEI i
         switch(regs->TCU) {
         // SEI i E=0 M=0 X=0
             case 1: // 2
@@ -5395,7 +5395,7 @@ static void WDC65816_opcode_78_mx(struct WDC65816_regs *regs, WDC65816_pins *pin
 }
 
 
-static void WDC65816_opcode_79_mx(struct WDC65816_regs *regs, WDC65816_pins *pins) { // ADC a,y
+static void WDC65816_opcode_79_mx(WDC65816_regs *regs, WDC65816_pins *pins) { // ADC a,y
         switch(regs->TCU) {
         // ADC a,y E=0 M=0 X=0
             case 1: // 2
@@ -5460,7 +5460,7 @@ static void WDC65816_opcode_79_mx(struct WDC65816_regs *regs, WDC65816_pins *pin
 }
 
 
-static void WDC65816_opcode_7A_mx(struct WDC65816_regs *regs, WDC65816_pins *pins) { // PLY s
+static void WDC65816_opcode_7A_mx(WDC65816_regs *regs, WDC65816_pins *pins) { // PLY s
         switch(regs->TCU) {
         // PLY s E=0 M=0 X=0
             case 1: // 2
@@ -5498,7 +5498,7 @@ static void WDC65816_opcode_7A_mx(struct WDC65816_regs *regs, WDC65816_pins *pin
 }
 
 
-static void WDC65816_opcode_7B_mx(struct WDC65816_regs *regs, WDC65816_pins *pins) { // TDC i
+static void WDC65816_opcode_7B_mx(WDC65816_regs *regs, WDC65816_pins *pins) { // TDC i
         switch(regs->TCU) {
         // TDC i E=0 M=0 X=0
             case 1: // 2
@@ -5522,7 +5522,7 @@ static void WDC65816_opcode_7B_mx(struct WDC65816_regs *regs, WDC65816_pins *pin
 }
 
 
-static void WDC65816_opcode_7C_mx(struct WDC65816_regs *regs, WDC65816_pins *pins) { // JMP (a,x)
+static void WDC65816_opcode_7C_mx(WDC65816_regs *regs, WDC65816_pins *pins) { // JMP (a,x)
         switch(regs->TCU) {
         // JMP (a,x) E=0 M=0 X=0
             case 1: // 2
@@ -5559,7 +5559,7 @@ static void WDC65816_opcode_7C_mx(struct WDC65816_regs *regs, WDC65816_pins *pin
 }
 
 
-static void WDC65816_opcode_7D_mx(struct WDC65816_regs *regs, WDC65816_pins *pins) { // ADC a,x
+static void WDC65816_opcode_7D_mx(WDC65816_regs *regs, WDC65816_pins *pins) { // ADC a,x
         switch(regs->TCU) {
         // ADC a,x E=0 M=0 X=0
             case 1: // 2
@@ -5624,7 +5624,7 @@ static void WDC65816_opcode_7D_mx(struct WDC65816_regs *regs, WDC65816_pins *pin
 }
 
 
-static void WDC65816_opcode_7E_mx(struct WDC65816_regs *regs, WDC65816_pins *pins) { // ROR a,x
+static void WDC65816_opcode_7E_mx(WDC65816_regs *regs, WDC65816_pins *pins) { // ROR a,x
         switch(regs->TCU) {
         // ROR a,x E=0 M=0 X=0
             case 1: // 2
@@ -5682,7 +5682,7 @@ static void WDC65816_opcode_7E_mx(struct WDC65816_regs *regs, WDC65816_pins *pin
 }
 
 
-static void WDC65816_opcode_7F_mx(struct WDC65816_regs *regs, WDC65816_pins *pins) { // ADC al,x
+static void WDC65816_opcode_7F_mx(WDC65816_regs *regs, WDC65816_pins *pins) { // ADC al,x
         switch(regs->TCU) {
         // ADC al,x E=0 M=0 X=0
             case 1: // 2
@@ -5741,7 +5741,7 @@ static void WDC65816_opcode_7F_mx(struct WDC65816_regs *regs, WDC65816_pins *pin
 }
 
 
-static void WDC65816_opcode_80_mx(struct WDC65816_regs *regs, WDC65816_pins *pins) { // BRA r
+static void WDC65816_opcode_80_mx(WDC65816_regs *regs, WDC65816_pins *pins) { // BRA r
         switch(regs->TCU) {
         // BRA r E=0 M=0 X=0
             case 1: // 2
@@ -5773,7 +5773,7 @@ static void WDC65816_opcode_80_mx(struct WDC65816_regs *regs, WDC65816_pins *pin
 }
 
 
-static void WDC65816_opcode_81_mx(struct WDC65816_regs *regs, WDC65816_pins *pins) { // STA (d,x)
+static void WDC65816_opcode_81_mx(WDC65816_regs *regs, WDC65816_pins *pins) { // STA (d,x)
         switch(regs->TCU) {
         // STA (d,x) E=0 M=0 X=0
             case 1: // fetch_D0_and_skip_cycle 2
@@ -5826,7 +5826,7 @@ static void WDC65816_opcode_81_mx(struct WDC65816_regs *regs, WDC65816_pins *pin
 }
 
 
-static void WDC65816_opcode_82_mx(struct WDC65816_regs *regs, WDC65816_pins *pins) { // BRL rl
+static void WDC65816_opcode_82_mx(WDC65816_regs *regs, WDC65816_pins *pins) { // BRL rl
         switch(regs->TCU) {
         // BRL rl E=0 M=0 X=0
             case 1: // 2
@@ -5855,7 +5855,7 @@ static void WDC65816_opcode_82_mx(struct WDC65816_regs *regs, WDC65816_pins *pin
 }
 
 
-static void WDC65816_opcode_83_mx(struct WDC65816_regs *regs, WDC65816_pins *pins) { // STA d,s
+static void WDC65816_opcode_83_mx(WDC65816_regs *regs, WDC65816_pins *pins) { // STA d,s
         switch(regs->TCU) {
         // STA d,s E=0 M=0 X=0
             case 1: // 2
@@ -5891,7 +5891,7 @@ static void WDC65816_opcode_83_mx(struct WDC65816_regs *regs, WDC65816_pins *pin
 }
 
 
-static void WDC65816_opcode_84_mx(struct WDC65816_regs *regs, WDC65816_pins *pins) { // STY d
+static void WDC65816_opcode_84_mx(WDC65816_regs *regs, WDC65816_pins *pins) { // STY d
         switch(regs->TCU) {
         // STY d E=0 M=0 X=0
             case 1: // fetch_D0_and_skip_cycle 2
@@ -5932,7 +5932,7 @@ static void WDC65816_opcode_84_mx(struct WDC65816_regs *regs, WDC65816_pins *pin
 }
 
 
-static void WDC65816_opcode_85_mx(struct WDC65816_regs *regs, WDC65816_pins *pins) { // STA d
+static void WDC65816_opcode_85_mx(WDC65816_regs *regs, WDC65816_pins *pins) { // STA d
         switch(regs->TCU) {
         // STA d E=0 M=0 X=0
             case 1: // fetch_D0_and_skip_cycle 2
@@ -5974,7 +5974,7 @@ static void WDC65816_opcode_85_mx(struct WDC65816_regs *regs, WDC65816_pins *pin
 }
 
 
-static void WDC65816_opcode_86_mx(struct WDC65816_regs *regs, WDC65816_pins *pins) { // STX d
+static void WDC65816_opcode_86_mx(WDC65816_regs *regs, WDC65816_pins *pins) { // STX d
         switch(regs->TCU) {
         // STX d E=0 M=0 X=0
             case 1: // fetch_D0_and_skip_cycle 2
@@ -6015,7 +6015,7 @@ static void WDC65816_opcode_86_mx(struct WDC65816_regs *regs, WDC65816_pins *pin
 }
 
 
-static void WDC65816_opcode_87_mx(struct WDC65816_regs *regs, WDC65816_pins *pins) { // STA [d]
+static void WDC65816_opcode_87_mx(WDC65816_regs *regs, WDC65816_pins *pins) { // STA [d]
         switch(regs->TCU) {
         // STA [d] E=0 M=0 X=0
             case 1: // fetch_D0_and_skip_cycle 2
@@ -6071,7 +6071,7 @@ static void WDC65816_opcode_87_mx(struct WDC65816_regs *regs, WDC65816_pins *pin
 }
 
 
-static void WDC65816_opcode_88_mx(struct WDC65816_regs *regs, WDC65816_pins *pins) { // DEY i
+static void WDC65816_opcode_88_mx(WDC65816_regs *regs, WDC65816_pins *pins) { // DEY i
         switch(regs->TCU) {
         // DEY i E=0 M=0 X=0
             case 1: // 2
@@ -6095,7 +6095,7 @@ static void WDC65816_opcode_88_mx(struct WDC65816_regs *regs, WDC65816_pins *pin
 }
 
 
-static void WDC65816_opcode_89_mx(struct WDC65816_regs *regs, WDC65816_pins *pins) { // BIT #
+static void WDC65816_opcode_89_mx(WDC65816_regs *regs, WDC65816_pins *pins) { // BIT #
         switch(regs->TCU) {
         // BIT # E=0 M=0 X=0
             case 1: // 2
@@ -6122,7 +6122,7 @@ static void WDC65816_opcode_89_mx(struct WDC65816_regs *regs, WDC65816_pins *pin
 }
 
 
-static void WDC65816_opcode_8A_mx(struct WDC65816_regs *regs, WDC65816_pins *pins) { // TXA i
+static void WDC65816_opcode_8A_mx(WDC65816_regs *regs, WDC65816_pins *pins) { // TXA i
         switch(regs->TCU) {
         // TXA i E=0 M=0 X=0
             case 1: // 2
@@ -6146,7 +6146,7 @@ static void WDC65816_opcode_8A_mx(struct WDC65816_regs *regs, WDC65816_pins *pin
 }
 
 
-static void WDC65816_opcode_8B_mx(struct WDC65816_regs *regs, WDC65816_pins *pins) { // PHB s
+static void WDC65816_opcode_8B_mx(WDC65816_regs *regs, WDC65816_pins *pins) { // PHB s
         switch(regs->TCU) {
         // PHB s E=0 M=0 X=0
             case 1: // 2
@@ -6175,7 +6175,7 @@ static void WDC65816_opcode_8B_mx(struct WDC65816_regs *regs, WDC65816_pins *pin
 }
 
 
-static void WDC65816_opcode_8C_mx(struct WDC65816_regs *regs, WDC65816_pins *pins) { // STY a
+static void WDC65816_opcode_8C_mx(WDC65816_regs *regs, WDC65816_pins *pins) { // STY a
         switch(regs->TCU) {
         // STY a E=0 M=0 X=0
             case 1: // 2
@@ -6211,7 +6211,7 @@ static void WDC65816_opcode_8C_mx(struct WDC65816_regs *regs, WDC65816_pins *pin
 }
 
 
-static void WDC65816_opcode_8D_mx(struct WDC65816_regs *regs, WDC65816_pins *pins) { // STA a
+static void WDC65816_opcode_8D_mx(WDC65816_regs *regs, WDC65816_pins *pins) { // STA a
         switch(regs->TCU) {
         // STA a E=0 M=0 X=0
             case 1: // 2
@@ -6248,7 +6248,7 @@ static void WDC65816_opcode_8D_mx(struct WDC65816_regs *regs, WDC65816_pins *pin
 }
 
 
-static void WDC65816_opcode_8E_mx(struct WDC65816_regs *regs, WDC65816_pins *pins) { // STX a
+static void WDC65816_opcode_8E_mx(WDC65816_regs *regs, WDC65816_pins *pins) { // STX a
         switch(regs->TCU) {
         // STX a E=0 M=0 X=0
             case 1: // 2
@@ -6284,7 +6284,7 @@ static void WDC65816_opcode_8E_mx(struct WDC65816_regs *regs, WDC65816_pins *pin
 }
 
 
-static void WDC65816_opcode_8F_mx(struct WDC65816_regs *regs, WDC65816_pins *pins) { // STA al
+static void WDC65816_opcode_8F_mx(WDC65816_regs *regs, WDC65816_pins *pins) { // STA al
         switch(regs->TCU) {
         // STA al E=0 M=0 X=0
             case 1: // 2
@@ -6326,7 +6326,7 @@ static void WDC65816_opcode_8F_mx(struct WDC65816_regs *regs, WDC65816_pins *pin
 }
 
 
-static void WDC65816_opcode_90_mx(struct WDC65816_regs *regs, WDC65816_pins *pins) { // BCC r
+static void WDC65816_opcode_90_mx(WDC65816_regs *regs, WDC65816_pins *pins) { // BCC r
         switch(regs->TCU) {
         // BCC r E=0 M=0 X=0
             case 1: // 2
@@ -6358,7 +6358,7 @@ static void WDC65816_opcode_90_mx(struct WDC65816_regs *regs, WDC65816_pins *pin
 }
 
 
-static void WDC65816_opcode_91_mx(struct WDC65816_regs *regs, WDC65816_pins *pins) { // STA (d),y
+static void WDC65816_opcode_91_mx(WDC65816_regs *regs, WDC65816_pins *pins) { // STA (d),y
         switch(regs->TCU) {
         // STA (d),y E=0 M=0 X=0
             case 1: // fetch_D0_and_skip_cycle 2
@@ -6419,7 +6419,7 @@ static void WDC65816_opcode_91_mx(struct WDC65816_regs *regs, WDC65816_pins *pin
 }
 
 
-static void WDC65816_opcode_92_mx(struct WDC65816_regs *regs, WDC65816_pins *pins) { // STA (d)
+static void WDC65816_opcode_92_mx(WDC65816_regs *regs, WDC65816_pins *pins) { // STA (d)
         switch(regs->TCU) {
         // STA (d) E=0 M=0 X=0
             case 1: // fetch_D0_and_skip_cycle 2
@@ -6469,7 +6469,7 @@ static void WDC65816_opcode_92_mx(struct WDC65816_regs *regs, WDC65816_pins *pin
 }
 
 
-static void WDC65816_opcode_93_mx(struct WDC65816_regs *regs, WDC65816_pins *pins) { // STA (d,s),y
+static void WDC65816_opcode_93_mx(WDC65816_regs *regs, WDC65816_pins *pins) { // STA (d,s),y
         switch(regs->TCU) {
         // STA (d,s),y E=0 M=0 X=0
             case 1: // 2
@@ -6519,7 +6519,7 @@ static void WDC65816_opcode_93_mx(struct WDC65816_regs *regs, WDC65816_pins *pin
 }
 
 
-static void WDC65816_opcode_94_mx(struct WDC65816_regs *regs, WDC65816_pins *pins) { // STY d,x
+static void WDC65816_opcode_94_mx(WDC65816_regs *regs, WDC65816_pins *pins) { // STY d,x
         switch(regs->TCU) {
         // STY d,x E=0 M=0 X=0
             case 1: // fetch_D0_and_skip_cycle 2
@@ -6562,7 +6562,7 @@ static void WDC65816_opcode_94_mx(struct WDC65816_regs *regs, WDC65816_pins *pin
 }
 
 
-static void WDC65816_opcode_95_mx(struct WDC65816_regs *regs, WDC65816_pins *pins) { // STA d,x
+static void WDC65816_opcode_95_mx(WDC65816_regs *regs, WDC65816_pins *pins) { // STA d,x
         switch(regs->TCU) {
         // STA d,x E=0 M=0 X=0
             case 1: // fetch_D0_and_skip_cycle 2
@@ -6606,7 +6606,7 @@ static void WDC65816_opcode_95_mx(struct WDC65816_regs *regs, WDC65816_pins *pin
 }
 
 
-static void WDC65816_opcode_96_mx(struct WDC65816_regs *regs, WDC65816_pins *pins) { // STX d,y
+static void WDC65816_opcode_96_mx(WDC65816_regs *regs, WDC65816_pins *pins) { // STX d,y
         switch(regs->TCU) {
         // STX d,y E=0 M=0 X=0
             case 1: // fetch_D0_and_skip_cycle 2
@@ -6649,7 +6649,7 @@ static void WDC65816_opcode_96_mx(struct WDC65816_regs *regs, WDC65816_pins *pin
 }
 
 
-static void WDC65816_opcode_97_mx(struct WDC65816_regs *regs, WDC65816_pins *pins) { // STA [d],y
+static void WDC65816_opcode_97_mx(WDC65816_regs *regs, WDC65816_pins *pins) { // STA [d],y
         switch(regs->TCU) {
         // STA [d],y E=0 M=0 X=0
             case 1: // fetch_D0_and_skip_cycle 2
@@ -6705,7 +6705,7 @@ static void WDC65816_opcode_97_mx(struct WDC65816_regs *regs, WDC65816_pins *pin
 }
 
 
-static void WDC65816_opcode_98_mx(struct WDC65816_regs *regs, WDC65816_pins *pins) { // TYA i
+static void WDC65816_opcode_98_mx(WDC65816_regs *regs, WDC65816_pins *pins) { // TYA i
         switch(regs->TCU) {
         // TYA i E=0 M=0 X=0
             case 1: // 2
@@ -6729,7 +6729,7 @@ static void WDC65816_opcode_98_mx(struct WDC65816_regs *regs, WDC65816_pins *pin
 }
 
 
-static void WDC65816_opcode_99_mx(struct WDC65816_regs *regs, WDC65816_pins *pins) { // STA a,y
+static void WDC65816_opcode_99_mx(WDC65816_regs *regs, WDC65816_pins *pins) { // STA a,y
         switch(regs->TCU) {
         // STA a,y E=0 M=0 X=0
             case 1: // 2
@@ -6777,7 +6777,7 @@ static void WDC65816_opcode_99_mx(struct WDC65816_regs *regs, WDC65816_pins *pin
 }
 
 
-static void WDC65816_opcode_9A_mx(struct WDC65816_regs *regs, WDC65816_pins *pins) { // TXS i
+static void WDC65816_opcode_9A_mx(WDC65816_regs *regs, WDC65816_pins *pins) { // TXS i
         switch(regs->TCU) {
         // TXS i E=0 M=0 X=0
             case 1: // 2
@@ -6799,7 +6799,7 @@ static void WDC65816_opcode_9A_mx(struct WDC65816_regs *regs, WDC65816_pins *pin
 }
 
 
-static void WDC65816_opcode_9B_mx(struct WDC65816_regs *regs, WDC65816_pins *pins) { // TXY i
+static void WDC65816_opcode_9B_mx(WDC65816_regs *regs, WDC65816_pins *pins) { // TXY i
         switch(regs->TCU) {
         // TXY i E=0 M=0 X=0
             case 1: // 2
@@ -6823,7 +6823,7 @@ static void WDC65816_opcode_9B_mx(struct WDC65816_regs *regs, WDC65816_pins *pin
 }
 
 
-static void WDC65816_opcode_9C_mx(struct WDC65816_regs *regs, WDC65816_pins *pins) { // STZ a
+static void WDC65816_opcode_9C_mx(WDC65816_regs *regs, WDC65816_pins *pins) { // STZ a
         switch(regs->TCU) {
         // STZ a E=0 M=0 X=0
             case 1: // 2
@@ -6859,7 +6859,7 @@ static void WDC65816_opcode_9C_mx(struct WDC65816_regs *regs, WDC65816_pins *pin
 }
 
 
-static void WDC65816_opcode_9D_mx(struct WDC65816_regs *regs, WDC65816_pins *pins) { // STA a,x
+static void WDC65816_opcode_9D_mx(WDC65816_regs *regs, WDC65816_pins *pins) { // STA a,x
         switch(regs->TCU) {
         // STA a,x E=0 M=0 X=0
             case 1: // 2
@@ -6907,7 +6907,7 @@ static void WDC65816_opcode_9D_mx(struct WDC65816_regs *regs, WDC65816_pins *pin
 }
 
 
-static void WDC65816_opcode_9E_mx(struct WDC65816_regs *regs, WDC65816_pins *pins) { // STZ a,x
+static void WDC65816_opcode_9E_mx(WDC65816_regs *regs, WDC65816_pins *pins) { // STZ a,x
         switch(regs->TCU) {
         // STZ a,x E=0 M=0 X=0
             case 1: // 2
@@ -6954,7 +6954,7 @@ static void WDC65816_opcode_9E_mx(struct WDC65816_regs *regs, WDC65816_pins *pin
 }
 
 
-static void WDC65816_opcode_9F_mx(struct WDC65816_regs *regs, WDC65816_pins *pins) { // STA al,x
+static void WDC65816_opcode_9F_mx(WDC65816_regs *regs, WDC65816_pins *pins) { // STA al,x
         switch(regs->TCU) {
         // STA al,x E=0 M=0 X=0
             case 1: // 2
@@ -6997,7 +6997,7 @@ static void WDC65816_opcode_9F_mx(struct WDC65816_regs *regs, WDC65816_pins *pin
 }
 
 
-static void WDC65816_opcode_A0_mx(struct WDC65816_regs *regs, WDC65816_pins *pins) { // LDY #
+static void WDC65816_opcode_A0_mx(WDC65816_regs *regs, WDC65816_pins *pins) { // LDY #
         switch(regs->TCU) {
         // LDY # E=0 M=0 X=0
             case 1: // 2
@@ -7026,7 +7026,7 @@ static void WDC65816_opcode_A0_mx(struct WDC65816_regs *regs, WDC65816_pins *pin
 }
 
 
-static void WDC65816_opcode_A1_mx(struct WDC65816_regs *regs, WDC65816_pins *pins) { // LDA (d,x)
+static void WDC65816_opcode_A1_mx(WDC65816_regs *regs, WDC65816_pins *pins) { // LDA (d,x)
         switch(regs->TCU) {
         // LDA (d,x) E=0 M=0 X=0
             case 1: // fetch_D0_and_skip_cycle 2
@@ -7078,7 +7078,7 @@ static void WDC65816_opcode_A1_mx(struct WDC65816_regs *regs, WDC65816_pins *pin
 }
 
 
-static void WDC65816_opcode_A2_mx(struct WDC65816_regs *regs, WDC65816_pins *pins) { // LDX #
+static void WDC65816_opcode_A2_mx(WDC65816_regs *regs, WDC65816_pins *pins) { // LDX #
         switch(regs->TCU) {
         // LDX # E=0 M=0 X=0
             case 1: // 2
@@ -7107,7 +7107,7 @@ static void WDC65816_opcode_A2_mx(struct WDC65816_regs *regs, WDC65816_pins *pin
 }
 
 
-static void WDC65816_opcode_A3_mx(struct WDC65816_regs *regs, WDC65816_pins *pins) { // LDA d,s
+static void WDC65816_opcode_A3_mx(WDC65816_regs *regs, WDC65816_pins *pins) { // LDA d,s
         switch(regs->TCU) {
         // LDA d,s E=0 M=0 X=0
             case 1: // 2
@@ -7143,7 +7143,7 @@ static void WDC65816_opcode_A3_mx(struct WDC65816_regs *regs, WDC65816_pins *pin
 }
 
 
-static void WDC65816_opcode_A4_mx(struct WDC65816_regs *regs, WDC65816_pins *pins) { // LDY d
+static void WDC65816_opcode_A4_mx(WDC65816_regs *regs, WDC65816_pins *pins) { // LDY d
         switch(regs->TCU) {
         // LDY d E=0 M=0 X=0
             case 1: // fetch_D0_and_skip_cycle 2
@@ -7185,7 +7185,7 @@ static void WDC65816_opcode_A4_mx(struct WDC65816_regs *regs, WDC65816_pins *pin
 }
 
 
-static void WDC65816_opcode_A5_mx(struct WDC65816_regs *regs, WDC65816_pins *pins) { // LDA d
+static void WDC65816_opcode_A5_mx(WDC65816_regs *regs, WDC65816_pins *pins) { // LDA d
         switch(regs->TCU) {
         // LDA d E=0 M=0 X=0
             case 1: // fetch_D0_and_skip_cycle 2
@@ -7227,7 +7227,7 @@ static void WDC65816_opcode_A5_mx(struct WDC65816_regs *regs, WDC65816_pins *pin
 }
 
 
-static void WDC65816_opcode_A6_mx(struct WDC65816_regs *regs, WDC65816_pins *pins) { // LDX d
+static void WDC65816_opcode_A6_mx(WDC65816_regs *regs, WDC65816_pins *pins) { // LDX d
         switch(regs->TCU) {
         // LDX d E=0 M=0 X=0
             case 1: // fetch_D0_and_skip_cycle 2
@@ -7269,7 +7269,7 @@ static void WDC65816_opcode_A6_mx(struct WDC65816_regs *regs, WDC65816_pins *pin
 }
 
 
-static void WDC65816_opcode_A7_mx(struct WDC65816_regs *regs, WDC65816_pins *pins) { // LDA [d]
+static void WDC65816_opcode_A7_mx(WDC65816_regs *regs, WDC65816_pins *pins) { // LDA [d]
         switch(regs->TCU) {
         // LDA [d] E=0 M=0 X=0
             case 1: // fetch_D0_and_skip_cycle 2
@@ -7324,7 +7324,7 @@ static void WDC65816_opcode_A7_mx(struct WDC65816_regs *regs, WDC65816_pins *pin
 }
 
 
-static void WDC65816_opcode_A8_mx(struct WDC65816_regs *regs, WDC65816_pins *pins) { // TAY i
+static void WDC65816_opcode_A8_mx(WDC65816_regs *regs, WDC65816_pins *pins) { // TAY i
         switch(regs->TCU) {
         // TAY i E=0 M=0 X=0
             case 1: // 2
@@ -7348,7 +7348,7 @@ static void WDC65816_opcode_A8_mx(struct WDC65816_regs *regs, WDC65816_pins *pin
 }
 
 
-static void WDC65816_opcode_A9_mx(struct WDC65816_regs *regs, WDC65816_pins *pins) { // LDA #
+static void WDC65816_opcode_A9_mx(WDC65816_regs *regs, WDC65816_pins *pins) { // LDA #
         switch(regs->TCU) {
         // LDA # E=0 M=0 X=0
             case 1: // 2
@@ -7377,7 +7377,7 @@ static void WDC65816_opcode_A9_mx(struct WDC65816_regs *regs, WDC65816_pins *pin
 }
 
 
-static void WDC65816_opcode_AA_mx(struct WDC65816_regs *regs, WDC65816_pins *pins) { // TAX i
+static void WDC65816_opcode_AA_mx(WDC65816_regs *regs, WDC65816_pins *pins) { // TAX i
         switch(regs->TCU) {
         // TAX i E=0 M=0 X=0
             case 1: // 2
@@ -7401,7 +7401,7 @@ static void WDC65816_opcode_AA_mx(struct WDC65816_regs *regs, WDC65816_pins *pin
 }
 
 
-static void WDC65816_opcode_AB_mx(struct WDC65816_regs *regs, WDC65816_pins *pins) { // PLB s
+static void WDC65816_opcode_AB_mx(WDC65816_regs *regs, WDC65816_pins *pins) { // PLB s
         switch(regs->TCU) {
         // PLB s E=0 M=0 X=0
             case 1: // 2
@@ -7433,7 +7433,7 @@ static void WDC65816_opcode_AB_mx(struct WDC65816_regs *regs, WDC65816_pins *pin
 }
 
 
-static void WDC65816_opcode_AC_mx(struct WDC65816_regs *regs, WDC65816_pins *pins) { // LDY a
+static void WDC65816_opcode_AC_mx(WDC65816_regs *regs, WDC65816_pins *pins) { // LDY a
         switch(regs->TCU) {
         // LDY a E=0 M=0 X=0
             case 1: // 2
@@ -7469,7 +7469,7 @@ static void WDC65816_opcode_AC_mx(struct WDC65816_regs *regs, WDC65816_pins *pin
 }
 
 
-static void WDC65816_opcode_AD_mx(struct WDC65816_regs *regs, WDC65816_pins *pins) { // LDA a
+static void WDC65816_opcode_AD_mx(WDC65816_regs *regs, WDC65816_pins *pins) { // LDA a
         switch(regs->TCU) {
         // LDA a E=0 M=0 X=0
             case 1: // 2
@@ -7505,7 +7505,7 @@ static void WDC65816_opcode_AD_mx(struct WDC65816_regs *regs, WDC65816_pins *pin
 }
 
 
-static void WDC65816_opcode_AE_mx(struct WDC65816_regs *regs, WDC65816_pins *pins) { // LDX a
+static void WDC65816_opcode_AE_mx(WDC65816_regs *regs, WDC65816_pins *pins) { // LDX a
         switch(regs->TCU) {
         // LDX a E=0 M=0 X=0
             case 1: // 2
@@ -7541,7 +7541,7 @@ static void WDC65816_opcode_AE_mx(struct WDC65816_regs *regs, WDC65816_pins *pin
 }
 
 
-static void WDC65816_opcode_AF_mx(struct WDC65816_regs *regs, WDC65816_pins *pins) { // LDA al
+static void WDC65816_opcode_AF_mx(WDC65816_regs *regs, WDC65816_pins *pins) { // LDA al
         switch(regs->TCU) {
         // LDA al E=0 M=0 X=0
             case 1: // 2
@@ -7582,7 +7582,7 @@ static void WDC65816_opcode_AF_mx(struct WDC65816_regs *regs, WDC65816_pins *pin
 }
 
 
-static void WDC65816_opcode_B0_mx(struct WDC65816_regs *regs, WDC65816_pins *pins) { // BCS r
+static void WDC65816_opcode_B0_mx(WDC65816_regs *regs, WDC65816_pins *pins) { // BCS r
         switch(regs->TCU) {
         // BCS r E=0 M=0 X=0
             case 1: // 2
@@ -7614,7 +7614,7 @@ static void WDC65816_opcode_B0_mx(struct WDC65816_regs *regs, WDC65816_pins *pin
 }
 
 
-static void WDC65816_opcode_B1_mx(struct WDC65816_regs *regs, WDC65816_pins *pins) { // LDA (d),y
+static void WDC65816_opcode_B1_mx(WDC65816_regs *regs, WDC65816_pins *pins) { // LDA (d),y
         switch(regs->TCU) {
         // LDA (d),y E=0 M=0 X=0
             case 1: // fetch_D0_and_skip_cycle 2
@@ -7675,7 +7675,7 @@ static void WDC65816_opcode_B1_mx(struct WDC65816_regs *regs, WDC65816_pins *pin
 }
 
 
-static void WDC65816_opcode_B2_mx(struct WDC65816_regs *regs, WDC65816_pins *pins) { // LDA (d)
+static void WDC65816_opcode_B2_mx(WDC65816_regs *regs, WDC65816_pins *pins) { // LDA (d)
         switch(regs->TCU) {
         // LDA (d) E=0 M=0 X=0
             case 1: // fetch_D0_and_skip_cycle 2
@@ -7724,7 +7724,7 @@ static void WDC65816_opcode_B2_mx(struct WDC65816_regs *regs, WDC65816_pins *pin
 }
 
 
-static void WDC65816_opcode_B3_mx(struct WDC65816_regs *regs, WDC65816_pins *pins) { // LDA (d,s),y
+static void WDC65816_opcode_B3_mx(WDC65816_regs *regs, WDC65816_pins *pins) { // LDA (d,s),y
         switch(regs->TCU) {
         // LDA (d,s),y E=0 M=0 X=0
             case 1: // 2
@@ -7774,7 +7774,7 @@ static void WDC65816_opcode_B3_mx(struct WDC65816_regs *regs, WDC65816_pins *pin
 }
 
 
-static void WDC65816_opcode_B4_mx(struct WDC65816_regs *regs, WDC65816_pins *pins) { // LDY d,x
+static void WDC65816_opcode_B4_mx(WDC65816_regs *regs, WDC65816_pins *pins) { // LDY d,x
         switch(regs->TCU) {
         // LDY d,x E=0 M=0 X=0
             case 1: // fetch_D0_and_skip_cycle 2
@@ -7818,7 +7818,7 @@ static void WDC65816_opcode_B4_mx(struct WDC65816_regs *regs, WDC65816_pins *pin
 }
 
 
-static void WDC65816_opcode_B5_mx(struct WDC65816_regs *regs, WDC65816_pins *pins) { // LDA d,x
+static void WDC65816_opcode_B5_mx(WDC65816_regs *regs, WDC65816_pins *pins) { // LDA d,x
         switch(regs->TCU) {
         // LDA d,x E=0 M=0 X=0
             case 1: // fetch_D0_and_skip_cycle 2
@@ -7862,7 +7862,7 @@ static void WDC65816_opcode_B5_mx(struct WDC65816_regs *regs, WDC65816_pins *pin
 }
 
 
-static void WDC65816_opcode_B6_mx(struct WDC65816_regs *regs, WDC65816_pins *pins) { // LDX d,y
+static void WDC65816_opcode_B6_mx(WDC65816_regs *regs, WDC65816_pins *pins) { // LDX d,y
         switch(regs->TCU) {
         // LDX d,y E=0 M=0 X=0
             case 1: // fetch_D0_and_skip_cycle 2
@@ -7906,7 +7906,7 @@ static void WDC65816_opcode_B6_mx(struct WDC65816_regs *regs, WDC65816_pins *pin
 }
 
 
-static void WDC65816_opcode_B7_mx(struct WDC65816_regs *regs, WDC65816_pins *pins) { // LDA [d],y
+static void WDC65816_opcode_B7_mx(WDC65816_regs *regs, WDC65816_pins *pins) { // LDA [d],y
         switch(regs->TCU) {
         // LDA [d],y E=0 M=0 X=0
             case 1: // fetch_D0_and_skip_cycle 2
@@ -7961,7 +7961,7 @@ static void WDC65816_opcode_B7_mx(struct WDC65816_regs *regs, WDC65816_pins *pin
 }
 
 
-static void WDC65816_opcode_B8_mx(struct WDC65816_regs *regs, WDC65816_pins *pins) { // CLV i
+static void WDC65816_opcode_B8_mx(WDC65816_regs *regs, WDC65816_pins *pins) { // CLV i
         switch(regs->TCU) {
         // CLV i E=0 M=0 X=0
             case 1: // 2
@@ -7983,7 +7983,7 @@ static void WDC65816_opcode_B8_mx(struct WDC65816_regs *regs, WDC65816_pins *pin
 }
 
 
-static void WDC65816_opcode_B9_mx(struct WDC65816_regs *regs, WDC65816_pins *pins) { // LDA a,y
+static void WDC65816_opcode_B9_mx(WDC65816_regs *regs, WDC65816_pins *pins) { // LDA a,y
         switch(regs->TCU) {
         // LDA a,y E=0 M=0 X=0
             case 1: // 2
@@ -8031,7 +8031,7 @@ static void WDC65816_opcode_B9_mx(struct WDC65816_regs *regs, WDC65816_pins *pin
 }
 
 
-static void WDC65816_opcode_BA_mx(struct WDC65816_regs *regs, WDC65816_pins *pins) { // TSX i
+static void WDC65816_opcode_BA_mx(WDC65816_regs *regs, WDC65816_pins *pins) { // TSX i
         switch(regs->TCU) {
         // TSX i E=0 M=0 X=0
             case 1: // 2
@@ -8055,7 +8055,7 @@ static void WDC65816_opcode_BA_mx(struct WDC65816_regs *regs, WDC65816_pins *pin
 }
 
 
-static void WDC65816_opcode_BB_mx(struct WDC65816_regs *regs, WDC65816_pins *pins) { // TYX i
+static void WDC65816_opcode_BB_mx(WDC65816_regs *regs, WDC65816_pins *pins) { // TYX i
         switch(regs->TCU) {
         // TYX i E=0 M=0 X=0
             case 1: // 2
@@ -8079,7 +8079,7 @@ static void WDC65816_opcode_BB_mx(struct WDC65816_regs *regs, WDC65816_pins *pin
 }
 
 
-static void WDC65816_opcode_BC_mx(struct WDC65816_regs *regs, WDC65816_pins *pins) { // LDY a,x
+static void WDC65816_opcode_BC_mx(WDC65816_regs *regs, WDC65816_pins *pins) { // LDY a,x
         switch(regs->TCU) {
         // LDY a,x E=0 M=0 X=0
             case 1: // 2
@@ -8127,7 +8127,7 @@ static void WDC65816_opcode_BC_mx(struct WDC65816_regs *regs, WDC65816_pins *pin
 }
 
 
-static void WDC65816_opcode_BD_mx(struct WDC65816_regs *regs, WDC65816_pins *pins) { // LDA a,x
+static void WDC65816_opcode_BD_mx(WDC65816_regs *regs, WDC65816_pins *pins) { // LDA a,x
         switch(regs->TCU) {
         // LDA a,x E=0 M=0 X=0
             case 1: // 2
@@ -8175,7 +8175,7 @@ static void WDC65816_opcode_BD_mx(struct WDC65816_regs *regs, WDC65816_pins *pin
 }
 
 
-static void WDC65816_opcode_BE_mx(struct WDC65816_regs *regs, WDC65816_pins *pins) { // LDX a,y
+static void WDC65816_opcode_BE_mx(WDC65816_regs *regs, WDC65816_pins *pins) { // LDX a,y
         switch(regs->TCU) {
         // LDX a,y E=0 M=0 X=0
             case 1: // 2
@@ -8223,7 +8223,7 @@ static void WDC65816_opcode_BE_mx(struct WDC65816_regs *regs, WDC65816_pins *pin
 }
 
 
-static void WDC65816_opcode_BF_mx(struct WDC65816_regs *regs, WDC65816_pins *pins) { // LDA al,x
+static void WDC65816_opcode_BF_mx(WDC65816_regs *regs, WDC65816_pins *pins) { // LDA al,x
         switch(regs->TCU) {
         // LDA al,x E=0 M=0 X=0
             case 1: // 2
@@ -8265,7 +8265,7 @@ static void WDC65816_opcode_BF_mx(struct WDC65816_regs *regs, WDC65816_pins *pin
 }
 
 
-static void WDC65816_opcode_C0_mx(struct WDC65816_regs *regs, WDC65816_pins *pins) { // CPY #
+static void WDC65816_opcode_C0_mx(WDC65816_regs *regs, WDC65816_pins *pins) { // CPY #
         switch(regs->TCU) {
         // CPY # E=0 M=0 X=0
             case 1: // 2
@@ -8295,7 +8295,7 @@ static void WDC65816_opcode_C0_mx(struct WDC65816_regs *regs, WDC65816_pins *pin
 }
 
 
-static void WDC65816_opcode_C1_mx(struct WDC65816_regs *regs, WDC65816_pins *pins) { // CMP (d,x)
+static void WDC65816_opcode_C1_mx(WDC65816_regs *regs, WDC65816_pins *pins) { // CMP (d,x)
         switch(regs->TCU) {
         // CMP (d,x) E=0 M=0 X=0
             case 1: // fetch_D0_and_skip_cycle 2
@@ -8348,7 +8348,7 @@ static void WDC65816_opcode_C1_mx(struct WDC65816_regs *regs, WDC65816_pins *pin
 }
 
 
-static void WDC65816_opcode_C2_mx(struct WDC65816_regs *regs, WDC65816_pins *pins) { // REP #
+static void WDC65816_opcode_C2_mx(WDC65816_regs *regs, WDC65816_pins *pins) { // REP #
         switch(regs->TCU) {
         // REP # E=0 M=0 X=0
             case 1: // 2
@@ -8374,7 +8374,7 @@ static void WDC65816_opcode_C2_mx(struct WDC65816_regs *regs, WDC65816_pins *pin
 }
 
 
-static void WDC65816_opcode_C3_mx(struct WDC65816_regs *regs, WDC65816_pins *pins) { // CMP d,s
+static void WDC65816_opcode_C3_mx(WDC65816_regs *regs, WDC65816_pins *pins) { // CMP d,s
         switch(regs->TCU) {
         // CMP d,s E=0 M=0 X=0
             case 1: // 2
@@ -8411,7 +8411,7 @@ static void WDC65816_opcode_C3_mx(struct WDC65816_regs *regs, WDC65816_pins *pin
 }
 
 
-static void WDC65816_opcode_C4_mx(struct WDC65816_regs *regs, WDC65816_pins *pins) { // CPY d
+static void WDC65816_opcode_C4_mx(WDC65816_regs *regs, WDC65816_pins *pins) { // CPY d
         switch(regs->TCU) {
         // CPY d E=0 M=0 X=0
             case 1: // fetch_D0_and_skip_cycle 2
@@ -8454,7 +8454,7 @@ static void WDC65816_opcode_C4_mx(struct WDC65816_regs *regs, WDC65816_pins *pin
 }
 
 
-static void WDC65816_opcode_C5_mx(struct WDC65816_regs *regs, WDC65816_pins *pins) { // CMP d
+static void WDC65816_opcode_C5_mx(WDC65816_regs *regs, WDC65816_pins *pins) { // CMP d
         switch(regs->TCU) {
         // CMP d E=0 M=0 X=0
             case 1: // fetch_D0_and_skip_cycle 2
@@ -8497,7 +8497,7 @@ static void WDC65816_opcode_C5_mx(struct WDC65816_regs *regs, WDC65816_pins *pin
 }
 
 
-static void WDC65816_opcode_C6_mx(struct WDC65816_regs *regs, WDC65816_pins *pins) { // DEC d
+static void WDC65816_opcode_C6_mx(WDC65816_regs *regs, WDC65816_pins *pins) { // DEC d
         switch(regs->TCU) {
         // DEC d E=0 M=0 X=0
             case 1: // fetch_D0_and_skip_cycle 2
@@ -8551,7 +8551,7 @@ static void WDC65816_opcode_C6_mx(struct WDC65816_regs *regs, WDC65816_pins *pin
 }
 
 
-static void WDC65816_opcode_C7_mx(struct WDC65816_regs *regs, WDC65816_pins *pins) { // CMP [d]
+static void WDC65816_opcode_C7_mx(WDC65816_regs *regs, WDC65816_pins *pins) { // CMP [d]
         switch(regs->TCU) {
         // CMP [d] E=0 M=0 X=0
             case 1: // fetch_D0_and_skip_cycle 2
@@ -8607,7 +8607,7 @@ static void WDC65816_opcode_C7_mx(struct WDC65816_regs *regs, WDC65816_pins *pin
 }
 
 
-static void WDC65816_opcode_C8_mx(struct WDC65816_regs *regs, WDC65816_pins *pins) { // INY i
+static void WDC65816_opcode_C8_mx(WDC65816_regs *regs, WDC65816_pins *pins) { // INY i
         switch(regs->TCU) {
         // INY i E=0 M=0 X=0
             case 1: // 2
@@ -8631,7 +8631,7 @@ static void WDC65816_opcode_C8_mx(struct WDC65816_regs *regs, WDC65816_pins *pin
 }
 
 
-static void WDC65816_opcode_C9_mx(struct WDC65816_regs *regs, WDC65816_pins *pins) { // CMP #
+static void WDC65816_opcode_C9_mx(WDC65816_regs *regs, WDC65816_pins *pins) { // CMP #
         switch(regs->TCU) {
         // CMP # E=0 M=0 X=0
             case 1: // 2
@@ -8661,7 +8661,7 @@ static void WDC65816_opcode_C9_mx(struct WDC65816_regs *regs, WDC65816_pins *pin
 }
 
 
-static void WDC65816_opcode_CA_mx(struct WDC65816_regs *regs, WDC65816_pins *pins) { // DEX i
+static void WDC65816_opcode_CA_mx(WDC65816_regs *regs, WDC65816_pins *pins) { // DEX i
         switch(regs->TCU) {
         // DEX i E=0 M=0 X=0
             case 1: // 2
@@ -8685,7 +8685,7 @@ static void WDC65816_opcode_CA_mx(struct WDC65816_regs *regs, WDC65816_pins *pin
 }
 
 
-static void WDC65816_opcode_CB_mx(struct WDC65816_regs *regs, WDC65816_pins *pins) { // WAI i
+static void WDC65816_opcode_CB_mx(WDC65816_regs *regs, WDC65816_pins *pins) { // WAI i
         switch(regs->TCU) {
         // WAI i E=0 M=0 X=0
             case 1: // 1
@@ -8714,7 +8714,7 @@ static void WDC65816_opcode_CB_mx(struct WDC65816_regs *regs, WDC65816_pins *pin
 }
 
 
-static void WDC65816_opcode_CC_mx(struct WDC65816_regs *regs, WDC65816_pins *pins) { // CPY a
+static void WDC65816_opcode_CC_mx(WDC65816_regs *regs, WDC65816_pins *pins) { // CPY a
         switch(regs->TCU) {
         // CPY a E=0 M=0 X=0
             case 1: // 2
@@ -8751,7 +8751,7 @@ static void WDC65816_opcode_CC_mx(struct WDC65816_regs *regs, WDC65816_pins *pin
 }
 
 
-static void WDC65816_opcode_CD_mx(struct WDC65816_regs *regs, WDC65816_pins *pins) { // CMP a
+static void WDC65816_opcode_CD_mx(WDC65816_regs *regs, WDC65816_pins *pins) { // CMP a
         switch(regs->TCU) {
         // CMP a E=0 M=0 X=0
             case 1: // 2
@@ -8788,7 +8788,7 @@ static void WDC65816_opcode_CD_mx(struct WDC65816_regs *regs, WDC65816_pins *pin
 }
 
 
-static void WDC65816_opcode_CE_mx(struct WDC65816_regs *regs, WDC65816_pins *pins) { // DEC a
+static void WDC65816_opcode_CE_mx(WDC65816_regs *regs, WDC65816_pins *pins) { // DEC a
         switch(regs->TCU) {
         // DEC a E=0 M=0 X=0
         //case AM.Ad
@@ -8838,7 +8838,7 @@ static void WDC65816_opcode_CE_mx(struct WDC65816_regs *regs, WDC65816_pins *pin
 }
 
 
-static void WDC65816_opcode_CF_mx(struct WDC65816_regs *regs, WDC65816_pins *pins) { // CMP al
+static void WDC65816_opcode_CF_mx(WDC65816_regs *regs, WDC65816_pins *pins) { // CMP al
         switch(regs->TCU) {
         // CMP al E=0 M=0 X=0
             case 1: // 2
@@ -8880,7 +8880,7 @@ static void WDC65816_opcode_CF_mx(struct WDC65816_regs *regs, WDC65816_pins *pin
 }
 
 
-static void WDC65816_opcode_D0_mx(struct WDC65816_regs *regs, WDC65816_pins *pins) { // BNE r
+static void WDC65816_opcode_D0_mx(WDC65816_regs *regs, WDC65816_pins *pins) { // BNE r
         switch(regs->TCU) {
         // BNE r E=0 M=0 X=0
             case 1: // 2
@@ -8912,7 +8912,7 @@ static void WDC65816_opcode_D0_mx(struct WDC65816_regs *regs, WDC65816_pins *pin
 }
 
 
-static void WDC65816_opcode_D1_mx(struct WDC65816_regs *regs, WDC65816_pins *pins) { // CMP (d),y
+static void WDC65816_opcode_D1_mx(WDC65816_regs *regs, WDC65816_pins *pins) { // CMP (d),y
         switch(regs->TCU) {
         // CMP (d),y E=0 M=0 X=0
             case 1: // fetch_D0_and_skip_cycle 2
@@ -8974,7 +8974,7 @@ static void WDC65816_opcode_D1_mx(struct WDC65816_regs *regs, WDC65816_pins *pin
 }
 
 
-static void WDC65816_opcode_D2_mx(struct WDC65816_regs *regs, WDC65816_pins *pins) { // CMP (d)
+static void WDC65816_opcode_D2_mx(WDC65816_regs *regs, WDC65816_pins *pins) { // CMP (d)
         switch(regs->TCU) {
         // CMP (d) E=0 M=0 X=0
             case 1: // fetch_D0_and_skip_cycle 2
@@ -9024,7 +9024,7 @@ static void WDC65816_opcode_D2_mx(struct WDC65816_regs *regs, WDC65816_pins *pin
 }
 
 
-static void WDC65816_opcode_D3_mx(struct WDC65816_regs *regs, WDC65816_pins *pins) { // CMP (d,s),y
+static void WDC65816_opcode_D3_mx(WDC65816_regs *regs, WDC65816_pins *pins) { // CMP (d,s),y
         switch(regs->TCU) {
         // CMP (d,s),y E=0 M=0 X=0
             case 1: // 2
@@ -9075,7 +9075,7 @@ static void WDC65816_opcode_D3_mx(struct WDC65816_regs *regs, WDC65816_pins *pin
 }
 
 
-static void WDC65816_opcode_D4_mx(struct WDC65816_regs *regs, WDC65816_pins *pins) { // PEI s
+static void WDC65816_opcode_D4_mx(WDC65816_regs *regs, WDC65816_pins *pins) { // PEI s
         switch(regs->TCU) {
         // PEI s E=0 M=0 X=0
             case 1: // fetch_D0_and_skip_cycle 2
@@ -9122,7 +9122,7 @@ static void WDC65816_opcode_D4_mx(struct WDC65816_regs *regs, WDC65816_pins *pin
 }
 
 
-static void WDC65816_opcode_D5_mx(struct WDC65816_regs *regs, WDC65816_pins *pins) { // CMP d,x
+static void WDC65816_opcode_D5_mx(WDC65816_regs *regs, WDC65816_pins *pins) { // CMP d,x
         switch(regs->TCU) {
         // CMP d,x E=0 M=0 X=0
             case 1: // fetch_D0_and_skip_cycle 2
@@ -9167,7 +9167,7 @@ static void WDC65816_opcode_D5_mx(struct WDC65816_regs *regs, WDC65816_pins *pin
 }
 
 
-static void WDC65816_opcode_D6_mx(struct WDC65816_regs *regs, WDC65816_pins *pins) { // DEC d,x
+static void WDC65816_opcode_D6_mx(WDC65816_regs *regs, WDC65816_pins *pins) { // DEC d,x
         switch(regs->TCU) {
         // DEC d,x E=0 M=0 X=0
             case 1: // fetch_D0_and_skip_cycle 2
@@ -9223,7 +9223,7 @@ static void WDC65816_opcode_D6_mx(struct WDC65816_regs *regs, WDC65816_pins *pin
 }
 
 
-static void WDC65816_opcode_D7_mx(struct WDC65816_regs *regs, WDC65816_pins *pins) { // CMP [d],y
+static void WDC65816_opcode_D7_mx(WDC65816_regs *regs, WDC65816_pins *pins) { // CMP [d],y
         switch(regs->TCU) {
         // CMP [d],y E=0 M=0 X=0
             case 1: // fetch_D0_and_skip_cycle 2
@@ -9279,7 +9279,7 @@ static void WDC65816_opcode_D7_mx(struct WDC65816_regs *regs, WDC65816_pins *pin
 }
 
 
-static void WDC65816_opcode_D8_mx(struct WDC65816_regs *regs, WDC65816_pins *pins) { // CLD i
+static void WDC65816_opcode_D8_mx(WDC65816_regs *regs, WDC65816_pins *pins) { // CLD i
         switch(regs->TCU) {
         // CLD i E=0 M=0 X=0
             case 1: // 2
@@ -9301,7 +9301,7 @@ static void WDC65816_opcode_D8_mx(struct WDC65816_regs *regs, WDC65816_pins *pin
 }
 
 
-static void WDC65816_opcode_D9_mx(struct WDC65816_regs *regs, WDC65816_pins *pins) { // CMP a,y
+static void WDC65816_opcode_D9_mx(WDC65816_regs *regs, WDC65816_pins *pins) { // CMP a,y
         switch(regs->TCU) {
         // CMP a,y E=0 M=0 X=0
             case 1: // 2
@@ -9350,7 +9350,7 @@ static void WDC65816_opcode_D9_mx(struct WDC65816_regs *regs, WDC65816_pins *pin
 }
 
 
-static void WDC65816_opcode_DA_mx(struct WDC65816_regs *regs, WDC65816_pins *pins) { // PHX s
+static void WDC65816_opcode_DA_mx(WDC65816_regs *regs, WDC65816_pins *pins) { // PHX s
         switch(regs->TCU) {
         // PHX s E=0 M=0 X=0
             case 1: // 2
@@ -9385,7 +9385,7 @@ static void WDC65816_opcode_DA_mx(struct WDC65816_regs *regs, WDC65816_pins *pin
 }
 
 
-static void WDC65816_opcode_DB_mx(struct WDC65816_regs *regs, WDC65816_pins *pins) { // STP i
+static void WDC65816_opcode_DB_mx(WDC65816_regs *regs, WDC65816_pins *pins) { // STP i
         switch(regs->TCU) {
         // STP i E=0 M=0 X=0
             case 1: // 2
@@ -9404,7 +9404,7 @@ static void WDC65816_opcode_DB_mx(struct WDC65816_regs *regs, WDC65816_pins *pin
 }
 
 
-static void WDC65816_opcode_DC_mx(struct WDC65816_regs *regs, WDC65816_pins *pins) { // JML (a)
+static void WDC65816_opcode_DC_mx(WDC65816_regs *regs, WDC65816_pins *pins) { // JML (a)
         switch(regs->TCU) {
         // JML (a) E=0 M=0 X=0
             case 1: // 2
@@ -9439,7 +9439,7 @@ static void WDC65816_opcode_DC_mx(struct WDC65816_regs *regs, WDC65816_pins *pin
 }
 
 
-static void WDC65816_opcode_DD_mx(struct WDC65816_regs *regs, WDC65816_pins *pins) { // CMP a,x
+static void WDC65816_opcode_DD_mx(WDC65816_regs *regs, WDC65816_pins *pins) { // CMP a,x
         switch(regs->TCU) {
         // CMP a,x E=0 M=0 X=0
             case 1: // 2
@@ -9488,7 +9488,7 @@ static void WDC65816_opcode_DD_mx(struct WDC65816_regs *regs, WDC65816_pins *pin
 }
 
 
-static void WDC65816_opcode_DE_mx(struct WDC65816_regs *regs, WDC65816_pins *pins) { // DEC a,x
+static void WDC65816_opcode_DE_mx(WDC65816_regs *regs, WDC65816_pins *pins) { // DEC a,x
         switch(regs->TCU) {
         // DEC a,x E=0 M=0 X=0
             case 1: // 2
@@ -9544,7 +9544,7 @@ static void WDC65816_opcode_DE_mx(struct WDC65816_regs *regs, WDC65816_pins *pin
 }
 
 
-static void WDC65816_opcode_DF_mx(struct WDC65816_regs *regs, WDC65816_pins *pins) { // CMP al,x
+static void WDC65816_opcode_DF_mx(WDC65816_regs *regs, WDC65816_pins *pins) { // CMP al,x
         switch(regs->TCU) {
         // CMP al,x E=0 M=0 X=0
             case 1: // 2
@@ -9587,7 +9587,7 @@ static void WDC65816_opcode_DF_mx(struct WDC65816_regs *regs, WDC65816_pins *pin
 }
 
 
-static void WDC65816_opcode_E0_mx(struct WDC65816_regs *regs, WDC65816_pins *pins) { // CPX #
+static void WDC65816_opcode_E0_mx(WDC65816_regs *regs, WDC65816_pins *pins) { // CPX #
         switch(regs->TCU) {
         // CPX # E=0 M=0 X=0
             case 1: // 2
@@ -9617,7 +9617,7 @@ static void WDC65816_opcode_E0_mx(struct WDC65816_regs *regs, WDC65816_pins *pin
 }
 
 
-static void WDC65816_opcode_E1_mx(struct WDC65816_regs *regs, WDC65816_pins *pins) { // SBC (d,x)
+static void WDC65816_opcode_E1_mx(WDC65816_regs *regs, WDC65816_pins *pins) { // SBC (d,x)
         switch(regs->TCU) {
         // SBC (d,x) E=0 M=0 X=0
             case 1: // fetch_D0_and_skip_cycle 2
@@ -9687,7 +9687,7 @@ static void WDC65816_opcode_E1_mx(struct WDC65816_regs *regs, WDC65816_pins *pin
 }
 
 
-static void WDC65816_opcode_E2_mx(struct WDC65816_regs *regs, WDC65816_pins *pins) { // SEP #
+static void WDC65816_opcode_E2_mx(WDC65816_regs *regs, WDC65816_pins *pins) { // SEP #
         switch(regs->TCU) {
         // SEP # E=0 M=0 X=0
             case 1: // 2
@@ -9714,7 +9714,7 @@ static void WDC65816_opcode_E2_mx(struct WDC65816_regs *regs, WDC65816_pins *pin
 }
 
 
-static void WDC65816_opcode_E3_mx(struct WDC65816_regs *regs, WDC65816_pins *pins) { // SBC d,s
+static void WDC65816_opcode_E3_mx(WDC65816_regs *regs, WDC65816_pins *pins) { // SBC d,s
         switch(regs->TCU) {
         // SBC d,s E=0 M=0 X=0
             case 1: // 2
@@ -9768,7 +9768,7 @@ static void WDC65816_opcode_E3_mx(struct WDC65816_regs *regs, WDC65816_pins *pin
 }
 
 
-static void WDC65816_opcode_E4_mx(struct WDC65816_regs *regs, WDC65816_pins *pins) { // CPX d
+static void WDC65816_opcode_E4_mx(WDC65816_regs *regs, WDC65816_pins *pins) { // CPX d
         switch(regs->TCU) {
         // CPX d E=0 M=0 X=0
             case 1: // fetch_D0_and_skip_cycle 2
@@ -9811,7 +9811,7 @@ static void WDC65816_opcode_E4_mx(struct WDC65816_regs *regs, WDC65816_pins *pin
 }
 
 
-static void WDC65816_opcode_E5_mx(struct WDC65816_regs *regs, WDC65816_pins *pins) { // SBC d
+static void WDC65816_opcode_E5_mx(WDC65816_regs *regs, WDC65816_pins *pins) { // SBC d
         switch(regs->TCU) {
         // SBC d E=0 M=0 X=0
             case 1: // fetch_D0_and_skip_cycle 2
@@ -9871,7 +9871,7 @@ static void WDC65816_opcode_E5_mx(struct WDC65816_regs *regs, WDC65816_pins *pin
 }
 
 
-static void WDC65816_opcode_E6_mx(struct WDC65816_regs *regs, WDC65816_pins *pins) { // INC d
+static void WDC65816_opcode_E6_mx(WDC65816_regs *regs, WDC65816_pins *pins) { // INC d
         switch(regs->TCU) {
         // INC d E=0 M=0 X=0
             case 1: // fetch_D0_and_skip_cycle 2
@@ -9925,7 +9925,7 @@ static void WDC65816_opcode_E6_mx(struct WDC65816_regs *regs, WDC65816_pins *pin
 }
 
 
-static void WDC65816_opcode_E7_mx(struct WDC65816_regs *regs, WDC65816_pins *pins) { // SBC [d]
+static void WDC65816_opcode_E7_mx(WDC65816_regs *regs, WDC65816_pins *pins) { // SBC [d]
         switch(regs->TCU) {
         // SBC [d] E=0 M=0 X=0
             case 1: // fetch_D0_and_skip_cycle 2
@@ -9998,7 +9998,7 @@ static void WDC65816_opcode_E7_mx(struct WDC65816_regs *regs, WDC65816_pins *pin
 }
 
 
-static void WDC65816_opcode_E8_mx(struct WDC65816_regs *regs, WDC65816_pins *pins) { // INX i
+static void WDC65816_opcode_E8_mx(WDC65816_regs *regs, WDC65816_pins *pins) { // INX i
         switch(regs->TCU) {
         // INX i E=0 M=0 X=0
             case 1: // 2
@@ -10022,7 +10022,7 @@ static void WDC65816_opcode_E8_mx(struct WDC65816_regs *regs, WDC65816_pins *pin
 }
 
 
-static void WDC65816_opcode_E9_mx(struct WDC65816_regs *regs, WDC65816_pins *pins) { // SBC #
+static void WDC65816_opcode_E9_mx(WDC65816_regs *regs, WDC65816_pins *pins) { // SBC #
         switch(regs->TCU) {
         // SBC # E=0 M=0 X=0
             case 1: // 2
@@ -10069,7 +10069,7 @@ static void WDC65816_opcode_E9_mx(struct WDC65816_regs *regs, WDC65816_pins *pin
 }
 
 
-static void WDC65816_opcode_EA_mx(struct WDC65816_regs *regs, WDC65816_pins *pins) { // NOP i
+static void WDC65816_opcode_EA_mx(WDC65816_regs *regs, WDC65816_pins *pins) { // NOP i
         switch(regs->TCU) {
         // NOP i E=0 M=0 X=0
             case 1: // 2
@@ -10090,7 +10090,7 @@ static void WDC65816_opcode_EA_mx(struct WDC65816_regs *regs, WDC65816_pins *pin
 }
 
 
-static void WDC65816_opcode_EB_mx(struct WDC65816_regs *regs, WDC65816_pins *pins) { // XBA i
+static void WDC65816_opcode_EB_mx(WDC65816_regs *regs, WDC65816_pins *pins) { // XBA i
         switch(regs->TCU) {
         // XBA i E=0 M=0 X=0
             case 1:
@@ -10116,7 +10116,7 @@ static void WDC65816_opcode_EB_mx(struct WDC65816_regs *regs, WDC65816_pins *pin
 }
 
 
-static void WDC65816_opcode_EC_mx(struct WDC65816_regs *regs, WDC65816_pins *pins) { // CPX a
+static void WDC65816_opcode_EC_mx(WDC65816_regs *regs, WDC65816_pins *pins) { // CPX a
         switch(regs->TCU) {
         // CPX a E=0 M=0 X=0
             case 1: // 2
@@ -10153,7 +10153,7 @@ static void WDC65816_opcode_EC_mx(struct WDC65816_regs *regs, WDC65816_pins *pin
 }
 
 
-static void WDC65816_opcode_ED_mx(struct WDC65816_regs *regs, WDC65816_pins *pins) { // SBC a
+static void WDC65816_opcode_ED_mx(WDC65816_regs *regs, WDC65816_pins *pins) { // SBC a
         switch(regs->TCU) {
         // SBC a E=0 M=0 X=0
             case 1: // 2
@@ -10207,7 +10207,7 @@ static void WDC65816_opcode_ED_mx(struct WDC65816_regs *regs, WDC65816_pins *pin
 }
 
 
-static void WDC65816_opcode_EE_mx(struct WDC65816_regs *regs, WDC65816_pins *pins) { // INC a
+static void WDC65816_opcode_EE_mx(WDC65816_regs *regs, WDC65816_pins *pins) { // INC a
         switch(regs->TCU) {
         // INC a E=0 M=0 X=0
         //case AM.Ad
@@ -10257,7 +10257,7 @@ static void WDC65816_opcode_EE_mx(struct WDC65816_regs *regs, WDC65816_pins *pin
 }
 
 
-static void WDC65816_opcode_EF_mx(struct WDC65816_regs *regs, WDC65816_pins *pins) { // SBC al
+static void WDC65816_opcode_EF_mx(WDC65816_regs *regs, WDC65816_pins *pins) { // SBC al
         switch(regs->TCU) {
         // SBC al E=0 M=0 X=0
             case 1: // 2
@@ -10316,7 +10316,7 @@ static void WDC65816_opcode_EF_mx(struct WDC65816_regs *regs, WDC65816_pins *pin
 }
 
 
-static void WDC65816_opcode_F0_mx(struct WDC65816_regs *regs, WDC65816_pins *pins) { // BEQ r
+static void WDC65816_opcode_F0_mx(WDC65816_regs *regs, WDC65816_pins *pins) { // BEQ r
         switch(regs->TCU) {
         // BEQ r E=0 M=0 X=0
             case 1: // 2
@@ -10348,7 +10348,7 @@ static void WDC65816_opcode_F0_mx(struct WDC65816_regs *regs, WDC65816_pins *pin
 }
 
 
-static void WDC65816_opcode_F1_mx(struct WDC65816_regs *regs, WDC65816_pins *pins) { // SBC (d),y
+static void WDC65816_opcode_F1_mx(WDC65816_regs *regs, WDC65816_pins *pins) { // SBC (d),y
         switch(regs->TCU) {
         // SBC (d),y E=0 M=0 X=0
             case 1: // fetch_D0_and_skip_cycle 2
@@ -10427,7 +10427,7 @@ static void WDC65816_opcode_F1_mx(struct WDC65816_regs *regs, WDC65816_pins *pin
 }
 
 
-static void WDC65816_opcode_F2_mx(struct WDC65816_regs *regs, WDC65816_pins *pins) { // SBC (d)
+static void WDC65816_opcode_F2_mx(WDC65816_regs *regs, WDC65816_pins *pins) { // SBC (d)
         switch(regs->TCU) {
         // SBC (d) E=0 M=0 X=0
             case 1: // fetch_D0_and_skip_cycle 2
@@ -10494,7 +10494,7 @@ static void WDC65816_opcode_F2_mx(struct WDC65816_regs *regs, WDC65816_pins *pin
 }
 
 
-static void WDC65816_opcode_F3_mx(struct WDC65816_regs *regs, WDC65816_pins *pins) { // SBC (d,s),y
+static void WDC65816_opcode_F3_mx(WDC65816_regs *regs, WDC65816_pins *pins) { // SBC (d,s),y
         switch(regs->TCU) {
         // SBC (d,s),y E=0 M=0 X=0
             case 1: // 2
@@ -10562,7 +10562,7 @@ static void WDC65816_opcode_F3_mx(struct WDC65816_regs *regs, WDC65816_pins *pin
 }
 
 
-static void WDC65816_opcode_F4_mx(struct WDC65816_regs *regs, WDC65816_pins *pins) { // PEA s
+static void WDC65816_opcode_F4_mx(WDC65816_regs *regs, WDC65816_pins *pins) { // PEA s
         switch(regs->TCU) {
         // PEA s E=0 M=0 X=0
             case 1: // 2
@@ -10596,7 +10596,7 @@ static void WDC65816_opcode_F4_mx(struct WDC65816_regs *regs, WDC65816_pins *pin
 }
 
 
-static void WDC65816_opcode_F5_mx(struct WDC65816_regs *regs, WDC65816_pins *pins) { // SBC d,x
+static void WDC65816_opcode_F5_mx(WDC65816_regs *regs, WDC65816_pins *pins) { // SBC d,x
         switch(regs->TCU) {
         // SBC d,x E=0 M=0 X=0
             case 1: // fetch_D0_and_skip_cycle 2
@@ -10658,7 +10658,7 @@ static void WDC65816_opcode_F5_mx(struct WDC65816_regs *regs, WDC65816_pins *pin
 }
 
 
-static void WDC65816_opcode_F6_mx(struct WDC65816_regs *regs, WDC65816_pins *pins) { // INC d,x
+static void WDC65816_opcode_F6_mx(WDC65816_regs *regs, WDC65816_pins *pins) { // INC d,x
         switch(regs->TCU) {
         // INC d,x E=0 M=0 X=0
             case 1: // fetch_D0_and_skip_cycle 2
@@ -10714,7 +10714,7 @@ static void WDC65816_opcode_F6_mx(struct WDC65816_regs *regs, WDC65816_pins *pin
 }
 
 
-static void WDC65816_opcode_F7_mx(struct WDC65816_regs *regs, WDC65816_pins *pins) { // SBC [d],y
+static void WDC65816_opcode_F7_mx(WDC65816_regs *regs, WDC65816_pins *pins) { // SBC [d],y
         switch(regs->TCU) {
         // SBC [d],y E=0 M=0 X=0
             case 1: // fetch_D0_and_skip_cycle 2
@@ -10787,7 +10787,7 @@ static void WDC65816_opcode_F7_mx(struct WDC65816_regs *regs, WDC65816_pins *pin
 }
 
 
-static void WDC65816_opcode_F8_mx(struct WDC65816_regs *regs, WDC65816_pins *pins) { // SED i
+static void WDC65816_opcode_F8_mx(WDC65816_regs *regs, WDC65816_pins *pins) { // SED i
         switch(regs->TCU) {
         // SED i E=0 M=0 X=0
             case 1: // 2
@@ -10809,7 +10809,7 @@ static void WDC65816_opcode_F8_mx(struct WDC65816_regs *regs, WDC65816_pins *pin
 }
 
 
-static void WDC65816_opcode_F9_mx(struct WDC65816_regs *regs, WDC65816_pins *pins) { // SBC a,y
+static void WDC65816_opcode_F9_mx(WDC65816_regs *regs, WDC65816_pins *pins) { // SBC a,y
         switch(regs->TCU) {
         // SBC a,y E=0 M=0 X=0
             case 1: // 2
@@ -10875,7 +10875,7 @@ static void WDC65816_opcode_F9_mx(struct WDC65816_regs *regs, WDC65816_pins *pin
 }
 
 
-static void WDC65816_opcode_FA_mx(struct WDC65816_regs *regs, WDC65816_pins *pins) { // PLX s
+static void WDC65816_opcode_FA_mx(WDC65816_regs *regs, WDC65816_pins *pins) { // PLX s
         switch(regs->TCU) {
         // PLX s E=0 M=0 X=0
             case 1: // 2
@@ -10913,7 +10913,7 @@ static void WDC65816_opcode_FA_mx(struct WDC65816_regs *regs, WDC65816_pins *pin
 }
 
 
-static void WDC65816_opcode_FB_mx(struct WDC65816_regs *regs, WDC65816_pins *pins) { // XCE i
+static void WDC65816_opcode_FB_mx(WDC65816_regs *regs, WDC65816_pins *pins) { // XCE i
         switch(regs->TCU) {
         // XCE i E=0 M=0 X=0
             case 1: // 2
@@ -10941,7 +10941,7 @@ static void WDC65816_opcode_FB_mx(struct WDC65816_regs *regs, WDC65816_pins *pin
 }
 
 
-static void WDC65816_opcode_FC_mx(struct WDC65816_regs *regs, WDC65816_pins *pins) { // JSR (a,x)
+static void WDC65816_opcode_FC_mx(WDC65816_regs *regs, WDC65816_pins *pins) { // JSR (a,x)
         switch(regs->TCU) {
         // JSR (a,x) E=0 M=0 X=0
             case 1: // 2
@@ -10991,7 +10991,7 @@ static void WDC65816_opcode_FC_mx(struct WDC65816_regs *regs, WDC65816_pins *pin
 }
 
 
-static void WDC65816_opcode_FD_mx(struct WDC65816_regs *regs, WDC65816_pins *pins) { // SBC a,x
+static void WDC65816_opcode_FD_mx(WDC65816_regs *regs, WDC65816_pins *pins) { // SBC a,x
         switch(regs->TCU) {
         // SBC a,x E=0 M=0 X=0
             case 1: // 2
@@ -11057,7 +11057,7 @@ static void WDC65816_opcode_FD_mx(struct WDC65816_regs *regs, WDC65816_pins *pin
 }
 
 
-static void WDC65816_opcode_FE_mx(struct WDC65816_regs *regs, WDC65816_pins *pins) { // INC a,x
+static void WDC65816_opcode_FE_mx(WDC65816_regs *regs, WDC65816_pins *pins) { // INC a,x
         switch(regs->TCU) {
         // INC a,x E=0 M=0 X=0
             case 1: // 2
@@ -11113,7 +11113,7 @@ static void WDC65816_opcode_FE_mx(struct WDC65816_regs *regs, WDC65816_pins *pin
 }
 
 
-static void WDC65816_opcode_FF_mx(struct WDC65816_regs *regs, WDC65816_pins *pins) { // SBC al,x
+static void WDC65816_opcode_FF_mx(WDC65816_regs *regs, WDC65816_pins *pins) { // SBC al,x
         switch(regs->TCU) {
         // SBC al,x E=0 M=0 X=0
             case 1: // 2
@@ -11173,7 +11173,7 @@ static void WDC65816_opcode_FF_mx(struct WDC65816_regs *regs, WDC65816_pins *pin
 }
 
 
-static void WDC65816_opcode_100_mx(struct WDC65816_regs *regs, WDC65816_pins *pins) { // S_RESET s
+static void WDC65816_opcode_100_mx(WDC65816_regs *regs, WDC65816_pins *pins) { // S_RESET s
         switch(regs->TCU) {
         // S_RESET s E=0 M=0 X=0
             case 1: // 3
@@ -11227,7 +11227,7 @@ static void WDC65816_opcode_100_mx(struct WDC65816_regs *regs, WDC65816_pins *pi
 }
 
 
-static void WDC65816_opcode_101_mx(struct WDC65816_regs *regs, WDC65816_pins *pins) { // S_ABORT s
+static void WDC65816_opcode_101_mx(WDC65816_regs *regs, WDC65816_pins *pins) { // S_ABORT s
         switch(regs->TCU) {
         // S_ABORT s E=0 M=0 X=0
             case 1: // 3
@@ -11277,7 +11277,7 @@ static void WDC65816_opcode_101_mx(struct WDC65816_regs *regs, WDC65816_pins *pi
 }
 
 
-static void WDC65816_opcode_102_mx(struct WDC65816_regs *regs, WDC65816_pins *pins) { // S_IRQ s
+static void WDC65816_opcode_102_mx(WDC65816_regs *regs, WDC65816_pins *pins) { // S_IRQ s
         switch(regs->TCU) {
         // S_IRQ s E=0 M=0 X=0
             case 1: // 3
@@ -11329,7 +11329,7 @@ static void WDC65816_opcode_102_mx(struct WDC65816_regs *regs, WDC65816_pins *pi
 }
 
 
-static void WDC65816_opcode_103_mx(struct WDC65816_regs *regs, WDC65816_pins *pins) { // S_NMI s
+static void WDC65816_opcode_103_mx(WDC65816_regs *regs, WDC65816_pins *pins) { // S_NMI s
         switch(regs->TCU) {
         // S_NMI s E=0 M=0 X=0
             case 1: // 3
@@ -11381,7 +11381,7 @@ static void WDC65816_opcode_103_mx(struct WDC65816_regs *regs, WDC65816_pins *pi
 }
 
 
-static void WDC65816_opcode_00_Mx(struct WDC65816_regs *regs, WDC65816_pins *pins) { // BRK s
+static void WDC65816_opcode_00_Mx(WDC65816_regs *regs, WDC65816_pins *pins) { // BRK s
         switch(regs->TCU) {
         // BRK s E=0 M=1 X=0
         // instruction code follows
@@ -11439,7 +11439,7 @@ static void WDC65816_opcode_00_Mx(struct WDC65816_regs *regs, WDC65816_pins *pin
 }
 
 
-static void WDC65816_opcode_01_Mx(struct WDC65816_regs *regs, WDC65816_pins *pins) { // ORA (d,x)
+static void WDC65816_opcode_01_Mx(WDC65816_regs *regs, WDC65816_pins *pins) { // ORA (d,x)
         switch(regs->TCU) {
         // ORA (d,x) E=0 M=1 X=0
             case 1: // fetch_D0_and_skip_cycle 2
@@ -11488,7 +11488,7 @@ static void WDC65816_opcode_01_Mx(struct WDC65816_regs *regs, WDC65816_pins *pin
 }
 
 
-static void WDC65816_opcode_02_Mx(struct WDC65816_regs *regs, WDC65816_pins *pins) { // COP s
+static void WDC65816_opcode_02_Mx(WDC65816_regs *regs, WDC65816_pins *pins) { // COP s
         switch(regs->TCU) {
         // COP s E=0 M=1 X=0
         // instruction code follows
@@ -11546,7 +11546,7 @@ static void WDC65816_opcode_02_Mx(struct WDC65816_regs *regs, WDC65816_pins *pin
 }
 
 
-static void WDC65816_opcode_03_Mx(struct WDC65816_regs *regs, WDC65816_pins *pins) { // ORA d,s
+static void WDC65816_opcode_03_Mx(WDC65816_regs *regs, WDC65816_pins *pins) { // ORA d,s
         switch(regs->TCU) {
         // ORA d,s E=0 M=1 X=0
             case 1: // 2
@@ -11579,7 +11579,7 @@ static void WDC65816_opcode_03_Mx(struct WDC65816_regs *regs, WDC65816_pins *pin
 }
 
 
-static void WDC65816_opcode_04_Mx(struct WDC65816_regs *regs, WDC65816_pins *pins) { // TSB d
+static void WDC65816_opcode_04_Mx(WDC65816_regs *regs, WDC65816_pins *pins) { // TSB d
         switch(regs->TCU) {
         // TSB d E=0 M=1 X=0
             case 1: // fetch_D0_and_skip_cycle 2
@@ -11624,7 +11624,7 @@ static void WDC65816_opcode_04_Mx(struct WDC65816_regs *regs, WDC65816_pins *pin
 }
 
 
-static void WDC65816_opcode_05_Mx(struct WDC65816_regs *regs, WDC65816_pins *pins) { // ORA d
+static void WDC65816_opcode_05_Mx(WDC65816_regs *regs, WDC65816_pins *pins) { // ORA d
         switch(regs->TCU) {
         // ORA d E=0 M=1 X=0
             case 1: // fetch_D0_and_skip_cycle 2
@@ -11663,7 +11663,7 @@ static void WDC65816_opcode_05_Mx(struct WDC65816_regs *regs, WDC65816_pins *pin
 }
 
 
-static void WDC65816_opcode_06_Mx(struct WDC65816_regs *regs, WDC65816_pins *pins) { // ASL d
+static void WDC65816_opcode_06_Mx(WDC65816_regs *regs, WDC65816_pins *pins) { // ASL d
         switch(regs->TCU) {
         // ASL d E=0 M=1 X=0
             case 1: // fetch_D0_and_skip_cycle 2
@@ -11710,7 +11710,7 @@ static void WDC65816_opcode_06_Mx(struct WDC65816_regs *regs, WDC65816_pins *pin
 }
 
 
-static void WDC65816_opcode_07_Mx(struct WDC65816_regs *regs, WDC65816_pins *pins) { // ORA [d]
+static void WDC65816_opcode_07_Mx(WDC65816_regs *regs, WDC65816_pins *pins) { // ORA [d]
         switch(regs->TCU) {
         // ORA [d] E=0 M=1 X=0
             case 1: // fetch_D0_and_skip_cycle 2
@@ -11762,7 +11762,7 @@ static void WDC65816_opcode_07_Mx(struct WDC65816_regs *regs, WDC65816_pins *pin
 }
 
 
-static void WDC65816_opcode_08_Mx(struct WDC65816_regs *regs, WDC65816_pins *pins) { // PHP s
+static void WDC65816_opcode_08_Mx(WDC65816_regs *regs, WDC65816_pins *pins) { // PHP s
         switch(regs->TCU) {
         // PHP s E=0 M=1 X=0
             case 1: // 2
@@ -11791,7 +11791,7 @@ static void WDC65816_opcode_08_Mx(struct WDC65816_regs *regs, WDC65816_pins *pin
 }
 
 
-static void WDC65816_opcode_09_Mx(struct WDC65816_regs *regs, WDC65816_pins *pins) { // ORA #
+static void WDC65816_opcode_09_Mx(WDC65816_regs *regs, WDC65816_pins *pins) { // ORA #
         switch(regs->TCU) {
         // ORA # E=0 M=1 X=0
             case 1: // 2
@@ -11816,7 +11816,7 @@ static void WDC65816_opcode_09_Mx(struct WDC65816_regs *regs, WDC65816_pins *pin
 }
 
 
-static void WDC65816_opcode_0A_Mx(struct WDC65816_regs *regs, WDC65816_pins *pins) { // ASL A
+static void WDC65816_opcode_0A_Mx(WDC65816_regs *regs, WDC65816_pins *pins) { // ASL A
         switch(regs->TCU) {
         // ASL A E=0 M=1 X=0
             case 1: // 2
@@ -11843,7 +11843,7 @@ static void WDC65816_opcode_0A_Mx(struct WDC65816_regs *regs, WDC65816_pins *pin
 }
 
 
-static void WDC65816_opcode_0B_Mx(struct WDC65816_regs *regs, WDC65816_pins *pins) { // PHD s
+static void WDC65816_opcode_0B_Mx(WDC65816_regs *regs, WDC65816_pins *pins) { // PHD s
         switch(regs->TCU) {
         // PHD s E=0 M=1 X=0
             case 1: // 2
@@ -11876,7 +11876,7 @@ static void WDC65816_opcode_0B_Mx(struct WDC65816_regs *regs, WDC65816_pins *pin
 }
 
 
-static void WDC65816_opcode_0C_Mx(struct WDC65816_regs *regs, WDC65816_pins *pins) { // TSB a
+static void WDC65816_opcode_0C_Mx(WDC65816_regs *regs, WDC65816_pins *pins) { // TSB a
         switch(regs->TCU) {
         // TSB a E=0 M=1 X=0
         //case AM.Ad
@@ -11917,7 +11917,7 @@ static void WDC65816_opcode_0C_Mx(struct WDC65816_regs *regs, WDC65816_pins *pin
 }
 
 
-static void WDC65816_opcode_0D_Mx(struct WDC65816_regs *regs, WDC65816_pins *pins) { // ORA a
+static void WDC65816_opcode_0D_Mx(WDC65816_regs *regs, WDC65816_pins *pins) { // ORA a
         switch(regs->TCU) {
         // ORA a E=0 M=1 X=0
             case 1: // 2
@@ -11950,7 +11950,7 @@ static void WDC65816_opcode_0D_Mx(struct WDC65816_regs *regs, WDC65816_pins *pin
 }
 
 
-static void WDC65816_opcode_0E_Mx(struct WDC65816_regs *regs, WDC65816_pins *pins) { // ASL a
+static void WDC65816_opcode_0E_Mx(WDC65816_regs *regs, WDC65816_pins *pins) { // ASL a
         switch(regs->TCU) {
         // ASL a E=0 M=1 X=0
         //case AM.Ad
@@ -11993,7 +11993,7 @@ static void WDC65816_opcode_0E_Mx(struct WDC65816_regs *regs, WDC65816_pins *pin
 }
 
 
-static void WDC65816_opcode_0F_Mx(struct WDC65816_regs *regs, WDC65816_pins *pins) { // ORA al
+static void WDC65816_opcode_0F_Mx(WDC65816_regs *regs, WDC65816_pins *pins) { // ORA al
         switch(regs->TCU) {
         // ORA al E=0 M=1 X=0
             case 1: // 2
@@ -12031,7 +12031,7 @@ static void WDC65816_opcode_0F_Mx(struct WDC65816_regs *regs, WDC65816_pins *pin
 }
 
 
-static void WDC65816_opcode_10_Mx(struct WDC65816_regs *regs, WDC65816_pins *pins) { // BPL r
+static void WDC65816_opcode_10_Mx(WDC65816_regs *regs, WDC65816_pins *pins) { // BPL r
         switch(regs->TCU) {
         // BPL r E=0 M=1 X=0
             case 1: // 2
@@ -12063,7 +12063,7 @@ static void WDC65816_opcode_10_Mx(struct WDC65816_regs *regs, WDC65816_pins *pin
 }
 
 
-static void WDC65816_opcode_11_Mx(struct WDC65816_regs *regs, WDC65816_pins *pins) { // ORA (d),y
+static void WDC65816_opcode_11_Mx(WDC65816_regs *regs, WDC65816_pins *pins) { // ORA (d),y
         switch(regs->TCU) {
         // ORA (d),y E=0 M=1 X=0
             case 1: // fetch_D0_and_skip_cycle 2
@@ -12121,7 +12121,7 @@ static void WDC65816_opcode_11_Mx(struct WDC65816_regs *regs, WDC65816_pins *pin
 }
 
 
-static void WDC65816_opcode_12_Mx(struct WDC65816_regs *regs, WDC65816_pins *pins) { // ORA (d)
+static void WDC65816_opcode_12_Mx(WDC65816_regs *regs, WDC65816_pins *pins) { // ORA (d)
         switch(regs->TCU) {
         // ORA (d) E=0 M=1 X=0
             case 1: // fetch_D0_and_skip_cycle 2
@@ -12167,7 +12167,7 @@ static void WDC65816_opcode_12_Mx(struct WDC65816_regs *regs, WDC65816_pins *pin
 }
 
 
-static void WDC65816_opcode_13_Mx(struct WDC65816_regs *regs, WDC65816_pins *pins) { // ORA (d,s),y
+static void WDC65816_opcode_13_Mx(WDC65816_regs *regs, WDC65816_pins *pins) { // ORA (d,s),y
         switch(regs->TCU) {
         // ORA (d,s),y E=0 M=1 X=0
             case 1: // 2
@@ -12214,7 +12214,7 @@ static void WDC65816_opcode_13_Mx(struct WDC65816_regs *regs, WDC65816_pins *pin
 }
 
 
-static void WDC65816_opcode_14_Mx(struct WDC65816_regs *regs, WDC65816_pins *pins) { // TRB d
+static void WDC65816_opcode_14_Mx(WDC65816_regs *regs, WDC65816_pins *pins) { // TRB d
         switch(regs->TCU) {
         // TRB d E=0 M=1 X=0
             case 1: // fetch_D0_and_skip_cycle 2
@@ -12259,7 +12259,7 @@ static void WDC65816_opcode_14_Mx(struct WDC65816_regs *regs, WDC65816_pins *pin
 }
 
 
-static void WDC65816_opcode_15_Mx(struct WDC65816_regs *regs, WDC65816_pins *pins) { // ORA d,x
+static void WDC65816_opcode_15_Mx(WDC65816_regs *regs, WDC65816_pins *pins) { // ORA d,x
         switch(regs->TCU) {
         // ORA d,x E=0 M=1 X=0
             case 1: // fetch_D0_and_skip_cycle 2
@@ -12300,7 +12300,7 @@ static void WDC65816_opcode_15_Mx(struct WDC65816_regs *regs, WDC65816_pins *pin
 }
 
 
-static void WDC65816_opcode_16_Mx(struct WDC65816_regs *regs, WDC65816_pins *pins) { // ASL d,x
+static void WDC65816_opcode_16_Mx(WDC65816_regs *regs, WDC65816_pins *pins) { // ASL d,x
         switch(regs->TCU) {
         // ASL d,x E=0 M=1 X=0
             case 1: // fetch_D0_and_skip_cycle 2
@@ -12349,7 +12349,7 @@ static void WDC65816_opcode_16_Mx(struct WDC65816_regs *regs, WDC65816_pins *pin
 }
 
 
-static void WDC65816_opcode_17_Mx(struct WDC65816_regs *regs, WDC65816_pins *pins) { // ORA [d],y
+static void WDC65816_opcode_17_Mx(WDC65816_regs *regs, WDC65816_pins *pins) { // ORA [d],y
         switch(regs->TCU) {
         // ORA [d],y E=0 M=1 X=0
             case 1: // fetch_D0_and_skip_cycle 2
@@ -12401,7 +12401,7 @@ static void WDC65816_opcode_17_Mx(struct WDC65816_regs *regs, WDC65816_pins *pin
 }
 
 
-static void WDC65816_opcode_18_Mx(struct WDC65816_regs *regs, WDC65816_pins *pins) { // CLC i
+static void WDC65816_opcode_18_Mx(WDC65816_regs *regs, WDC65816_pins *pins) { // CLC i
         switch(regs->TCU) {
         // CLC i E=0 M=1 X=0
             case 1: // 2
@@ -12423,7 +12423,7 @@ static void WDC65816_opcode_18_Mx(struct WDC65816_regs *regs, WDC65816_pins *pin
 }
 
 
-static void WDC65816_opcode_19_Mx(struct WDC65816_regs *regs, WDC65816_pins *pins) { // ORA a,y
+static void WDC65816_opcode_19_Mx(WDC65816_regs *regs, WDC65816_pins *pins) { // ORA a,y
         switch(regs->TCU) {
         // ORA a,y E=0 M=1 X=0
             case 1: // 2
@@ -12468,7 +12468,7 @@ static void WDC65816_opcode_19_Mx(struct WDC65816_regs *regs, WDC65816_pins *pin
 }
 
 
-static void WDC65816_opcode_1A_Mx(struct WDC65816_regs *regs, WDC65816_pins *pins) { // INC A
+static void WDC65816_opcode_1A_Mx(WDC65816_regs *regs, WDC65816_pins *pins) { // INC A
         switch(regs->TCU) {
         // INC A E=0 M=1 X=0
             case 1: // 2
@@ -12494,7 +12494,7 @@ static void WDC65816_opcode_1A_Mx(struct WDC65816_regs *regs, WDC65816_pins *pin
 }
 
 
-static void WDC65816_opcode_1B_Mx(struct WDC65816_regs *regs, WDC65816_pins *pins) { // TCS i
+static void WDC65816_opcode_1B_Mx(WDC65816_regs *regs, WDC65816_pins *pins) { // TCS i
         switch(regs->TCU) {
         // TCS i E=0 M=1 X=0
             case 1: // 2
@@ -12516,7 +12516,7 @@ static void WDC65816_opcode_1B_Mx(struct WDC65816_regs *regs, WDC65816_pins *pin
 }
 
 
-static void WDC65816_opcode_1C_Mx(struct WDC65816_regs *regs, WDC65816_pins *pins) { // TRB a
+static void WDC65816_opcode_1C_Mx(WDC65816_regs *regs, WDC65816_pins *pins) { // TRB a
         switch(regs->TCU) {
         // TRB a E=0 M=1 X=0
         //case AM.Ad
@@ -12557,7 +12557,7 @@ static void WDC65816_opcode_1C_Mx(struct WDC65816_regs *regs, WDC65816_pins *pin
 }
 
 
-static void WDC65816_opcode_1D_Mx(struct WDC65816_regs *regs, WDC65816_pins *pins) { // ORA a,x
+static void WDC65816_opcode_1D_Mx(WDC65816_regs *regs, WDC65816_pins *pins) { // ORA a,x
         switch(regs->TCU) {
         // ORA a,x E=0 M=1 X=0
             case 1: // 2
@@ -12602,7 +12602,7 @@ static void WDC65816_opcode_1D_Mx(struct WDC65816_regs *regs, WDC65816_pins *pin
 }
 
 
-static void WDC65816_opcode_1E_Mx(struct WDC65816_regs *regs, WDC65816_pins *pins) { // ASL a,x
+static void WDC65816_opcode_1E_Mx(WDC65816_regs *regs, WDC65816_pins *pins) { // ASL a,x
         switch(regs->TCU) {
         // ASL a,x E=0 M=1 X=0
             case 1: // 2
@@ -12651,7 +12651,7 @@ static void WDC65816_opcode_1E_Mx(struct WDC65816_regs *regs, WDC65816_pins *pin
 }
 
 
-static void WDC65816_opcode_1F_Mx(struct WDC65816_regs *regs, WDC65816_pins *pins) { // ORA al,x
+static void WDC65816_opcode_1F_Mx(WDC65816_regs *regs, WDC65816_pins *pins) { // ORA al,x
         switch(regs->TCU) {
         // ORA al,x E=0 M=1 X=0
             case 1: // 2
@@ -12690,7 +12690,7 @@ static void WDC65816_opcode_1F_Mx(struct WDC65816_regs *regs, WDC65816_pins *pin
 }
 
 
-static void WDC65816_opcode_20_Mx(struct WDC65816_regs *regs, WDC65816_pins *pins) { // JSR a
+static void WDC65816_opcode_20_Mx(WDC65816_regs *regs, WDC65816_pins *pins) { // JSR a
         switch(regs->TCU) {
         // JSR a E=0 M=1 X=0
             case 1: // 2
@@ -12733,7 +12733,7 @@ static void WDC65816_opcode_20_Mx(struct WDC65816_regs *regs, WDC65816_pins *pin
 }
 
 
-static void WDC65816_opcode_21_Mx(struct WDC65816_regs *regs, WDC65816_pins *pins) { // AND (d,x)
+static void WDC65816_opcode_21_Mx(WDC65816_regs *regs, WDC65816_pins *pins) { // AND (d,x)
         switch(regs->TCU) {
         // AND (d,x) E=0 M=1 X=0
             case 1: // fetch_D0_and_skip_cycle 2
@@ -12782,7 +12782,7 @@ static void WDC65816_opcode_21_Mx(struct WDC65816_regs *regs, WDC65816_pins *pin
 }
 
 
-static void WDC65816_opcode_22_Mx(struct WDC65816_regs *regs, WDC65816_pins *pins) { // JSL al
+static void WDC65816_opcode_22_Mx(WDC65816_regs *regs, WDC65816_pins *pins) { // JSL al
         switch(regs->TCU) {
         // JSL al E=0 M=1 X=0
             case 1: // 2
@@ -12838,7 +12838,7 @@ static void WDC65816_opcode_22_Mx(struct WDC65816_regs *regs, WDC65816_pins *pin
 }
 
 
-static void WDC65816_opcode_23_Mx(struct WDC65816_regs *regs, WDC65816_pins *pins) { // AND d,s
+static void WDC65816_opcode_23_Mx(WDC65816_regs *regs, WDC65816_pins *pins) { // AND d,s
         switch(regs->TCU) {
         // AND d,s E=0 M=1 X=0
             case 1: // 2
@@ -12871,7 +12871,7 @@ static void WDC65816_opcode_23_Mx(struct WDC65816_regs *regs, WDC65816_pins *pin
 }
 
 
-static void WDC65816_opcode_24_Mx(struct WDC65816_regs *regs, WDC65816_pins *pins) { // BIT d
+static void WDC65816_opcode_24_Mx(WDC65816_regs *regs, WDC65816_pins *pins) { // BIT d
         switch(regs->TCU) {
         // BIT d E=0 M=1 X=0
             case 1: // fetch_D0_and_skip_cycle 2
@@ -12909,7 +12909,7 @@ static void WDC65816_opcode_24_Mx(struct WDC65816_regs *regs, WDC65816_pins *pin
 }
 
 
-static void WDC65816_opcode_25_Mx(struct WDC65816_regs *regs, WDC65816_pins *pins) { // AND d
+static void WDC65816_opcode_25_Mx(WDC65816_regs *regs, WDC65816_pins *pins) { // AND d
         switch(regs->TCU) {
         // AND d E=0 M=1 X=0
             case 1: // fetch_D0_and_skip_cycle 2
@@ -12948,7 +12948,7 @@ static void WDC65816_opcode_25_Mx(struct WDC65816_regs *regs, WDC65816_pins *pin
 }
 
 
-static void WDC65816_opcode_26_Mx(struct WDC65816_regs *regs, WDC65816_pins *pins) { // ROL d
+static void WDC65816_opcode_26_Mx(WDC65816_regs *regs, WDC65816_pins *pins) { // ROL d
         switch(regs->TCU) {
         // ROL d E=0 M=1 X=0
             case 1: // fetch_D0_and_skip_cycle 2
@@ -12996,7 +12996,7 @@ static void WDC65816_opcode_26_Mx(struct WDC65816_regs *regs, WDC65816_pins *pin
 }
 
 
-static void WDC65816_opcode_27_Mx(struct WDC65816_regs *regs, WDC65816_pins *pins) { // AND [d]
+static void WDC65816_opcode_27_Mx(WDC65816_regs *regs, WDC65816_pins *pins) { // AND [d]
         switch(regs->TCU) {
         // AND [d] E=0 M=1 X=0
             case 1: // fetch_D0_and_skip_cycle 2
@@ -13048,7 +13048,7 @@ static void WDC65816_opcode_27_Mx(struct WDC65816_regs *regs, WDC65816_pins *pin
 }
 
 
-static void WDC65816_opcode_28_Mx(struct WDC65816_regs *regs, WDC65816_pins *pins) { // PLP s
+static void WDC65816_opcode_28_Mx(WDC65816_regs *regs, WDC65816_pins *pins) { // PLP s
         switch(regs->TCU) {
         // PLP s E=0 M=1 X=0
             case 1: // 2
@@ -13082,7 +13082,7 @@ static void WDC65816_opcode_28_Mx(struct WDC65816_regs *regs, WDC65816_pins *pin
 }
 
 
-static void WDC65816_opcode_29_Mx(struct WDC65816_regs *regs, WDC65816_pins *pins) { // AND #
+static void WDC65816_opcode_29_Mx(WDC65816_regs *regs, WDC65816_pins *pins) { // AND #
         switch(regs->TCU) {
         // AND # E=0 M=1 X=0
             case 1: // 2
@@ -13107,7 +13107,7 @@ static void WDC65816_opcode_29_Mx(struct WDC65816_regs *regs, WDC65816_pins *pin
 }
 
 
-static void WDC65816_opcode_2A_Mx(struct WDC65816_regs *regs, WDC65816_pins *pins) { // ROL A
+static void WDC65816_opcode_2A_Mx(WDC65816_regs *regs, WDC65816_pins *pins) { // ROL A
         switch(regs->TCU) {
         // ROL A E=0 M=1 X=0
             case 1: // 2
@@ -13135,7 +13135,7 @@ static void WDC65816_opcode_2A_Mx(struct WDC65816_regs *regs, WDC65816_pins *pin
 }
 
 
-static void WDC65816_opcode_2B_Mx(struct WDC65816_regs *regs, WDC65816_pins *pins) { // PLD s
+static void WDC65816_opcode_2B_Mx(WDC65816_regs *regs, WDC65816_pins *pins) { // PLD s
         switch(regs->TCU) {
         // PLD s E=0 M=1 X=0
             case 1: // 2
@@ -13171,7 +13171,7 @@ static void WDC65816_opcode_2B_Mx(struct WDC65816_regs *regs, WDC65816_pins *pin
 }
 
 
-static void WDC65816_opcode_2C_Mx(struct WDC65816_regs *regs, WDC65816_pins *pins) { // BIT a
+static void WDC65816_opcode_2C_Mx(WDC65816_regs *regs, WDC65816_pins *pins) { // BIT a
         switch(regs->TCU) {
         // BIT a E=0 M=1 X=0
             case 1: // 2
@@ -13203,7 +13203,7 @@ static void WDC65816_opcode_2C_Mx(struct WDC65816_regs *regs, WDC65816_pins *pin
 }
 
 
-static void WDC65816_opcode_2D_Mx(struct WDC65816_regs *regs, WDC65816_pins *pins) { // AND a
+static void WDC65816_opcode_2D_Mx(WDC65816_regs *regs, WDC65816_pins *pins) { // AND a
         switch(regs->TCU) {
         // AND a E=0 M=1 X=0
             case 1: // 2
@@ -13236,7 +13236,7 @@ static void WDC65816_opcode_2D_Mx(struct WDC65816_regs *regs, WDC65816_pins *pin
 }
 
 
-static void WDC65816_opcode_2E_Mx(struct WDC65816_regs *regs, WDC65816_pins *pins) { // ROL a
+static void WDC65816_opcode_2E_Mx(WDC65816_regs *regs, WDC65816_pins *pins) { // ROL a
         switch(regs->TCU) {
         // ROL a E=0 M=1 X=0
         //case AM.Ad
@@ -13280,7 +13280,7 @@ static void WDC65816_opcode_2E_Mx(struct WDC65816_regs *regs, WDC65816_pins *pin
 }
 
 
-static void WDC65816_opcode_2F_Mx(struct WDC65816_regs *regs, WDC65816_pins *pins) { // AND al
+static void WDC65816_opcode_2F_Mx(WDC65816_regs *regs, WDC65816_pins *pins) { // AND al
         switch(regs->TCU) {
         // AND al E=0 M=1 X=0
             case 1: // 2
@@ -13318,7 +13318,7 @@ static void WDC65816_opcode_2F_Mx(struct WDC65816_regs *regs, WDC65816_pins *pin
 }
 
 
-static void WDC65816_opcode_30_Mx(struct WDC65816_regs *regs, WDC65816_pins *pins) { // BMI r
+static void WDC65816_opcode_30_Mx(WDC65816_regs *regs, WDC65816_pins *pins) { // BMI r
         switch(regs->TCU) {
         // BMI r E=0 M=1 X=0
             case 1: // 2
@@ -13350,7 +13350,7 @@ static void WDC65816_opcode_30_Mx(struct WDC65816_regs *regs, WDC65816_pins *pin
 }
 
 
-static void WDC65816_opcode_31_Mx(struct WDC65816_regs *regs, WDC65816_pins *pins) { // AND (d),y
+static void WDC65816_opcode_31_Mx(WDC65816_regs *regs, WDC65816_pins *pins) { // AND (d),y
         switch(regs->TCU) {
         // AND (d),y E=0 M=1 X=0
             case 1: // fetch_D0_and_skip_cycle 2
@@ -13408,7 +13408,7 @@ static void WDC65816_opcode_31_Mx(struct WDC65816_regs *regs, WDC65816_pins *pin
 }
 
 
-static void WDC65816_opcode_32_Mx(struct WDC65816_regs *regs, WDC65816_pins *pins) { // AND (d)
+static void WDC65816_opcode_32_Mx(WDC65816_regs *regs, WDC65816_pins *pins) { // AND (d)
         switch(regs->TCU) {
         // AND (d) E=0 M=1 X=0
             case 1: // fetch_D0_and_skip_cycle 2
@@ -13454,7 +13454,7 @@ static void WDC65816_opcode_32_Mx(struct WDC65816_regs *regs, WDC65816_pins *pin
 }
 
 
-static void WDC65816_opcode_33_Mx(struct WDC65816_regs *regs, WDC65816_pins *pins) { // AND (d,s),y
+static void WDC65816_opcode_33_Mx(WDC65816_regs *regs, WDC65816_pins *pins) { // AND (d,s),y
         switch(regs->TCU) {
         // AND (d,s),y E=0 M=1 X=0
             case 1: // 2
@@ -13501,7 +13501,7 @@ static void WDC65816_opcode_33_Mx(struct WDC65816_regs *regs, WDC65816_pins *pin
 }
 
 
-static void WDC65816_opcode_34_Mx(struct WDC65816_regs *regs, WDC65816_pins *pins) { // BIT d,x
+static void WDC65816_opcode_34_Mx(WDC65816_regs *regs, WDC65816_pins *pins) { // BIT d,x
         switch(regs->TCU) {
         // BIT d,x E=0 M=1 X=0
             case 1: // fetch_D0_and_skip_cycle 2
@@ -13541,7 +13541,7 @@ static void WDC65816_opcode_34_Mx(struct WDC65816_regs *regs, WDC65816_pins *pin
 }
 
 
-static void WDC65816_opcode_35_Mx(struct WDC65816_regs *regs, WDC65816_pins *pins) { // AND d,x
+static void WDC65816_opcode_35_Mx(WDC65816_regs *regs, WDC65816_pins *pins) { // AND d,x
         switch(regs->TCU) {
         // AND d,x E=0 M=1 X=0
             case 1: // fetch_D0_and_skip_cycle 2
@@ -13582,7 +13582,7 @@ static void WDC65816_opcode_35_Mx(struct WDC65816_regs *regs, WDC65816_pins *pin
 }
 
 
-static void WDC65816_opcode_36_Mx(struct WDC65816_regs *regs, WDC65816_pins *pins) { // ROL d,x
+static void WDC65816_opcode_36_Mx(WDC65816_regs *regs, WDC65816_pins *pins) { // ROL d,x
         switch(regs->TCU) {
         // ROL d,x E=0 M=1 X=0
             case 1: // fetch_D0_and_skip_cycle 2
@@ -13632,7 +13632,7 @@ static void WDC65816_opcode_36_Mx(struct WDC65816_regs *regs, WDC65816_pins *pin
 }
 
 
-static void WDC65816_opcode_37_Mx(struct WDC65816_regs *regs, WDC65816_pins *pins) { // AND [d],y
+static void WDC65816_opcode_37_Mx(WDC65816_regs *regs, WDC65816_pins *pins) { // AND [d],y
         switch(regs->TCU) {
         // AND [d],y E=0 M=1 X=0
             case 1: // fetch_D0_and_skip_cycle 2
@@ -13684,7 +13684,7 @@ static void WDC65816_opcode_37_Mx(struct WDC65816_regs *regs, WDC65816_pins *pin
 }
 
 
-static void WDC65816_opcode_38_Mx(struct WDC65816_regs *regs, WDC65816_pins *pins) { // SEC i
+static void WDC65816_opcode_38_Mx(WDC65816_regs *regs, WDC65816_pins *pins) { // SEC i
         switch(regs->TCU) {
         // SEC i E=0 M=1 X=0
             case 1: // 2
@@ -13706,7 +13706,7 @@ static void WDC65816_opcode_38_Mx(struct WDC65816_regs *regs, WDC65816_pins *pin
 }
 
 
-static void WDC65816_opcode_39_Mx(struct WDC65816_regs *regs, WDC65816_pins *pins) { // AND a,y
+static void WDC65816_opcode_39_Mx(WDC65816_regs *regs, WDC65816_pins *pins) { // AND a,y
         switch(regs->TCU) {
         // AND a,y E=0 M=1 X=0
             case 1: // 2
@@ -13751,7 +13751,7 @@ static void WDC65816_opcode_39_Mx(struct WDC65816_regs *regs, WDC65816_pins *pin
 }
 
 
-static void WDC65816_opcode_3A_Mx(struct WDC65816_regs *regs, WDC65816_pins *pins) { // DEC A
+static void WDC65816_opcode_3A_Mx(WDC65816_regs *regs, WDC65816_pins *pins) { // DEC A
         switch(regs->TCU) {
         // DEC A E=0 M=1 X=0
             case 1: // 2
@@ -13777,7 +13777,7 @@ static void WDC65816_opcode_3A_Mx(struct WDC65816_regs *regs, WDC65816_pins *pin
 }
 
 
-static void WDC65816_opcode_3B_Mx(struct WDC65816_regs *regs, WDC65816_pins *pins) { // TSC i
+static void WDC65816_opcode_3B_Mx(WDC65816_regs *regs, WDC65816_pins *pins) { // TSC i
         switch(regs->TCU) {
         // TSC i E=0 M=1 X=0
             case 1: // 2
@@ -13801,7 +13801,7 @@ static void WDC65816_opcode_3B_Mx(struct WDC65816_regs *regs, WDC65816_pins *pin
 }
 
 
-static void WDC65816_opcode_3C_Mx(struct WDC65816_regs *regs, WDC65816_pins *pins) { // BIT a,x
+static void WDC65816_opcode_3C_Mx(WDC65816_regs *regs, WDC65816_pins *pins) { // BIT a,x
         switch(regs->TCU) {
         // BIT a,x E=0 M=1 X=0
             case 1: // 2
@@ -13845,7 +13845,7 @@ static void WDC65816_opcode_3C_Mx(struct WDC65816_regs *regs, WDC65816_pins *pin
 }
 
 
-static void WDC65816_opcode_3D_Mx(struct WDC65816_regs *regs, WDC65816_pins *pins) { // AND a,x
+static void WDC65816_opcode_3D_Mx(WDC65816_regs *regs, WDC65816_pins *pins) { // AND a,x
         switch(regs->TCU) {
         // AND a,x E=0 M=1 X=0
             case 1: // 2
@@ -13890,7 +13890,7 @@ static void WDC65816_opcode_3D_Mx(struct WDC65816_regs *regs, WDC65816_pins *pin
 }
 
 
-static void WDC65816_opcode_3E_Mx(struct WDC65816_regs *regs, WDC65816_pins *pins) { // ROL a,x
+static void WDC65816_opcode_3E_Mx(WDC65816_regs *regs, WDC65816_pins *pins) { // ROL a,x
         switch(regs->TCU) {
         // ROL a,x E=0 M=1 X=0
             case 1: // 2
@@ -13940,7 +13940,7 @@ static void WDC65816_opcode_3E_Mx(struct WDC65816_regs *regs, WDC65816_pins *pin
 }
 
 
-static void WDC65816_opcode_3F_Mx(struct WDC65816_regs *regs, WDC65816_pins *pins) { // AND al,x
+static void WDC65816_opcode_3F_Mx(WDC65816_regs *regs, WDC65816_pins *pins) { // AND al,x
         switch(regs->TCU) {
         // AND al,x E=0 M=1 X=0
             case 1: // 2
@@ -13979,7 +13979,7 @@ static void WDC65816_opcode_3F_Mx(struct WDC65816_regs *regs, WDC65816_pins *pin
 }
 
 
-static void WDC65816_opcode_40_Mx(struct WDC65816_regs *regs, WDC65816_pins *pins) { // RTI s
+static void WDC65816_opcode_40_Mx(WDC65816_regs *regs, WDC65816_pins *pins) { // RTI s
         switch(regs->TCU) {
         // RTI s E=0 M=1 X=0
             case 1: // 2
@@ -14030,7 +14030,7 @@ static void WDC65816_opcode_40_Mx(struct WDC65816_regs *regs, WDC65816_pins *pin
 }
 
 
-static void WDC65816_opcode_41_Mx(struct WDC65816_regs *regs, WDC65816_pins *pins) { // EOR (d,x)
+static void WDC65816_opcode_41_Mx(WDC65816_regs *regs, WDC65816_pins *pins) { // EOR (d,x)
         switch(regs->TCU) {
         // EOR (d,x) E=0 M=1 X=0
             case 1: // fetch_D0_and_skip_cycle 2
@@ -14079,7 +14079,7 @@ static void WDC65816_opcode_41_Mx(struct WDC65816_regs *regs, WDC65816_pins *pin
 }
 
 
-static void WDC65816_opcode_42_Mx(struct WDC65816_regs *regs, WDC65816_pins *pins) { // WDM i
+static void WDC65816_opcode_42_Mx(WDC65816_regs *regs, WDC65816_pins *pins) { // WDM i
         switch(regs->TCU) {
         // WDM i E=0 M=1 X=0
             case 1: // 2
@@ -14101,7 +14101,7 @@ static void WDC65816_opcode_42_Mx(struct WDC65816_regs *regs, WDC65816_pins *pin
 }
 
 
-static void WDC65816_opcode_43_Mx(struct WDC65816_regs *regs, WDC65816_pins *pins) { // EOR d,s
+static void WDC65816_opcode_43_Mx(WDC65816_regs *regs, WDC65816_pins *pins) { // EOR d,s
         switch(regs->TCU) {
         // EOR d,s E=0 M=1 X=0
             case 1: // 2
@@ -14134,7 +14134,7 @@ static void WDC65816_opcode_43_Mx(struct WDC65816_regs *regs, WDC65816_pins *pin
 }
 
 
-static void WDC65816_opcode_44_Mx(struct WDC65816_regs *regs, WDC65816_pins *pins) { // MVP xyc
+static void WDC65816_opcode_44_Mx(WDC65816_regs *regs, WDC65816_pins *pins) { // MVP xyc
         switch(regs->TCU) {
         // MVP xyc E=0 M=1 X=0
             case 1: // 2
@@ -14175,7 +14175,7 @@ static void WDC65816_opcode_44_Mx(struct WDC65816_regs *regs, WDC65816_pins *pin
 }
 
 
-static void WDC65816_opcode_45_Mx(struct WDC65816_regs *regs, WDC65816_pins *pins) { // EOR d
+static void WDC65816_opcode_45_Mx(WDC65816_regs *regs, WDC65816_pins *pins) { // EOR d
         switch(regs->TCU) {
         // EOR d E=0 M=1 X=0
             case 1: // fetch_D0_and_skip_cycle 2
@@ -14214,7 +14214,7 @@ static void WDC65816_opcode_45_Mx(struct WDC65816_regs *regs, WDC65816_pins *pin
 }
 
 
-static void WDC65816_opcode_46_Mx(struct WDC65816_regs *regs, WDC65816_pins *pins) { // LSR d
+static void WDC65816_opcode_46_Mx(WDC65816_regs *regs, WDC65816_pins *pins) { // LSR d
         switch(regs->TCU) {
         // LSR d E=0 M=1 X=0
             case 1: // fetch_D0_and_skip_cycle 2
@@ -14261,7 +14261,7 @@ static void WDC65816_opcode_46_Mx(struct WDC65816_regs *regs, WDC65816_pins *pin
 }
 
 
-static void WDC65816_opcode_47_Mx(struct WDC65816_regs *regs, WDC65816_pins *pins) { // EOR [d]
+static void WDC65816_opcode_47_Mx(WDC65816_regs *regs, WDC65816_pins *pins) { // EOR [d]
         switch(regs->TCU) {
         // EOR [d] E=0 M=1 X=0
             case 1: // fetch_D0_and_skip_cycle 2
@@ -14313,7 +14313,7 @@ static void WDC65816_opcode_47_Mx(struct WDC65816_regs *regs, WDC65816_pins *pin
 }
 
 
-static void WDC65816_opcode_48_Mx(struct WDC65816_regs *regs, WDC65816_pins *pins) { // PHA s
+static void WDC65816_opcode_48_Mx(WDC65816_regs *regs, WDC65816_pins *pins) { // PHA s
         switch(regs->TCU) {
         // PHA s E=0 M=1 X=0
             case 1: // 2
@@ -14342,7 +14342,7 @@ static void WDC65816_opcode_48_Mx(struct WDC65816_regs *regs, WDC65816_pins *pin
 }
 
 
-static void WDC65816_opcode_49_Mx(struct WDC65816_regs *regs, WDC65816_pins *pins) { // EOR #
+static void WDC65816_opcode_49_Mx(WDC65816_regs *regs, WDC65816_pins *pins) { // EOR #
         switch(regs->TCU) {
         // EOR # E=0 M=1 X=0
             case 1: // 2
@@ -14367,7 +14367,7 @@ static void WDC65816_opcode_49_Mx(struct WDC65816_regs *regs, WDC65816_pins *pin
 }
 
 
-static void WDC65816_opcode_4A_Mx(struct WDC65816_regs *regs, WDC65816_pins *pins) { // LSR A
+static void WDC65816_opcode_4A_Mx(WDC65816_regs *regs, WDC65816_pins *pins) { // LSR A
         switch(regs->TCU) {
         // LSR A E=0 M=1 X=0
             case 1: // 2
@@ -14394,7 +14394,7 @@ static void WDC65816_opcode_4A_Mx(struct WDC65816_regs *regs, WDC65816_pins *pin
 }
 
 
-static void WDC65816_opcode_4B_Mx(struct WDC65816_regs *regs, WDC65816_pins *pins) { // PHK s
+static void WDC65816_opcode_4B_Mx(WDC65816_regs *regs, WDC65816_pins *pins) { // PHK s
         switch(regs->TCU) {
         // PHK s E=0 M=1 X=0
             case 1: // 2
@@ -14423,7 +14423,7 @@ static void WDC65816_opcode_4B_Mx(struct WDC65816_regs *regs, WDC65816_pins *pin
 }
 
 
-static void WDC65816_opcode_4C_Mx(struct WDC65816_regs *regs, WDC65816_pins *pins) { // JMP a
+static void WDC65816_opcode_4C_Mx(WDC65816_regs *regs, WDC65816_pins *pins) { // JMP a
         switch(regs->TCU) {
         // JMP a E=0 M=1 X=0
             case 1: // 2
@@ -14447,7 +14447,7 @@ static void WDC65816_opcode_4C_Mx(struct WDC65816_regs *regs, WDC65816_pins *pin
 }
 
 
-static void WDC65816_opcode_4D_Mx(struct WDC65816_regs *regs, WDC65816_pins *pins) { // EOR a
+static void WDC65816_opcode_4D_Mx(WDC65816_regs *regs, WDC65816_pins *pins) { // EOR a
         switch(regs->TCU) {
         // EOR a E=0 M=1 X=0
             case 1: // 2
@@ -14480,7 +14480,7 @@ static void WDC65816_opcode_4D_Mx(struct WDC65816_regs *regs, WDC65816_pins *pin
 }
 
 
-static void WDC65816_opcode_4E_Mx(struct WDC65816_regs *regs, WDC65816_pins *pins) { // LSR a
+static void WDC65816_opcode_4E_Mx(WDC65816_regs *regs, WDC65816_pins *pins) { // LSR a
         switch(regs->TCU) {
         // LSR a E=0 M=1 X=0
         //case AM.Ad
@@ -14523,7 +14523,7 @@ static void WDC65816_opcode_4E_Mx(struct WDC65816_regs *regs, WDC65816_pins *pin
 }
 
 
-static void WDC65816_opcode_4F_Mx(struct WDC65816_regs *regs, WDC65816_pins *pins) { // EOR al
+static void WDC65816_opcode_4F_Mx(WDC65816_regs *regs, WDC65816_pins *pins) { // EOR al
         switch(regs->TCU) {
         // EOR al E=0 M=1 X=0
             case 1: // 2
@@ -14561,7 +14561,7 @@ static void WDC65816_opcode_4F_Mx(struct WDC65816_regs *regs, WDC65816_pins *pin
 }
 
 
-static void WDC65816_opcode_50_Mx(struct WDC65816_regs *regs, WDC65816_pins *pins) { // BVC r
+static void WDC65816_opcode_50_Mx(WDC65816_regs *regs, WDC65816_pins *pins) { // BVC r
         switch(regs->TCU) {
         // BVC r E=0 M=1 X=0
             case 1: // 2
@@ -14593,7 +14593,7 @@ static void WDC65816_opcode_50_Mx(struct WDC65816_regs *regs, WDC65816_pins *pin
 }
 
 
-static void WDC65816_opcode_51_Mx(struct WDC65816_regs *regs, WDC65816_pins *pins) { // EOR (d),y
+static void WDC65816_opcode_51_Mx(WDC65816_regs *regs, WDC65816_pins *pins) { // EOR (d),y
         switch(regs->TCU) {
         // EOR (d),y E=0 M=1 X=0
             case 1: // fetch_D0_and_skip_cycle 2
@@ -14651,7 +14651,7 @@ static void WDC65816_opcode_51_Mx(struct WDC65816_regs *regs, WDC65816_pins *pin
 }
 
 
-static void WDC65816_opcode_52_Mx(struct WDC65816_regs *regs, WDC65816_pins *pins) { // EOR (d)
+static void WDC65816_opcode_52_Mx(WDC65816_regs *regs, WDC65816_pins *pins) { // EOR (d)
         switch(regs->TCU) {
         // EOR (d) E=0 M=1 X=0
             case 1: // fetch_D0_and_skip_cycle 2
@@ -14697,7 +14697,7 @@ static void WDC65816_opcode_52_Mx(struct WDC65816_regs *regs, WDC65816_pins *pin
 }
 
 
-static void WDC65816_opcode_53_Mx(struct WDC65816_regs *regs, WDC65816_pins *pins) { // EOR (d,s),y
+static void WDC65816_opcode_53_Mx(WDC65816_regs *regs, WDC65816_pins *pins) { // EOR (d,s),y
         switch(regs->TCU) {
         // EOR (d,s),y E=0 M=1 X=0
             case 1: // 2
@@ -14744,7 +14744,7 @@ static void WDC65816_opcode_53_Mx(struct WDC65816_regs *regs, WDC65816_pins *pin
 }
 
 
-static void WDC65816_opcode_54_Mx(struct WDC65816_regs *regs, WDC65816_pins *pins) { // MVN xyc
+static void WDC65816_opcode_54_Mx(WDC65816_regs *regs, WDC65816_pins *pins) { // MVN xyc
         switch(regs->TCU) {
         // MVN xyc E=0 M=1 X=0
             case 1: // 2
@@ -14785,7 +14785,7 @@ static void WDC65816_opcode_54_Mx(struct WDC65816_regs *regs, WDC65816_pins *pin
 }
 
 
-static void WDC65816_opcode_55_Mx(struct WDC65816_regs *regs, WDC65816_pins *pins) { // EOR d,x
+static void WDC65816_opcode_55_Mx(WDC65816_regs *regs, WDC65816_pins *pins) { // EOR d,x
         switch(regs->TCU) {
         // EOR d,x E=0 M=1 X=0
             case 1: // fetch_D0_and_skip_cycle 2
@@ -14826,7 +14826,7 @@ static void WDC65816_opcode_55_Mx(struct WDC65816_regs *regs, WDC65816_pins *pin
 }
 
 
-static void WDC65816_opcode_56_Mx(struct WDC65816_regs *regs, WDC65816_pins *pins) { // LSR d,x
+static void WDC65816_opcode_56_Mx(WDC65816_regs *regs, WDC65816_pins *pins) { // LSR d,x
         switch(regs->TCU) {
         // LSR d,x E=0 M=1 X=0
             case 1: // fetch_D0_and_skip_cycle 2
@@ -14875,7 +14875,7 @@ static void WDC65816_opcode_56_Mx(struct WDC65816_regs *regs, WDC65816_pins *pin
 }
 
 
-static void WDC65816_opcode_57_Mx(struct WDC65816_regs *regs, WDC65816_pins *pins) { // EOR [d],y
+static void WDC65816_opcode_57_Mx(WDC65816_regs *regs, WDC65816_pins *pins) { // EOR [d],y
         switch(regs->TCU) {
         // EOR [d],y E=0 M=1 X=0
             case 1: // fetch_D0_and_skip_cycle 2
@@ -14927,7 +14927,7 @@ static void WDC65816_opcode_57_Mx(struct WDC65816_regs *regs, WDC65816_pins *pin
 }
 
 
-static void WDC65816_opcode_58_Mx(struct WDC65816_regs *regs, WDC65816_pins *pins) { // CLI i
+static void WDC65816_opcode_58_Mx(WDC65816_regs *regs, WDC65816_pins *pins) { // CLI i
         switch(regs->TCU) {
         // CLI i E=0 M=1 X=0
             case 1: // 2
@@ -14949,7 +14949,7 @@ static void WDC65816_opcode_58_Mx(struct WDC65816_regs *regs, WDC65816_pins *pin
 }
 
 
-static void WDC65816_opcode_59_Mx(struct WDC65816_regs *regs, WDC65816_pins *pins) { // EOR a,y
+static void WDC65816_opcode_59_Mx(WDC65816_regs *regs, WDC65816_pins *pins) { // EOR a,y
         switch(regs->TCU) {
         // EOR a,y E=0 M=1 X=0
             case 1: // 2
@@ -14994,7 +14994,7 @@ static void WDC65816_opcode_59_Mx(struct WDC65816_regs *regs, WDC65816_pins *pin
 }
 
 
-static void WDC65816_opcode_5A_Mx(struct WDC65816_regs *regs, WDC65816_pins *pins) { // PHY s
+static void WDC65816_opcode_5A_Mx(WDC65816_regs *regs, WDC65816_pins *pins) { // PHY s
         switch(regs->TCU) {
         // PHY s E=0 M=1 X=0
             case 1: // 2
@@ -15029,7 +15029,7 @@ static void WDC65816_opcode_5A_Mx(struct WDC65816_regs *regs, WDC65816_pins *pin
 }
 
 
-static void WDC65816_opcode_5B_Mx(struct WDC65816_regs *regs, WDC65816_pins *pins) { // TCD i
+static void WDC65816_opcode_5B_Mx(WDC65816_regs *regs, WDC65816_pins *pins) { // TCD i
         switch(regs->TCU) {
         // TCD i E=0 M=1 X=0
             case 1: // 2
@@ -15053,7 +15053,7 @@ static void WDC65816_opcode_5B_Mx(struct WDC65816_regs *regs, WDC65816_pins *pin
 }
 
 
-static void WDC65816_opcode_5C_Mx(struct WDC65816_regs *regs, WDC65816_pins *pins) { // JMP al
+static void WDC65816_opcode_5C_Mx(WDC65816_regs *regs, WDC65816_pins *pins) { // JMP al
         switch(regs->TCU) {
         // JMP al E=0 M=1 X=0
             case 1: // 2
@@ -15081,7 +15081,7 @@ static void WDC65816_opcode_5C_Mx(struct WDC65816_regs *regs, WDC65816_pins *pin
 }
 
 
-static void WDC65816_opcode_5D_Mx(struct WDC65816_regs *regs, WDC65816_pins *pins) { // EOR a,x
+static void WDC65816_opcode_5D_Mx(WDC65816_regs *regs, WDC65816_pins *pins) { // EOR a,x
         switch(regs->TCU) {
         // EOR a,x E=0 M=1 X=0
             case 1: // 2
@@ -15126,7 +15126,7 @@ static void WDC65816_opcode_5D_Mx(struct WDC65816_regs *regs, WDC65816_pins *pin
 }
 
 
-static void WDC65816_opcode_5E_Mx(struct WDC65816_regs *regs, WDC65816_pins *pins) { // LSR a,x
+static void WDC65816_opcode_5E_Mx(WDC65816_regs *regs, WDC65816_pins *pins) { // LSR a,x
         switch(regs->TCU) {
         // LSR a,x E=0 M=1 X=0
             case 1: // 2
@@ -15175,7 +15175,7 @@ static void WDC65816_opcode_5E_Mx(struct WDC65816_regs *regs, WDC65816_pins *pin
 }
 
 
-static void WDC65816_opcode_5F_Mx(struct WDC65816_regs *regs, WDC65816_pins *pins) { // EOR al,x
+static void WDC65816_opcode_5F_Mx(WDC65816_regs *regs, WDC65816_pins *pins) { // EOR al,x
         switch(regs->TCU) {
         // EOR al,x E=0 M=1 X=0
             case 1: // 2
@@ -15214,7 +15214,7 @@ static void WDC65816_opcode_5F_Mx(struct WDC65816_regs *regs, WDC65816_pins *pin
 }
 
 
-static void WDC65816_opcode_60_Mx(struct WDC65816_regs *regs, WDC65816_pins *pins) { // RTS s
+static void WDC65816_opcode_60_Mx(WDC65816_regs *regs, WDC65816_pins *pins) { // RTS s
         switch(regs->TCU) {
         // RTS s E=0 M=1 X=0
             case 1: // 2
@@ -15251,7 +15251,7 @@ static void WDC65816_opcode_60_Mx(struct WDC65816_regs *regs, WDC65816_pins *pin
 }
 
 
-static void WDC65816_opcode_61_Mx(struct WDC65816_regs *regs, WDC65816_pins *pins) { // ADC (d,x)
+static void WDC65816_opcode_61_Mx(WDC65816_regs *regs, WDC65816_pins *pins) { // ADC (d,x)
         switch(regs->TCU) {
         // ADC (d,x) E=0 M=1 X=0
             case 1: // fetch_D0_and_skip_cycle 2
@@ -15311,7 +15311,7 @@ static void WDC65816_opcode_61_Mx(struct WDC65816_regs *regs, WDC65816_pins *pin
 }
 
 
-static void WDC65816_opcode_62_Mx(struct WDC65816_regs *regs, WDC65816_pins *pins) { // PER s
+static void WDC65816_opcode_62_Mx(WDC65816_regs *regs, WDC65816_pins *pins) { // PER s
         switch(regs->TCU) {
         // PER s E=0 M=1 X=0
             case 1: // 2
@@ -15350,7 +15350,7 @@ static void WDC65816_opcode_62_Mx(struct WDC65816_regs *regs, WDC65816_pins *pin
 }
 
 
-static void WDC65816_opcode_63_Mx(struct WDC65816_regs *regs, WDC65816_pins *pins) { // ADC d,s
+static void WDC65816_opcode_63_Mx(WDC65816_regs *regs, WDC65816_pins *pins) { // ADC d,s
         switch(regs->TCU) {
         // ADC d,s E=0 M=1 X=0
             case 1: // 2
@@ -15394,7 +15394,7 @@ static void WDC65816_opcode_63_Mx(struct WDC65816_regs *regs, WDC65816_pins *pin
 }
 
 
-static void WDC65816_opcode_64_Mx(struct WDC65816_regs *regs, WDC65816_pins *pins) { // STZ d
+static void WDC65816_opcode_64_Mx(WDC65816_regs *regs, WDC65816_pins *pins) { // STZ d
         switch(regs->TCU) {
         // STZ d E=0 M=1 X=0
             case 1: // fetch_D0_and_skip_cycle 2
@@ -15431,7 +15431,7 @@ static void WDC65816_opcode_64_Mx(struct WDC65816_regs *regs, WDC65816_pins *pin
 }
 
 
-static void WDC65816_opcode_65_Mx(struct WDC65816_regs *regs, WDC65816_pins *pins) { // ADC d
+static void WDC65816_opcode_65_Mx(WDC65816_regs *regs, WDC65816_pins *pins) { // ADC d
         switch(regs->TCU) {
         // ADC d E=0 M=1 X=0
             case 1: // fetch_D0_and_skip_cycle 2
@@ -15481,7 +15481,7 @@ static void WDC65816_opcode_65_Mx(struct WDC65816_regs *regs, WDC65816_pins *pin
 }
 
 
-static void WDC65816_opcode_66_Mx(struct WDC65816_regs *regs, WDC65816_pins *pins) { // ROR d
+static void WDC65816_opcode_66_Mx(WDC65816_regs *regs, WDC65816_pins *pins) { // ROR d
         switch(regs->TCU) {
         // ROR d E=0 M=1 X=0
             case 1: // fetch_D0_and_skip_cycle 2
@@ -15529,7 +15529,7 @@ static void WDC65816_opcode_66_Mx(struct WDC65816_regs *regs, WDC65816_pins *pin
 }
 
 
-static void WDC65816_opcode_67_Mx(struct WDC65816_regs *regs, WDC65816_pins *pins) { // ADC [d]
+static void WDC65816_opcode_67_Mx(WDC65816_regs *regs, WDC65816_pins *pins) { // ADC [d]
         switch(regs->TCU) {
         // ADC [d] E=0 M=1 X=0
             case 1: // fetch_D0_and_skip_cycle 2
@@ -15592,7 +15592,7 @@ static void WDC65816_opcode_67_Mx(struct WDC65816_regs *regs, WDC65816_pins *pin
 }
 
 
-static void WDC65816_opcode_68_Mx(struct WDC65816_regs *regs, WDC65816_pins *pins) { // PLA s
+static void WDC65816_opcode_68_Mx(WDC65816_regs *regs, WDC65816_pins *pins) { // PLA s
         switch(regs->TCU) {
         // PLA s E=0 M=1 X=0
             case 1: // 2
@@ -15624,7 +15624,7 @@ static void WDC65816_opcode_68_Mx(struct WDC65816_regs *regs, WDC65816_pins *pin
 }
 
 
-static void WDC65816_opcode_69_Mx(struct WDC65816_regs *regs, WDC65816_pins *pins) { // ADC #
+static void WDC65816_opcode_69_Mx(WDC65816_regs *regs, WDC65816_pins *pins) { // ADC #
         switch(regs->TCU) {
         // ADC # E=0 M=1 X=0
             case 1: // 2
@@ -15660,7 +15660,7 @@ static void WDC65816_opcode_69_Mx(struct WDC65816_regs *regs, WDC65816_pins *pin
 }
 
 
-static void WDC65816_opcode_6A_Mx(struct WDC65816_regs *regs, WDC65816_pins *pins) { // ROR A
+static void WDC65816_opcode_6A_Mx(WDC65816_regs *regs, WDC65816_pins *pins) { // ROR A
         switch(regs->TCU) {
         // ROR A E=0 M=1 X=0
             case 1: // 2
@@ -15688,7 +15688,7 @@ static void WDC65816_opcode_6A_Mx(struct WDC65816_regs *regs, WDC65816_pins *pin
 }
 
 
-static void WDC65816_opcode_6B_Mx(struct WDC65816_regs *regs, WDC65816_pins *pins) { // RTL s
+static void WDC65816_opcode_6B_Mx(WDC65816_regs *regs, WDC65816_pins *pins) { // RTL s
         switch(regs->TCU) {
         // RTL s E=0 M=1 X=0
             case 1: // 2
@@ -15727,7 +15727,7 @@ static void WDC65816_opcode_6B_Mx(struct WDC65816_regs *regs, WDC65816_pins *pin
 }
 
 
-static void WDC65816_opcode_6C_Mx(struct WDC65816_regs *regs, WDC65816_pins *pins) { // JMP (a)
+static void WDC65816_opcode_6C_Mx(WDC65816_regs *regs, WDC65816_pins *pins) { // JMP (a)
         switch(regs->TCU) {
         // JMP (a) E=0 M=1 X=0
             case 1: // 2
@@ -15758,7 +15758,7 @@ static void WDC65816_opcode_6C_Mx(struct WDC65816_regs *regs, WDC65816_pins *pin
 }
 
 
-static void WDC65816_opcode_6D_Mx(struct WDC65816_regs *regs, WDC65816_pins *pins) { // ADC a
+static void WDC65816_opcode_6D_Mx(WDC65816_regs *regs, WDC65816_pins *pins) { // ADC a
         switch(regs->TCU) {
         // ADC a E=0 M=1 X=0
             case 1: // 2
@@ -15802,7 +15802,7 @@ static void WDC65816_opcode_6D_Mx(struct WDC65816_regs *regs, WDC65816_pins *pin
 }
 
 
-static void WDC65816_opcode_6E_Mx(struct WDC65816_regs *regs, WDC65816_pins *pins) { // ROR a
+static void WDC65816_opcode_6E_Mx(WDC65816_regs *regs, WDC65816_pins *pins) { // ROR a
         switch(regs->TCU) {
         // ROR a E=0 M=1 X=0
         //case AM.Ad
@@ -15846,7 +15846,7 @@ static void WDC65816_opcode_6E_Mx(struct WDC65816_regs *regs, WDC65816_pins *pin
 }
 
 
-static void WDC65816_opcode_6F_Mx(struct WDC65816_regs *regs, WDC65816_pins *pins) { // ADC al
+static void WDC65816_opcode_6F_Mx(WDC65816_regs *regs, WDC65816_pins *pins) { // ADC al
         switch(regs->TCU) {
         // ADC al E=0 M=1 X=0
             case 1: // 2
@@ -15895,7 +15895,7 @@ static void WDC65816_opcode_6F_Mx(struct WDC65816_regs *regs, WDC65816_pins *pin
 }
 
 
-static void WDC65816_opcode_70_Mx(struct WDC65816_regs *regs, WDC65816_pins *pins) { // BVS r
+static void WDC65816_opcode_70_Mx(WDC65816_regs *regs, WDC65816_pins *pins) { // BVS r
         switch(regs->TCU) {
         // BVS r E=0 M=1 X=0
             case 1: // 2
@@ -15927,7 +15927,7 @@ static void WDC65816_opcode_70_Mx(struct WDC65816_regs *regs, WDC65816_pins *pin
 }
 
 
-static void WDC65816_opcode_71_Mx(struct WDC65816_regs *regs, WDC65816_pins *pins) { // ADC (d),y
+static void WDC65816_opcode_71_Mx(WDC65816_regs *regs, WDC65816_pins *pins) { // ADC (d),y
         switch(regs->TCU) {
         // ADC (d),y E=0 M=1 X=0
             case 1: // fetch_D0_and_skip_cycle 2
@@ -15996,7 +15996,7 @@ static void WDC65816_opcode_71_Mx(struct WDC65816_regs *regs, WDC65816_pins *pin
 }
 
 
-static void WDC65816_opcode_72_Mx(struct WDC65816_regs *regs, WDC65816_pins *pins) { // ADC (d)
+static void WDC65816_opcode_72_Mx(WDC65816_regs *regs, WDC65816_pins *pins) { // ADC (d)
         switch(regs->TCU) {
         // ADC (d) E=0 M=1 X=0
             case 1: // fetch_D0_and_skip_cycle 2
@@ -16053,7 +16053,7 @@ static void WDC65816_opcode_72_Mx(struct WDC65816_regs *regs, WDC65816_pins *pin
 }
 
 
-static void WDC65816_opcode_73_Mx(struct WDC65816_regs *regs, WDC65816_pins *pins) { // ADC (d,s),y
+static void WDC65816_opcode_73_Mx(WDC65816_regs *regs, WDC65816_pins *pins) { // ADC (d,s),y
         switch(regs->TCU) {
         // ADC (d,s),y E=0 M=1 X=0
             case 1: // 2
@@ -16111,7 +16111,7 @@ static void WDC65816_opcode_73_Mx(struct WDC65816_regs *regs, WDC65816_pins *pin
 }
 
 
-static void WDC65816_opcode_74_Mx(struct WDC65816_regs *regs, WDC65816_pins *pins) { // STZ d,x
+static void WDC65816_opcode_74_Mx(WDC65816_regs *regs, WDC65816_pins *pins) { // STZ d,x
         switch(regs->TCU) {
         // STZ d,x E=0 M=1 X=0
             case 1: // fetch_D0_and_skip_cycle 2
@@ -16150,7 +16150,7 @@ static void WDC65816_opcode_74_Mx(struct WDC65816_regs *regs, WDC65816_pins *pin
 }
 
 
-static void WDC65816_opcode_75_Mx(struct WDC65816_regs *regs, WDC65816_pins *pins) { // ADC d,x
+static void WDC65816_opcode_75_Mx(WDC65816_regs *regs, WDC65816_pins *pins) { // ADC d,x
         switch(regs->TCU) {
         // ADC d,x E=0 M=1 X=0
             case 1: // fetch_D0_and_skip_cycle 2
@@ -16202,7 +16202,7 @@ static void WDC65816_opcode_75_Mx(struct WDC65816_regs *regs, WDC65816_pins *pin
 }
 
 
-static void WDC65816_opcode_76_Mx(struct WDC65816_regs *regs, WDC65816_pins *pins) { // ROR d,x
+static void WDC65816_opcode_76_Mx(WDC65816_regs *regs, WDC65816_pins *pins) { // ROR d,x
         switch(regs->TCU) {
         // ROR d,x E=0 M=1 X=0
             case 1: // fetch_D0_and_skip_cycle 2
@@ -16252,7 +16252,7 @@ static void WDC65816_opcode_76_Mx(struct WDC65816_regs *regs, WDC65816_pins *pin
 }
 
 
-static void WDC65816_opcode_77_Mx(struct WDC65816_regs *regs, WDC65816_pins *pins) { // ADC [d],y
+static void WDC65816_opcode_77_Mx(WDC65816_regs *regs, WDC65816_pins *pins) { // ADC [d],y
         switch(regs->TCU) {
         // ADC [d],y E=0 M=1 X=0
             case 1: // fetch_D0_and_skip_cycle 2
@@ -16315,7 +16315,7 @@ static void WDC65816_opcode_77_Mx(struct WDC65816_regs *regs, WDC65816_pins *pin
 }
 
 
-static void WDC65816_opcode_78_Mx(struct WDC65816_regs *regs, WDC65816_pins *pins) { // SEI i
+static void WDC65816_opcode_78_Mx(WDC65816_regs *regs, WDC65816_pins *pins) { // SEI i
         switch(regs->TCU) {
         // SEI i E=0 M=1 X=0
             case 1: // 2
@@ -16337,7 +16337,7 @@ static void WDC65816_opcode_78_Mx(struct WDC65816_regs *regs, WDC65816_pins *pin
 }
 
 
-static void WDC65816_opcode_79_Mx(struct WDC65816_regs *regs, WDC65816_pins *pins) { // ADC a,y
+static void WDC65816_opcode_79_Mx(WDC65816_regs *regs, WDC65816_pins *pins) { // ADC a,y
         switch(regs->TCU) {
         // ADC a,y E=0 M=1 X=0
             case 1: // 2
@@ -16393,7 +16393,7 @@ static void WDC65816_opcode_79_Mx(struct WDC65816_regs *regs, WDC65816_pins *pin
 }
 
 
-static void WDC65816_opcode_7A_Mx(struct WDC65816_regs *regs, WDC65816_pins *pins) { // PLY s
+static void WDC65816_opcode_7A_Mx(WDC65816_regs *regs, WDC65816_pins *pins) { // PLY s
         switch(regs->TCU) {
         // PLY s E=0 M=1 X=0
             case 1: // 2
@@ -16431,7 +16431,7 @@ static void WDC65816_opcode_7A_Mx(struct WDC65816_regs *regs, WDC65816_pins *pin
 }
 
 
-static void WDC65816_opcode_7B_Mx(struct WDC65816_regs *regs, WDC65816_pins *pins) { // TDC i
+static void WDC65816_opcode_7B_Mx(WDC65816_regs *regs, WDC65816_pins *pins) { // TDC i
         switch(regs->TCU) {
         // TDC i E=0 M=1 X=0
             case 1: // 2
@@ -16455,7 +16455,7 @@ static void WDC65816_opcode_7B_Mx(struct WDC65816_regs *regs, WDC65816_pins *pin
 }
 
 
-static void WDC65816_opcode_7C_Mx(struct WDC65816_regs *regs, WDC65816_pins *pins) { // JMP (a,x)
+static void WDC65816_opcode_7C_Mx(WDC65816_regs *regs, WDC65816_pins *pins) { // JMP (a,x)
         switch(regs->TCU) {
         // JMP (a,x) E=0 M=1 X=0
             case 1: // 2
@@ -16492,7 +16492,7 @@ static void WDC65816_opcode_7C_Mx(struct WDC65816_regs *regs, WDC65816_pins *pin
 }
 
 
-static void WDC65816_opcode_7D_Mx(struct WDC65816_regs *regs, WDC65816_pins *pins) { // ADC a,x
+static void WDC65816_opcode_7D_Mx(WDC65816_regs *regs, WDC65816_pins *pins) { // ADC a,x
         switch(regs->TCU) {
         // ADC a,x E=0 M=1 X=0
             case 1: // 2
@@ -16548,7 +16548,7 @@ static void WDC65816_opcode_7D_Mx(struct WDC65816_regs *regs, WDC65816_pins *pin
 }
 
 
-static void WDC65816_opcode_7E_Mx(struct WDC65816_regs *regs, WDC65816_pins *pins) { // ROR a,x
+static void WDC65816_opcode_7E_Mx(WDC65816_regs *regs, WDC65816_pins *pins) { // ROR a,x
         switch(regs->TCU) {
         // ROR a,x E=0 M=1 X=0
             case 1: // 2
@@ -16598,7 +16598,7 @@ static void WDC65816_opcode_7E_Mx(struct WDC65816_regs *regs, WDC65816_pins *pin
 }
 
 
-static void WDC65816_opcode_7F_Mx(struct WDC65816_regs *regs, WDC65816_pins *pins) { // ADC al,x
+static void WDC65816_opcode_7F_Mx(WDC65816_regs *regs, WDC65816_pins *pins) { // ADC al,x
         switch(regs->TCU) {
         // ADC al,x E=0 M=1 X=0
             case 1: // 2
@@ -16648,7 +16648,7 @@ static void WDC65816_opcode_7F_Mx(struct WDC65816_regs *regs, WDC65816_pins *pin
 }
 
 
-static void WDC65816_opcode_80_Mx(struct WDC65816_regs *regs, WDC65816_pins *pins) { // BRA r
+static void WDC65816_opcode_80_Mx(WDC65816_regs *regs, WDC65816_pins *pins) { // BRA r
         switch(regs->TCU) {
         // BRA r E=0 M=1 X=0
             case 1: // 2
@@ -16680,7 +16680,7 @@ static void WDC65816_opcode_80_Mx(struct WDC65816_regs *regs, WDC65816_pins *pin
 }
 
 
-static void WDC65816_opcode_81_Mx(struct WDC65816_regs *regs, WDC65816_pins *pins) { // STA (d,x)
+static void WDC65816_opcode_81_Mx(WDC65816_regs *regs, WDC65816_pins *pins) { // STA (d,x)
         switch(regs->TCU) {
         // STA (d,x) E=0 M=1 X=0
             case 1: // fetch_D0_and_skip_cycle 2
@@ -16729,7 +16729,7 @@ static void WDC65816_opcode_81_Mx(struct WDC65816_regs *regs, WDC65816_pins *pin
 }
 
 
-static void WDC65816_opcode_82_Mx(struct WDC65816_regs *regs, WDC65816_pins *pins) { // BRL rl
+static void WDC65816_opcode_82_Mx(WDC65816_regs *regs, WDC65816_pins *pins) { // BRL rl
         switch(regs->TCU) {
         // BRL rl E=0 M=1 X=0
             case 1: // 2
@@ -16758,7 +16758,7 @@ static void WDC65816_opcode_82_Mx(struct WDC65816_regs *regs, WDC65816_pins *pin
 }
 
 
-static void WDC65816_opcode_83_Mx(struct WDC65816_regs *regs, WDC65816_pins *pins) { // STA d,s
+static void WDC65816_opcode_83_Mx(WDC65816_regs *regs, WDC65816_pins *pins) { // STA d,s
         switch(regs->TCU) {
         // STA d,s E=0 M=1 X=0
             case 1: // 2
@@ -16790,7 +16790,7 @@ static void WDC65816_opcode_83_Mx(struct WDC65816_regs *regs, WDC65816_pins *pin
 }
 
 
-static void WDC65816_opcode_84_Mx(struct WDC65816_regs *regs, WDC65816_pins *pins) { // STY d
+static void WDC65816_opcode_84_Mx(WDC65816_regs *regs, WDC65816_pins *pins) { // STY d
         switch(regs->TCU) {
         // STY d E=0 M=1 X=0
             case 1: // fetch_D0_and_skip_cycle 2
@@ -16831,7 +16831,7 @@ static void WDC65816_opcode_84_Mx(struct WDC65816_regs *regs, WDC65816_pins *pin
 }
 
 
-static void WDC65816_opcode_85_Mx(struct WDC65816_regs *regs, WDC65816_pins *pins) { // STA d
+static void WDC65816_opcode_85_Mx(WDC65816_regs *regs, WDC65816_pins *pins) { // STA d
         switch(regs->TCU) {
         // STA d E=0 M=1 X=0
             case 1: // fetch_D0_and_skip_cycle 2
@@ -16869,7 +16869,7 @@ static void WDC65816_opcode_85_Mx(struct WDC65816_regs *regs, WDC65816_pins *pin
 }
 
 
-static void WDC65816_opcode_86_Mx(struct WDC65816_regs *regs, WDC65816_pins *pins) { // STX d
+static void WDC65816_opcode_86_Mx(WDC65816_regs *regs, WDC65816_pins *pins) { // STX d
         switch(regs->TCU) {
         // STX d E=0 M=1 X=0
             case 1: // fetch_D0_and_skip_cycle 2
@@ -16910,7 +16910,7 @@ static void WDC65816_opcode_86_Mx(struct WDC65816_regs *regs, WDC65816_pins *pin
 }
 
 
-static void WDC65816_opcode_87_Mx(struct WDC65816_regs *regs, WDC65816_pins *pins) { // STA [d]
+static void WDC65816_opcode_87_Mx(WDC65816_regs *regs, WDC65816_pins *pins) { // STA [d]
         switch(regs->TCU) {
         // STA [d] E=0 M=1 X=0
             case 1: // fetch_D0_and_skip_cycle 2
@@ -16962,7 +16962,7 @@ static void WDC65816_opcode_87_Mx(struct WDC65816_regs *regs, WDC65816_pins *pin
 }
 
 
-static void WDC65816_opcode_88_Mx(struct WDC65816_regs *regs, WDC65816_pins *pins) { // DEY i
+static void WDC65816_opcode_88_Mx(WDC65816_regs *regs, WDC65816_pins *pins) { // DEY i
         switch(regs->TCU) {
         // DEY i E=0 M=1 X=0
             case 1: // 2
@@ -16986,7 +16986,7 @@ static void WDC65816_opcode_88_Mx(struct WDC65816_regs *regs, WDC65816_pins *pin
 }
 
 
-static void WDC65816_opcode_89_Mx(struct WDC65816_regs *regs, WDC65816_pins *pins) { // BIT #
+static void WDC65816_opcode_89_Mx(WDC65816_regs *regs, WDC65816_pins *pins) { // BIT #
         switch(regs->TCU) {
         // BIT # E=0 M=1 X=0
             case 1: // 2
@@ -17008,7 +17008,7 @@ static void WDC65816_opcode_89_Mx(struct WDC65816_regs *regs, WDC65816_pins *pin
 }
 
 
-static void WDC65816_opcode_8A_Mx(struct WDC65816_regs *regs, WDC65816_pins *pins) { // TXA i
+static void WDC65816_opcode_8A_Mx(WDC65816_regs *regs, WDC65816_pins *pins) { // TXA i
         switch(regs->TCU) {
         // TXA i E=0 M=1 X=0
             case 1: // 2
@@ -17032,7 +17032,7 @@ static void WDC65816_opcode_8A_Mx(struct WDC65816_regs *regs, WDC65816_pins *pin
 }
 
 
-static void WDC65816_opcode_8B_Mx(struct WDC65816_regs *regs, WDC65816_pins *pins) { // PHB s
+static void WDC65816_opcode_8B_Mx(WDC65816_regs *regs, WDC65816_pins *pins) { // PHB s
         switch(regs->TCU) {
         // PHB s E=0 M=1 X=0
             case 1: // 2
@@ -17061,7 +17061,7 @@ static void WDC65816_opcode_8B_Mx(struct WDC65816_regs *regs, WDC65816_pins *pin
 }
 
 
-static void WDC65816_opcode_8C_Mx(struct WDC65816_regs *regs, WDC65816_pins *pins) { // STY a
+static void WDC65816_opcode_8C_Mx(WDC65816_regs *regs, WDC65816_pins *pins) { // STY a
         switch(regs->TCU) {
         // STY a E=0 M=1 X=0
             case 1: // 2
@@ -17097,7 +17097,7 @@ static void WDC65816_opcode_8C_Mx(struct WDC65816_regs *regs, WDC65816_pins *pin
 }
 
 
-static void WDC65816_opcode_8D_Mx(struct WDC65816_regs *regs, WDC65816_pins *pins) { // STA a
+static void WDC65816_opcode_8D_Mx(WDC65816_regs *regs, WDC65816_pins *pins) { // STA a
         switch(regs->TCU) {
         // STA a E=0 M=1 X=0
             case 1: // 2
@@ -17130,7 +17130,7 @@ static void WDC65816_opcode_8D_Mx(struct WDC65816_regs *regs, WDC65816_pins *pin
 }
 
 
-static void WDC65816_opcode_8E_Mx(struct WDC65816_regs *regs, WDC65816_pins *pins) { // STX a
+static void WDC65816_opcode_8E_Mx(WDC65816_regs *regs, WDC65816_pins *pins) { // STX a
         switch(regs->TCU) {
         // STX a E=0 M=1 X=0
             case 1: // 2
@@ -17166,7 +17166,7 @@ static void WDC65816_opcode_8E_Mx(struct WDC65816_regs *regs, WDC65816_pins *pin
 }
 
 
-static void WDC65816_opcode_8F_Mx(struct WDC65816_regs *regs, WDC65816_pins *pins) { // STA al
+static void WDC65816_opcode_8F_Mx(WDC65816_regs *regs, WDC65816_pins *pins) { // STA al
         switch(regs->TCU) {
         // STA al E=0 M=1 X=0
             case 1: // 2
@@ -17204,7 +17204,7 @@ static void WDC65816_opcode_8F_Mx(struct WDC65816_regs *regs, WDC65816_pins *pin
 }
 
 
-static void WDC65816_opcode_90_Mx(struct WDC65816_regs *regs, WDC65816_pins *pins) { // BCC r
+static void WDC65816_opcode_90_Mx(WDC65816_regs *regs, WDC65816_pins *pins) { // BCC r
         switch(regs->TCU) {
         // BCC r E=0 M=1 X=0
             case 1: // 2
@@ -17236,7 +17236,7 @@ static void WDC65816_opcode_90_Mx(struct WDC65816_regs *regs, WDC65816_pins *pin
 }
 
 
-static void WDC65816_opcode_91_Mx(struct WDC65816_regs *regs, WDC65816_pins *pins) { // STA (d),y
+static void WDC65816_opcode_91_Mx(WDC65816_regs *regs, WDC65816_pins *pins) { // STA (d),y
         switch(regs->TCU) {
         // STA (d),y E=0 M=1 X=0
             case 1: // fetch_D0_and_skip_cycle 2
@@ -17293,7 +17293,7 @@ static void WDC65816_opcode_91_Mx(struct WDC65816_regs *regs, WDC65816_pins *pin
 }
 
 
-static void WDC65816_opcode_92_Mx(struct WDC65816_regs *regs, WDC65816_pins *pins) { // STA (d)
+static void WDC65816_opcode_92_Mx(WDC65816_regs *regs, WDC65816_pins *pins) { // STA (d)
         switch(regs->TCU) {
         // STA (d) E=0 M=1 X=0
             case 1: // fetch_D0_and_skip_cycle 2
@@ -17339,7 +17339,7 @@ static void WDC65816_opcode_92_Mx(struct WDC65816_regs *regs, WDC65816_pins *pin
 }
 
 
-static void WDC65816_opcode_93_Mx(struct WDC65816_regs *regs, WDC65816_pins *pins) { // STA (d,s),y
+static void WDC65816_opcode_93_Mx(WDC65816_regs *regs, WDC65816_pins *pins) { // STA (d,s),y
         switch(regs->TCU) {
         // STA (d,s),y E=0 M=1 X=0
             case 1: // 2
@@ -17385,7 +17385,7 @@ static void WDC65816_opcode_93_Mx(struct WDC65816_regs *regs, WDC65816_pins *pin
 }
 
 
-static void WDC65816_opcode_94_Mx(struct WDC65816_regs *regs, WDC65816_pins *pins) { // STY d,x
+static void WDC65816_opcode_94_Mx(WDC65816_regs *regs, WDC65816_pins *pins) { // STY d,x
         switch(regs->TCU) {
         // STY d,x E=0 M=1 X=0
             case 1: // fetch_D0_and_skip_cycle 2
@@ -17428,7 +17428,7 @@ static void WDC65816_opcode_94_Mx(struct WDC65816_regs *regs, WDC65816_pins *pin
 }
 
 
-static void WDC65816_opcode_95_Mx(struct WDC65816_regs *regs, WDC65816_pins *pins) { // STA d,x
+static void WDC65816_opcode_95_Mx(WDC65816_regs *regs, WDC65816_pins *pins) { // STA d,x
         switch(regs->TCU) {
         // STA d,x E=0 M=1 X=0
             case 1: // fetch_D0_and_skip_cycle 2
@@ -17468,7 +17468,7 @@ static void WDC65816_opcode_95_Mx(struct WDC65816_regs *regs, WDC65816_pins *pin
 }
 
 
-static void WDC65816_opcode_96_Mx(struct WDC65816_regs *regs, WDC65816_pins *pins) { // STX d,y
+static void WDC65816_opcode_96_Mx(WDC65816_regs *regs, WDC65816_pins *pins) { // STX d,y
         switch(regs->TCU) {
         // STX d,y E=0 M=1 X=0
             case 1: // fetch_D0_and_skip_cycle 2
@@ -17511,7 +17511,7 @@ static void WDC65816_opcode_96_Mx(struct WDC65816_regs *regs, WDC65816_pins *pin
 }
 
 
-static void WDC65816_opcode_97_Mx(struct WDC65816_regs *regs, WDC65816_pins *pins) { // STA [d],y
+static void WDC65816_opcode_97_Mx(WDC65816_regs *regs, WDC65816_pins *pins) { // STA [d],y
         switch(regs->TCU) {
         // STA [d],y E=0 M=1 X=0
             case 1: // fetch_D0_and_skip_cycle 2
@@ -17563,7 +17563,7 @@ static void WDC65816_opcode_97_Mx(struct WDC65816_regs *regs, WDC65816_pins *pin
 }
 
 
-static void WDC65816_opcode_98_Mx(struct WDC65816_regs *regs, WDC65816_pins *pins) { // TYA i
+static void WDC65816_opcode_98_Mx(WDC65816_regs *regs, WDC65816_pins *pins) { // TYA i
         switch(regs->TCU) {
         // TYA i E=0 M=1 X=0
             case 1: // 2
@@ -17587,7 +17587,7 @@ static void WDC65816_opcode_98_Mx(struct WDC65816_regs *regs, WDC65816_pins *pin
 }
 
 
-static void WDC65816_opcode_99_Mx(struct WDC65816_regs *regs, WDC65816_pins *pins) { // STA a,y
+static void WDC65816_opcode_99_Mx(WDC65816_regs *regs, WDC65816_pins *pins) { // STA a,y
         switch(regs->TCU) {
         // STA a,y E=0 M=1 X=0
             case 1: // 2
@@ -17631,7 +17631,7 @@ static void WDC65816_opcode_99_Mx(struct WDC65816_regs *regs, WDC65816_pins *pin
 }
 
 
-static void WDC65816_opcode_9A_Mx(struct WDC65816_regs *regs, WDC65816_pins *pins) { // TXS i
+static void WDC65816_opcode_9A_Mx(WDC65816_regs *regs, WDC65816_pins *pins) { // TXS i
         switch(regs->TCU) {
         // TXS i E=0 M=1 X=0
             case 1: // 2
@@ -17653,7 +17653,7 @@ static void WDC65816_opcode_9A_Mx(struct WDC65816_regs *regs, WDC65816_pins *pin
 }
 
 
-static void WDC65816_opcode_9B_Mx(struct WDC65816_regs *regs, WDC65816_pins *pins) { // TXY i
+static void WDC65816_opcode_9B_Mx(WDC65816_regs *regs, WDC65816_pins *pins) { // TXY i
         switch(regs->TCU) {
         // TXY i E=0 M=1 X=0
             case 1: // 2
@@ -17677,7 +17677,7 @@ static void WDC65816_opcode_9B_Mx(struct WDC65816_regs *regs, WDC65816_pins *pin
 }
 
 
-static void WDC65816_opcode_9C_Mx(struct WDC65816_regs *regs, WDC65816_pins *pins) { // STZ a
+static void WDC65816_opcode_9C_Mx(WDC65816_regs *regs, WDC65816_pins *pins) { // STZ a
         switch(regs->TCU) {
         // STZ a E=0 M=1 X=0
             case 1: // 2
@@ -17709,7 +17709,7 @@ static void WDC65816_opcode_9C_Mx(struct WDC65816_regs *regs, WDC65816_pins *pin
 }
 
 
-static void WDC65816_opcode_9D_Mx(struct WDC65816_regs *regs, WDC65816_pins *pins) { // STA a,x
+static void WDC65816_opcode_9D_Mx(WDC65816_regs *regs, WDC65816_pins *pins) { // STA a,x
         switch(regs->TCU) {
         // STA a,x E=0 M=1 X=0
             case 1: // 2
@@ -17753,7 +17753,7 @@ static void WDC65816_opcode_9D_Mx(struct WDC65816_regs *regs, WDC65816_pins *pin
 }
 
 
-static void WDC65816_opcode_9E_Mx(struct WDC65816_regs *regs, WDC65816_pins *pins) { // STZ a,x
+static void WDC65816_opcode_9E_Mx(WDC65816_regs *regs, WDC65816_pins *pins) { // STZ a,x
         switch(regs->TCU) {
         // STZ a,x E=0 M=1 X=0
             case 1: // 2
@@ -17796,7 +17796,7 @@ static void WDC65816_opcode_9E_Mx(struct WDC65816_regs *regs, WDC65816_pins *pin
 }
 
 
-static void WDC65816_opcode_9F_Mx(struct WDC65816_regs *regs, WDC65816_pins *pins) { // STA al,x
+static void WDC65816_opcode_9F_Mx(WDC65816_regs *regs, WDC65816_pins *pins) { // STA al,x
         switch(regs->TCU) {
         // STA al,x E=0 M=1 X=0
             case 1: // 2
@@ -17835,7 +17835,7 @@ static void WDC65816_opcode_9F_Mx(struct WDC65816_regs *regs, WDC65816_pins *pin
 }
 
 
-static void WDC65816_opcode_A0_Mx(struct WDC65816_regs *regs, WDC65816_pins *pins) { // LDY #
+static void WDC65816_opcode_A0_Mx(WDC65816_regs *regs, WDC65816_pins *pins) { // LDY #
         switch(regs->TCU) {
         // LDY # E=0 M=1 X=0
             case 1: // 2
@@ -17864,7 +17864,7 @@ static void WDC65816_opcode_A0_Mx(struct WDC65816_regs *regs, WDC65816_pins *pin
 }
 
 
-static void WDC65816_opcode_A1_Mx(struct WDC65816_regs *regs, WDC65816_pins *pins) { // LDA (d,x)
+static void WDC65816_opcode_A1_Mx(WDC65816_regs *regs, WDC65816_pins *pins) { // LDA (d,x)
         switch(regs->TCU) {
         // LDA (d,x) E=0 M=1 X=0
             case 1: // fetch_D0_and_skip_cycle 2
@@ -17912,7 +17912,7 @@ static void WDC65816_opcode_A1_Mx(struct WDC65816_regs *regs, WDC65816_pins *pin
 }
 
 
-static void WDC65816_opcode_A2_Mx(struct WDC65816_regs *regs, WDC65816_pins *pins) { // LDX #
+static void WDC65816_opcode_A2_Mx(WDC65816_regs *regs, WDC65816_pins *pins) { // LDX #
         switch(regs->TCU) {
         // LDX # E=0 M=1 X=0
             case 1: // 2
@@ -17941,7 +17941,7 @@ static void WDC65816_opcode_A2_Mx(struct WDC65816_regs *regs, WDC65816_pins *pin
 }
 
 
-static void WDC65816_opcode_A3_Mx(struct WDC65816_regs *regs, WDC65816_pins *pins) { // LDA d,s
+static void WDC65816_opcode_A3_Mx(WDC65816_regs *regs, WDC65816_pins *pins) { // LDA d,s
         switch(regs->TCU) {
         // LDA d,s E=0 M=1 X=0
             case 1: // 2
@@ -17973,7 +17973,7 @@ static void WDC65816_opcode_A3_Mx(struct WDC65816_regs *regs, WDC65816_pins *pin
 }
 
 
-static void WDC65816_opcode_A4_Mx(struct WDC65816_regs *regs, WDC65816_pins *pins) { // LDY d
+static void WDC65816_opcode_A4_Mx(WDC65816_regs *regs, WDC65816_pins *pins) { // LDY d
         switch(regs->TCU) {
         // LDY d E=0 M=1 X=0
             case 1: // fetch_D0_and_skip_cycle 2
@@ -18015,7 +18015,7 @@ static void WDC65816_opcode_A4_Mx(struct WDC65816_regs *regs, WDC65816_pins *pin
 }
 
 
-static void WDC65816_opcode_A5_Mx(struct WDC65816_regs *regs, WDC65816_pins *pins) { // LDA d
+static void WDC65816_opcode_A5_Mx(WDC65816_regs *regs, WDC65816_pins *pins) { // LDA d
         switch(regs->TCU) {
         // LDA d E=0 M=1 X=0
             case 1: // fetch_D0_and_skip_cycle 2
@@ -18053,7 +18053,7 @@ static void WDC65816_opcode_A5_Mx(struct WDC65816_regs *regs, WDC65816_pins *pin
 }
 
 
-static void WDC65816_opcode_A6_Mx(struct WDC65816_regs *regs, WDC65816_pins *pins) { // LDX d
+static void WDC65816_opcode_A6_Mx(WDC65816_regs *regs, WDC65816_pins *pins) { // LDX d
         switch(regs->TCU) {
         // LDX d E=0 M=1 X=0
             case 1: // fetch_D0_and_skip_cycle 2
@@ -18095,7 +18095,7 @@ static void WDC65816_opcode_A6_Mx(struct WDC65816_regs *regs, WDC65816_pins *pin
 }
 
 
-static void WDC65816_opcode_A7_Mx(struct WDC65816_regs *regs, WDC65816_pins *pins) { // LDA [d]
+static void WDC65816_opcode_A7_Mx(WDC65816_regs *regs, WDC65816_pins *pins) { // LDA [d]
         switch(regs->TCU) {
         // LDA [d] E=0 M=1 X=0
             case 1: // fetch_D0_and_skip_cycle 2
@@ -18146,7 +18146,7 @@ static void WDC65816_opcode_A7_Mx(struct WDC65816_regs *regs, WDC65816_pins *pin
 }
 
 
-static void WDC65816_opcode_A8_Mx(struct WDC65816_regs *regs, WDC65816_pins *pins) { // TAY i
+static void WDC65816_opcode_A8_Mx(WDC65816_regs *regs, WDC65816_pins *pins) { // TAY i
         switch(regs->TCU) {
         // TAY i E=0 M=1 X=0
             case 1: // 2
@@ -18170,7 +18170,7 @@ static void WDC65816_opcode_A8_Mx(struct WDC65816_regs *regs, WDC65816_pins *pin
 }
 
 
-static void WDC65816_opcode_A9_Mx(struct WDC65816_regs *regs, WDC65816_pins *pins) { // LDA #
+static void WDC65816_opcode_A9_Mx(WDC65816_regs *regs, WDC65816_pins *pins) { // LDA #
         switch(regs->TCU) {
         // LDA # E=0 M=1 X=0
             case 1: // 2
@@ -18194,7 +18194,7 @@ static void WDC65816_opcode_A9_Mx(struct WDC65816_regs *regs, WDC65816_pins *pin
 }
 
 
-static void WDC65816_opcode_AA_Mx(struct WDC65816_regs *regs, WDC65816_pins *pins) { // TAX i
+static void WDC65816_opcode_AA_Mx(WDC65816_regs *regs, WDC65816_pins *pins) { // TAX i
         switch(regs->TCU) {
         // TAX i E=0 M=1 X=0
             case 1: // 2
@@ -18218,7 +18218,7 @@ static void WDC65816_opcode_AA_Mx(struct WDC65816_regs *regs, WDC65816_pins *pin
 }
 
 
-static void WDC65816_opcode_AB_Mx(struct WDC65816_regs *regs, WDC65816_pins *pins) { // PLB s
+static void WDC65816_opcode_AB_Mx(WDC65816_regs *regs, WDC65816_pins *pins) { // PLB s
         switch(regs->TCU) {
         // PLB s E=0 M=1 X=0
             case 1: // 2
@@ -18250,7 +18250,7 @@ static void WDC65816_opcode_AB_Mx(struct WDC65816_regs *regs, WDC65816_pins *pin
 }
 
 
-static void WDC65816_opcode_AC_Mx(struct WDC65816_regs *regs, WDC65816_pins *pins) { // LDY a
+static void WDC65816_opcode_AC_Mx(WDC65816_regs *regs, WDC65816_pins *pins) { // LDY a
         switch(regs->TCU) {
         // LDY a E=0 M=1 X=0
             case 1: // 2
@@ -18286,7 +18286,7 @@ static void WDC65816_opcode_AC_Mx(struct WDC65816_regs *regs, WDC65816_pins *pin
 }
 
 
-static void WDC65816_opcode_AD_Mx(struct WDC65816_regs *regs, WDC65816_pins *pins) { // LDA a
+static void WDC65816_opcode_AD_Mx(WDC65816_regs *regs, WDC65816_pins *pins) { // LDA a
         switch(regs->TCU) {
         // LDA a E=0 M=1 X=0
             case 1: // 2
@@ -18318,7 +18318,7 @@ static void WDC65816_opcode_AD_Mx(struct WDC65816_regs *regs, WDC65816_pins *pin
 }
 
 
-static void WDC65816_opcode_AE_Mx(struct WDC65816_regs *regs, WDC65816_pins *pins) { // LDX a
+static void WDC65816_opcode_AE_Mx(WDC65816_regs *regs, WDC65816_pins *pins) { // LDX a
         switch(regs->TCU) {
         // LDX a E=0 M=1 X=0
             case 1: // 2
@@ -18354,7 +18354,7 @@ static void WDC65816_opcode_AE_Mx(struct WDC65816_regs *regs, WDC65816_pins *pin
 }
 
 
-static void WDC65816_opcode_AF_Mx(struct WDC65816_regs *regs, WDC65816_pins *pins) { // LDA al
+static void WDC65816_opcode_AF_Mx(WDC65816_regs *regs, WDC65816_pins *pins) { // LDA al
         switch(regs->TCU) {
         // LDA al E=0 M=1 X=0
             case 1: // 2
@@ -18391,7 +18391,7 @@ static void WDC65816_opcode_AF_Mx(struct WDC65816_regs *regs, WDC65816_pins *pin
 }
 
 
-static void WDC65816_opcode_B0_Mx(struct WDC65816_regs *regs, WDC65816_pins *pins) { // BCS r
+static void WDC65816_opcode_B0_Mx(WDC65816_regs *regs, WDC65816_pins *pins) { // BCS r
         switch(regs->TCU) {
         // BCS r E=0 M=1 X=0
             case 1: // 2
@@ -18423,7 +18423,7 @@ static void WDC65816_opcode_B0_Mx(struct WDC65816_regs *regs, WDC65816_pins *pin
 }
 
 
-static void WDC65816_opcode_B1_Mx(struct WDC65816_regs *regs, WDC65816_pins *pins) { // LDA (d),y
+static void WDC65816_opcode_B1_Mx(WDC65816_regs *regs, WDC65816_pins *pins) { // LDA (d),y
         switch(regs->TCU) {
         // LDA (d),y E=0 M=1 X=0
             case 1: // fetch_D0_and_skip_cycle 2
@@ -18480,7 +18480,7 @@ static void WDC65816_opcode_B1_Mx(struct WDC65816_regs *regs, WDC65816_pins *pin
 }
 
 
-static void WDC65816_opcode_B2_Mx(struct WDC65816_regs *regs, WDC65816_pins *pins) { // LDA (d)
+static void WDC65816_opcode_B2_Mx(WDC65816_regs *regs, WDC65816_pins *pins) { // LDA (d)
         switch(regs->TCU) {
         // LDA (d) E=0 M=1 X=0
             case 1: // fetch_D0_and_skip_cycle 2
@@ -18525,7 +18525,7 @@ static void WDC65816_opcode_B2_Mx(struct WDC65816_regs *regs, WDC65816_pins *pin
 }
 
 
-static void WDC65816_opcode_B3_Mx(struct WDC65816_regs *regs, WDC65816_pins *pins) { // LDA (d,s),y
+static void WDC65816_opcode_B3_Mx(WDC65816_regs *regs, WDC65816_pins *pins) { // LDA (d,s),y
         switch(regs->TCU) {
         // LDA (d,s),y E=0 M=1 X=0
             case 1: // 2
@@ -18571,7 +18571,7 @@ static void WDC65816_opcode_B3_Mx(struct WDC65816_regs *regs, WDC65816_pins *pin
 }
 
 
-static void WDC65816_opcode_B4_Mx(struct WDC65816_regs *regs, WDC65816_pins *pins) { // LDY d,x
+static void WDC65816_opcode_B4_Mx(WDC65816_regs *regs, WDC65816_pins *pins) { // LDY d,x
         switch(regs->TCU) {
         // LDY d,x E=0 M=1 X=0
             case 1: // fetch_D0_and_skip_cycle 2
@@ -18615,7 +18615,7 @@ static void WDC65816_opcode_B4_Mx(struct WDC65816_regs *regs, WDC65816_pins *pin
 }
 
 
-static void WDC65816_opcode_B5_Mx(struct WDC65816_regs *regs, WDC65816_pins *pins) { // LDA d,x
+static void WDC65816_opcode_B5_Mx(WDC65816_regs *regs, WDC65816_pins *pins) { // LDA d,x
         switch(regs->TCU) {
         // LDA d,x E=0 M=1 X=0
             case 1: // fetch_D0_and_skip_cycle 2
@@ -18655,7 +18655,7 @@ static void WDC65816_opcode_B5_Mx(struct WDC65816_regs *regs, WDC65816_pins *pin
 }
 
 
-static void WDC65816_opcode_B6_Mx(struct WDC65816_regs *regs, WDC65816_pins *pins) { // LDX d,y
+static void WDC65816_opcode_B6_Mx(WDC65816_regs *regs, WDC65816_pins *pins) { // LDX d,y
         switch(regs->TCU) {
         // LDX d,y E=0 M=1 X=0
             case 1: // fetch_D0_and_skip_cycle 2
@@ -18699,7 +18699,7 @@ static void WDC65816_opcode_B6_Mx(struct WDC65816_regs *regs, WDC65816_pins *pin
 }
 
 
-static void WDC65816_opcode_B7_Mx(struct WDC65816_regs *regs, WDC65816_pins *pins) { // LDA [d],y
+static void WDC65816_opcode_B7_Mx(WDC65816_regs *regs, WDC65816_pins *pins) { // LDA [d],y
         switch(regs->TCU) {
         // LDA [d],y E=0 M=1 X=0
             case 1: // fetch_D0_and_skip_cycle 2
@@ -18750,7 +18750,7 @@ static void WDC65816_opcode_B7_Mx(struct WDC65816_regs *regs, WDC65816_pins *pin
 }
 
 
-static void WDC65816_opcode_B8_Mx(struct WDC65816_regs *regs, WDC65816_pins *pins) { // CLV i
+static void WDC65816_opcode_B8_Mx(WDC65816_regs *regs, WDC65816_pins *pins) { // CLV i
         switch(regs->TCU) {
         // CLV i E=0 M=1 X=0
             case 1: // 2
@@ -18772,7 +18772,7 @@ static void WDC65816_opcode_B8_Mx(struct WDC65816_regs *regs, WDC65816_pins *pin
 }
 
 
-static void WDC65816_opcode_B9_Mx(struct WDC65816_regs *regs, WDC65816_pins *pins) { // LDA a,y
+static void WDC65816_opcode_B9_Mx(WDC65816_regs *regs, WDC65816_pins *pins) { // LDA a,y
         switch(regs->TCU) {
         // LDA a,y E=0 M=1 X=0
             case 1: // 2
@@ -18816,7 +18816,7 @@ static void WDC65816_opcode_B9_Mx(struct WDC65816_regs *regs, WDC65816_pins *pin
 }
 
 
-static void WDC65816_opcode_BA_Mx(struct WDC65816_regs *regs, WDC65816_pins *pins) { // TSX i
+static void WDC65816_opcode_BA_Mx(WDC65816_regs *regs, WDC65816_pins *pins) { // TSX i
         switch(regs->TCU) {
         // TSX i E=0 M=1 X=0
             case 1: // 2
@@ -18840,7 +18840,7 @@ static void WDC65816_opcode_BA_Mx(struct WDC65816_regs *regs, WDC65816_pins *pin
 }
 
 
-static void WDC65816_opcode_BB_Mx(struct WDC65816_regs *regs, WDC65816_pins *pins) { // TYX i
+static void WDC65816_opcode_BB_Mx(WDC65816_regs *regs, WDC65816_pins *pins) { // TYX i
         switch(regs->TCU) {
         // TYX i E=0 M=1 X=0
             case 1: // 2
@@ -18864,7 +18864,7 @@ static void WDC65816_opcode_BB_Mx(struct WDC65816_regs *regs, WDC65816_pins *pin
 }
 
 
-static void WDC65816_opcode_BC_Mx(struct WDC65816_regs *regs, WDC65816_pins *pins) { // LDY a,x
+static void WDC65816_opcode_BC_Mx(WDC65816_regs *regs, WDC65816_pins *pins) { // LDY a,x
         switch(regs->TCU) {
         // LDY a,x E=0 M=1 X=0
             case 1: // 2
@@ -18912,7 +18912,7 @@ static void WDC65816_opcode_BC_Mx(struct WDC65816_regs *regs, WDC65816_pins *pin
 }
 
 
-static void WDC65816_opcode_BD_Mx(struct WDC65816_regs *regs, WDC65816_pins *pins) { // LDA a,x
+static void WDC65816_opcode_BD_Mx(WDC65816_regs *regs, WDC65816_pins *pins) { // LDA a,x
         switch(regs->TCU) {
         // LDA a,x E=0 M=1 X=0
             case 1: // 2
@@ -18956,7 +18956,7 @@ static void WDC65816_opcode_BD_Mx(struct WDC65816_regs *regs, WDC65816_pins *pin
 }
 
 
-static void WDC65816_opcode_BE_Mx(struct WDC65816_regs *regs, WDC65816_pins *pins) { // LDX a,y
+static void WDC65816_opcode_BE_Mx(WDC65816_regs *regs, WDC65816_pins *pins) { // LDX a,y
         switch(regs->TCU) {
         // LDX a,y E=0 M=1 X=0
             case 1: // 2
@@ -19004,7 +19004,7 @@ static void WDC65816_opcode_BE_Mx(struct WDC65816_regs *regs, WDC65816_pins *pin
 }
 
 
-static void WDC65816_opcode_BF_Mx(struct WDC65816_regs *regs, WDC65816_pins *pins) { // LDA al,x
+static void WDC65816_opcode_BF_Mx(WDC65816_regs *regs, WDC65816_pins *pins) { // LDA al,x
         switch(regs->TCU) {
         // LDA al,x E=0 M=1 X=0
             case 1: // 2
@@ -19042,7 +19042,7 @@ static void WDC65816_opcode_BF_Mx(struct WDC65816_regs *regs, WDC65816_pins *pin
 }
 
 
-static void WDC65816_opcode_C0_Mx(struct WDC65816_regs *regs, WDC65816_pins *pins) { // CPY #
+static void WDC65816_opcode_C0_Mx(WDC65816_regs *regs, WDC65816_pins *pins) { // CPY #
         switch(regs->TCU) {
         // CPY # E=0 M=1 X=0
             case 1: // 2
@@ -19072,7 +19072,7 @@ static void WDC65816_opcode_C0_Mx(struct WDC65816_regs *regs, WDC65816_pins *pin
 }
 
 
-static void WDC65816_opcode_C1_Mx(struct WDC65816_regs *regs, WDC65816_pins *pins) { // CMP (d,x)
+static void WDC65816_opcode_C1_Mx(WDC65816_regs *regs, WDC65816_pins *pins) { // CMP (d,x)
         switch(regs->TCU) {
         // CMP (d,x) E=0 M=1 X=0
             case 1: // fetch_D0_and_skip_cycle 2
@@ -19121,7 +19121,7 @@ static void WDC65816_opcode_C1_Mx(struct WDC65816_regs *regs, WDC65816_pins *pin
 }
 
 
-static void WDC65816_opcode_C2_Mx(struct WDC65816_regs *regs, WDC65816_pins *pins) { // REP #
+static void WDC65816_opcode_C2_Mx(WDC65816_regs *regs, WDC65816_pins *pins) { // REP #
         switch(regs->TCU) {
         // REP # E=0 M=1 X=0
             case 1: // 2
@@ -19147,7 +19147,7 @@ static void WDC65816_opcode_C2_Mx(struct WDC65816_regs *regs, WDC65816_pins *pin
 }
 
 
-static void WDC65816_opcode_C3_Mx(struct WDC65816_regs *regs, WDC65816_pins *pins) { // CMP d,s
+static void WDC65816_opcode_C3_Mx(WDC65816_regs *regs, WDC65816_pins *pins) { // CMP d,s
         switch(regs->TCU) {
         // CMP d,s E=0 M=1 X=0
             case 1: // 2
@@ -19180,7 +19180,7 @@ static void WDC65816_opcode_C3_Mx(struct WDC65816_regs *regs, WDC65816_pins *pin
 }
 
 
-static void WDC65816_opcode_C4_Mx(struct WDC65816_regs *regs, WDC65816_pins *pins) { // CPY d
+static void WDC65816_opcode_C4_Mx(WDC65816_regs *regs, WDC65816_pins *pins) { // CPY d
         switch(regs->TCU) {
         // CPY d E=0 M=1 X=0
             case 1: // fetch_D0_and_skip_cycle 2
@@ -19223,7 +19223,7 @@ static void WDC65816_opcode_C4_Mx(struct WDC65816_regs *regs, WDC65816_pins *pin
 }
 
 
-static void WDC65816_opcode_C5_Mx(struct WDC65816_regs *regs, WDC65816_pins *pins) { // CMP d
+static void WDC65816_opcode_C5_Mx(WDC65816_regs *regs, WDC65816_pins *pins) { // CMP d
         switch(regs->TCU) {
         // CMP d E=0 M=1 X=0
             case 1: // fetch_D0_and_skip_cycle 2
@@ -19262,7 +19262,7 @@ static void WDC65816_opcode_C5_Mx(struct WDC65816_regs *regs, WDC65816_pins *pin
 }
 
 
-static void WDC65816_opcode_C6_Mx(struct WDC65816_regs *regs, WDC65816_pins *pins) { // DEC d
+static void WDC65816_opcode_C6_Mx(WDC65816_regs *regs, WDC65816_pins *pins) { // DEC d
         switch(regs->TCU) {
         // DEC d E=0 M=1 X=0
             case 1: // fetch_D0_and_skip_cycle 2
@@ -19308,7 +19308,7 @@ static void WDC65816_opcode_C6_Mx(struct WDC65816_regs *regs, WDC65816_pins *pin
 }
 
 
-static void WDC65816_opcode_C7_Mx(struct WDC65816_regs *regs, WDC65816_pins *pins) { // CMP [d]
+static void WDC65816_opcode_C7_Mx(WDC65816_regs *regs, WDC65816_pins *pins) { // CMP [d]
         switch(regs->TCU) {
         // CMP [d] E=0 M=1 X=0
             case 1: // fetch_D0_and_skip_cycle 2
@@ -19360,7 +19360,7 @@ static void WDC65816_opcode_C7_Mx(struct WDC65816_regs *regs, WDC65816_pins *pin
 }
 
 
-static void WDC65816_opcode_C8_Mx(struct WDC65816_regs *regs, WDC65816_pins *pins) { // INY i
+static void WDC65816_opcode_C8_Mx(WDC65816_regs *regs, WDC65816_pins *pins) { // INY i
         switch(regs->TCU) {
         // INY i E=0 M=1 X=0
             case 1: // 2
@@ -19384,7 +19384,7 @@ static void WDC65816_opcode_C8_Mx(struct WDC65816_regs *regs, WDC65816_pins *pin
 }
 
 
-static void WDC65816_opcode_C9_Mx(struct WDC65816_regs *regs, WDC65816_pins *pins) { // CMP #
+static void WDC65816_opcode_C9_Mx(WDC65816_regs *regs, WDC65816_pins *pins) { // CMP #
         switch(regs->TCU) {
         // CMP # E=0 M=1 X=0
             case 1: // 2
@@ -19409,7 +19409,7 @@ static void WDC65816_opcode_C9_Mx(struct WDC65816_regs *regs, WDC65816_pins *pin
 }
 
 
-static void WDC65816_opcode_CA_Mx(struct WDC65816_regs *regs, WDC65816_pins *pins) { // DEX i
+static void WDC65816_opcode_CA_Mx(WDC65816_regs *regs, WDC65816_pins *pins) { // DEX i
         switch(regs->TCU) {
         // DEX i E=0 M=1 X=0
             case 1: // 2
@@ -19433,7 +19433,7 @@ static void WDC65816_opcode_CA_Mx(struct WDC65816_regs *regs, WDC65816_pins *pin
 }
 
 
-static void WDC65816_opcode_CB_Mx(struct WDC65816_regs *regs, WDC65816_pins *pins) { // WAI i
+static void WDC65816_opcode_CB_Mx(WDC65816_regs *regs, WDC65816_pins *pins) { // WAI i
         switch(regs->TCU) {
         // WAI i E=0 M=1 X=0
             case 1: // 1
@@ -19462,7 +19462,7 @@ static void WDC65816_opcode_CB_Mx(struct WDC65816_regs *regs, WDC65816_pins *pin
 }
 
 
-static void WDC65816_opcode_CC_Mx(struct WDC65816_regs *regs, WDC65816_pins *pins) { // CPY a
+static void WDC65816_opcode_CC_Mx(WDC65816_regs *regs, WDC65816_pins *pins) { // CPY a
         switch(regs->TCU) {
         // CPY a E=0 M=1 X=0
             case 1: // 2
@@ -19499,7 +19499,7 @@ static void WDC65816_opcode_CC_Mx(struct WDC65816_regs *regs, WDC65816_pins *pin
 }
 
 
-static void WDC65816_opcode_CD_Mx(struct WDC65816_regs *regs, WDC65816_pins *pins) { // CMP a
+static void WDC65816_opcode_CD_Mx(WDC65816_regs *regs, WDC65816_pins *pins) { // CMP a
         switch(regs->TCU) {
         // CMP a E=0 M=1 X=0
             case 1: // 2
@@ -19532,7 +19532,7 @@ static void WDC65816_opcode_CD_Mx(struct WDC65816_regs *regs, WDC65816_pins *pin
 }
 
 
-static void WDC65816_opcode_CE_Mx(struct WDC65816_regs *regs, WDC65816_pins *pins) { // DEC a
+static void WDC65816_opcode_CE_Mx(WDC65816_regs *regs, WDC65816_pins *pins) { // DEC a
         switch(regs->TCU) {
         // DEC a E=0 M=1 X=0
         //case AM.Ad
@@ -19574,7 +19574,7 @@ static void WDC65816_opcode_CE_Mx(struct WDC65816_regs *regs, WDC65816_pins *pin
 }
 
 
-static void WDC65816_opcode_CF_Mx(struct WDC65816_regs *regs, WDC65816_pins *pins) { // CMP al
+static void WDC65816_opcode_CF_Mx(WDC65816_regs *regs, WDC65816_pins *pins) { // CMP al
         switch(regs->TCU) {
         // CMP al E=0 M=1 X=0
             case 1: // 2
@@ -19612,7 +19612,7 @@ static void WDC65816_opcode_CF_Mx(struct WDC65816_regs *regs, WDC65816_pins *pin
 }
 
 
-static void WDC65816_opcode_D0_Mx(struct WDC65816_regs *regs, WDC65816_pins *pins) { // BNE r
+static void WDC65816_opcode_D0_Mx(WDC65816_regs *regs, WDC65816_pins *pins) { // BNE r
         switch(regs->TCU) {
         // BNE r E=0 M=1 X=0
             case 1: // 2
@@ -19644,7 +19644,7 @@ static void WDC65816_opcode_D0_Mx(struct WDC65816_regs *regs, WDC65816_pins *pin
 }
 
 
-static void WDC65816_opcode_D1_Mx(struct WDC65816_regs *regs, WDC65816_pins *pins) { // CMP (d),y
+static void WDC65816_opcode_D1_Mx(WDC65816_regs *regs, WDC65816_pins *pins) { // CMP (d),y
         switch(regs->TCU) {
         // CMP (d),y E=0 M=1 X=0
             case 1: // fetch_D0_and_skip_cycle 2
@@ -19702,7 +19702,7 @@ static void WDC65816_opcode_D1_Mx(struct WDC65816_regs *regs, WDC65816_pins *pin
 }
 
 
-static void WDC65816_opcode_D2_Mx(struct WDC65816_regs *regs, WDC65816_pins *pins) { // CMP (d)
+static void WDC65816_opcode_D2_Mx(WDC65816_regs *regs, WDC65816_pins *pins) { // CMP (d)
         switch(regs->TCU) {
         // CMP (d) E=0 M=1 X=0
             case 1: // fetch_D0_and_skip_cycle 2
@@ -19748,7 +19748,7 @@ static void WDC65816_opcode_D2_Mx(struct WDC65816_regs *regs, WDC65816_pins *pin
 }
 
 
-static void WDC65816_opcode_D3_Mx(struct WDC65816_regs *regs, WDC65816_pins *pins) { // CMP (d,s),y
+static void WDC65816_opcode_D3_Mx(WDC65816_regs *regs, WDC65816_pins *pins) { // CMP (d,s),y
         switch(regs->TCU) {
         // CMP (d,s),y E=0 M=1 X=0
             case 1: // 2
@@ -19795,7 +19795,7 @@ static void WDC65816_opcode_D3_Mx(struct WDC65816_regs *regs, WDC65816_pins *pin
 }
 
 
-static void WDC65816_opcode_D4_Mx(struct WDC65816_regs *regs, WDC65816_pins *pins) { // PEI s
+static void WDC65816_opcode_D4_Mx(WDC65816_regs *regs, WDC65816_pins *pins) { // PEI s
         switch(regs->TCU) {
         // PEI s E=0 M=1 X=0
             case 1: // fetch_D0_and_skip_cycle 2
@@ -19842,7 +19842,7 @@ static void WDC65816_opcode_D4_Mx(struct WDC65816_regs *regs, WDC65816_pins *pin
 }
 
 
-static void WDC65816_opcode_D5_Mx(struct WDC65816_regs *regs, WDC65816_pins *pins) { // CMP d,x
+static void WDC65816_opcode_D5_Mx(WDC65816_regs *regs, WDC65816_pins *pins) { // CMP d,x
         switch(regs->TCU) {
         // CMP d,x E=0 M=1 X=0
             case 1: // fetch_D0_and_skip_cycle 2
@@ -19883,7 +19883,7 @@ static void WDC65816_opcode_D5_Mx(struct WDC65816_regs *regs, WDC65816_pins *pin
 }
 
 
-static void WDC65816_opcode_D6_Mx(struct WDC65816_regs *regs, WDC65816_pins *pins) { // DEC d,x
+static void WDC65816_opcode_D6_Mx(WDC65816_regs *regs, WDC65816_pins *pins) { // DEC d,x
         switch(regs->TCU) {
         // DEC d,x E=0 M=1 X=0
             case 1: // fetch_D0_and_skip_cycle 2
@@ -19931,7 +19931,7 @@ static void WDC65816_opcode_D6_Mx(struct WDC65816_regs *regs, WDC65816_pins *pin
 }
 
 
-static void WDC65816_opcode_D7_Mx(struct WDC65816_regs *regs, WDC65816_pins *pins) { // CMP [d],y
+static void WDC65816_opcode_D7_Mx(WDC65816_regs *regs, WDC65816_pins *pins) { // CMP [d],y
         switch(regs->TCU) {
         // CMP [d],y E=0 M=1 X=0
             case 1: // fetch_D0_and_skip_cycle 2
@@ -19983,7 +19983,7 @@ static void WDC65816_opcode_D7_Mx(struct WDC65816_regs *regs, WDC65816_pins *pin
 }
 
 
-static void WDC65816_opcode_D8_Mx(struct WDC65816_regs *regs, WDC65816_pins *pins) { // CLD i
+static void WDC65816_opcode_D8_Mx(WDC65816_regs *regs, WDC65816_pins *pins) { // CLD i
         switch(regs->TCU) {
         // CLD i E=0 M=1 X=0
             case 1: // 2
@@ -20005,7 +20005,7 @@ static void WDC65816_opcode_D8_Mx(struct WDC65816_regs *regs, WDC65816_pins *pin
 }
 
 
-static void WDC65816_opcode_D9_Mx(struct WDC65816_regs *regs, WDC65816_pins *pins) { // CMP a,y
+static void WDC65816_opcode_D9_Mx(WDC65816_regs *regs, WDC65816_pins *pins) { // CMP a,y
         switch(regs->TCU) {
         // CMP a,y E=0 M=1 X=0
             case 1: // 2
@@ -20050,7 +20050,7 @@ static void WDC65816_opcode_D9_Mx(struct WDC65816_regs *regs, WDC65816_pins *pin
 }
 
 
-static void WDC65816_opcode_DA_Mx(struct WDC65816_regs *regs, WDC65816_pins *pins) { // PHX s
+static void WDC65816_opcode_DA_Mx(WDC65816_regs *regs, WDC65816_pins *pins) { // PHX s
         switch(regs->TCU) {
         // PHX s E=0 M=1 X=0
             case 1: // 2
@@ -20085,7 +20085,7 @@ static void WDC65816_opcode_DA_Mx(struct WDC65816_regs *regs, WDC65816_pins *pin
 }
 
 
-static void WDC65816_opcode_DB_Mx(struct WDC65816_regs *regs, WDC65816_pins *pins) { // STP i
+static void WDC65816_opcode_DB_Mx(WDC65816_regs *regs, WDC65816_pins *pins) { // STP i
         switch(regs->TCU) {
         // STP i E=0 M=1 X=0
             case 1: // 2
@@ -20104,7 +20104,7 @@ static void WDC65816_opcode_DB_Mx(struct WDC65816_regs *regs, WDC65816_pins *pin
 }
 
 
-static void WDC65816_opcode_DC_Mx(struct WDC65816_regs *regs, WDC65816_pins *pins) { // JML (a)
+static void WDC65816_opcode_DC_Mx(WDC65816_regs *regs, WDC65816_pins *pins) { // JML (a)
         switch(regs->TCU) {
         // JML (a) E=0 M=1 X=0
             case 1: // 2
@@ -20139,7 +20139,7 @@ static void WDC65816_opcode_DC_Mx(struct WDC65816_regs *regs, WDC65816_pins *pin
 }
 
 
-static void WDC65816_opcode_DD_Mx(struct WDC65816_regs *regs, WDC65816_pins *pins) { // CMP a,x
+static void WDC65816_opcode_DD_Mx(WDC65816_regs *regs, WDC65816_pins *pins) { // CMP a,x
         switch(regs->TCU) {
         // CMP a,x E=0 M=1 X=0
             case 1: // 2
@@ -20184,7 +20184,7 @@ static void WDC65816_opcode_DD_Mx(struct WDC65816_regs *regs, WDC65816_pins *pin
 }
 
 
-static void WDC65816_opcode_DE_Mx(struct WDC65816_regs *regs, WDC65816_pins *pins) { // DEC a,x
+static void WDC65816_opcode_DE_Mx(WDC65816_regs *regs, WDC65816_pins *pins) { // DEC a,x
         switch(regs->TCU) {
         // DEC a,x E=0 M=1 X=0
             case 1: // 2
@@ -20232,7 +20232,7 @@ static void WDC65816_opcode_DE_Mx(struct WDC65816_regs *regs, WDC65816_pins *pin
 }
 
 
-static void WDC65816_opcode_DF_Mx(struct WDC65816_regs *regs, WDC65816_pins *pins) { // CMP al,x
+static void WDC65816_opcode_DF_Mx(WDC65816_regs *regs, WDC65816_pins *pins) { // CMP al,x
         switch(regs->TCU) {
         // CMP al,x E=0 M=1 X=0
             case 1: // 2
@@ -20271,7 +20271,7 @@ static void WDC65816_opcode_DF_Mx(struct WDC65816_regs *regs, WDC65816_pins *pin
 }
 
 
-static void WDC65816_opcode_E0_Mx(struct WDC65816_regs *regs, WDC65816_pins *pins) { // CPX #
+static void WDC65816_opcode_E0_Mx(WDC65816_regs *regs, WDC65816_pins *pins) { // CPX #
         switch(regs->TCU) {
         // CPX # E=0 M=1 X=0
             case 1: // 2
@@ -20301,7 +20301,7 @@ static void WDC65816_opcode_E0_Mx(struct WDC65816_regs *regs, WDC65816_pins *pin
 }
 
 
-static void WDC65816_opcode_E1_Mx(struct WDC65816_regs *regs, WDC65816_pins *pins) { // SBC (d,x)
+static void WDC65816_opcode_E1_Mx(WDC65816_regs *regs, WDC65816_pins *pins) { // SBC (d,x)
         switch(regs->TCU) {
         // SBC (d,x) E=0 M=1 X=0
             case 1: // fetch_D0_and_skip_cycle 2
@@ -20361,7 +20361,7 @@ static void WDC65816_opcode_E1_Mx(struct WDC65816_regs *regs, WDC65816_pins *pin
 }
 
 
-static void WDC65816_opcode_E2_Mx(struct WDC65816_regs *regs, WDC65816_pins *pins) { // SEP #
+static void WDC65816_opcode_E2_Mx(WDC65816_regs *regs, WDC65816_pins *pins) { // SEP #
         switch(regs->TCU) {
         // SEP # E=0 M=1 X=0
             case 1: // 2
@@ -20388,7 +20388,7 @@ static void WDC65816_opcode_E2_Mx(struct WDC65816_regs *regs, WDC65816_pins *pin
 }
 
 
-static void WDC65816_opcode_E3_Mx(struct WDC65816_regs *regs, WDC65816_pins *pins) { // SBC d,s
+static void WDC65816_opcode_E3_Mx(WDC65816_regs *regs, WDC65816_pins *pins) { // SBC d,s
         switch(regs->TCU) {
         // SBC d,s E=0 M=1 X=0
             case 1: // 2
@@ -20432,7 +20432,7 @@ static void WDC65816_opcode_E3_Mx(struct WDC65816_regs *regs, WDC65816_pins *pin
 }
 
 
-static void WDC65816_opcode_E4_Mx(struct WDC65816_regs *regs, WDC65816_pins *pins) { // CPX d
+static void WDC65816_opcode_E4_Mx(WDC65816_regs *regs, WDC65816_pins *pins) { // CPX d
         switch(regs->TCU) {
         // CPX d E=0 M=1 X=0
             case 1: // fetch_D0_and_skip_cycle 2
@@ -20475,7 +20475,7 @@ static void WDC65816_opcode_E4_Mx(struct WDC65816_regs *regs, WDC65816_pins *pin
 }
 
 
-static void WDC65816_opcode_E5_Mx(struct WDC65816_regs *regs, WDC65816_pins *pins) { // SBC d
+static void WDC65816_opcode_E5_Mx(WDC65816_regs *regs, WDC65816_pins *pins) { // SBC d
         switch(regs->TCU) {
         // SBC d E=0 M=1 X=0
             case 1: // fetch_D0_and_skip_cycle 2
@@ -20525,7 +20525,7 @@ static void WDC65816_opcode_E5_Mx(struct WDC65816_regs *regs, WDC65816_pins *pin
 }
 
 
-static void WDC65816_opcode_E6_Mx(struct WDC65816_regs *regs, WDC65816_pins *pins) { // INC d
+static void WDC65816_opcode_E6_Mx(WDC65816_regs *regs, WDC65816_pins *pins) { // INC d
         switch(regs->TCU) {
         // INC d E=0 M=1 X=0
             case 1: // fetch_D0_and_skip_cycle 2
@@ -20571,7 +20571,7 @@ static void WDC65816_opcode_E6_Mx(struct WDC65816_regs *regs, WDC65816_pins *pin
 }
 
 
-static void WDC65816_opcode_E7_Mx(struct WDC65816_regs *regs, WDC65816_pins *pins) { // SBC [d]
+static void WDC65816_opcode_E7_Mx(WDC65816_regs *regs, WDC65816_pins *pins) { // SBC [d]
         switch(regs->TCU) {
         // SBC [d] E=0 M=1 X=0
             case 1: // fetch_D0_and_skip_cycle 2
@@ -20634,7 +20634,7 @@ static void WDC65816_opcode_E7_Mx(struct WDC65816_regs *regs, WDC65816_pins *pin
 }
 
 
-static void WDC65816_opcode_E8_Mx(struct WDC65816_regs *regs, WDC65816_pins *pins) { // INX i
+static void WDC65816_opcode_E8_Mx(WDC65816_regs *regs, WDC65816_pins *pins) { // INX i
         switch(regs->TCU) {
         // INX i E=0 M=1 X=0
             case 1: // 2
@@ -20658,7 +20658,7 @@ static void WDC65816_opcode_E8_Mx(struct WDC65816_regs *regs, WDC65816_pins *pin
 }
 
 
-static void WDC65816_opcode_E9_Mx(struct WDC65816_regs *regs, WDC65816_pins *pins) { // SBC #
+static void WDC65816_opcode_E9_Mx(WDC65816_regs *regs, WDC65816_pins *pins) { // SBC #
         switch(regs->TCU) {
         // SBC # E=0 M=1 X=0
             case 1: // 2
@@ -20694,7 +20694,7 @@ static void WDC65816_opcode_E9_Mx(struct WDC65816_regs *regs, WDC65816_pins *pin
 }
 
 
-static void WDC65816_opcode_EA_Mx(struct WDC65816_regs *regs, WDC65816_pins *pins) { // NOP i
+static void WDC65816_opcode_EA_Mx(WDC65816_regs *regs, WDC65816_pins *pins) { // NOP i
         switch(regs->TCU) {
         // NOP i E=0 M=1 X=0
             case 1: // 2
@@ -20715,7 +20715,7 @@ static void WDC65816_opcode_EA_Mx(struct WDC65816_regs *regs, WDC65816_pins *pin
 }
 
 
-static void WDC65816_opcode_EB_Mx(struct WDC65816_regs *regs, WDC65816_pins *pins) { // XBA i
+static void WDC65816_opcode_EB_Mx(WDC65816_regs *regs, WDC65816_pins *pins) { // XBA i
         switch(regs->TCU) {
         // XBA i E=0 M=1 X=0
             case 1:
@@ -20741,7 +20741,7 @@ static void WDC65816_opcode_EB_Mx(struct WDC65816_regs *regs, WDC65816_pins *pin
 }
 
 
-static void WDC65816_opcode_EC_Mx(struct WDC65816_regs *regs, WDC65816_pins *pins) { // CPX a
+static void WDC65816_opcode_EC_Mx(WDC65816_regs *regs, WDC65816_pins *pins) { // CPX a
         switch(regs->TCU) {
         // CPX a E=0 M=1 X=0
             case 1: // 2
@@ -20778,7 +20778,7 @@ static void WDC65816_opcode_EC_Mx(struct WDC65816_regs *regs, WDC65816_pins *pin
 }
 
 
-static void WDC65816_opcode_ED_Mx(struct WDC65816_regs *regs, WDC65816_pins *pins) { // SBC a
+static void WDC65816_opcode_ED_Mx(WDC65816_regs *regs, WDC65816_pins *pins) { // SBC a
         switch(regs->TCU) {
         // SBC a E=0 M=1 X=0
             case 1: // 2
@@ -20822,7 +20822,7 @@ static void WDC65816_opcode_ED_Mx(struct WDC65816_regs *regs, WDC65816_pins *pin
 }
 
 
-static void WDC65816_opcode_EE_Mx(struct WDC65816_regs *regs, WDC65816_pins *pins) { // INC a
+static void WDC65816_opcode_EE_Mx(WDC65816_regs *regs, WDC65816_pins *pins) { // INC a
         switch(regs->TCU) {
         // INC a E=0 M=1 X=0
         //case AM.Ad
@@ -20864,7 +20864,7 @@ static void WDC65816_opcode_EE_Mx(struct WDC65816_regs *regs, WDC65816_pins *pin
 }
 
 
-static void WDC65816_opcode_EF_Mx(struct WDC65816_regs *regs, WDC65816_pins *pins) { // SBC al
+static void WDC65816_opcode_EF_Mx(WDC65816_regs *regs, WDC65816_pins *pins) { // SBC al
         switch(regs->TCU) {
         // SBC al E=0 M=1 X=0
             case 1: // 2
@@ -20913,7 +20913,7 @@ static void WDC65816_opcode_EF_Mx(struct WDC65816_regs *regs, WDC65816_pins *pin
 }
 
 
-static void WDC65816_opcode_F0_Mx(struct WDC65816_regs *regs, WDC65816_pins *pins) { // BEQ r
+static void WDC65816_opcode_F0_Mx(WDC65816_regs *regs, WDC65816_pins *pins) { // BEQ r
         switch(regs->TCU) {
         // BEQ r E=0 M=1 X=0
             case 1: // 2
@@ -20945,7 +20945,7 @@ static void WDC65816_opcode_F0_Mx(struct WDC65816_regs *regs, WDC65816_pins *pin
 }
 
 
-static void WDC65816_opcode_F1_Mx(struct WDC65816_regs *regs, WDC65816_pins *pins) { // SBC (d),y
+static void WDC65816_opcode_F1_Mx(WDC65816_regs *regs, WDC65816_pins *pins) { // SBC (d),y
         switch(regs->TCU) {
         // SBC (d),y E=0 M=1 X=0
             case 1: // fetch_D0_and_skip_cycle 2
@@ -21014,7 +21014,7 @@ static void WDC65816_opcode_F1_Mx(struct WDC65816_regs *regs, WDC65816_pins *pin
 }
 
 
-static void WDC65816_opcode_F2_Mx(struct WDC65816_regs *regs, WDC65816_pins *pins) { // SBC (d)
+static void WDC65816_opcode_F2_Mx(WDC65816_regs *regs, WDC65816_pins *pins) { // SBC (d)
         switch(regs->TCU) {
         // SBC (d) E=0 M=1 X=0
             case 1: // fetch_D0_and_skip_cycle 2
@@ -21071,7 +21071,7 @@ static void WDC65816_opcode_F2_Mx(struct WDC65816_regs *regs, WDC65816_pins *pin
 }
 
 
-static void WDC65816_opcode_F3_Mx(struct WDC65816_regs *regs, WDC65816_pins *pins) { // SBC (d,s),y
+static void WDC65816_opcode_F3_Mx(WDC65816_regs *regs, WDC65816_pins *pins) { // SBC (d,s),y
         switch(regs->TCU) {
         // SBC (d,s),y E=0 M=1 X=0
             case 1: // 2
@@ -21129,7 +21129,7 @@ static void WDC65816_opcode_F3_Mx(struct WDC65816_regs *regs, WDC65816_pins *pin
 }
 
 
-static void WDC65816_opcode_F4_Mx(struct WDC65816_regs *regs, WDC65816_pins *pins) { // PEA s
+static void WDC65816_opcode_F4_Mx(WDC65816_regs *regs, WDC65816_pins *pins) { // PEA s
         switch(regs->TCU) {
         // PEA s E=0 M=1 X=0
             case 1: // 2
@@ -21163,7 +21163,7 @@ static void WDC65816_opcode_F4_Mx(struct WDC65816_regs *regs, WDC65816_pins *pin
 }
 
 
-static void WDC65816_opcode_F5_Mx(struct WDC65816_regs *regs, WDC65816_pins *pins) { // SBC d,x
+static void WDC65816_opcode_F5_Mx(WDC65816_regs *regs, WDC65816_pins *pins) { // SBC d,x
         switch(regs->TCU) {
         // SBC d,x E=0 M=1 X=0
             case 1: // fetch_D0_and_skip_cycle 2
@@ -21215,7 +21215,7 @@ static void WDC65816_opcode_F5_Mx(struct WDC65816_regs *regs, WDC65816_pins *pin
 }
 
 
-static void WDC65816_opcode_F6_Mx(struct WDC65816_regs *regs, WDC65816_pins *pins) { // INC d,x
+static void WDC65816_opcode_F6_Mx(WDC65816_regs *regs, WDC65816_pins *pins) { // INC d,x
         switch(regs->TCU) {
         // INC d,x E=0 M=1 X=0
             case 1: // fetch_D0_and_skip_cycle 2
@@ -21263,7 +21263,7 @@ static void WDC65816_opcode_F6_Mx(struct WDC65816_regs *regs, WDC65816_pins *pin
 }
 
 
-static void WDC65816_opcode_F7_Mx(struct WDC65816_regs *regs, WDC65816_pins *pins) { // SBC [d],y
+static void WDC65816_opcode_F7_Mx(WDC65816_regs *regs, WDC65816_pins *pins) { // SBC [d],y
         switch(regs->TCU) {
         // SBC [d],y E=0 M=1 X=0
             case 1: // fetch_D0_and_skip_cycle 2
@@ -21326,7 +21326,7 @@ static void WDC65816_opcode_F7_Mx(struct WDC65816_regs *regs, WDC65816_pins *pin
 }
 
 
-static void WDC65816_opcode_F8_Mx(struct WDC65816_regs *regs, WDC65816_pins *pins) { // SED i
+static void WDC65816_opcode_F8_Mx(WDC65816_regs *regs, WDC65816_pins *pins) { // SED i
         switch(regs->TCU) {
         // SED i E=0 M=1 X=0
             case 1: // 2
@@ -21348,7 +21348,7 @@ static void WDC65816_opcode_F8_Mx(struct WDC65816_regs *regs, WDC65816_pins *pin
 }
 
 
-static void WDC65816_opcode_F9_Mx(struct WDC65816_regs *regs, WDC65816_pins *pins) { // SBC a,y
+static void WDC65816_opcode_F9_Mx(WDC65816_regs *regs, WDC65816_pins *pins) { // SBC a,y
         switch(regs->TCU) {
         // SBC a,y E=0 M=1 X=0
             case 1: // 2
@@ -21404,7 +21404,7 @@ static void WDC65816_opcode_F9_Mx(struct WDC65816_regs *regs, WDC65816_pins *pin
 }
 
 
-static void WDC65816_opcode_FA_Mx(struct WDC65816_regs *regs, WDC65816_pins *pins) { // PLX s
+static void WDC65816_opcode_FA_Mx(WDC65816_regs *regs, WDC65816_pins *pins) { // PLX s
         switch(regs->TCU) {
         // PLX s E=0 M=1 X=0
             case 1: // 2
@@ -21442,7 +21442,7 @@ static void WDC65816_opcode_FA_Mx(struct WDC65816_regs *regs, WDC65816_pins *pin
 }
 
 
-static void WDC65816_opcode_FB_Mx(struct WDC65816_regs *regs, WDC65816_pins *pins) { // XCE i
+static void WDC65816_opcode_FB_Mx(WDC65816_regs *regs, WDC65816_pins *pins) { // XCE i
         switch(regs->TCU) {
         // XCE i E=0 M=1 X=0
             case 1: // 2
@@ -21470,7 +21470,7 @@ static void WDC65816_opcode_FB_Mx(struct WDC65816_regs *regs, WDC65816_pins *pin
 }
 
 
-static void WDC65816_opcode_FC_Mx(struct WDC65816_regs *regs, WDC65816_pins *pins) { // JSR (a,x)
+static void WDC65816_opcode_FC_Mx(WDC65816_regs *regs, WDC65816_pins *pins) { // JSR (a,x)
         switch(regs->TCU) {
         // JSR (a,x) E=0 M=1 X=0
             case 1: // 2
@@ -21520,7 +21520,7 @@ static void WDC65816_opcode_FC_Mx(struct WDC65816_regs *regs, WDC65816_pins *pin
 }
 
 
-static void WDC65816_opcode_FD_Mx(struct WDC65816_regs *regs, WDC65816_pins *pins) { // SBC a,x
+static void WDC65816_opcode_FD_Mx(WDC65816_regs *regs, WDC65816_pins *pins) { // SBC a,x
         switch(regs->TCU) {
         // SBC a,x E=0 M=1 X=0
             case 1: // 2
@@ -21576,7 +21576,7 @@ static void WDC65816_opcode_FD_Mx(struct WDC65816_regs *regs, WDC65816_pins *pin
 }
 
 
-static void WDC65816_opcode_FE_Mx(struct WDC65816_regs *regs, WDC65816_pins *pins) { // INC a,x
+static void WDC65816_opcode_FE_Mx(WDC65816_regs *regs, WDC65816_pins *pins) { // INC a,x
         switch(regs->TCU) {
         // INC a,x E=0 M=1 X=0
             case 1: // 2
@@ -21624,7 +21624,7 @@ static void WDC65816_opcode_FE_Mx(struct WDC65816_regs *regs, WDC65816_pins *pin
 }
 
 
-static void WDC65816_opcode_FF_Mx(struct WDC65816_regs *regs, WDC65816_pins *pins) { // SBC al,x
+static void WDC65816_opcode_FF_Mx(WDC65816_regs *regs, WDC65816_pins *pins) { // SBC al,x
         switch(regs->TCU) {
         // SBC al,x E=0 M=1 X=0
             case 1: // 2
@@ -21674,7 +21674,7 @@ static void WDC65816_opcode_FF_Mx(struct WDC65816_regs *regs, WDC65816_pins *pin
 }
 
 
-static void WDC65816_opcode_100_Mx(struct WDC65816_regs *regs, WDC65816_pins *pins) { // S_RESET s
+static void WDC65816_opcode_100_Mx(WDC65816_regs *regs, WDC65816_pins *pins) { // S_RESET s
         switch(regs->TCU) {
         // S_RESET s E=0 M=1 X=0
             case 1: // 3
@@ -21728,7 +21728,7 @@ static void WDC65816_opcode_100_Mx(struct WDC65816_regs *regs, WDC65816_pins *pi
 }
 
 
-static void WDC65816_opcode_101_Mx(struct WDC65816_regs *regs, WDC65816_pins *pins) { // S_ABORT s
+static void WDC65816_opcode_101_Mx(WDC65816_regs *regs, WDC65816_pins *pins) { // S_ABORT s
         switch(regs->TCU) {
         // S_ABORT s E=0 M=1 X=0
             case 1: // 3
@@ -21778,7 +21778,7 @@ static void WDC65816_opcode_101_Mx(struct WDC65816_regs *regs, WDC65816_pins *pi
 }
 
 
-static void WDC65816_opcode_102_Mx(struct WDC65816_regs *regs, WDC65816_pins *pins) { // S_IRQ s
+static void WDC65816_opcode_102_Mx(WDC65816_regs *regs, WDC65816_pins *pins) { // S_IRQ s
         switch(regs->TCU) {
         // S_IRQ s E=0 M=1 X=0
             case 1: // 3
@@ -21830,7 +21830,7 @@ static void WDC65816_opcode_102_Mx(struct WDC65816_regs *regs, WDC65816_pins *pi
 }
 
 
-static void WDC65816_opcode_103_Mx(struct WDC65816_regs *regs, WDC65816_pins *pins) { // S_NMI s
+static void WDC65816_opcode_103_Mx(WDC65816_regs *regs, WDC65816_pins *pins) { // S_NMI s
         switch(regs->TCU) {
         // S_NMI s E=0 M=1 X=0
             case 1: // 3
@@ -21882,7 +21882,7 @@ static void WDC65816_opcode_103_Mx(struct WDC65816_regs *regs, WDC65816_pins *pi
 }
 
 
-static void WDC65816_opcode_00_mX(struct WDC65816_regs *regs, WDC65816_pins *pins) { // BRK s
+static void WDC65816_opcode_00_mX(WDC65816_regs *regs, WDC65816_pins *pins) { // BRK s
         switch(regs->TCU) {
         // BRK s E=0 M=0 X=1
         // instruction code follows
@@ -21940,7 +21940,7 @@ static void WDC65816_opcode_00_mX(struct WDC65816_regs *regs, WDC65816_pins *pin
 }
 
 
-static void WDC65816_opcode_01_mX(struct WDC65816_regs *regs, WDC65816_pins *pins) { // ORA (d,x)
+static void WDC65816_opcode_01_mX(WDC65816_regs *regs, WDC65816_pins *pins) { // ORA (d,x)
         switch(regs->TCU) {
         // ORA (d,x) E=0 M=0 X=1
             case 1: // fetch_D0_and_skip_cycle 2
@@ -21992,7 +21992,7 @@ static void WDC65816_opcode_01_mX(struct WDC65816_regs *regs, WDC65816_pins *pin
 }
 
 
-static void WDC65816_opcode_02_mX(struct WDC65816_regs *regs, WDC65816_pins *pins) { // COP s
+static void WDC65816_opcode_02_mX(WDC65816_regs *regs, WDC65816_pins *pins) { // COP s
         switch(regs->TCU) {
         // COP s E=0 M=0 X=1
         // instruction code follows
@@ -22050,7 +22050,7 @@ static void WDC65816_opcode_02_mX(struct WDC65816_regs *regs, WDC65816_pins *pin
 }
 
 
-static void WDC65816_opcode_03_mX(struct WDC65816_regs *regs, WDC65816_pins *pins) { // ORA d,s
+static void WDC65816_opcode_03_mX(WDC65816_regs *regs, WDC65816_pins *pins) { // ORA d,s
         switch(regs->TCU) {
         // ORA d,s E=0 M=0 X=1
             case 1: // 2
@@ -22086,7 +22086,7 @@ static void WDC65816_opcode_03_mX(struct WDC65816_regs *regs, WDC65816_pins *pin
 }
 
 
-static void WDC65816_opcode_04_mX(struct WDC65816_regs *regs, WDC65816_pins *pins) { // TSB d
+static void WDC65816_opcode_04_mX(WDC65816_regs *regs, WDC65816_pins *pins) { // TSB d
         switch(regs->TCU) {
         // TSB d E=0 M=0 X=1
             case 1: // fetch_D0_and_skip_cycle 2
@@ -22139,7 +22139,7 @@ static void WDC65816_opcode_04_mX(struct WDC65816_regs *regs, WDC65816_pins *pin
 }
 
 
-static void WDC65816_opcode_05_mX(struct WDC65816_regs *regs, WDC65816_pins *pins) { // ORA d
+static void WDC65816_opcode_05_mX(WDC65816_regs *regs, WDC65816_pins *pins) { // ORA d
         switch(regs->TCU) {
         // ORA d E=0 M=0 X=1
             case 1: // fetch_D0_and_skip_cycle 2
@@ -22181,7 +22181,7 @@ static void WDC65816_opcode_05_mX(struct WDC65816_regs *regs, WDC65816_pins *pin
 }
 
 
-static void WDC65816_opcode_06_mX(struct WDC65816_regs *regs, WDC65816_pins *pins) { // ASL d
+static void WDC65816_opcode_06_mX(WDC65816_regs *regs, WDC65816_pins *pins) { // ASL d
         switch(regs->TCU) {
         // ASL d E=0 M=0 X=1
             case 1: // fetch_D0_and_skip_cycle 2
@@ -22236,7 +22236,7 @@ static void WDC65816_opcode_06_mX(struct WDC65816_regs *regs, WDC65816_pins *pin
 }
 
 
-static void WDC65816_opcode_07_mX(struct WDC65816_regs *regs, WDC65816_pins *pins) { // ORA [d]
+static void WDC65816_opcode_07_mX(WDC65816_regs *regs, WDC65816_pins *pins) { // ORA [d]
         switch(regs->TCU) {
         // ORA [d] E=0 M=0 X=1
             case 1: // fetch_D0_and_skip_cycle 2
@@ -22291,7 +22291,7 @@ static void WDC65816_opcode_07_mX(struct WDC65816_regs *regs, WDC65816_pins *pin
 }
 
 
-static void WDC65816_opcode_08_mX(struct WDC65816_regs *regs, WDC65816_pins *pins) { // PHP s
+static void WDC65816_opcode_08_mX(WDC65816_regs *regs, WDC65816_pins *pins) { // PHP s
         switch(regs->TCU) {
         // PHP s E=0 M=0 X=1
             case 1: // 2
@@ -22320,7 +22320,7 @@ static void WDC65816_opcode_08_mX(struct WDC65816_regs *regs, WDC65816_pins *pin
 }
 
 
-static void WDC65816_opcode_09_mX(struct WDC65816_regs *regs, WDC65816_pins *pins) { // ORA #
+static void WDC65816_opcode_09_mX(WDC65816_regs *regs, WDC65816_pins *pins) { // ORA #
         switch(regs->TCU) {
         // ORA # E=0 M=0 X=1
             case 1: // 2
@@ -22349,7 +22349,7 @@ static void WDC65816_opcode_09_mX(struct WDC65816_regs *regs, WDC65816_pins *pin
 }
 
 
-static void WDC65816_opcode_0A_mX(struct WDC65816_regs *regs, WDC65816_pins *pins) { // ASL A
+static void WDC65816_opcode_0A_mX(WDC65816_regs *regs, WDC65816_pins *pins) { // ASL A
         switch(regs->TCU) {
         // ASL A E=0 M=0 X=1
             case 1: // 2
@@ -22376,7 +22376,7 @@ static void WDC65816_opcode_0A_mX(struct WDC65816_regs *regs, WDC65816_pins *pin
 }
 
 
-static void WDC65816_opcode_0B_mX(struct WDC65816_regs *regs, WDC65816_pins *pins) { // PHD s
+static void WDC65816_opcode_0B_mX(WDC65816_regs *regs, WDC65816_pins *pins) { // PHD s
         switch(regs->TCU) {
         // PHD s E=0 M=0 X=1
             case 1: // 2
@@ -22409,7 +22409,7 @@ static void WDC65816_opcode_0B_mX(struct WDC65816_regs *regs, WDC65816_pins *pin
 }
 
 
-static void WDC65816_opcode_0C_mX(struct WDC65816_regs *regs, WDC65816_pins *pins) { // TSB a
+static void WDC65816_opcode_0C_mX(WDC65816_regs *regs, WDC65816_pins *pins) { // TSB a
         switch(regs->TCU) {
         // TSB a E=0 M=0 X=1
         //case AM.Ad
@@ -22458,7 +22458,7 @@ static void WDC65816_opcode_0C_mX(struct WDC65816_regs *regs, WDC65816_pins *pin
 }
 
 
-static void WDC65816_opcode_0D_mX(struct WDC65816_regs *regs, WDC65816_pins *pins) { // ORA a
+static void WDC65816_opcode_0D_mX(WDC65816_regs *regs, WDC65816_pins *pins) { // ORA a
         switch(regs->TCU) {
         // ORA a E=0 M=0 X=1
             case 1: // 2
@@ -22494,7 +22494,7 @@ static void WDC65816_opcode_0D_mX(struct WDC65816_regs *regs, WDC65816_pins *pin
 }
 
 
-static void WDC65816_opcode_0E_mX(struct WDC65816_regs *regs, WDC65816_pins *pins) { // ASL a
+static void WDC65816_opcode_0E_mX(WDC65816_regs *regs, WDC65816_pins *pins) { // ASL a
         switch(regs->TCU) {
         // ASL a E=0 M=0 X=1
         //case AM.Ad
@@ -22545,7 +22545,7 @@ static void WDC65816_opcode_0E_mX(struct WDC65816_regs *regs, WDC65816_pins *pin
 }
 
 
-static void WDC65816_opcode_0F_mX(struct WDC65816_regs *regs, WDC65816_pins *pins) { // ORA al
+static void WDC65816_opcode_0F_mX(WDC65816_regs *regs, WDC65816_pins *pins) { // ORA al
         switch(regs->TCU) {
         // ORA al E=0 M=0 X=1
             case 1: // 2
@@ -22586,7 +22586,7 @@ static void WDC65816_opcode_0F_mX(struct WDC65816_regs *regs, WDC65816_pins *pin
 }
 
 
-static void WDC65816_opcode_10_mX(struct WDC65816_regs *regs, WDC65816_pins *pins) { // BPL r
+static void WDC65816_opcode_10_mX(WDC65816_regs *regs, WDC65816_pins *pins) { // BPL r
         switch(regs->TCU) {
         // BPL r E=0 M=0 X=1
             case 1: // 2
@@ -22618,7 +22618,7 @@ static void WDC65816_opcode_10_mX(struct WDC65816_regs *regs, WDC65816_pins *pin
 }
 
 
-static void WDC65816_opcode_11_mX(struct WDC65816_regs *regs, WDC65816_pins *pins) { // ORA (d),y
+static void WDC65816_opcode_11_mX(WDC65816_regs *regs, WDC65816_pins *pins) { // ORA (d),y
         switch(regs->TCU) {
         // ORA (d),y E=0 M=0 X=1
             case 1: // fetch_D0_and_skip_cycle 2
@@ -22680,7 +22680,7 @@ static void WDC65816_opcode_11_mX(struct WDC65816_regs *regs, WDC65816_pins *pin
 }
 
 
-static void WDC65816_opcode_12_mX(struct WDC65816_regs *regs, WDC65816_pins *pins) { // ORA (d)
+static void WDC65816_opcode_12_mX(WDC65816_regs *regs, WDC65816_pins *pins) { // ORA (d)
         switch(regs->TCU) {
         // ORA (d) E=0 M=0 X=1
             case 1: // fetch_D0_and_skip_cycle 2
@@ -22729,7 +22729,7 @@ static void WDC65816_opcode_12_mX(struct WDC65816_regs *regs, WDC65816_pins *pin
 }
 
 
-static void WDC65816_opcode_13_mX(struct WDC65816_regs *regs, WDC65816_pins *pins) { // ORA (d,s),y
+static void WDC65816_opcode_13_mX(WDC65816_regs *regs, WDC65816_pins *pins) { // ORA (d,s),y
         switch(regs->TCU) {
         // ORA (d,s),y E=0 M=0 X=1
             case 1: // 2
@@ -22779,7 +22779,7 @@ static void WDC65816_opcode_13_mX(struct WDC65816_regs *regs, WDC65816_pins *pin
 }
 
 
-static void WDC65816_opcode_14_mX(struct WDC65816_regs *regs, WDC65816_pins *pins) { // TRB d
+static void WDC65816_opcode_14_mX(WDC65816_regs *regs, WDC65816_pins *pins) { // TRB d
         switch(regs->TCU) {
         // TRB d E=0 M=0 X=1
             case 1: // fetch_D0_and_skip_cycle 2
@@ -22832,7 +22832,7 @@ static void WDC65816_opcode_14_mX(struct WDC65816_regs *regs, WDC65816_pins *pin
 }
 
 
-static void WDC65816_opcode_15_mX(struct WDC65816_regs *regs, WDC65816_pins *pins) { // ORA d,x
+static void WDC65816_opcode_15_mX(WDC65816_regs *regs, WDC65816_pins *pins) { // ORA d,x
         switch(regs->TCU) {
         // ORA d,x E=0 M=0 X=1
             case 1: // fetch_D0_and_skip_cycle 2
@@ -22876,7 +22876,7 @@ static void WDC65816_opcode_15_mX(struct WDC65816_regs *regs, WDC65816_pins *pin
 }
 
 
-static void WDC65816_opcode_16_mX(struct WDC65816_regs *regs, WDC65816_pins *pins) { // ASL d,x
+static void WDC65816_opcode_16_mX(WDC65816_regs *regs, WDC65816_pins *pins) { // ASL d,x
         switch(regs->TCU) {
         // ASL d,x E=0 M=0 X=1
             case 1: // fetch_D0_and_skip_cycle 2
@@ -22933,7 +22933,7 @@ static void WDC65816_opcode_16_mX(struct WDC65816_regs *regs, WDC65816_pins *pin
 }
 
 
-static void WDC65816_opcode_17_mX(struct WDC65816_regs *regs, WDC65816_pins *pins) { // ORA [d],y
+static void WDC65816_opcode_17_mX(WDC65816_regs *regs, WDC65816_pins *pins) { // ORA [d],y
         switch(regs->TCU) {
         // ORA [d],y E=0 M=0 X=1
             case 1: // fetch_D0_and_skip_cycle 2
@@ -22988,7 +22988,7 @@ static void WDC65816_opcode_17_mX(struct WDC65816_regs *regs, WDC65816_pins *pin
 }
 
 
-static void WDC65816_opcode_18_mX(struct WDC65816_regs *regs, WDC65816_pins *pins) { // CLC i
+static void WDC65816_opcode_18_mX(WDC65816_regs *regs, WDC65816_pins *pins) { // CLC i
         switch(regs->TCU) {
         // CLC i E=0 M=0 X=1
             case 1: // 2
@@ -23010,7 +23010,7 @@ static void WDC65816_opcode_18_mX(struct WDC65816_regs *regs, WDC65816_pins *pin
 }
 
 
-static void WDC65816_opcode_19_mX(struct WDC65816_regs *regs, WDC65816_pins *pins) { // ORA a,y
+static void WDC65816_opcode_19_mX(WDC65816_regs *regs, WDC65816_pins *pins) { // ORA a,y
         switch(regs->TCU) {
         // ORA a,y E=0 M=0 X=1
             case 1: // 2
@@ -23060,7 +23060,7 @@ static void WDC65816_opcode_19_mX(struct WDC65816_regs *regs, WDC65816_pins *pin
 }
 
 
-static void WDC65816_opcode_1A_mX(struct WDC65816_regs *regs, WDC65816_pins *pins) { // INC A
+static void WDC65816_opcode_1A_mX(WDC65816_regs *regs, WDC65816_pins *pins) { // INC A
         switch(regs->TCU) {
         // INC A E=0 M=0 X=1
             case 1: // 2
@@ -23086,7 +23086,7 @@ static void WDC65816_opcode_1A_mX(struct WDC65816_regs *regs, WDC65816_pins *pin
 }
 
 
-static void WDC65816_opcode_1B_mX(struct WDC65816_regs *regs, WDC65816_pins *pins) { // TCS i
+static void WDC65816_opcode_1B_mX(WDC65816_regs *regs, WDC65816_pins *pins) { // TCS i
         switch(regs->TCU) {
         // TCS i E=0 M=0 X=1
             case 1: // 2
@@ -23108,7 +23108,7 @@ static void WDC65816_opcode_1B_mX(struct WDC65816_regs *regs, WDC65816_pins *pin
 }
 
 
-static void WDC65816_opcode_1C_mX(struct WDC65816_regs *regs, WDC65816_pins *pins) { // TRB a
+static void WDC65816_opcode_1C_mX(WDC65816_regs *regs, WDC65816_pins *pins) { // TRB a
         switch(regs->TCU) {
         // TRB a E=0 M=0 X=1
         //case AM.Ad
@@ -23157,7 +23157,7 @@ static void WDC65816_opcode_1C_mX(struct WDC65816_regs *regs, WDC65816_pins *pin
 }
 
 
-static void WDC65816_opcode_1D_mX(struct WDC65816_regs *regs, WDC65816_pins *pins) { // ORA a,x
+static void WDC65816_opcode_1D_mX(WDC65816_regs *regs, WDC65816_pins *pins) { // ORA a,x
         switch(regs->TCU) {
         // ORA a,x E=0 M=0 X=1
             case 1: // 2
@@ -23207,7 +23207,7 @@ static void WDC65816_opcode_1D_mX(struct WDC65816_regs *regs, WDC65816_pins *pin
 }
 
 
-static void WDC65816_opcode_1E_mX(struct WDC65816_regs *regs, WDC65816_pins *pins) { // ASL a,x
+static void WDC65816_opcode_1E_mX(WDC65816_regs *regs, WDC65816_pins *pins) { // ASL a,x
         switch(regs->TCU) {
         // ASL a,x E=0 M=0 X=1
             case 1: // 2
@@ -23264,7 +23264,7 @@ static void WDC65816_opcode_1E_mX(struct WDC65816_regs *regs, WDC65816_pins *pin
 }
 
 
-static void WDC65816_opcode_1F_mX(struct WDC65816_regs *regs, WDC65816_pins *pins) { // ORA al,x
+static void WDC65816_opcode_1F_mX(WDC65816_regs *regs, WDC65816_pins *pins) { // ORA al,x
         switch(regs->TCU) {
         // ORA al,x E=0 M=0 X=1
             case 1: // 2
@@ -23306,7 +23306,7 @@ static void WDC65816_opcode_1F_mX(struct WDC65816_regs *regs, WDC65816_pins *pin
 }
 
 
-static void WDC65816_opcode_20_mX(struct WDC65816_regs *regs, WDC65816_pins *pins) { // JSR a
+static void WDC65816_opcode_20_mX(WDC65816_regs *regs, WDC65816_pins *pins) { // JSR a
         switch(regs->TCU) {
         // JSR a E=0 M=0 X=1
             case 1: // 2
@@ -23349,7 +23349,7 @@ static void WDC65816_opcode_20_mX(struct WDC65816_regs *regs, WDC65816_pins *pin
 }
 
 
-static void WDC65816_opcode_21_mX(struct WDC65816_regs *regs, WDC65816_pins *pins) { // AND (d,x)
+static void WDC65816_opcode_21_mX(WDC65816_regs *regs, WDC65816_pins *pins) { // AND (d,x)
         switch(regs->TCU) {
         // AND (d,x) E=0 M=0 X=1
             case 1: // fetch_D0_and_skip_cycle 2
@@ -23401,7 +23401,7 @@ static void WDC65816_opcode_21_mX(struct WDC65816_regs *regs, WDC65816_pins *pin
 }
 
 
-static void WDC65816_opcode_22_mX(struct WDC65816_regs *regs, WDC65816_pins *pins) { // JSL al
+static void WDC65816_opcode_22_mX(WDC65816_regs *regs, WDC65816_pins *pins) { // JSL al
         switch(regs->TCU) {
         // JSL al E=0 M=0 X=1
             case 1: // 2
@@ -23457,7 +23457,7 @@ static void WDC65816_opcode_22_mX(struct WDC65816_regs *regs, WDC65816_pins *pin
 }
 
 
-static void WDC65816_opcode_23_mX(struct WDC65816_regs *regs, WDC65816_pins *pins) { // AND d,s
+static void WDC65816_opcode_23_mX(WDC65816_regs *regs, WDC65816_pins *pins) { // AND d,s
         switch(regs->TCU) {
         // AND d,s E=0 M=0 X=1
             case 1: // 2
@@ -23493,7 +23493,7 @@ static void WDC65816_opcode_23_mX(struct WDC65816_regs *regs, WDC65816_pins *pin
 }
 
 
-static void WDC65816_opcode_24_mX(struct WDC65816_regs *regs, WDC65816_pins *pins) { // BIT d
+static void WDC65816_opcode_24_mX(WDC65816_regs *regs, WDC65816_pins *pins) { // BIT d
         switch(regs->TCU) {
         // BIT d E=0 M=0 X=1
             case 1: // fetch_D0_and_skip_cycle 2
@@ -23535,7 +23535,7 @@ static void WDC65816_opcode_24_mX(struct WDC65816_regs *regs, WDC65816_pins *pin
 }
 
 
-static void WDC65816_opcode_25_mX(struct WDC65816_regs *regs, WDC65816_pins *pins) { // AND d
+static void WDC65816_opcode_25_mX(WDC65816_regs *regs, WDC65816_pins *pins) { // AND d
         switch(regs->TCU) {
         // AND d E=0 M=0 X=1
             case 1: // fetch_D0_and_skip_cycle 2
@@ -23577,7 +23577,7 @@ static void WDC65816_opcode_25_mX(struct WDC65816_regs *regs, WDC65816_pins *pin
 }
 
 
-static void WDC65816_opcode_26_mX(struct WDC65816_regs *regs, WDC65816_pins *pins) { // ROL d
+static void WDC65816_opcode_26_mX(WDC65816_regs *regs, WDC65816_pins *pins) { // ROL d
         switch(regs->TCU) {
         // ROL d E=0 M=0 X=1
             case 1: // fetch_D0_and_skip_cycle 2
@@ -23633,7 +23633,7 @@ static void WDC65816_opcode_26_mX(struct WDC65816_regs *regs, WDC65816_pins *pin
 }
 
 
-static void WDC65816_opcode_27_mX(struct WDC65816_regs *regs, WDC65816_pins *pins) { // AND [d]
+static void WDC65816_opcode_27_mX(WDC65816_regs *regs, WDC65816_pins *pins) { // AND [d]
         switch(regs->TCU) {
         // AND [d] E=0 M=0 X=1
             case 1: // fetch_D0_and_skip_cycle 2
@@ -23688,7 +23688,7 @@ static void WDC65816_opcode_27_mX(struct WDC65816_regs *regs, WDC65816_pins *pin
 }
 
 
-static void WDC65816_opcode_28_mX(struct WDC65816_regs *regs, WDC65816_pins *pins) { // PLP s
+static void WDC65816_opcode_28_mX(WDC65816_regs *regs, WDC65816_pins *pins) { // PLP s
         switch(regs->TCU) {
         // PLP s E=0 M=0 X=1
             case 1: // 2
@@ -23722,7 +23722,7 @@ static void WDC65816_opcode_28_mX(struct WDC65816_regs *regs, WDC65816_pins *pin
 }
 
 
-static void WDC65816_opcode_29_mX(struct WDC65816_regs *regs, WDC65816_pins *pins) { // AND #
+static void WDC65816_opcode_29_mX(WDC65816_regs *regs, WDC65816_pins *pins) { // AND #
         switch(regs->TCU) {
         // AND # E=0 M=0 X=1
             case 1: // 2
@@ -23751,7 +23751,7 @@ static void WDC65816_opcode_29_mX(struct WDC65816_regs *regs, WDC65816_pins *pin
 }
 
 
-static void WDC65816_opcode_2A_mX(struct WDC65816_regs *regs, WDC65816_pins *pins) { // ROL A
+static void WDC65816_opcode_2A_mX(WDC65816_regs *regs, WDC65816_pins *pins) { // ROL A
         switch(regs->TCU) {
         // ROL A E=0 M=0 X=1
             case 1: // 2
@@ -23779,7 +23779,7 @@ static void WDC65816_opcode_2A_mX(struct WDC65816_regs *regs, WDC65816_pins *pin
 }
 
 
-static void WDC65816_opcode_2B_mX(struct WDC65816_regs *regs, WDC65816_pins *pins) { // PLD s
+static void WDC65816_opcode_2B_mX(WDC65816_regs *regs, WDC65816_pins *pins) { // PLD s
         switch(regs->TCU) {
         // PLD s E=0 M=0 X=1
             case 1: // 2
@@ -23815,7 +23815,7 @@ static void WDC65816_opcode_2B_mX(struct WDC65816_regs *regs, WDC65816_pins *pin
 }
 
 
-static void WDC65816_opcode_2C_mX(struct WDC65816_regs *regs, WDC65816_pins *pins) { // BIT a
+static void WDC65816_opcode_2C_mX(WDC65816_regs *regs, WDC65816_pins *pins) { // BIT a
         switch(regs->TCU) {
         // BIT a E=0 M=0 X=1
             case 1: // 2
@@ -23851,7 +23851,7 @@ static void WDC65816_opcode_2C_mX(struct WDC65816_regs *regs, WDC65816_pins *pin
 }
 
 
-static void WDC65816_opcode_2D_mX(struct WDC65816_regs *regs, WDC65816_pins *pins) { // AND a
+static void WDC65816_opcode_2D_mX(WDC65816_regs *regs, WDC65816_pins *pins) { // AND a
         switch(regs->TCU) {
         // AND a E=0 M=0 X=1
             case 1: // 2
@@ -23887,7 +23887,7 @@ static void WDC65816_opcode_2D_mX(struct WDC65816_regs *regs, WDC65816_pins *pin
 }
 
 
-static void WDC65816_opcode_2E_mX(struct WDC65816_regs *regs, WDC65816_pins *pins) { // ROL a
+static void WDC65816_opcode_2E_mX(WDC65816_regs *regs, WDC65816_pins *pins) { // ROL a
         switch(regs->TCU) {
         // ROL a E=0 M=0 X=1
         //case AM.Ad
@@ -23939,7 +23939,7 @@ static void WDC65816_opcode_2E_mX(struct WDC65816_regs *regs, WDC65816_pins *pin
 }
 
 
-static void WDC65816_opcode_2F_mX(struct WDC65816_regs *regs, WDC65816_pins *pins) { // AND al
+static void WDC65816_opcode_2F_mX(WDC65816_regs *regs, WDC65816_pins *pins) { // AND al
         switch(regs->TCU) {
         // AND al E=0 M=0 X=1
             case 1: // 2
@@ -23980,7 +23980,7 @@ static void WDC65816_opcode_2F_mX(struct WDC65816_regs *regs, WDC65816_pins *pin
 }
 
 
-static void WDC65816_opcode_30_mX(struct WDC65816_regs *regs, WDC65816_pins *pins) { // BMI r
+static void WDC65816_opcode_30_mX(WDC65816_regs *regs, WDC65816_pins *pins) { // BMI r
         switch(regs->TCU) {
         // BMI r E=0 M=0 X=1
             case 1: // 2
@@ -24012,7 +24012,7 @@ static void WDC65816_opcode_30_mX(struct WDC65816_regs *regs, WDC65816_pins *pin
 }
 
 
-static void WDC65816_opcode_31_mX(struct WDC65816_regs *regs, WDC65816_pins *pins) { // AND (d),y
+static void WDC65816_opcode_31_mX(WDC65816_regs *regs, WDC65816_pins *pins) { // AND (d),y
         switch(regs->TCU) {
         // AND (d),y E=0 M=0 X=1
             case 1: // fetch_D0_and_skip_cycle 2
@@ -24074,7 +24074,7 @@ static void WDC65816_opcode_31_mX(struct WDC65816_regs *regs, WDC65816_pins *pin
 }
 
 
-static void WDC65816_opcode_32_mX(struct WDC65816_regs *regs, WDC65816_pins *pins) { // AND (d)
+static void WDC65816_opcode_32_mX(WDC65816_regs *regs, WDC65816_pins *pins) { // AND (d)
         switch(regs->TCU) {
         // AND (d) E=0 M=0 X=1
             case 1: // fetch_D0_and_skip_cycle 2
@@ -24123,7 +24123,7 @@ static void WDC65816_opcode_32_mX(struct WDC65816_regs *regs, WDC65816_pins *pin
 }
 
 
-static void WDC65816_opcode_33_mX(struct WDC65816_regs *regs, WDC65816_pins *pins) { // AND (d,s),y
+static void WDC65816_opcode_33_mX(WDC65816_regs *regs, WDC65816_pins *pins) { // AND (d,s),y
         switch(regs->TCU) {
         // AND (d,s),y E=0 M=0 X=1
             case 1: // 2
@@ -24173,7 +24173,7 @@ static void WDC65816_opcode_33_mX(struct WDC65816_regs *regs, WDC65816_pins *pin
 }
 
 
-static void WDC65816_opcode_34_mX(struct WDC65816_regs *regs, WDC65816_pins *pins) { // BIT d,x
+static void WDC65816_opcode_34_mX(WDC65816_regs *regs, WDC65816_pins *pins) { // BIT d,x
         switch(regs->TCU) {
         // BIT d,x E=0 M=0 X=1
             case 1: // fetch_D0_and_skip_cycle 2
@@ -24217,7 +24217,7 @@ static void WDC65816_opcode_34_mX(struct WDC65816_regs *regs, WDC65816_pins *pin
 }
 
 
-static void WDC65816_opcode_35_mX(struct WDC65816_regs *regs, WDC65816_pins *pins) { // AND d,x
+static void WDC65816_opcode_35_mX(WDC65816_regs *regs, WDC65816_pins *pins) { // AND d,x
         switch(regs->TCU) {
         // AND d,x E=0 M=0 X=1
             case 1: // fetch_D0_and_skip_cycle 2
@@ -24261,7 +24261,7 @@ static void WDC65816_opcode_35_mX(struct WDC65816_regs *regs, WDC65816_pins *pin
 }
 
 
-static void WDC65816_opcode_36_mX(struct WDC65816_regs *regs, WDC65816_pins *pins) { // ROL d,x
+static void WDC65816_opcode_36_mX(WDC65816_regs *regs, WDC65816_pins *pins) { // ROL d,x
         switch(regs->TCU) {
         // ROL d,x E=0 M=0 X=1
             case 1: // fetch_D0_and_skip_cycle 2
@@ -24319,7 +24319,7 @@ static void WDC65816_opcode_36_mX(struct WDC65816_regs *regs, WDC65816_pins *pin
 }
 
 
-static void WDC65816_opcode_37_mX(struct WDC65816_regs *regs, WDC65816_pins *pins) { // AND [d],y
+static void WDC65816_opcode_37_mX(WDC65816_regs *regs, WDC65816_pins *pins) { // AND [d],y
         switch(regs->TCU) {
         // AND [d],y E=0 M=0 X=1
             case 1: // fetch_D0_and_skip_cycle 2
@@ -24374,7 +24374,7 @@ static void WDC65816_opcode_37_mX(struct WDC65816_regs *regs, WDC65816_pins *pin
 }
 
 
-static void WDC65816_opcode_38_mX(struct WDC65816_regs *regs, WDC65816_pins *pins) { // SEC i
+static void WDC65816_opcode_38_mX(WDC65816_regs *regs, WDC65816_pins *pins) { // SEC i
         switch(regs->TCU) {
         // SEC i E=0 M=0 X=1
             case 1: // 2
@@ -24396,7 +24396,7 @@ static void WDC65816_opcode_38_mX(struct WDC65816_regs *regs, WDC65816_pins *pin
 }
 
 
-static void WDC65816_opcode_39_mX(struct WDC65816_regs *regs, WDC65816_pins *pins) { // AND a,y
+static void WDC65816_opcode_39_mX(WDC65816_regs *regs, WDC65816_pins *pins) { // AND a,y
         switch(regs->TCU) {
         // AND a,y E=0 M=0 X=1
             case 1: // 2
@@ -24446,7 +24446,7 @@ static void WDC65816_opcode_39_mX(struct WDC65816_regs *regs, WDC65816_pins *pin
 }
 
 
-static void WDC65816_opcode_3A_mX(struct WDC65816_regs *regs, WDC65816_pins *pins) { // DEC A
+static void WDC65816_opcode_3A_mX(WDC65816_regs *regs, WDC65816_pins *pins) { // DEC A
         switch(regs->TCU) {
         // DEC A E=0 M=0 X=1
             case 1: // 2
@@ -24472,7 +24472,7 @@ static void WDC65816_opcode_3A_mX(struct WDC65816_regs *regs, WDC65816_pins *pin
 }
 
 
-static void WDC65816_opcode_3B_mX(struct WDC65816_regs *regs, WDC65816_pins *pins) { // TSC i
+static void WDC65816_opcode_3B_mX(WDC65816_regs *regs, WDC65816_pins *pins) { // TSC i
         switch(regs->TCU) {
         // TSC i E=0 M=0 X=1
             case 1: // 2
@@ -24496,7 +24496,7 @@ static void WDC65816_opcode_3B_mX(struct WDC65816_regs *regs, WDC65816_pins *pin
 }
 
 
-static void WDC65816_opcode_3C_mX(struct WDC65816_regs *regs, WDC65816_pins *pins) { // BIT a,x
+static void WDC65816_opcode_3C_mX(WDC65816_regs *regs, WDC65816_pins *pins) { // BIT a,x
         switch(regs->TCU) {
         // BIT a,x E=0 M=0 X=1
             case 1: // 2
@@ -24546,7 +24546,7 @@ static void WDC65816_opcode_3C_mX(struct WDC65816_regs *regs, WDC65816_pins *pin
 }
 
 
-static void WDC65816_opcode_3D_mX(struct WDC65816_regs *regs, WDC65816_pins *pins) { // AND a,x
+static void WDC65816_opcode_3D_mX(WDC65816_regs *regs, WDC65816_pins *pins) { // AND a,x
         switch(regs->TCU) {
         // AND a,x E=0 M=0 X=1
             case 1: // 2
@@ -24596,7 +24596,7 @@ static void WDC65816_opcode_3D_mX(struct WDC65816_regs *regs, WDC65816_pins *pin
 }
 
 
-static void WDC65816_opcode_3E_mX(struct WDC65816_regs *regs, WDC65816_pins *pins) { // ROL a,x
+static void WDC65816_opcode_3E_mX(WDC65816_regs *regs, WDC65816_pins *pins) { // ROL a,x
         switch(regs->TCU) {
         // ROL a,x E=0 M=0 X=1
             case 1: // 2
@@ -24654,7 +24654,7 @@ static void WDC65816_opcode_3E_mX(struct WDC65816_regs *regs, WDC65816_pins *pin
 }
 
 
-static void WDC65816_opcode_3F_mX(struct WDC65816_regs *regs, WDC65816_pins *pins) { // AND al,x
+static void WDC65816_opcode_3F_mX(WDC65816_regs *regs, WDC65816_pins *pins) { // AND al,x
         switch(regs->TCU) {
         // AND al,x E=0 M=0 X=1
             case 1: // 2
@@ -24696,7 +24696,7 @@ static void WDC65816_opcode_3F_mX(struct WDC65816_regs *regs, WDC65816_pins *pin
 }
 
 
-static void WDC65816_opcode_40_mX(struct WDC65816_regs *regs, WDC65816_pins *pins) { // RTI s
+static void WDC65816_opcode_40_mX(WDC65816_regs *regs, WDC65816_pins *pins) { // RTI s
         switch(regs->TCU) {
         // RTI s E=0 M=0 X=1
             case 1: // 2
@@ -24747,7 +24747,7 @@ static void WDC65816_opcode_40_mX(struct WDC65816_regs *regs, WDC65816_pins *pin
 }
 
 
-static void WDC65816_opcode_41_mX(struct WDC65816_regs *regs, WDC65816_pins *pins) { // EOR (d,x)
+static void WDC65816_opcode_41_mX(WDC65816_regs *regs, WDC65816_pins *pins) { // EOR (d,x)
         switch(regs->TCU) {
         // EOR (d,x) E=0 M=0 X=1
             case 1: // fetch_D0_and_skip_cycle 2
@@ -24799,7 +24799,7 @@ static void WDC65816_opcode_41_mX(struct WDC65816_regs *regs, WDC65816_pins *pin
 }
 
 
-static void WDC65816_opcode_42_mX(struct WDC65816_regs *regs, WDC65816_pins *pins) { // WDM i
+static void WDC65816_opcode_42_mX(WDC65816_regs *regs, WDC65816_pins *pins) { // WDM i
         switch(regs->TCU) {
         // WDM i E=0 M=0 X=1
             case 1: // 2
@@ -24821,7 +24821,7 @@ static void WDC65816_opcode_42_mX(struct WDC65816_regs *regs, WDC65816_pins *pin
 }
 
 
-static void WDC65816_opcode_43_mX(struct WDC65816_regs *regs, WDC65816_pins *pins) { // EOR d,s
+static void WDC65816_opcode_43_mX(WDC65816_regs *regs, WDC65816_pins *pins) { // EOR d,s
         switch(regs->TCU) {
         // EOR d,s E=0 M=0 X=1
             case 1: // 2
@@ -24857,7 +24857,7 @@ static void WDC65816_opcode_43_mX(struct WDC65816_regs *regs, WDC65816_pins *pin
 }
 
 
-static void WDC65816_opcode_44_mX(struct WDC65816_regs *regs, WDC65816_pins *pins) { // MVP xyc
+static void WDC65816_opcode_44_mX(WDC65816_regs *regs, WDC65816_pins *pins) { // MVP xyc
         switch(regs->TCU) {
         // MVP xyc E=0 M=0 X=1
             case 1: // 2
@@ -24898,7 +24898,7 @@ static void WDC65816_opcode_44_mX(struct WDC65816_regs *regs, WDC65816_pins *pin
 }
 
 
-static void WDC65816_opcode_45_mX(struct WDC65816_regs *regs, WDC65816_pins *pins) { // EOR d
+static void WDC65816_opcode_45_mX(WDC65816_regs *regs, WDC65816_pins *pins) { // EOR d
         switch(regs->TCU) {
         // EOR d E=0 M=0 X=1
             case 1: // fetch_D0_and_skip_cycle 2
@@ -24940,7 +24940,7 @@ static void WDC65816_opcode_45_mX(struct WDC65816_regs *regs, WDC65816_pins *pin
 }
 
 
-static void WDC65816_opcode_46_mX(struct WDC65816_regs *regs, WDC65816_pins *pins) { // LSR d
+static void WDC65816_opcode_46_mX(WDC65816_regs *regs, WDC65816_pins *pins) { // LSR d
         switch(regs->TCU) {
         // LSR d E=0 M=0 X=1
             case 1: // fetch_D0_and_skip_cycle 2
@@ -24995,7 +24995,7 @@ static void WDC65816_opcode_46_mX(struct WDC65816_regs *regs, WDC65816_pins *pin
 }
 
 
-static void WDC65816_opcode_47_mX(struct WDC65816_regs *regs, WDC65816_pins *pins) { // EOR [d]
+static void WDC65816_opcode_47_mX(WDC65816_regs *regs, WDC65816_pins *pins) { // EOR [d]
         switch(regs->TCU) {
         // EOR [d] E=0 M=0 X=1
             case 1: // fetch_D0_and_skip_cycle 2
@@ -25050,7 +25050,7 @@ static void WDC65816_opcode_47_mX(struct WDC65816_regs *regs, WDC65816_pins *pin
 }
 
 
-static void WDC65816_opcode_48_mX(struct WDC65816_regs *regs, WDC65816_pins *pins) { // PHA s
+static void WDC65816_opcode_48_mX(WDC65816_regs *regs, WDC65816_pins *pins) { // PHA s
         switch(regs->TCU) {
         // PHA s E=0 M=0 X=1
             case 1: // 2
@@ -25085,7 +25085,7 @@ static void WDC65816_opcode_48_mX(struct WDC65816_regs *regs, WDC65816_pins *pin
 }
 
 
-static void WDC65816_opcode_49_mX(struct WDC65816_regs *regs, WDC65816_pins *pins) { // EOR #
+static void WDC65816_opcode_49_mX(WDC65816_regs *regs, WDC65816_pins *pins) { // EOR #
         switch(regs->TCU) {
         // EOR # E=0 M=0 X=1
             case 1: // 2
@@ -25114,7 +25114,7 @@ static void WDC65816_opcode_49_mX(struct WDC65816_regs *regs, WDC65816_pins *pin
 }
 
 
-static void WDC65816_opcode_4A_mX(struct WDC65816_regs *regs, WDC65816_pins *pins) { // LSR A
+static void WDC65816_opcode_4A_mX(WDC65816_regs *regs, WDC65816_pins *pins) { // LSR A
         switch(regs->TCU) {
         // LSR A E=0 M=0 X=1
             case 1: // 2
@@ -25141,7 +25141,7 @@ static void WDC65816_opcode_4A_mX(struct WDC65816_regs *regs, WDC65816_pins *pin
 }
 
 
-static void WDC65816_opcode_4B_mX(struct WDC65816_regs *regs, WDC65816_pins *pins) { // PHK s
+static void WDC65816_opcode_4B_mX(WDC65816_regs *regs, WDC65816_pins *pins) { // PHK s
         switch(regs->TCU) {
         // PHK s E=0 M=0 X=1
             case 1: // 2
@@ -25170,7 +25170,7 @@ static void WDC65816_opcode_4B_mX(struct WDC65816_regs *regs, WDC65816_pins *pin
 }
 
 
-static void WDC65816_opcode_4C_mX(struct WDC65816_regs *regs, WDC65816_pins *pins) { // JMP a
+static void WDC65816_opcode_4C_mX(WDC65816_regs *regs, WDC65816_pins *pins) { // JMP a
         switch(regs->TCU) {
         // JMP a E=0 M=0 X=1
             case 1: // 2
@@ -25194,7 +25194,7 @@ static void WDC65816_opcode_4C_mX(struct WDC65816_regs *regs, WDC65816_pins *pin
 }
 
 
-static void WDC65816_opcode_4D_mX(struct WDC65816_regs *regs, WDC65816_pins *pins) { // EOR a
+static void WDC65816_opcode_4D_mX(WDC65816_regs *regs, WDC65816_pins *pins) { // EOR a
         switch(regs->TCU) {
         // EOR a E=0 M=0 X=1
             case 1: // 2
@@ -25230,7 +25230,7 @@ static void WDC65816_opcode_4D_mX(struct WDC65816_regs *regs, WDC65816_pins *pin
 }
 
 
-static void WDC65816_opcode_4E_mX(struct WDC65816_regs *regs, WDC65816_pins *pins) { // LSR a
+static void WDC65816_opcode_4E_mX(WDC65816_regs *regs, WDC65816_pins *pins) { // LSR a
         switch(regs->TCU) {
         // LSR a E=0 M=0 X=1
         //case AM.Ad
@@ -25281,7 +25281,7 @@ static void WDC65816_opcode_4E_mX(struct WDC65816_regs *regs, WDC65816_pins *pin
 }
 
 
-static void WDC65816_opcode_4F_mX(struct WDC65816_regs *regs, WDC65816_pins *pins) { // EOR al
+static void WDC65816_opcode_4F_mX(WDC65816_regs *regs, WDC65816_pins *pins) { // EOR al
         switch(regs->TCU) {
         // EOR al E=0 M=0 X=1
             case 1: // 2
@@ -25322,7 +25322,7 @@ static void WDC65816_opcode_4F_mX(struct WDC65816_regs *regs, WDC65816_pins *pin
 }
 
 
-static void WDC65816_opcode_50_mX(struct WDC65816_regs *regs, WDC65816_pins *pins) { // BVC r
+static void WDC65816_opcode_50_mX(WDC65816_regs *regs, WDC65816_pins *pins) { // BVC r
         switch(regs->TCU) {
         // BVC r E=0 M=0 X=1
             case 1: // 2
@@ -25354,7 +25354,7 @@ static void WDC65816_opcode_50_mX(struct WDC65816_regs *regs, WDC65816_pins *pin
 }
 
 
-static void WDC65816_opcode_51_mX(struct WDC65816_regs *regs, WDC65816_pins *pins) { // EOR (d),y
+static void WDC65816_opcode_51_mX(WDC65816_regs *regs, WDC65816_pins *pins) { // EOR (d),y
         switch(regs->TCU) {
         // EOR (d),y E=0 M=0 X=1
             case 1: // fetch_D0_and_skip_cycle 2
@@ -25416,7 +25416,7 @@ static void WDC65816_opcode_51_mX(struct WDC65816_regs *regs, WDC65816_pins *pin
 }
 
 
-static void WDC65816_opcode_52_mX(struct WDC65816_regs *regs, WDC65816_pins *pins) { // EOR (d)
+static void WDC65816_opcode_52_mX(WDC65816_regs *regs, WDC65816_pins *pins) { // EOR (d)
         switch(regs->TCU) {
         // EOR (d) E=0 M=0 X=1
             case 1: // fetch_D0_and_skip_cycle 2
@@ -25465,7 +25465,7 @@ static void WDC65816_opcode_52_mX(struct WDC65816_regs *regs, WDC65816_pins *pin
 }
 
 
-static void WDC65816_opcode_53_mX(struct WDC65816_regs *regs, WDC65816_pins *pins) { // EOR (d,s),y
+static void WDC65816_opcode_53_mX(WDC65816_regs *regs, WDC65816_pins *pins) { // EOR (d,s),y
         switch(regs->TCU) {
         // EOR (d,s),y E=0 M=0 X=1
             case 1: // 2
@@ -25515,7 +25515,7 @@ static void WDC65816_opcode_53_mX(struct WDC65816_regs *regs, WDC65816_pins *pin
 }
 
 
-static void WDC65816_opcode_54_mX(struct WDC65816_regs *regs, WDC65816_pins *pins) { // MVN xyc
+static void WDC65816_opcode_54_mX(WDC65816_regs *regs, WDC65816_pins *pins) { // MVN xyc
         switch(regs->TCU) {
         // MVN xyc E=0 M=0 X=1
             case 1: // 2
@@ -25556,7 +25556,7 @@ static void WDC65816_opcode_54_mX(struct WDC65816_regs *regs, WDC65816_pins *pin
 }
 
 
-static void WDC65816_opcode_55_mX(struct WDC65816_regs *regs, WDC65816_pins *pins) { // EOR d,x
+static void WDC65816_opcode_55_mX(WDC65816_regs *regs, WDC65816_pins *pins) { // EOR d,x
         switch(regs->TCU) {
         // EOR d,x E=0 M=0 X=1
             case 1: // fetch_D0_and_skip_cycle 2
@@ -25600,7 +25600,7 @@ static void WDC65816_opcode_55_mX(struct WDC65816_regs *regs, WDC65816_pins *pin
 }
 
 
-static void WDC65816_opcode_56_mX(struct WDC65816_regs *regs, WDC65816_pins *pins) { // LSR d,x
+static void WDC65816_opcode_56_mX(WDC65816_regs *regs, WDC65816_pins *pins) { // LSR d,x
         switch(regs->TCU) {
         // LSR d,x E=0 M=0 X=1
             case 1: // fetch_D0_and_skip_cycle 2
@@ -25657,7 +25657,7 @@ static void WDC65816_opcode_56_mX(struct WDC65816_regs *regs, WDC65816_pins *pin
 }
 
 
-static void WDC65816_opcode_57_mX(struct WDC65816_regs *regs, WDC65816_pins *pins) { // EOR [d],y
+static void WDC65816_opcode_57_mX(WDC65816_regs *regs, WDC65816_pins *pins) { // EOR [d],y
         switch(regs->TCU) {
         // EOR [d],y E=0 M=0 X=1
             case 1: // fetch_D0_and_skip_cycle 2
@@ -25712,7 +25712,7 @@ static void WDC65816_opcode_57_mX(struct WDC65816_regs *regs, WDC65816_pins *pin
 }
 
 
-static void WDC65816_opcode_58_mX(struct WDC65816_regs *regs, WDC65816_pins *pins) { // CLI i
+static void WDC65816_opcode_58_mX(WDC65816_regs *regs, WDC65816_pins *pins) { // CLI i
         switch(regs->TCU) {
         // CLI i E=0 M=0 X=1
             case 1: // 2
@@ -25734,7 +25734,7 @@ static void WDC65816_opcode_58_mX(struct WDC65816_regs *regs, WDC65816_pins *pin
 }
 
 
-static void WDC65816_opcode_59_mX(struct WDC65816_regs *regs, WDC65816_pins *pins) { // EOR a,y
+static void WDC65816_opcode_59_mX(WDC65816_regs *regs, WDC65816_pins *pins) { // EOR a,y
         switch(regs->TCU) {
         // EOR a,y E=0 M=0 X=1
             case 1: // 2
@@ -25784,7 +25784,7 @@ static void WDC65816_opcode_59_mX(struct WDC65816_regs *regs, WDC65816_pins *pin
 }
 
 
-static void WDC65816_opcode_5A_mX(struct WDC65816_regs *regs, WDC65816_pins *pins) { // PHY s
+static void WDC65816_opcode_5A_mX(WDC65816_regs *regs, WDC65816_pins *pins) { // PHY s
         switch(regs->TCU) {
         // PHY s E=0 M=0 X=1
             case 1: // 2
@@ -25813,7 +25813,7 @@ static void WDC65816_opcode_5A_mX(struct WDC65816_regs *regs, WDC65816_pins *pin
 }
 
 
-static void WDC65816_opcode_5B_mX(struct WDC65816_regs *regs, WDC65816_pins *pins) { // TCD i
+static void WDC65816_opcode_5B_mX(WDC65816_regs *regs, WDC65816_pins *pins) { // TCD i
         switch(regs->TCU) {
         // TCD i E=0 M=0 X=1
             case 1: // 2
@@ -25837,7 +25837,7 @@ static void WDC65816_opcode_5B_mX(struct WDC65816_regs *regs, WDC65816_pins *pin
 }
 
 
-static void WDC65816_opcode_5C_mX(struct WDC65816_regs *regs, WDC65816_pins *pins) { // JMP al
+static void WDC65816_opcode_5C_mX(WDC65816_regs *regs, WDC65816_pins *pins) { // JMP al
         switch(regs->TCU) {
         // JMP al E=0 M=0 X=1
             case 1: // 2
@@ -25865,7 +25865,7 @@ static void WDC65816_opcode_5C_mX(struct WDC65816_regs *regs, WDC65816_pins *pin
 }
 
 
-static void WDC65816_opcode_5D_mX(struct WDC65816_regs *regs, WDC65816_pins *pins) { // EOR a,x
+static void WDC65816_opcode_5D_mX(WDC65816_regs *regs, WDC65816_pins *pins) { // EOR a,x
         switch(regs->TCU) {
         // EOR a,x E=0 M=0 X=1
             case 1: // 2
@@ -25915,7 +25915,7 @@ static void WDC65816_opcode_5D_mX(struct WDC65816_regs *regs, WDC65816_pins *pin
 }
 
 
-static void WDC65816_opcode_5E_mX(struct WDC65816_regs *regs, WDC65816_pins *pins) { // LSR a,x
+static void WDC65816_opcode_5E_mX(WDC65816_regs *regs, WDC65816_pins *pins) { // LSR a,x
         switch(regs->TCU) {
         // LSR a,x E=0 M=0 X=1
             case 1: // 2
@@ -25972,7 +25972,7 @@ static void WDC65816_opcode_5E_mX(struct WDC65816_regs *regs, WDC65816_pins *pin
 }
 
 
-static void WDC65816_opcode_5F_mX(struct WDC65816_regs *regs, WDC65816_pins *pins) { // EOR al,x
+static void WDC65816_opcode_5F_mX(WDC65816_regs *regs, WDC65816_pins *pins) { // EOR al,x
         switch(regs->TCU) {
         // EOR al,x E=0 M=0 X=1
             case 1: // 2
@@ -26014,7 +26014,7 @@ static void WDC65816_opcode_5F_mX(struct WDC65816_regs *regs, WDC65816_pins *pin
 }
 
 
-static void WDC65816_opcode_60_mX(struct WDC65816_regs *regs, WDC65816_pins *pins) { // RTS s
+static void WDC65816_opcode_60_mX(WDC65816_regs *regs, WDC65816_pins *pins) { // RTS s
         switch(regs->TCU) {
         // RTS s E=0 M=0 X=1
             case 1: // 2
@@ -26051,7 +26051,7 @@ static void WDC65816_opcode_60_mX(struct WDC65816_regs *regs, WDC65816_pins *pin
 }
 
 
-static void WDC65816_opcode_61_mX(struct WDC65816_regs *regs, WDC65816_pins *pins) { // ADC (d,x)
+static void WDC65816_opcode_61_mX(WDC65816_regs *regs, WDC65816_pins *pins) { // ADC (d,x)
         switch(regs->TCU) {
         // ADC (d,x) E=0 M=0 X=1
             case 1: // fetch_D0_and_skip_cycle 2
@@ -26120,7 +26120,7 @@ static void WDC65816_opcode_61_mX(struct WDC65816_regs *regs, WDC65816_pins *pin
 }
 
 
-static void WDC65816_opcode_62_mX(struct WDC65816_regs *regs, WDC65816_pins *pins) { // PER s
+static void WDC65816_opcode_62_mX(WDC65816_regs *regs, WDC65816_pins *pins) { // PER s
         switch(regs->TCU) {
         // PER s E=0 M=0 X=1
             case 1: // 2
@@ -26159,7 +26159,7 @@ static void WDC65816_opcode_62_mX(struct WDC65816_regs *regs, WDC65816_pins *pin
 }
 
 
-static void WDC65816_opcode_63_mX(struct WDC65816_regs *regs, WDC65816_pins *pins) { // ADC d,s
+static void WDC65816_opcode_63_mX(WDC65816_regs *regs, WDC65816_pins *pins) { // ADC d,s
         switch(regs->TCU) {
         // ADC d,s E=0 M=0 X=1
             case 1: // 2
@@ -26212,7 +26212,7 @@ static void WDC65816_opcode_63_mX(struct WDC65816_regs *regs, WDC65816_pins *pin
 }
 
 
-static void WDC65816_opcode_64_mX(struct WDC65816_regs *regs, WDC65816_pins *pins) { // STZ d
+static void WDC65816_opcode_64_mX(WDC65816_regs *regs, WDC65816_pins *pins) { // STZ d
         switch(regs->TCU) {
         // STZ d E=0 M=0 X=1
             case 1: // fetch_D0_and_skip_cycle 2
@@ -26253,7 +26253,7 @@ static void WDC65816_opcode_64_mX(struct WDC65816_regs *regs, WDC65816_pins *pin
 }
 
 
-static void WDC65816_opcode_65_mX(struct WDC65816_regs *regs, WDC65816_pins *pins) { // ADC d
+static void WDC65816_opcode_65_mX(WDC65816_regs *regs, WDC65816_pins *pins) { // ADC d
         switch(regs->TCU) {
         // ADC d E=0 M=0 X=1
             case 1: // fetch_D0_and_skip_cycle 2
@@ -26312,7 +26312,7 @@ static void WDC65816_opcode_65_mX(struct WDC65816_regs *regs, WDC65816_pins *pin
 }
 
 
-static void WDC65816_opcode_66_mX(struct WDC65816_regs *regs, WDC65816_pins *pins) { // ROR d
+static void WDC65816_opcode_66_mX(WDC65816_regs *regs, WDC65816_pins *pins) { // ROR d
         switch(regs->TCU) {
         // ROR d E=0 M=0 X=1
             case 1: // fetch_D0_and_skip_cycle 2
@@ -26368,7 +26368,7 @@ static void WDC65816_opcode_66_mX(struct WDC65816_regs *regs, WDC65816_pins *pin
 }
 
 
-static void WDC65816_opcode_67_mX(struct WDC65816_regs *regs, WDC65816_pins *pins) { // ADC [d]
+static void WDC65816_opcode_67_mX(WDC65816_regs *regs, WDC65816_pins *pins) { // ADC [d]
         switch(regs->TCU) {
         // ADC [d] E=0 M=0 X=1
             case 1: // fetch_D0_and_skip_cycle 2
@@ -26440,7 +26440,7 @@ static void WDC65816_opcode_67_mX(struct WDC65816_regs *regs, WDC65816_pins *pin
 }
 
 
-static void WDC65816_opcode_68_mX(struct WDC65816_regs *regs, WDC65816_pins *pins) { // PLA s
+static void WDC65816_opcode_68_mX(WDC65816_regs *regs, WDC65816_pins *pins) { // PLA s
         switch(regs->TCU) {
         // PLA s E=0 M=0 X=1
             case 1: // 2
@@ -26478,7 +26478,7 @@ static void WDC65816_opcode_68_mX(struct WDC65816_regs *regs, WDC65816_pins *pin
 }
 
 
-static void WDC65816_opcode_69_mX(struct WDC65816_regs *regs, WDC65816_pins *pins) { // ADC #
+static void WDC65816_opcode_69_mX(WDC65816_regs *regs, WDC65816_pins *pins) { // ADC #
         switch(regs->TCU) {
         // ADC # E=0 M=0 X=1
             case 1: // 2
@@ -26524,7 +26524,7 @@ static void WDC65816_opcode_69_mX(struct WDC65816_regs *regs, WDC65816_pins *pin
 }
 
 
-static void WDC65816_opcode_6A_mX(struct WDC65816_regs *regs, WDC65816_pins *pins) { // ROR A
+static void WDC65816_opcode_6A_mX(WDC65816_regs *regs, WDC65816_pins *pins) { // ROR A
         switch(regs->TCU) {
         // ROR A E=0 M=0 X=1
             case 1: // 2
@@ -26552,7 +26552,7 @@ static void WDC65816_opcode_6A_mX(struct WDC65816_regs *regs, WDC65816_pins *pin
 }
 
 
-static void WDC65816_opcode_6B_mX(struct WDC65816_regs *regs, WDC65816_pins *pins) { // RTL s
+static void WDC65816_opcode_6B_mX(WDC65816_regs *regs, WDC65816_pins *pins) { // RTL s
         switch(regs->TCU) {
         // RTL s E=0 M=0 X=1
             case 1: // 2
@@ -26591,7 +26591,7 @@ static void WDC65816_opcode_6B_mX(struct WDC65816_regs *regs, WDC65816_pins *pin
 }
 
 
-static void WDC65816_opcode_6C_mX(struct WDC65816_regs *regs, WDC65816_pins *pins) { // JMP (a)
+static void WDC65816_opcode_6C_mX(WDC65816_regs *regs, WDC65816_pins *pins) { // JMP (a)
         switch(regs->TCU) {
         // JMP (a) E=0 M=0 X=1
             case 1: // 2
@@ -26622,7 +26622,7 @@ static void WDC65816_opcode_6C_mX(struct WDC65816_regs *regs, WDC65816_pins *pin
 }
 
 
-static void WDC65816_opcode_6D_mX(struct WDC65816_regs *regs, WDC65816_pins *pins) { // ADC a
+static void WDC65816_opcode_6D_mX(WDC65816_regs *regs, WDC65816_pins *pins) { // ADC a
         switch(regs->TCU) {
         // ADC a E=0 M=0 X=1
             case 1: // 2
@@ -26675,7 +26675,7 @@ static void WDC65816_opcode_6D_mX(struct WDC65816_regs *regs, WDC65816_pins *pin
 }
 
 
-static void WDC65816_opcode_6E_mX(struct WDC65816_regs *regs, WDC65816_pins *pins) { // ROR a
+static void WDC65816_opcode_6E_mX(WDC65816_regs *regs, WDC65816_pins *pins) { // ROR a
         switch(regs->TCU) {
         // ROR a E=0 M=0 X=1
         //case AM.Ad
@@ -26727,7 +26727,7 @@ static void WDC65816_opcode_6E_mX(struct WDC65816_regs *regs, WDC65816_pins *pin
 }
 
 
-static void WDC65816_opcode_6F_mX(struct WDC65816_regs *regs, WDC65816_pins *pins) { // ADC al
+static void WDC65816_opcode_6F_mX(WDC65816_regs *regs, WDC65816_pins *pins) { // ADC al
         switch(regs->TCU) {
         // ADC al E=0 M=0 X=1
             case 1: // 2
@@ -26785,7 +26785,7 @@ static void WDC65816_opcode_6F_mX(struct WDC65816_regs *regs, WDC65816_pins *pin
 }
 
 
-static void WDC65816_opcode_70_mX(struct WDC65816_regs *regs, WDC65816_pins *pins) { // BVS r
+static void WDC65816_opcode_70_mX(WDC65816_regs *regs, WDC65816_pins *pins) { // BVS r
         switch(regs->TCU) {
         // BVS r E=0 M=0 X=1
             case 1: // 2
@@ -26817,7 +26817,7 @@ static void WDC65816_opcode_70_mX(struct WDC65816_regs *regs, WDC65816_pins *pin
 }
 
 
-static void WDC65816_opcode_71_mX(struct WDC65816_regs *regs, WDC65816_pins *pins) { // ADC (d),y
+static void WDC65816_opcode_71_mX(WDC65816_regs *regs, WDC65816_pins *pins) { // ADC (d),y
         switch(regs->TCU) {
         // ADC (d),y E=0 M=0 X=1
             case 1: // fetch_D0_and_skip_cycle 2
@@ -26896,7 +26896,7 @@ static void WDC65816_opcode_71_mX(struct WDC65816_regs *regs, WDC65816_pins *pin
 }
 
 
-static void WDC65816_opcode_72_mX(struct WDC65816_regs *regs, WDC65816_pins *pins) { // ADC (d)
+static void WDC65816_opcode_72_mX(WDC65816_regs *regs, WDC65816_pins *pins) { // ADC (d)
         switch(regs->TCU) {
         // ADC (d) E=0 M=0 X=1
             case 1: // fetch_D0_and_skip_cycle 2
@@ -26962,7 +26962,7 @@ static void WDC65816_opcode_72_mX(struct WDC65816_regs *regs, WDC65816_pins *pin
 }
 
 
-static void WDC65816_opcode_73_mX(struct WDC65816_regs *regs, WDC65816_pins *pins) { // ADC (d,s),y
+static void WDC65816_opcode_73_mX(WDC65816_regs *regs, WDC65816_pins *pins) { // ADC (d,s),y
         switch(regs->TCU) {
         // ADC (d,s),y E=0 M=0 X=1
             case 1: // 2
@@ -27029,7 +27029,7 @@ static void WDC65816_opcode_73_mX(struct WDC65816_regs *regs, WDC65816_pins *pin
 }
 
 
-static void WDC65816_opcode_74_mX(struct WDC65816_regs *regs, WDC65816_pins *pins) { // STZ d,x
+static void WDC65816_opcode_74_mX(WDC65816_regs *regs, WDC65816_pins *pins) { // STZ d,x
         switch(regs->TCU) {
         // STZ d,x E=0 M=0 X=1
             case 1: // fetch_D0_and_skip_cycle 2
@@ -27072,7 +27072,7 @@ static void WDC65816_opcode_74_mX(struct WDC65816_regs *regs, WDC65816_pins *pin
 }
 
 
-static void WDC65816_opcode_75_mX(struct WDC65816_regs *regs, WDC65816_pins *pins) { // ADC d,x
+static void WDC65816_opcode_75_mX(WDC65816_regs *regs, WDC65816_pins *pins) { // ADC d,x
         switch(regs->TCU) {
         // ADC d,x E=0 M=0 X=1
             case 1: // fetch_D0_and_skip_cycle 2
@@ -27133,7 +27133,7 @@ static void WDC65816_opcode_75_mX(struct WDC65816_regs *regs, WDC65816_pins *pin
 }
 
 
-static void WDC65816_opcode_76_mX(struct WDC65816_regs *regs, WDC65816_pins *pins) { // ROR d,x
+static void WDC65816_opcode_76_mX(WDC65816_regs *regs, WDC65816_pins *pins) { // ROR d,x
         switch(regs->TCU) {
         // ROR d,x E=0 M=0 X=1
             case 1: // fetch_D0_and_skip_cycle 2
@@ -27191,7 +27191,7 @@ static void WDC65816_opcode_76_mX(struct WDC65816_regs *regs, WDC65816_pins *pin
 }
 
 
-static void WDC65816_opcode_77_mX(struct WDC65816_regs *regs, WDC65816_pins *pins) { // ADC [d],y
+static void WDC65816_opcode_77_mX(WDC65816_regs *regs, WDC65816_pins *pins) { // ADC [d],y
         switch(regs->TCU) {
         // ADC [d],y E=0 M=0 X=1
             case 1: // fetch_D0_and_skip_cycle 2
@@ -27263,7 +27263,7 @@ static void WDC65816_opcode_77_mX(struct WDC65816_regs *regs, WDC65816_pins *pin
 }
 
 
-static void WDC65816_opcode_78_mX(struct WDC65816_regs *regs, WDC65816_pins *pins) { // SEI i
+static void WDC65816_opcode_78_mX(WDC65816_regs *regs, WDC65816_pins *pins) { // SEI i
         switch(regs->TCU) {
         // SEI i E=0 M=0 X=1
             case 1: // 2
@@ -27285,7 +27285,7 @@ static void WDC65816_opcode_78_mX(struct WDC65816_regs *regs, WDC65816_pins *pin
 }
 
 
-static void WDC65816_opcode_79_mX(struct WDC65816_regs *regs, WDC65816_pins *pins) { // ADC a,y
+static void WDC65816_opcode_79_mX(WDC65816_regs *regs, WDC65816_pins *pins) { // ADC a,y
         switch(regs->TCU) {
         // ADC a,y E=0 M=0 X=1
             case 1: // 2
@@ -27352,7 +27352,7 @@ static void WDC65816_opcode_79_mX(struct WDC65816_regs *regs, WDC65816_pins *pin
 }
 
 
-static void WDC65816_opcode_7A_mX(struct WDC65816_regs *regs, WDC65816_pins *pins) { // PLY s
+static void WDC65816_opcode_7A_mX(WDC65816_regs *regs, WDC65816_pins *pins) { // PLY s
         switch(regs->TCU) {
         // PLY s E=0 M=0 X=1
             case 1: // 2
@@ -27384,7 +27384,7 @@ static void WDC65816_opcode_7A_mX(struct WDC65816_regs *regs, WDC65816_pins *pin
 }
 
 
-static void WDC65816_opcode_7B_mX(struct WDC65816_regs *regs, WDC65816_pins *pins) { // TDC i
+static void WDC65816_opcode_7B_mX(WDC65816_regs *regs, WDC65816_pins *pins) { // TDC i
         switch(regs->TCU) {
         // TDC i E=0 M=0 X=1
             case 1: // 2
@@ -27408,7 +27408,7 @@ static void WDC65816_opcode_7B_mX(struct WDC65816_regs *regs, WDC65816_pins *pin
 }
 
 
-static void WDC65816_opcode_7C_mX(struct WDC65816_regs *regs, WDC65816_pins *pins) { // JMP (a,x)
+static void WDC65816_opcode_7C_mX(WDC65816_regs *regs, WDC65816_pins *pins) { // JMP (a,x)
         switch(regs->TCU) {
         // JMP (a,x) E=0 M=0 X=1
             case 1: // 2
@@ -27445,7 +27445,7 @@ static void WDC65816_opcode_7C_mX(struct WDC65816_regs *regs, WDC65816_pins *pin
 }
 
 
-static void WDC65816_opcode_7D_mX(struct WDC65816_regs *regs, WDC65816_pins *pins) { // ADC a,x
+static void WDC65816_opcode_7D_mX(WDC65816_regs *regs, WDC65816_pins *pins) { // ADC a,x
         switch(regs->TCU) {
         // ADC a,x E=0 M=0 X=1
             case 1: // 2
@@ -27512,7 +27512,7 @@ static void WDC65816_opcode_7D_mX(struct WDC65816_regs *regs, WDC65816_pins *pin
 }
 
 
-static void WDC65816_opcode_7E_mX(struct WDC65816_regs *regs, WDC65816_pins *pins) { // ROR a,x
+static void WDC65816_opcode_7E_mX(WDC65816_regs *regs, WDC65816_pins *pins) { // ROR a,x
         switch(regs->TCU) {
         // ROR a,x E=0 M=0 X=1
             case 1: // 2
@@ -27570,7 +27570,7 @@ static void WDC65816_opcode_7E_mX(struct WDC65816_regs *regs, WDC65816_pins *pin
 }
 
 
-static void WDC65816_opcode_7F_mX(struct WDC65816_regs *regs, WDC65816_pins *pins) { // ADC al,x
+static void WDC65816_opcode_7F_mX(WDC65816_regs *regs, WDC65816_pins *pins) { // ADC al,x
         switch(regs->TCU) {
         // ADC al,x E=0 M=0 X=1
             case 1: // 2
@@ -27629,7 +27629,7 @@ static void WDC65816_opcode_7F_mX(struct WDC65816_regs *regs, WDC65816_pins *pin
 }
 
 
-static void WDC65816_opcode_80_mX(struct WDC65816_regs *regs, WDC65816_pins *pins) { // BRA r
+static void WDC65816_opcode_80_mX(WDC65816_regs *regs, WDC65816_pins *pins) { // BRA r
         switch(regs->TCU) {
         // BRA r E=0 M=0 X=1
             case 1: // 2
@@ -27661,7 +27661,7 @@ static void WDC65816_opcode_80_mX(struct WDC65816_regs *regs, WDC65816_pins *pin
 }
 
 
-static void WDC65816_opcode_81_mX(struct WDC65816_regs *regs, WDC65816_pins *pins) { // STA (d,x)
+static void WDC65816_opcode_81_mX(WDC65816_regs *regs, WDC65816_pins *pins) { // STA (d,x)
         switch(regs->TCU) {
         // STA (d,x) E=0 M=0 X=1
             case 1: // fetch_D0_and_skip_cycle 2
@@ -27714,7 +27714,7 @@ static void WDC65816_opcode_81_mX(struct WDC65816_regs *regs, WDC65816_pins *pin
 }
 
 
-static void WDC65816_opcode_82_mX(struct WDC65816_regs *regs, WDC65816_pins *pins) { // BRL rl
+static void WDC65816_opcode_82_mX(WDC65816_regs *regs, WDC65816_pins *pins) { // BRL rl
         switch(regs->TCU) {
         // BRL rl E=0 M=0 X=1
             case 1: // 2
@@ -27743,7 +27743,7 @@ static void WDC65816_opcode_82_mX(struct WDC65816_regs *regs, WDC65816_pins *pin
 }
 
 
-static void WDC65816_opcode_83_mX(struct WDC65816_regs *regs, WDC65816_pins *pins) { // STA d,s
+static void WDC65816_opcode_83_mX(WDC65816_regs *regs, WDC65816_pins *pins) { // STA d,s
         switch(regs->TCU) {
         // STA d,s E=0 M=0 X=1
             case 1: // 2
@@ -27779,7 +27779,7 @@ static void WDC65816_opcode_83_mX(struct WDC65816_regs *regs, WDC65816_pins *pin
 }
 
 
-static void WDC65816_opcode_84_mX(struct WDC65816_regs *regs, WDC65816_pins *pins) { // STY d
+static void WDC65816_opcode_84_mX(WDC65816_regs *regs, WDC65816_pins *pins) { // STY d
         switch(regs->TCU) {
         // STY d E=0 M=0 X=1
             case 1: // fetch_D0_and_skip_cycle 2
@@ -27816,7 +27816,7 @@ static void WDC65816_opcode_84_mX(struct WDC65816_regs *regs, WDC65816_pins *pin
 }
 
 
-static void WDC65816_opcode_85_mX(struct WDC65816_regs *regs, WDC65816_pins *pins) { // STA d
+static void WDC65816_opcode_85_mX(WDC65816_regs *regs, WDC65816_pins *pins) { // STA d
         switch(regs->TCU) {
         // STA d E=0 M=0 X=1
             case 1: // fetch_D0_and_skip_cycle 2
@@ -27858,7 +27858,7 @@ static void WDC65816_opcode_85_mX(struct WDC65816_regs *regs, WDC65816_pins *pin
 }
 
 
-static void WDC65816_opcode_86_mX(struct WDC65816_regs *regs, WDC65816_pins *pins) { // STX d
+static void WDC65816_opcode_86_mX(WDC65816_regs *regs, WDC65816_pins *pins) { // STX d
         switch(regs->TCU) {
         // STX d E=0 M=0 X=1
             case 1: // fetch_D0_and_skip_cycle 2
@@ -27895,7 +27895,7 @@ static void WDC65816_opcode_86_mX(struct WDC65816_regs *regs, WDC65816_pins *pin
 }
 
 
-static void WDC65816_opcode_87_mX(struct WDC65816_regs *regs, WDC65816_pins *pins) { // STA [d]
+static void WDC65816_opcode_87_mX(WDC65816_regs *regs, WDC65816_pins *pins) { // STA [d]
         switch(regs->TCU) {
         // STA [d] E=0 M=0 X=1
             case 1: // fetch_D0_and_skip_cycle 2
@@ -27951,7 +27951,7 @@ static void WDC65816_opcode_87_mX(struct WDC65816_regs *regs, WDC65816_pins *pin
 }
 
 
-static void WDC65816_opcode_88_mX(struct WDC65816_regs *regs, WDC65816_pins *pins) { // DEY i
+static void WDC65816_opcode_88_mX(WDC65816_regs *regs, WDC65816_pins *pins) { // DEY i
         switch(regs->TCU) {
         // DEY i E=0 M=0 X=1
             case 1: // 2
@@ -27975,7 +27975,7 @@ static void WDC65816_opcode_88_mX(struct WDC65816_regs *regs, WDC65816_pins *pin
 }
 
 
-static void WDC65816_opcode_89_mX(struct WDC65816_regs *regs, WDC65816_pins *pins) { // BIT #
+static void WDC65816_opcode_89_mX(WDC65816_regs *regs, WDC65816_pins *pins) { // BIT #
         switch(regs->TCU) {
         // BIT # E=0 M=0 X=1
             case 1: // 2
@@ -28002,7 +28002,7 @@ static void WDC65816_opcode_89_mX(struct WDC65816_regs *regs, WDC65816_pins *pin
 }
 
 
-static void WDC65816_opcode_8A_mX(struct WDC65816_regs *regs, WDC65816_pins *pins) { // TXA i
+static void WDC65816_opcode_8A_mX(WDC65816_regs *regs, WDC65816_pins *pins) { // TXA i
         switch(regs->TCU) {
         // TXA i E=0 M=0 X=1
             case 1: // 2
@@ -28026,7 +28026,7 @@ static void WDC65816_opcode_8A_mX(struct WDC65816_regs *regs, WDC65816_pins *pin
 }
 
 
-static void WDC65816_opcode_8B_mX(struct WDC65816_regs *regs, WDC65816_pins *pins) { // PHB s
+static void WDC65816_opcode_8B_mX(WDC65816_regs *regs, WDC65816_pins *pins) { // PHB s
         switch(regs->TCU) {
         // PHB s E=0 M=0 X=1
             case 1: // 2
@@ -28055,7 +28055,7 @@ static void WDC65816_opcode_8B_mX(struct WDC65816_regs *regs, WDC65816_pins *pin
 }
 
 
-static void WDC65816_opcode_8C_mX(struct WDC65816_regs *regs, WDC65816_pins *pins) { // STY a
+static void WDC65816_opcode_8C_mX(WDC65816_regs *regs, WDC65816_pins *pins) { // STY a
         switch(regs->TCU) {
         // STY a E=0 M=0 X=1
             case 1: // 2
@@ -28087,7 +28087,7 @@ static void WDC65816_opcode_8C_mX(struct WDC65816_regs *regs, WDC65816_pins *pin
 }
 
 
-static void WDC65816_opcode_8D_mX(struct WDC65816_regs *regs, WDC65816_pins *pins) { // STA a
+static void WDC65816_opcode_8D_mX(WDC65816_regs *regs, WDC65816_pins *pins) { // STA a
         switch(regs->TCU) {
         // STA a E=0 M=0 X=1
             case 1: // 2
@@ -28124,7 +28124,7 @@ static void WDC65816_opcode_8D_mX(struct WDC65816_regs *regs, WDC65816_pins *pin
 }
 
 
-static void WDC65816_opcode_8E_mX(struct WDC65816_regs *regs, WDC65816_pins *pins) { // STX a
+static void WDC65816_opcode_8E_mX(WDC65816_regs *regs, WDC65816_pins *pins) { // STX a
         switch(regs->TCU) {
         // STX a E=0 M=0 X=1
             case 1: // 2
@@ -28156,7 +28156,7 @@ static void WDC65816_opcode_8E_mX(struct WDC65816_regs *regs, WDC65816_pins *pin
 }
 
 
-static void WDC65816_opcode_8F_mX(struct WDC65816_regs *regs, WDC65816_pins *pins) { // STA al
+static void WDC65816_opcode_8F_mX(WDC65816_regs *regs, WDC65816_pins *pins) { // STA al
         switch(regs->TCU) {
         // STA al E=0 M=0 X=1
             case 1: // 2
@@ -28198,7 +28198,7 @@ static void WDC65816_opcode_8F_mX(struct WDC65816_regs *regs, WDC65816_pins *pin
 }
 
 
-static void WDC65816_opcode_90_mX(struct WDC65816_regs *regs, WDC65816_pins *pins) { // BCC r
+static void WDC65816_opcode_90_mX(WDC65816_regs *regs, WDC65816_pins *pins) { // BCC r
         switch(regs->TCU) {
         // BCC r E=0 M=0 X=1
             case 1: // 2
@@ -28230,7 +28230,7 @@ static void WDC65816_opcode_90_mX(struct WDC65816_regs *regs, WDC65816_pins *pin
 }
 
 
-static void WDC65816_opcode_91_mX(struct WDC65816_regs *regs, WDC65816_pins *pins) { // STA (d),y
+static void WDC65816_opcode_91_mX(WDC65816_regs *regs, WDC65816_pins *pins) { // STA (d),y
         switch(regs->TCU) {
         // STA (d),y E=0 M=0 X=1
             case 1: // fetch_D0_and_skip_cycle 2
@@ -28291,7 +28291,7 @@ static void WDC65816_opcode_91_mX(struct WDC65816_regs *regs, WDC65816_pins *pin
 }
 
 
-static void WDC65816_opcode_92_mX(struct WDC65816_regs *regs, WDC65816_pins *pins) { // STA (d)
+static void WDC65816_opcode_92_mX(WDC65816_regs *regs, WDC65816_pins *pins) { // STA (d)
         switch(regs->TCU) {
         // STA (d) E=0 M=0 X=1
             case 1: // fetch_D0_and_skip_cycle 2
@@ -28341,7 +28341,7 @@ static void WDC65816_opcode_92_mX(struct WDC65816_regs *regs, WDC65816_pins *pin
 }
 
 
-static void WDC65816_opcode_93_mX(struct WDC65816_regs *regs, WDC65816_pins *pins) { // STA (d,s),y
+static void WDC65816_opcode_93_mX(WDC65816_regs *regs, WDC65816_pins *pins) { // STA (d,s),y
         switch(regs->TCU) {
         // STA (d,s),y E=0 M=0 X=1
             case 1: // 2
@@ -28391,7 +28391,7 @@ static void WDC65816_opcode_93_mX(struct WDC65816_regs *regs, WDC65816_pins *pin
 }
 
 
-static void WDC65816_opcode_94_mX(struct WDC65816_regs *regs, WDC65816_pins *pins) { // STY d,x
+static void WDC65816_opcode_94_mX(WDC65816_regs *regs, WDC65816_pins *pins) { // STY d,x
         switch(regs->TCU) {
         // STY d,x E=0 M=0 X=1
             case 1: // fetch_D0_and_skip_cycle 2
@@ -28430,7 +28430,7 @@ static void WDC65816_opcode_94_mX(struct WDC65816_regs *regs, WDC65816_pins *pin
 }
 
 
-static void WDC65816_opcode_95_mX(struct WDC65816_regs *regs, WDC65816_pins *pins) { // STA d,x
+static void WDC65816_opcode_95_mX(WDC65816_regs *regs, WDC65816_pins *pins) { // STA d,x
         switch(regs->TCU) {
         // STA d,x E=0 M=0 X=1
             case 1: // fetch_D0_and_skip_cycle 2
@@ -28474,7 +28474,7 @@ static void WDC65816_opcode_95_mX(struct WDC65816_regs *regs, WDC65816_pins *pin
 }
 
 
-static void WDC65816_opcode_96_mX(struct WDC65816_regs *regs, WDC65816_pins *pins) { // STX d,y
+static void WDC65816_opcode_96_mX(WDC65816_regs *regs, WDC65816_pins *pins) { // STX d,y
         switch(regs->TCU) {
         // STX d,y E=0 M=0 X=1
             case 1: // fetch_D0_and_skip_cycle 2
@@ -28513,7 +28513,7 @@ static void WDC65816_opcode_96_mX(struct WDC65816_regs *regs, WDC65816_pins *pin
 }
 
 
-static void WDC65816_opcode_97_mX(struct WDC65816_regs *regs, WDC65816_pins *pins) { // STA [d],y
+static void WDC65816_opcode_97_mX(WDC65816_regs *regs, WDC65816_pins *pins) { // STA [d],y
         switch(regs->TCU) {
         // STA [d],y E=0 M=0 X=1
             case 1: // fetch_D0_and_skip_cycle 2
@@ -28569,7 +28569,7 @@ static void WDC65816_opcode_97_mX(struct WDC65816_regs *regs, WDC65816_pins *pin
 }
 
 
-static void WDC65816_opcode_98_mX(struct WDC65816_regs *regs, WDC65816_pins *pins) { // TYA i
+static void WDC65816_opcode_98_mX(WDC65816_regs *regs, WDC65816_pins *pins) { // TYA i
         switch(regs->TCU) {
         // TYA i E=0 M=0 X=1
             case 1: // 2
@@ -28593,7 +28593,7 @@ static void WDC65816_opcode_98_mX(struct WDC65816_regs *regs, WDC65816_pins *pin
 }
 
 
-static void WDC65816_opcode_99_mX(struct WDC65816_regs *regs, WDC65816_pins *pins) { // STA a,y
+static void WDC65816_opcode_99_mX(WDC65816_regs *regs, WDC65816_pins *pins) { // STA a,y
         switch(regs->TCU) {
         // STA a,y E=0 M=0 X=1
             case 1: // 2
@@ -28641,7 +28641,7 @@ static void WDC65816_opcode_99_mX(struct WDC65816_regs *regs, WDC65816_pins *pin
 }
 
 
-static void WDC65816_opcode_9A_mX(struct WDC65816_regs *regs, WDC65816_pins *pins) { // TXS i
+static void WDC65816_opcode_9A_mX(WDC65816_regs *regs, WDC65816_pins *pins) { // TXS i
         switch(regs->TCU) {
         // TXS i E=0 M=0 X=1
             case 1: // 2
@@ -28663,7 +28663,7 @@ static void WDC65816_opcode_9A_mX(struct WDC65816_regs *regs, WDC65816_pins *pin
 }
 
 
-static void WDC65816_opcode_9B_mX(struct WDC65816_regs *regs, WDC65816_pins *pins) { // TXY i
+static void WDC65816_opcode_9B_mX(WDC65816_regs *regs, WDC65816_pins *pins) { // TXY i
         switch(regs->TCU) {
         // TXY i E=0 M=0 X=1
             case 1: // 2
@@ -28687,7 +28687,7 @@ static void WDC65816_opcode_9B_mX(struct WDC65816_regs *regs, WDC65816_pins *pin
 }
 
 
-static void WDC65816_opcode_9C_mX(struct WDC65816_regs *regs, WDC65816_pins *pins) { // STZ a
+static void WDC65816_opcode_9C_mX(WDC65816_regs *regs, WDC65816_pins *pins) { // STZ a
         switch(regs->TCU) {
         // STZ a E=0 M=0 X=1
             case 1: // 2
@@ -28723,7 +28723,7 @@ static void WDC65816_opcode_9C_mX(struct WDC65816_regs *regs, WDC65816_pins *pin
 }
 
 
-static void WDC65816_opcode_9D_mX(struct WDC65816_regs *regs, WDC65816_pins *pins) { // STA a,x
+static void WDC65816_opcode_9D_mX(WDC65816_regs *regs, WDC65816_pins *pins) { // STA a,x
         switch(regs->TCU) {
         // STA a,x E=0 M=0 X=1
             case 1: // 2
@@ -28771,7 +28771,7 @@ static void WDC65816_opcode_9D_mX(struct WDC65816_regs *regs, WDC65816_pins *pin
 }
 
 
-static void WDC65816_opcode_9E_mX(struct WDC65816_regs *regs, WDC65816_pins *pins) { // STZ a,x
+static void WDC65816_opcode_9E_mX(WDC65816_regs *regs, WDC65816_pins *pins) { // STZ a,x
         switch(regs->TCU) {
         // STZ a,x E=0 M=0 X=1
             case 1: // 2
@@ -28818,7 +28818,7 @@ static void WDC65816_opcode_9E_mX(struct WDC65816_regs *regs, WDC65816_pins *pin
 }
 
 
-static void WDC65816_opcode_9F_mX(struct WDC65816_regs *regs, WDC65816_pins *pins) { // STA al,x
+static void WDC65816_opcode_9F_mX(WDC65816_regs *regs, WDC65816_pins *pins) { // STA al,x
         switch(regs->TCU) {
         // STA al,x E=0 M=0 X=1
             case 1: // 2
@@ -28861,7 +28861,7 @@ static void WDC65816_opcode_9F_mX(struct WDC65816_regs *regs, WDC65816_pins *pin
 }
 
 
-static void WDC65816_opcode_A0_mX(struct WDC65816_regs *regs, WDC65816_pins *pins) { // LDY #
+static void WDC65816_opcode_A0_mX(WDC65816_regs *regs, WDC65816_pins *pins) { // LDY #
         switch(regs->TCU) {
         // LDY # E=0 M=0 X=1
             case 1: // 2
@@ -28885,7 +28885,7 @@ static void WDC65816_opcode_A0_mX(struct WDC65816_regs *regs, WDC65816_pins *pin
 }
 
 
-static void WDC65816_opcode_A1_mX(struct WDC65816_regs *regs, WDC65816_pins *pins) { // LDA (d,x)
+static void WDC65816_opcode_A1_mX(WDC65816_regs *regs, WDC65816_pins *pins) { // LDA (d,x)
         switch(regs->TCU) {
         // LDA (d,x) E=0 M=0 X=1
             case 1: // fetch_D0_and_skip_cycle 2
@@ -28937,7 +28937,7 @@ static void WDC65816_opcode_A1_mX(struct WDC65816_regs *regs, WDC65816_pins *pin
 }
 
 
-static void WDC65816_opcode_A2_mX(struct WDC65816_regs *regs, WDC65816_pins *pins) { // LDX #
+static void WDC65816_opcode_A2_mX(WDC65816_regs *regs, WDC65816_pins *pins) { // LDX #
         switch(regs->TCU) {
         // LDX # E=0 M=0 X=1
             case 1: // 2
@@ -28961,7 +28961,7 @@ static void WDC65816_opcode_A2_mX(struct WDC65816_regs *regs, WDC65816_pins *pin
 }
 
 
-static void WDC65816_opcode_A3_mX(struct WDC65816_regs *regs, WDC65816_pins *pins) { // LDA d,s
+static void WDC65816_opcode_A3_mX(WDC65816_regs *regs, WDC65816_pins *pins) { // LDA d,s
         switch(regs->TCU) {
         // LDA d,s E=0 M=0 X=1
             case 1: // 2
@@ -28997,7 +28997,7 @@ static void WDC65816_opcode_A3_mX(struct WDC65816_regs *regs, WDC65816_pins *pin
 }
 
 
-static void WDC65816_opcode_A4_mX(struct WDC65816_regs *regs, WDC65816_pins *pins) { // LDY d
+static void WDC65816_opcode_A4_mX(WDC65816_regs *regs, WDC65816_pins *pins) { // LDY d
         switch(regs->TCU) {
         // LDY d E=0 M=0 X=1
             case 1: // fetch_D0_and_skip_cycle 2
@@ -29035,7 +29035,7 @@ static void WDC65816_opcode_A4_mX(struct WDC65816_regs *regs, WDC65816_pins *pin
 }
 
 
-static void WDC65816_opcode_A5_mX(struct WDC65816_regs *regs, WDC65816_pins *pins) { // LDA d
+static void WDC65816_opcode_A5_mX(WDC65816_regs *regs, WDC65816_pins *pins) { // LDA d
         switch(regs->TCU) {
         // LDA d E=0 M=0 X=1
             case 1: // fetch_D0_and_skip_cycle 2
@@ -29077,7 +29077,7 @@ static void WDC65816_opcode_A5_mX(struct WDC65816_regs *regs, WDC65816_pins *pin
 }
 
 
-static void WDC65816_opcode_A6_mX(struct WDC65816_regs *regs, WDC65816_pins *pins) { // LDX d
+static void WDC65816_opcode_A6_mX(WDC65816_regs *regs, WDC65816_pins *pins) { // LDX d
         switch(regs->TCU) {
         // LDX d E=0 M=0 X=1
             case 1: // fetch_D0_and_skip_cycle 2
@@ -29115,7 +29115,7 @@ static void WDC65816_opcode_A6_mX(struct WDC65816_regs *regs, WDC65816_pins *pin
 }
 
 
-static void WDC65816_opcode_A7_mX(struct WDC65816_regs *regs, WDC65816_pins *pins) { // LDA [d]
+static void WDC65816_opcode_A7_mX(WDC65816_regs *regs, WDC65816_pins *pins) { // LDA [d]
         switch(regs->TCU) {
         // LDA [d] E=0 M=0 X=1
             case 1: // fetch_D0_and_skip_cycle 2
@@ -29170,7 +29170,7 @@ static void WDC65816_opcode_A7_mX(struct WDC65816_regs *regs, WDC65816_pins *pin
 }
 
 
-static void WDC65816_opcode_A8_mX(struct WDC65816_regs *regs, WDC65816_pins *pins) { // TAY i
+static void WDC65816_opcode_A8_mX(WDC65816_regs *regs, WDC65816_pins *pins) { // TAY i
         switch(regs->TCU) {
         // TAY i E=0 M=0 X=1
             case 1: // 2
@@ -29194,7 +29194,7 @@ static void WDC65816_opcode_A8_mX(struct WDC65816_regs *regs, WDC65816_pins *pin
 }
 
 
-static void WDC65816_opcode_A9_mX(struct WDC65816_regs *regs, WDC65816_pins *pins) { // LDA #
+static void WDC65816_opcode_A9_mX(WDC65816_regs *regs, WDC65816_pins *pins) { // LDA #
         switch(regs->TCU) {
         // LDA # E=0 M=0 X=1
             case 1: // 2
@@ -29223,7 +29223,7 @@ static void WDC65816_opcode_A9_mX(struct WDC65816_regs *regs, WDC65816_pins *pin
 }
 
 
-static void WDC65816_opcode_AA_mX(struct WDC65816_regs *regs, WDC65816_pins *pins) { // TAX i
+static void WDC65816_opcode_AA_mX(WDC65816_regs *regs, WDC65816_pins *pins) { // TAX i
         switch(regs->TCU) {
         // TAX i E=0 M=0 X=1
             case 1: // 2
@@ -29247,7 +29247,7 @@ static void WDC65816_opcode_AA_mX(struct WDC65816_regs *regs, WDC65816_pins *pin
 }
 
 
-static void WDC65816_opcode_AB_mX(struct WDC65816_regs *regs, WDC65816_pins *pins) { // PLB s
+static void WDC65816_opcode_AB_mX(WDC65816_regs *regs, WDC65816_pins *pins) { // PLB s
         switch(regs->TCU) {
         // PLB s E=0 M=0 X=1
             case 1: // 2
@@ -29279,7 +29279,7 @@ static void WDC65816_opcode_AB_mX(struct WDC65816_regs *regs, WDC65816_pins *pin
 }
 
 
-static void WDC65816_opcode_AC_mX(struct WDC65816_regs *regs, WDC65816_pins *pins) { // LDY a
+static void WDC65816_opcode_AC_mX(WDC65816_regs *regs, WDC65816_pins *pins) { // LDY a
         switch(regs->TCU) {
         // LDY a E=0 M=0 X=1
             case 1: // 2
@@ -29311,7 +29311,7 @@ static void WDC65816_opcode_AC_mX(struct WDC65816_regs *regs, WDC65816_pins *pin
 }
 
 
-static void WDC65816_opcode_AD_mX(struct WDC65816_regs *regs, WDC65816_pins *pins) { // LDA a
+static void WDC65816_opcode_AD_mX(WDC65816_regs *regs, WDC65816_pins *pins) { // LDA a
         switch(regs->TCU) {
         // LDA a E=0 M=0 X=1
             case 1: // 2
@@ -29347,7 +29347,7 @@ static void WDC65816_opcode_AD_mX(struct WDC65816_regs *regs, WDC65816_pins *pin
 }
 
 
-static void WDC65816_opcode_AE_mX(struct WDC65816_regs *regs, WDC65816_pins *pins) { // LDX a
+static void WDC65816_opcode_AE_mX(WDC65816_regs *regs, WDC65816_pins *pins) { // LDX a
         switch(regs->TCU) {
         // LDX a E=0 M=0 X=1
             case 1: // 2
@@ -29379,7 +29379,7 @@ static void WDC65816_opcode_AE_mX(struct WDC65816_regs *regs, WDC65816_pins *pin
 }
 
 
-static void WDC65816_opcode_AF_mX(struct WDC65816_regs *regs, WDC65816_pins *pins) { // LDA al
+static void WDC65816_opcode_AF_mX(WDC65816_regs *regs, WDC65816_pins *pins) { // LDA al
         switch(regs->TCU) {
         // LDA al E=0 M=0 X=1
             case 1: // 2
@@ -29420,7 +29420,7 @@ static void WDC65816_opcode_AF_mX(struct WDC65816_regs *regs, WDC65816_pins *pin
 }
 
 
-static void WDC65816_opcode_B0_mX(struct WDC65816_regs *regs, WDC65816_pins *pins) { // BCS r
+static void WDC65816_opcode_B0_mX(WDC65816_regs *regs, WDC65816_pins *pins) { // BCS r
         switch(regs->TCU) {
         // BCS r E=0 M=0 X=1
             case 1: // 2
@@ -29452,7 +29452,7 @@ static void WDC65816_opcode_B0_mX(struct WDC65816_regs *regs, WDC65816_pins *pin
 }
 
 
-static void WDC65816_opcode_B1_mX(struct WDC65816_regs *regs, WDC65816_pins *pins) { // LDA (d),y
+static void WDC65816_opcode_B1_mX(WDC65816_regs *regs, WDC65816_pins *pins) { // LDA (d),y
         switch(regs->TCU) {
         // LDA (d),y E=0 M=0 X=1
             case 1: // fetch_D0_and_skip_cycle 2
@@ -29514,7 +29514,7 @@ static void WDC65816_opcode_B1_mX(struct WDC65816_regs *regs, WDC65816_pins *pin
 }
 
 
-static void WDC65816_opcode_B2_mX(struct WDC65816_regs *regs, WDC65816_pins *pins) { // LDA (d)
+static void WDC65816_opcode_B2_mX(WDC65816_regs *regs, WDC65816_pins *pins) { // LDA (d)
         switch(regs->TCU) {
         // LDA (d) E=0 M=0 X=1
             case 1: // fetch_D0_and_skip_cycle 2
@@ -29563,7 +29563,7 @@ static void WDC65816_opcode_B2_mX(struct WDC65816_regs *regs, WDC65816_pins *pin
 }
 
 
-static void WDC65816_opcode_B3_mX(struct WDC65816_regs *regs, WDC65816_pins *pins) { // LDA (d,s),y
+static void WDC65816_opcode_B3_mX(WDC65816_regs *regs, WDC65816_pins *pins) { // LDA (d,s),y
         switch(regs->TCU) {
         // LDA (d,s),y E=0 M=0 X=1
             case 1: // 2
@@ -29613,7 +29613,7 @@ static void WDC65816_opcode_B3_mX(struct WDC65816_regs *regs, WDC65816_pins *pin
 }
 
 
-static void WDC65816_opcode_B4_mX(struct WDC65816_regs *regs, WDC65816_pins *pins) { // LDY d,x
+static void WDC65816_opcode_B4_mX(WDC65816_regs *regs, WDC65816_pins *pins) { // LDY d,x
         switch(regs->TCU) {
         // LDY d,x E=0 M=0 X=1
             case 1: // fetch_D0_and_skip_cycle 2
@@ -29653,7 +29653,7 @@ static void WDC65816_opcode_B4_mX(struct WDC65816_regs *regs, WDC65816_pins *pin
 }
 
 
-static void WDC65816_opcode_B5_mX(struct WDC65816_regs *regs, WDC65816_pins *pins) { // LDA d,x
+static void WDC65816_opcode_B5_mX(WDC65816_regs *regs, WDC65816_pins *pins) { // LDA d,x
         switch(regs->TCU) {
         // LDA d,x E=0 M=0 X=1
             case 1: // fetch_D0_and_skip_cycle 2
@@ -29697,7 +29697,7 @@ static void WDC65816_opcode_B5_mX(struct WDC65816_regs *regs, WDC65816_pins *pin
 }
 
 
-static void WDC65816_opcode_B6_mX(struct WDC65816_regs *regs, WDC65816_pins *pins) { // LDX d,y
+static void WDC65816_opcode_B6_mX(WDC65816_regs *regs, WDC65816_pins *pins) { // LDX d,y
         switch(regs->TCU) {
         // LDX d,y E=0 M=0 X=1
             case 1: // fetch_D0_and_skip_cycle 2
@@ -29737,7 +29737,7 @@ static void WDC65816_opcode_B6_mX(struct WDC65816_regs *regs, WDC65816_pins *pin
 }
 
 
-static void WDC65816_opcode_B7_mX(struct WDC65816_regs *regs, WDC65816_pins *pins) { // LDA [d],y
+static void WDC65816_opcode_B7_mX(WDC65816_regs *regs, WDC65816_pins *pins) { // LDA [d],y
         switch(regs->TCU) {
         // LDA [d],y E=0 M=0 X=1
             case 1: // fetch_D0_and_skip_cycle 2
@@ -29792,7 +29792,7 @@ static void WDC65816_opcode_B7_mX(struct WDC65816_regs *regs, WDC65816_pins *pin
 }
 
 
-static void WDC65816_opcode_B8_mX(struct WDC65816_regs *regs, WDC65816_pins *pins) { // CLV i
+static void WDC65816_opcode_B8_mX(WDC65816_regs *regs, WDC65816_pins *pins) { // CLV i
         switch(regs->TCU) {
         // CLV i E=0 M=0 X=1
             case 1: // 2
@@ -29814,7 +29814,7 @@ static void WDC65816_opcode_B8_mX(struct WDC65816_regs *regs, WDC65816_pins *pin
 }
 
 
-static void WDC65816_opcode_B9_mX(struct WDC65816_regs *regs, WDC65816_pins *pins) { // LDA a,y
+static void WDC65816_opcode_B9_mX(WDC65816_regs *regs, WDC65816_pins *pins) { // LDA a,y
         switch(regs->TCU) {
         // LDA a,y E=0 M=0 X=1
             case 1: // 2
@@ -29864,7 +29864,7 @@ static void WDC65816_opcode_B9_mX(struct WDC65816_regs *regs, WDC65816_pins *pin
 }
 
 
-static void WDC65816_opcode_BA_mX(struct WDC65816_regs *regs, WDC65816_pins *pins) { // TSX i
+static void WDC65816_opcode_BA_mX(WDC65816_regs *regs, WDC65816_pins *pins) { // TSX i
         switch(regs->TCU) {
         // TSX i E=0 M=0 X=1
             case 1: // 2
@@ -29888,7 +29888,7 @@ static void WDC65816_opcode_BA_mX(struct WDC65816_regs *regs, WDC65816_pins *pin
 }
 
 
-static void WDC65816_opcode_BB_mX(struct WDC65816_regs *regs, WDC65816_pins *pins) { // TYX i
+static void WDC65816_opcode_BB_mX(WDC65816_regs *regs, WDC65816_pins *pins) { // TYX i
         switch(regs->TCU) {
         // TYX i E=0 M=0 X=1
             case 1: // 2
@@ -29912,7 +29912,7 @@ static void WDC65816_opcode_BB_mX(struct WDC65816_regs *regs, WDC65816_pins *pin
 }
 
 
-static void WDC65816_opcode_BC_mX(struct WDC65816_regs *regs, WDC65816_pins *pins) { // LDY a,x
+static void WDC65816_opcode_BC_mX(WDC65816_regs *regs, WDC65816_pins *pins) { // LDY a,x
         switch(regs->TCU) {
         // LDY a,x E=0 M=0 X=1
             case 1: // 2
@@ -29958,7 +29958,7 @@ static void WDC65816_opcode_BC_mX(struct WDC65816_regs *regs, WDC65816_pins *pin
 }
 
 
-static void WDC65816_opcode_BD_mX(struct WDC65816_regs *regs, WDC65816_pins *pins) { // LDA a,x
+static void WDC65816_opcode_BD_mX(WDC65816_regs *regs, WDC65816_pins *pins) { // LDA a,x
         switch(regs->TCU) {
         // LDA a,x E=0 M=0 X=1
             case 1: // 2
@@ -30008,7 +30008,7 @@ static void WDC65816_opcode_BD_mX(struct WDC65816_regs *regs, WDC65816_pins *pin
 }
 
 
-static void WDC65816_opcode_BE_mX(struct WDC65816_regs *regs, WDC65816_pins *pins) { // LDX a,y
+static void WDC65816_opcode_BE_mX(WDC65816_regs *regs, WDC65816_pins *pins) { // LDX a,y
         switch(regs->TCU) {
         // LDX a,y E=0 M=0 X=1
             case 1: // 2
@@ -30054,7 +30054,7 @@ static void WDC65816_opcode_BE_mX(struct WDC65816_regs *regs, WDC65816_pins *pin
 }
 
 
-static void WDC65816_opcode_BF_mX(struct WDC65816_regs *regs, WDC65816_pins *pins) { // LDA al,x
+static void WDC65816_opcode_BF_mX(WDC65816_regs *regs, WDC65816_pins *pins) { // LDA al,x
         switch(regs->TCU) {
         // LDA al,x E=0 M=0 X=1
             case 1: // 2
@@ -30096,7 +30096,7 @@ static void WDC65816_opcode_BF_mX(struct WDC65816_regs *regs, WDC65816_pins *pin
 }
 
 
-static void WDC65816_opcode_C0_mX(struct WDC65816_regs *regs, WDC65816_pins *pins) { // CPY #
+static void WDC65816_opcode_C0_mX(WDC65816_regs *regs, WDC65816_pins *pins) { // CPY #
         switch(regs->TCU) {
         // CPY # E=0 M=0 X=1
             case 1: // 2
@@ -30121,7 +30121,7 @@ static void WDC65816_opcode_C0_mX(struct WDC65816_regs *regs, WDC65816_pins *pin
 }
 
 
-static void WDC65816_opcode_C1_mX(struct WDC65816_regs *regs, WDC65816_pins *pins) { // CMP (d,x)
+static void WDC65816_opcode_C1_mX(WDC65816_regs *regs, WDC65816_pins *pins) { // CMP (d,x)
         switch(regs->TCU) {
         // CMP (d,x) E=0 M=0 X=1
             case 1: // fetch_D0_and_skip_cycle 2
@@ -30174,7 +30174,7 @@ static void WDC65816_opcode_C1_mX(struct WDC65816_regs *regs, WDC65816_pins *pin
 }
 
 
-static void WDC65816_opcode_C2_mX(struct WDC65816_regs *regs, WDC65816_pins *pins) { // REP #
+static void WDC65816_opcode_C2_mX(WDC65816_regs *regs, WDC65816_pins *pins) { // REP #
         switch(regs->TCU) {
         // REP # E=0 M=0 X=1
             case 1: // 2
@@ -30200,7 +30200,7 @@ static void WDC65816_opcode_C2_mX(struct WDC65816_regs *regs, WDC65816_pins *pin
 }
 
 
-static void WDC65816_opcode_C3_mX(struct WDC65816_regs *regs, WDC65816_pins *pins) { // CMP d,s
+static void WDC65816_opcode_C3_mX(WDC65816_regs *regs, WDC65816_pins *pins) { // CMP d,s
         switch(regs->TCU) {
         // CMP d,s E=0 M=0 X=1
             case 1: // 2
@@ -30237,7 +30237,7 @@ static void WDC65816_opcode_C3_mX(struct WDC65816_regs *regs, WDC65816_pins *pin
 }
 
 
-static void WDC65816_opcode_C4_mX(struct WDC65816_regs *regs, WDC65816_pins *pins) { // CPY d
+static void WDC65816_opcode_C4_mX(WDC65816_regs *regs, WDC65816_pins *pins) { // CPY d
         switch(regs->TCU) {
         // CPY d E=0 M=0 X=1
             case 1: // fetch_D0_and_skip_cycle 2
@@ -30276,7 +30276,7 @@ static void WDC65816_opcode_C4_mX(struct WDC65816_regs *regs, WDC65816_pins *pin
 }
 
 
-static void WDC65816_opcode_C5_mX(struct WDC65816_regs *regs, WDC65816_pins *pins) { // CMP d
+static void WDC65816_opcode_C5_mX(WDC65816_regs *regs, WDC65816_pins *pins) { // CMP d
         switch(regs->TCU) {
         // CMP d E=0 M=0 X=1
             case 1: // fetch_D0_and_skip_cycle 2
@@ -30319,7 +30319,7 @@ static void WDC65816_opcode_C5_mX(struct WDC65816_regs *regs, WDC65816_pins *pin
 }
 
 
-static void WDC65816_opcode_C6_mX(struct WDC65816_regs *regs, WDC65816_pins *pins) { // DEC d
+static void WDC65816_opcode_C6_mX(WDC65816_regs *regs, WDC65816_pins *pins) { // DEC d
         switch(regs->TCU) {
         // DEC d E=0 M=0 X=1
             case 1: // fetch_D0_and_skip_cycle 2
@@ -30373,7 +30373,7 @@ static void WDC65816_opcode_C6_mX(struct WDC65816_regs *regs, WDC65816_pins *pin
 }
 
 
-static void WDC65816_opcode_C7_mX(struct WDC65816_regs *regs, WDC65816_pins *pins) { // CMP [d]
+static void WDC65816_opcode_C7_mX(WDC65816_regs *regs, WDC65816_pins *pins) { // CMP [d]
         switch(regs->TCU) {
         // CMP [d] E=0 M=0 X=1
             case 1: // fetch_D0_and_skip_cycle 2
@@ -30429,7 +30429,7 @@ static void WDC65816_opcode_C7_mX(struct WDC65816_regs *regs, WDC65816_pins *pin
 }
 
 
-static void WDC65816_opcode_C8_mX(struct WDC65816_regs *regs, WDC65816_pins *pins) { // INY i
+static void WDC65816_opcode_C8_mX(WDC65816_regs *regs, WDC65816_pins *pins) { // INY i
         switch(regs->TCU) {
         // INY i E=0 M=0 X=1
             case 1: // 2
@@ -30453,7 +30453,7 @@ static void WDC65816_opcode_C8_mX(struct WDC65816_regs *regs, WDC65816_pins *pin
 }
 
 
-static void WDC65816_opcode_C9_mX(struct WDC65816_regs *regs, WDC65816_pins *pins) { // CMP #
+static void WDC65816_opcode_C9_mX(WDC65816_regs *regs, WDC65816_pins *pins) { // CMP #
         switch(regs->TCU) {
         // CMP # E=0 M=0 X=1
             case 1: // 2
@@ -30483,7 +30483,7 @@ static void WDC65816_opcode_C9_mX(struct WDC65816_regs *regs, WDC65816_pins *pin
 }
 
 
-static void WDC65816_opcode_CA_mX(struct WDC65816_regs *regs, WDC65816_pins *pins) { // DEX i
+static void WDC65816_opcode_CA_mX(WDC65816_regs *regs, WDC65816_pins *pins) { // DEX i
         switch(regs->TCU) {
         // DEX i E=0 M=0 X=1
             case 1: // 2
@@ -30507,7 +30507,7 @@ static void WDC65816_opcode_CA_mX(struct WDC65816_regs *regs, WDC65816_pins *pin
 }
 
 
-static void WDC65816_opcode_CB_mX(struct WDC65816_regs *regs, WDC65816_pins *pins) { // WAI i
+static void WDC65816_opcode_CB_mX(WDC65816_regs *regs, WDC65816_pins *pins) { // WAI i
         switch(regs->TCU) {
         // WAI i E=0 M=0 X=1
             case 1: // 1
@@ -30536,7 +30536,7 @@ static void WDC65816_opcode_CB_mX(struct WDC65816_regs *regs, WDC65816_pins *pin
 }
 
 
-static void WDC65816_opcode_CC_mX(struct WDC65816_regs *regs, WDC65816_pins *pins) { // CPY a
+static void WDC65816_opcode_CC_mX(WDC65816_regs *regs, WDC65816_pins *pins) { // CPY a
         switch(regs->TCU) {
         // CPY a E=0 M=0 X=1
             case 1: // 2
@@ -30569,7 +30569,7 @@ static void WDC65816_opcode_CC_mX(struct WDC65816_regs *regs, WDC65816_pins *pin
 }
 
 
-static void WDC65816_opcode_CD_mX(struct WDC65816_regs *regs, WDC65816_pins *pins) { // CMP a
+static void WDC65816_opcode_CD_mX(WDC65816_regs *regs, WDC65816_pins *pins) { // CMP a
         switch(regs->TCU) {
         // CMP a E=0 M=0 X=1
             case 1: // 2
@@ -30606,7 +30606,7 @@ static void WDC65816_opcode_CD_mX(struct WDC65816_regs *regs, WDC65816_pins *pin
 }
 
 
-static void WDC65816_opcode_CE_mX(struct WDC65816_regs *regs, WDC65816_pins *pins) { // DEC a
+static void WDC65816_opcode_CE_mX(WDC65816_regs *regs, WDC65816_pins *pins) { // DEC a
         switch(regs->TCU) {
         // DEC a E=0 M=0 X=1
         //case AM.Ad
@@ -30656,7 +30656,7 @@ static void WDC65816_opcode_CE_mX(struct WDC65816_regs *regs, WDC65816_pins *pin
 }
 
 
-static void WDC65816_opcode_CF_mX(struct WDC65816_regs *regs, WDC65816_pins *pins) { // CMP al
+static void WDC65816_opcode_CF_mX(WDC65816_regs *regs, WDC65816_pins *pins) { // CMP al
         switch(regs->TCU) {
         // CMP al E=0 M=0 X=1
             case 1: // 2
@@ -30698,7 +30698,7 @@ static void WDC65816_opcode_CF_mX(struct WDC65816_regs *regs, WDC65816_pins *pin
 }
 
 
-static void WDC65816_opcode_D0_mX(struct WDC65816_regs *regs, WDC65816_pins *pins) { // BNE r
+static void WDC65816_opcode_D0_mX(WDC65816_regs *regs, WDC65816_pins *pins) { // BNE r
         switch(regs->TCU) {
         // BNE r E=0 M=0 X=1
             case 1: // 2
@@ -30730,7 +30730,7 @@ static void WDC65816_opcode_D0_mX(struct WDC65816_regs *regs, WDC65816_pins *pin
 }
 
 
-static void WDC65816_opcode_D1_mX(struct WDC65816_regs *regs, WDC65816_pins *pins) { // CMP (d),y
+static void WDC65816_opcode_D1_mX(WDC65816_regs *regs, WDC65816_pins *pins) { // CMP (d),y
         switch(regs->TCU) {
         // CMP (d),y E=0 M=0 X=1
             case 1: // fetch_D0_and_skip_cycle 2
@@ -30793,7 +30793,7 @@ static void WDC65816_opcode_D1_mX(struct WDC65816_regs *regs, WDC65816_pins *pin
 }
 
 
-static void WDC65816_opcode_D2_mX(struct WDC65816_regs *regs, WDC65816_pins *pins) { // CMP (d)
+static void WDC65816_opcode_D2_mX(WDC65816_regs *regs, WDC65816_pins *pins) { // CMP (d)
         switch(regs->TCU) {
         // CMP (d) E=0 M=0 X=1
             case 1: // fetch_D0_and_skip_cycle 2
@@ -30843,7 +30843,7 @@ static void WDC65816_opcode_D2_mX(struct WDC65816_regs *regs, WDC65816_pins *pin
 }
 
 
-static void WDC65816_opcode_D3_mX(struct WDC65816_regs *regs, WDC65816_pins *pins) { // CMP (d,s),y
+static void WDC65816_opcode_D3_mX(WDC65816_regs *regs, WDC65816_pins *pins) { // CMP (d,s),y
         switch(regs->TCU) {
         // CMP (d,s),y E=0 M=0 X=1
             case 1: // 2
@@ -30894,7 +30894,7 @@ static void WDC65816_opcode_D3_mX(struct WDC65816_regs *regs, WDC65816_pins *pin
 }
 
 
-static void WDC65816_opcode_D4_mX(struct WDC65816_regs *regs, WDC65816_pins *pins) { // PEI s
+static void WDC65816_opcode_D4_mX(WDC65816_regs *regs, WDC65816_pins *pins) { // PEI s
         switch(regs->TCU) {
         // PEI s E=0 M=0 X=1
             case 1: // fetch_D0_and_skip_cycle 2
@@ -30941,7 +30941,7 @@ static void WDC65816_opcode_D4_mX(struct WDC65816_regs *regs, WDC65816_pins *pin
 }
 
 
-static void WDC65816_opcode_D5_mX(struct WDC65816_regs *regs, WDC65816_pins *pins) { // CMP d,x
+static void WDC65816_opcode_D5_mX(WDC65816_regs *regs, WDC65816_pins *pins) { // CMP d,x
         switch(regs->TCU) {
         // CMP d,x E=0 M=0 X=1
             case 1: // fetch_D0_and_skip_cycle 2
@@ -30986,7 +30986,7 @@ static void WDC65816_opcode_D5_mX(struct WDC65816_regs *regs, WDC65816_pins *pin
 }
 
 
-static void WDC65816_opcode_D6_mX(struct WDC65816_regs *regs, WDC65816_pins *pins) { // DEC d,x
+static void WDC65816_opcode_D6_mX(WDC65816_regs *regs, WDC65816_pins *pins) { // DEC d,x
         switch(regs->TCU) {
         // DEC d,x E=0 M=0 X=1
             case 1: // fetch_D0_and_skip_cycle 2
@@ -31042,7 +31042,7 @@ static void WDC65816_opcode_D6_mX(struct WDC65816_regs *regs, WDC65816_pins *pin
 }
 
 
-static void WDC65816_opcode_D7_mX(struct WDC65816_regs *regs, WDC65816_pins *pins) { // CMP [d],y
+static void WDC65816_opcode_D7_mX(WDC65816_regs *regs, WDC65816_pins *pins) { // CMP [d],y
         switch(regs->TCU) {
         // CMP [d],y E=0 M=0 X=1
             case 1: // fetch_D0_and_skip_cycle 2
@@ -31098,7 +31098,7 @@ static void WDC65816_opcode_D7_mX(struct WDC65816_regs *regs, WDC65816_pins *pin
 }
 
 
-static void WDC65816_opcode_D8_mX(struct WDC65816_regs *regs, WDC65816_pins *pins) { // CLD i
+static void WDC65816_opcode_D8_mX(WDC65816_regs *regs, WDC65816_pins *pins) { // CLD i
         switch(regs->TCU) {
         // CLD i E=0 M=0 X=1
             case 1: // 2
@@ -31120,7 +31120,7 @@ static void WDC65816_opcode_D8_mX(struct WDC65816_regs *regs, WDC65816_pins *pin
 }
 
 
-static void WDC65816_opcode_D9_mX(struct WDC65816_regs *regs, WDC65816_pins *pins) { // CMP a,y
+static void WDC65816_opcode_D9_mX(WDC65816_regs *regs, WDC65816_pins *pins) { // CMP a,y
         switch(regs->TCU) {
         // CMP a,y E=0 M=0 X=1
             case 1: // 2
@@ -31171,7 +31171,7 @@ static void WDC65816_opcode_D9_mX(struct WDC65816_regs *regs, WDC65816_pins *pin
 }
 
 
-static void WDC65816_opcode_DA_mX(struct WDC65816_regs *regs, WDC65816_pins *pins) { // PHX s
+static void WDC65816_opcode_DA_mX(WDC65816_regs *regs, WDC65816_pins *pins) { // PHX s
         switch(regs->TCU) {
         // PHX s E=0 M=0 X=1
             case 1: // 2
@@ -31200,7 +31200,7 @@ static void WDC65816_opcode_DA_mX(struct WDC65816_regs *regs, WDC65816_pins *pin
 }
 
 
-static void WDC65816_opcode_DB_mX(struct WDC65816_regs *regs, WDC65816_pins *pins) { // STP i
+static void WDC65816_opcode_DB_mX(WDC65816_regs *regs, WDC65816_pins *pins) { // STP i
         switch(regs->TCU) {
         // STP i E=0 M=0 X=1
             case 1: // 2
@@ -31219,7 +31219,7 @@ static void WDC65816_opcode_DB_mX(struct WDC65816_regs *regs, WDC65816_pins *pin
 }
 
 
-static void WDC65816_opcode_DC_mX(struct WDC65816_regs *regs, WDC65816_pins *pins) { // JML (a)
+static void WDC65816_opcode_DC_mX(WDC65816_regs *regs, WDC65816_pins *pins) { // JML (a)
         switch(regs->TCU) {
         // JML (a) E=0 M=0 X=1
             case 1: // 2
@@ -31254,7 +31254,7 @@ static void WDC65816_opcode_DC_mX(struct WDC65816_regs *regs, WDC65816_pins *pin
 }
 
 
-static void WDC65816_opcode_DD_mX(struct WDC65816_regs *regs, WDC65816_pins *pins) { // CMP a,x
+static void WDC65816_opcode_DD_mX(WDC65816_regs *regs, WDC65816_pins *pins) { // CMP a,x
         switch(regs->TCU) {
         // CMP a,x E=0 M=0 X=1
             case 1: // 2
@@ -31305,7 +31305,7 @@ static void WDC65816_opcode_DD_mX(struct WDC65816_regs *regs, WDC65816_pins *pin
 }
 
 
-static void WDC65816_opcode_DE_mX(struct WDC65816_regs *regs, WDC65816_pins *pins) { // DEC a,x
+static void WDC65816_opcode_DE_mX(WDC65816_regs *regs, WDC65816_pins *pins) { // DEC a,x
         switch(regs->TCU) {
         // DEC a,x E=0 M=0 X=1
             case 1: // 2
@@ -31361,7 +31361,7 @@ static void WDC65816_opcode_DE_mX(struct WDC65816_regs *regs, WDC65816_pins *pin
 }
 
 
-static void WDC65816_opcode_DF_mX(struct WDC65816_regs *regs, WDC65816_pins *pins) { // CMP al,x
+static void WDC65816_opcode_DF_mX(WDC65816_regs *regs, WDC65816_pins *pins) { // CMP al,x
         switch(regs->TCU) {
         // CMP al,x E=0 M=0 X=1
             case 1: // 2
@@ -31404,7 +31404,7 @@ static void WDC65816_opcode_DF_mX(struct WDC65816_regs *regs, WDC65816_pins *pin
 }
 
 
-static void WDC65816_opcode_E0_mX(struct WDC65816_regs *regs, WDC65816_pins *pins) { // CPX #
+static void WDC65816_opcode_E0_mX(WDC65816_regs *regs, WDC65816_pins *pins) { // CPX #
         switch(regs->TCU) {
         // CPX # E=0 M=0 X=1
             case 1: // 2
@@ -31429,7 +31429,7 @@ static void WDC65816_opcode_E0_mX(struct WDC65816_regs *regs, WDC65816_pins *pin
 }
 
 
-static void WDC65816_opcode_E1_mX(struct WDC65816_regs *regs, WDC65816_pins *pins) { // SBC (d,x)
+static void WDC65816_opcode_E1_mX(WDC65816_regs *regs, WDC65816_pins *pins) { // SBC (d,x)
         switch(regs->TCU) {
         // SBC (d,x) E=0 M=0 X=1
             case 1: // fetch_D0_and_skip_cycle 2
@@ -31499,7 +31499,7 @@ static void WDC65816_opcode_E1_mX(struct WDC65816_regs *regs, WDC65816_pins *pin
 }
 
 
-static void WDC65816_opcode_E2_mX(struct WDC65816_regs *regs, WDC65816_pins *pins) { // SEP #
+static void WDC65816_opcode_E2_mX(WDC65816_regs *regs, WDC65816_pins *pins) { // SEP #
         switch(regs->TCU) {
         // SEP # E=0 M=0 X=1
             case 1: // 2
@@ -31526,7 +31526,7 @@ static void WDC65816_opcode_E2_mX(struct WDC65816_regs *regs, WDC65816_pins *pin
 }
 
 
-static void WDC65816_opcode_E3_mX(struct WDC65816_regs *regs, WDC65816_pins *pins) { // SBC d,s
+static void WDC65816_opcode_E3_mX(WDC65816_regs *regs, WDC65816_pins *pins) { // SBC d,s
         switch(regs->TCU) {
         // SBC d,s E=0 M=0 X=1
             case 1: // 2
@@ -31580,7 +31580,7 @@ static void WDC65816_opcode_E3_mX(struct WDC65816_regs *regs, WDC65816_pins *pin
 }
 
 
-static void WDC65816_opcode_E4_mX(struct WDC65816_regs *regs, WDC65816_pins *pins) { // CPX d
+static void WDC65816_opcode_E4_mX(WDC65816_regs *regs, WDC65816_pins *pins) { // CPX d
         switch(regs->TCU) {
         // CPX d E=0 M=0 X=1
             case 1: // fetch_D0_and_skip_cycle 2
@@ -31619,7 +31619,7 @@ static void WDC65816_opcode_E4_mX(struct WDC65816_regs *regs, WDC65816_pins *pin
 }
 
 
-static void WDC65816_opcode_E5_mX(struct WDC65816_regs *regs, WDC65816_pins *pins) { // SBC d
+static void WDC65816_opcode_E5_mX(WDC65816_regs *regs, WDC65816_pins *pins) { // SBC d
         switch(regs->TCU) {
         // SBC d E=0 M=0 X=1
             case 1: // fetch_D0_and_skip_cycle 2
@@ -31679,7 +31679,7 @@ static void WDC65816_opcode_E5_mX(struct WDC65816_regs *regs, WDC65816_pins *pin
 }
 
 
-static void WDC65816_opcode_E6_mX(struct WDC65816_regs *regs, WDC65816_pins *pins) { // INC d
+static void WDC65816_opcode_E6_mX(WDC65816_regs *regs, WDC65816_pins *pins) { // INC d
         switch(regs->TCU) {
         // INC d E=0 M=0 X=1
             case 1: // fetch_D0_and_skip_cycle 2
@@ -31733,7 +31733,7 @@ static void WDC65816_opcode_E6_mX(struct WDC65816_regs *regs, WDC65816_pins *pin
 }
 
 
-static void WDC65816_opcode_E7_mX(struct WDC65816_regs *regs, WDC65816_pins *pins) { // SBC [d]
+static void WDC65816_opcode_E7_mX(WDC65816_regs *regs, WDC65816_pins *pins) { // SBC [d]
         switch(regs->TCU) {
         // SBC [d] E=0 M=0 X=1
             case 1: // fetch_D0_and_skip_cycle 2
@@ -31806,7 +31806,7 @@ static void WDC65816_opcode_E7_mX(struct WDC65816_regs *regs, WDC65816_pins *pin
 }
 
 
-static void WDC65816_opcode_E8_mX(struct WDC65816_regs *regs, WDC65816_pins *pins) { // INX i
+static void WDC65816_opcode_E8_mX(WDC65816_regs *regs, WDC65816_pins *pins) { // INX i
         switch(regs->TCU) {
         // INX i E=0 M=0 X=1
             case 1: // 2
@@ -31830,7 +31830,7 @@ static void WDC65816_opcode_E8_mX(struct WDC65816_regs *regs, WDC65816_pins *pin
 }
 
 
-static void WDC65816_opcode_E9_mX(struct WDC65816_regs *regs, WDC65816_pins *pins) { // SBC #
+static void WDC65816_opcode_E9_mX(WDC65816_regs *regs, WDC65816_pins *pins) { // SBC #
         switch(regs->TCU) {
         // SBC # E=0 M=0 X=1
             case 1: // 2
@@ -31877,7 +31877,7 @@ static void WDC65816_opcode_E9_mX(struct WDC65816_regs *regs, WDC65816_pins *pin
 }
 
 
-static void WDC65816_opcode_EA_mX(struct WDC65816_regs *regs, WDC65816_pins *pins) { // NOP i
+static void WDC65816_opcode_EA_mX(WDC65816_regs *regs, WDC65816_pins *pins) { // NOP i
         switch(regs->TCU) {
         // NOP i E=0 M=0 X=1
             case 1: // 2
@@ -31898,7 +31898,7 @@ static void WDC65816_opcode_EA_mX(struct WDC65816_regs *regs, WDC65816_pins *pin
 }
 
 
-static void WDC65816_opcode_EB_mX(struct WDC65816_regs *regs, WDC65816_pins *pins) { // XBA i
+static void WDC65816_opcode_EB_mX(WDC65816_regs *regs, WDC65816_pins *pins) { // XBA i
         switch(regs->TCU) {
         // XBA i E=0 M=0 X=1
             case 1:
@@ -31924,7 +31924,7 @@ static void WDC65816_opcode_EB_mX(struct WDC65816_regs *regs, WDC65816_pins *pin
 }
 
 
-static void WDC65816_opcode_EC_mX(struct WDC65816_regs *regs, WDC65816_pins *pins) { // CPX a
+static void WDC65816_opcode_EC_mX(WDC65816_regs *regs, WDC65816_pins *pins) { // CPX a
         switch(regs->TCU) {
         // CPX a E=0 M=0 X=1
             case 1: // 2
@@ -31957,7 +31957,7 @@ static void WDC65816_opcode_EC_mX(struct WDC65816_regs *regs, WDC65816_pins *pin
 }
 
 
-static void WDC65816_opcode_ED_mX(struct WDC65816_regs *regs, WDC65816_pins *pins) { // SBC a
+static void WDC65816_opcode_ED_mX(WDC65816_regs *regs, WDC65816_pins *pins) { // SBC a
         switch(regs->TCU) {
         // SBC a E=0 M=0 X=1
             case 1: // 2
@@ -32011,7 +32011,7 @@ static void WDC65816_opcode_ED_mX(struct WDC65816_regs *regs, WDC65816_pins *pin
 }
 
 
-static void WDC65816_opcode_EE_mX(struct WDC65816_regs *regs, WDC65816_pins *pins) { // INC a
+static void WDC65816_opcode_EE_mX(WDC65816_regs *regs, WDC65816_pins *pins) { // INC a
         switch(regs->TCU) {
         // INC a E=0 M=0 X=1
         //case AM.Ad
@@ -32061,7 +32061,7 @@ static void WDC65816_opcode_EE_mX(struct WDC65816_regs *regs, WDC65816_pins *pin
 }
 
 
-static void WDC65816_opcode_EF_mX(struct WDC65816_regs *regs, WDC65816_pins *pins) { // SBC al
+static void WDC65816_opcode_EF_mX(WDC65816_regs *regs, WDC65816_pins *pins) { // SBC al
         switch(regs->TCU) {
         // SBC al E=0 M=0 X=1
             case 1: // 2
@@ -32120,7 +32120,7 @@ static void WDC65816_opcode_EF_mX(struct WDC65816_regs *regs, WDC65816_pins *pin
 }
 
 
-static void WDC65816_opcode_F0_mX(struct WDC65816_regs *regs, WDC65816_pins *pins) { // BEQ r
+static void WDC65816_opcode_F0_mX(WDC65816_regs *regs, WDC65816_pins *pins) { // BEQ r
         switch(regs->TCU) {
         // BEQ r E=0 M=0 X=1
             case 1: // 2
@@ -32152,7 +32152,7 @@ static void WDC65816_opcode_F0_mX(struct WDC65816_regs *regs, WDC65816_pins *pin
 }
 
 
-static void WDC65816_opcode_F1_mX(struct WDC65816_regs *regs, WDC65816_pins *pins) { // SBC (d),y
+static void WDC65816_opcode_F1_mX(WDC65816_regs *regs, WDC65816_pins *pins) { // SBC (d),y
         switch(regs->TCU) {
         // SBC (d),y E=0 M=0 X=1
             case 1: // fetch_D0_and_skip_cycle 2
@@ -32232,7 +32232,7 @@ static void WDC65816_opcode_F1_mX(struct WDC65816_regs *regs, WDC65816_pins *pin
 }
 
 
-static void WDC65816_opcode_F2_mX(struct WDC65816_regs *regs, WDC65816_pins *pins) { // SBC (d)
+static void WDC65816_opcode_F2_mX(WDC65816_regs *regs, WDC65816_pins *pins) { // SBC (d)
         switch(regs->TCU) {
         // SBC (d) E=0 M=0 X=1
             case 1: // fetch_D0_and_skip_cycle 2
@@ -32299,7 +32299,7 @@ static void WDC65816_opcode_F2_mX(struct WDC65816_regs *regs, WDC65816_pins *pin
 }
 
 
-static void WDC65816_opcode_F3_mX(struct WDC65816_regs *regs, WDC65816_pins *pins) { // SBC (d,s),y
+static void WDC65816_opcode_F3_mX(WDC65816_regs *regs, WDC65816_pins *pins) { // SBC (d,s),y
         switch(regs->TCU) {
         // SBC (d,s),y E=0 M=0 X=1
             case 1: // 2
@@ -32367,7 +32367,7 @@ static void WDC65816_opcode_F3_mX(struct WDC65816_regs *regs, WDC65816_pins *pin
 }
 
 
-static void WDC65816_opcode_F4_mX(struct WDC65816_regs *regs, WDC65816_pins *pins) { // PEA s
+static void WDC65816_opcode_F4_mX(WDC65816_regs *regs, WDC65816_pins *pins) { // PEA s
         switch(regs->TCU) {
         // PEA s E=0 M=0 X=1
             case 1: // 2
@@ -32401,7 +32401,7 @@ static void WDC65816_opcode_F4_mX(struct WDC65816_regs *regs, WDC65816_pins *pin
 }
 
 
-static void WDC65816_opcode_F5_mX(struct WDC65816_regs *regs, WDC65816_pins *pins) { // SBC d,x
+static void WDC65816_opcode_F5_mX(WDC65816_regs *regs, WDC65816_pins *pins) { // SBC d,x
         switch(regs->TCU) {
         // SBC d,x E=0 M=0 X=1
             case 1: // fetch_D0_and_skip_cycle 2
@@ -32463,7 +32463,7 @@ static void WDC65816_opcode_F5_mX(struct WDC65816_regs *regs, WDC65816_pins *pin
 }
 
 
-static void WDC65816_opcode_F6_mX(struct WDC65816_regs *regs, WDC65816_pins *pins) { // INC d,x
+static void WDC65816_opcode_F6_mX(WDC65816_regs *regs, WDC65816_pins *pins) { // INC d,x
         switch(regs->TCU) {
         // INC d,x E=0 M=0 X=1
             case 1: // fetch_D0_and_skip_cycle 2
@@ -32519,7 +32519,7 @@ static void WDC65816_opcode_F6_mX(struct WDC65816_regs *regs, WDC65816_pins *pin
 }
 
 
-static void WDC65816_opcode_F7_mX(struct WDC65816_regs *regs, WDC65816_pins *pins) { // SBC [d],y
+static void WDC65816_opcode_F7_mX(WDC65816_regs *regs, WDC65816_pins *pins) { // SBC [d],y
         switch(regs->TCU) {
         // SBC [d],y E=0 M=0 X=1
             case 1: // fetch_D0_and_skip_cycle 2
@@ -32592,7 +32592,7 @@ static void WDC65816_opcode_F7_mX(struct WDC65816_regs *regs, WDC65816_pins *pin
 }
 
 
-static void WDC65816_opcode_F8_mX(struct WDC65816_regs *regs, WDC65816_pins *pins) { // SED i
+static void WDC65816_opcode_F8_mX(WDC65816_regs *regs, WDC65816_pins *pins) { // SED i
         switch(regs->TCU) {
         // SED i E=0 M=0 X=1
             case 1: // 2
@@ -32614,7 +32614,7 @@ static void WDC65816_opcode_F8_mX(struct WDC65816_regs *regs, WDC65816_pins *pin
 }
 
 
-static void WDC65816_opcode_F9_mX(struct WDC65816_regs *regs, WDC65816_pins *pins) { // SBC a,y
+static void WDC65816_opcode_F9_mX(WDC65816_regs *regs, WDC65816_pins *pins) { // SBC a,y
         switch(regs->TCU) {
         // SBC a,y E=0 M=0 X=1
             case 1: // 2
@@ -32682,7 +32682,7 @@ static void WDC65816_opcode_F9_mX(struct WDC65816_regs *regs, WDC65816_pins *pin
 }
 
 
-static void WDC65816_opcode_FA_mX(struct WDC65816_regs *regs, WDC65816_pins *pins) { // PLX s
+static void WDC65816_opcode_FA_mX(WDC65816_regs *regs, WDC65816_pins *pins) { // PLX s
         switch(regs->TCU) {
         // PLX s E=0 M=0 X=1
             case 1: // 2
@@ -32714,7 +32714,7 @@ static void WDC65816_opcode_FA_mX(struct WDC65816_regs *regs, WDC65816_pins *pin
 }
 
 
-static void WDC65816_opcode_FB_mX(struct WDC65816_regs *regs, WDC65816_pins *pins) { // XCE i
+static void WDC65816_opcode_FB_mX(WDC65816_regs *regs, WDC65816_pins *pins) { // XCE i
         switch(regs->TCU) {
         // XCE i E=0 M=0 X=1
             case 1: // 2
@@ -32742,7 +32742,7 @@ static void WDC65816_opcode_FB_mX(struct WDC65816_regs *regs, WDC65816_pins *pin
 }
 
 
-static void WDC65816_opcode_FC_mX(struct WDC65816_regs *regs, WDC65816_pins *pins) { // JSR (a,x)
+static void WDC65816_opcode_FC_mX(WDC65816_regs *regs, WDC65816_pins *pins) { // JSR (a,x)
         switch(regs->TCU) {
         // JSR (a,x) E=0 M=0 X=1
             case 1: // 2
@@ -32792,7 +32792,7 @@ static void WDC65816_opcode_FC_mX(struct WDC65816_regs *regs, WDC65816_pins *pin
 }
 
 
-static void WDC65816_opcode_FD_mX(struct WDC65816_regs *regs, WDC65816_pins *pins) { // SBC a,x
+static void WDC65816_opcode_FD_mX(WDC65816_regs *regs, WDC65816_pins *pins) { // SBC a,x
         switch(regs->TCU) {
         // SBC a,x E=0 M=0 X=1
             case 1: // 2
@@ -32860,7 +32860,7 @@ static void WDC65816_opcode_FD_mX(struct WDC65816_regs *regs, WDC65816_pins *pin
 }
 
 
-static void WDC65816_opcode_FE_mX(struct WDC65816_regs *regs, WDC65816_pins *pins) { // INC a,x
+static void WDC65816_opcode_FE_mX(WDC65816_regs *regs, WDC65816_pins *pins) { // INC a,x
         switch(regs->TCU) {
         // INC a,x E=0 M=0 X=1
             case 1: // 2
@@ -32916,7 +32916,7 @@ static void WDC65816_opcode_FE_mX(struct WDC65816_regs *regs, WDC65816_pins *pin
 }
 
 
-static void WDC65816_opcode_FF_mX(struct WDC65816_regs *regs, WDC65816_pins *pins) { // SBC al,x
+static void WDC65816_opcode_FF_mX(WDC65816_regs *regs, WDC65816_pins *pins) { // SBC al,x
         switch(regs->TCU) {
         // SBC al,x E=0 M=0 X=1
             case 1: // 2
@@ -32976,7 +32976,7 @@ static void WDC65816_opcode_FF_mX(struct WDC65816_regs *regs, WDC65816_pins *pin
 }
 
 
-static void WDC65816_opcode_100_mX(struct WDC65816_regs *regs, WDC65816_pins *pins) { // S_RESET s
+static void WDC65816_opcode_100_mX(WDC65816_regs *regs, WDC65816_pins *pins) { // S_RESET s
         switch(regs->TCU) {
         // S_RESET s E=0 M=0 X=1
             case 1: // 3
@@ -33030,7 +33030,7 @@ static void WDC65816_opcode_100_mX(struct WDC65816_regs *regs, WDC65816_pins *pi
 }
 
 
-static void WDC65816_opcode_101_mX(struct WDC65816_regs *regs, WDC65816_pins *pins) { // S_ABORT s
+static void WDC65816_opcode_101_mX(WDC65816_regs *regs, WDC65816_pins *pins) { // S_ABORT s
         switch(regs->TCU) {
         // S_ABORT s E=0 M=0 X=1
             case 1: // 3
@@ -33080,7 +33080,7 @@ static void WDC65816_opcode_101_mX(struct WDC65816_regs *regs, WDC65816_pins *pi
 }
 
 
-static void WDC65816_opcode_102_mX(struct WDC65816_regs *regs, WDC65816_pins *pins) { // S_IRQ s
+static void WDC65816_opcode_102_mX(WDC65816_regs *regs, WDC65816_pins *pins) { // S_IRQ s
         switch(regs->TCU) {
         // S_IRQ s E=0 M=0 X=1
             case 1: // 3
@@ -33132,7 +33132,7 @@ static void WDC65816_opcode_102_mX(struct WDC65816_regs *regs, WDC65816_pins *pi
 }
 
 
-static void WDC65816_opcode_103_mX(struct WDC65816_regs *regs, WDC65816_pins *pins) { // S_NMI s
+static void WDC65816_opcode_103_mX(WDC65816_regs *regs, WDC65816_pins *pins) { // S_NMI s
         switch(regs->TCU) {
         // S_NMI s E=0 M=0 X=1
             case 1: // 3
@@ -33184,7 +33184,7 @@ static void WDC65816_opcode_103_mX(struct WDC65816_regs *regs, WDC65816_pins *pi
 }
 
 
-static void WDC65816_opcode_00_MX(struct WDC65816_regs *regs, WDC65816_pins *pins) { // BRK s
+static void WDC65816_opcode_00_MX(WDC65816_regs *regs, WDC65816_pins *pins) { // BRK s
         switch(regs->TCU) {
         // BRK s E=0 M=1 X=1
         // instruction code follows
@@ -33242,7 +33242,7 @@ static void WDC65816_opcode_00_MX(struct WDC65816_regs *regs, WDC65816_pins *pin
 }
 
 
-static void WDC65816_opcode_01_MX(struct WDC65816_regs *regs, WDC65816_pins *pins) { // ORA (d,x)
+static void WDC65816_opcode_01_MX(WDC65816_regs *regs, WDC65816_pins *pins) { // ORA (d,x)
         switch(regs->TCU) {
         // ORA (d,x) E=0 M=1 X=1
             case 1: // fetch_D0_and_skip_cycle 2
@@ -33291,7 +33291,7 @@ static void WDC65816_opcode_01_MX(struct WDC65816_regs *regs, WDC65816_pins *pin
 }
 
 
-static void WDC65816_opcode_02_MX(struct WDC65816_regs *regs, WDC65816_pins *pins) { // COP s
+static void WDC65816_opcode_02_MX(WDC65816_regs *regs, WDC65816_pins *pins) { // COP s
         switch(regs->TCU) {
         // COP s E=0 M=1 X=1
         // instruction code follows
@@ -33349,7 +33349,7 @@ static void WDC65816_opcode_02_MX(struct WDC65816_regs *regs, WDC65816_pins *pin
 }
 
 
-static void WDC65816_opcode_03_MX(struct WDC65816_regs *regs, WDC65816_pins *pins) { // ORA d,s
+static void WDC65816_opcode_03_MX(WDC65816_regs *regs, WDC65816_pins *pins) { // ORA d,s
         switch(regs->TCU) {
         // ORA d,s E=0 M=1 X=1
             case 1: // 2
@@ -33382,7 +33382,7 @@ static void WDC65816_opcode_03_MX(struct WDC65816_regs *regs, WDC65816_pins *pin
 }
 
 
-static void WDC65816_opcode_04_MX(struct WDC65816_regs *regs, WDC65816_pins *pins) { // TSB d
+static void WDC65816_opcode_04_MX(WDC65816_regs *regs, WDC65816_pins *pins) { // TSB d
         switch(regs->TCU) {
         // TSB d E=0 M=1 X=1
             case 1: // fetch_D0_and_skip_cycle 2
@@ -33427,7 +33427,7 @@ static void WDC65816_opcode_04_MX(struct WDC65816_regs *regs, WDC65816_pins *pin
 }
 
 
-static void WDC65816_opcode_05_MX(struct WDC65816_regs *regs, WDC65816_pins *pins) { // ORA d
+static void WDC65816_opcode_05_MX(WDC65816_regs *regs, WDC65816_pins *pins) { // ORA d
         switch(regs->TCU) {
         // ORA d E=0 M=1 X=1
             case 1: // fetch_D0_and_skip_cycle 2
@@ -33466,7 +33466,7 @@ static void WDC65816_opcode_05_MX(struct WDC65816_regs *regs, WDC65816_pins *pin
 }
 
 
-static void WDC65816_opcode_06_MX(struct WDC65816_regs *regs, WDC65816_pins *pins) { // ASL d
+static void WDC65816_opcode_06_MX(WDC65816_regs *regs, WDC65816_pins *pins) { // ASL d
         switch(regs->TCU) {
         // ASL d E=0 M=1 X=1
             case 1: // fetch_D0_and_skip_cycle 2
@@ -33513,7 +33513,7 @@ static void WDC65816_opcode_06_MX(struct WDC65816_regs *regs, WDC65816_pins *pin
 }
 
 
-static void WDC65816_opcode_07_MX(struct WDC65816_regs *regs, WDC65816_pins *pins) { // ORA [d]
+static void WDC65816_opcode_07_MX(WDC65816_regs *regs, WDC65816_pins *pins) { // ORA [d]
         switch(regs->TCU) {
         // ORA [d] E=0 M=1 X=1
             case 1: // fetch_D0_and_skip_cycle 2
@@ -33565,7 +33565,7 @@ static void WDC65816_opcode_07_MX(struct WDC65816_regs *regs, WDC65816_pins *pin
 }
 
 
-static void WDC65816_opcode_08_MX(struct WDC65816_regs *regs, WDC65816_pins *pins) { // PHP s
+static void WDC65816_opcode_08_MX(WDC65816_regs *regs, WDC65816_pins *pins) { // PHP s
         switch(regs->TCU) {
         // PHP s E=0 M=1 X=1
             case 1: // 2
@@ -33594,7 +33594,7 @@ static void WDC65816_opcode_08_MX(struct WDC65816_regs *regs, WDC65816_pins *pin
 }
 
 
-static void WDC65816_opcode_09_MX(struct WDC65816_regs *regs, WDC65816_pins *pins) { // ORA #
+static void WDC65816_opcode_09_MX(WDC65816_regs *regs, WDC65816_pins *pins) { // ORA #
         switch(regs->TCU) {
         // ORA # E=0 M=1 X=1
             case 1: // 2
@@ -33619,7 +33619,7 @@ static void WDC65816_opcode_09_MX(struct WDC65816_regs *regs, WDC65816_pins *pin
 }
 
 
-static void WDC65816_opcode_0A_MX(struct WDC65816_regs *regs, WDC65816_pins *pins) { // ASL A
+static void WDC65816_opcode_0A_MX(WDC65816_regs *regs, WDC65816_pins *pins) { // ASL A
         switch(regs->TCU) {
         // ASL A E=0 M=1 X=1
             case 1: // 2
@@ -33646,7 +33646,7 @@ static void WDC65816_opcode_0A_MX(struct WDC65816_regs *regs, WDC65816_pins *pin
 }
 
 
-static void WDC65816_opcode_0B_MX(struct WDC65816_regs *regs, WDC65816_pins *pins) { // PHD s
+static void WDC65816_opcode_0B_MX(WDC65816_regs *regs, WDC65816_pins *pins) { // PHD s
         switch(regs->TCU) {
         // PHD s E=0 M=1 X=1
             case 1: // 2
@@ -33679,7 +33679,7 @@ static void WDC65816_opcode_0B_MX(struct WDC65816_regs *regs, WDC65816_pins *pin
 }
 
 
-static void WDC65816_opcode_0C_MX(struct WDC65816_regs *regs, WDC65816_pins *pins) { // TSB a
+static void WDC65816_opcode_0C_MX(WDC65816_regs *regs, WDC65816_pins *pins) { // TSB a
         switch(regs->TCU) {
         // TSB a E=0 M=1 X=1
         //case AM.Ad
@@ -33720,7 +33720,7 @@ static void WDC65816_opcode_0C_MX(struct WDC65816_regs *regs, WDC65816_pins *pin
 }
 
 
-static void WDC65816_opcode_0D_MX(struct WDC65816_regs *regs, WDC65816_pins *pins) { // ORA a
+static void WDC65816_opcode_0D_MX(WDC65816_regs *regs, WDC65816_pins *pins) { // ORA a
         switch(regs->TCU) {
         // ORA a E=0 M=1 X=1
             case 1: // 2
@@ -33753,7 +33753,7 @@ static void WDC65816_opcode_0D_MX(struct WDC65816_regs *regs, WDC65816_pins *pin
 }
 
 
-static void WDC65816_opcode_0E_MX(struct WDC65816_regs *regs, WDC65816_pins *pins) { // ASL a
+static void WDC65816_opcode_0E_MX(WDC65816_regs *regs, WDC65816_pins *pins) { // ASL a
         switch(regs->TCU) {
         // ASL a E=0 M=1 X=1
         //case AM.Ad
@@ -33796,7 +33796,7 @@ static void WDC65816_opcode_0E_MX(struct WDC65816_regs *regs, WDC65816_pins *pin
 }
 
 
-static void WDC65816_opcode_0F_MX(struct WDC65816_regs *regs, WDC65816_pins *pins) { // ORA al
+static void WDC65816_opcode_0F_MX(WDC65816_regs *regs, WDC65816_pins *pins) { // ORA al
         switch(regs->TCU) {
         // ORA al E=0 M=1 X=1
             case 1: // 2
@@ -33834,7 +33834,7 @@ static void WDC65816_opcode_0F_MX(struct WDC65816_regs *regs, WDC65816_pins *pin
 }
 
 
-static void WDC65816_opcode_10_MX(struct WDC65816_regs *regs, WDC65816_pins *pins) { // BPL r
+static void WDC65816_opcode_10_MX(WDC65816_regs *regs, WDC65816_pins *pins) { // BPL r
         switch(regs->TCU) {
         // BPL r E=0 M=1 X=1
             case 1: // 2
@@ -33866,7 +33866,7 @@ static void WDC65816_opcode_10_MX(struct WDC65816_regs *regs, WDC65816_pins *pin
 }
 
 
-static void WDC65816_opcode_11_MX(struct WDC65816_regs *regs, WDC65816_pins *pins) { // ORA (d),y
+static void WDC65816_opcode_11_MX(WDC65816_regs *regs, WDC65816_pins *pins) { // ORA (d),y
         switch(regs->TCU) {
         // ORA (d),y E=0 M=1 X=1
             case 1: // fetch_D0_and_skip_cycle 2
@@ -33925,7 +33925,7 @@ static void WDC65816_opcode_11_MX(struct WDC65816_regs *regs, WDC65816_pins *pin
 }
 
 
-static void WDC65816_opcode_12_MX(struct WDC65816_regs *regs, WDC65816_pins *pins) { // ORA (d)
+static void WDC65816_opcode_12_MX(WDC65816_regs *regs, WDC65816_pins *pins) { // ORA (d)
         switch(regs->TCU) {
         // ORA (d) E=0 M=1 X=1
             case 1: // fetch_D0_and_skip_cycle 2
@@ -33971,7 +33971,7 @@ static void WDC65816_opcode_12_MX(struct WDC65816_regs *regs, WDC65816_pins *pin
 }
 
 
-static void WDC65816_opcode_13_MX(struct WDC65816_regs *regs, WDC65816_pins *pins) { // ORA (d,s),y
+static void WDC65816_opcode_13_MX(WDC65816_regs *regs, WDC65816_pins *pins) { // ORA (d,s),y
         switch(regs->TCU) {
         // ORA (d,s),y E=0 M=1 X=1
             case 1: // 2
@@ -34018,7 +34018,7 @@ static void WDC65816_opcode_13_MX(struct WDC65816_regs *regs, WDC65816_pins *pin
 }
 
 
-static void WDC65816_opcode_14_MX(struct WDC65816_regs *regs, WDC65816_pins *pins) { // TRB d
+static void WDC65816_opcode_14_MX(WDC65816_regs *regs, WDC65816_pins *pins) { // TRB d
         switch(regs->TCU) {
         // TRB d E=0 M=1 X=1
             case 1: // fetch_D0_and_skip_cycle 2
@@ -34063,7 +34063,7 @@ static void WDC65816_opcode_14_MX(struct WDC65816_regs *regs, WDC65816_pins *pin
 }
 
 
-static void WDC65816_opcode_15_MX(struct WDC65816_regs *regs, WDC65816_pins *pins) { // ORA d,x
+static void WDC65816_opcode_15_MX(WDC65816_regs *regs, WDC65816_pins *pins) { // ORA d,x
         switch(regs->TCU) {
         // ORA d,x E=0 M=1 X=1
             case 1: // fetch_D0_and_skip_cycle 2
@@ -34104,7 +34104,7 @@ static void WDC65816_opcode_15_MX(struct WDC65816_regs *regs, WDC65816_pins *pin
 }
 
 
-static void WDC65816_opcode_16_MX(struct WDC65816_regs *regs, WDC65816_pins *pins) { // ASL d,x
+static void WDC65816_opcode_16_MX(WDC65816_regs *regs, WDC65816_pins *pins) { // ASL d,x
         switch(regs->TCU) {
         // ASL d,x E=0 M=1 X=1
             case 1: // fetch_D0_and_skip_cycle 2
@@ -34153,7 +34153,7 @@ static void WDC65816_opcode_16_MX(struct WDC65816_regs *regs, WDC65816_pins *pin
 }
 
 
-static void WDC65816_opcode_17_MX(struct WDC65816_regs *regs, WDC65816_pins *pins) { // ORA [d],y
+static void WDC65816_opcode_17_MX(WDC65816_regs *regs, WDC65816_pins *pins) { // ORA [d],y
         switch(regs->TCU) {
         // ORA [d],y E=0 M=1 X=1
             case 1: // fetch_D0_and_skip_cycle 2
@@ -34205,7 +34205,7 @@ static void WDC65816_opcode_17_MX(struct WDC65816_regs *regs, WDC65816_pins *pin
 }
 
 
-static void WDC65816_opcode_18_MX(struct WDC65816_regs *regs, WDC65816_pins *pins) { // CLC i
+static void WDC65816_opcode_18_MX(WDC65816_regs *regs, WDC65816_pins *pins) { // CLC i
         switch(regs->TCU) {
         // CLC i E=0 M=1 X=1
             case 1: // 2
@@ -34227,7 +34227,7 @@ static void WDC65816_opcode_18_MX(struct WDC65816_regs *regs, WDC65816_pins *pin
 }
 
 
-static void WDC65816_opcode_19_MX(struct WDC65816_regs *regs, WDC65816_pins *pins) { // ORA a,y
+static void WDC65816_opcode_19_MX(WDC65816_regs *regs, WDC65816_pins *pins) { // ORA a,y
         switch(regs->TCU) {
         // ORA a,y E=0 M=1 X=1
             case 1: // 2
@@ -34274,7 +34274,7 @@ static void WDC65816_opcode_19_MX(struct WDC65816_regs *regs, WDC65816_pins *pin
 }
 
 
-static void WDC65816_opcode_1A_MX(struct WDC65816_regs *regs, WDC65816_pins *pins) { // INC A
+static void WDC65816_opcode_1A_MX(WDC65816_regs *regs, WDC65816_pins *pins) { // INC A
         switch(regs->TCU) {
         // INC A E=0 M=1 X=1
             case 1: // 2
@@ -34300,7 +34300,7 @@ static void WDC65816_opcode_1A_MX(struct WDC65816_regs *regs, WDC65816_pins *pin
 }
 
 
-static void WDC65816_opcode_1B_MX(struct WDC65816_regs *regs, WDC65816_pins *pins) { // TCS i
+static void WDC65816_opcode_1B_MX(WDC65816_regs *regs, WDC65816_pins *pins) { // TCS i
         switch(regs->TCU) {
         // TCS i E=0 M=1 X=1
             case 1: // 2
@@ -34322,7 +34322,7 @@ static void WDC65816_opcode_1B_MX(struct WDC65816_regs *regs, WDC65816_pins *pin
 }
 
 
-static void WDC65816_opcode_1C_MX(struct WDC65816_regs *regs, WDC65816_pins *pins) { // TRB a
+static void WDC65816_opcode_1C_MX(WDC65816_regs *regs, WDC65816_pins *pins) { // TRB a
         switch(regs->TCU) {
         // TRB a E=0 M=1 X=1
         //case AM.Ad
@@ -34363,7 +34363,7 @@ static void WDC65816_opcode_1C_MX(struct WDC65816_regs *regs, WDC65816_pins *pin
 }
 
 
-static void WDC65816_opcode_1D_MX(struct WDC65816_regs *regs, WDC65816_pins *pins) { // ORA a,x
+static void WDC65816_opcode_1D_MX(WDC65816_regs *regs, WDC65816_pins *pins) { // ORA a,x
         switch(regs->TCU) {
         // ORA a,x E=0 M=1 X=1
             case 1: // 2
@@ -34410,7 +34410,7 @@ static void WDC65816_opcode_1D_MX(struct WDC65816_regs *regs, WDC65816_pins *pin
 }
 
 
-static void WDC65816_opcode_1E_MX(struct WDC65816_regs *regs, WDC65816_pins *pins) { // ASL a,x
+static void WDC65816_opcode_1E_MX(WDC65816_regs *regs, WDC65816_pins *pins) { // ASL a,x
         switch(regs->TCU) {
         // ASL a,x E=0 M=1 X=1
             case 1: // 2
@@ -34459,7 +34459,7 @@ static void WDC65816_opcode_1E_MX(struct WDC65816_regs *regs, WDC65816_pins *pin
 }
 
 
-static void WDC65816_opcode_1F_MX(struct WDC65816_regs *regs, WDC65816_pins *pins) { // ORA al,x
+static void WDC65816_opcode_1F_MX(WDC65816_regs *regs, WDC65816_pins *pins) { // ORA al,x
         switch(regs->TCU) {
         // ORA al,x E=0 M=1 X=1
             case 1: // 2
@@ -34498,7 +34498,7 @@ static void WDC65816_opcode_1F_MX(struct WDC65816_regs *regs, WDC65816_pins *pin
 }
 
 
-static void WDC65816_opcode_20_MX(struct WDC65816_regs *regs, WDC65816_pins *pins) { // JSR a
+static void WDC65816_opcode_20_MX(WDC65816_regs *regs, WDC65816_pins *pins) { // JSR a
         switch(regs->TCU) {
         // JSR a E=0 M=1 X=1
             case 1: // 2
@@ -34541,7 +34541,7 @@ static void WDC65816_opcode_20_MX(struct WDC65816_regs *regs, WDC65816_pins *pin
 }
 
 
-static void WDC65816_opcode_21_MX(struct WDC65816_regs *regs, WDC65816_pins *pins) { // AND (d,x)
+static void WDC65816_opcode_21_MX(WDC65816_regs *regs, WDC65816_pins *pins) { // AND (d,x)
         switch(regs->TCU) {
         // AND (d,x) E=0 M=1 X=1
             case 1: // fetch_D0_and_skip_cycle 2
@@ -34590,7 +34590,7 @@ static void WDC65816_opcode_21_MX(struct WDC65816_regs *regs, WDC65816_pins *pin
 }
 
 
-static void WDC65816_opcode_22_MX(struct WDC65816_regs *regs, WDC65816_pins *pins) { // JSL al
+static void WDC65816_opcode_22_MX(WDC65816_regs *regs, WDC65816_pins *pins) { // JSL al
         switch(regs->TCU) {
         // JSL al E=0 M=1 X=1
             case 1: // 2
@@ -34646,7 +34646,7 @@ static void WDC65816_opcode_22_MX(struct WDC65816_regs *regs, WDC65816_pins *pin
 }
 
 
-static void WDC65816_opcode_23_MX(struct WDC65816_regs *regs, WDC65816_pins *pins) { // AND d,s
+static void WDC65816_opcode_23_MX(WDC65816_regs *regs, WDC65816_pins *pins) { // AND d,s
         switch(regs->TCU) {
         // AND d,s E=0 M=1 X=1
             case 1: // 2
@@ -34679,7 +34679,7 @@ static void WDC65816_opcode_23_MX(struct WDC65816_regs *regs, WDC65816_pins *pin
 }
 
 
-static void WDC65816_opcode_24_MX(struct WDC65816_regs *regs, WDC65816_pins *pins) { // BIT d
+static void WDC65816_opcode_24_MX(WDC65816_regs *regs, WDC65816_pins *pins) { // BIT d
         switch(regs->TCU) {
         // BIT d E=0 M=1 X=1
             case 1: // fetch_D0_and_skip_cycle 2
@@ -34717,7 +34717,7 @@ static void WDC65816_opcode_24_MX(struct WDC65816_regs *regs, WDC65816_pins *pin
 }
 
 
-static void WDC65816_opcode_25_MX(struct WDC65816_regs *regs, WDC65816_pins *pins) { // AND d
+static void WDC65816_opcode_25_MX(WDC65816_regs *regs, WDC65816_pins *pins) { // AND d
         switch(regs->TCU) {
         // AND d E=0 M=1 X=1
             case 1: // fetch_D0_and_skip_cycle 2
@@ -34756,7 +34756,7 @@ static void WDC65816_opcode_25_MX(struct WDC65816_regs *regs, WDC65816_pins *pin
 }
 
 
-static void WDC65816_opcode_26_MX(struct WDC65816_regs *regs, WDC65816_pins *pins) { // ROL d
+static void WDC65816_opcode_26_MX(WDC65816_regs *regs, WDC65816_pins *pins) { // ROL d
         switch(regs->TCU) {
         // ROL d E=0 M=1 X=1
             case 1: // fetch_D0_and_skip_cycle 2
@@ -34804,7 +34804,7 @@ static void WDC65816_opcode_26_MX(struct WDC65816_regs *regs, WDC65816_pins *pin
 }
 
 
-static void WDC65816_opcode_27_MX(struct WDC65816_regs *regs, WDC65816_pins *pins) { // AND [d]
+static void WDC65816_opcode_27_MX(WDC65816_regs *regs, WDC65816_pins *pins) { // AND [d]
         switch(regs->TCU) {
         // AND [d] E=0 M=1 X=1
             case 1: // fetch_D0_and_skip_cycle 2
@@ -34856,7 +34856,7 @@ static void WDC65816_opcode_27_MX(struct WDC65816_regs *regs, WDC65816_pins *pin
 }
 
 
-static void WDC65816_opcode_28_MX(struct WDC65816_regs *regs, WDC65816_pins *pins) { // PLP s
+static void WDC65816_opcode_28_MX(WDC65816_regs *regs, WDC65816_pins *pins) { // PLP s
         switch(regs->TCU) {
         // PLP s E=0 M=1 X=1
             case 1: // 2
@@ -34890,7 +34890,7 @@ static void WDC65816_opcode_28_MX(struct WDC65816_regs *regs, WDC65816_pins *pin
 }
 
 
-static void WDC65816_opcode_29_MX(struct WDC65816_regs *regs, WDC65816_pins *pins) { // AND #
+static void WDC65816_opcode_29_MX(WDC65816_regs *regs, WDC65816_pins *pins) { // AND #
         switch(regs->TCU) {
         // AND # E=0 M=1 X=1
             case 1: // 2
@@ -34915,7 +34915,7 @@ static void WDC65816_opcode_29_MX(struct WDC65816_regs *regs, WDC65816_pins *pin
 }
 
 
-static void WDC65816_opcode_2A_MX(struct WDC65816_regs *regs, WDC65816_pins *pins) { // ROL A
+static void WDC65816_opcode_2A_MX(WDC65816_regs *regs, WDC65816_pins *pins) { // ROL A
         switch(regs->TCU) {
         // ROL A E=0 M=1 X=1
             case 1: // 2
@@ -34943,7 +34943,7 @@ static void WDC65816_opcode_2A_MX(struct WDC65816_regs *regs, WDC65816_pins *pin
 }
 
 
-static void WDC65816_opcode_2B_MX(struct WDC65816_regs *regs, WDC65816_pins *pins) { // PLD s
+static void WDC65816_opcode_2B_MX(WDC65816_regs *regs, WDC65816_pins *pins) { // PLD s
         switch(regs->TCU) {
         // PLD s E=0 M=1 X=1
             case 1: // 2
@@ -34979,7 +34979,7 @@ static void WDC65816_opcode_2B_MX(struct WDC65816_regs *regs, WDC65816_pins *pin
 }
 
 
-static void WDC65816_opcode_2C_MX(struct WDC65816_regs *regs, WDC65816_pins *pins) { // BIT a
+static void WDC65816_opcode_2C_MX(WDC65816_regs *regs, WDC65816_pins *pins) { // BIT a
         switch(regs->TCU) {
         // BIT a E=0 M=1 X=1
             case 1: // 2
@@ -35011,7 +35011,7 @@ static void WDC65816_opcode_2C_MX(struct WDC65816_regs *regs, WDC65816_pins *pin
 }
 
 
-static void WDC65816_opcode_2D_MX(struct WDC65816_regs *regs, WDC65816_pins *pins) { // AND a
+static void WDC65816_opcode_2D_MX(WDC65816_regs *regs, WDC65816_pins *pins) { // AND a
         switch(regs->TCU) {
         // AND a E=0 M=1 X=1
             case 1: // 2
@@ -35044,7 +35044,7 @@ static void WDC65816_opcode_2D_MX(struct WDC65816_regs *regs, WDC65816_pins *pin
 }
 
 
-static void WDC65816_opcode_2E_MX(struct WDC65816_regs *regs, WDC65816_pins *pins) { // ROL a
+static void WDC65816_opcode_2E_MX(WDC65816_regs *regs, WDC65816_pins *pins) { // ROL a
         switch(regs->TCU) {
         // ROL a E=0 M=1 X=1
         //case AM.Ad
@@ -35088,7 +35088,7 @@ static void WDC65816_opcode_2E_MX(struct WDC65816_regs *regs, WDC65816_pins *pin
 }
 
 
-static void WDC65816_opcode_2F_MX(struct WDC65816_regs *regs, WDC65816_pins *pins) { // AND al
+static void WDC65816_opcode_2F_MX(WDC65816_regs *regs, WDC65816_pins *pins) { // AND al
         switch(regs->TCU) {
         // AND al E=0 M=1 X=1
             case 1: // 2
@@ -35126,7 +35126,7 @@ static void WDC65816_opcode_2F_MX(struct WDC65816_regs *regs, WDC65816_pins *pin
 }
 
 
-static void WDC65816_opcode_30_MX(struct WDC65816_regs *regs, WDC65816_pins *pins) { // BMI r
+static void WDC65816_opcode_30_MX(WDC65816_regs *regs, WDC65816_pins *pins) { // BMI r
         switch(regs->TCU) {
         // BMI r E=0 M=1 X=1
             case 1: // 2
@@ -35158,7 +35158,7 @@ static void WDC65816_opcode_30_MX(struct WDC65816_regs *regs, WDC65816_pins *pin
 }
 
 
-static void WDC65816_opcode_31_MX(struct WDC65816_regs *regs, WDC65816_pins *pins) { // AND (d),y
+static void WDC65816_opcode_31_MX(WDC65816_regs *regs, WDC65816_pins *pins) { // AND (d),y
         switch(regs->TCU) {
         // AND (d),y E=0 M=1 X=1
             case 1: // fetch_D0_and_skip_cycle 2
@@ -35217,7 +35217,7 @@ static void WDC65816_opcode_31_MX(struct WDC65816_regs *regs, WDC65816_pins *pin
 }
 
 
-static void WDC65816_opcode_32_MX(struct WDC65816_regs *regs, WDC65816_pins *pins) { // AND (d)
+static void WDC65816_opcode_32_MX(WDC65816_regs *regs, WDC65816_pins *pins) { // AND (d)
         switch(regs->TCU) {
         // AND (d) E=0 M=1 X=1
             case 1: // fetch_D0_and_skip_cycle 2
@@ -35263,7 +35263,7 @@ static void WDC65816_opcode_32_MX(struct WDC65816_regs *regs, WDC65816_pins *pin
 }
 
 
-static void WDC65816_opcode_33_MX(struct WDC65816_regs *regs, WDC65816_pins *pins) { // AND (d,s),y
+static void WDC65816_opcode_33_MX(WDC65816_regs *regs, WDC65816_pins *pins) { // AND (d,s),y
         switch(regs->TCU) {
         // AND (d,s),y E=0 M=1 X=1
             case 1: // 2
@@ -35310,7 +35310,7 @@ static void WDC65816_opcode_33_MX(struct WDC65816_regs *regs, WDC65816_pins *pin
 }
 
 
-static void WDC65816_opcode_34_MX(struct WDC65816_regs *regs, WDC65816_pins *pins) { // BIT d,x
+static void WDC65816_opcode_34_MX(WDC65816_regs *regs, WDC65816_pins *pins) { // BIT d,x
         switch(regs->TCU) {
         // BIT d,x E=0 M=1 X=1
             case 1: // fetch_D0_and_skip_cycle 2
@@ -35350,7 +35350,7 @@ static void WDC65816_opcode_34_MX(struct WDC65816_regs *regs, WDC65816_pins *pin
 }
 
 
-static void WDC65816_opcode_35_MX(struct WDC65816_regs *regs, WDC65816_pins *pins) { // AND d,x
+static void WDC65816_opcode_35_MX(WDC65816_regs *regs, WDC65816_pins *pins) { // AND d,x
         switch(regs->TCU) {
         // AND d,x E=0 M=1 X=1
             case 1: // fetch_D0_and_skip_cycle 2
@@ -35391,7 +35391,7 @@ static void WDC65816_opcode_35_MX(struct WDC65816_regs *regs, WDC65816_pins *pin
 }
 
 
-static void WDC65816_opcode_36_MX(struct WDC65816_regs *regs, WDC65816_pins *pins) { // ROL d,x
+static void WDC65816_opcode_36_MX(WDC65816_regs *regs, WDC65816_pins *pins) { // ROL d,x
         switch(regs->TCU) {
         // ROL d,x E=0 M=1 X=1
             case 1: // fetch_D0_and_skip_cycle 2
@@ -35441,7 +35441,7 @@ static void WDC65816_opcode_36_MX(struct WDC65816_regs *regs, WDC65816_pins *pin
 }
 
 
-static void WDC65816_opcode_37_MX(struct WDC65816_regs *regs, WDC65816_pins *pins) { // AND [d],y
+static void WDC65816_opcode_37_MX(WDC65816_regs *regs, WDC65816_pins *pins) { // AND [d],y
         switch(regs->TCU) {
         // AND [d],y E=0 M=1 X=1
             case 1: // fetch_D0_and_skip_cycle 2
@@ -35493,7 +35493,7 @@ static void WDC65816_opcode_37_MX(struct WDC65816_regs *regs, WDC65816_pins *pin
 }
 
 
-static void WDC65816_opcode_38_MX(struct WDC65816_regs *regs, WDC65816_pins *pins) { // SEC i
+static void WDC65816_opcode_38_MX(WDC65816_regs *regs, WDC65816_pins *pins) { // SEC i
         switch(regs->TCU) {
         // SEC i E=0 M=1 X=1
             case 1: // 2
@@ -35515,7 +35515,7 @@ static void WDC65816_opcode_38_MX(struct WDC65816_regs *regs, WDC65816_pins *pin
 }
 
 
-static void WDC65816_opcode_39_MX(struct WDC65816_regs *regs, WDC65816_pins *pins) { // AND a,y
+static void WDC65816_opcode_39_MX(WDC65816_regs *regs, WDC65816_pins *pins) { // AND a,y
         switch(regs->TCU) {
         // AND a,y E=0 M=1 X=1
             case 1: // 2
@@ -35562,7 +35562,7 @@ static void WDC65816_opcode_39_MX(struct WDC65816_regs *regs, WDC65816_pins *pin
 }
 
 
-static void WDC65816_opcode_3A_MX(struct WDC65816_regs *regs, WDC65816_pins *pins) { // DEC A
+static void WDC65816_opcode_3A_MX(WDC65816_regs *regs, WDC65816_pins *pins) { // DEC A
         switch(regs->TCU) {
         // DEC A E=0 M=1 X=1
             case 1: // 2
@@ -35588,7 +35588,7 @@ static void WDC65816_opcode_3A_MX(struct WDC65816_regs *regs, WDC65816_pins *pin
 }
 
 
-static void WDC65816_opcode_3B_MX(struct WDC65816_regs *regs, WDC65816_pins *pins) { // TSC i
+static void WDC65816_opcode_3B_MX(WDC65816_regs *regs, WDC65816_pins *pins) { // TSC i
         switch(regs->TCU) {
         // TSC i E=0 M=1 X=1
             case 1: // 2
@@ -35612,7 +35612,7 @@ static void WDC65816_opcode_3B_MX(struct WDC65816_regs *regs, WDC65816_pins *pin
 }
 
 
-static void WDC65816_opcode_3C_MX(struct WDC65816_regs *regs, WDC65816_pins *pins) { // BIT a,x
+static void WDC65816_opcode_3C_MX(WDC65816_regs *regs, WDC65816_pins *pins) { // BIT a,x
         switch(regs->TCU) {
         // BIT a,x E=0 M=1 X=1
             case 1: // 2
@@ -35658,7 +35658,7 @@ static void WDC65816_opcode_3C_MX(struct WDC65816_regs *regs, WDC65816_pins *pin
 }
 
 
-static void WDC65816_opcode_3D_MX(struct WDC65816_regs *regs, WDC65816_pins *pins) { // AND a,x
+static void WDC65816_opcode_3D_MX(WDC65816_regs *regs, WDC65816_pins *pins) { // AND a,x
         switch(regs->TCU) {
         // AND a,x E=0 M=1 X=1
             case 1: // 2
@@ -35705,7 +35705,7 @@ static void WDC65816_opcode_3D_MX(struct WDC65816_regs *regs, WDC65816_pins *pin
 }
 
 
-static void WDC65816_opcode_3E_MX(struct WDC65816_regs *regs, WDC65816_pins *pins) { // ROL a,x
+static void WDC65816_opcode_3E_MX(WDC65816_regs *regs, WDC65816_pins *pins) { // ROL a,x
         switch(regs->TCU) {
         // ROL a,x E=0 M=1 X=1
             case 1: // 2
@@ -35755,7 +35755,7 @@ static void WDC65816_opcode_3E_MX(struct WDC65816_regs *regs, WDC65816_pins *pin
 }
 
 
-static void WDC65816_opcode_3F_MX(struct WDC65816_regs *regs, WDC65816_pins *pins) { // AND al,x
+static void WDC65816_opcode_3F_MX(WDC65816_regs *regs, WDC65816_pins *pins) { // AND al,x
         switch(regs->TCU) {
         // AND al,x E=0 M=1 X=1
             case 1: // 2
@@ -35794,7 +35794,7 @@ static void WDC65816_opcode_3F_MX(struct WDC65816_regs *regs, WDC65816_pins *pin
 }
 
 
-static void WDC65816_opcode_40_MX(struct WDC65816_regs *regs, WDC65816_pins *pins) { // RTI s
+static void WDC65816_opcode_40_MX(WDC65816_regs *regs, WDC65816_pins *pins) { // RTI s
         switch(regs->TCU) {
         // RTI s E=0 M=1 X=1
             case 1: // 2
@@ -35845,7 +35845,7 @@ static void WDC65816_opcode_40_MX(struct WDC65816_regs *regs, WDC65816_pins *pin
 }
 
 
-static void WDC65816_opcode_41_MX(struct WDC65816_regs *regs, WDC65816_pins *pins) { // EOR (d,x)
+static void WDC65816_opcode_41_MX(WDC65816_regs *regs, WDC65816_pins *pins) { // EOR (d,x)
         switch(regs->TCU) {
         // EOR (d,x) E=0 M=1 X=1
             case 1: // fetch_D0_and_skip_cycle 2
@@ -35894,7 +35894,7 @@ static void WDC65816_opcode_41_MX(struct WDC65816_regs *regs, WDC65816_pins *pin
 }
 
 
-static void WDC65816_opcode_42_MX(struct WDC65816_regs *regs, WDC65816_pins *pins) { // WDM i
+static void WDC65816_opcode_42_MX(WDC65816_regs *regs, WDC65816_pins *pins) { // WDM i
         switch(regs->TCU) {
         // WDM i E=0 M=1 X=1
             case 1: // 2
@@ -35916,7 +35916,7 @@ static void WDC65816_opcode_42_MX(struct WDC65816_regs *regs, WDC65816_pins *pin
 }
 
 
-static void WDC65816_opcode_43_MX(struct WDC65816_regs *regs, WDC65816_pins *pins) { // EOR d,s
+static void WDC65816_opcode_43_MX(WDC65816_regs *regs, WDC65816_pins *pins) { // EOR d,s
         switch(regs->TCU) {
         // EOR d,s E=0 M=1 X=1
             case 1: // 2
@@ -35949,7 +35949,7 @@ static void WDC65816_opcode_43_MX(struct WDC65816_regs *regs, WDC65816_pins *pin
 }
 
 
-static void WDC65816_opcode_44_MX(struct WDC65816_regs *regs, WDC65816_pins *pins) { // MVP xyc
+static void WDC65816_opcode_44_MX(WDC65816_regs *regs, WDC65816_pins *pins) { // MVP xyc
         switch(regs->TCU) {
         // MVP xyc E=0 M=1 X=1
             case 1: // 2
@@ -35990,7 +35990,7 @@ static void WDC65816_opcode_44_MX(struct WDC65816_regs *regs, WDC65816_pins *pin
 }
 
 
-static void WDC65816_opcode_45_MX(struct WDC65816_regs *regs, WDC65816_pins *pins) { // EOR d
+static void WDC65816_opcode_45_MX(WDC65816_regs *regs, WDC65816_pins *pins) { // EOR d
         switch(regs->TCU) {
         // EOR d E=0 M=1 X=1
             case 1: // fetch_D0_and_skip_cycle 2
@@ -36029,7 +36029,7 @@ static void WDC65816_opcode_45_MX(struct WDC65816_regs *regs, WDC65816_pins *pin
 }
 
 
-static void WDC65816_opcode_46_MX(struct WDC65816_regs *regs, WDC65816_pins *pins) { // LSR d
+static void WDC65816_opcode_46_MX(WDC65816_regs *regs, WDC65816_pins *pins) { // LSR d
         switch(regs->TCU) {
         // LSR d E=0 M=1 X=1
             case 1: // fetch_D0_and_skip_cycle 2
@@ -36076,7 +36076,7 @@ static void WDC65816_opcode_46_MX(struct WDC65816_regs *regs, WDC65816_pins *pin
 }
 
 
-static void WDC65816_opcode_47_MX(struct WDC65816_regs *regs, WDC65816_pins *pins) { // EOR [d]
+static void WDC65816_opcode_47_MX(WDC65816_regs *regs, WDC65816_pins *pins) { // EOR [d]
         switch(regs->TCU) {
         // EOR [d] E=0 M=1 X=1
             case 1: // fetch_D0_and_skip_cycle 2
@@ -36128,7 +36128,7 @@ static void WDC65816_opcode_47_MX(struct WDC65816_regs *regs, WDC65816_pins *pin
 }
 
 
-static void WDC65816_opcode_48_MX(struct WDC65816_regs *regs, WDC65816_pins *pins) { // PHA s
+static void WDC65816_opcode_48_MX(WDC65816_regs *regs, WDC65816_pins *pins) { // PHA s
         switch(regs->TCU) {
         // PHA s E=0 M=1 X=1
             case 1: // 2
@@ -36157,7 +36157,7 @@ static void WDC65816_opcode_48_MX(struct WDC65816_regs *regs, WDC65816_pins *pin
 }
 
 
-static void WDC65816_opcode_49_MX(struct WDC65816_regs *regs, WDC65816_pins *pins) { // EOR #
+static void WDC65816_opcode_49_MX(WDC65816_regs *regs, WDC65816_pins *pins) { // EOR #
         switch(regs->TCU) {
         // EOR # E=0 M=1 X=1
             case 1: // 2
@@ -36182,7 +36182,7 @@ static void WDC65816_opcode_49_MX(struct WDC65816_regs *regs, WDC65816_pins *pin
 }
 
 
-static void WDC65816_opcode_4A_MX(struct WDC65816_regs *regs, WDC65816_pins *pins) { // LSR A
+static void WDC65816_opcode_4A_MX(WDC65816_regs *regs, WDC65816_pins *pins) { // LSR A
         switch(regs->TCU) {
         // LSR A E=0 M=1 X=1
             case 1: // 2
@@ -36209,7 +36209,7 @@ static void WDC65816_opcode_4A_MX(struct WDC65816_regs *regs, WDC65816_pins *pin
 }
 
 
-static void WDC65816_opcode_4B_MX(struct WDC65816_regs *regs, WDC65816_pins *pins) { // PHK s
+static void WDC65816_opcode_4B_MX(WDC65816_regs *regs, WDC65816_pins *pins) { // PHK s
         switch(regs->TCU) {
         // PHK s E=0 M=1 X=1
             case 1: // 2
@@ -36238,7 +36238,7 @@ static void WDC65816_opcode_4B_MX(struct WDC65816_regs *regs, WDC65816_pins *pin
 }
 
 
-static void WDC65816_opcode_4C_MX(struct WDC65816_regs *regs, WDC65816_pins *pins) { // JMP a
+static void WDC65816_opcode_4C_MX(WDC65816_regs *regs, WDC65816_pins *pins) { // JMP a
         switch(regs->TCU) {
         // JMP a E=0 M=1 X=1
             case 1: // 2
@@ -36262,7 +36262,7 @@ static void WDC65816_opcode_4C_MX(struct WDC65816_regs *regs, WDC65816_pins *pin
 }
 
 
-static void WDC65816_opcode_4D_MX(struct WDC65816_regs *regs, WDC65816_pins *pins) { // EOR a
+static void WDC65816_opcode_4D_MX(WDC65816_regs *regs, WDC65816_pins *pins) { // EOR a
         switch(regs->TCU) {
         // EOR a E=0 M=1 X=1
             case 1: // 2
@@ -36295,7 +36295,7 @@ static void WDC65816_opcode_4D_MX(struct WDC65816_regs *regs, WDC65816_pins *pin
 }
 
 
-static void WDC65816_opcode_4E_MX(struct WDC65816_regs *regs, WDC65816_pins *pins) { // LSR a
+static void WDC65816_opcode_4E_MX(WDC65816_regs *regs, WDC65816_pins *pins) { // LSR a
         switch(regs->TCU) {
         // LSR a E=0 M=1 X=1
         //case AM.Ad
@@ -36338,7 +36338,7 @@ static void WDC65816_opcode_4E_MX(struct WDC65816_regs *regs, WDC65816_pins *pin
 }
 
 
-static void WDC65816_opcode_4F_MX(struct WDC65816_regs *regs, WDC65816_pins *pins) { // EOR al
+static void WDC65816_opcode_4F_MX(WDC65816_regs *regs, WDC65816_pins *pins) { // EOR al
         switch(regs->TCU) {
         // EOR al E=0 M=1 X=1
             case 1: // 2
@@ -36376,7 +36376,7 @@ static void WDC65816_opcode_4F_MX(struct WDC65816_regs *regs, WDC65816_pins *pin
 }
 
 
-static void WDC65816_opcode_50_MX(struct WDC65816_regs *regs, WDC65816_pins *pins) { // BVC r
+static void WDC65816_opcode_50_MX(WDC65816_regs *regs, WDC65816_pins *pins) { // BVC r
         switch(regs->TCU) {
         // BVC r E=0 M=1 X=1
             case 1: // 2
@@ -36408,7 +36408,7 @@ static void WDC65816_opcode_50_MX(struct WDC65816_regs *regs, WDC65816_pins *pin
 }
 
 
-static void WDC65816_opcode_51_MX(struct WDC65816_regs *regs, WDC65816_pins *pins) { // EOR (d),y
+static void WDC65816_opcode_51_MX(WDC65816_regs *regs, WDC65816_pins *pins) { // EOR (d),y
         switch(regs->TCU) {
         // EOR (d),y E=0 M=1 X=1
             case 1: // fetch_D0_and_skip_cycle 2
@@ -36467,7 +36467,7 @@ static void WDC65816_opcode_51_MX(struct WDC65816_regs *regs, WDC65816_pins *pin
 }
 
 
-static void WDC65816_opcode_52_MX(struct WDC65816_regs *regs, WDC65816_pins *pins) { // EOR (d)
+static void WDC65816_opcode_52_MX(WDC65816_regs *regs, WDC65816_pins *pins) { // EOR (d)
         switch(regs->TCU) {
         // EOR (d) E=0 M=1 X=1
             case 1: // fetch_D0_and_skip_cycle 2
@@ -36513,7 +36513,7 @@ static void WDC65816_opcode_52_MX(struct WDC65816_regs *regs, WDC65816_pins *pin
 }
 
 
-static void WDC65816_opcode_53_MX(struct WDC65816_regs *regs, WDC65816_pins *pins) { // EOR (d,s),y
+static void WDC65816_opcode_53_MX(WDC65816_regs *regs, WDC65816_pins *pins) { // EOR (d,s),y
         switch(regs->TCU) {
         // EOR (d,s),y E=0 M=1 X=1
             case 1: // 2
@@ -36560,7 +36560,7 @@ static void WDC65816_opcode_53_MX(struct WDC65816_regs *regs, WDC65816_pins *pin
 }
 
 
-static void WDC65816_opcode_54_MX(struct WDC65816_regs *regs, WDC65816_pins *pins) { // MVN xyc
+static void WDC65816_opcode_54_MX(WDC65816_regs *regs, WDC65816_pins *pins) { // MVN xyc
         switch(regs->TCU) {
         // MVN xyc E=0 M=1 X=1
             case 1: // 2
@@ -36601,7 +36601,7 @@ static void WDC65816_opcode_54_MX(struct WDC65816_regs *regs, WDC65816_pins *pin
 }
 
 
-static void WDC65816_opcode_55_MX(struct WDC65816_regs *regs, WDC65816_pins *pins) { // EOR d,x
+static void WDC65816_opcode_55_MX(WDC65816_regs *regs, WDC65816_pins *pins) { // EOR d,x
         switch(regs->TCU) {
         // EOR d,x E=0 M=1 X=1
             case 1: // fetch_D0_and_skip_cycle 2
@@ -36642,7 +36642,7 @@ static void WDC65816_opcode_55_MX(struct WDC65816_regs *regs, WDC65816_pins *pin
 }
 
 
-static void WDC65816_opcode_56_MX(struct WDC65816_regs *regs, WDC65816_pins *pins) { // LSR d,x
+static void WDC65816_opcode_56_MX(WDC65816_regs *regs, WDC65816_pins *pins) { // LSR d,x
         switch(regs->TCU) {
         // LSR d,x E=0 M=1 X=1
             case 1: // fetch_D0_and_skip_cycle 2
@@ -36691,7 +36691,7 @@ static void WDC65816_opcode_56_MX(struct WDC65816_regs *regs, WDC65816_pins *pin
 }
 
 
-static void WDC65816_opcode_57_MX(struct WDC65816_regs *regs, WDC65816_pins *pins) { // EOR [d],y
+static void WDC65816_opcode_57_MX(WDC65816_regs *regs, WDC65816_pins *pins) { // EOR [d],y
         switch(regs->TCU) {
         // EOR [d],y E=0 M=1 X=1
             case 1: // fetch_D0_and_skip_cycle 2
@@ -36743,7 +36743,7 @@ static void WDC65816_opcode_57_MX(struct WDC65816_regs *regs, WDC65816_pins *pin
 }
 
 
-static void WDC65816_opcode_58_MX(struct WDC65816_regs *regs, WDC65816_pins *pins) { // CLI i
+static void WDC65816_opcode_58_MX(WDC65816_regs *regs, WDC65816_pins *pins) { // CLI i
         switch(regs->TCU) {
         // CLI i E=0 M=1 X=1
             case 1: // 2
@@ -36765,7 +36765,7 @@ static void WDC65816_opcode_58_MX(struct WDC65816_regs *regs, WDC65816_pins *pin
 }
 
 
-static void WDC65816_opcode_59_MX(struct WDC65816_regs *regs, WDC65816_pins *pins) { // EOR a,y
+static void WDC65816_opcode_59_MX(WDC65816_regs *regs, WDC65816_pins *pins) { // EOR a,y
         switch(regs->TCU) {
         // EOR a,y E=0 M=1 X=1
             case 1: // 2
@@ -36812,7 +36812,7 @@ static void WDC65816_opcode_59_MX(struct WDC65816_regs *regs, WDC65816_pins *pin
 }
 
 
-static void WDC65816_opcode_5A_MX(struct WDC65816_regs *regs, WDC65816_pins *pins) { // PHY s
+static void WDC65816_opcode_5A_MX(WDC65816_regs *regs, WDC65816_pins *pins) { // PHY s
         switch(regs->TCU) {
         // PHY s E=0 M=1 X=1
             case 1: // 2
@@ -36841,7 +36841,7 @@ static void WDC65816_opcode_5A_MX(struct WDC65816_regs *regs, WDC65816_pins *pin
 }
 
 
-static void WDC65816_opcode_5B_MX(struct WDC65816_regs *regs, WDC65816_pins *pins) { // TCD i
+static void WDC65816_opcode_5B_MX(WDC65816_regs *regs, WDC65816_pins *pins) { // TCD i
         switch(regs->TCU) {
         // TCD i E=0 M=1 X=1
             case 1: // 2
@@ -36865,7 +36865,7 @@ static void WDC65816_opcode_5B_MX(struct WDC65816_regs *regs, WDC65816_pins *pin
 }
 
 
-static void WDC65816_opcode_5C_MX(struct WDC65816_regs *regs, WDC65816_pins *pins) { // JMP al
+static void WDC65816_opcode_5C_MX(WDC65816_regs *regs, WDC65816_pins *pins) { // JMP al
         switch(regs->TCU) {
         // JMP al E=0 M=1 X=1
             case 1: // 2
@@ -36893,7 +36893,7 @@ static void WDC65816_opcode_5C_MX(struct WDC65816_regs *regs, WDC65816_pins *pin
 }
 
 
-static void WDC65816_opcode_5D_MX(struct WDC65816_regs *regs, WDC65816_pins *pins) { // EOR a,x
+static void WDC65816_opcode_5D_MX(WDC65816_regs *regs, WDC65816_pins *pins) { // EOR a,x
         switch(regs->TCU) {
         // EOR a,x E=0 M=1 X=1
             case 1: // 2
@@ -36940,7 +36940,7 @@ static void WDC65816_opcode_5D_MX(struct WDC65816_regs *regs, WDC65816_pins *pin
 }
 
 
-static void WDC65816_opcode_5E_MX(struct WDC65816_regs *regs, WDC65816_pins *pins) { // LSR a,x
+static void WDC65816_opcode_5E_MX(WDC65816_regs *regs, WDC65816_pins *pins) { // LSR a,x
         switch(regs->TCU) {
         // LSR a,x E=0 M=1 X=1
             case 1: // 2
@@ -36989,7 +36989,7 @@ static void WDC65816_opcode_5E_MX(struct WDC65816_regs *regs, WDC65816_pins *pin
 }
 
 
-static void WDC65816_opcode_5F_MX(struct WDC65816_regs *regs, WDC65816_pins *pins) { // EOR al,x
+static void WDC65816_opcode_5F_MX(WDC65816_regs *regs, WDC65816_pins *pins) { // EOR al,x
         switch(regs->TCU) {
         // EOR al,x E=0 M=1 X=1
             case 1: // 2
@@ -37028,7 +37028,7 @@ static void WDC65816_opcode_5F_MX(struct WDC65816_regs *regs, WDC65816_pins *pin
 }
 
 
-static void WDC65816_opcode_60_MX(struct WDC65816_regs *regs, WDC65816_pins *pins) { // RTS s
+static void WDC65816_opcode_60_MX(WDC65816_regs *regs, WDC65816_pins *pins) { // RTS s
         switch(regs->TCU) {
         // RTS s E=0 M=1 X=1
             case 1: // 2
@@ -37065,7 +37065,7 @@ static void WDC65816_opcode_60_MX(struct WDC65816_regs *regs, WDC65816_pins *pin
 }
 
 
-static void WDC65816_opcode_61_MX(struct WDC65816_regs *regs, WDC65816_pins *pins) { // ADC (d,x)
+static void WDC65816_opcode_61_MX(WDC65816_regs *regs, WDC65816_pins *pins) { // ADC (d,x)
         switch(regs->TCU) {
         // ADC (d,x) E=0 M=1 X=1
             case 1: // fetch_D0_and_skip_cycle 2
@@ -37125,7 +37125,7 @@ static void WDC65816_opcode_61_MX(struct WDC65816_regs *regs, WDC65816_pins *pin
 }
 
 
-static void WDC65816_opcode_62_MX(struct WDC65816_regs *regs, WDC65816_pins *pins) { // PER s
+static void WDC65816_opcode_62_MX(WDC65816_regs *regs, WDC65816_pins *pins) { // PER s
         switch(regs->TCU) {
         // PER s E=0 M=1 X=1
             case 1: // 2
@@ -37164,7 +37164,7 @@ static void WDC65816_opcode_62_MX(struct WDC65816_regs *regs, WDC65816_pins *pin
 }
 
 
-static void WDC65816_opcode_63_MX(struct WDC65816_regs *regs, WDC65816_pins *pins) { // ADC d,s
+static void WDC65816_opcode_63_MX(WDC65816_regs *regs, WDC65816_pins *pins) { // ADC d,s
         switch(regs->TCU) {
         // ADC d,s E=0 M=1 X=1
             case 1: // 2
@@ -37208,7 +37208,7 @@ static void WDC65816_opcode_63_MX(struct WDC65816_regs *regs, WDC65816_pins *pin
 }
 
 
-static void WDC65816_opcode_64_MX(struct WDC65816_regs *regs, WDC65816_pins *pins) { // STZ d
+static void WDC65816_opcode_64_MX(WDC65816_regs *regs, WDC65816_pins *pins) { // STZ d
         switch(regs->TCU) {
         // STZ d E=0 M=1 X=1
             case 1: // fetch_D0_and_skip_cycle 2
@@ -37245,7 +37245,7 @@ static void WDC65816_opcode_64_MX(struct WDC65816_regs *regs, WDC65816_pins *pin
 }
 
 
-static void WDC65816_opcode_65_MX(struct WDC65816_regs *regs, WDC65816_pins *pins) { // ADC d
+static void WDC65816_opcode_65_MX(WDC65816_regs *regs, WDC65816_pins *pins) { // ADC d
         switch(regs->TCU) {
         // ADC d E=0 M=1 X=1
             case 1: // fetch_D0_and_skip_cycle 2
@@ -37295,7 +37295,7 @@ static void WDC65816_opcode_65_MX(struct WDC65816_regs *regs, WDC65816_pins *pin
 }
 
 
-static void WDC65816_opcode_66_MX(struct WDC65816_regs *regs, WDC65816_pins *pins) { // ROR d
+static void WDC65816_opcode_66_MX(WDC65816_regs *regs, WDC65816_pins *pins) { // ROR d
         switch(regs->TCU) {
         // ROR d E=0 M=1 X=1
             case 1: // fetch_D0_and_skip_cycle 2
@@ -37343,7 +37343,7 @@ static void WDC65816_opcode_66_MX(struct WDC65816_regs *regs, WDC65816_pins *pin
 }
 
 
-static void WDC65816_opcode_67_MX(struct WDC65816_regs *regs, WDC65816_pins *pins) { // ADC [d]
+static void WDC65816_opcode_67_MX(WDC65816_regs *regs, WDC65816_pins *pins) { // ADC [d]
         switch(regs->TCU) {
         // ADC [d] E=0 M=1 X=1
             case 1: // fetch_D0_and_skip_cycle 2
@@ -37406,7 +37406,7 @@ static void WDC65816_opcode_67_MX(struct WDC65816_regs *regs, WDC65816_pins *pin
 }
 
 
-static void WDC65816_opcode_68_MX(struct WDC65816_regs *regs, WDC65816_pins *pins) { // PLA s
+static void WDC65816_opcode_68_MX(WDC65816_regs *regs, WDC65816_pins *pins) { // PLA s
         switch(regs->TCU) {
         // PLA s E=0 M=1 X=1
             case 1: // 2
@@ -37438,7 +37438,7 @@ static void WDC65816_opcode_68_MX(struct WDC65816_regs *regs, WDC65816_pins *pin
 }
 
 
-static void WDC65816_opcode_69_MX(struct WDC65816_regs *regs, WDC65816_pins *pins) { // ADC #
+static void WDC65816_opcode_69_MX(WDC65816_regs *regs, WDC65816_pins *pins) { // ADC #
         switch(regs->TCU) {
         // ADC # E=0 M=1 X=1
             case 1: // 2
@@ -37474,7 +37474,7 @@ static void WDC65816_opcode_69_MX(struct WDC65816_regs *regs, WDC65816_pins *pin
 }
 
 
-static void WDC65816_opcode_6A_MX(struct WDC65816_regs *regs, WDC65816_pins *pins) { // ROR A
+static void WDC65816_opcode_6A_MX(WDC65816_regs *regs, WDC65816_pins *pins) { // ROR A
         switch(regs->TCU) {
         // ROR A E=0 M=1 X=1
             case 1: // 2
@@ -37502,7 +37502,7 @@ static void WDC65816_opcode_6A_MX(struct WDC65816_regs *regs, WDC65816_pins *pin
 }
 
 
-static void WDC65816_opcode_6B_MX(struct WDC65816_regs *regs, WDC65816_pins *pins) { // RTL s
+static void WDC65816_opcode_6B_MX(WDC65816_regs *regs, WDC65816_pins *pins) { // RTL s
         switch(regs->TCU) {
         // RTL s E=0 M=1 X=1
             case 1: // 2
@@ -37541,7 +37541,7 @@ static void WDC65816_opcode_6B_MX(struct WDC65816_regs *regs, WDC65816_pins *pin
 }
 
 
-static void WDC65816_opcode_6C_MX(struct WDC65816_regs *regs, WDC65816_pins *pins) { // JMP (a)
+static void WDC65816_opcode_6C_MX(WDC65816_regs *regs, WDC65816_pins *pins) { // JMP (a)
         switch(regs->TCU) {
         // JMP (a) E=0 M=1 X=1
             case 1: // 2
@@ -37572,7 +37572,7 @@ static void WDC65816_opcode_6C_MX(struct WDC65816_regs *regs, WDC65816_pins *pin
 }
 
 
-static void WDC65816_opcode_6D_MX(struct WDC65816_regs *regs, WDC65816_pins *pins) { // ADC a
+static void WDC65816_opcode_6D_MX(WDC65816_regs *regs, WDC65816_pins *pins) { // ADC a
         switch(regs->TCU) {
         // ADC a E=0 M=1 X=1
             case 1: // 2
@@ -37616,7 +37616,7 @@ static void WDC65816_opcode_6D_MX(struct WDC65816_regs *regs, WDC65816_pins *pin
 }
 
 
-static void WDC65816_opcode_6E_MX(struct WDC65816_regs *regs, WDC65816_pins *pins) { // ROR a
+static void WDC65816_opcode_6E_MX(WDC65816_regs *regs, WDC65816_pins *pins) { // ROR a
         switch(regs->TCU) {
         // ROR a E=0 M=1 X=1
         //case AM.Ad
@@ -37660,7 +37660,7 @@ static void WDC65816_opcode_6E_MX(struct WDC65816_regs *regs, WDC65816_pins *pin
 }
 
 
-static void WDC65816_opcode_6F_MX(struct WDC65816_regs *regs, WDC65816_pins *pins) { // ADC al
+static void WDC65816_opcode_6F_MX(WDC65816_regs *regs, WDC65816_pins *pins) { // ADC al
         switch(regs->TCU) {
         // ADC al E=0 M=1 X=1
             case 1: // 2
@@ -37709,7 +37709,7 @@ static void WDC65816_opcode_6F_MX(struct WDC65816_regs *regs, WDC65816_pins *pin
 }
 
 
-static void WDC65816_opcode_70_MX(struct WDC65816_regs *regs, WDC65816_pins *pins) { // BVS r
+static void WDC65816_opcode_70_MX(WDC65816_regs *regs, WDC65816_pins *pins) { // BVS r
         switch(regs->TCU) {
         // BVS r E=0 M=1 X=1
             case 1: // 2
@@ -37741,7 +37741,7 @@ static void WDC65816_opcode_70_MX(struct WDC65816_regs *regs, WDC65816_pins *pin
 }
 
 
-static void WDC65816_opcode_71_MX(struct WDC65816_regs *regs, WDC65816_pins *pins) { // ADC (d),y
+static void WDC65816_opcode_71_MX(WDC65816_regs *regs, WDC65816_pins *pins) { // ADC (d),y
         switch(regs->TCU) {
         // ADC (d),y E=0 M=1 X=1
             case 1: // fetch_D0_and_skip_cycle 2
@@ -37811,7 +37811,7 @@ static void WDC65816_opcode_71_MX(struct WDC65816_regs *regs, WDC65816_pins *pin
 }
 
 
-static void WDC65816_opcode_72_MX(struct WDC65816_regs *regs, WDC65816_pins *pins) { // ADC (d)
+static void WDC65816_opcode_72_MX(WDC65816_regs *regs, WDC65816_pins *pins) { // ADC (d)
         switch(regs->TCU) {
         // ADC (d) E=0 M=1 X=1
             case 1: // fetch_D0_and_skip_cycle 2
@@ -37868,7 +37868,7 @@ static void WDC65816_opcode_72_MX(struct WDC65816_regs *regs, WDC65816_pins *pin
 }
 
 
-static void WDC65816_opcode_73_MX(struct WDC65816_regs *regs, WDC65816_pins *pins) { // ADC (d,s),y
+static void WDC65816_opcode_73_MX(WDC65816_regs *regs, WDC65816_pins *pins) { // ADC (d,s),y
         switch(regs->TCU) {
         // ADC (d,s),y E=0 M=1 X=1
             case 1: // 2
@@ -37926,7 +37926,7 @@ static void WDC65816_opcode_73_MX(struct WDC65816_regs *regs, WDC65816_pins *pin
 }
 
 
-static void WDC65816_opcode_74_MX(struct WDC65816_regs *regs, WDC65816_pins *pins) { // STZ d,x
+static void WDC65816_opcode_74_MX(WDC65816_regs *regs, WDC65816_pins *pins) { // STZ d,x
         switch(regs->TCU) {
         // STZ d,x E=0 M=1 X=1
             case 1: // fetch_D0_and_skip_cycle 2
@@ -37965,7 +37965,7 @@ static void WDC65816_opcode_74_MX(struct WDC65816_regs *regs, WDC65816_pins *pin
 }
 
 
-static void WDC65816_opcode_75_MX(struct WDC65816_regs *regs, WDC65816_pins *pins) { // ADC d,x
+static void WDC65816_opcode_75_MX(WDC65816_regs *regs, WDC65816_pins *pins) { // ADC d,x
         switch(regs->TCU) {
         // ADC d,x E=0 M=1 X=1
             case 1: // fetch_D0_and_skip_cycle 2
@@ -38017,7 +38017,7 @@ static void WDC65816_opcode_75_MX(struct WDC65816_regs *regs, WDC65816_pins *pin
 }
 
 
-static void WDC65816_opcode_76_MX(struct WDC65816_regs *regs, WDC65816_pins *pins) { // ROR d,x
+static void WDC65816_opcode_76_MX(WDC65816_regs *regs, WDC65816_pins *pins) { // ROR d,x
         switch(regs->TCU) {
         // ROR d,x E=0 M=1 X=1
             case 1: // fetch_D0_and_skip_cycle 2
@@ -38067,7 +38067,7 @@ static void WDC65816_opcode_76_MX(struct WDC65816_regs *regs, WDC65816_pins *pin
 }
 
 
-static void WDC65816_opcode_77_MX(struct WDC65816_regs *regs, WDC65816_pins *pins) { // ADC [d],y
+static void WDC65816_opcode_77_MX(WDC65816_regs *regs, WDC65816_pins *pins) { // ADC [d],y
         switch(regs->TCU) {
         // ADC [d],y E=0 M=1 X=1
             case 1: // fetch_D0_and_skip_cycle 2
@@ -38130,7 +38130,7 @@ static void WDC65816_opcode_77_MX(struct WDC65816_regs *regs, WDC65816_pins *pin
 }
 
 
-static void WDC65816_opcode_78_MX(struct WDC65816_regs *regs, WDC65816_pins *pins) { // SEI i
+static void WDC65816_opcode_78_MX(WDC65816_regs *regs, WDC65816_pins *pins) { // SEI i
         switch(regs->TCU) {
         // SEI i E=0 M=1 X=1
             case 1: // 2
@@ -38152,7 +38152,7 @@ static void WDC65816_opcode_78_MX(struct WDC65816_regs *regs, WDC65816_pins *pin
 }
 
 
-static void WDC65816_opcode_79_MX(struct WDC65816_regs *regs, WDC65816_pins *pins) { // ADC a,y
+static void WDC65816_opcode_79_MX(WDC65816_regs *regs, WDC65816_pins *pins) { // ADC a,y
         switch(regs->TCU) {
         // ADC a,y E=0 M=1 X=1
             case 1: // 2
@@ -38210,7 +38210,7 @@ static void WDC65816_opcode_79_MX(struct WDC65816_regs *regs, WDC65816_pins *pin
 }
 
 
-static void WDC65816_opcode_7A_MX(struct WDC65816_regs *regs, WDC65816_pins *pins) { // PLY s
+static void WDC65816_opcode_7A_MX(WDC65816_regs *regs, WDC65816_pins *pins) { // PLY s
         switch(regs->TCU) {
         // PLY s E=0 M=1 X=1
             case 1: // 2
@@ -38242,7 +38242,7 @@ static void WDC65816_opcode_7A_MX(struct WDC65816_regs *regs, WDC65816_pins *pin
 }
 
 
-static void WDC65816_opcode_7B_MX(struct WDC65816_regs *regs, WDC65816_pins *pins) { // TDC i
+static void WDC65816_opcode_7B_MX(WDC65816_regs *regs, WDC65816_pins *pins) { // TDC i
         switch(regs->TCU) {
         // TDC i E=0 M=1 X=1
             case 1: // 2
@@ -38266,7 +38266,7 @@ static void WDC65816_opcode_7B_MX(struct WDC65816_regs *regs, WDC65816_pins *pin
 }
 
 
-static void WDC65816_opcode_7C_MX(struct WDC65816_regs *regs, WDC65816_pins *pins) { // JMP (a,x)
+static void WDC65816_opcode_7C_MX(WDC65816_regs *regs, WDC65816_pins *pins) { // JMP (a,x)
         switch(regs->TCU) {
         // JMP (a,x) E=0 M=1 X=1
             case 1: // 2
@@ -38303,7 +38303,7 @@ static void WDC65816_opcode_7C_MX(struct WDC65816_regs *regs, WDC65816_pins *pin
 }
 
 
-static void WDC65816_opcode_7D_MX(struct WDC65816_regs *regs, WDC65816_pins *pins) { // ADC a,x
+static void WDC65816_opcode_7D_MX(WDC65816_regs *regs, WDC65816_pins *pins) { // ADC a,x
         switch(regs->TCU) {
         // ADC a,x E=0 M=1 X=1
             case 1: // 2
@@ -38361,7 +38361,7 @@ static void WDC65816_opcode_7D_MX(struct WDC65816_regs *regs, WDC65816_pins *pin
 }
 
 
-static void WDC65816_opcode_7E_MX(struct WDC65816_regs *regs, WDC65816_pins *pins) { // ROR a,x
+static void WDC65816_opcode_7E_MX(WDC65816_regs *regs, WDC65816_pins *pins) { // ROR a,x
         switch(regs->TCU) {
         // ROR a,x E=0 M=1 X=1
             case 1: // 2
@@ -38411,7 +38411,7 @@ static void WDC65816_opcode_7E_MX(struct WDC65816_regs *regs, WDC65816_pins *pin
 }
 
 
-static void WDC65816_opcode_7F_MX(struct WDC65816_regs *regs, WDC65816_pins *pins) { // ADC al,x
+static void WDC65816_opcode_7F_MX(WDC65816_regs *regs, WDC65816_pins *pins) { // ADC al,x
         switch(regs->TCU) {
         // ADC al,x E=0 M=1 X=1
             case 1: // 2
@@ -38461,7 +38461,7 @@ static void WDC65816_opcode_7F_MX(struct WDC65816_regs *regs, WDC65816_pins *pin
 }
 
 
-static void WDC65816_opcode_80_MX(struct WDC65816_regs *regs, WDC65816_pins *pins) { // BRA r
+static void WDC65816_opcode_80_MX(WDC65816_regs *regs, WDC65816_pins *pins) { // BRA r
         switch(regs->TCU) {
         // BRA r E=0 M=1 X=1
             case 1: // 2
@@ -38493,7 +38493,7 @@ static void WDC65816_opcode_80_MX(struct WDC65816_regs *regs, WDC65816_pins *pin
 }
 
 
-static void WDC65816_opcode_81_MX(struct WDC65816_regs *regs, WDC65816_pins *pins) { // STA (d,x)
+static void WDC65816_opcode_81_MX(WDC65816_regs *regs, WDC65816_pins *pins) { // STA (d,x)
         switch(regs->TCU) {
         // STA (d,x) E=0 M=1 X=1
             case 1: // fetch_D0_and_skip_cycle 2
@@ -38542,7 +38542,7 @@ static void WDC65816_opcode_81_MX(struct WDC65816_regs *regs, WDC65816_pins *pin
 }
 
 
-static void WDC65816_opcode_82_MX(struct WDC65816_regs *regs, WDC65816_pins *pins) { // BRL rl
+static void WDC65816_opcode_82_MX(WDC65816_regs *regs, WDC65816_pins *pins) { // BRL rl
         switch(regs->TCU) {
         // BRL rl E=0 M=1 X=1
             case 1: // 2
@@ -38571,7 +38571,7 @@ static void WDC65816_opcode_82_MX(struct WDC65816_regs *regs, WDC65816_pins *pin
 }
 
 
-static void WDC65816_opcode_83_MX(struct WDC65816_regs *regs, WDC65816_pins *pins) { // STA d,s
+static void WDC65816_opcode_83_MX(WDC65816_regs *regs, WDC65816_pins *pins) { // STA d,s
         switch(regs->TCU) {
         // STA d,s E=0 M=1 X=1
             case 1: // 2
@@ -38603,7 +38603,7 @@ static void WDC65816_opcode_83_MX(struct WDC65816_regs *regs, WDC65816_pins *pin
 }
 
 
-static void WDC65816_opcode_84_MX(struct WDC65816_regs *regs, WDC65816_pins *pins) { // STY d
+static void WDC65816_opcode_84_MX(WDC65816_regs *regs, WDC65816_pins *pins) { // STY d
         switch(regs->TCU) {
         // STY d E=0 M=1 X=1
             case 1: // fetch_D0_and_skip_cycle 2
@@ -38640,7 +38640,7 @@ static void WDC65816_opcode_84_MX(struct WDC65816_regs *regs, WDC65816_pins *pin
 }
 
 
-static void WDC65816_opcode_85_MX(struct WDC65816_regs *regs, WDC65816_pins *pins) { // STA d
+static void WDC65816_opcode_85_MX(WDC65816_regs *regs, WDC65816_pins *pins) { // STA d
         switch(regs->TCU) {
         // STA d E=0 M=1 X=1
             case 1: // fetch_D0_and_skip_cycle 2
@@ -38678,7 +38678,7 @@ static void WDC65816_opcode_85_MX(struct WDC65816_regs *regs, WDC65816_pins *pin
 }
 
 
-static void WDC65816_opcode_86_MX(struct WDC65816_regs *regs, WDC65816_pins *pins) { // STX d
+static void WDC65816_opcode_86_MX(WDC65816_regs *regs, WDC65816_pins *pins) { // STX d
         switch(regs->TCU) {
         // STX d E=0 M=1 X=1
             case 1: // fetch_D0_and_skip_cycle 2
@@ -38715,7 +38715,7 @@ static void WDC65816_opcode_86_MX(struct WDC65816_regs *regs, WDC65816_pins *pin
 }
 
 
-static void WDC65816_opcode_87_MX(struct WDC65816_regs *regs, WDC65816_pins *pins) { // STA [d]
+static void WDC65816_opcode_87_MX(WDC65816_regs *regs, WDC65816_pins *pins) { // STA [d]
         switch(regs->TCU) {
         // STA [d] E=0 M=1 X=1
             case 1: // fetch_D0_and_skip_cycle 2
@@ -38767,7 +38767,7 @@ static void WDC65816_opcode_87_MX(struct WDC65816_regs *regs, WDC65816_pins *pin
 }
 
 
-static void WDC65816_opcode_88_MX(struct WDC65816_regs *regs, WDC65816_pins *pins) { // DEY i
+static void WDC65816_opcode_88_MX(WDC65816_regs *regs, WDC65816_pins *pins) { // DEY i
         switch(regs->TCU) {
         // DEY i E=0 M=1 X=1
             case 1: // 2
@@ -38791,7 +38791,7 @@ static void WDC65816_opcode_88_MX(struct WDC65816_regs *regs, WDC65816_pins *pin
 }
 
 
-static void WDC65816_opcode_89_MX(struct WDC65816_regs *regs, WDC65816_pins *pins) { // BIT #
+static void WDC65816_opcode_89_MX(WDC65816_regs *regs, WDC65816_pins *pins) { // BIT #
         switch(regs->TCU) {
         // BIT # E=0 M=1 X=1
             case 1: // 2
@@ -38813,7 +38813,7 @@ static void WDC65816_opcode_89_MX(struct WDC65816_regs *regs, WDC65816_pins *pin
 }
 
 
-static void WDC65816_opcode_8A_MX(struct WDC65816_regs *regs, WDC65816_pins *pins) { // TXA i
+static void WDC65816_opcode_8A_MX(WDC65816_regs *regs, WDC65816_pins *pins) { // TXA i
         switch(regs->TCU) {
         // TXA i E=0 M=1 X=1
             case 1: // 2
@@ -38837,7 +38837,7 @@ static void WDC65816_opcode_8A_MX(struct WDC65816_regs *regs, WDC65816_pins *pin
 }
 
 
-static void WDC65816_opcode_8B_MX(struct WDC65816_regs *regs, WDC65816_pins *pins) { // PHB s
+static void WDC65816_opcode_8B_MX(WDC65816_regs *regs, WDC65816_pins *pins) { // PHB s
         switch(regs->TCU) {
         // PHB s E=0 M=1 X=1
             case 1: // 2
@@ -38866,7 +38866,7 @@ static void WDC65816_opcode_8B_MX(struct WDC65816_regs *regs, WDC65816_pins *pin
 }
 
 
-static void WDC65816_opcode_8C_MX(struct WDC65816_regs *regs, WDC65816_pins *pins) { // STY a
+static void WDC65816_opcode_8C_MX(WDC65816_regs *regs, WDC65816_pins *pins) { // STY a
         switch(regs->TCU) {
         // STY a E=0 M=1 X=1
             case 1: // 2
@@ -38898,7 +38898,7 @@ static void WDC65816_opcode_8C_MX(struct WDC65816_regs *regs, WDC65816_pins *pin
 }
 
 
-static void WDC65816_opcode_8D_MX(struct WDC65816_regs *regs, WDC65816_pins *pins) { // STA a
+static void WDC65816_opcode_8D_MX(WDC65816_regs *regs, WDC65816_pins *pins) { // STA a
         switch(regs->TCU) {
         // STA a E=0 M=1 X=1
             case 1: // 2
@@ -38931,7 +38931,7 @@ static void WDC65816_opcode_8D_MX(struct WDC65816_regs *regs, WDC65816_pins *pin
 }
 
 
-static void WDC65816_opcode_8E_MX(struct WDC65816_regs *regs, WDC65816_pins *pins) { // STX a
+static void WDC65816_opcode_8E_MX(WDC65816_regs *regs, WDC65816_pins *pins) { // STX a
         switch(regs->TCU) {
         // STX a E=0 M=1 X=1
             case 1: // 2
@@ -38963,7 +38963,7 @@ static void WDC65816_opcode_8E_MX(struct WDC65816_regs *regs, WDC65816_pins *pin
 }
 
 
-static void WDC65816_opcode_8F_MX(struct WDC65816_regs *regs, WDC65816_pins *pins) { // STA al
+static void WDC65816_opcode_8F_MX(WDC65816_regs *regs, WDC65816_pins *pins) { // STA al
         switch(regs->TCU) {
         // STA al E=0 M=1 X=1
             case 1: // 2
@@ -39001,7 +39001,7 @@ static void WDC65816_opcode_8F_MX(struct WDC65816_regs *regs, WDC65816_pins *pin
 }
 
 
-static void WDC65816_opcode_90_MX(struct WDC65816_regs *regs, WDC65816_pins *pins) { // BCC r
+static void WDC65816_opcode_90_MX(WDC65816_regs *regs, WDC65816_pins *pins) { // BCC r
         switch(regs->TCU) {
         // BCC r E=0 M=1 X=1
             case 1: // 2
@@ -39033,7 +39033,7 @@ static void WDC65816_opcode_90_MX(struct WDC65816_regs *regs, WDC65816_pins *pin
 }
 
 
-static void WDC65816_opcode_91_MX(struct WDC65816_regs *regs, WDC65816_pins *pins) { // STA (d),y
+static void WDC65816_opcode_91_MX(WDC65816_regs *regs, WDC65816_pins *pins) { // STA (d),y
         switch(regs->TCU) {
         // STA (d),y E=0 M=1 X=1
             case 1: // fetch_D0_and_skip_cycle 2
@@ -39090,7 +39090,7 @@ static void WDC65816_opcode_91_MX(struct WDC65816_regs *regs, WDC65816_pins *pin
 }
 
 
-static void WDC65816_opcode_92_MX(struct WDC65816_regs *regs, WDC65816_pins *pins) { // STA (d)
+static void WDC65816_opcode_92_MX(WDC65816_regs *regs, WDC65816_pins *pins) { // STA (d)
         switch(regs->TCU) {
         // STA (d) E=0 M=1 X=1
             case 1: // fetch_D0_and_skip_cycle 2
@@ -39136,7 +39136,7 @@ static void WDC65816_opcode_92_MX(struct WDC65816_regs *regs, WDC65816_pins *pin
 }
 
 
-static void WDC65816_opcode_93_MX(struct WDC65816_regs *regs, WDC65816_pins *pins) { // STA (d,s),y
+static void WDC65816_opcode_93_MX(WDC65816_regs *regs, WDC65816_pins *pins) { // STA (d,s),y
         switch(regs->TCU) {
         // STA (d,s),y E=0 M=1 X=1
             case 1: // 2
@@ -39182,7 +39182,7 @@ static void WDC65816_opcode_93_MX(struct WDC65816_regs *regs, WDC65816_pins *pin
 }
 
 
-static void WDC65816_opcode_94_MX(struct WDC65816_regs *regs, WDC65816_pins *pins) { // STY d,x
+static void WDC65816_opcode_94_MX(WDC65816_regs *regs, WDC65816_pins *pins) { // STY d,x
         switch(regs->TCU) {
         // STY d,x E=0 M=1 X=1
             case 1: // fetch_D0_and_skip_cycle 2
@@ -39221,7 +39221,7 @@ static void WDC65816_opcode_94_MX(struct WDC65816_regs *regs, WDC65816_pins *pin
 }
 
 
-static void WDC65816_opcode_95_MX(struct WDC65816_regs *regs, WDC65816_pins *pins) { // STA d,x
+static void WDC65816_opcode_95_MX(WDC65816_regs *regs, WDC65816_pins *pins) { // STA d,x
         switch(regs->TCU) {
         // STA d,x E=0 M=1 X=1
             case 1: // fetch_D0_and_skip_cycle 2
@@ -39261,7 +39261,7 @@ static void WDC65816_opcode_95_MX(struct WDC65816_regs *regs, WDC65816_pins *pin
 }
 
 
-static void WDC65816_opcode_96_MX(struct WDC65816_regs *regs, WDC65816_pins *pins) { // STX d,y
+static void WDC65816_opcode_96_MX(WDC65816_regs *regs, WDC65816_pins *pins) { // STX d,y
         switch(regs->TCU) {
         // STX d,y E=0 M=1 X=1
             case 1: // fetch_D0_and_skip_cycle 2
@@ -39300,7 +39300,7 @@ static void WDC65816_opcode_96_MX(struct WDC65816_regs *regs, WDC65816_pins *pin
 }
 
 
-static void WDC65816_opcode_97_MX(struct WDC65816_regs *regs, WDC65816_pins *pins) { // STA [d],y
+static void WDC65816_opcode_97_MX(WDC65816_regs *regs, WDC65816_pins *pins) { // STA [d],y
         switch(regs->TCU) {
         // STA [d],y E=0 M=1 X=1
             case 1: // fetch_D0_and_skip_cycle 2
@@ -39352,7 +39352,7 @@ static void WDC65816_opcode_97_MX(struct WDC65816_regs *regs, WDC65816_pins *pin
 }
 
 
-static void WDC65816_opcode_98_MX(struct WDC65816_regs *regs, WDC65816_pins *pins) { // TYA i
+static void WDC65816_opcode_98_MX(WDC65816_regs *regs, WDC65816_pins *pins) { // TYA i
         switch(regs->TCU) {
         // TYA i E=0 M=1 X=1
             case 1: // 2
@@ -39376,7 +39376,7 @@ static void WDC65816_opcode_98_MX(struct WDC65816_regs *regs, WDC65816_pins *pin
 }
 
 
-static void WDC65816_opcode_99_MX(struct WDC65816_regs *regs, WDC65816_pins *pins) { // STA a,y
+static void WDC65816_opcode_99_MX(WDC65816_regs *regs, WDC65816_pins *pins) { // STA a,y
         switch(regs->TCU) {
         // STA a,y E=0 M=1 X=1
             case 1: // 2
@@ -39420,7 +39420,7 @@ static void WDC65816_opcode_99_MX(struct WDC65816_regs *regs, WDC65816_pins *pin
 }
 
 
-static void WDC65816_opcode_9A_MX(struct WDC65816_regs *regs, WDC65816_pins *pins) { // TXS i
+static void WDC65816_opcode_9A_MX(WDC65816_regs *regs, WDC65816_pins *pins) { // TXS i
         switch(regs->TCU) {
         // TXS i E=0 M=1 X=1
             case 1: // 2
@@ -39442,7 +39442,7 @@ static void WDC65816_opcode_9A_MX(struct WDC65816_regs *regs, WDC65816_pins *pin
 }
 
 
-static void WDC65816_opcode_9B_MX(struct WDC65816_regs *regs, WDC65816_pins *pins) { // TXY i
+static void WDC65816_opcode_9B_MX(WDC65816_regs *regs, WDC65816_pins *pins) { // TXY i
         switch(regs->TCU) {
         // TXY i E=0 M=1 X=1
             case 1: // 2
@@ -39466,7 +39466,7 @@ static void WDC65816_opcode_9B_MX(struct WDC65816_regs *regs, WDC65816_pins *pin
 }
 
 
-static void WDC65816_opcode_9C_MX(struct WDC65816_regs *regs, WDC65816_pins *pins) { // STZ a
+static void WDC65816_opcode_9C_MX(WDC65816_regs *regs, WDC65816_pins *pins) { // STZ a
         switch(regs->TCU) {
         // STZ a E=0 M=1 X=1
             case 1: // 2
@@ -39498,7 +39498,7 @@ static void WDC65816_opcode_9C_MX(struct WDC65816_regs *regs, WDC65816_pins *pin
 }
 
 
-static void WDC65816_opcode_9D_MX(struct WDC65816_regs *regs, WDC65816_pins *pins) { // STA a,x
+static void WDC65816_opcode_9D_MX(WDC65816_regs *regs, WDC65816_pins *pins) { // STA a,x
         switch(regs->TCU) {
         // STA a,x E=0 M=1 X=1
             case 1: // 2
@@ -39542,7 +39542,7 @@ static void WDC65816_opcode_9D_MX(struct WDC65816_regs *regs, WDC65816_pins *pin
 }
 
 
-static void WDC65816_opcode_9E_MX(struct WDC65816_regs *regs, WDC65816_pins *pins) { // STZ a,x
+static void WDC65816_opcode_9E_MX(WDC65816_regs *regs, WDC65816_pins *pins) { // STZ a,x
         switch(regs->TCU) {
         // STZ a,x E=0 M=1 X=1
             case 1: // 2
@@ -39585,7 +39585,7 @@ static void WDC65816_opcode_9E_MX(struct WDC65816_regs *regs, WDC65816_pins *pin
 }
 
 
-static void WDC65816_opcode_9F_MX(struct WDC65816_regs *regs, WDC65816_pins *pins) { // STA al,x
+static void WDC65816_opcode_9F_MX(WDC65816_regs *regs, WDC65816_pins *pins) { // STA al,x
         switch(regs->TCU) {
         // STA al,x E=0 M=1 X=1
             case 1: // 2
@@ -39624,7 +39624,7 @@ static void WDC65816_opcode_9F_MX(struct WDC65816_regs *regs, WDC65816_pins *pin
 }
 
 
-static void WDC65816_opcode_A0_MX(struct WDC65816_regs *regs, WDC65816_pins *pins) { // LDY #
+static void WDC65816_opcode_A0_MX(WDC65816_regs *regs, WDC65816_pins *pins) { // LDY #
         switch(regs->TCU) {
         // LDY # E=0 M=1 X=1
             case 1: // 2
@@ -39648,7 +39648,7 @@ static void WDC65816_opcode_A0_MX(struct WDC65816_regs *regs, WDC65816_pins *pin
 }
 
 
-static void WDC65816_opcode_A1_MX(struct WDC65816_regs *regs, WDC65816_pins *pins) { // LDA (d,x)
+static void WDC65816_opcode_A1_MX(WDC65816_regs *regs, WDC65816_pins *pins) { // LDA (d,x)
         switch(regs->TCU) {
         // LDA (d,x) E=0 M=1 X=1
             case 1: // fetch_D0_and_skip_cycle 2
@@ -39696,7 +39696,7 @@ static void WDC65816_opcode_A1_MX(struct WDC65816_regs *regs, WDC65816_pins *pin
 }
 
 
-static void WDC65816_opcode_A2_MX(struct WDC65816_regs *regs, WDC65816_pins *pins) { // LDX #
+static void WDC65816_opcode_A2_MX(WDC65816_regs *regs, WDC65816_pins *pins) { // LDX #
         switch(regs->TCU) {
         // LDX # E=0 M=1 X=1
             case 1: // 2
@@ -39720,7 +39720,7 @@ static void WDC65816_opcode_A2_MX(struct WDC65816_regs *regs, WDC65816_pins *pin
 }
 
 
-static void WDC65816_opcode_A3_MX(struct WDC65816_regs *regs, WDC65816_pins *pins) { // LDA d,s
+static void WDC65816_opcode_A3_MX(WDC65816_regs *regs, WDC65816_pins *pins) { // LDA d,s
         switch(regs->TCU) {
         // LDA d,s E=0 M=1 X=1
             case 1: // 2
@@ -39752,7 +39752,7 @@ static void WDC65816_opcode_A3_MX(struct WDC65816_regs *regs, WDC65816_pins *pin
 }
 
 
-static void WDC65816_opcode_A4_MX(struct WDC65816_regs *regs, WDC65816_pins *pins) { // LDY d
+static void WDC65816_opcode_A4_MX(WDC65816_regs *regs, WDC65816_pins *pins) { // LDY d
         switch(regs->TCU) {
         // LDY d E=0 M=1 X=1
             case 1: // fetch_D0_and_skip_cycle 2
@@ -39790,7 +39790,7 @@ static void WDC65816_opcode_A4_MX(struct WDC65816_regs *regs, WDC65816_pins *pin
 }
 
 
-static void WDC65816_opcode_A5_MX(struct WDC65816_regs *regs, WDC65816_pins *pins) { // LDA d
+static void WDC65816_opcode_A5_MX(WDC65816_regs *regs, WDC65816_pins *pins) { // LDA d
         switch(regs->TCU) {
         // LDA d E=0 M=1 X=1
             case 1: // fetch_D0_and_skip_cycle 2
@@ -39828,7 +39828,7 @@ static void WDC65816_opcode_A5_MX(struct WDC65816_regs *regs, WDC65816_pins *pin
 }
 
 
-static void WDC65816_opcode_A6_MX(struct WDC65816_regs *regs, WDC65816_pins *pins) { // LDX d
+static void WDC65816_opcode_A6_MX(WDC65816_regs *regs, WDC65816_pins *pins) { // LDX d
         switch(regs->TCU) {
         // LDX d E=0 M=1 X=1
             case 1: // fetch_D0_and_skip_cycle 2
@@ -39866,7 +39866,7 @@ static void WDC65816_opcode_A6_MX(struct WDC65816_regs *regs, WDC65816_pins *pin
 }
 
 
-static void WDC65816_opcode_A7_MX(struct WDC65816_regs *regs, WDC65816_pins *pins) { // LDA [d]
+static void WDC65816_opcode_A7_MX(WDC65816_regs *regs, WDC65816_pins *pins) { // LDA [d]
         switch(regs->TCU) {
         // LDA [d] E=0 M=1 X=1
             case 1: // fetch_D0_and_skip_cycle 2
@@ -39917,7 +39917,7 @@ static void WDC65816_opcode_A7_MX(struct WDC65816_regs *regs, WDC65816_pins *pin
 }
 
 
-static void WDC65816_opcode_A8_MX(struct WDC65816_regs *regs, WDC65816_pins *pins) { // TAY i
+static void WDC65816_opcode_A8_MX(WDC65816_regs *regs, WDC65816_pins *pins) { // TAY i
         switch(regs->TCU) {
         // TAY i E=0 M=1 X=1
             case 1: // 2
@@ -39941,7 +39941,7 @@ static void WDC65816_opcode_A8_MX(struct WDC65816_regs *regs, WDC65816_pins *pin
 }
 
 
-static void WDC65816_opcode_A9_MX(struct WDC65816_regs *regs, WDC65816_pins *pins) { // LDA #
+static void WDC65816_opcode_A9_MX(WDC65816_regs *regs, WDC65816_pins *pins) { // LDA #
         switch(regs->TCU) {
         // LDA # E=0 M=1 X=1
             case 1: // 2
@@ -39965,7 +39965,7 @@ static void WDC65816_opcode_A9_MX(struct WDC65816_regs *regs, WDC65816_pins *pin
 }
 
 
-static void WDC65816_opcode_AA_MX(struct WDC65816_regs *regs, WDC65816_pins *pins) { // TAX i
+static void WDC65816_opcode_AA_MX(WDC65816_regs *regs, WDC65816_pins *pins) { // TAX i
         switch(regs->TCU) {
         // TAX i E=0 M=1 X=1
             case 1: // 2
@@ -39989,7 +39989,7 @@ static void WDC65816_opcode_AA_MX(struct WDC65816_regs *regs, WDC65816_pins *pin
 }
 
 
-static void WDC65816_opcode_AB_MX(struct WDC65816_regs *regs, WDC65816_pins *pins) { // PLB s
+static void WDC65816_opcode_AB_MX(WDC65816_regs *regs, WDC65816_pins *pins) { // PLB s
         switch(regs->TCU) {
         // PLB s E=0 M=1 X=1
             case 1: // 2
@@ -40021,7 +40021,7 @@ static void WDC65816_opcode_AB_MX(struct WDC65816_regs *regs, WDC65816_pins *pin
 }
 
 
-static void WDC65816_opcode_AC_MX(struct WDC65816_regs *regs, WDC65816_pins *pins) { // LDY a
+static void WDC65816_opcode_AC_MX(WDC65816_regs *regs, WDC65816_pins *pins) { // LDY a
         switch(regs->TCU) {
         // LDY a E=0 M=1 X=1
             case 1: // 2
@@ -40053,7 +40053,7 @@ static void WDC65816_opcode_AC_MX(struct WDC65816_regs *regs, WDC65816_pins *pin
 }
 
 
-static void WDC65816_opcode_AD_MX(struct WDC65816_regs *regs, WDC65816_pins *pins) { // LDA a
+static void WDC65816_opcode_AD_MX(WDC65816_regs *regs, WDC65816_pins *pins) { // LDA a
         switch(regs->TCU) {
         // LDA a E=0 M=1 X=1
             case 1: // 2
@@ -40085,7 +40085,7 @@ static void WDC65816_opcode_AD_MX(struct WDC65816_regs *regs, WDC65816_pins *pin
 }
 
 
-static void WDC65816_opcode_AE_MX(struct WDC65816_regs *regs, WDC65816_pins *pins) { // LDX a
+static void WDC65816_opcode_AE_MX(WDC65816_regs *regs, WDC65816_pins *pins) { // LDX a
         switch(regs->TCU) {
         // LDX a E=0 M=1 X=1
             case 1: // 2
@@ -40117,7 +40117,7 @@ static void WDC65816_opcode_AE_MX(struct WDC65816_regs *regs, WDC65816_pins *pin
 }
 
 
-static void WDC65816_opcode_AF_MX(struct WDC65816_regs *regs, WDC65816_pins *pins) { // LDA al
+static void WDC65816_opcode_AF_MX(WDC65816_regs *regs, WDC65816_pins *pins) { // LDA al
         switch(regs->TCU) {
         // LDA al E=0 M=1 X=1
             case 1: // 2
@@ -40154,7 +40154,7 @@ static void WDC65816_opcode_AF_MX(struct WDC65816_regs *regs, WDC65816_pins *pin
 }
 
 
-static void WDC65816_opcode_B0_MX(struct WDC65816_regs *regs, WDC65816_pins *pins) { // BCS r
+static void WDC65816_opcode_B0_MX(WDC65816_regs *regs, WDC65816_pins *pins) { // BCS r
         switch(regs->TCU) {
         // BCS r E=0 M=1 X=1
             case 1: // 2
@@ -40186,7 +40186,7 @@ static void WDC65816_opcode_B0_MX(struct WDC65816_regs *regs, WDC65816_pins *pin
 }
 
 
-static void WDC65816_opcode_B1_MX(struct WDC65816_regs *regs, WDC65816_pins *pins) { // LDA (d),y
+static void WDC65816_opcode_B1_MX(WDC65816_regs *regs, WDC65816_pins *pins) { // LDA (d),y
         switch(regs->TCU) {
         // LDA (d),y E=0 M=1 X=1
             case 1: // fetch_D0_and_skip_cycle 2
@@ -40244,7 +40244,7 @@ static void WDC65816_opcode_B1_MX(struct WDC65816_regs *regs, WDC65816_pins *pin
 }
 
 
-static void WDC65816_opcode_B2_MX(struct WDC65816_regs *regs, WDC65816_pins *pins) { // LDA (d)
+static void WDC65816_opcode_B2_MX(WDC65816_regs *regs, WDC65816_pins *pins) { // LDA (d)
         switch(regs->TCU) {
         // LDA (d) E=0 M=1 X=1
             case 1: // fetch_D0_and_skip_cycle 2
@@ -40289,7 +40289,7 @@ static void WDC65816_opcode_B2_MX(struct WDC65816_regs *regs, WDC65816_pins *pin
 }
 
 
-static void WDC65816_opcode_B3_MX(struct WDC65816_regs *regs, WDC65816_pins *pins) { // LDA (d,s),y
+static void WDC65816_opcode_B3_MX(WDC65816_regs *regs, WDC65816_pins *pins) { // LDA (d,s),y
         switch(regs->TCU) {
         // LDA (d,s),y E=0 M=1 X=1
             case 1: // 2
@@ -40335,7 +40335,7 @@ static void WDC65816_opcode_B3_MX(struct WDC65816_regs *regs, WDC65816_pins *pin
 }
 
 
-static void WDC65816_opcode_B4_MX(struct WDC65816_regs *regs, WDC65816_pins *pins) { // LDY d,x
+static void WDC65816_opcode_B4_MX(WDC65816_regs *regs, WDC65816_pins *pins) { // LDY d,x
         switch(regs->TCU) {
         // LDY d,x E=0 M=1 X=1
             case 1: // fetch_D0_and_skip_cycle 2
@@ -40375,7 +40375,7 @@ static void WDC65816_opcode_B4_MX(struct WDC65816_regs *regs, WDC65816_pins *pin
 }
 
 
-static void WDC65816_opcode_B5_MX(struct WDC65816_regs *regs, WDC65816_pins *pins) { // LDA d,x
+static void WDC65816_opcode_B5_MX(WDC65816_regs *regs, WDC65816_pins *pins) { // LDA d,x
         switch(regs->TCU) {
         // LDA d,x E=0 M=1 X=1
             case 1: // fetch_D0_and_skip_cycle 2
@@ -40415,7 +40415,7 @@ static void WDC65816_opcode_B5_MX(struct WDC65816_regs *regs, WDC65816_pins *pin
 }
 
 
-static void WDC65816_opcode_B6_MX(struct WDC65816_regs *regs, WDC65816_pins *pins) { // LDX d,y
+static void WDC65816_opcode_B6_MX(WDC65816_regs *regs, WDC65816_pins *pins) { // LDX d,y
         switch(regs->TCU) {
         // LDX d,y E=0 M=1 X=1
             case 1: // fetch_D0_and_skip_cycle 2
@@ -40455,7 +40455,7 @@ static void WDC65816_opcode_B6_MX(struct WDC65816_regs *regs, WDC65816_pins *pin
 }
 
 
-static void WDC65816_opcode_B7_MX(struct WDC65816_regs *regs, WDC65816_pins *pins) { // LDA [d],y
+static void WDC65816_opcode_B7_MX(WDC65816_regs *regs, WDC65816_pins *pins) { // LDA [d],y
         switch(regs->TCU) {
         // LDA [d],y E=0 M=1 X=1
             case 1: // fetch_D0_and_skip_cycle 2
@@ -40506,7 +40506,7 @@ static void WDC65816_opcode_B7_MX(struct WDC65816_regs *regs, WDC65816_pins *pin
 }
 
 
-static void WDC65816_opcode_B8_MX(struct WDC65816_regs *regs, WDC65816_pins *pins) { // CLV i
+static void WDC65816_opcode_B8_MX(WDC65816_regs *regs, WDC65816_pins *pins) { // CLV i
         switch(regs->TCU) {
         // CLV i E=0 M=1 X=1
             case 1: // 2
@@ -40528,7 +40528,7 @@ static void WDC65816_opcode_B8_MX(struct WDC65816_regs *regs, WDC65816_pins *pin
 }
 
 
-static void WDC65816_opcode_B9_MX(struct WDC65816_regs *regs, WDC65816_pins *pins) { // LDA a,y
+static void WDC65816_opcode_B9_MX(WDC65816_regs *regs, WDC65816_pins *pins) { // LDA a,y
         switch(regs->TCU) {
         // LDA a,y E=0 M=1 X=1
             case 1: // 2
@@ -40574,7 +40574,7 @@ static void WDC65816_opcode_B9_MX(struct WDC65816_regs *regs, WDC65816_pins *pin
 }
 
 
-static void WDC65816_opcode_BA_MX(struct WDC65816_regs *regs, WDC65816_pins *pins) { // TSX i
+static void WDC65816_opcode_BA_MX(WDC65816_regs *regs, WDC65816_pins *pins) { // TSX i
         switch(regs->TCU) {
         // TSX i E=0 M=1 X=1
             case 1: // 2
@@ -40598,7 +40598,7 @@ static void WDC65816_opcode_BA_MX(struct WDC65816_regs *regs, WDC65816_pins *pin
 }
 
 
-static void WDC65816_opcode_BB_MX(struct WDC65816_regs *regs, WDC65816_pins *pins) { // TYX i
+static void WDC65816_opcode_BB_MX(WDC65816_regs *regs, WDC65816_pins *pins) { // TYX i
         switch(regs->TCU) {
         // TYX i E=0 M=1 X=1
             case 1: // 2
@@ -40622,7 +40622,7 @@ static void WDC65816_opcode_BB_MX(struct WDC65816_regs *regs, WDC65816_pins *pin
 }
 
 
-static void WDC65816_opcode_BC_MX(struct WDC65816_regs *regs, WDC65816_pins *pins) { // LDY a,x
+static void WDC65816_opcode_BC_MX(WDC65816_regs *regs, WDC65816_pins *pins) { // LDY a,x
         switch(regs->TCU) {
         // LDY a,x E=0 M=1 X=1
             case 1: // 2
@@ -40668,7 +40668,7 @@ static void WDC65816_opcode_BC_MX(struct WDC65816_regs *regs, WDC65816_pins *pin
 }
 
 
-static void WDC65816_opcode_BD_MX(struct WDC65816_regs *regs, WDC65816_pins *pins) { // LDA a,x
+static void WDC65816_opcode_BD_MX(WDC65816_regs *regs, WDC65816_pins *pins) { // LDA a,x
         switch(regs->TCU) {
         // LDA a,x E=0 M=1 X=1
             case 1: // 2
@@ -40714,7 +40714,7 @@ static void WDC65816_opcode_BD_MX(struct WDC65816_regs *regs, WDC65816_pins *pin
 }
 
 
-static void WDC65816_opcode_BE_MX(struct WDC65816_regs *regs, WDC65816_pins *pins) { // LDX a,y
+static void WDC65816_opcode_BE_MX(WDC65816_regs *regs, WDC65816_pins *pins) { // LDX a,y
         switch(regs->TCU) {
         // LDX a,y E=0 M=1 X=1
             case 1: // 2
@@ -40760,7 +40760,7 @@ static void WDC65816_opcode_BE_MX(struct WDC65816_regs *regs, WDC65816_pins *pin
 }
 
 
-static void WDC65816_opcode_BF_MX(struct WDC65816_regs *regs, WDC65816_pins *pins) { // LDA al,x
+static void WDC65816_opcode_BF_MX(WDC65816_regs *regs, WDC65816_pins *pins) { // LDA al,x
         switch(regs->TCU) {
         // LDA al,x E=0 M=1 X=1
             case 1: // 2
@@ -40798,7 +40798,7 @@ static void WDC65816_opcode_BF_MX(struct WDC65816_regs *regs, WDC65816_pins *pin
 }
 
 
-static void WDC65816_opcode_C0_MX(struct WDC65816_regs *regs, WDC65816_pins *pins) { // CPY #
+static void WDC65816_opcode_C0_MX(WDC65816_regs *regs, WDC65816_pins *pins) { // CPY #
         switch(regs->TCU) {
         // CPY # E=0 M=1 X=1
             case 1: // 2
@@ -40823,7 +40823,7 @@ static void WDC65816_opcode_C0_MX(struct WDC65816_regs *regs, WDC65816_pins *pin
 }
 
 
-static void WDC65816_opcode_C1_MX(struct WDC65816_regs *regs, WDC65816_pins *pins) { // CMP (d,x)
+static void WDC65816_opcode_C1_MX(WDC65816_regs *regs, WDC65816_pins *pins) { // CMP (d,x)
         switch(regs->TCU) {
         // CMP (d,x) E=0 M=1 X=1
             case 1: // fetch_D0_and_skip_cycle 2
@@ -40872,7 +40872,7 @@ static void WDC65816_opcode_C1_MX(struct WDC65816_regs *regs, WDC65816_pins *pin
 }
 
 
-static void WDC65816_opcode_C2_MX(struct WDC65816_regs *regs, WDC65816_pins *pins) { // REP #
+static void WDC65816_opcode_C2_MX(WDC65816_regs *regs, WDC65816_pins *pins) { // REP #
         switch(regs->TCU) {
         // REP # E=0 M=1 X=1
             case 1: // 2
@@ -40898,7 +40898,7 @@ static void WDC65816_opcode_C2_MX(struct WDC65816_regs *regs, WDC65816_pins *pin
 }
 
 
-static void WDC65816_opcode_C3_MX(struct WDC65816_regs *regs, WDC65816_pins *pins) { // CMP d,s
+static void WDC65816_opcode_C3_MX(WDC65816_regs *regs, WDC65816_pins *pins) { // CMP d,s
         switch(regs->TCU) {
         // CMP d,s E=0 M=1 X=1
             case 1: // 2
@@ -40931,7 +40931,7 @@ static void WDC65816_opcode_C3_MX(struct WDC65816_regs *regs, WDC65816_pins *pin
 }
 
 
-static void WDC65816_opcode_C4_MX(struct WDC65816_regs *regs, WDC65816_pins *pins) { // CPY d
+static void WDC65816_opcode_C4_MX(WDC65816_regs *regs, WDC65816_pins *pins) { // CPY d
         switch(regs->TCU) {
         // CPY d E=0 M=1 X=1
             case 1: // fetch_D0_and_skip_cycle 2
@@ -40970,7 +40970,7 @@ static void WDC65816_opcode_C4_MX(struct WDC65816_regs *regs, WDC65816_pins *pin
 }
 
 
-static void WDC65816_opcode_C5_MX(struct WDC65816_regs *regs, WDC65816_pins *pins) { // CMP d
+static void WDC65816_opcode_C5_MX(WDC65816_regs *regs, WDC65816_pins *pins) { // CMP d
         switch(regs->TCU) {
         // CMP d E=0 M=1 X=1
             case 1: // fetch_D0_and_skip_cycle 2
@@ -41009,7 +41009,7 @@ static void WDC65816_opcode_C5_MX(struct WDC65816_regs *regs, WDC65816_pins *pin
 }
 
 
-static void WDC65816_opcode_C6_MX(struct WDC65816_regs *regs, WDC65816_pins *pins) { // DEC d
+static void WDC65816_opcode_C6_MX(WDC65816_regs *regs, WDC65816_pins *pins) { // DEC d
         switch(regs->TCU) {
         // DEC d E=0 M=1 X=1
             case 1: // fetch_D0_and_skip_cycle 2
@@ -41055,7 +41055,7 @@ static void WDC65816_opcode_C6_MX(struct WDC65816_regs *regs, WDC65816_pins *pin
 }
 
 
-static void WDC65816_opcode_C7_MX(struct WDC65816_regs *regs, WDC65816_pins *pins) { // CMP [d]
+static void WDC65816_opcode_C7_MX(WDC65816_regs *regs, WDC65816_pins *pins) { // CMP [d]
         switch(regs->TCU) {
         // CMP [d] E=0 M=1 X=1
             case 1: // fetch_D0_and_skip_cycle 2
@@ -41107,7 +41107,7 @@ static void WDC65816_opcode_C7_MX(struct WDC65816_regs *regs, WDC65816_pins *pin
 }
 
 
-static void WDC65816_opcode_C8_MX(struct WDC65816_regs *regs, WDC65816_pins *pins) { // INY i
+static void WDC65816_opcode_C8_MX(WDC65816_regs *regs, WDC65816_pins *pins) { // INY i
         switch(regs->TCU) {
         // INY i E=0 M=1 X=1
             case 1: // 2
@@ -41131,7 +41131,7 @@ static void WDC65816_opcode_C8_MX(struct WDC65816_regs *regs, WDC65816_pins *pin
 }
 
 
-static void WDC65816_opcode_C9_MX(struct WDC65816_regs *regs, WDC65816_pins *pins) { // CMP #
+static void WDC65816_opcode_C9_MX(WDC65816_regs *regs, WDC65816_pins *pins) { // CMP #
         switch(regs->TCU) {
         // CMP # E=0 M=1 X=1
             case 1: // 2
@@ -41156,7 +41156,7 @@ static void WDC65816_opcode_C9_MX(struct WDC65816_regs *regs, WDC65816_pins *pin
 }
 
 
-static void WDC65816_opcode_CA_MX(struct WDC65816_regs *regs, WDC65816_pins *pins) { // DEX i
+static void WDC65816_opcode_CA_MX(WDC65816_regs *regs, WDC65816_pins *pins) { // DEX i
         switch(regs->TCU) {
         // DEX i E=0 M=1 X=1
             case 1: // 2
@@ -41180,7 +41180,7 @@ static void WDC65816_opcode_CA_MX(struct WDC65816_regs *regs, WDC65816_pins *pin
 }
 
 
-static void WDC65816_opcode_CB_MX(struct WDC65816_regs *regs, WDC65816_pins *pins) { // WAI i
+static void WDC65816_opcode_CB_MX(WDC65816_regs *regs, WDC65816_pins *pins) { // WAI i
         switch(regs->TCU) {
         // WAI i E=0 M=1 X=1
             case 1: // 1
@@ -41209,7 +41209,7 @@ static void WDC65816_opcode_CB_MX(struct WDC65816_regs *regs, WDC65816_pins *pin
 }
 
 
-static void WDC65816_opcode_CC_MX(struct WDC65816_regs *regs, WDC65816_pins *pins) { // CPY a
+static void WDC65816_opcode_CC_MX(WDC65816_regs *regs, WDC65816_pins *pins) { // CPY a
         switch(regs->TCU) {
         // CPY a E=0 M=1 X=1
             case 1: // 2
@@ -41242,7 +41242,7 @@ static void WDC65816_opcode_CC_MX(struct WDC65816_regs *regs, WDC65816_pins *pin
 }
 
 
-static void WDC65816_opcode_CD_MX(struct WDC65816_regs *regs, WDC65816_pins *pins) { // CMP a
+static void WDC65816_opcode_CD_MX(WDC65816_regs *regs, WDC65816_pins *pins) { // CMP a
         switch(regs->TCU) {
         // CMP a E=0 M=1 X=1
             case 1: // 2
@@ -41275,7 +41275,7 @@ static void WDC65816_opcode_CD_MX(struct WDC65816_regs *regs, WDC65816_pins *pin
 }
 
 
-static void WDC65816_opcode_CE_MX(struct WDC65816_regs *regs, WDC65816_pins *pins) { // DEC a
+static void WDC65816_opcode_CE_MX(WDC65816_regs *regs, WDC65816_pins *pins) { // DEC a
         switch(regs->TCU) {
         // DEC a E=0 M=1 X=1
         //case AM.Ad
@@ -41317,7 +41317,7 @@ static void WDC65816_opcode_CE_MX(struct WDC65816_regs *regs, WDC65816_pins *pin
 }
 
 
-static void WDC65816_opcode_CF_MX(struct WDC65816_regs *regs, WDC65816_pins *pins) { // CMP al
+static void WDC65816_opcode_CF_MX(WDC65816_regs *regs, WDC65816_pins *pins) { // CMP al
         switch(regs->TCU) {
         // CMP al E=0 M=1 X=1
             case 1: // 2
@@ -41355,7 +41355,7 @@ static void WDC65816_opcode_CF_MX(struct WDC65816_regs *regs, WDC65816_pins *pin
 }
 
 
-static void WDC65816_opcode_D0_MX(struct WDC65816_regs *regs, WDC65816_pins *pins) { // BNE r
+static void WDC65816_opcode_D0_MX(WDC65816_regs *regs, WDC65816_pins *pins) { // BNE r
         switch(regs->TCU) {
         // BNE r E=0 M=1 X=1
             case 1: // 2
@@ -41387,7 +41387,7 @@ static void WDC65816_opcode_D0_MX(struct WDC65816_regs *regs, WDC65816_pins *pin
 }
 
 
-static void WDC65816_opcode_D1_MX(struct WDC65816_regs *regs, WDC65816_pins *pins) { // CMP (d),y
+static void WDC65816_opcode_D1_MX(WDC65816_regs *regs, WDC65816_pins *pins) { // CMP (d),y
         switch(regs->TCU) {
         // CMP (d),y E=0 M=1 X=1
             case 1: // fetch_D0_and_skip_cycle 2
@@ -41446,7 +41446,7 @@ static void WDC65816_opcode_D1_MX(struct WDC65816_regs *regs, WDC65816_pins *pin
 }
 
 
-static void WDC65816_opcode_D2_MX(struct WDC65816_regs *regs, WDC65816_pins *pins) { // CMP (d)
+static void WDC65816_opcode_D2_MX(WDC65816_regs *regs, WDC65816_pins *pins) { // CMP (d)
         switch(regs->TCU) {
         // CMP (d) E=0 M=1 X=1
             case 1: // fetch_D0_and_skip_cycle 2
@@ -41492,7 +41492,7 @@ static void WDC65816_opcode_D2_MX(struct WDC65816_regs *regs, WDC65816_pins *pin
 }
 
 
-static void WDC65816_opcode_D3_MX(struct WDC65816_regs *regs, WDC65816_pins *pins) { // CMP (d,s),y
+static void WDC65816_opcode_D3_MX(WDC65816_regs *regs, WDC65816_pins *pins) { // CMP (d,s),y
         switch(regs->TCU) {
         // CMP (d,s),y E=0 M=1 X=1
             case 1: // 2
@@ -41539,7 +41539,7 @@ static void WDC65816_opcode_D3_MX(struct WDC65816_regs *regs, WDC65816_pins *pin
 }
 
 
-static void WDC65816_opcode_D4_MX(struct WDC65816_regs *regs, WDC65816_pins *pins) { // PEI s
+static void WDC65816_opcode_D4_MX(WDC65816_regs *regs, WDC65816_pins *pins) { // PEI s
         switch(regs->TCU) {
         // PEI s E=0 M=1 X=1
             case 1: // fetch_D0_and_skip_cycle 2
@@ -41586,7 +41586,7 @@ static void WDC65816_opcode_D4_MX(struct WDC65816_regs *regs, WDC65816_pins *pin
 }
 
 
-static void WDC65816_opcode_D5_MX(struct WDC65816_regs *regs, WDC65816_pins *pins) { // CMP d,x
+static void WDC65816_opcode_D5_MX(WDC65816_regs *regs, WDC65816_pins *pins) { // CMP d,x
         switch(regs->TCU) {
         // CMP d,x E=0 M=1 X=1
             case 1: // fetch_D0_and_skip_cycle 2
@@ -41627,7 +41627,7 @@ static void WDC65816_opcode_D5_MX(struct WDC65816_regs *regs, WDC65816_pins *pin
 }
 
 
-static void WDC65816_opcode_D6_MX(struct WDC65816_regs *regs, WDC65816_pins *pins) { // DEC d,x
+static void WDC65816_opcode_D6_MX(WDC65816_regs *regs, WDC65816_pins *pins) { // DEC d,x
         switch(regs->TCU) {
         // DEC d,x E=0 M=1 X=1
             case 1: // fetch_D0_and_skip_cycle 2
@@ -41675,7 +41675,7 @@ static void WDC65816_opcode_D6_MX(struct WDC65816_regs *regs, WDC65816_pins *pin
 }
 
 
-static void WDC65816_opcode_D7_MX(struct WDC65816_regs *regs, WDC65816_pins *pins) { // CMP [d],y
+static void WDC65816_opcode_D7_MX(WDC65816_regs *regs, WDC65816_pins *pins) { // CMP [d],y
         switch(regs->TCU) {
         // CMP [d],y E=0 M=1 X=1
             case 1: // fetch_D0_and_skip_cycle 2
@@ -41727,7 +41727,7 @@ static void WDC65816_opcode_D7_MX(struct WDC65816_regs *regs, WDC65816_pins *pin
 }
 
 
-static void WDC65816_opcode_D8_MX(struct WDC65816_regs *regs, WDC65816_pins *pins) { // CLD i
+static void WDC65816_opcode_D8_MX(WDC65816_regs *regs, WDC65816_pins *pins) { // CLD i
         switch(regs->TCU) {
         // CLD i E=0 M=1 X=1
             case 1: // 2
@@ -41749,7 +41749,7 @@ static void WDC65816_opcode_D8_MX(struct WDC65816_regs *regs, WDC65816_pins *pin
 }
 
 
-static void WDC65816_opcode_D9_MX(struct WDC65816_regs *regs, WDC65816_pins *pins) { // CMP a,y
+static void WDC65816_opcode_D9_MX(WDC65816_regs *regs, WDC65816_pins *pins) { // CMP a,y
         switch(regs->TCU) {
         // CMP a,y E=0 M=1 X=1
             case 1: // 2
@@ -41796,7 +41796,7 @@ static void WDC65816_opcode_D9_MX(struct WDC65816_regs *regs, WDC65816_pins *pin
 }
 
 
-static void WDC65816_opcode_DA_MX(struct WDC65816_regs *regs, WDC65816_pins *pins) { // PHX s
+static void WDC65816_opcode_DA_MX(WDC65816_regs *regs, WDC65816_pins *pins) { // PHX s
         switch(regs->TCU) {
         // PHX s E=0 M=1 X=1
             case 1: // 2
@@ -41825,7 +41825,7 @@ static void WDC65816_opcode_DA_MX(struct WDC65816_regs *regs, WDC65816_pins *pin
 }
 
 
-static void WDC65816_opcode_DB_MX(struct WDC65816_regs *regs, WDC65816_pins *pins) { // STP i
+static void WDC65816_opcode_DB_MX(WDC65816_regs *regs, WDC65816_pins *pins) { // STP i
         switch(regs->TCU) {
         // STP i E=0 M=1 X=1
             case 1: // 2
@@ -41844,7 +41844,7 @@ static void WDC65816_opcode_DB_MX(struct WDC65816_regs *regs, WDC65816_pins *pin
 }
 
 
-static void WDC65816_opcode_DC_MX(struct WDC65816_regs *regs, WDC65816_pins *pins) { // JML (a)
+static void WDC65816_opcode_DC_MX(WDC65816_regs *regs, WDC65816_pins *pins) { // JML (a)
         switch(regs->TCU) {
         // JML (a) E=0 M=1 X=1
             case 1: // 2
@@ -41879,7 +41879,7 @@ static void WDC65816_opcode_DC_MX(struct WDC65816_regs *regs, WDC65816_pins *pin
 }
 
 
-static void WDC65816_opcode_DD_MX(struct WDC65816_regs *regs, WDC65816_pins *pins) { // CMP a,x
+static void WDC65816_opcode_DD_MX(WDC65816_regs *regs, WDC65816_pins *pins) { // CMP a,x
         switch(regs->TCU) {
         // CMP a,x E=0 M=1 X=1
             case 1: // 2
@@ -41926,7 +41926,7 @@ static void WDC65816_opcode_DD_MX(struct WDC65816_regs *regs, WDC65816_pins *pin
 }
 
 
-static void WDC65816_opcode_DE_MX(struct WDC65816_regs *regs, WDC65816_pins *pins) { // DEC a,x
+static void WDC65816_opcode_DE_MX(WDC65816_regs *regs, WDC65816_pins *pins) { // DEC a,x
         switch(regs->TCU) {
         // DEC a,x E=0 M=1 X=1
             case 1: // 2
@@ -41974,7 +41974,7 @@ static void WDC65816_opcode_DE_MX(struct WDC65816_regs *regs, WDC65816_pins *pin
 }
 
 
-static void WDC65816_opcode_DF_MX(struct WDC65816_regs *regs, WDC65816_pins *pins) { // CMP al,x
+static void WDC65816_opcode_DF_MX(WDC65816_regs *regs, WDC65816_pins *pins) { // CMP al,x
         switch(regs->TCU) {
         // CMP al,x E=0 M=1 X=1
             case 1: // 2
@@ -42013,7 +42013,7 @@ static void WDC65816_opcode_DF_MX(struct WDC65816_regs *regs, WDC65816_pins *pin
 }
 
 
-static void WDC65816_opcode_E0_MX(struct WDC65816_regs *regs, WDC65816_pins *pins) { // CPX #
+static void WDC65816_opcode_E0_MX(WDC65816_regs *regs, WDC65816_pins *pins) { // CPX #
         switch(regs->TCU) {
         // CPX # E=0 M=1 X=1
             case 1: // 2
@@ -42038,7 +42038,7 @@ static void WDC65816_opcode_E0_MX(struct WDC65816_regs *regs, WDC65816_pins *pin
 }
 
 
-static void WDC65816_opcode_E1_MX(struct WDC65816_regs *regs, WDC65816_pins *pins) { // SBC (d,x)
+static void WDC65816_opcode_E1_MX(WDC65816_regs *regs, WDC65816_pins *pins) { // SBC (d,x)
         switch(regs->TCU) {
         // SBC (d,x) E=0 M=1 X=1
             case 1: // fetch_D0_and_skip_cycle 2
@@ -42098,7 +42098,7 @@ static void WDC65816_opcode_E1_MX(struct WDC65816_regs *regs, WDC65816_pins *pin
 }
 
 
-static void WDC65816_opcode_E2_MX(struct WDC65816_regs *regs, WDC65816_pins *pins) { // SEP #
+static void WDC65816_opcode_E2_MX(WDC65816_regs *regs, WDC65816_pins *pins) { // SEP #
         switch(regs->TCU) {
         // SEP # E=0 M=1 X=1
             case 1: // 2
@@ -42125,7 +42125,7 @@ static void WDC65816_opcode_E2_MX(struct WDC65816_regs *regs, WDC65816_pins *pin
 }
 
 
-static void WDC65816_opcode_E3_MX(struct WDC65816_regs *regs, WDC65816_pins *pins) { // SBC d,s
+static void WDC65816_opcode_E3_MX(WDC65816_regs *regs, WDC65816_pins *pins) { // SBC d,s
         switch(regs->TCU) {
         // SBC d,s E=0 M=1 X=1
             case 1: // 2
@@ -42169,7 +42169,7 @@ static void WDC65816_opcode_E3_MX(struct WDC65816_regs *regs, WDC65816_pins *pin
 }
 
 
-static void WDC65816_opcode_E4_MX(struct WDC65816_regs *regs, WDC65816_pins *pins) { // CPX d
+static void WDC65816_opcode_E4_MX(WDC65816_regs *regs, WDC65816_pins *pins) { // CPX d
         switch(regs->TCU) {
         // CPX d E=0 M=1 X=1
             case 1: // fetch_D0_and_skip_cycle 2
@@ -42208,7 +42208,7 @@ static void WDC65816_opcode_E4_MX(struct WDC65816_regs *regs, WDC65816_pins *pin
 }
 
 
-static void WDC65816_opcode_E5_MX(struct WDC65816_regs *regs, WDC65816_pins *pins) { // SBC d
+static void WDC65816_opcode_E5_MX(WDC65816_regs *regs, WDC65816_pins *pins) { // SBC d
         switch(regs->TCU) {
         // SBC d E=0 M=1 X=1
             case 1: // fetch_D0_and_skip_cycle 2
@@ -42258,7 +42258,7 @@ static void WDC65816_opcode_E5_MX(struct WDC65816_regs *regs, WDC65816_pins *pin
 }
 
 
-static void WDC65816_opcode_E6_MX(struct WDC65816_regs *regs, WDC65816_pins *pins) { // INC d
+static void WDC65816_opcode_E6_MX(WDC65816_regs *regs, WDC65816_pins *pins) { // INC d
         switch(regs->TCU) {
         // INC d E=0 M=1 X=1
             case 1: // fetch_D0_and_skip_cycle 2
@@ -42304,7 +42304,7 @@ static void WDC65816_opcode_E6_MX(struct WDC65816_regs *regs, WDC65816_pins *pin
 }
 
 
-static void WDC65816_opcode_E7_MX(struct WDC65816_regs *regs, WDC65816_pins *pins) { // SBC [d]
+static void WDC65816_opcode_E7_MX(WDC65816_regs *regs, WDC65816_pins *pins) { // SBC [d]
         switch(regs->TCU) {
         // SBC [d] E=0 M=1 X=1
             case 1: // fetch_D0_and_skip_cycle 2
@@ -42367,7 +42367,7 @@ static void WDC65816_opcode_E7_MX(struct WDC65816_regs *regs, WDC65816_pins *pin
 }
 
 
-static void WDC65816_opcode_E8_MX(struct WDC65816_regs *regs, WDC65816_pins *pins) { // INX i
+static void WDC65816_opcode_E8_MX(WDC65816_regs *regs, WDC65816_pins *pins) { // INX i
         switch(regs->TCU) {
         // INX i E=0 M=1 X=1
             case 1: // 2
@@ -42391,7 +42391,7 @@ static void WDC65816_opcode_E8_MX(struct WDC65816_regs *regs, WDC65816_pins *pin
 }
 
 
-static void WDC65816_opcode_E9_MX(struct WDC65816_regs *regs, WDC65816_pins *pins) { // SBC #
+static void WDC65816_opcode_E9_MX(WDC65816_regs *regs, WDC65816_pins *pins) { // SBC #
         switch(regs->TCU) {
         // SBC # E=0 M=1 X=1
             case 1: // 2
@@ -42427,7 +42427,7 @@ static void WDC65816_opcode_E9_MX(struct WDC65816_regs *regs, WDC65816_pins *pin
 }
 
 
-static void WDC65816_opcode_EA_MX(struct WDC65816_regs *regs, WDC65816_pins *pins) { // NOP i
+static void WDC65816_opcode_EA_MX(WDC65816_regs *regs, WDC65816_pins *pins) { // NOP i
         switch(regs->TCU) {
         // NOP i E=0 M=1 X=1
             case 1: // 2
@@ -42448,7 +42448,7 @@ static void WDC65816_opcode_EA_MX(struct WDC65816_regs *regs, WDC65816_pins *pin
 }
 
 
-static void WDC65816_opcode_EB_MX(struct WDC65816_regs *regs, WDC65816_pins *pins) { // XBA i
+static void WDC65816_opcode_EB_MX(WDC65816_regs *regs, WDC65816_pins *pins) { // XBA i
         switch(regs->TCU) {
         // XBA i E=0 M=1 X=1
             case 1:
@@ -42474,7 +42474,7 @@ static void WDC65816_opcode_EB_MX(struct WDC65816_regs *regs, WDC65816_pins *pin
 }
 
 
-static void WDC65816_opcode_EC_MX(struct WDC65816_regs *regs, WDC65816_pins *pins) { // CPX a
+static void WDC65816_opcode_EC_MX(WDC65816_regs *regs, WDC65816_pins *pins) { // CPX a
         switch(regs->TCU) {
         // CPX a E=0 M=1 X=1
             case 1: // 2
@@ -42507,7 +42507,7 @@ static void WDC65816_opcode_EC_MX(struct WDC65816_regs *regs, WDC65816_pins *pin
 }
 
 
-static void WDC65816_opcode_ED_MX(struct WDC65816_regs *regs, WDC65816_pins *pins) { // SBC a
+static void WDC65816_opcode_ED_MX(WDC65816_regs *regs, WDC65816_pins *pins) { // SBC a
         switch(regs->TCU) {
         // SBC a E=0 M=1 X=1
             case 1: // 2
@@ -42551,7 +42551,7 @@ static void WDC65816_opcode_ED_MX(struct WDC65816_regs *regs, WDC65816_pins *pin
 }
 
 
-static void WDC65816_opcode_EE_MX(struct WDC65816_regs *regs, WDC65816_pins *pins) { // INC a
+static void WDC65816_opcode_EE_MX(WDC65816_regs *regs, WDC65816_pins *pins) { // INC a
         switch(regs->TCU) {
         // INC a E=0 M=1 X=1
         //case AM.Ad
@@ -42593,7 +42593,7 @@ static void WDC65816_opcode_EE_MX(struct WDC65816_regs *regs, WDC65816_pins *pin
 }
 
 
-static void WDC65816_opcode_EF_MX(struct WDC65816_regs *regs, WDC65816_pins *pins) { // SBC al
+static void WDC65816_opcode_EF_MX(WDC65816_regs *regs, WDC65816_pins *pins) { // SBC al
         switch(regs->TCU) {
         // SBC al E=0 M=1 X=1
             case 1: // 2
@@ -42642,7 +42642,7 @@ static void WDC65816_opcode_EF_MX(struct WDC65816_regs *regs, WDC65816_pins *pin
 }
 
 
-static void WDC65816_opcode_F0_MX(struct WDC65816_regs *regs, WDC65816_pins *pins) { // BEQ r
+static void WDC65816_opcode_F0_MX(WDC65816_regs *regs, WDC65816_pins *pins) { // BEQ r
         switch(regs->TCU) {
         // BEQ r E=0 M=1 X=1
             case 1: // 2
@@ -42674,7 +42674,7 @@ static void WDC65816_opcode_F0_MX(struct WDC65816_regs *regs, WDC65816_pins *pin
 }
 
 
-static void WDC65816_opcode_F1_MX(struct WDC65816_regs *regs, WDC65816_pins *pins) { // SBC (d),y
+static void WDC65816_opcode_F1_MX(WDC65816_regs *regs, WDC65816_pins *pins) { // SBC (d),y
         switch(regs->TCU) {
         // SBC (d),y E=0 M=1 X=1
             case 1: // fetch_D0_and_skip_cycle 2
@@ -42744,7 +42744,7 @@ static void WDC65816_opcode_F1_MX(struct WDC65816_regs *regs, WDC65816_pins *pin
 }
 
 
-static void WDC65816_opcode_F2_MX(struct WDC65816_regs *regs, WDC65816_pins *pins) { // SBC (d)
+static void WDC65816_opcode_F2_MX(WDC65816_regs *regs, WDC65816_pins *pins) { // SBC (d)
         switch(regs->TCU) {
         // SBC (d) E=0 M=1 X=1
             case 1: // fetch_D0_and_skip_cycle 2
@@ -42801,7 +42801,7 @@ static void WDC65816_opcode_F2_MX(struct WDC65816_regs *regs, WDC65816_pins *pin
 }
 
 
-static void WDC65816_opcode_F3_MX(struct WDC65816_regs *regs, WDC65816_pins *pins) { // SBC (d,s),y
+static void WDC65816_opcode_F3_MX(WDC65816_regs *regs, WDC65816_pins *pins) { // SBC (d,s),y
         switch(regs->TCU) {
         // SBC (d,s),y E=0 M=1 X=1
             case 1: // 2
@@ -42859,7 +42859,7 @@ static void WDC65816_opcode_F3_MX(struct WDC65816_regs *regs, WDC65816_pins *pin
 }
 
 
-static void WDC65816_opcode_F4_MX(struct WDC65816_regs *regs, WDC65816_pins *pins) { // PEA s
+static void WDC65816_opcode_F4_MX(WDC65816_regs *regs, WDC65816_pins *pins) { // PEA s
         switch(regs->TCU) {
         // PEA s E=0 M=1 X=1
             case 1: // 2
@@ -42893,7 +42893,7 @@ static void WDC65816_opcode_F4_MX(struct WDC65816_regs *regs, WDC65816_pins *pin
 }
 
 
-static void WDC65816_opcode_F5_MX(struct WDC65816_regs *regs, WDC65816_pins *pins) { // SBC d,x
+static void WDC65816_opcode_F5_MX(WDC65816_regs *regs, WDC65816_pins *pins) { // SBC d,x
         switch(regs->TCU) {
         // SBC d,x E=0 M=1 X=1
             case 1: // fetch_D0_and_skip_cycle 2
@@ -42945,7 +42945,7 @@ static void WDC65816_opcode_F5_MX(struct WDC65816_regs *regs, WDC65816_pins *pin
 }
 
 
-static void WDC65816_opcode_F6_MX(struct WDC65816_regs *regs, WDC65816_pins *pins) { // INC d,x
+static void WDC65816_opcode_F6_MX(WDC65816_regs *regs, WDC65816_pins *pins) { // INC d,x
         switch(regs->TCU) {
         // INC d,x E=0 M=1 X=1
             case 1: // fetch_D0_and_skip_cycle 2
@@ -42993,7 +42993,7 @@ static void WDC65816_opcode_F6_MX(struct WDC65816_regs *regs, WDC65816_pins *pin
 }
 
 
-static void WDC65816_opcode_F7_MX(struct WDC65816_regs *regs, WDC65816_pins *pins) { // SBC [d],y
+static void WDC65816_opcode_F7_MX(WDC65816_regs *regs, WDC65816_pins *pins) { // SBC [d],y
         switch(regs->TCU) {
         // SBC [d],y E=0 M=1 X=1
             case 1: // fetch_D0_and_skip_cycle 2
@@ -43056,7 +43056,7 @@ static void WDC65816_opcode_F7_MX(struct WDC65816_regs *regs, WDC65816_pins *pin
 }
 
 
-static void WDC65816_opcode_F8_MX(struct WDC65816_regs *regs, WDC65816_pins *pins) { // SED i
+static void WDC65816_opcode_F8_MX(WDC65816_regs *regs, WDC65816_pins *pins) { // SED i
         switch(regs->TCU) {
         // SED i E=0 M=1 X=1
             case 1: // 2
@@ -43078,7 +43078,7 @@ static void WDC65816_opcode_F8_MX(struct WDC65816_regs *regs, WDC65816_pins *pin
 }
 
 
-static void WDC65816_opcode_F9_MX(struct WDC65816_regs *regs, WDC65816_pins *pins) { // SBC a,y
+static void WDC65816_opcode_F9_MX(WDC65816_regs *regs, WDC65816_pins *pins) { // SBC a,y
         switch(regs->TCU) {
         // SBC a,y E=0 M=1 X=1
             case 1: // 2
@@ -43136,7 +43136,7 @@ static void WDC65816_opcode_F9_MX(struct WDC65816_regs *regs, WDC65816_pins *pin
 }
 
 
-static void WDC65816_opcode_FA_MX(struct WDC65816_regs *regs, WDC65816_pins *pins) { // PLX s
+static void WDC65816_opcode_FA_MX(WDC65816_regs *regs, WDC65816_pins *pins) { // PLX s
         switch(regs->TCU) {
         // PLX s E=0 M=1 X=1
             case 1: // 2
@@ -43168,7 +43168,7 @@ static void WDC65816_opcode_FA_MX(struct WDC65816_regs *regs, WDC65816_pins *pin
 }
 
 
-static void WDC65816_opcode_FB_MX(struct WDC65816_regs *regs, WDC65816_pins *pins) { // XCE i
+static void WDC65816_opcode_FB_MX(WDC65816_regs *regs, WDC65816_pins *pins) { // XCE i
         switch(regs->TCU) {
         // XCE i E=0 M=1 X=1
             case 1: // 2
@@ -43196,7 +43196,7 @@ static void WDC65816_opcode_FB_MX(struct WDC65816_regs *regs, WDC65816_pins *pin
 }
 
 
-static void WDC65816_opcode_FC_MX(struct WDC65816_regs *regs, WDC65816_pins *pins) { // JSR (a,x)
+static void WDC65816_opcode_FC_MX(WDC65816_regs *regs, WDC65816_pins *pins) { // JSR (a,x)
         switch(regs->TCU) {
         // JSR (a,x) E=0 M=1 X=1
             case 1: // 2
@@ -43246,7 +43246,7 @@ static void WDC65816_opcode_FC_MX(struct WDC65816_regs *regs, WDC65816_pins *pin
 }
 
 
-static void WDC65816_opcode_FD_MX(struct WDC65816_regs *regs, WDC65816_pins *pins) { // SBC a,x
+static void WDC65816_opcode_FD_MX(WDC65816_regs *regs, WDC65816_pins *pins) { // SBC a,x
         switch(regs->TCU) {
         // SBC a,x E=0 M=1 X=1
             case 1: // 2
@@ -43304,7 +43304,7 @@ static void WDC65816_opcode_FD_MX(struct WDC65816_regs *regs, WDC65816_pins *pin
 }
 
 
-static void WDC65816_opcode_FE_MX(struct WDC65816_regs *regs, WDC65816_pins *pins) { // INC a,x
+static void WDC65816_opcode_FE_MX(WDC65816_regs *regs, WDC65816_pins *pins) { // INC a,x
         switch(regs->TCU) {
         // INC a,x E=0 M=1 X=1
             case 1: // 2
@@ -43352,7 +43352,7 @@ static void WDC65816_opcode_FE_MX(struct WDC65816_regs *regs, WDC65816_pins *pin
 }
 
 
-static void WDC65816_opcode_FF_MX(struct WDC65816_regs *regs, WDC65816_pins *pins) { // SBC al,x
+static void WDC65816_opcode_FF_MX(WDC65816_regs *regs, WDC65816_pins *pins) { // SBC al,x
         switch(regs->TCU) {
         // SBC al,x E=0 M=1 X=1
             case 1: // 2
@@ -43402,7 +43402,7 @@ static void WDC65816_opcode_FF_MX(struct WDC65816_regs *regs, WDC65816_pins *pin
 }
 
 
-static void WDC65816_opcode_100_MX(struct WDC65816_regs *regs, WDC65816_pins *pins) { // S_RESET s
+static void WDC65816_opcode_100_MX(WDC65816_regs *regs, WDC65816_pins *pins) { // S_RESET s
         switch(regs->TCU) {
         // S_RESET s E=0 M=1 X=1
             case 1: // 3
@@ -43456,7 +43456,7 @@ static void WDC65816_opcode_100_MX(struct WDC65816_regs *regs, WDC65816_pins *pi
 }
 
 
-static void WDC65816_opcode_101_MX(struct WDC65816_regs *regs, WDC65816_pins *pins) { // S_ABORT s
+static void WDC65816_opcode_101_MX(WDC65816_regs *regs, WDC65816_pins *pins) { // S_ABORT s
         switch(regs->TCU) {
         // S_ABORT s E=0 M=1 X=1
             case 1: // 3
@@ -43506,7 +43506,7 @@ static void WDC65816_opcode_101_MX(struct WDC65816_regs *regs, WDC65816_pins *pi
 }
 
 
-static void WDC65816_opcode_102_MX(struct WDC65816_regs *regs, WDC65816_pins *pins) { // S_IRQ s
+static void WDC65816_opcode_102_MX(WDC65816_regs *regs, WDC65816_pins *pins) { // S_IRQ s
         switch(regs->TCU) {
         // S_IRQ s E=0 M=1 X=1
             case 1: // 3
@@ -43558,7 +43558,7 @@ static void WDC65816_opcode_102_MX(struct WDC65816_regs *regs, WDC65816_pins *pi
 }
 
 
-static void WDC65816_opcode_103_MX(struct WDC65816_regs *regs, WDC65816_pins *pins) { // S_NMI s
+static void WDC65816_opcode_103_MX(WDC65816_regs *regs, WDC65816_pins *pins) { // S_NMI s
         switch(regs->TCU) {
         // S_NMI s E=0 M=1 X=1
             case 1: // 3
@@ -43610,7 +43610,7 @@ static void WDC65816_opcode_103_MX(struct WDC65816_regs *regs, WDC65816_pins *pi
 }
 
 
-static void WDC65816_opcode_00_E(struct WDC65816_regs *regs, WDC65816_pins *pins) { // BRK s
+static void WDC65816_opcode_00_E(WDC65816_regs *regs, WDC65816_pins *pins) { // BRK s
         switch(regs->TCU) {
         // BRK s E=1 M=0 X=0
         // instruction code follows
@@ -43662,7 +43662,7 @@ static void WDC65816_opcode_00_E(struct WDC65816_regs *regs, WDC65816_pins *pins
 }
 
 
-static void WDC65816_opcode_01_E(struct WDC65816_regs *regs, WDC65816_pins *pins) { // ORA (d,x)
+static void WDC65816_opcode_01_E(WDC65816_regs *regs, WDC65816_pins *pins) { // ORA (d,x)
         switch(regs->TCU) {
         // ORA (d,x) E=1 M=0 X=0
             case 1: // fetch_D0_and_skip_cycle 2
@@ -43711,7 +43711,7 @@ static void WDC65816_opcode_01_E(struct WDC65816_regs *regs, WDC65816_pins *pins
 }
 
 
-static void WDC65816_opcode_02_E(struct WDC65816_regs *regs, WDC65816_pins *pins) { // COP s
+static void WDC65816_opcode_02_E(WDC65816_regs *regs, WDC65816_pins *pins) { // COP s
         switch(regs->TCU) {
         // COP s E=1 M=0 X=0
         // instruction code follows
@@ -43763,7 +43763,7 @@ static void WDC65816_opcode_02_E(struct WDC65816_regs *regs, WDC65816_pins *pins
 }
 
 
-static void WDC65816_opcode_03_E(struct WDC65816_regs *regs, WDC65816_pins *pins) { // ORA d,s
+static void WDC65816_opcode_03_E(WDC65816_regs *regs, WDC65816_pins *pins) { // ORA d,s
         switch(regs->TCU) {
         // ORA d,s E=1 M=0 X=0
             case 1: // 2
@@ -43796,7 +43796,7 @@ static void WDC65816_opcode_03_E(struct WDC65816_regs *regs, WDC65816_pins *pins
 }
 
 
-static void WDC65816_opcode_04_E(struct WDC65816_regs *regs, WDC65816_pins *pins) { // TSB d
+static void WDC65816_opcode_04_E(WDC65816_regs *regs, WDC65816_pins *pins) { // TSB d
         switch(regs->TCU) {
         // TSB d E=1 M=0 X=0
             case 1: // fetch_D0_and_skip_cycle 2
@@ -43841,7 +43841,7 @@ static void WDC65816_opcode_04_E(struct WDC65816_regs *regs, WDC65816_pins *pins
 }
 
 
-static void WDC65816_opcode_05_E(struct WDC65816_regs *regs, WDC65816_pins *pins) { // ORA d
+static void WDC65816_opcode_05_E(WDC65816_regs *regs, WDC65816_pins *pins) { // ORA d
         switch(regs->TCU) {
         // ORA d E=1 M=0 X=0
             case 1: // fetch_D0_and_skip_cycle 2
@@ -43880,7 +43880,7 @@ static void WDC65816_opcode_05_E(struct WDC65816_regs *regs, WDC65816_pins *pins
 }
 
 
-static void WDC65816_opcode_06_E(struct WDC65816_regs *regs, WDC65816_pins *pins) { // ASL d
+static void WDC65816_opcode_06_E(WDC65816_regs *regs, WDC65816_pins *pins) { // ASL d
         switch(regs->TCU) {
         // ASL d E=1 M=0 X=0
             case 1: // fetch_D0_and_skip_cycle 2
@@ -43927,7 +43927,7 @@ static void WDC65816_opcode_06_E(struct WDC65816_regs *regs, WDC65816_pins *pins
 }
 
 
-static void WDC65816_opcode_07_E(struct WDC65816_regs *regs, WDC65816_pins *pins) { // ORA [d]
+static void WDC65816_opcode_07_E(WDC65816_regs *regs, WDC65816_pins *pins) { // ORA [d]
         switch(regs->TCU) {
         // ORA [d] E=1 M=0 X=0
             case 1: // fetch_D0_and_skip_cycle 2
@@ -43979,7 +43979,7 @@ static void WDC65816_opcode_07_E(struct WDC65816_regs *regs, WDC65816_pins *pins
 }
 
 
-static void WDC65816_opcode_08_E(struct WDC65816_regs *regs, WDC65816_pins *pins) { // PHP s
+static void WDC65816_opcode_08_E(WDC65816_regs *regs, WDC65816_pins *pins) { // PHP s
         switch(regs->TCU) {
         // PHP s E=1 M=0 X=0
             case 1: // 2
@@ -44008,7 +44008,7 @@ static void WDC65816_opcode_08_E(struct WDC65816_regs *regs, WDC65816_pins *pins
 }
 
 
-static void WDC65816_opcode_09_E(struct WDC65816_regs *regs, WDC65816_pins *pins) { // ORA #
+static void WDC65816_opcode_09_E(WDC65816_regs *regs, WDC65816_pins *pins) { // ORA #
         switch(regs->TCU) {
         // ORA # E=1 M=0 X=0
             case 1: // 2
@@ -44033,7 +44033,7 @@ static void WDC65816_opcode_09_E(struct WDC65816_regs *regs, WDC65816_pins *pins
 }
 
 
-static void WDC65816_opcode_0A_E(struct WDC65816_regs *regs, WDC65816_pins *pins) { // ASL A
+static void WDC65816_opcode_0A_E(WDC65816_regs *regs, WDC65816_pins *pins) { // ASL A
         switch(regs->TCU) {
         // ASL A E=1 M=0 X=0
             case 1: // 2
@@ -44060,7 +44060,7 @@ static void WDC65816_opcode_0A_E(struct WDC65816_regs *regs, WDC65816_pins *pins
 }
 
 
-static void WDC65816_opcode_0B_E(struct WDC65816_regs *regs, WDC65816_pins *pins) { // PHD s
+static void WDC65816_opcode_0B_E(WDC65816_regs *regs, WDC65816_pins *pins) { // PHD s
         switch(regs->TCU) {
         // PHD s E=1 M=0 X=0
             case 1: // 2
@@ -44094,7 +44094,7 @@ static void WDC65816_opcode_0B_E(struct WDC65816_regs *regs, WDC65816_pins *pins
 }
 
 
-static void WDC65816_opcode_0C_E(struct WDC65816_regs *regs, WDC65816_pins *pins) { // TSB a
+static void WDC65816_opcode_0C_E(WDC65816_regs *regs, WDC65816_pins *pins) { // TSB a
         switch(regs->TCU) {
         // TSB a E=1 M=0 X=0
         //case AM.Ad
@@ -44135,7 +44135,7 @@ static void WDC65816_opcode_0C_E(struct WDC65816_regs *regs, WDC65816_pins *pins
 }
 
 
-static void WDC65816_opcode_0D_E(struct WDC65816_regs *regs, WDC65816_pins *pins) { // ORA a
+static void WDC65816_opcode_0D_E(WDC65816_regs *regs, WDC65816_pins *pins) { // ORA a
         switch(regs->TCU) {
         // ORA a E=1 M=0 X=0
             case 1: // 2
@@ -44168,7 +44168,7 @@ static void WDC65816_opcode_0D_E(struct WDC65816_regs *regs, WDC65816_pins *pins
 }
 
 
-static void WDC65816_opcode_0E_E(struct WDC65816_regs *regs, WDC65816_pins *pins) { // ASL a
+static void WDC65816_opcode_0E_E(WDC65816_regs *regs, WDC65816_pins *pins) { // ASL a
         switch(regs->TCU) {
         // ASL a E=1 M=0 X=0
         //case AM.Ad
@@ -44211,7 +44211,7 @@ static void WDC65816_opcode_0E_E(struct WDC65816_regs *regs, WDC65816_pins *pins
 }
 
 
-static void WDC65816_opcode_0F_E(struct WDC65816_regs *regs, WDC65816_pins *pins) { // ORA al
+static void WDC65816_opcode_0F_E(WDC65816_regs *regs, WDC65816_pins *pins) { // ORA al
         switch(regs->TCU) {
         // ORA al E=1 M=0 X=0
             case 1: // 2
@@ -44249,7 +44249,7 @@ static void WDC65816_opcode_0F_E(struct WDC65816_regs *regs, WDC65816_pins *pins
 }
 
 
-static void WDC65816_opcode_10_E(struct WDC65816_regs *regs, WDC65816_pins *pins) { // BPL r
+static void WDC65816_opcode_10_E(WDC65816_regs *regs, WDC65816_pins *pins) { // BPL r
         switch(regs->TCU) {
         // BPL r E=1 M=0 X=0
             case 1: // 2
@@ -44280,7 +44280,7 @@ static void WDC65816_opcode_10_E(struct WDC65816_regs *regs, WDC65816_pins *pins
 }
 
 
-static void WDC65816_opcode_11_E(struct WDC65816_regs *regs, WDC65816_pins *pins) { // ORA (d),y
+static void WDC65816_opcode_11_E(WDC65816_regs *regs, WDC65816_pins *pins) { // ORA (d),y
         switch(regs->TCU) {
         // ORA (d),y E=1 M=0 X=0
             case 1: // fetch_D0_and_skip_cycle 2
@@ -44339,7 +44339,7 @@ static void WDC65816_opcode_11_E(struct WDC65816_regs *regs, WDC65816_pins *pins
 }
 
 
-static void WDC65816_opcode_12_E(struct WDC65816_regs *regs, WDC65816_pins *pins) { // ORA (d)
+static void WDC65816_opcode_12_E(WDC65816_regs *regs, WDC65816_pins *pins) { // ORA (d)
         switch(regs->TCU) {
         // ORA (d) E=1 M=0 X=0
             case 1: // fetch_D0_and_skip_cycle 2
@@ -44385,7 +44385,7 @@ static void WDC65816_opcode_12_E(struct WDC65816_regs *regs, WDC65816_pins *pins
 }
 
 
-static void WDC65816_opcode_13_E(struct WDC65816_regs *regs, WDC65816_pins *pins) { // ORA (d,s),y
+static void WDC65816_opcode_13_E(WDC65816_regs *regs, WDC65816_pins *pins) { // ORA (d,s),y
         switch(regs->TCU) {
         // ORA (d,s),y E=1 M=0 X=0
             case 1: // 2
@@ -44432,7 +44432,7 @@ static void WDC65816_opcode_13_E(struct WDC65816_regs *regs, WDC65816_pins *pins
 }
 
 
-static void WDC65816_opcode_14_E(struct WDC65816_regs *regs, WDC65816_pins *pins) { // TRB d
+static void WDC65816_opcode_14_E(WDC65816_regs *regs, WDC65816_pins *pins) { // TRB d
         switch(regs->TCU) {
         // TRB d E=1 M=0 X=0
             case 1: // fetch_D0_and_skip_cycle 2
@@ -44477,7 +44477,7 @@ static void WDC65816_opcode_14_E(struct WDC65816_regs *regs, WDC65816_pins *pins
 }
 
 
-static void WDC65816_opcode_15_E(struct WDC65816_regs *regs, WDC65816_pins *pins) { // ORA d,x
+static void WDC65816_opcode_15_E(WDC65816_regs *regs, WDC65816_pins *pins) { // ORA d,x
         switch(regs->TCU) {
         // ORA d,x E=1 M=0 X=0
             case 1: // fetch_D0_and_skip_cycle 2
@@ -44518,7 +44518,7 @@ static void WDC65816_opcode_15_E(struct WDC65816_regs *regs, WDC65816_pins *pins
 }
 
 
-static void WDC65816_opcode_16_E(struct WDC65816_regs *regs, WDC65816_pins *pins) { // ASL d,x
+static void WDC65816_opcode_16_E(WDC65816_regs *regs, WDC65816_pins *pins) { // ASL d,x
         switch(regs->TCU) {
         // ASL d,x E=1 M=0 X=0
             case 1: // fetch_D0_and_skip_cycle 2
@@ -44567,7 +44567,7 @@ static void WDC65816_opcode_16_E(struct WDC65816_regs *regs, WDC65816_pins *pins
 }
 
 
-static void WDC65816_opcode_17_E(struct WDC65816_regs *regs, WDC65816_pins *pins) { // ORA [d],y
+static void WDC65816_opcode_17_E(WDC65816_regs *regs, WDC65816_pins *pins) { // ORA [d],y
         switch(regs->TCU) {
         // ORA [d],y E=1 M=0 X=0
             case 1: // fetch_D0_and_skip_cycle 2
@@ -44619,7 +44619,7 @@ static void WDC65816_opcode_17_E(struct WDC65816_regs *regs, WDC65816_pins *pins
 }
 
 
-static void WDC65816_opcode_18_E(struct WDC65816_regs *regs, WDC65816_pins *pins) { // CLC i
+static void WDC65816_opcode_18_E(WDC65816_regs *regs, WDC65816_pins *pins) { // CLC i
         switch(regs->TCU) {
         // CLC i E=1 M=0 X=0
             case 1: // 2
@@ -44641,7 +44641,7 @@ static void WDC65816_opcode_18_E(struct WDC65816_regs *regs, WDC65816_pins *pins
 }
 
 
-static void WDC65816_opcode_19_E(struct WDC65816_regs *regs, WDC65816_pins *pins) { // ORA a,y
+static void WDC65816_opcode_19_E(WDC65816_regs *regs, WDC65816_pins *pins) { // ORA a,y
         switch(regs->TCU) {
         // ORA a,y E=1 M=0 X=0
             case 1: // 2
@@ -44688,7 +44688,7 @@ static void WDC65816_opcode_19_E(struct WDC65816_regs *regs, WDC65816_pins *pins
 }
 
 
-static void WDC65816_opcode_1A_E(struct WDC65816_regs *regs, WDC65816_pins *pins) { // INC A
+static void WDC65816_opcode_1A_E(WDC65816_regs *regs, WDC65816_pins *pins) { // INC A
         switch(regs->TCU) {
         // INC A E=1 M=0 X=0
             case 1: // 2
@@ -44714,7 +44714,7 @@ static void WDC65816_opcode_1A_E(struct WDC65816_regs *regs, WDC65816_pins *pins
 }
 
 
-static void WDC65816_opcode_1B_E(struct WDC65816_regs *regs, WDC65816_pins *pins) { // TCS i
+static void WDC65816_opcode_1B_E(WDC65816_regs *regs, WDC65816_pins *pins) { // TCS i
         switch(regs->TCU) {
         // TCS i E=1 M=0 X=0
             case 1: // 2
@@ -44737,7 +44737,7 @@ static void WDC65816_opcode_1B_E(struct WDC65816_regs *regs, WDC65816_pins *pins
 }
 
 
-static void WDC65816_opcode_1C_E(struct WDC65816_regs *regs, WDC65816_pins *pins) { // TRB a
+static void WDC65816_opcode_1C_E(WDC65816_regs *regs, WDC65816_pins *pins) { // TRB a
         switch(regs->TCU) {
         // TRB a E=1 M=0 X=0
         //case AM.Ad
@@ -44778,7 +44778,7 @@ static void WDC65816_opcode_1C_E(struct WDC65816_regs *regs, WDC65816_pins *pins
 }
 
 
-static void WDC65816_opcode_1D_E(struct WDC65816_regs *regs, WDC65816_pins *pins) { // ORA a,x
+static void WDC65816_opcode_1D_E(WDC65816_regs *regs, WDC65816_pins *pins) { // ORA a,x
         switch(regs->TCU) {
         // ORA a,x E=1 M=0 X=0
             case 1: // 2
@@ -44825,7 +44825,7 @@ static void WDC65816_opcode_1D_E(struct WDC65816_regs *regs, WDC65816_pins *pins
 }
 
 
-static void WDC65816_opcode_1E_E(struct WDC65816_regs *regs, WDC65816_pins *pins) { // ASL a,x
+static void WDC65816_opcode_1E_E(WDC65816_regs *regs, WDC65816_pins *pins) { // ASL a,x
         switch(regs->TCU) {
         // ASL a,x E=1 M=0 X=0
             case 1: // 2
@@ -44874,7 +44874,7 @@ static void WDC65816_opcode_1E_E(struct WDC65816_regs *regs, WDC65816_pins *pins
 }
 
 
-static void WDC65816_opcode_1F_E(struct WDC65816_regs *regs, WDC65816_pins *pins) { // ORA al,x
+static void WDC65816_opcode_1F_E(WDC65816_regs *regs, WDC65816_pins *pins) { // ORA al,x
         switch(regs->TCU) {
         // ORA al,x E=1 M=0 X=0
             case 1: // 2
@@ -44913,7 +44913,7 @@ static void WDC65816_opcode_1F_E(struct WDC65816_regs *regs, WDC65816_pins *pins
 }
 
 
-static void WDC65816_opcode_20_E(struct WDC65816_regs *regs, WDC65816_pins *pins) { // JSR a
+static void WDC65816_opcode_20_E(WDC65816_regs *regs, WDC65816_pins *pins) { // JSR a
         switch(regs->TCU) {
         // JSR a E=1 M=0 X=0
             case 1: // 2
@@ -44956,7 +44956,7 @@ static void WDC65816_opcode_20_E(struct WDC65816_regs *regs, WDC65816_pins *pins
 }
 
 
-static void WDC65816_opcode_21_E(struct WDC65816_regs *regs, WDC65816_pins *pins) { // AND (d,x)
+static void WDC65816_opcode_21_E(WDC65816_regs *regs, WDC65816_pins *pins) { // AND (d,x)
         switch(regs->TCU) {
         // AND (d,x) E=1 M=0 X=0
             case 1: // fetch_D0_and_skip_cycle 2
@@ -45005,7 +45005,7 @@ static void WDC65816_opcode_21_E(struct WDC65816_regs *regs, WDC65816_pins *pins
 }
 
 
-static void WDC65816_opcode_22_E(struct WDC65816_regs *regs, WDC65816_pins *pins) { // JSL al
+static void WDC65816_opcode_22_E(WDC65816_regs *regs, WDC65816_pins *pins) { // JSL al
         switch(regs->TCU) {
         // JSL al E=1 M=0 X=0
             case 1: // 2
@@ -45061,7 +45061,7 @@ static void WDC65816_opcode_22_E(struct WDC65816_regs *regs, WDC65816_pins *pins
 }
 
 
-static void WDC65816_opcode_23_E(struct WDC65816_regs *regs, WDC65816_pins *pins) { // AND d,s
+static void WDC65816_opcode_23_E(WDC65816_regs *regs, WDC65816_pins *pins) { // AND d,s
         switch(regs->TCU) {
         // AND d,s E=1 M=0 X=0
             case 1: // 2
@@ -45094,7 +45094,7 @@ static void WDC65816_opcode_23_E(struct WDC65816_regs *regs, WDC65816_pins *pins
 }
 
 
-static void WDC65816_opcode_24_E(struct WDC65816_regs *regs, WDC65816_pins *pins) { // BIT d
+static void WDC65816_opcode_24_E(WDC65816_regs *regs, WDC65816_pins *pins) { // BIT d
         switch(regs->TCU) {
         // BIT d E=1 M=0 X=0
             case 1: // fetch_D0_and_skip_cycle 2
@@ -45132,7 +45132,7 @@ static void WDC65816_opcode_24_E(struct WDC65816_regs *regs, WDC65816_pins *pins
 }
 
 
-static void WDC65816_opcode_25_E(struct WDC65816_regs *regs, WDC65816_pins *pins) { // AND d
+static void WDC65816_opcode_25_E(WDC65816_regs *regs, WDC65816_pins *pins) { // AND d
         switch(regs->TCU) {
         // AND d E=1 M=0 X=0
             case 1: // fetch_D0_and_skip_cycle 2
@@ -45171,7 +45171,7 @@ static void WDC65816_opcode_25_E(struct WDC65816_regs *regs, WDC65816_pins *pins
 }
 
 
-static void WDC65816_opcode_26_E(struct WDC65816_regs *regs, WDC65816_pins *pins) { // ROL d
+static void WDC65816_opcode_26_E(WDC65816_regs *regs, WDC65816_pins *pins) { // ROL d
         switch(regs->TCU) {
         // ROL d E=1 M=0 X=0
             case 1: // fetch_D0_and_skip_cycle 2
@@ -45219,7 +45219,7 @@ static void WDC65816_opcode_26_E(struct WDC65816_regs *regs, WDC65816_pins *pins
 }
 
 
-static void WDC65816_opcode_27_E(struct WDC65816_regs *regs, WDC65816_pins *pins) { // AND [d]
+static void WDC65816_opcode_27_E(WDC65816_regs *regs, WDC65816_pins *pins) { // AND [d]
         switch(regs->TCU) {
         // AND [d] E=1 M=0 X=0
             case 1: // fetch_D0_and_skip_cycle 2
@@ -45271,7 +45271,7 @@ static void WDC65816_opcode_27_E(struct WDC65816_regs *regs, WDC65816_pins *pins
 }
 
 
-static void WDC65816_opcode_28_E(struct WDC65816_regs *regs, WDC65816_pins *pins) { // PLP s
+static void WDC65816_opcode_28_E(WDC65816_regs *regs, WDC65816_pins *pins) { // PLP s
         switch(regs->TCU) {
         // PLP s E=1 M=0 X=0
             case 1: // 2
@@ -45305,7 +45305,7 @@ static void WDC65816_opcode_28_E(struct WDC65816_regs *regs, WDC65816_pins *pins
 }
 
 
-static void WDC65816_opcode_29_E(struct WDC65816_regs *regs, WDC65816_pins *pins) { // AND #
+static void WDC65816_opcode_29_E(WDC65816_regs *regs, WDC65816_pins *pins) { // AND #
         switch(regs->TCU) {
         // AND # E=1 M=0 X=0
             case 1: // 2
@@ -45330,7 +45330,7 @@ static void WDC65816_opcode_29_E(struct WDC65816_regs *regs, WDC65816_pins *pins
 }
 
 
-static void WDC65816_opcode_2A_E(struct WDC65816_regs *regs, WDC65816_pins *pins) { // ROL A
+static void WDC65816_opcode_2A_E(WDC65816_regs *regs, WDC65816_pins *pins) { // ROL A
         switch(regs->TCU) {
         // ROL A E=1 M=0 X=0
             case 1: // 2
@@ -45358,7 +45358,7 @@ static void WDC65816_opcode_2A_E(struct WDC65816_regs *regs, WDC65816_pins *pins
 }
 
 
-static void WDC65816_opcode_2B_E(struct WDC65816_regs *regs, WDC65816_pins *pins) { // PLD s
+static void WDC65816_opcode_2B_E(WDC65816_regs *regs, WDC65816_pins *pins) { // PLD s
         switch(regs->TCU) {
         // PLD s E=1 M=0 X=0
             case 1: // 2
@@ -45395,7 +45395,7 @@ static void WDC65816_opcode_2B_E(struct WDC65816_regs *regs, WDC65816_pins *pins
 }
 
 
-static void WDC65816_opcode_2C_E(struct WDC65816_regs *regs, WDC65816_pins *pins) { // BIT a
+static void WDC65816_opcode_2C_E(WDC65816_regs *regs, WDC65816_pins *pins) { // BIT a
         switch(regs->TCU) {
         // BIT a E=1 M=0 X=0
             case 1: // 2
@@ -45427,7 +45427,7 @@ static void WDC65816_opcode_2C_E(struct WDC65816_regs *regs, WDC65816_pins *pins
 }
 
 
-static void WDC65816_opcode_2D_E(struct WDC65816_regs *regs, WDC65816_pins *pins) { // AND a
+static void WDC65816_opcode_2D_E(WDC65816_regs *regs, WDC65816_pins *pins) { // AND a
         switch(regs->TCU) {
         // AND a E=1 M=0 X=0
             case 1: // 2
@@ -45460,7 +45460,7 @@ static void WDC65816_opcode_2D_E(struct WDC65816_regs *regs, WDC65816_pins *pins
 }
 
 
-static void WDC65816_opcode_2E_E(struct WDC65816_regs *regs, WDC65816_pins *pins) { // ROL a
+static void WDC65816_opcode_2E_E(WDC65816_regs *regs, WDC65816_pins *pins) { // ROL a
         switch(regs->TCU) {
         // ROL a E=1 M=0 X=0
         //case AM.Ad
@@ -45504,7 +45504,7 @@ static void WDC65816_opcode_2E_E(struct WDC65816_regs *regs, WDC65816_pins *pins
 }
 
 
-static void WDC65816_opcode_2F_E(struct WDC65816_regs *regs, WDC65816_pins *pins) { // AND al
+static void WDC65816_opcode_2F_E(WDC65816_regs *regs, WDC65816_pins *pins) { // AND al
         switch(regs->TCU) {
         // AND al E=1 M=0 X=0
             case 1: // 2
@@ -45542,7 +45542,7 @@ static void WDC65816_opcode_2F_E(struct WDC65816_regs *regs, WDC65816_pins *pins
 }
 
 
-static void WDC65816_opcode_30_E(struct WDC65816_regs *regs, WDC65816_pins *pins) { // BMI r
+static void WDC65816_opcode_30_E(WDC65816_regs *regs, WDC65816_pins *pins) { // BMI r
         switch(regs->TCU) {
         // BMI r E=1 M=0 X=0
             case 1: // 2
@@ -45573,7 +45573,7 @@ static void WDC65816_opcode_30_E(struct WDC65816_regs *regs, WDC65816_pins *pins
 }
 
 
-static void WDC65816_opcode_31_E(struct WDC65816_regs *regs, WDC65816_pins *pins) { // AND (d),y
+static void WDC65816_opcode_31_E(WDC65816_regs *regs, WDC65816_pins *pins) { // AND (d),y
         switch(regs->TCU) {
         // AND (d),y E=1 M=0 X=0
             case 1: // fetch_D0_and_skip_cycle 2
@@ -45632,7 +45632,7 @@ static void WDC65816_opcode_31_E(struct WDC65816_regs *regs, WDC65816_pins *pins
 }
 
 
-static void WDC65816_opcode_32_E(struct WDC65816_regs *regs, WDC65816_pins *pins) { // AND (d)
+static void WDC65816_opcode_32_E(WDC65816_regs *regs, WDC65816_pins *pins) { // AND (d)
         switch(regs->TCU) {
         // AND (d) E=1 M=0 X=0
             case 1: // fetch_D0_and_skip_cycle 2
@@ -45678,7 +45678,7 @@ static void WDC65816_opcode_32_E(struct WDC65816_regs *regs, WDC65816_pins *pins
 }
 
 
-static void WDC65816_opcode_33_E(struct WDC65816_regs *regs, WDC65816_pins *pins) { // AND (d,s),y
+static void WDC65816_opcode_33_E(WDC65816_regs *regs, WDC65816_pins *pins) { // AND (d,s),y
         switch(regs->TCU) {
         // AND (d,s),y E=1 M=0 X=0
             case 1: // 2
@@ -45725,7 +45725,7 @@ static void WDC65816_opcode_33_E(struct WDC65816_regs *regs, WDC65816_pins *pins
 }
 
 
-static void WDC65816_opcode_34_E(struct WDC65816_regs *regs, WDC65816_pins *pins) { // BIT d,x
+static void WDC65816_opcode_34_E(WDC65816_regs *regs, WDC65816_pins *pins) { // BIT d,x
         switch(regs->TCU) {
         // BIT d,x E=1 M=0 X=0
             case 1: // fetch_D0_and_skip_cycle 2
@@ -45765,7 +45765,7 @@ static void WDC65816_opcode_34_E(struct WDC65816_regs *regs, WDC65816_pins *pins
 }
 
 
-static void WDC65816_opcode_35_E(struct WDC65816_regs *regs, WDC65816_pins *pins) { // AND d,x
+static void WDC65816_opcode_35_E(WDC65816_regs *regs, WDC65816_pins *pins) { // AND d,x
         switch(regs->TCU) {
         // AND d,x E=1 M=0 X=0
             case 1: // fetch_D0_and_skip_cycle 2
@@ -45806,7 +45806,7 @@ static void WDC65816_opcode_35_E(struct WDC65816_regs *regs, WDC65816_pins *pins
 }
 
 
-static void WDC65816_opcode_36_E(struct WDC65816_regs *regs, WDC65816_pins *pins) { // ROL d,x
+static void WDC65816_opcode_36_E(WDC65816_regs *regs, WDC65816_pins *pins) { // ROL d,x
         switch(regs->TCU) {
         // ROL d,x E=1 M=0 X=0
             case 1: // fetch_D0_and_skip_cycle 2
@@ -45856,7 +45856,7 @@ static void WDC65816_opcode_36_E(struct WDC65816_regs *regs, WDC65816_pins *pins
 }
 
 
-static void WDC65816_opcode_37_E(struct WDC65816_regs *regs, WDC65816_pins *pins) { // AND [d],y
+static void WDC65816_opcode_37_E(WDC65816_regs *regs, WDC65816_pins *pins) { // AND [d],y
         switch(regs->TCU) {
         // AND [d],y E=1 M=0 X=0
             case 1: // fetch_D0_and_skip_cycle 2
@@ -45908,7 +45908,7 @@ static void WDC65816_opcode_37_E(struct WDC65816_regs *regs, WDC65816_pins *pins
 }
 
 
-static void WDC65816_opcode_38_E(struct WDC65816_regs *regs, WDC65816_pins *pins) { // SEC i
+static void WDC65816_opcode_38_E(WDC65816_regs *regs, WDC65816_pins *pins) { // SEC i
         switch(regs->TCU) {
         // SEC i E=1 M=0 X=0
             case 1: // 2
@@ -45930,7 +45930,7 @@ static void WDC65816_opcode_38_E(struct WDC65816_regs *regs, WDC65816_pins *pins
 }
 
 
-static void WDC65816_opcode_39_E(struct WDC65816_regs *regs, WDC65816_pins *pins) { // AND a,y
+static void WDC65816_opcode_39_E(WDC65816_regs *regs, WDC65816_pins *pins) { // AND a,y
         switch(regs->TCU) {
         // AND a,y E=1 M=0 X=0
             case 1: // 2
@@ -45977,7 +45977,7 @@ static void WDC65816_opcode_39_E(struct WDC65816_regs *regs, WDC65816_pins *pins
 }
 
 
-static void WDC65816_opcode_3A_E(struct WDC65816_regs *regs, WDC65816_pins *pins) { // DEC A
+static void WDC65816_opcode_3A_E(WDC65816_regs *regs, WDC65816_pins *pins) { // DEC A
         switch(regs->TCU) {
         // DEC A E=1 M=0 X=0
             case 1: // 2
@@ -46003,7 +46003,7 @@ static void WDC65816_opcode_3A_E(struct WDC65816_regs *regs, WDC65816_pins *pins
 }
 
 
-static void WDC65816_opcode_3B_E(struct WDC65816_regs *regs, WDC65816_pins *pins) { // TSC i
+static void WDC65816_opcode_3B_E(WDC65816_regs *regs, WDC65816_pins *pins) { // TSC i
         switch(regs->TCU) {
         // TSC i E=1 M=0 X=0
             case 1: // 2
@@ -46027,7 +46027,7 @@ static void WDC65816_opcode_3B_E(struct WDC65816_regs *regs, WDC65816_pins *pins
 }
 
 
-static void WDC65816_opcode_3C_E(struct WDC65816_regs *regs, WDC65816_pins *pins) { // BIT a,x
+static void WDC65816_opcode_3C_E(WDC65816_regs *regs, WDC65816_pins *pins) { // BIT a,x
         switch(regs->TCU) {
         // BIT a,x E=1 M=0 X=0
             case 1: // 2
@@ -46073,7 +46073,7 @@ static void WDC65816_opcode_3C_E(struct WDC65816_regs *regs, WDC65816_pins *pins
 }
 
 
-static void WDC65816_opcode_3D_E(struct WDC65816_regs *regs, WDC65816_pins *pins) { // AND a,x
+static void WDC65816_opcode_3D_E(WDC65816_regs *regs, WDC65816_pins *pins) { // AND a,x
         switch(regs->TCU) {
         // AND a,x E=1 M=0 X=0
             case 1: // 2
@@ -46120,7 +46120,7 @@ static void WDC65816_opcode_3D_E(struct WDC65816_regs *regs, WDC65816_pins *pins
 }
 
 
-static void WDC65816_opcode_3E_E(struct WDC65816_regs *regs, WDC65816_pins *pins) { // ROL a,x
+static void WDC65816_opcode_3E_E(WDC65816_regs *regs, WDC65816_pins *pins) { // ROL a,x
         switch(regs->TCU) {
         // ROL a,x E=1 M=0 X=0
             case 1: // 2
@@ -46170,7 +46170,7 @@ static void WDC65816_opcode_3E_E(struct WDC65816_regs *regs, WDC65816_pins *pins
 }
 
 
-static void WDC65816_opcode_3F_E(struct WDC65816_regs *regs, WDC65816_pins *pins) { // AND al,x
+static void WDC65816_opcode_3F_E(WDC65816_regs *regs, WDC65816_pins *pins) { // AND al,x
         switch(regs->TCU) {
         // AND al,x E=1 M=0 X=0
             case 1: // 2
@@ -46209,7 +46209,7 @@ static void WDC65816_opcode_3F_E(struct WDC65816_regs *regs, WDC65816_pins *pins
 }
 
 
-static void WDC65816_opcode_40_E(struct WDC65816_regs *regs, WDC65816_pins *pins) { // RTI s
+static void WDC65816_opcode_40_E(WDC65816_regs *regs, WDC65816_pins *pins) { // RTI s
         switch(regs->TCU) {
         // RTI s E=1 M=0 X=0
             case 1: // 2
@@ -46253,7 +46253,7 @@ static void WDC65816_opcode_40_E(struct WDC65816_regs *regs, WDC65816_pins *pins
 }
 
 
-static void WDC65816_opcode_41_E(struct WDC65816_regs *regs, WDC65816_pins *pins) { // EOR (d,x)
+static void WDC65816_opcode_41_E(WDC65816_regs *regs, WDC65816_pins *pins) { // EOR (d,x)
         switch(regs->TCU) {
         // EOR (d,x) E=1 M=0 X=0
             case 1: // fetch_D0_and_skip_cycle 2
@@ -46302,7 +46302,7 @@ static void WDC65816_opcode_41_E(struct WDC65816_regs *regs, WDC65816_pins *pins
 }
 
 
-static void WDC65816_opcode_42_E(struct WDC65816_regs *regs, WDC65816_pins *pins) { // WDM i
+static void WDC65816_opcode_42_E(WDC65816_regs *regs, WDC65816_pins *pins) { // WDM i
         switch(regs->TCU) {
         // WDM i E=1 M=0 X=0
             case 1: // 2
@@ -46324,7 +46324,7 @@ static void WDC65816_opcode_42_E(struct WDC65816_regs *regs, WDC65816_pins *pins
 }
 
 
-static void WDC65816_opcode_43_E(struct WDC65816_regs *regs, WDC65816_pins *pins) { // EOR d,s
+static void WDC65816_opcode_43_E(WDC65816_regs *regs, WDC65816_pins *pins) { // EOR d,s
         switch(regs->TCU) {
         // EOR d,s E=1 M=0 X=0
             case 1: // 2
@@ -46357,7 +46357,7 @@ static void WDC65816_opcode_43_E(struct WDC65816_regs *regs, WDC65816_pins *pins
 }
 
 
-static void WDC65816_opcode_44_E(struct WDC65816_regs *regs, WDC65816_pins *pins) { // MVP xyc
+static void WDC65816_opcode_44_E(WDC65816_regs *regs, WDC65816_pins *pins) { // MVP xyc
         switch(regs->TCU) {
         // MVP xyc E=1 M=0 X=0
             case 1: // 2
@@ -46398,7 +46398,7 @@ static void WDC65816_opcode_44_E(struct WDC65816_regs *regs, WDC65816_pins *pins
 }
 
 
-static void WDC65816_opcode_45_E(struct WDC65816_regs *regs, WDC65816_pins *pins) { // EOR d
+static void WDC65816_opcode_45_E(WDC65816_regs *regs, WDC65816_pins *pins) { // EOR d
         switch(regs->TCU) {
         // EOR d E=1 M=0 X=0
             case 1: // fetch_D0_and_skip_cycle 2
@@ -46437,7 +46437,7 @@ static void WDC65816_opcode_45_E(struct WDC65816_regs *regs, WDC65816_pins *pins
 }
 
 
-static void WDC65816_opcode_46_E(struct WDC65816_regs *regs, WDC65816_pins *pins) { // LSR d
+static void WDC65816_opcode_46_E(WDC65816_regs *regs, WDC65816_pins *pins) { // LSR d
         switch(regs->TCU) {
         // LSR d E=1 M=0 X=0
             case 1: // fetch_D0_and_skip_cycle 2
@@ -46484,7 +46484,7 @@ static void WDC65816_opcode_46_E(struct WDC65816_regs *regs, WDC65816_pins *pins
 }
 
 
-static void WDC65816_opcode_47_E(struct WDC65816_regs *regs, WDC65816_pins *pins) { // EOR [d]
+static void WDC65816_opcode_47_E(WDC65816_regs *regs, WDC65816_pins *pins) { // EOR [d]
         switch(regs->TCU) {
         // EOR [d] E=1 M=0 X=0
             case 1: // fetch_D0_and_skip_cycle 2
@@ -46536,7 +46536,7 @@ static void WDC65816_opcode_47_E(struct WDC65816_regs *regs, WDC65816_pins *pins
 }
 
 
-static void WDC65816_opcode_48_E(struct WDC65816_regs *regs, WDC65816_pins *pins) { // PHA s
+static void WDC65816_opcode_48_E(WDC65816_regs *regs, WDC65816_pins *pins) { // PHA s
         switch(regs->TCU) {
         // PHA s E=1 M=0 X=0
             case 1: // 2
@@ -46571,7 +46571,7 @@ static void WDC65816_opcode_48_E(struct WDC65816_regs *regs, WDC65816_pins *pins
 }
 
 
-static void WDC65816_opcode_49_E(struct WDC65816_regs *regs, WDC65816_pins *pins) { // EOR #
+static void WDC65816_opcode_49_E(WDC65816_regs *regs, WDC65816_pins *pins) { // EOR #
         switch(regs->TCU) {
         // EOR # E=1 M=0 X=0
             case 1: // 2
@@ -46596,7 +46596,7 @@ static void WDC65816_opcode_49_E(struct WDC65816_regs *regs, WDC65816_pins *pins
 }
 
 
-static void WDC65816_opcode_4A_E(struct WDC65816_regs *regs, WDC65816_pins *pins) { // LSR A
+static void WDC65816_opcode_4A_E(WDC65816_regs *regs, WDC65816_pins *pins) { // LSR A
         switch(regs->TCU) {
         // LSR A E=1 M=0 X=0
             case 1: // 2
@@ -46623,7 +46623,7 @@ static void WDC65816_opcode_4A_E(struct WDC65816_regs *regs, WDC65816_pins *pins
 }
 
 
-static void WDC65816_opcode_4B_E(struct WDC65816_regs *regs, WDC65816_pins *pins) { // PHK s
+static void WDC65816_opcode_4B_E(WDC65816_regs *regs, WDC65816_pins *pins) { // PHK s
         switch(regs->TCU) {
         // PHK s E=1 M=0 X=0
             case 1: // 2
@@ -46652,7 +46652,7 @@ static void WDC65816_opcode_4B_E(struct WDC65816_regs *regs, WDC65816_pins *pins
 }
 
 
-static void WDC65816_opcode_4C_E(struct WDC65816_regs *regs, WDC65816_pins *pins) { // JMP a
+static void WDC65816_opcode_4C_E(WDC65816_regs *regs, WDC65816_pins *pins) { // JMP a
         switch(regs->TCU) {
         // JMP a E=1 M=0 X=0
             case 1: // 2
@@ -46676,7 +46676,7 @@ static void WDC65816_opcode_4C_E(struct WDC65816_regs *regs, WDC65816_pins *pins
 }
 
 
-static void WDC65816_opcode_4D_E(struct WDC65816_regs *regs, WDC65816_pins *pins) { // EOR a
+static void WDC65816_opcode_4D_E(WDC65816_regs *regs, WDC65816_pins *pins) { // EOR a
         switch(regs->TCU) {
         // EOR a E=1 M=0 X=0
             case 1: // 2
@@ -46709,7 +46709,7 @@ static void WDC65816_opcode_4D_E(struct WDC65816_regs *regs, WDC65816_pins *pins
 }
 
 
-static void WDC65816_opcode_4E_E(struct WDC65816_regs *regs, WDC65816_pins *pins) { // LSR a
+static void WDC65816_opcode_4E_E(WDC65816_regs *regs, WDC65816_pins *pins) { // LSR a
         switch(regs->TCU) {
         // LSR a E=1 M=0 X=0
         //case AM.Ad
@@ -46752,7 +46752,7 @@ static void WDC65816_opcode_4E_E(struct WDC65816_regs *regs, WDC65816_pins *pins
 }
 
 
-static void WDC65816_opcode_4F_E(struct WDC65816_regs *regs, WDC65816_pins *pins) { // EOR al
+static void WDC65816_opcode_4F_E(WDC65816_regs *regs, WDC65816_pins *pins) { // EOR al
         switch(regs->TCU) {
         // EOR al E=1 M=0 X=0
             case 1: // 2
@@ -46790,7 +46790,7 @@ static void WDC65816_opcode_4F_E(struct WDC65816_regs *regs, WDC65816_pins *pins
 }
 
 
-static void WDC65816_opcode_50_E(struct WDC65816_regs *regs, WDC65816_pins *pins) { // BVC r
+static void WDC65816_opcode_50_E(WDC65816_regs *regs, WDC65816_pins *pins) { // BVC r
         switch(regs->TCU) {
         // BVC r E=1 M=0 X=0
             case 1: // 2
@@ -46821,7 +46821,7 @@ static void WDC65816_opcode_50_E(struct WDC65816_regs *regs, WDC65816_pins *pins
 }
 
 
-static void WDC65816_opcode_51_E(struct WDC65816_regs *regs, WDC65816_pins *pins) { // EOR (d),y
+static void WDC65816_opcode_51_E(WDC65816_regs *regs, WDC65816_pins *pins) { // EOR (d),y
         switch(regs->TCU) {
         // EOR (d),y E=1 M=0 X=0
             case 1: // fetch_D0_and_skip_cycle 2
@@ -46880,7 +46880,7 @@ static void WDC65816_opcode_51_E(struct WDC65816_regs *regs, WDC65816_pins *pins
 }
 
 
-static void WDC65816_opcode_52_E(struct WDC65816_regs *regs, WDC65816_pins *pins) { // EOR (d)
+static void WDC65816_opcode_52_E(WDC65816_regs *regs, WDC65816_pins *pins) { // EOR (d)
         switch(regs->TCU) {
         // EOR (d) E=1 M=0 X=0
             case 1: // fetch_D0_and_skip_cycle 2
@@ -46926,7 +46926,7 @@ static void WDC65816_opcode_52_E(struct WDC65816_regs *regs, WDC65816_pins *pins
 }
 
 
-static void WDC65816_opcode_53_E(struct WDC65816_regs *regs, WDC65816_pins *pins) { // EOR (d,s),y
+static void WDC65816_opcode_53_E(WDC65816_regs *regs, WDC65816_pins *pins) { // EOR (d,s),y
         switch(regs->TCU) {
         // EOR (d,s),y E=1 M=0 X=0
             case 1: // 2
@@ -46973,7 +46973,7 @@ static void WDC65816_opcode_53_E(struct WDC65816_regs *regs, WDC65816_pins *pins
 }
 
 
-static void WDC65816_opcode_54_E(struct WDC65816_regs *regs, WDC65816_pins *pins) { // MVN xyc
+static void WDC65816_opcode_54_E(WDC65816_regs *regs, WDC65816_pins *pins) { // MVN xyc
         switch(regs->TCU) {
         // MVN xyc E=1 M=0 X=0
             case 1: // 2
@@ -47014,7 +47014,7 @@ static void WDC65816_opcode_54_E(struct WDC65816_regs *regs, WDC65816_pins *pins
 }
 
 
-static void WDC65816_opcode_55_E(struct WDC65816_regs *regs, WDC65816_pins *pins) { // EOR d,x
+static void WDC65816_opcode_55_E(WDC65816_regs *regs, WDC65816_pins *pins) { // EOR d,x
         switch(regs->TCU) {
         // EOR d,x E=1 M=0 X=0
             case 1: // fetch_D0_and_skip_cycle 2
@@ -47055,7 +47055,7 @@ static void WDC65816_opcode_55_E(struct WDC65816_regs *regs, WDC65816_pins *pins
 }
 
 
-static void WDC65816_opcode_56_E(struct WDC65816_regs *regs, WDC65816_pins *pins) { // LSR d,x
+static void WDC65816_opcode_56_E(WDC65816_regs *regs, WDC65816_pins *pins) { // LSR d,x
         switch(regs->TCU) {
         // LSR d,x E=1 M=0 X=0
             case 1: // fetch_D0_and_skip_cycle 2
@@ -47104,7 +47104,7 @@ static void WDC65816_opcode_56_E(struct WDC65816_regs *regs, WDC65816_pins *pins
 }
 
 
-static void WDC65816_opcode_57_E(struct WDC65816_regs *regs, WDC65816_pins *pins) { // EOR [d],y
+static void WDC65816_opcode_57_E(WDC65816_regs *regs, WDC65816_pins *pins) { // EOR [d],y
         switch(regs->TCU) {
         // EOR [d],y E=1 M=0 X=0
             case 1: // fetch_D0_and_skip_cycle 2
@@ -47156,7 +47156,7 @@ static void WDC65816_opcode_57_E(struct WDC65816_regs *regs, WDC65816_pins *pins
 }
 
 
-static void WDC65816_opcode_58_E(struct WDC65816_regs *regs, WDC65816_pins *pins) { // CLI i
+static void WDC65816_opcode_58_E(WDC65816_regs *regs, WDC65816_pins *pins) { // CLI i
         switch(regs->TCU) {
         // CLI i E=1 M=0 X=0
             case 1: // 2
@@ -47178,7 +47178,7 @@ static void WDC65816_opcode_58_E(struct WDC65816_regs *regs, WDC65816_pins *pins
 }
 
 
-static void WDC65816_opcode_59_E(struct WDC65816_regs *regs, WDC65816_pins *pins) { // EOR a,y
+static void WDC65816_opcode_59_E(WDC65816_regs *regs, WDC65816_pins *pins) { // EOR a,y
         switch(regs->TCU) {
         // EOR a,y E=1 M=0 X=0
             case 1: // 2
@@ -47225,7 +47225,7 @@ static void WDC65816_opcode_59_E(struct WDC65816_regs *regs, WDC65816_pins *pins
 }
 
 
-static void WDC65816_opcode_5A_E(struct WDC65816_regs *regs, WDC65816_pins *pins) { // PHY s
+static void WDC65816_opcode_5A_E(WDC65816_regs *regs, WDC65816_pins *pins) { // PHY s
         switch(regs->TCU) {
         // PHY s E=1 M=0 X=0
             case 1: // 2
@@ -47260,7 +47260,7 @@ static void WDC65816_opcode_5A_E(struct WDC65816_regs *regs, WDC65816_pins *pins
 }
 
 
-static void WDC65816_opcode_5B_E(struct WDC65816_regs *regs, WDC65816_pins *pins) { // TCD i
+static void WDC65816_opcode_5B_E(WDC65816_regs *regs, WDC65816_pins *pins) { // TCD i
         switch(regs->TCU) {
         // TCD i E=1 M=0 X=0
             case 1: // 2
@@ -47284,7 +47284,7 @@ static void WDC65816_opcode_5B_E(struct WDC65816_regs *regs, WDC65816_pins *pins
 }
 
 
-static void WDC65816_opcode_5C_E(struct WDC65816_regs *regs, WDC65816_pins *pins) { // JMP al
+static void WDC65816_opcode_5C_E(WDC65816_regs *regs, WDC65816_pins *pins) { // JMP al
         switch(regs->TCU) {
         // JMP al E=1 M=0 X=0
             case 1: // 2
@@ -47312,7 +47312,7 @@ static void WDC65816_opcode_5C_E(struct WDC65816_regs *regs, WDC65816_pins *pins
 }
 
 
-static void WDC65816_opcode_5D_E(struct WDC65816_regs *regs, WDC65816_pins *pins) { // EOR a,x
+static void WDC65816_opcode_5D_E(WDC65816_regs *regs, WDC65816_pins *pins) { // EOR a,x
         switch(regs->TCU) {
         // EOR a,x E=1 M=0 X=0
             case 1: // 2
@@ -47359,7 +47359,7 @@ static void WDC65816_opcode_5D_E(struct WDC65816_regs *regs, WDC65816_pins *pins
 }
 
 
-static void WDC65816_opcode_5E_E(struct WDC65816_regs *regs, WDC65816_pins *pins) { // LSR a,x
+static void WDC65816_opcode_5E_E(WDC65816_regs *regs, WDC65816_pins *pins) { // LSR a,x
         switch(regs->TCU) {
         // LSR a,x E=1 M=0 X=0
             case 1: // 2
@@ -47408,7 +47408,7 @@ static void WDC65816_opcode_5E_E(struct WDC65816_regs *regs, WDC65816_pins *pins
 }
 
 
-static void WDC65816_opcode_5F_E(struct WDC65816_regs *regs, WDC65816_pins *pins) { // EOR al,x
+static void WDC65816_opcode_5F_E(WDC65816_regs *regs, WDC65816_pins *pins) { // EOR al,x
         switch(regs->TCU) {
         // EOR al,x E=1 M=0 X=0
             case 1: // 2
@@ -47447,7 +47447,7 @@ static void WDC65816_opcode_5F_E(struct WDC65816_regs *regs, WDC65816_pins *pins
 }
 
 
-static void WDC65816_opcode_60_E(struct WDC65816_regs *regs, WDC65816_pins *pins) { // RTS s
+static void WDC65816_opcode_60_E(WDC65816_regs *regs, WDC65816_pins *pins) { // RTS s
         switch(regs->TCU) {
         // RTS s E=1 M=0 X=0
             case 1: // 2
@@ -47484,7 +47484,7 @@ static void WDC65816_opcode_60_E(struct WDC65816_regs *regs, WDC65816_pins *pins
 }
 
 
-static void WDC65816_opcode_61_E(struct WDC65816_regs *regs, WDC65816_pins *pins) { // ADC (d,x)
+static void WDC65816_opcode_61_E(WDC65816_regs *regs, WDC65816_pins *pins) { // ADC (d,x)
         switch(regs->TCU) {
         // ADC (d,x) E=1 M=0 X=0
             case 1: // fetch_D0_and_skip_cycle 2
@@ -47544,7 +47544,7 @@ static void WDC65816_opcode_61_E(struct WDC65816_regs *regs, WDC65816_pins *pins
 }
 
 
-static void WDC65816_opcode_62_E(struct WDC65816_regs *regs, WDC65816_pins *pins) { // PER s
+static void WDC65816_opcode_62_E(WDC65816_regs *regs, WDC65816_pins *pins) { // PER s
         switch(regs->TCU) {
         // PER s E=1 M=0 X=0
             case 1: // 2
@@ -47584,7 +47584,7 @@ static void WDC65816_opcode_62_E(struct WDC65816_regs *regs, WDC65816_pins *pins
 }
 
 
-static void WDC65816_opcode_63_E(struct WDC65816_regs *regs, WDC65816_pins *pins) { // ADC d,s
+static void WDC65816_opcode_63_E(WDC65816_regs *regs, WDC65816_pins *pins) { // ADC d,s
         switch(regs->TCU) {
         // ADC d,s E=1 M=0 X=0
             case 1: // 2
@@ -47628,7 +47628,7 @@ static void WDC65816_opcode_63_E(struct WDC65816_regs *regs, WDC65816_pins *pins
 }
 
 
-static void WDC65816_opcode_64_E(struct WDC65816_regs *regs, WDC65816_pins *pins) { // STZ d
+static void WDC65816_opcode_64_E(WDC65816_regs *regs, WDC65816_pins *pins) { // STZ d
         switch(regs->TCU) {
         // STZ d E=1 M=0 X=0
             case 1: // fetch_D0_and_skip_cycle 2
@@ -47665,7 +47665,7 @@ static void WDC65816_opcode_64_E(struct WDC65816_regs *regs, WDC65816_pins *pins
 }
 
 
-static void WDC65816_opcode_65_E(struct WDC65816_regs *regs, WDC65816_pins *pins) { // ADC d
+static void WDC65816_opcode_65_E(WDC65816_regs *regs, WDC65816_pins *pins) { // ADC d
         switch(regs->TCU) {
         // ADC d E=1 M=0 X=0
             case 1: // fetch_D0_and_skip_cycle 2
@@ -47715,7 +47715,7 @@ static void WDC65816_opcode_65_E(struct WDC65816_regs *regs, WDC65816_pins *pins
 }
 
 
-static void WDC65816_opcode_66_E(struct WDC65816_regs *regs, WDC65816_pins *pins) { // ROR d
+static void WDC65816_opcode_66_E(WDC65816_regs *regs, WDC65816_pins *pins) { // ROR d
         switch(regs->TCU) {
         // ROR d E=1 M=0 X=0
             case 1: // fetch_D0_and_skip_cycle 2
@@ -47763,7 +47763,7 @@ static void WDC65816_opcode_66_E(struct WDC65816_regs *regs, WDC65816_pins *pins
 }
 
 
-static void WDC65816_opcode_67_E(struct WDC65816_regs *regs, WDC65816_pins *pins) { // ADC [d]
+static void WDC65816_opcode_67_E(WDC65816_regs *regs, WDC65816_pins *pins) { // ADC [d]
         switch(regs->TCU) {
         // ADC [d] E=1 M=0 X=0
             case 1: // fetch_D0_and_skip_cycle 2
@@ -47826,7 +47826,7 @@ static void WDC65816_opcode_67_E(struct WDC65816_regs *regs, WDC65816_pins *pins
 }
 
 
-static void WDC65816_opcode_68_E(struct WDC65816_regs *regs, WDC65816_pins *pins) { // PLA s
+static void WDC65816_opcode_68_E(WDC65816_regs *regs, WDC65816_pins *pins) { // PLA s
         switch(regs->TCU) {
         // PLA s E=1 M=0 X=0
             case 1: // 2
@@ -47864,7 +47864,7 @@ static void WDC65816_opcode_68_E(struct WDC65816_regs *regs, WDC65816_pins *pins
 }
 
 
-static void WDC65816_opcode_69_E(struct WDC65816_regs *regs, WDC65816_pins *pins) { // ADC #
+static void WDC65816_opcode_69_E(WDC65816_regs *regs, WDC65816_pins *pins) { // ADC #
         switch(regs->TCU) {
         // ADC # E=1 M=0 X=0
             case 1: // 2
@@ -47900,7 +47900,7 @@ static void WDC65816_opcode_69_E(struct WDC65816_regs *regs, WDC65816_pins *pins
 }
 
 
-static void WDC65816_opcode_6A_E(struct WDC65816_regs *regs, WDC65816_pins *pins) { // ROR A
+static void WDC65816_opcode_6A_E(WDC65816_regs *regs, WDC65816_pins *pins) { // ROR A
         switch(regs->TCU) {
         // ROR A E=1 M=0 X=0
             case 1: // 2
@@ -47928,7 +47928,7 @@ static void WDC65816_opcode_6A_E(struct WDC65816_regs *regs, WDC65816_pins *pins
 }
 
 
-static void WDC65816_opcode_6B_E(struct WDC65816_regs *regs, WDC65816_pins *pins) { // RTL s
+static void WDC65816_opcode_6B_E(WDC65816_regs *regs, WDC65816_pins *pins) { // RTL s
         switch(regs->TCU) {
         // RTL s E=1 M=0 X=0
             case 1: // 2
@@ -47968,7 +47968,7 @@ static void WDC65816_opcode_6B_E(struct WDC65816_regs *regs, WDC65816_pins *pins
 }
 
 
-static void WDC65816_opcode_6C_E(struct WDC65816_regs *regs, WDC65816_pins *pins) { // JMP (a)
+static void WDC65816_opcode_6C_E(WDC65816_regs *regs, WDC65816_pins *pins) { // JMP (a)
         switch(regs->TCU) {
         // JMP (a) E=1 M=0 X=0
             case 1: // 2
@@ -47999,7 +47999,7 @@ static void WDC65816_opcode_6C_E(struct WDC65816_regs *regs, WDC65816_pins *pins
 }
 
 
-static void WDC65816_opcode_6D_E(struct WDC65816_regs *regs, WDC65816_pins *pins) { // ADC a
+static void WDC65816_opcode_6D_E(WDC65816_regs *regs, WDC65816_pins *pins) { // ADC a
         switch(regs->TCU) {
         // ADC a E=1 M=0 X=0
             case 1: // 2
@@ -48043,7 +48043,7 @@ static void WDC65816_opcode_6D_E(struct WDC65816_regs *regs, WDC65816_pins *pins
 }
 
 
-static void WDC65816_opcode_6E_E(struct WDC65816_regs *regs, WDC65816_pins *pins) { // ROR a
+static void WDC65816_opcode_6E_E(WDC65816_regs *regs, WDC65816_pins *pins) { // ROR a
         switch(regs->TCU) {
         // ROR a E=1 M=0 X=0
         //case AM.Ad
@@ -48087,7 +48087,7 @@ static void WDC65816_opcode_6E_E(struct WDC65816_regs *regs, WDC65816_pins *pins
 }
 
 
-static void WDC65816_opcode_6F_E(struct WDC65816_regs *regs, WDC65816_pins *pins) { // ADC al
+static void WDC65816_opcode_6F_E(WDC65816_regs *regs, WDC65816_pins *pins) { // ADC al
         switch(regs->TCU) {
         // ADC al E=1 M=0 X=0
             case 1: // 2
@@ -48136,7 +48136,7 @@ static void WDC65816_opcode_6F_E(struct WDC65816_regs *regs, WDC65816_pins *pins
 }
 
 
-static void WDC65816_opcode_70_E(struct WDC65816_regs *regs, WDC65816_pins *pins) { // BVS r
+static void WDC65816_opcode_70_E(WDC65816_regs *regs, WDC65816_pins *pins) { // BVS r
         switch(regs->TCU) {
         // BVS r E=1 M=0 X=0
             case 1: // 2
@@ -48167,7 +48167,7 @@ static void WDC65816_opcode_70_E(struct WDC65816_regs *regs, WDC65816_pins *pins
 }
 
 
-static void WDC65816_opcode_71_E(struct WDC65816_regs *regs, WDC65816_pins *pins) { // ADC (d),y
+static void WDC65816_opcode_71_E(WDC65816_regs *regs, WDC65816_pins *pins) { // ADC (d),y
         switch(regs->TCU) {
         // ADC (d),y E=1 M=0 X=0
             case 1: // fetch_D0_and_skip_cycle 2
@@ -48237,7 +48237,7 @@ static void WDC65816_opcode_71_E(struct WDC65816_regs *regs, WDC65816_pins *pins
 }
 
 
-static void WDC65816_opcode_72_E(struct WDC65816_regs *regs, WDC65816_pins *pins) { // ADC (d)
+static void WDC65816_opcode_72_E(WDC65816_regs *regs, WDC65816_pins *pins) { // ADC (d)
         switch(regs->TCU) {
         // ADC (d) E=1 M=0 X=0
             case 1: // fetch_D0_and_skip_cycle 2
@@ -48294,7 +48294,7 @@ static void WDC65816_opcode_72_E(struct WDC65816_regs *regs, WDC65816_pins *pins
 }
 
 
-static void WDC65816_opcode_73_E(struct WDC65816_regs *regs, WDC65816_pins *pins) { // ADC (d,s),y
+static void WDC65816_opcode_73_E(WDC65816_regs *regs, WDC65816_pins *pins) { // ADC (d,s),y
         switch(regs->TCU) {
         // ADC (d,s),y E=1 M=0 X=0
             case 1: // 2
@@ -48352,7 +48352,7 @@ static void WDC65816_opcode_73_E(struct WDC65816_regs *regs, WDC65816_pins *pins
 }
 
 
-static void WDC65816_opcode_74_E(struct WDC65816_regs *regs, WDC65816_pins *pins) { // STZ d,x
+static void WDC65816_opcode_74_E(WDC65816_regs *regs, WDC65816_pins *pins) { // STZ d,x
         switch(regs->TCU) {
         // STZ d,x E=1 M=0 X=0
             case 1: // fetch_D0_and_skip_cycle 2
@@ -48391,7 +48391,7 @@ static void WDC65816_opcode_74_E(struct WDC65816_regs *regs, WDC65816_pins *pins
 }
 
 
-static void WDC65816_opcode_75_E(struct WDC65816_regs *regs, WDC65816_pins *pins) { // ADC d,x
+static void WDC65816_opcode_75_E(WDC65816_regs *regs, WDC65816_pins *pins) { // ADC d,x
         switch(regs->TCU) {
         // ADC d,x E=1 M=0 X=0
             case 1: // fetch_D0_and_skip_cycle 2
@@ -48443,7 +48443,7 @@ static void WDC65816_opcode_75_E(struct WDC65816_regs *regs, WDC65816_pins *pins
 }
 
 
-static void WDC65816_opcode_76_E(struct WDC65816_regs *regs, WDC65816_pins *pins) { // ROR d,x
+static void WDC65816_opcode_76_E(WDC65816_regs *regs, WDC65816_pins *pins) { // ROR d,x
         switch(regs->TCU) {
         // ROR d,x E=1 M=0 X=0
             case 1: // fetch_D0_and_skip_cycle 2
@@ -48493,7 +48493,7 @@ static void WDC65816_opcode_76_E(struct WDC65816_regs *regs, WDC65816_pins *pins
 }
 
 
-static void WDC65816_opcode_77_E(struct WDC65816_regs *regs, WDC65816_pins *pins) { // ADC [d],y
+static void WDC65816_opcode_77_E(WDC65816_regs *regs, WDC65816_pins *pins) { // ADC [d],y
         switch(regs->TCU) {
         // ADC [d],y E=1 M=0 X=0
             case 1: // fetch_D0_and_skip_cycle 2
@@ -48556,7 +48556,7 @@ static void WDC65816_opcode_77_E(struct WDC65816_regs *regs, WDC65816_pins *pins
 }
 
 
-static void WDC65816_opcode_78_E(struct WDC65816_regs *regs, WDC65816_pins *pins) { // SEI i
+static void WDC65816_opcode_78_E(WDC65816_regs *regs, WDC65816_pins *pins) { // SEI i
         switch(regs->TCU) {
         // SEI i E=1 M=0 X=0
             case 1: // 2
@@ -48578,7 +48578,7 @@ static void WDC65816_opcode_78_E(struct WDC65816_regs *regs, WDC65816_pins *pins
 }
 
 
-static void WDC65816_opcode_79_E(struct WDC65816_regs *regs, WDC65816_pins *pins) { // ADC a,y
+static void WDC65816_opcode_79_E(WDC65816_regs *regs, WDC65816_pins *pins) { // ADC a,y
         switch(regs->TCU) {
         // ADC a,y E=1 M=0 X=0
             case 1: // 2
@@ -48636,7 +48636,7 @@ static void WDC65816_opcode_79_E(struct WDC65816_regs *regs, WDC65816_pins *pins
 }
 
 
-static void WDC65816_opcode_7A_E(struct WDC65816_regs *regs, WDC65816_pins *pins) { // PLY s
+static void WDC65816_opcode_7A_E(WDC65816_regs *regs, WDC65816_pins *pins) { // PLY s
         switch(regs->TCU) {
         // PLY s E=1 M=0 X=0
             case 1: // 2
@@ -48674,7 +48674,7 @@ static void WDC65816_opcode_7A_E(struct WDC65816_regs *regs, WDC65816_pins *pins
 }
 
 
-static void WDC65816_opcode_7B_E(struct WDC65816_regs *regs, WDC65816_pins *pins) { // TDC i
+static void WDC65816_opcode_7B_E(WDC65816_regs *regs, WDC65816_pins *pins) { // TDC i
         switch(regs->TCU) {
         // TDC i E=1 M=0 X=0
             case 1: // 2
@@ -48698,7 +48698,7 @@ static void WDC65816_opcode_7B_E(struct WDC65816_regs *regs, WDC65816_pins *pins
 }
 
 
-static void WDC65816_opcode_7C_E(struct WDC65816_regs *regs, WDC65816_pins *pins) { // JMP (a,x)
+static void WDC65816_opcode_7C_E(WDC65816_regs *regs, WDC65816_pins *pins) { // JMP (a,x)
         switch(regs->TCU) {
         // JMP (a,x) E=1 M=0 X=0
             case 1: // 2
@@ -48735,7 +48735,7 @@ static void WDC65816_opcode_7C_E(struct WDC65816_regs *regs, WDC65816_pins *pins
 }
 
 
-static void WDC65816_opcode_7D_E(struct WDC65816_regs *regs, WDC65816_pins *pins) { // ADC a,x
+static void WDC65816_opcode_7D_E(WDC65816_regs *regs, WDC65816_pins *pins) { // ADC a,x
         switch(regs->TCU) {
         // ADC a,x E=1 M=0 X=0
             case 1: // 2
@@ -48793,7 +48793,7 @@ static void WDC65816_opcode_7D_E(struct WDC65816_regs *regs, WDC65816_pins *pins
 }
 
 
-static void WDC65816_opcode_7E_E(struct WDC65816_regs *regs, WDC65816_pins *pins) { // ROR a,x
+static void WDC65816_opcode_7E_E(WDC65816_regs *regs, WDC65816_pins *pins) { // ROR a,x
         switch(regs->TCU) {
         // ROR a,x E=1 M=0 X=0
             case 1: // 2
@@ -48843,7 +48843,7 @@ static void WDC65816_opcode_7E_E(struct WDC65816_regs *regs, WDC65816_pins *pins
 }
 
 
-static void WDC65816_opcode_7F_E(struct WDC65816_regs *regs, WDC65816_pins *pins) { // ADC al,x
+static void WDC65816_opcode_7F_E(WDC65816_regs *regs, WDC65816_pins *pins) { // ADC al,x
         switch(regs->TCU) {
         // ADC al,x E=1 M=0 X=0
             case 1: // 2
@@ -48893,7 +48893,7 @@ static void WDC65816_opcode_7F_E(struct WDC65816_regs *regs, WDC65816_pins *pins
 }
 
 
-static void WDC65816_opcode_80_E(struct WDC65816_regs *regs, WDC65816_pins *pins) { // BRA r
+static void WDC65816_opcode_80_E(WDC65816_regs *regs, WDC65816_pins *pins) { // BRA r
         switch(regs->TCU) {
         // BRA r E=1 M=0 X=0
             case 1: // 2
@@ -48924,7 +48924,7 @@ static void WDC65816_opcode_80_E(struct WDC65816_regs *regs, WDC65816_pins *pins
 }
 
 
-static void WDC65816_opcode_81_E(struct WDC65816_regs *regs, WDC65816_pins *pins) { // STA (d,x)
+static void WDC65816_opcode_81_E(WDC65816_regs *regs, WDC65816_pins *pins) { // STA (d,x)
         switch(regs->TCU) {
         // STA (d,x) E=1 M=0 X=0
             case 1: // fetch_D0_and_skip_cycle 2
@@ -48973,7 +48973,7 @@ static void WDC65816_opcode_81_E(struct WDC65816_regs *regs, WDC65816_pins *pins
 }
 
 
-static void WDC65816_opcode_82_E(struct WDC65816_regs *regs, WDC65816_pins *pins) { // BRL rl
+static void WDC65816_opcode_82_E(WDC65816_regs *regs, WDC65816_pins *pins) { // BRL rl
         switch(regs->TCU) {
         // BRL rl E=1 M=0 X=0
             case 1: // 2
@@ -49002,7 +49002,7 @@ static void WDC65816_opcode_82_E(struct WDC65816_regs *regs, WDC65816_pins *pins
 }
 
 
-static void WDC65816_opcode_83_E(struct WDC65816_regs *regs, WDC65816_pins *pins) { // STA d,s
+static void WDC65816_opcode_83_E(WDC65816_regs *regs, WDC65816_pins *pins) { // STA d,s
         switch(regs->TCU) {
         // STA d,s E=1 M=0 X=0
             case 1: // 2
@@ -49034,7 +49034,7 @@ static void WDC65816_opcode_83_E(struct WDC65816_regs *regs, WDC65816_pins *pins
 }
 
 
-static void WDC65816_opcode_84_E(struct WDC65816_regs *regs, WDC65816_pins *pins) { // STY d
+static void WDC65816_opcode_84_E(WDC65816_regs *regs, WDC65816_pins *pins) { // STY d
         switch(regs->TCU) {
         // STY d E=1 M=0 X=0
             case 1: // fetch_D0_and_skip_cycle 2
@@ -49071,7 +49071,7 @@ static void WDC65816_opcode_84_E(struct WDC65816_regs *regs, WDC65816_pins *pins
 }
 
 
-static void WDC65816_opcode_85_E(struct WDC65816_regs *regs, WDC65816_pins *pins) { // STA d
+static void WDC65816_opcode_85_E(WDC65816_regs *regs, WDC65816_pins *pins) { // STA d
         switch(regs->TCU) {
         // STA d E=1 M=0 X=0
             case 1: // fetch_D0_and_skip_cycle 2
@@ -49109,7 +49109,7 @@ static void WDC65816_opcode_85_E(struct WDC65816_regs *regs, WDC65816_pins *pins
 }
 
 
-static void WDC65816_opcode_86_E(struct WDC65816_regs *regs, WDC65816_pins *pins) { // STX d
+static void WDC65816_opcode_86_E(WDC65816_regs *regs, WDC65816_pins *pins) { // STX d
         switch(regs->TCU) {
         // STX d E=1 M=0 X=0
             case 1: // fetch_D0_and_skip_cycle 2
@@ -49146,7 +49146,7 @@ static void WDC65816_opcode_86_E(struct WDC65816_regs *regs, WDC65816_pins *pins
 }
 
 
-static void WDC65816_opcode_87_E(struct WDC65816_regs *regs, WDC65816_pins *pins) { // STA [d]
+static void WDC65816_opcode_87_E(WDC65816_regs *regs, WDC65816_pins *pins) { // STA [d]
         switch(regs->TCU) {
         // STA [d] E=1 M=0 X=0
             case 1: // fetch_D0_and_skip_cycle 2
@@ -49198,7 +49198,7 @@ static void WDC65816_opcode_87_E(struct WDC65816_regs *regs, WDC65816_pins *pins
 }
 
 
-static void WDC65816_opcode_88_E(struct WDC65816_regs *regs, WDC65816_pins *pins) { // DEY i
+static void WDC65816_opcode_88_E(WDC65816_regs *regs, WDC65816_pins *pins) { // DEY i
         switch(regs->TCU) {
         // DEY i E=1 M=0 X=0
             case 1: // 2
@@ -49222,7 +49222,7 @@ static void WDC65816_opcode_88_E(struct WDC65816_regs *regs, WDC65816_pins *pins
 }
 
 
-static void WDC65816_opcode_89_E(struct WDC65816_regs *regs, WDC65816_pins *pins) { // BIT #
+static void WDC65816_opcode_89_E(WDC65816_regs *regs, WDC65816_pins *pins) { // BIT #
         switch(regs->TCU) {
         // BIT # E=1 M=0 X=0
             case 1: // 2
@@ -49244,7 +49244,7 @@ static void WDC65816_opcode_89_E(struct WDC65816_regs *regs, WDC65816_pins *pins
 }
 
 
-static void WDC65816_opcode_8A_E(struct WDC65816_regs *regs, WDC65816_pins *pins) { // TXA i
+static void WDC65816_opcode_8A_E(WDC65816_regs *regs, WDC65816_pins *pins) { // TXA i
         switch(regs->TCU) {
         // TXA i E=1 M=0 X=0
             case 1: // 2
@@ -49268,7 +49268,7 @@ static void WDC65816_opcode_8A_E(struct WDC65816_regs *regs, WDC65816_pins *pins
 }
 
 
-static void WDC65816_opcode_8B_E(struct WDC65816_regs *regs, WDC65816_pins *pins) { // PHB s
+static void WDC65816_opcode_8B_E(WDC65816_regs *regs, WDC65816_pins *pins) { // PHB s
         switch(regs->TCU) {
         // PHB s E=1 M=0 X=0
             case 1: // 2
@@ -49297,7 +49297,7 @@ static void WDC65816_opcode_8B_E(struct WDC65816_regs *regs, WDC65816_pins *pins
 }
 
 
-static void WDC65816_opcode_8C_E(struct WDC65816_regs *regs, WDC65816_pins *pins) { // STY a
+static void WDC65816_opcode_8C_E(WDC65816_regs *regs, WDC65816_pins *pins) { // STY a
         switch(regs->TCU) {
         // STY a E=1 M=0 X=0
             case 1: // 2
@@ -49329,7 +49329,7 @@ static void WDC65816_opcode_8C_E(struct WDC65816_regs *regs, WDC65816_pins *pins
 }
 
 
-static void WDC65816_opcode_8D_E(struct WDC65816_regs *regs, WDC65816_pins *pins) { // STA a
+static void WDC65816_opcode_8D_E(WDC65816_regs *regs, WDC65816_pins *pins) { // STA a
         switch(regs->TCU) {
         // STA a E=1 M=0 X=0
             case 1: // 2
@@ -49362,7 +49362,7 @@ static void WDC65816_opcode_8D_E(struct WDC65816_regs *regs, WDC65816_pins *pins
 }
 
 
-static void WDC65816_opcode_8E_E(struct WDC65816_regs *regs, WDC65816_pins *pins) { // STX a
+static void WDC65816_opcode_8E_E(WDC65816_regs *regs, WDC65816_pins *pins) { // STX a
         switch(regs->TCU) {
         // STX a E=1 M=0 X=0
             case 1: // 2
@@ -49394,7 +49394,7 @@ static void WDC65816_opcode_8E_E(struct WDC65816_regs *regs, WDC65816_pins *pins
 }
 
 
-static void WDC65816_opcode_8F_E(struct WDC65816_regs *regs, WDC65816_pins *pins) { // STA al
+static void WDC65816_opcode_8F_E(WDC65816_regs *regs, WDC65816_pins *pins) { // STA al
         switch(regs->TCU) {
         // STA al E=1 M=0 X=0
             case 1: // 2
@@ -49432,7 +49432,7 @@ static void WDC65816_opcode_8F_E(struct WDC65816_regs *regs, WDC65816_pins *pins
 }
 
 
-static void WDC65816_opcode_90_E(struct WDC65816_regs *regs, WDC65816_pins *pins) { // BCC r
+static void WDC65816_opcode_90_E(WDC65816_regs *regs, WDC65816_pins *pins) { // BCC r
         switch(regs->TCU) {
         // BCC r E=1 M=0 X=0
             case 1: // 2
@@ -49463,7 +49463,7 @@ static void WDC65816_opcode_90_E(struct WDC65816_regs *regs, WDC65816_pins *pins
 }
 
 
-static void WDC65816_opcode_91_E(struct WDC65816_regs *regs, WDC65816_pins *pins) { // STA (d),y
+static void WDC65816_opcode_91_E(WDC65816_regs *regs, WDC65816_pins *pins) { // STA (d),y
         switch(regs->TCU) {
         // STA (d),y E=1 M=0 X=0
             case 1: // fetch_D0_and_skip_cycle 2
@@ -49520,7 +49520,7 @@ static void WDC65816_opcode_91_E(struct WDC65816_regs *regs, WDC65816_pins *pins
 }
 
 
-static void WDC65816_opcode_92_E(struct WDC65816_regs *regs, WDC65816_pins *pins) { // STA (d)
+static void WDC65816_opcode_92_E(WDC65816_regs *regs, WDC65816_pins *pins) { // STA (d)
         switch(regs->TCU) {
         // STA (d) E=1 M=0 X=0
             case 1: // fetch_D0_and_skip_cycle 2
@@ -49566,7 +49566,7 @@ static void WDC65816_opcode_92_E(struct WDC65816_regs *regs, WDC65816_pins *pins
 }
 
 
-static void WDC65816_opcode_93_E(struct WDC65816_regs *regs, WDC65816_pins *pins) { // STA (d,s),y
+static void WDC65816_opcode_93_E(WDC65816_regs *regs, WDC65816_pins *pins) { // STA (d,s),y
         switch(regs->TCU) {
         // STA (d,s),y E=1 M=0 X=0
             case 1: // 2
@@ -49612,7 +49612,7 @@ static void WDC65816_opcode_93_E(struct WDC65816_regs *regs, WDC65816_pins *pins
 }
 
 
-static void WDC65816_opcode_94_E(struct WDC65816_regs *regs, WDC65816_pins *pins) { // STY d,x
+static void WDC65816_opcode_94_E(WDC65816_regs *regs, WDC65816_pins *pins) { // STY d,x
         switch(regs->TCU) {
         // STY d,x E=1 M=0 X=0
             case 1: // fetch_D0_and_skip_cycle 2
@@ -49651,7 +49651,7 @@ static void WDC65816_opcode_94_E(struct WDC65816_regs *regs, WDC65816_pins *pins
 }
 
 
-static void WDC65816_opcode_95_E(struct WDC65816_regs *regs, WDC65816_pins *pins) { // STA d,x
+static void WDC65816_opcode_95_E(WDC65816_regs *regs, WDC65816_pins *pins) { // STA d,x
         switch(regs->TCU) {
         // STA d,x E=1 M=0 X=0
             case 1: // fetch_D0_and_skip_cycle 2
@@ -49691,7 +49691,7 @@ static void WDC65816_opcode_95_E(struct WDC65816_regs *regs, WDC65816_pins *pins
 }
 
 
-static void WDC65816_opcode_96_E(struct WDC65816_regs *regs, WDC65816_pins *pins) { // STX d,y
+static void WDC65816_opcode_96_E(WDC65816_regs *regs, WDC65816_pins *pins) { // STX d,y
         switch(regs->TCU) {
         // STX d,y E=1 M=0 X=0
             case 1: // fetch_D0_and_skip_cycle 2
@@ -49730,7 +49730,7 @@ static void WDC65816_opcode_96_E(struct WDC65816_regs *regs, WDC65816_pins *pins
 }
 
 
-static void WDC65816_opcode_97_E(struct WDC65816_regs *regs, WDC65816_pins *pins) { // STA [d],y
+static void WDC65816_opcode_97_E(WDC65816_regs *regs, WDC65816_pins *pins) { // STA [d],y
         switch(regs->TCU) {
         // STA [d],y E=1 M=0 X=0
             case 1: // fetch_D0_and_skip_cycle 2
@@ -49782,7 +49782,7 @@ static void WDC65816_opcode_97_E(struct WDC65816_regs *regs, WDC65816_pins *pins
 }
 
 
-static void WDC65816_opcode_98_E(struct WDC65816_regs *regs, WDC65816_pins *pins) { // TYA i
+static void WDC65816_opcode_98_E(WDC65816_regs *regs, WDC65816_pins *pins) { // TYA i
         switch(regs->TCU) {
         // TYA i E=1 M=0 X=0
             case 1: // 2
@@ -49806,7 +49806,7 @@ static void WDC65816_opcode_98_E(struct WDC65816_regs *regs, WDC65816_pins *pins
 }
 
 
-static void WDC65816_opcode_99_E(struct WDC65816_regs *regs, WDC65816_pins *pins) { // STA a,y
+static void WDC65816_opcode_99_E(WDC65816_regs *regs, WDC65816_pins *pins) { // STA a,y
         switch(regs->TCU) {
         // STA a,y E=1 M=0 X=0
             case 1: // 2
@@ -49850,7 +49850,7 @@ static void WDC65816_opcode_99_E(struct WDC65816_regs *regs, WDC65816_pins *pins
 }
 
 
-static void WDC65816_opcode_9A_E(struct WDC65816_regs *regs, WDC65816_pins *pins) { // TXS i
+static void WDC65816_opcode_9A_E(WDC65816_regs *regs, WDC65816_pins *pins) { // TXS i
         switch(regs->TCU) {
         // TXS i E=1 M=0 X=0
             case 1: // 2
@@ -49872,7 +49872,7 @@ static void WDC65816_opcode_9A_E(struct WDC65816_regs *regs, WDC65816_pins *pins
 }
 
 
-static void WDC65816_opcode_9B_E(struct WDC65816_regs *regs, WDC65816_pins *pins) { // TXY i
+static void WDC65816_opcode_9B_E(WDC65816_regs *regs, WDC65816_pins *pins) { // TXY i
         switch(regs->TCU) {
         // TXY i E=1 M=0 X=0
             case 1: // 2
@@ -49896,7 +49896,7 @@ static void WDC65816_opcode_9B_E(struct WDC65816_regs *regs, WDC65816_pins *pins
 }
 
 
-static void WDC65816_opcode_9C_E(struct WDC65816_regs *regs, WDC65816_pins *pins) { // STZ a
+static void WDC65816_opcode_9C_E(WDC65816_regs *regs, WDC65816_pins *pins) { // STZ a
         switch(regs->TCU) {
         // STZ a E=1 M=0 X=0
             case 1: // 2
@@ -49928,7 +49928,7 @@ static void WDC65816_opcode_9C_E(struct WDC65816_regs *regs, WDC65816_pins *pins
 }
 
 
-static void WDC65816_opcode_9D_E(struct WDC65816_regs *regs, WDC65816_pins *pins) { // STA a,x
+static void WDC65816_opcode_9D_E(WDC65816_regs *regs, WDC65816_pins *pins) { // STA a,x
         switch(regs->TCU) {
         // STA a,x E=1 M=0 X=0
             case 1: // 2
@@ -49972,7 +49972,7 @@ static void WDC65816_opcode_9D_E(struct WDC65816_regs *regs, WDC65816_pins *pins
 }
 
 
-static void WDC65816_opcode_9E_E(struct WDC65816_regs *regs, WDC65816_pins *pins) { // STZ a,x
+static void WDC65816_opcode_9E_E(WDC65816_regs *regs, WDC65816_pins *pins) { // STZ a,x
         switch(regs->TCU) {
         // STZ a,x E=1 M=0 X=0
             case 1: // 2
@@ -50015,7 +50015,7 @@ static void WDC65816_opcode_9E_E(struct WDC65816_regs *regs, WDC65816_pins *pins
 }
 
 
-static void WDC65816_opcode_9F_E(struct WDC65816_regs *regs, WDC65816_pins *pins) { // STA al,x
+static void WDC65816_opcode_9F_E(WDC65816_regs *regs, WDC65816_pins *pins) { // STA al,x
         switch(regs->TCU) {
         // STA al,x E=1 M=0 X=0
             case 1: // 2
@@ -50054,7 +50054,7 @@ static void WDC65816_opcode_9F_E(struct WDC65816_regs *regs, WDC65816_pins *pins
 }
 
 
-static void WDC65816_opcode_A0_E(struct WDC65816_regs *regs, WDC65816_pins *pins) { // LDY #
+static void WDC65816_opcode_A0_E(WDC65816_regs *regs, WDC65816_pins *pins) { // LDY #
         switch(regs->TCU) {
         // LDY # E=1 M=0 X=0
             case 1: // 2
@@ -50078,7 +50078,7 @@ static void WDC65816_opcode_A0_E(struct WDC65816_regs *regs, WDC65816_pins *pins
 }
 
 
-static void WDC65816_opcode_A1_E(struct WDC65816_regs *regs, WDC65816_pins *pins) { // LDA (d,x)
+static void WDC65816_opcode_A1_E(WDC65816_regs *regs, WDC65816_pins *pins) { // LDA (d,x)
         switch(regs->TCU) {
         // LDA (d,x) E=1 M=0 X=0
             case 1: // fetch_D0_and_skip_cycle 2
@@ -50126,7 +50126,7 @@ static void WDC65816_opcode_A1_E(struct WDC65816_regs *regs, WDC65816_pins *pins
 }
 
 
-static void WDC65816_opcode_A2_E(struct WDC65816_regs *regs, WDC65816_pins *pins) { // LDX #
+static void WDC65816_opcode_A2_E(WDC65816_regs *regs, WDC65816_pins *pins) { // LDX #
         switch(regs->TCU) {
         // LDX # E=1 M=0 X=0
             case 1: // 2
@@ -50150,7 +50150,7 @@ static void WDC65816_opcode_A2_E(struct WDC65816_regs *regs, WDC65816_pins *pins
 }
 
 
-static void WDC65816_opcode_A3_E(struct WDC65816_regs *regs, WDC65816_pins *pins) { // LDA d,s
+static void WDC65816_opcode_A3_E(WDC65816_regs *regs, WDC65816_pins *pins) { // LDA d,s
         switch(regs->TCU) {
         // LDA d,s E=1 M=0 X=0
             case 1: // 2
@@ -50182,7 +50182,7 @@ static void WDC65816_opcode_A3_E(struct WDC65816_regs *regs, WDC65816_pins *pins
 }
 
 
-static void WDC65816_opcode_A4_E(struct WDC65816_regs *regs, WDC65816_pins *pins) { // LDY d
+static void WDC65816_opcode_A4_E(WDC65816_regs *regs, WDC65816_pins *pins) { // LDY d
         switch(regs->TCU) {
         // LDY d E=1 M=0 X=0
             case 1: // fetch_D0_and_skip_cycle 2
@@ -50220,7 +50220,7 @@ static void WDC65816_opcode_A4_E(struct WDC65816_regs *regs, WDC65816_pins *pins
 }
 
 
-static void WDC65816_opcode_A5_E(struct WDC65816_regs *regs, WDC65816_pins *pins) { // LDA d
+static void WDC65816_opcode_A5_E(WDC65816_regs *regs, WDC65816_pins *pins) { // LDA d
         switch(regs->TCU) {
         // LDA d E=1 M=0 X=0
             case 1: // fetch_D0_and_skip_cycle 2
@@ -50258,7 +50258,7 @@ static void WDC65816_opcode_A5_E(struct WDC65816_regs *regs, WDC65816_pins *pins
 }
 
 
-static void WDC65816_opcode_A6_E(struct WDC65816_regs *regs, WDC65816_pins *pins) { // LDX d
+static void WDC65816_opcode_A6_E(WDC65816_regs *regs, WDC65816_pins *pins) { // LDX d
         switch(regs->TCU) {
         // LDX d E=1 M=0 X=0
             case 1: // fetch_D0_and_skip_cycle 2
@@ -50296,7 +50296,7 @@ static void WDC65816_opcode_A6_E(struct WDC65816_regs *regs, WDC65816_pins *pins
 }
 
 
-static void WDC65816_opcode_A7_E(struct WDC65816_regs *regs, WDC65816_pins *pins) { // LDA [d]
+static void WDC65816_opcode_A7_E(WDC65816_regs *regs, WDC65816_pins *pins) { // LDA [d]
         switch(regs->TCU) {
         // LDA [d] E=1 M=0 X=0
             case 1: // fetch_D0_and_skip_cycle 2
@@ -50347,7 +50347,7 @@ static void WDC65816_opcode_A7_E(struct WDC65816_regs *regs, WDC65816_pins *pins
 }
 
 
-static void WDC65816_opcode_A8_E(struct WDC65816_regs *regs, WDC65816_pins *pins) { // TAY i
+static void WDC65816_opcode_A8_E(WDC65816_regs *regs, WDC65816_pins *pins) { // TAY i
         switch(regs->TCU) {
         // TAY i E=1 M=0 X=0
             case 1: // 2
@@ -50371,7 +50371,7 @@ static void WDC65816_opcode_A8_E(struct WDC65816_regs *regs, WDC65816_pins *pins
 }
 
 
-static void WDC65816_opcode_A9_E(struct WDC65816_regs *regs, WDC65816_pins *pins) { // LDA #
+static void WDC65816_opcode_A9_E(WDC65816_regs *regs, WDC65816_pins *pins) { // LDA #
         switch(regs->TCU) {
         // LDA # E=1 M=0 X=0
             case 1: // 2
@@ -50395,7 +50395,7 @@ static void WDC65816_opcode_A9_E(struct WDC65816_regs *regs, WDC65816_pins *pins
 }
 
 
-static void WDC65816_opcode_AA_E(struct WDC65816_regs *regs, WDC65816_pins *pins) { // TAX i
+static void WDC65816_opcode_AA_E(WDC65816_regs *regs, WDC65816_pins *pins) { // TAX i
         switch(regs->TCU) {
         // TAX i E=1 M=0 X=0
             case 1: // 2
@@ -50419,7 +50419,7 @@ static void WDC65816_opcode_AA_E(struct WDC65816_regs *regs, WDC65816_pins *pins
 }
 
 
-static void WDC65816_opcode_AB_E(struct WDC65816_regs *regs, WDC65816_pins *pins) { // PLB s
+static void WDC65816_opcode_AB_E(WDC65816_regs *regs, WDC65816_pins *pins) { // PLB s
         switch(regs->TCU) {
         // PLB s E=1 M=0 X=0
             case 1: // 2
@@ -50451,7 +50451,7 @@ static void WDC65816_opcode_AB_E(struct WDC65816_regs *regs, WDC65816_pins *pins
 }
 
 
-static void WDC65816_opcode_AC_E(struct WDC65816_regs *regs, WDC65816_pins *pins) { // LDY a
+static void WDC65816_opcode_AC_E(WDC65816_regs *regs, WDC65816_pins *pins) { // LDY a
         switch(regs->TCU) {
         // LDY a E=1 M=0 X=0
             case 1: // 2
@@ -50483,7 +50483,7 @@ static void WDC65816_opcode_AC_E(struct WDC65816_regs *regs, WDC65816_pins *pins
 }
 
 
-static void WDC65816_opcode_AD_E(struct WDC65816_regs *regs, WDC65816_pins *pins) { // LDA a
+static void WDC65816_opcode_AD_E(WDC65816_regs *regs, WDC65816_pins *pins) { // LDA a
         switch(regs->TCU) {
         // LDA a E=1 M=0 X=0
             case 1: // 2
@@ -50515,7 +50515,7 @@ static void WDC65816_opcode_AD_E(struct WDC65816_regs *regs, WDC65816_pins *pins
 }
 
 
-static void WDC65816_opcode_AE_E(struct WDC65816_regs *regs, WDC65816_pins *pins) { // LDX a
+static void WDC65816_opcode_AE_E(WDC65816_regs *regs, WDC65816_pins *pins) { // LDX a
         switch(regs->TCU) {
         // LDX a E=1 M=0 X=0
             case 1: // 2
@@ -50547,7 +50547,7 @@ static void WDC65816_opcode_AE_E(struct WDC65816_regs *regs, WDC65816_pins *pins
 }
 
 
-static void WDC65816_opcode_AF_E(struct WDC65816_regs *regs, WDC65816_pins *pins) { // LDA al
+static void WDC65816_opcode_AF_E(WDC65816_regs *regs, WDC65816_pins *pins) { // LDA al
         switch(regs->TCU) {
         // LDA al E=1 M=0 X=0
             case 1: // 2
@@ -50584,7 +50584,7 @@ static void WDC65816_opcode_AF_E(struct WDC65816_regs *regs, WDC65816_pins *pins
 }
 
 
-static void WDC65816_opcode_B0_E(struct WDC65816_regs *regs, WDC65816_pins *pins) { // BCS r
+static void WDC65816_opcode_B0_E(WDC65816_regs *regs, WDC65816_pins *pins) { // BCS r
         switch(regs->TCU) {
         // BCS r E=1 M=0 X=0
             case 1: // 2
@@ -50615,7 +50615,7 @@ static void WDC65816_opcode_B0_E(struct WDC65816_regs *regs, WDC65816_pins *pins
 }
 
 
-static void WDC65816_opcode_B1_E(struct WDC65816_regs *regs, WDC65816_pins *pins) { // LDA (d),y
+static void WDC65816_opcode_B1_E(WDC65816_regs *regs, WDC65816_pins *pins) { // LDA (d),y
         switch(regs->TCU) {
         // LDA (d),y E=1 M=0 X=0
             case 1: // fetch_D0_and_skip_cycle 2
@@ -50673,7 +50673,7 @@ static void WDC65816_opcode_B1_E(struct WDC65816_regs *regs, WDC65816_pins *pins
 }
 
 
-static void WDC65816_opcode_B2_E(struct WDC65816_regs *regs, WDC65816_pins *pins) { // LDA (d)
+static void WDC65816_opcode_B2_E(WDC65816_regs *regs, WDC65816_pins *pins) { // LDA (d)
         switch(regs->TCU) {
         // LDA (d) E=1 M=0 X=0
             case 1: // fetch_D0_and_skip_cycle 2
@@ -50718,7 +50718,7 @@ static void WDC65816_opcode_B2_E(struct WDC65816_regs *regs, WDC65816_pins *pins
 }
 
 
-static void WDC65816_opcode_B3_E(struct WDC65816_regs *regs, WDC65816_pins *pins) { // LDA (d,s),y
+static void WDC65816_opcode_B3_E(WDC65816_regs *regs, WDC65816_pins *pins) { // LDA (d,s),y
         switch(regs->TCU) {
         // LDA (d,s),y E=1 M=0 X=0
             case 1: // 2
@@ -50764,7 +50764,7 @@ static void WDC65816_opcode_B3_E(struct WDC65816_regs *regs, WDC65816_pins *pins
 }
 
 
-static void WDC65816_opcode_B4_E(struct WDC65816_regs *regs, WDC65816_pins *pins) { // LDY d,x
+static void WDC65816_opcode_B4_E(WDC65816_regs *regs, WDC65816_pins *pins) { // LDY d,x
         switch(regs->TCU) {
         // LDY d,x E=1 M=0 X=0
             case 1: // fetch_D0_and_skip_cycle 2
@@ -50804,7 +50804,7 @@ static void WDC65816_opcode_B4_E(struct WDC65816_regs *regs, WDC65816_pins *pins
 }
 
 
-static void WDC65816_opcode_B5_E(struct WDC65816_regs *regs, WDC65816_pins *pins) { // LDA d,x
+static void WDC65816_opcode_B5_E(WDC65816_regs *regs, WDC65816_pins *pins) { // LDA d,x
         switch(regs->TCU) {
         // LDA d,x E=1 M=0 X=0
             case 1: // fetch_D0_and_skip_cycle 2
@@ -50844,7 +50844,7 @@ static void WDC65816_opcode_B5_E(struct WDC65816_regs *regs, WDC65816_pins *pins
 }
 
 
-static void WDC65816_opcode_B6_E(struct WDC65816_regs *regs, WDC65816_pins *pins) { // LDX d,y
+static void WDC65816_opcode_B6_E(WDC65816_regs *regs, WDC65816_pins *pins) { // LDX d,y
         switch(regs->TCU) {
         // LDX d,y E=1 M=0 X=0
             case 1: // fetch_D0_and_skip_cycle 2
@@ -50884,7 +50884,7 @@ static void WDC65816_opcode_B6_E(struct WDC65816_regs *regs, WDC65816_pins *pins
 }
 
 
-static void WDC65816_opcode_B7_E(struct WDC65816_regs *regs, WDC65816_pins *pins) { // LDA [d],y
+static void WDC65816_opcode_B7_E(WDC65816_regs *regs, WDC65816_pins *pins) { // LDA [d],y
         switch(regs->TCU) {
         // LDA [d],y E=1 M=0 X=0
             case 1: // fetch_D0_and_skip_cycle 2
@@ -50935,7 +50935,7 @@ static void WDC65816_opcode_B7_E(struct WDC65816_regs *regs, WDC65816_pins *pins
 }
 
 
-static void WDC65816_opcode_B8_E(struct WDC65816_regs *regs, WDC65816_pins *pins) { // CLV i
+static void WDC65816_opcode_B8_E(WDC65816_regs *regs, WDC65816_pins *pins) { // CLV i
         switch(regs->TCU) {
         // CLV i E=1 M=0 X=0
             case 1: // 2
@@ -50957,7 +50957,7 @@ static void WDC65816_opcode_B8_E(struct WDC65816_regs *regs, WDC65816_pins *pins
 }
 
 
-static void WDC65816_opcode_B9_E(struct WDC65816_regs *regs, WDC65816_pins *pins) { // LDA a,y
+static void WDC65816_opcode_B9_E(WDC65816_regs *regs, WDC65816_pins *pins) { // LDA a,y
         switch(regs->TCU) {
         // LDA a,y E=1 M=0 X=0
             case 1: // 2
@@ -51003,7 +51003,7 @@ static void WDC65816_opcode_B9_E(struct WDC65816_regs *regs, WDC65816_pins *pins
 }
 
 
-static void WDC65816_opcode_BA_E(struct WDC65816_regs *regs, WDC65816_pins *pins) { // TSX i
+static void WDC65816_opcode_BA_E(WDC65816_regs *regs, WDC65816_pins *pins) { // TSX i
         switch(regs->TCU) {
         // TSX i E=1 M=0 X=0
             case 1: // 2
@@ -51027,7 +51027,7 @@ static void WDC65816_opcode_BA_E(struct WDC65816_regs *regs, WDC65816_pins *pins
 }
 
 
-static void WDC65816_opcode_BB_E(struct WDC65816_regs *regs, WDC65816_pins *pins) { // TYX i
+static void WDC65816_opcode_BB_E(WDC65816_regs *regs, WDC65816_pins *pins) { // TYX i
         switch(regs->TCU) {
         // TYX i E=1 M=0 X=0
             case 1: // 2
@@ -51051,7 +51051,7 @@ static void WDC65816_opcode_BB_E(struct WDC65816_regs *regs, WDC65816_pins *pins
 }
 
 
-static void WDC65816_opcode_BC_E(struct WDC65816_regs *regs, WDC65816_pins *pins) { // LDY a,x
+static void WDC65816_opcode_BC_E(WDC65816_regs *regs, WDC65816_pins *pins) { // LDY a,x
         switch(regs->TCU) {
         // LDY a,x E=1 M=0 X=0
             case 1: // 2
@@ -51097,7 +51097,7 @@ static void WDC65816_opcode_BC_E(struct WDC65816_regs *regs, WDC65816_pins *pins
 }
 
 
-static void WDC65816_opcode_BD_E(struct WDC65816_regs *regs, WDC65816_pins *pins) { // LDA a,x
+static void WDC65816_opcode_BD_E(WDC65816_regs *regs, WDC65816_pins *pins) { // LDA a,x
         switch(regs->TCU) {
         // LDA a,x E=1 M=0 X=0
             case 1: // 2
@@ -51143,7 +51143,7 @@ static void WDC65816_opcode_BD_E(struct WDC65816_regs *regs, WDC65816_pins *pins
 }
 
 
-static void WDC65816_opcode_BE_E(struct WDC65816_regs *regs, WDC65816_pins *pins) { // LDX a,y
+static void WDC65816_opcode_BE_E(WDC65816_regs *regs, WDC65816_pins *pins) { // LDX a,y
         switch(regs->TCU) {
         // LDX a,y E=1 M=0 X=0
             case 1: // 2
@@ -51189,7 +51189,7 @@ static void WDC65816_opcode_BE_E(struct WDC65816_regs *regs, WDC65816_pins *pins
 }
 
 
-static void WDC65816_opcode_BF_E(struct WDC65816_regs *regs, WDC65816_pins *pins) { // LDA al,x
+static void WDC65816_opcode_BF_E(WDC65816_regs *regs, WDC65816_pins *pins) { // LDA al,x
         switch(regs->TCU) {
         // LDA al,x E=1 M=0 X=0
             case 1: // 2
@@ -51227,7 +51227,7 @@ static void WDC65816_opcode_BF_E(struct WDC65816_regs *regs, WDC65816_pins *pins
 }
 
 
-static void WDC65816_opcode_C0_E(struct WDC65816_regs *regs, WDC65816_pins *pins) { // CPY #
+static void WDC65816_opcode_C0_E(WDC65816_regs *regs, WDC65816_pins *pins) { // CPY #
         switch(regs->TCU) {
         // CPY # E=1 M=0 X=0
             case 1: // 2
@@ -51252,7 +51252,7 @@ static void WDC65816_opcode_C0_E(struct WDC65816_regs *regs, WDC65816_pins *pins
 }
 
 
-static void WDC65816_opcode_C1_E(struct WDC65816_regs *regs, WDC65816_pins *pins) { // CMP (d,x)
+static void WDC65816_opcode_C1_E(WDC65816_regs *regs, WDC65816_pins *pins) { // CMP (d,x)
         switch(regs->TCU) {
         // CMP (d,x) E=1 M=0 X=0
             case 1: // fetch_D0_and_skip_cycle 2
@@ -51301,7 +51301,7 @@ static void WDC65816_opcode_C1_E(struct WDC65816_regs *regs, WDC65816_pins *pins
 }
 
 
-static void WDC65816_opcode_C2_E(struct WDC65816_regs *regs, WDC65816_pins *pins) { // REP #
+static void WDC65816_opcode_C2_E(WDC65816_regs *regs, WDC65816_pins *pins) { // REP #
         switch(regs->TCU) {
         // REP # E=1 M=0 X=0
             case 1: // 2
@@ -51327,7 +51327,7 @@ static void WDC65816_opcode_C2_E(struct WDC65816_regs *regs, WDC65816_pins *pins
 }
 
 
-static void WDC65816_opcode_C3_E(struct WDC65816_regs *regs, WDC65816_pins *pins) { // CMP d,s
+static void WDC65816_opcode_C3_E(WDC65816_regs *regs, WDC65816_pins *pins) { // CMP d,s
         switch(regs->TCU) {
         // CMP d,s E=1 M=0 X=0
             case 1: // 2
@@ -51360,7 +51360,7 @@ static void WDC65816_opcode_C3_E(struct WDC65816_regs *regs, WDC65816_pins *pins
 }
 
 
-static void WDC65816_opcode_C4_E(struct WDC65816_regs *regs, WDC65816_pins *pins) { // CPY d
+static void WDC65816_opcode_C4_E(WDC65816_regs *regs, WDC65816_pins *pins) { // CPY d
         switch(regs->TCU) {
         // CPY d E=1 M=0 X=0
             case 1: // fetch_D0_and_skip_cycle 2
@@ -51399,7 +51399,7 @@ static void WDC65816_opcode_C4_E(struct WDC65816_regs *regs, WDC65816_pins *pins
 }
 
 
-static void WDC65816_opcode_C5_E(struct WDC65816_regs *regs, WDC65816_pins *pins) { // CMP d
+static void WDC65816_opcode_C5_E(WDC65816_regs *regs, WDC65816_pins *pins) { // CMP d
         switch(regs->TCU) {
         // CMP d E=1 M=0 X=0
             case 1: // fetch_D0_and_skip_cycle 2
@@ -51438,7 +51438,7 @@ static void WDC65816_opcode_C5_E(struct WDC65816_regs *regs, WDC65816_pins *pins
 }
 
 
-static void WDC65816_opcode_C6_E(struct WDC65816_regs *regs, WDC65816_pins *pins) { // DEC d
+static void WDC65816_opcode_C6_E(WDC65816_regs *regs, WDC65816_pins *pins) { // DEC d
         switch(regs->TCU) {
         // DEC d E=1 M=0 X=0
             case 1: // fetch_D0_and_skip_cycle 2
@@ -51484,7 +51484,7 @@ static void WDC65816_opcode_C6_E(struct WDC65816_regs *regs, WDC65816_pins *pins
 }
 
 
-static void WDC65816_opcode_C7_E(struct WDC65816_regs *regs, WDC65816_pins *pins) { // CMP [d]
+static void WDC65816_opcode_C7_E(WDC65816_regs *regs, WDC65816_pins *pins) { // CMP [d]
         switch(regs->TCU) {
         // CMP [d] E=1 M=0 X=0
             case 1: // fetch_D0_and_skip_cycle 2
@@ -51536,7 +51536,7 @@ static void WDC65816_opcode_C7_E(struct WDC65816_regs *regs, WDC65816_pins *pins
 }
 
 
-static void WDC65816_opcode_C8_E(struct WDC65816_regs *regs, WDC65816_pins *pins) { // INY i
+static void WDC65816_opcode_C8_E(WDC65816_regs *regs, WDC65816_pins *pins) { // INY i
         switch(regs->TCU) {
         // INY i E=1 M=0 X=0
             case 1: // 2
@@ -51560,7 +51560,7 @@ static void WDC65816_opcode_C8_E(struct WDC65816_regs *regs, WDC65816_pins *pins
 }
 
 
-static void WDC65816_opcode_C9_E(struct WDC65816_regs *regs, WDC65816_pins *pins) { // CMP #
+static void WDC65816_opcode_C9_E(WDC65816_regs *regs, WDC65816_pins *pins) { // CMP #
         switch(regs->TCU) {
         // CMP # E=1 M=0 X=0
             case 1: // 2
@@ -51585,7 +51585,7 @@ static void WDC65816_opcode_C9_E(struct WDC65816_regs *regs, WDC65816_pins *pins
 }
 
 
-static void WDC65816_opcode_CA_E(struct WDC65816_regs *regs, WDC65816_pins *pins) { // DEX i
+static void WDC65816_opcode_CA_E(WDC65816_regs *regs, WDC65816_pins *pins) { // DEX i
         switch(regs->TCU) {
         // DEX i E=1 M=0 X=0
             case 1: // 2
@@ -51609,7 +51609,7 @@ static void WDC65816_opcode_CA_E(struct WDC65816_regs *regs, WDC65816_pins *pins
 }
 
 
-static void WDC65816_opcode_CB_E(struct WDC65816_regs *regs, WDC65816_pins *pins) { // WAI i
+static void WDC65816_opcode_CB_E(WDC65816_regs *regs, WDC65816_pins *pins) { // WAI i
         switch(regs->TCU) {
         // WAI i E=1 M=0 X=0
             case 1: // 1
@@ -51638,7 +51638,7 @@ static void WDC65816_opcode_CB_E(struct WDC65816_regs *regs, WDC65816_pins *pins
 }
 
 
-static void WDC65816_opcode_CC_E(struct WDC65816_regs *regs, WDC65816_pins *pins) { // CPY a
+static void WDC65816_opcode_CC_E(WDC65816_regs *regs, WDC65816_pins *pins) { // CPY a
         switch(regs->TCU) {
         // CPY a E=1 M=0 X=0
             case 1: // 2
@@ -51671,7 +51671,7 @@ static void WDC65816_opcode_CC_E(struct WDC65816_regs *regs, WDC65816_pins *pins
 }
 
 
-static void WDC65816_opcode_CD_E(struct WDC65816_regs *regs, WDC65816_pins *pins) { // CMP a
+static void WDC65816_opcode_CD_E(WDC65816_regs *regs, WDC65816_pins *pins) { // CMP a
         switch(regs->TCU) {
         // CMP a E=1 M=0 X=0
             case 1: // 2
@@ -51704,7 +51704,7 @@ static void WDC65816_opcode_CD_E(struct WDC65816_regs *regs, WDC65816_pins *pins
 }
 
 
-static void WDC65816_opcode_CE_E(struct WDC65816_regs *regs, WDC65816_pins *pins) { // DEC a
+static void WDC65816_opcode_CE_E(WDC65816_regs *regs, WDC65816_pins *pins) { // DEC a
         switch(regs->TCU) {
         // DEC a E=1 M=0 X=0
         //case AM.Ad
@@ -51746,7 +51746,7 @@ static void WDC65816_opcode_CE_E(struct WDC65816_regs *regs, WDC65816_pins *pins
 }
 
 
-static void WDC65816_opcode_CF_E(struct WDC65816_regs *regs, WDC65816_pins *pins) { // CMP al
+static void WDC65816_opcode_CF_E(WDC65816_regs *regs, WDC65816_pins *pins) { // CMP al
         switch(regs->TCU) {
         // CMP al E=1 M=0 X=0
             case 1: // 2
@@ -51784,7 +51784,7 @@ static void WDC65816_opcode_CF_E(struct WDC65816_regs *regs, WDC65816_pins *pins
 }
 
 
-static void WDC65816_opcode_D0_E(struct WDC65816_regs *regs, WDC65816_pins *pins) { // BNE r
+static void WDC65816_opcode_D0_E(WDC65816_regs *regs, WDC65816_pins *pins) { // BNE r
         switch(regs->TCU) {
         // BNE r E=1 M=0 X=0
             case 1: // 2
@@ -51815,7 +51815,7 @@ static void WDC65816_opcode_D0_E(struct WDC65816_regs *regs, WDC65816_pins *pins
 }
 
 
-static void WDC65816_opcode_D1_E(struct WDC65816_regs *regs, WDC65816_pins *pins) { // CMP (d),y
+static void WDC65816_opcode_D1_E(WDC65816_regs *regs, WDC65816_pins *pins) { // CMP (d),y
         switch(regs->TCU) {
         // CMP (d),y E=1 M=0 X=0
             case 1: // fetch_D0_and_skip_cycle 2
@@ -51874,7 +51874,7 @@ static void WDC65816_opcode_D1_E(struct WDC65816_regs *regs, WDC65816_pins *pins
 }
 
 
-static void WDC65816_opcode_D2_E(struct WDC65816_regs *regs, WDC65816_pins *pins) { // CMP (d)
+static void WDC65816_opcode_D2_E(WDC65816_regs *regs, WDC65816_pins *pins) { // CMP (d)
         switch(regs->TCU) {
         // CMP (d) E=1 M=0 X=0
             case 1: // fetch_D0_and_skip_cycle 2
@@ -51920,7 +51920,7 @@ static void WDC65816_opcode_D2_E(struct WDC65816_regs *regs, WDC65816_pins *pins
 }
 
 
-static void WDC65816_opcode_D3_E(struct WDC65816_regs *regs, WDC65816_pins *pins) { // CMP (d,s),y
+static void WDC65816_opcode_D3_E(WDC65816_regs *regs, WDC65816_pins *pins) { // CMP (d,s),y
         switch(regs->TCU) {
         // CMP (d,s),y E=1 M=0 X=0
             case 1: // 2
@@ -51967,7 +51967,7 @@ static void WDC65816_opcode_D3_E(struct WDC65816_regs *regs, WDC65816_pins *pins
 }
 
 
-static void WDC65816_opcode_D4_E(struct WDC65816_regs *regs, WDC65816_pins *pins) { // PEI s
+static void WDC65816_opcode_D4_E(WDC65816_regs *regs, WDC65816_pins *pins) { // PEI s
         switch(regs->TCU) {
         // PEI s E=1 M=0 X=0
             case 1: // fetch_D0_and_skip_cycle 2
@@ -52015,7 +52015,7 @@ static void WDC65816_opcode_D4_E(struct WDC65816_regs *regs, WDC65816_pins *pins
 }
 
 
-static void WDC65816_opcode_D5_E(struct WDC65816_regs *regs, WDC65816_pins *pins) { // CMP d,x
+static void WDC65816_opcode_D5_E(WDC65816_regs *regs, WDC65816_pins *pins) { // CMP d,x
         switch(regs->TCU) {
         // CMP d,x E=1 M=0 X=0
             case 1: // fetch_D0_and_skip_cycle 2
@@ -52056,7 +52056,7 @@ static void WDC65816_opcode_D5_E(struct WDC65816_regs *regs, WDC65816_pins *pins
 }
 
 
-static void WDC65816_opcode_D6_E(struct WDC65816_regs *regs, WDC65816_pins *pins) { // DEC d,x
+static void WDC65816_opcode_D6_E(WDC65816_regs *regs, WDC65816_pins *pins) { // DEC d,x
         switch(regs->TCU) {
         // DEC d,x E=1 M=0 X=0
             case 1: // fetch_D0_and_skip_cycle 2
@@ -52104,7 +52104,7 @@ static void WDC65816_opcode_D6_E(struct WDC65816_regs *regs, WDC65816_pins *pins
 }
 
 
-static void WDC65816_opcode_D7_E(struct WDC65816_regs *regs, WDC65816_pins *pins) { // CMP [d],y
+static void WDC65816_opcode_D7_E(WDC65816_regs *regs, WDC65816_pins *pins) { // CMP [d],y
         switch(regs->TCU) {
         // CMP [d],y E=1 M=0 X=0
             case 1: // fetch_D0_and_skip_cycle 2
@@ -52156,7 +52156,7 @@ static void WDC65816_opcode_D7_E(struct WDC65816_regs *regs, WDC65816_pins *pins
 }
 
 
-static void WDC65816_opcode_D8_E(struct WDC65816_regs *regs, WDC65816_pins *pins) { // CLD i
+static void WDC65816_opcode_D8_E(WDC65816_regs *regs, WDC65816_pins *pins) { // CLD i
         switch(regs->TCU) {
         // CLD i E=1 M=0 X=0
             case 1: // 2
@@ -52178,7 +52178,7 @@ static void WDC65816_opcode_D8_E(struct WDC65816_regs *regs, WDC65816_pins *pins
 }
 
 
-static void WDC65816_opcode_D9_E(struct WDC65816_regs *regs, WDC65816_pins *pins) { // CMP a,y
+static void WDC65816_opcode_D9_E(WDC65816_regs *regs, WDC65816_pins *pins) { // CMP a,y
         switch(regs->TCU) {
         // CMP a,y E=1 M=0 X=0
             case 1: // 2
@@ -52225,7 +52225,7 @@ static void WDC65816_opcode_D9_E(struct WDC65816_regs *regs, WDC65816_pins *pins
 }
 
 
-static void WDC65816_opcode_DA_E(struct WDC65816_regs *regs, WDC65816_pins *pins) { // PHX s
+static void WDC65816_opcode_DA_E(WDC65816_regs *regs, WDC65816_pins *pins) { // PHX s
         switch(regs->TCU) {
         // PHX s E=1 M=0 X=0
             case 1: // 2
@@ -52260,7 +52260,7 @@ static void WDC65816_opcode_DA_E(struct WDC65816_regs *regs, WDC65816_pins *pins
 }
 
 
-static void WDC65816_opcode_DB_E(struct WDC65816_regs *regs, WDC65816_pins *pins) { // STP i
+static void WDC65816_opcode_DB_E(WDC65816_regs *regs, WDC65816_pins *pins) { // STP i
         switch(regs->TCU) {
         // STP i E=1 M=0 X=0
             case 1: // 2
@@ -52279,7 +52279,7 @@ static void WDC65816_opcode_DB_E(struct WDC65816_regs *regs, WDC65816_pins *pins
 }
 
 
-static void WDC65816_opcode_DC_E(struct WDC65816_regs *regs, WDC65816_pins *pins) { // JML (a)
+static void WDC65816_opcode_DC_E(WDC65816_regs *regs, WDC65816_pins *pins) { // JML (a)
         switch(regs->TCU) {
         // JML (a) E=1 M=0 X=0
             case 1: // 2
@@ -52314,7 +52314,7 @@ static void WDC65816_opcode_DC_E(struct WDC65816_regs *regs, WDC65816_pins *pins
 }
 
 
-static void WDC65816_opcode_DD_E(struct WDC65816_regs *regs, WDC65816_pins *pins) { // CMP a,x
+static void WDC65816_opcode_DD_E(WDC65816_regs *regs, WDC65816_pins *pins) { // CMP a,x
         switch(regs->TCU) {
         // CMP a,x E=1 M=0 X=0
             case 1: // 2
@@ -52361,7 +52361,7 @@ static void WDC65816_opcode_DD_E(struct WDC65816_regs *regs, WDC65816_pins *pins
 }
 
 
-static void WDC65816_opcode_DE_E(struct WDC65816_regs *regs, WDC65816_pins *pins) { // DEC a,x
+static void WDC65816_opcode_DE_E(WDC65816_regs *regs, WDC65816_pins *pins) { // DEC a,x
         switch(regs->TCU) {
         // DEC a,x E=1 M=0 X=0
             case 1: // 2
@@ -52409,7 +52409,7 @@ static void WDC65816_opcode_DE_E(struct WDC65816_regs *regs, WDC65816_pins *pins
 }
 
 
-static void WDC65816_opcode_DF_E(struct WDC65816_regs *regs, WDC65816_pins *pins) { // CMP al,x
+static void WDC65816_opcode_DF_E(WDC65816_regs *regs, WDC65816_pins *pins) { // CMP al,x
         switch(regs->TCU) {
         // CMP al,x E=1 M=0 X=0
             case 1: // 2
@@ -52448,7 +52448,7 @@ static void WDC65816_opcode_DF_E(struct WDC65816_regs *regs, WDC65816_pins *pins
 }
 
 
-static void WDC65816_opcode_E0_E(struct WDC65816_regs *regs, WDC65816_pins *pins) { // CPX #
+static void WDC65816_opcode_E0_E(WDC65816_regs *regs, WDC65816_pins *pins) { // CPX #
         switch(regs->TCU) {
         // CPX # E=1 M=0 X=0
             case 1: // 2
@@ -52473,7 +52473,7 @@ static void WDC65816_opcode_E0_E(struct WDC65816_regs *regs, WDC65816_pins *pins
 }
 
 
-static void WDC65816_opcode_E1_E(struct WDC65816_regs *regs, WDC65816_pins *pins) { // SBC (d,x)
+static void WDC65816_opcode_E1_E(WDC65816_regs *regs, WDC65816_pins *pins) { // SBC (d,x)
         switch(regs->TCU) {
         // SBC (d,x) E=1 M=0 X=0
             case 1: // fetch_D0_and_skip_cycle 2
@@ -52533,7 +52533,7 @@ static void WDC65816_opcode_E1_E(struct WDC65816_regs *regs, WDC65816_pins *pins
 }
 
 
-static void WDC65816_opcode_E2_E(struct WDC65816_regs *regs, WDC65816_pins *pins) { // SEP #
+static void WDC65816_opcode_E2_E(WDC65816_regs *regs, WDC65816_pins *pins) { // SEP #
         switch(regs->TCU) {
         // SEP # E=1 M=0 X=0
             case 1: // 2
@@ -52559,7 +52559,7 @@ static void WDC65816_opcode_E2_E(struct WDC65816_regs *regs, WDC65816_pins *pins
 }
 
 
-static void WDC65816_opcode_E3_E(struct WDC65816_regs *regs, WDC65816_pins *pins) { // SBC d,s
+static void WDC65816_opcode_E3_E(WDC65816_regs *regs, WDC65816_pins *pins) { // SBC d,s
         switch(regs->TCU) {
         // SBC d,s E=1 M=0 X=0
             case 1: // 2
@@ -52603,7 +52603,7 @@ static void WDC65816_opcode_E3_E(struct WDC65816_regs *regs, WDC65816_pins *pins
 }
 
 
-static void WDC65816_opcode_E4_E(struct WDC65816_regs *regs, WDC65816_pins *pins) { // CPX d
+static void WDC65816_opcode_E4_E(WDC65816_regs *regs, WDC65816_pins *pins) { // CPX d
         switch(regs->TCU) {
         // CPX d E=1 M=0 X=0
             case 1: // fetch_D0_and_skip_cycle 2
@@ -52642,7 +52642,7 @@ static void WDC65816_opcode_E4_E(struct WDC65816_regs *regs, WDC65816_pins *pins
 }
 
 
-static void WDC65816_opcode_E5_E(struct WDC65816_regs *regs, WDC65816_pins *pins) { // SBC d
+static void WDC65816_opcode_E5_E(WDC65816_regs *regs, WDC65816_pins *pins) { // SBC d
         switch(regs->TCU) {
         // SBC d E=1 M=0 X=0
             case 1: // fetch_D0_and_skip_cycle 2
@@ -52692,7 +52692,7 @@ static void WDC65816_opcode_E5_E(struct WDC65816_regs *regs, WDC65816_pins *pins
 }
 
 
-static void WDC65816_opcode_E6_E(struct WDC65816_regs *regs, WDC65816_pins *pins) { // INC d
+static void WDC65816_opcode_E6_E(WDC65816_regs *regs, WDC65816_pins *pins) { // INC d
         switch(regs->TCU) {
         // INC d E=1 M=0 X=0
             case 1: // fetch_D0_and_skip_cycle 2
@@ -52738,7 +52738,7 @@ static void WDC65816_opcode_E6_E(struct WDC65816_regs *regs, WDC65816_pins *pins
 }
 
 
-static void WDC65816_opcode_E7_E(struct WDC65816_regs *regs, WDC65816_pins *pins) { // SBC [d]
+static void WDC65816_opcode_E7_E(WDC65816_regs *regs, WDC65816_pins *pins) { // SBC [d]
         switch(regs->TCU) {
         // SBC [d] E=1 M=0 X=0
             case 1: // fetch_D0_and_skip_cycle 2
@@ -52801,7 +52801,7 @@ static void WDC65816_opcode_E7_E(struct WDC65816_regs *regs, WDC65816_pins *pins
 }
 
 
-static void WDC65816_opcode_E8_E(struct WDC65816_regs *regs, WDC65816_pins *pins) { // INX i
+static void WDC65816_opcode_E8_E(WDC65816_regs *regs, WDC65816_pins *pins) { // INX i
         switch(regs->TCU) {
         // INX i E=1 M=0 X=0
             case 1: // 2
@@ -52825,7 +52825,7 @@ static void WDC65816_opcode_E8_E(struct WDC65816_regs *regs, WDC65816_pins *pins
 }
 
 
-static void WDC65816_opcode_E9_E(struct WDC65816_regs *regs, WDC65816_pins *pins) { // SBC #
+static void WDC65816_opcode_E9_E(WDC65816_regs *regs, WDC65816_pins *pins) { // SBC #
         switch(regs->TCU) {
         // SBC # E=1 M=0 X=0
             case 1: // 2
@@ -52861,7 +52861,7 @@ static void WDC65816_opcode_E9_E(struct WDC65816_regs *regs, WDC65816_pins *pins
 }
 
 
-static void WDC65816_opcode_EA_E(struct WDC65816_regs *regs, WDC65816_pins *pins) { // NOP i
+static void WDC65816_opcode_EA_E(WDC65816_regs *regs, WDC65816_pins *pins) { // NOP i
         switch(regs->TCU) {
         // NOP i E=1 M=0 X=0
             case 1: // 2
@@ -52882,7 +52882,7 @@ static void WDC65816_opcode_EA_E(struct WDC65816_regs *regs, WDC65816_pins *pins
 }
 
 
-static void WDC65816_opcode_EB_E(struct WDC65816_regs *regs, WDC65816_pins *pins) { // XBA i
+static void WDC65816_opcode_EB_E(WDC65816_regs *regs, WDC65816_pins *pins) { // XBA i
         switch(regs->TCU) {
         // XBA i E=1 M=0 X=0
             case 1:
@@ -52908,7 +52908,7 @@ static void WDC65816_opcode_EB_E(struct WDC65816_regs *regs, WDC65816_pins *pins
 }
 
 
-static void WDC65816_opcode_EC_E(struct WDC65816_regs *regs, WDC65816_pins *pins) { // CPX a
+static void WDC65816_opcode_EC_E(WDC65816_regs *regs, WDC65816_pins *pins) { // CPX a
         switch(regs->TCU) {
         // CPX a E=1 M=0 X=0
             case 1: // 2
@@ -52941,7 +52941,7 @@ static void WDC65816_opcode_EC_E(struct WDC65816_regs *regs, WDC65816_pins *pins
 }
 
 
-static void WDC65816_opcode_ED_E(struct WDC65816_regs *regs, WDC65816_pins *pins) { // SBC a
+static void WDC65816_opcode_ED_E(WDC65816_regs *regs, WDC65816_pins *pins) { // SBC a
         switch(regs->TCU) {
         // SBC a E=1 M=0 X=0
             case 1: // 2
@@ -52985,7 +52985,7 @@ static void WDC65816_opcode_ED_E(struct WDC65816_regs *regs, WDC65816_pins *pins
 }
 
 
-static void WDC65816_opcode_EE_E(struct WDC65816_regs *regs, WDC65816_pins *pins) { // INC a
+static void WDC65816_opcode_EE_E(WDC65816_regs *regs, WDC65816_pins *pins) { // INC a
         switch(regs->TCU) {
         // INC a E=1 M=0 X=0
         //case AM.Ad
@@ -53027,7 +53027,7 @@ static void WDC65816_opcode_EE_E(struct WDC65816_regs *regs, WDC65816_pins *pins
 }
 
 
-static void WDC65816_opcode_EF_E(struct WDC65816_regs *regs, WDC65816_pins *pins) { // SBC al
+static void WDC65816_opcode_EF_E(WDC65816_regs *regs, WDC65816_pins *pins) { // SBC al
         switch(regs->TCU) {
         // SBC al E=1 M=0 X=0
             case 1: // 2
@@ -53076,7 +53076,7 @@ static void WDC65816_opcode_EF_E(struct WDC65816_regs *regs, WDC65816_pins *pins
 }
 
 
-static void WDC65816_opcode_F0_E(struct WDC65816_regs *regs, WDC65816_pins *pins) { // BEQ r
+static void WDC65816_opcode_F0_E(WDC65816_regs *regs, WDC65816_pins *pins) { // BEQ r
         switch(regs->TCU) {
         // BEQ r E=1 M=0 X=0
             case 1: // 2
@@ -53107,7 +53107,7 @@ static void WDC65816_opcode_F0_E(struct WDC65816_regs *regs, WDC65816_pins *pins
 }
 
 
-static void WDC65816_opcode_F1_E(struct WDC65816_regs *regs, WDC65816_pins *pins) { // SBC (d),y
+static void WDC65816_opcode_F1_E(WDC65816_regs *regs, WDC65816_pins *pins) { // SBC (d),y
         switch(regs->TCU) {
         // SBC (d),y E=1 M=0 X=0
             case 1: // fetch_D0_and_skip_cycle 2
@@ -53177,7 +53177,7 @@ static void WDC65816_opcode_F1_E(struct WDC65816_regs *regs, WDC65816_pins *pins
 }
 
 
-static void WDC65816_opcode_F2_E(struct WDC65816_regs *regs, WDC65816_pins *pins) { // SBC (d)
+static void WDC65816_opcode_F2_E(WDC65816_regs *regs, WDC65816_pins *pins) { // SBC (d)
         switch(regs->TCU) {
         // SBC (d) E=1 M=0 X=0
             case 1: // fetch_D0_and_skip_cycle 2
@@ -53234,7 +53234,7 @@ static void WDC65816_opcode_F2_E(struct WDC65816_regs *regs, WDC65816_pins *pins
 }
 
 
-static void WDC65816_opcode_F3_E(struct WDC65816_regs *regs, WDC65816_pins *pins) { // SBC (d,s),y
+static void WDC65816_opcode_F3_E(WDC65816_regs *regs, WDC65816_pins *pins) { // SBC (d,s),y
         switch(regs->TCU) {
         // SBC (d,s),y E=1 M=0 X=0
             case 1: // 2
@@ -53292,7 +53292,7 @@ static void WDC65816_opcode_F3_E(struct WDC65816_regs *regs, WDC65816_pins *pins
 }
 
 
-static void WDC65816_opcode_F4_E(struct WDC65816_regs *regs, WDC65816_pins *pins) { // PEA s
+static void WDC65816_opcode_F4_E(WDC65816_regs *regs, WDC65816_pins *pins) { // PEA s
         switch(regs->TCU) {
         // PEA s E=1 M=0 X=0
             case 1: // 2
@@ -53327,7 +53327,7 @@ static void WDC65816_opcode_F4_E(struct WDC65816_regs *regs, WDC65816_pins *pins
 }
 
 
-static void WDC65816_opcode_F5_E(struct WDC65816_regs *regs, WDC65816_pins *pins) { // SBC d,x
+static void WDC65816_opcode_F5_E(WDC65816_regs *regs, WDC65816_pins *pins) { // SBC d,x
         switch(regs->TCU) {
         // SBC d,x E=1 M=0 X=0
             case 1: // fetch_D0_and_skip_cycle 2
@@ -53379,7 +53379,7 @@ static void WDC65816_opcode_F5_E(struct WDC65816_regs *regs, WDC65816_pins *pins
 }
 
 
-static void WDC65816_opcode_F6_E(struct WDC65816_regs *regs, WDC65816_pins *pins) { // INC d,x
+static void WDC65816_opcode_F6_E(WDC65816_regs *regs, WDC65816_pins *pins) { // INC d,x
         switch(regs->TCU) {
         // INC d,x E=1 M=0 X=0
             case 1: // fetch_D0_and_skip_cycle 2
@@ -53427,7 +53427,7 @@ static void WDC65816_opcode_F6_E(struct WDC65816_regs *regs, WDC65816_pins *pins
 }
 
 
-static void WDC65816_opcode_F7_E(struct WDC65816_regs *regs, WDC65816_pins *pins) { // SBC [d],y
+static void WDC65816_opcode_F7_E(WDC65816_regs *regs, WDC65816_pins *pins) { // SBC [d],y
         switch(regs->TCU) {
         // SBC [d],y E=1 M=0 X=0
             case 1: // fetch_D0_and_skip_cycle 2
@@ -53490,7 +53490,7 @@ static void WDC65816_opcode_F7_E(struct WDC65816_regs *regs, WDC65816_pins *pins
 }
 
 
-static void WDC65816_opcode_F8_E(struct WDC65816_regs *regs, WDC65816_pins *pins) { // SED i
+static void WDC65816_opcode_F8_E(WDC65816_regs *regs, WDC65816_pins *pins) { // SED i
         switch(regs->TCU) {
         // SED i E=1 M=0 X=0
             case 1: // 2
@@ -53512,7 +53512,7 @@ static void WDC65816_opcode_F8_E(struct WDC65816_regs *regs, WDC65816_pins *pins
 }
 
 
-static void WDC65816_opcode_F9_E(struct WDC65816_regs *regs, WDC65816_pins *pins) { // SBC a,y
+static void WDC65816_opcode_F9_E(WDC65816_regs *regs, WDC65816_pins *pins) { // SBC a,y
         switch(regs->TCU) {
         // SBC a,y E=1 M=0 X=0
             case 1: // 2
@@ -53570,7 +53570,7 @@ static void WDC65816_opcode_F9_E(struct WDC65816_regs *regs, WDC65816_pins *pins
 }
 
 
-static void WDC65816_opcode_FA_E(struct WDC65816_regs *regs, WDC65816_pins *pins) { // PLX s
+static void WDC65816_opcode_FA_E(WDC65816_regs *regs, WDC65816_pins *pins) { // PLX s
         switch(regs->TCU) {
         // PLX s E=1 M=0 X=0
             case 1: // 2
@@ -53608,7 +53608,7 @@ static void WDC65816_opcode_FA_E(struct WDC65816_regs *regs, WDC65816_pins *pins
 }
 
 
-static void WDC65816_opcode_FB_E(struct WDC65816_regs *regs, WDC65816_pins *pins) { // XCE i
+static void WDC65816_opcode_FB_E(WDC65816_regs *regs, WDC65816_pins *pins) { // XCE i
         switch(regs->TCU) {
         // XCE i E=1 M=0 X=0
             case 1: // 2
@@ -53636,7 +53636,7 @@ static void WDC65816_opcode_FB_E(struct WDC65816_regs *regs, WDC65816_pins *pins
 }
 
 
-static void WDC65816_opcode_FC_E(struct WDC65816_regs *regs, WDC65816_pins *pins) { // JSR (a,x)
+static void WDC65816_opcode_FC_E(WDC65816_regs *regs, WDC65816_pins *pins) { // JSR (a,x)
         switch(regs->TCU) {
         // JSR (a,x) E=1 M=0 X=0
             case 1: // 2
@@ -53686,7 +53686,7 @@ static void WDC65816_opcode_FC_E(struct WDC65816_regs *regs, WDC65816_pins *pins
 }
 
 
-static void WDC65816_opcode_FD_E(struct WDC65816_regs *regs, WDC65816_pins *pins) { // SBC a,x
+static void WDC65816_opcode_FD_E(WDC65816_regs *regs, WDC65816_pins *pins) { // SBC a,x
         switch(regs->TCU) {
         // SBC a,x E=1 M=0 X=0
             case 1: // 2
@@ -53744,7 +53744,7 @@ static void WDC65816_opcode_FD_E(struct WDC65816_regs *regs, WDC65816_pins *pins
 }
 
 
-static void WDC65816_opcode_FE_E(struct WDC65816_regs *regs, WDC65816_pins *pins) { // INC a,x
+static void WDC65816_opcode_FE_E(WDC65816_regs *regs, WDC65816_pins *pins) { // INC a,x
         switch(regs->TCU) {
         // INC a,x E=1 M=0 X=0
             case 1: // 2
@@ -53792,7 +53792,7 @@ static void WDC65816_opcode_FE_E(struct WDC65816_regs *regs, WDC65816_pins *pins
 }
 
 
-static void WDC65816_opcode_FF_E(struct WDC65816_regs *regs, WDC65816_pins *pins) { // SBC al,x
+static void WDC65816_opcode_FF_E(WDC65816_regs *regs, WDC65816_pins *pins) { // SBC al,x
         switch(regs->TCU) {
         // SBC al,x E=1 M=0 X=0
             case 1: // 2
@@ -53842,7 +53842,7 @@ static void WDC65816_opcode_FF_E(struct WDC65816_regs *regs, WDC65816_pins *pins
 }
 
 
-static void WDC65816_opcode_100_E(struct WDC65816_regs *regs, WDC65816_pins *pins) { // S_RESET s
+static void WDC65816_opcode_100_E(WDC65816_regs *regs, WDC65816_pins *pins) { // S_RESET s
         switch(regs->TCU) {
         // S_RESET s E=1 M=0 X=0
             case 1: // 3
@@ -53896,7 +53896,7 @@ static void WDC65816_opcode_100_E(struct WDC65816_regs *regs, WDC65816_pins *pin
 }
 
 
-static void WDC65816_opcode_101_E(struct WDC65816_regs *regs, WDC65816_pins *pins) { // S_ABORT s
+static void WDC65816_opcode_101_E(WDC65816_regs *regs, WDC65816_pins *pins) { // S_ABORT s
         switch(regs->TCU) {
         // S_ABORT s E=1 M=0 X=0
             case 1: // 4
@@ -53940,7 +53940,7 @@ static void WDC65816_opcode_101_E(struct WDC65816_regs *regs, WDC65816_pins *pin
 }
 
 
-static void WDC65816_opcode_102_E(struct WDC65816_regs *regs, WDC65816_pins *pins) { // S_IRQ s
+static void WDC65816_opcode_102_E(WDC65816_regs *regs, WDC65816_pins *pins) { // S_IRQ s
         switch(regs->TCU) {
         // S_IRQ s E=1 M=0 X=0
             case 1: // 4
@@ -53986,7 +53986,7 @@ static void WDC65816_opcode_102_E(struct WDC65816_regs *regs, WDC65816_pins *pin
 }
 
 
-static void WDC65816_opcode_103_E(struct WDC65816_regs *regs, WDC65816_pins *pins) { // S_NMI s
+static void WDC65816_opcode_103_E(WDC65816_regs *regs, WDC65816_pins *pins) { // S_NMI s
         switch(regs->TCU) {
         // S_NMI s E=1 M=0 X=0
             case 1: // 4

@@ -10,17 +10,17 @@
 //#define flprintf(...) printf(__VA_ARGS__)
 #define flprintf(...) (void)0
 
-void NDS_flash_setup(struct NDS *this)
+void NDS_flash_setup(NDS *this)
 {
 
 }
 
-static void inc_addr(struct NDS *this)
+static void inc_addr(NDS *this)
 {
     this->cart.backup.cmd_addr = (this->cart.backup.cmd_addr & 0xFFFFFF00) | ((this->cart.backup.cmd_addr + 1) & 0xFF);
 }
 
-static void flash_handle_spi_cmd(struct NDS *this, u32 val)
+static void flash_handle_spi_cmd(NDS *this, u32 val)
 {
     switch(this->cart.backup.cmd) {
         case 0:
@@ -101,7 +101,7 @@ static void flash_handle_spi_cmd(struct NDS *this, u32 val)
 }
 
 
-void NDS_flash_spi_transaction(struct NDS *this, u32 val)
+void NDS_flash_spi_transaction(NDS *this, u32 val)
 {
     if (!this->cart.backup.chipsel) {
         flprintf("\nCMD: %02x", val);

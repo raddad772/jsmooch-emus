@@ -25,14 +25,14 @@
 
 struct M68k_ins_t M68k_decoded[65536];
 
-static void M68k_start_push(struct M68k* this, u32 val, u32 sz, enum M68k_states next_state, u32 reverse)
+static void M68k_start_push(M68k* this, u32 val, u32 sz, enum M68k_states next_state, u32 reverse)
 {
     this->regs.A[7] -= sz;
     if (sz == 1) this->regs.A[7]--;
     M68k_start_write(this, this->regs.A[7], val, sz, MAKE_FC(0), reverse, next_state);
 }
 
-static void M68k_start_pop(struct M68k* this, u32 sz, u32 FC, enum M68k_states next_state)
+static void M68k_start_pop(M68k* this, u32 sz, u32 FC, enum M68k_states next_state)
 {
     M68k_start_read(this, this->regs.A[7], sz, FC, M68K_RW_ORDER_NORMAL, next_state);
     this->regs.A[7] += sz;
@@ -58,7 +58,7 @@ static i32 sgn32(u32 num, u32 sz) {
     return 0;
 }
 
-static u32 ADD(struct M68k* this, u32 op1, u32 op2, u32 sz, u32 extend)
+static u32 ADD(M68k* this, u32 op1, u32 op2, u32 sz, u32 extend)
 {
     // Thanks Ares
     u32 target = clip32[sz] & op1;
@@ -76,7 +76,7 @@ static u32 ADD(struct M68k* this, u32 op1, u32 op2, u32 sz, u32 extend)
     return clip32[sz] & result;
 }
 
-static u32 AND(struct M68k* this, u32 source, u32 target, u32 sz)
+static u32 AND(M68k* this, u32 source, u32 target, u32 sz)
 {
     u32 result = source & target;
     this->regs.SR.C = this->regs.SR.V = 0;
@@ -86,7 +86,7 @@ static u32 AND(struct M68k* this, u32 source, u32 target, u32 sz)
 }
 
 
-static u32 ASL(struct M68k* this, u32 result, u32 shift, u32 sz)
+static u32 ASL(M68k* this, u32 result, u32 shift, u32 sz)
 {
     u32 carry = 0;
     u32 overflow = 0;
@@ -107,7 +107,7 @@ static u32 ASL(struct M68k* this, u32 result, u32 shift, u32 sz)
     return clip32[sz] & result;
 }
 
-static u32 ASR(struct M68k* this, u32 result, u32 shift, u32 sz)
+static u32 ASR(M68k* this, u32 result, u32 shift, u32 sz)
 {
     u32 carry = 0;
     u32 overflow = 0;
@@ -128,7 +128,7 @@ static u32 ASR(struct M68k* this, u32 result, u32 shift, u32 sz)
     return clip32[sz] & result;
 }
 
-static u32 CMP(struct M68k* this, u32 source, u32 target, u32 sz) {
+static u32 CMP(M68k* this, u32 source, u32 target, u32 sz) {
     u32 result = (target - source) & clip32[sz];
     u32 carries = target ^ source ^ result;
     u32 overflow = (target ^ result) & (source ^ target);
@@ -141,7 +141,7 @@ static u32 CMP(struct M68k* this, u32 source, u32 target, u32 sz) {
     return result;
 }
 
-static u32 ROL(struct M68k* this, u32 result, u32 shift, u32 sz)
+static u32 ROL(M68k* this, u32 result, u32 shift, u32 sz)
 {
     u32 carry = 0;
     for (u32 i = 0; i < shift; i++) {
@@ -157,7 +157,7 @@ static u32 ROL(struct M68k* this, u32 result, u32 shift, u32 sz)
     return clip32[sz] & result;
 }
 
-static u32 ROR(struct M68k* this, u32 result, u32 shift, u32 sz)
+static u32 ROR(M68k* this, u32 result, u32 shift, u32 sz)
 {
     u32 carry = 0;
     for (u32 i = 0; i < shift; i++) {
@@ -175,7 +175,7 @@ static u32 ROR(struct M68k* this, u32 result, u32 shift, u32 sz)
     return clip32[sz] & result;
 }
 
-static u32 ROXL(struct M68k* this, u32 result, u32 shift, u32 sz)
+static u32 ROXL(M68k* this, u32 result, u32 shift, u32 sz)
 {
     u32 carry = this->regs.SR.X;
     for (u32 i = 0; i < shift; i++) {
@@ -192,7 +192,7 @@ static u32 ROXL(struct M68k* this, u32 result, u32 shift, u32 sz)
     return clip32[sz] & result;
 }
 
-static u32 ROXR(struct M68k* this, u32 result, u32 shift, u32 sz)
+static u32 ROXR(M68k* this, u32 result, u32 shift, u32 sz)
 {
     u32 carry = this->regs.SR.X;
     for (u32 i = 0; i < shift; i++) {
@@ -212,7 +212,7 @@ static u32 ROXR(struct M68k* this, u32 result, u32 shift, u32 sz)
 }
 
 
-static u32 SUB(struct M68k* this, u32 op1, u32 op2, u32 sz, u32 extend, u32 change_x)
+static u32 SUB(M68k* this, u32 op1, u32 op2, u32 sz, u32 extend, u32 change_x)
 {
     u32 target = clip32[sz] & op2;
     u32 source = clip32[sz] & op1;
@@ -229,7 +229,7 @@ static u32 SUB(struct M68k* this, u32 op1, u32 op2, u32 sz, u32 extend, u32 chan
     return result & clip32[sz];
 }
 
-static u32 LSL(struct M68k* this, u32 result, u32 shift, u32 sz)
+static u32 LSL(M68k* this, u32 result, u32 shift, u32 sz)
 {
     u32 carry = 0;
     for (u32 i = 0; i < shift; i++) {
@@ -246,7 +246,7 @@ static u32 LSL(struct M68k* this, u32 result, u32 shift, u32 sz)
     return clip32[sz] & result;
 }
 
-static u32 LSR(struct M68k* this, u32 result, u32 shift, u32 sz)
+static u32 LSR(M68k* this, u32 result, u32 shift, u32 sz)
 {
     u32 carry = 0;
     result &= clip32[sz];
@@ -264,7 +264,7 @@ static u32 LSR(struct M68k* this, u32 result, u32 shift, u32 sz)
     return clip32[sz] & result;
 }
 
-static u32 EOR(struct M68k* this, u32 source, u32 target, u32 sz)
+static u32 EOR(M68k* this, u32 source, u32 target, u32 sz)
 {
     u32 result = target ^ source;
     this->regs.SR.C = this->regs.SR.V = 0;
@@ -275,7 +275,7 @@ static u32 EOR(struct M68k* this, u32 source, u32 target, u32 sz)
     return result;
 }
 
-static u32 OR(struct M68k* this, u32 source, u32 target, u32 sz)
+static u32 OR(M68k* this, u32 source, u32 target, u32 sz)
 {
     u32 result = source | target;
     this->regs.SR.C = this->regs.SR.V = 0;
@@ -285,7 +285,7 @@ static u32 OR(struct M68k* this, u32 source, u32 target, u32 sz)
     return clip32[sz] & result;
 }
 
-static u32 condition(struct M68k* this, u32 condition) {
+static u32 condition(M68k* this, u32 condition) {
     switch(condition) {
         case 0: return 1;
         case 1: return 0;
@@ -319,18 +319,18 @@ static u32 condition(struct M68k* this, u32 condition) {
 
 #define DELAY_IF_REGWRITE(k, n) if ((ins->sz == 4) && ((k == M68k_AM_data_register_direct) || (k == M68k_AM_address_register_direct))) M68k_start_wait(this, n, M68kS_exec);
 
-#define export_M68KINS(x) void M68k_ins_##x(struct M68k* this, M68k_ins_t *ins) { \
+#define export_M68KINS(x) void M68k_ins_##x(M68k* this, M68k_ins_t *ins) { \
     switch(this->state.instruction.TCU) {
 
-#define M68KINS(x) static void M68k_ins_##x(struct M68k* this, M68k_ins_t *ins) { \
+#define M68KINS(x) static void M68k_ins_##x(M68k* this, M68k_ins_t *ins) { \
     switch(this->state.instruction.TCU) {
 
-#define export_M68KINS_NOSWITCH(x) void M68k_ins_##x(struct M68k* this, M68k_ins_t *ins) {
+#define export_M68KINS_NOSWITCH(x) void M68k_ins_##x(M68k* this, M68k_ins_t *ins) {
 
-#define M68KINS_NOSWITCH(x) static void M68k_ins_##x(struct M68k* this, M68k_ins_t *ins) {
+#define M68KINS_NOSWITCH(x) static void M68k_ins_##x(M68k* this, M68k_ins_t *ins) {
 #define INS_END_NOSWITCH }
 
-static void M68k_set_IPC(struct M68k* this) {
+static void M68k_set_IPC(M68k* this) {
     this->regs.IPC = this->regs.PC;
 }
 
@@ -355,7 +355,7 @@ static void M68k_set_IPC(struct M68k* this) {
 }
 
 
-void M68k_ins_RESET_POWER(struct M68k* this, M68k_ins_t *ins) {
+void M68k_ins_RESET_POWER(M68k* this, M68k_ins_t *ins) {
     switch (this->state.instruction.TCU) {
         STEP0
             this->pins.RESET = 0;
@@ -1766,7 +1766,7 @@ M68KINS(LSR_ea)
         STEP(3)
 INS_END
 
-static void correct_IPC_MOVE_l_pf0(struct M68k* this, u32 opnum)
+static void correct_IPC_MOVE_l_pf0(M68k* this, u32 opnum)
 {
     switch(this->ins->ea[opnum].kind) {
         case M68k_AM_address_register_indirect:
@@ -3302,7 +3302,7 @@ INS_END
 
 
 
-static u32 M68k_disasm_BAD(struct M68k_ins_t *ins, jsm_debug_read_trace *rt, jsm_string *out)
+static u32 M68k_disasm_BAD(M68k_ins_t *ins, jsm_debug_read_trace *rt, jsm_string *out)
 {
     printf("\nERROR UNIMPLEMENTED DISASSEMBLY %04x", ins->opcode);
     jsm_string_sprintf(out, "UNIMPLEMENTED DISASSEMBLY %s", __func__);
@@ -3335,7 +3335,7 @@ struct m68k_str_ret
 
 };
 
-static void transform_ea(struct M68k_EA *ea)
+static void transform_ea(M68k_EA *ea)
 {
     if (ea->kind == 7) {
         if (ea->reg == 1) ea->kind = M68k_AM_absolute_long_data;
@@ -3416,7 +3416,7 @@ static void bind_opcode(const char* inpt, u32 sz, M68k_ins_func exec_func, M68k_
     }
 
     struct M68k_ins_t *ins = &M68k_decoded[out];
-    *ins = (struct M68k_ins_t) {
+    *ins = (M68k_ins_t) {
         .opcode = out,
         .disasm = disasm_func,
         .exec = exec_func,
@@ -3425,13 +3425,13 @@ static void bind_opcode(const char* inpt, u32 sz, M68k_ins_func exec_func, M68k_
         .operand_mode = operand_mode
     };
     if (ea1)
-        memcpy(&ins->ea[0], ea1, sizeof(struct M68k_EA));
+        memcpy(&ins->ea[0], ea1, sizeof(M68k_EA));
     if (ea2)
-        memcpy(&ins->ea[1], ea2, sizeof(struct M68k_EA));
+        memcpy(&ins->ea[1], ea2, sizeof(M68k_EA));
 }
 
 static struct M68k_EA mk_ea(u32 mode, u32 reg) {
-    return (struct M68k_EA) {.kind=mode, .reg=reg};
+    return (M68k_EA) {.kind=mode, .reg=reg};
 }
 #undef BADINS
 
@@ -3439,7 +3439,7 @@ void do_M68k_decode() {
     if (M68k_already_decoded) return;
     M68k_already_decoded = 1;
     for (u32 i = 0; i < 65536; i++) {
-        M68k_decoded[i] = (struct M68k_ins_t) {
+        M68k_decoded[i] = (M68k_ins_t) {
                 .opcode = i,
                 .exec = MF(NOINS),
                 .disasm = MD(BADINS),

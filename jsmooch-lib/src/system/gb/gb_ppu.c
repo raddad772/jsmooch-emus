@@ -13,39 +13,39 @@
 #include "gb_clock.h"
 #include "gb_debugger.h"
 
-struct GB_FIFO_item* GB_FIFO_pop(struct GB_FIFO* this);
-static struct GB_px* GB_pixel_slice_fetcher_get_px_if_available(struct GB_pixel_slice_fetcher* this);
-static void GB_pixel_slice_fetcher_run_fetch_cycle(struct GB_pixel_slice_fetcher* this);
-static u32 GB_PPU_in_window(struct GB_PPU* this);
-static u32 GB_PPU_bg_tilemap_addr_window(struct GB_PPU* this, u32 wlx);
-static u32 GB_PPU_bg_tilemap_addr_nowindow(struct GB_PPU* this, u32 lx);
-static u32 GB_PPU_bg_tile_addr_window(struct GB_PPU* this, u32 tn, u32 attr);
-static u32 GB_PPU_bg_tile_addr_nowindow(struct GB_PPU* this, u32 tn, u32 attr);
-static void GB_PPU_disable(struct GB_PPU* this);
-static void GB_PPU_eval_STAT(struct GB_PPU* this);
-static void GB_PPU_eval_lyc(struct GB_PPU* this);
-static void GB_PPU_advance_frame(struct GB_PPU* this, u32 update_buffer);
-static void GB_PPU_set_mode(struct GB_PPU* this, enum GB_PPU_modes which);;
-static void GB_PPU_IRQ_mode2_down(struct GB_PPU* this);
-static void GB_PPU_IRQ_mode2_up(struct GB_PPU* this);
-static void GB_PPU_IRQ_mode1_down(struct GB_PPU* this);
-static void GB_PPU_IRQ_mode1_up(struct GB_PPU* this);
-static void GB_PPU_IRQ_vblank_up(struct GB_PPU* this);
-static void GB_PPU_IRQ_mode0_down(struct GB_PPU* this);
-static void GB_PPU_IRQ_mode0_up(struct GB_PPU* this);
-static void GB_PPU_IRQ_lylyc_up(struct GB_PPU* this);
-static void GB_PPU_IRQ_lylyc_down(struct GB_PPU* this);
+struct GB_FIFO_item* GB_FIFO_pop(GB_FIFO* this);
+static struct GB_px* GB_pixel_slice_fetcher_get_px_if_available(GB_pixel_slice_fetcher* this);
+static void GB_pixel_slice_fetcher_run_fetch_cycle(GB_pixel_slice_fetcher* this);
+static u32 GB_PPU_in_window(GB_PPU* this);
+static u32 GB_PPU_bg_tilemap_addr_window(GB_PPU* this, u32 wlx);
+static u32 GB_PPU_bg_tilemap_addr_nowindow(GB_PPU* this, u32 lx);
+static u32 GB_PPU_bg_tile_addr_window(GB_PPU* this, u32 tn, u32 attr);
+static u32 GB_PPU_bg_tile_addr_nowindow(GB_PPU* this, u32 tn, u32 attr);
+static void GB_PPU_disable(GB_PPU* this);
+static void GB_PPU_eval_STAT(GB_PPU* this);
+static void GB_PPU_eval_lyc(GB_PPU* this);
+static void GB_PPU_advance_frame(GB_PPU* this, u32 update_buffer);
+static void GB_PPU_set_mode(GB_PPU* this, enum GB_PPU_modes which);;
+static void GB_PPU_IRQ_mode2_down(GB_PPU* this);
+static void GB_PPU_IRQ_mode2_up(GB_PPU* this);
+static void GB_PPU_IRQ_mode1_down(GB_PPU* this);
+static void GB_PPU_IRQ_mode1_up(GB_PPU* this);
+static void GB_PPU_IRQ_vblank_up(GB_PPU* this);
+static void GB_PPU_IRQ_mode0_down(GB_PPU* this);
+static void GB_PPU_IRQ_mode0_up(GB_PPU* this);
+static void GB_PPU_IRQ_lylyc_up(GB_PPU* this);
+static void GB_PPU_IRQ_lylyc_down(GB_PPU* this);
 
-void GB_PPU_bus_write_IO(struct GB_bus* bus, u32 addr, u32 val);
-u32 GB_PPU_bus_read_IO(struct GB_bus* bus, u32 addr, u32 val);
-static void GB_PPU_OAM_search(struct GB_PPU* this);
-static void GB_PPU_pixel_transfer(struct GB_PPU *this);
-void GB_PPU_write_OAM(struct GB_PPU* this, u32 addr, u32 val);
-u32 GB_PPU_read_OAM(struct GB_PPU* this, u32 addr);
+void GB_PPU_bus_write_IO(GB_bus* bus, u32 addr, u32 val);
+u32 GB_PPU_bus_read_IO(GB_bus* bus, u32 addr, u32 val);
+static void GB_PPU_OAM_search(GB_PPU* this);
+static void GB_PPU_pixel_transfer(GB_PPU *this);
+void GB_PPU_write_OAM(GB_PPU* this, u32 addr, u32 val);
+u32 GB_PPU_read_OAM(GB_PPU* this, u32 addr);
 u32 GBC_resolve_priority(u32 LCDC0, u32 OAM7, u32 BG7, u32 bg_color, u32 sp_color);
 u32 GB_sp_tile_addr(u32 tn, u32 y, u32 big_sprites, u32 attr, u32 cgb);
 
-static u32 GB_PPU_in_window(struct GB_PPU* this) {
+static u32 GB_PPU_in_window(GB_PPU* this) {
     return this->io.window_enable && this->is_window_line && (this->clock->lx >= this->io.wx);
 }
 
@@ -75,12 +75,12 @@ inline u32 GB_sp_tile_addr(u32 tn, u32 y, u32 big_sprites, u32 attr, u32 cgb) {
     return (0x8000 | (tn << 4) | (y << 1)) + hbits;
 }
 
-static void GB_PPU_sprite_init(struct GB_PPU_sprite* this) {
+static void GB_PPU_sprite_init(GB_PPU_sprite* this) {
     this->x = this->y = this->tile = this->attr = this->in_q = 0;
     this->num = 60;
 }
 
-static void GB_FIFO_item_init(struct GB_FIFO_item* this, u32 pixel, u32 palette, u32 cgb_priority, u32 sprite_priority) {
+static void GB_FIFO_item_init(GB_FIFO_item* this, u32 pixel, u32 palette, u32 cgb_priority, u32 sprite_priority) {
     this->pixel = pixel;
     this->palette = palette;
     this->cgb_priority = cgb_priority;
@@ -88,7 +88,7 @@ static void GB_FIFO_item_init(struct GB_FIFO_item* this, u32 pixel, u32 palette,
     this->sprite_obj = NULL; 
 }
 
-static void GB_FIFO_init(struct GB_FIFO *this, enum GB_variants variant, u32 max) {
+static void GB_FIFO_init(GB_FIFO *this, enum GB_variants variant, u32 max) {
     this->variant = variant;
     this->compat_mode = 1;
     this->max = max;
@@ -102,20 +102,20 @@ static void GB_FIFO_init(struct GB_FIFO *this, enum GB_variants variant, u32 max
     this->num_items = 0;
 }
 
-static void GB_FIFO_set_cgb_mode(struct GB_FIFO *this, u32 on) {
+static void GB_FIFO_set_cgb_mode(GB_FIFO *this, u32 on) {
     this->compat_mode = on ? 0 : 1;
 }
 
 
-static void GB_FIFO_clear(struct GB_FIFO *this) {
+static void GB_FIFO_clear(GB_FIFO *this) {
     this->head = this->tail = this->num_items = 0;
 }
 
-static u32 GB_FIFO_empty(struct GB_FIFO *this) {
+static u32 GB_FIFO_empty(GB_FIFO *this) {
     return this->num_items == 0;
 }
 
-static struct GB_FIFO_item* GB_FIFO_push(struct GB_FIFO* this)
+static struct GB_FIFO_item* GB_FIFO_push(GB_FIFO* this)
 {
     if (this->num_items >= this->max) {
         return NULL;
@@ -127,7 +127,7 @@ static struct GB_FIFO_item* GB_FIFO_push(struct GB_FIFO* this)
 };
 
 // This is for "mixing" on sprite encounter
-static void GB_FIFO_sprite_mix(struct GB_FIFO *this, u32 bp0, u32 bp1, u32 attr, u32 sprite_num)
+static void GB_FIFO_sprite_mix(GB_FIFO *this, u32 bp0, u32 bp1, u32 attr, u32 sprite_num)
 {
     u32 sp_palette;
     u32 sp_priority = (attr & 0x80) >> 7;
@@ -175,18 +175,18 @@ static void GB_FIFO_sprite_mix(struct GB_FIFO *this, u32 bp0, u32 bp1, u32 attr,
     }
 }
 
-static void GB_FIFO_discard(struct GB_FIFO* this, u32 num) {
+static void GB_FIFO_discard(GB_FIFO* this, u32 num) {
     for (u32 i = 0; i < num; i++) {
         GB_FIFO_pop(this);
     }
 }
 
-struct GB_FIFO_item* GB_FIFO_peek(struct GB_FIFO* this) {
+struct GB_FIFO_item* GB_FIFO_peek(GB_FIFO* this) {
     if (this->num_items == 0) return NULL;
     return &this->items[this->head];
 }
 
-struct GB_FIFO_item* GB_FIFO_pop(struct GB_FIFO* this) {
+struct GB_FIFO_item* GB_FIFO_pop(GB_FIFO* this) {
     if (this->num_items == 0) return &this->blank;
     struct GB_FIFO_item* r = &this->items[this->head];
     this->head = (this->head + 1) % this->max;
@@ -194,11 +194,11 @@ struct GB_FIFO_item* GB_FIFO_pop(struct GB_FIFO* this) {
     return r;
 };
 
-static void GB_px_init(struct GB_px* this) {
+static void GB_px_init(GB_px* this) {
     this->had_pixel = this->color = this->bg_or_sp = this->palette = 0;
 };
 
-static void GB_pixel_slice_fetcher_init(struct GB_pixel_slice_fetcher* this, enum GB_variants variant, GB_clock* clock, GB_bus* bus) {
+static void GB_pixel_slice_fetcher_init(GB_pixel_slice_fetcher* this, enum GB_variants variant, GB_clock* clock, GB_bus* bus) {
     this->clock = clock;
     this->bus = bus;
     this->variant = variant;
@@ -213,7 +213,7 @@ static void GB_pixel_slice_fetcher_init(struct GB_pixel_slice_fetcher* this, enu
     GB_px_init(&this->out_px);
 }
 
-static void GB_pixel_slice_fetcher_advance_line(struct GB_pixel_slice_fetcher* this) {
+static void GB_pixel_slice_fetcher_advance_line(GB_pixel_slice_fetcher* this) {
     this->fetch_cycle = 0;
     GB_FIFO_clear(&this->bg_FIFO);
     GB_FIFO_clear(&this->obj_FIFO);
@@ -222,19 +222,19 @@ static void GB_pixel_slice_fetcher_advance_line(struct GB_pixel_slice_fetcher* t
     this->sp_request = 0;
 }
 
-static void GB_pixel_slice_fetcher_trigger_window(struct GB_pixel_slice_fetcher* this) {
+static void GB_pixel_slice_fetcher_trigger_window(GB_pixel_slice_fetcher* this) {
     GB_FIFO_clear(&this->bg_FIFO);
     this->bg_request_x = 0;
     this->fetch_cycle = 0;
 }
 
-static struct GB_px *GB_pixel_slice_fetcher_cycle(struct GB_pixel_slice_fetcher* this) {
+static struct GB_px *GB_pixel_slice_fetcher_cycle(GB_pixel_slice_fetcher* this) {
     struct GB_px *r = GB_pixel_slice_fetcher_get_px_if_available(this);
     GB_pixel_slice_fetcher_run_fetch_cycle(this);
     return r;
 }
 
-static struct GB_px *GB_pixel_slice_fetcher_get_px_if_available(struct GB_pixel_slice_fetcher* this) {
+static struct GB_px *GB_pixel_slice_fetcher_get_px_if_available(GB_pixel_slice_fetcher* this) {
     this->out_px.had_pixel = false;
     this->out_px.bg_or_sp = -1;
     if ((this->sp_request == 0) && (!GB_FIFO_empty(&this->bg_FIFO))) { // if we're not in a sprite request, and the BG FIFO isn't empty
@@ -300,7 +300,7 @@ static struct GB_px *GB_pixel_slice_fetcher_get_px_if_available(struct GB_pixel_
     return &this->out_px;
 }
 
-static void GB_pixel_slice_fetcher_run_fetch_cycle(struct GB_pixel_slice_fetcher *this) {
+static void GB_pixel_slice_fetcher_run_fetch_cycle(GB_pixel_slice_fetcher *this) {
     // Scan any sprites
     for (u32 i = 0; i < this->ppu->sprites.num; i++) {
         if ((!this->ppu->OBJ[i].in_q) && (this->ppu->OBJ[i].x == this->clock->lx)) {
@@ -415,11 +415,11 @@ static void GB_pixel_slice_fetcher_run_fetch_cycle(struct GB_pixel_slice_fetcher
     }
 }
 
-static void GB_PPU_sprites_init(struct GB_PPU_sprites* this) {
+static void GB_PPU_sprites_init(GB_PPU_sprites* this) {
     this->num = this->index = this->search_index = 0;
 }
 
-void GB_PPU_reset(struct GB_PPU* this)
+void GB_PPU_reset(GB_PPU* this)
 {
     // Reset variables
     this->clock->lx = 0;
@@ -439,15 +439,15 @@ void GB_PPU_reset(struct GB_PPU* this)
     GB_PPU_set_mode(this, OAM_search);
 }
 
-u32 GB_PPU_bus_read_OAM(struct GB_bus* bus, u32 addr) {
+u32 GB_PPU_bus_read_OAM(GB_bus* bus, u32 addr) {
     return GB_PPU_read_OAM(bus->ppu, addr);
 }
 
-void GB_PPU_bus_write_OAM(struct GB_bus* bus, u32 addr, u32 val) {
+void GB_PPU_bus_write_OAM(GB_bus* bus, u32 addr, u32 val) {
     GB_PPU_write_OAM(bus->ppu, addr, val);
 }
 
-void GB_PPU_init(struct GB_PPU* this, enum GB_variants variant, GB_clock* clock, GB_bus* bus) {
+void GB_PPU_init(GB_PPU* this, enum GB_variants variant, GB_clock* clock, GB_bus* bus) {
     u32 i;
     this->variant = variant;
     this->clock = clock;
@@ -495,7 +495,7 @@ void GB_PPU_init(struct GB_PPU* this, enum GB_variants variant, GB_clock* clock,
     GB_PPU_disable(this);
 }
 
-static void GB_PPU_disable(struct GB_PPU* this) {
+static void GB_PPU_disable(GB_PPU* this) {
     if (!this->enabled) return;
     //printf("\nDISABLE PPU %d", this->clock->master_clock);
     this->enabled = FALSE;
@@ -506,7 +506,7 @@ static void GB_PPU_disable(struct GB_PPU* this) {
     GB_PPU_eval_STAT(this);
 }
 
-static void GB_PPU_enable(struct GB_PPU *this) {
+static void GB_PPU_enable(GB_PPU *this) {
     if (this->enabled) return;
     this->enabled = TRUE;
     this->display->enabled = 1;
@@ -523,7 +523,7 @@ static void GB_PPU_enable(struct GB_PPU *this) {
 }
 
 
-static void GB_PPU_eval_STAT(struct GB_PPU* this) {
+static void GB_PPU_eval_STAT(GB_PPU* this) {
     u32 mask = this->io.STAT_IF & this->io.STAT_IE;
     if ((this->io.old_mask == 0) && (mask != 0)) {
         this->bus->cpu->cpu.regs.IF |= 2;
@@ -531,7 +531,7 @@ static void GB_PPU_eval_STAT(struct GB_PPU* this) {
     this->io.old_mask = mask;
 }
 
-static u32 GB_PPU_bg_tilemap_addr_window(struct GB_PPU* this, u32 wlx) {
+static u32 GB_PPU_bg_tilemap_addr_window(GB_PPU* this, u32 wlx) {
     return (0x9800 | (this->io.window_tile_map_base << 10) |
         ((this->clock->wly >> 3) << 5) |
         (wlx >> 3)
@@ -558,7 +558,7 @@ fn get_tile_number(&mut self) -> u8 {
     mine += (((lx) & 0xFF) >> 3));
 
     } */
-static u32 GB_PPU_bg_tilemap_addr_nowindow(struct GB_PPU* this, u32 lx) {
+static u32 GB_PPU_bg_tilemap_addr_nowindow(GB_PPU* this, u32 lx) {
     return (0x9800 | (this->io.bg_tile_map_base << 10) |
             ((((this->clock->ly + this->io.SCY) & 0xFF) >> 3) << 5) |
     (((lx) & 0xFF) >> 3));
@@ -578,7 +578,7 @@ y = (y | (y << S[2])) & B[2];
 y = (y | (y << S[1])) & B[1];
 y = (y | (y << S[0])) & B[0];
 */
-static u32 GB_PPU_bg_tile_addr_window(struct GB_PPU* this, u32 tn, u32 attr) {
+static u32 GB_PPU_bg_tile_addr_window(GB_PPU* this, u32 tn, u32 attr) {
     u32 hbits = 0;
     u32 b12 = this->io.bg_window_tile_data_base ? 0 : ((tn & 0x80) ^ 0x80) << 5;
     u32 ybits = this->clock->wly & 7;
@@ -592,7 +592,7 @@ static u32 GB_PPU_bg_tile_addr_window(struct GB_PPU* this, u32 tn, u32 attr) {
            ) + hbits;
 }
 
-static u32 GB_PPU_bg_tile_addr_nowindow(struct GB_PPU* this, u32 tn, u32 attr) {
+static u32 GB_PPU_bg_tile_addr_nowindow(GB_PPU* this, u32 tn, u32 attr) {
     u32 b12 = this->io.bg_window_tile_data_base ? 0 : ((tn & 0x80) ^ 0x80) << 5;
     u32 hbits = 0;
     u32 ybits = (this->clock->ly + this->io.SCY) & 7;
@@ -606,16 +606,16 @@ static u32 GB_PPU_bg_tile_addr_nowindow(struct GB_PPU* this, u32 tn, u32 attr) {
            ) + hbits;
 }
 
-void GB_PPU_write_OAM(struct GB_PPU* this, u32 addr, u32 val) {
+void GB_PPU_write_OAM(GB_PPU* this, u32 addr, u32 val) {
     if (addr < 0xFEA0) this->OAM[addr - 0xFE00] = (u8)val;
 }
 
-u32 GB_PPU_read_OAM(struct GB_PPU* this, u32 addr) {
+u32 GB_PPU_read_OAM(GB_PPU* this, u32 addr) {
     if (addr >= 0xFEA0) return 0xFF;
     return this->OAM[addr - 0xFE00];
 }
 
-void GB_PPU_bus_write_IO(struct GB_bus* bus, u32 addr, u32 val) {
+void GB_PPU_bus_write_IO(GB_bus* bus, u32 addr, u32 val) {
     struct GB_PPU* this = bus->ppu;
     switch (addr) {
     case 0xFF01: // Serial write
@@ -717,7 +717,7 @@ void GB_PPU_bus_write_IO(struct GB_bus* bus, u32 addr, u32 val) {
     }
 }
 
-u32 GB_PPU_bus_read_IO(struct GB_bus* bus, u32 addr, u32 val){
+u32 GB_PPU_bus_read_IO(GB_bus* bus, u32 addr, u32 val){
     u32 e;
     u32 mode0_enable, mode1_enable, mode2_enable, lylyc_enable;
     u32 ly;
@@ -781,52 +781,52 @@ u32 GB_PPU_bus_read_IO(struct GB_bus* bus, u32 addr, u32 val){
     return 0xFF;
 }
 
-static void GB_PPU_IRQ_lylyc_up(struct GB_PPU* this) {
+static void GB_PPU_IRQ_lylyc_up(GB_PPU* this) {
     this->io.STAT_IF |= 8;
     GB_PPU_eval_STAT(this);
 }
 
-static void GB_PPU_IRQ_lylyc_down(struct GB_PPU *this) {
+static void GB_PPU_IRQ_lylyc_down(GB_PPU *this) {
     this->io.STAT_IF &= 0xF7;
     GB_PPU_eval_STAT(this);
 }
 
-static void GB_PPU_IRQ_mode0_up(struct GB_PPU *this) {
+static void GB_PPU_IRQ_mode0_up(GB_PPU *this) {
     this->io.STAT_IF |= 1;
     GB_PPU_eval_STAT(this);
 }
 
-static void GB_PPU_IRQ_mode0_down(struct GB_PPU *this) {
+static void GB_PPU_IRQ_mode0_down(GB_PPU *this) {
     this->io.STAT_IF &= 0xFE;
     GB_PPU_eval_STAT(this);
 }
 
-static void GB_PPU_IRQ_vblank_up(struct GB_PPU *this) {
+static void GB_PPU_IRQ_vblank_up(GB_PPU *this) {
     this->cycles_til_vblank = 2;
 }
 
-static void GB_PPU_IRQ_mode1_up(struct GB_PPU *this) {
+static void GB_PPU_IRQ_mode1_up(GB_PPU *this) {
     this->io.STAT_IF |= 2;
     GB_PPU_eval_STAT(this);
 }
 
-static void GB_PPU_IRQ_mode1_down(struct GB_PPU *this) {
+static void GB_PPU_IRQ_mode1_down(GB_PPU *this) {
     this->io.STAT_IF &= 0xFD;
     GB_PPU_eval_STAT(this);
 }
 
-static void GB_PPU_IRQ_mode2_up(struct GB_PPU *this) {
+static void GB_PPU_IRQ_mode2_up(GB_PPU *this) {
     this->io.STAT_IF |= 4;
     GB_PPU_eval_STAT(this);
 }
 
-static void GB_PPU_IRQ_mode2_down(struct GB_PPU *this) {
+static void GB_PPU_IRQ_mode2_down(GB_PPU *this) {
     this->io.STAT_IF &= 0xFB;
     GB_PPU_eval_STAT(this);
 }
 
 
-static void GB_PPU_eval_lyc(struct GB_PPU *this) {
+static void GB_PPU_eval_lyc(GB_PPU *this) {
     u32 cly = this->clock->ly;
     if ((cly == 153) && (this->io.lyc != 153)) cly = 0;
     if (cly == this->io.lyc) {
@@ -836,7 +836,7 @@ static void GB_PPU_eval_lyc(struct GB_PPU *this) {
         GB_PPU_IRQ_lylyc_down(this);
 }
 
-static void GB_PPU_advance_frame(struct GB_PPU *this, u32 update_buffer) {
+static void GB_PPU_advance_frame(GB_PPU *this, u32 update_buffer) {
     debugger_report_frame(this->bus->gb->dbg.interface);
     this->clock->ly = 0;
     this->clock->wly = 0;
@@ -855,7 +855,7 @@ static void GB_PPU_advance_frame(struct GB_PPU *this, u32 update_buffer) {
     }
 }
 
-static void GB_PPU_set_mode(struct GB_PPU *this, enum GB_PPU_modes which) {
+static void GB_PPU_set_mode(GB_PPU *this, enum GB_PPU_modes which) {
     if (this->clock->ppu_mode == which) return;
     this->clock->ppu_mode = which;
 
@@ -892,7 +892,7 @@ static void GB_PPU_set_mode(struct GB_PPU *this, enum GB_PPU_modes which) {
     }
 }
 
-void GB_PPU_cycle(struct GB_PPU* this) {
+void GB_PPU_cycle(GB_PPU* this) {
     // During HBlank and VBlank do nothing...
     this->display->scan_x++;
     if (this->clock->ly > 143) {
@@ -924,7 +924,7 @@ void GB_PPU_cycle(struct GB_PPU* this) {
     }
 }
 
-void GB_PPU_advance_line(struct GB_PPU* this) {
+void GB_PPU_advance_line(GB_PPU* this) {
     if (this->window_triggered_on_line) this->clock->wly++;
     this->display->scan_x = 0;
     this->display->scan_y++;
@@ -958,7 +958,7 @@ void GB_PPU_advance_line(struct GB_PPU* this) {
     }
 }
 
-void GB_PPU_run_cycles(struct GB_PPU *this, u32 howmany)
+void GB_PPU_run_cycles(GB_PPU *this, u32 howmany)
 {
     // We don't do anything, and in fact are off, if LCD is off
     for (u32 i = 0; i < howmany; i++) {
@@ -976,7 +976,7 @@ void GB_PPU_run_cycles(struct GB_PPU *this, u32 howmany)
     }
 }
 
-void GB_PPU_quick_boot(struct GB_PPU* this)
+void GB_PPU_quick_boot(GB_PPU* this)
 {
     switch (this->variant) {
     case DMG:
@@ -1006,7 +1006,7 @@ void GB_PPU_quick_boot(struct GB_PPU* this)
     }
 }
 
-static void GB_PPU_OAM_search(struct GB_PPU* this)
+static void GB_PPU_OAM_search(GB_PPU* this)
 {
     u32 i;
     if (this->line_cycle != 75) return;
@@ -1040,7 +1040,7 @@ static void GB_PPU_OAM_search(struct GB_PPU* this)
     }
 }
 
-static void GB_PPU_pixel_transfer(struct GB_PPU *this)
+static void GB_PPU_pixel_transfer(GB_PPU *this)
 {
     if ((this->io.window_enable) && ((this->clock->lx) == this->io.wx) && this->is_window_line && !this->window_triggered_on_line) {
         GB_pixel_slice_fetcher_trigger_window(&this->slice_fetcher);

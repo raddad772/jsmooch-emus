@@ -7,7 +7,7 @@
 #include "helpers/physical_io.h"
 
 
-void SNES_joypad_latch(struct SNES_joypad *this, u32 val)
+void SNES_joypad_latch(SNES_joypad *this, u32 val)
 {
     if (this->latched == val) return;
     this->latched = val;
@@ -33,7 +33,7 @@ void SNES_joypad_latch(struct SNES_joypad *this, u32 val)
 #undef B_GET
 }
 
-u32 SNES_joypad_data(struct SNES_joypad *this)
+u32 SNES_joypad_data(SNES_joypad *this)
 {
     if (this->latched == 1) return this->input_buffer.b;
     switch(this->counter++) {
@@ -59,7 +59,7 @@ u32 SNES_joypad_data(struct SNES_joypad *this)
     return 1;
 }
 
-void SNES_joypad_setup_pio(struct physical_io_device *d, u32 num, const char*name, u32 connected)
+void SNES_joypad_setup_pio(physical_io_device *d, u32 num, const char*name, u32 connected)
 {
     physical_io_device_init(d, HID_CONTROLLER, 0, 0, 1, 1);
 
@@ -86,12 +86,12 @@ void SNES_joypad_setup_pio(struct physical_io_device *d, u32 num, const char*nam
     pio_new_button(cnt, "select", DBCID_co_select);
 }
 
-void SNES_joypad_init(struct SNES_joypad* this)
+void SNES_joypad_init(SNES_joypad* this)
 {
     memset(this, 0, sizeof(*this));
 }
 
-void SNES_joypad_delete(struct SNES_joypad* this)
+void SNES_joypad_delete(SNES_joypad* this)
 {
     this->pio = NULL;
 }

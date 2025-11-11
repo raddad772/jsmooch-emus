@@ -65,7 +65,7 @@ void M6502::reset() {
     pins.D = M6502_OP_RESET;
 }
 
-void M6502::setup_tracing(struct jsm_debug_read_trace *strct, u64 *trace_cycle_pointer)
+void M6502::setup_tracing(jsm_debug_read_trace *strct, u64 *trace_cycle_pointer)
 {
     jsm_copy_read_trace(&trace.strct, strct);
     trace.ok = 1;
@@ -112,7 +112,7 @@ void M6502::cycle()
     trace.my_cycles++;
 }
 
-void M6502_poll_NMI_only(struct M6502_regs *regs, M6502_pins *pins)
+void M6502_poll_NMI_only(M6502_regs *regs, M6502_pins *pins)
 {
     if (regs->NMI_level_detected) {
         regs->do_NMI = 1;
@@ -121,7 +121,7 @@ void M6502_poll_NMI_only(struct M6502_regs *regs, M6502_pins *pins)
 }
 
 // Poll during second-to-last cycle
-void M6502_poll_IRQs(struct M6502_regs *regs, M6502_pins *pins)
+void M6502_poll_IRQs(M6502_regs *regs, M6502_pins *pins)
 {
     if (regs->NMI_level_detected) {
         regs->do_NMI = 1;
@@ -132,7 +132,7 @@ void M6502_poll_IRQs(struct M6502_regs *regs, M6502_pins *pins)
 }
 
 #define S(x) Sadd(state, & x, sizeof( x))
-void M6502_regs::serialize(struct serialized_state &state) {
+void M6502_regs::serialize(serialized_state &state) {
     S(A);
     S(X);
     S(Y);
@@ -158,7 +158,7 @@ void M6502_regs::serialize(struct serialized_state &state) {
     S(do_NMI);
 }
 
-void M6502_pins::serialize(struct serialized_state &state) {
+void M6502_pins::serialize(serialized_state &state) {
     S(Addr);
     S(D);
     S(RW);
@@ -168,7 +168,7 @@ void M6502_pins::serialize(struct serialized_state &state) {
     S(RDY);
 }
 
-void M6502::serialize(struct serialized_state &state)
+void M6502::serialize(serialized_state &state)
 {
     regs.serialize(state);
     pins.serialize(state);
@@ -179,7 +179,7 @@ void M6502::serialize(struct serialized_state &state)
 
 #define L(x) Sload(state, & x, sizeof( x))
 
-void M6502_regs::deserialize(struct serialized_state &state) {
+void M6502_regs::deserialize(serialized_state &state) {
     L(A);
     L(X);
     L(Y);
@@ -205,7 +205,7 @@ void M6502_regs::deserialize(struct serialized_state &state) {
     L(do_NMI);
 }
 
-void M6502_pins::deserialize(struct serialized_state &state) {
+void M6502_pins::deserialize(serialized_state &state) {
     L(Addr);
     L(D);
     L(RW);
@@ -215,7 +215,7 @@ void M6502_pins::deserialize(struct serialized_state &state) {
     L(RDY);
 }
 
-void M6502::deserialize(struct serialized_state &state)
+void M6502::deserialize(serialized_state &state)
 {
     regs.deserialize(state);
     pins.deserialize(state);

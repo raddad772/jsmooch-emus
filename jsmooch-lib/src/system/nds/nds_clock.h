@@ -52,7 +52,7 @@ struct NDS_clock {
 };
 
 
-void NDS_clock_init(struct NDS_clock *);
-void NDS_clock_reset(struct NDS_clock *);
+void NDS_clock_init(NDS_clock *);
+void NDS_clock_reset(NDS_clock *);
 
 #endif //JSMOOCH_EMUS_NDS_CLOCK_H

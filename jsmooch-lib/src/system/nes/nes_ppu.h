@@ -46,7 +46,7 @@ private:
     void new_scanline();
 
 public:
-    explicit NES_PPU(struct NES *nes);
+    explicit NES_PPU(NES *nes);
     void reset();
     void write_regs(u32 addr, u32 val);
     u32 cycle(u32 howmany);
@@ -128,8 +128,8 @@ public:
     u32 rendering_enabled = 1;
     u32 new_rendering_enabled = 1;
 
-    void serialize(struct serialized_state &state);
-    void deserialize(struct serialized_state &state);
+    void serialize(serialized_state &state);
+    void deserialize(serialized_state &state);
 
 };
 

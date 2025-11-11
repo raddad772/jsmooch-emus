@@ -22,11 +22,11 @@ struct GB_timer {
     DBG_EVENT_VIEW_ONLY;
 
     struct GB_CPU *raise_IRQ_cpu;
-    void (*raise_IRQ)(struct GB_CPU *);
+    void (*raise_IRQ)(GB_CPU *);
 };
 
-void GB_timer_write_IO(struct GB_timer*, u32 addr, u32 val);
-u32 GB_timer_read_IO(struct GB_timer*, u32 addr);
+void GB_timer_write_IO(GB_timer*, u32 addr, u32 val);
+u32 GB_timer_read_IO(GB_timer*, u32 addr);
 
 struct GB_CPU {
     enum GB_variants variant;
@@ -86,15 +86,15 @@ struct GB_CPU {
     struct cvec_ptr device_ptr;
 };
 
-void GB_CPU_init(struct GB_CPU*, enum GB_variants variant, GB_clock* clock, GB_bus* bus);
-void GB_CPU_cycle(struct GB_CPU*);
-void GB_CPU_reset(struct GB_CPU*);
-void GB_CPU_quick_boot(struct GB_CPU*);
-u32 GB_CPU_bus_read_IO(struct GB_bus *bus, u32 addr, u32 val);
-void GB_CPU_bus_write_IO(struct GB_bus* bus, u32 addr, u32 val);
+void GB_CPU_init(GB_CPU*, enum GB_variants variant, GB_clock* clock, GB_bus* bus);
+void GB_CPU_cycle(GB_CPU*);
+void GB_CPU_reset(GB_CPU*);
+void GB_CPU_quick_boot(GB_CPU*);
+u32 GB_CPU_bus_read_IO(GB_bus *bus, u32 addr, u32 val);
+void GB_CPU_bus_write_IO(GB_bus* bus, u32 addr, u32 val);
 
-void GB_CPU_enable_tracing(struct GB_CPU *);
-void GB_CPU_disable_tracing(struct GB_CPU *);
+void GB_CPU_enable_tracing(GB_CPU *);
+void GB_CPU_disable_tracing(GB_CPU *);
 struct GB_inputs;
 
 #endif

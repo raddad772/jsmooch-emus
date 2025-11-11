@@ -5,12 +5,12 @@
 #include "ps1_spu.h"
 #include "../ps1_bus.h"
 
-void PS1_SPU_init(struct PS1 *this)
+void PS1_SPU_init(PS1 *this)
 {
 
 }
 
-void PS1_SPU_write(struct PS1_SPU *this, u32 addr, u32 sz, u32 val)
+void PS1_SPU_write(PS1_SPU *this, u32 addr, u32 sz, u32 val)
 {
     addr -= 0x1F801C00;
     addr <<= 1;
@@ -19,7 +19,7 @@ void PS1_SPU_write(struct PS1_SPU *this, u32 addr, u32 sz, u32 val)
     if (sz == 4) this->val[addr+1] = val >> 16;
 }
 
-u32 PS1_SPU_read(struct PS1_SPU *this, u32 addr, u32 sz, u32 has_effect)
+u32 PS1_SPU_read(PS1_SPU *this, u32 addr, u32 sz, u32 has_effect)
 {
     addr -= 0x1F801C00;
     addr <<= 1;

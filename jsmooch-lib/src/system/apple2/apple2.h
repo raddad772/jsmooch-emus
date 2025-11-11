@@ -8,7 +8,7 @@
 #include "helpers/int.h"
 #include "helpers/sys_interface.h"
 
-void apple2_new(struct jsm_system* system);
-void apple2_delete(struct jsm_system* system);
+void apple2_new(jsm_system* system);
+void apple2_delete(jsm_system* system);
 
 #endif //JSMOOCH_EMUS_APPLE2_H

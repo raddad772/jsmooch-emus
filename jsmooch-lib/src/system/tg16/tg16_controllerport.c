@@ -5,19 +5,19 @@
 #include "tg16_controllerport.h"
 #include "component/controller/tg16b2/tg16b2.h"
 
-void TG16_controllerport_connect(struct TG16_controllerport *this, enum TG16_controller_kinds kind, void *ptr)
+void TG16_controllerport_connect(TG16_controllerport *this, enum TG16_controller_kinds kind, void *ptr)
 {
     this->controller_kind = kind;
     this->controller_ptr = ptr;
 }
 
-void TG16_controllerport_delete(struct TG16_controllerport *this)
+void TG16_controllerport_delete(TG16_controllerport *this)
 {
     this->controller_kind = TG16CK_none;
     this->controller_ptr = NULL;
 }
 
-u8 TG16_controllerport_read_data(struct TG16_controllerport *this)
+u8 TG16_controllerport_read_data(TG16_controllerport *this)
 {
     if (!this->controller_ptr) return 0x0F;
     switch(this->controller_kind) {
@@ -31,7 +31,7 @@ u8 TG16_controllerport_read_data(struct TG16_controllerport *this)
     }
 }
 
-void TG16_controllerport_write_data(struct TG16_controllerport *this, u8 val)
+void TG16_controllerport_write_data(TG16_controllerport *this, u8 val)
 {
     if (!this->controller_ptr) return;
     switch(this->controller_kind) {

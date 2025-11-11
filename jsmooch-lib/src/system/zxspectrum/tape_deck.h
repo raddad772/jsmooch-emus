@@ -44,12 +44,12 @@ struct ZXSpectrum_tape_deck {
 };
 
 struct ZXSpectrum;
-void ZXSpectrum_tape_deck_init(struct ZXSpectrum* bus);
-void ZXSpectrum_tape_deck_delete(struct ZXSpectrum* bus);
-void ZXSpectrum_tape_deck_load(struct ZXSpectrum* bus, multi_file_set* mfs);
-void ZXSpectrum_tape_deck_load_pzx(struct ZXSpectrum* bus, multi_file_set* mfs);
-void ZXSpectrum_tape_deck_rewind(struct ZXSpectrum *bus);
-void ZXSpectrum_tape_deck_remove(struct ZXSpectrum *bus);
-void ZXSpectrum_tape_deck_play(struct ZXSpectrum* bus);
-void ZXSpectrum_tape_deck_stop(struct ZXSpectrum* bus);
+void ZXSpectrum_tape_deck_init(ZXSpectrum* bus);
+void ZXSpectrum_tape_deck_delete(ZXSpectrum* bus);
+void ZXSpectrum_tape_deck_load(ZXSpectrum* bus, multi_file_set* mfs);
+void ZXSpectrum_tape_deck_load_pzx(ZXSpectrum* bus, multi_file_set* mfs);
+void ZXSpectrum_tape_deck_rewind(ZXSpectrum *bus);
+void ZXSpectrum_tape_deck_remove(ZXSpectrum *bus);
+void ZXSpectrum_tape_deck_play(ZXSpectrum* bus);
+void ZXSpectrum_tape_deck_stop(ZXSpectrum* bus);
 #endif //JSMOOCH_EMUS_TAPE_DECK_H

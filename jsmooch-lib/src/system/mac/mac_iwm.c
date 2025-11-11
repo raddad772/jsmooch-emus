@@ -7,8 +7,8 @@
 #include <stdio.h>
 
 #include "mac_internal.h"
-void mac_iwm_init(struct mac* mac) {
-    cvec_init(&mac->iwm.my_disks, sizeof(struct mac_floppy), 10);
+void mac_iwm_init(mac* mac) {
+    cvec_init(&mac->iwm.my_disks, sizeof(mac_floppy), 10);
     mac->iwm.active = IWMM_IDLE;
     mac->iwm.rw = IWMM_IDLE;
     mac->iwm.regs.data = 0;
@@ -30,14 +30,14 @@ void mac_iwm_init(struct mac* mac) {
     mac->iwm.drive[0].disc = f;
 }
 
-void mac_iwm_delete(struct mac* mac) {
+void mac_iwm_delete(mac* mac) {
     for (u32 i = 0; i < cvec_len(&mac->iwm.my_disks); i++) {
         mac_floppy_delete(cvec_get(&mac->iwm.my_disks, i));
     }
     cvec_delete(&mac->iwm.my_disks);
 }
 
-void mac_iwm_reset(struct mac* mac) {
+void mac_iwm_reset(mac* mac) {
     for (u32 i = 0; i < 2; i++) {
         mac->iwm.drive[i].head.track_num = 0;
         mac->iwm.drive[i].RPM = 0;
@@ -49,14 +49,14 @@ void mac_iwm_reset(struct mac* mac) {
     mac->iwm.active = IWMM_IDLE;
 }
 
-static void drive_setup_track(struct mac* this)
+static void drive_setup_track(mac* this)
 {
     struct JSMAC_DRIVE *drv = &this->iwm.drive[this->iwm.selected_drive];
     struct generic_floppy_track* track = cvec_get(&drv->disc->disc.tracks, drv->head.track_num);
     drv->RPM = track->rpm;
     drv->last_RPM_change_time = this->clock.master_cycles;
 }
-static void drive_write_motor_on(struct mac* this, u8 onoff)
+static void drive_write_motor_on(mac* this, u8 onoff)
 {
     struct JSMAC_DRIVE *drv = &this->iwm.drive[this->iwm.selected_drive];
     if (drv->disc == NULL) { // No disk inserted
@@ -77,7 +77,7 @@ static void drive_write_motor_on(struct mac* this, u8 onoff)
     drv->motor_on = onoff;
 }
 
-static void drive_select(struct mac* this, u8 towhich)
+static void drive_select(mac* this, u8 towhich)
 {
     if (towhich == 0) {
         printf("\nSELECT NO DRIVE");
@@ -91,21 +91,21 @@ static void drive_select(struct mac* this, u8 towhich)
     }
 }
 
-static u32 floppy_inserted(struct mac* this)
+static u32 floppy_inserted(mac* this)
 {
     if (this->iwm.cur_drive == NULL) return 0;
     if (this->iwm.cur_drive->disc == NULL) return 0;
     return 1;
 }
 
-static u32 floppy_write_protected(struct mac* this) {
+static u32 floppy_write_protected(mac* this) {
     if (this->iwm.cur_drive == NULL) return 0;
     if (this->iwm.cur_drive->disc == NULL) return 0;
     return this->iwm.cur_drive->disc->write_protect;
 
 }
 
-static void iwm_write_data(struct mac* this, u8 val)
+static void iwm_write_data(mac* this, u8 val)
 {
     this->iwm.regs.data = val;
     if (!this->iwm.regs.mode.async && (this->iwm.rw == IWMM_WRITE)) {
@@ -115,7 +115,7 @@ static void iwm_write_data(struct mac* this, u8 val)
         this->iwm.regs.write_shift &= 0x7F;
 }
 
-static void iwm_write_mode(struct mac* this, u8 val)
+static void iwm_write_mode(mac* this, u8 val)
 {
     if (this->iwm.regs.mode.u != val) {
         printf("\nUPDATE MODE: %02x %s%s%s%s%s%s%s%s      cyc:%lld", val,
@@ -133,7 +133,7 @@ static void iwm_write_mode(struct mac* this, u8 val)
     this->iwm.regs.status.lower5 = (val & 0x1F);
 }
 
-static void update_phases(struct mac* this)
+static void update_phases(mac* this)
 {
     this->iwm.lines.phases = (this->iwm.lines.phases & 0xF0) | (this->iwm.lines.CA0) | (this->iwm.lines.CA1 << 1) | (this->iwm.lines.CA2 << 2) | (this->iwm.lines.LSTRB << 3);
     /*
@@ -143,7 +143,7 @@ static void update_phases(struct mac* this)
         updates_drive_phases(this, m_phases_cb)*/
 }
 
-static void drive_do_step(struct mac* this, JSMAC_DRIVE *drv)
+static void drive_do_step(mac* this, JSMAC_DRIVE *drv)
 {
     if (drv->head_step_direction == 0) {
         if (drv->head.track_num > 0) {
@@ -165,7 +165,7 @@ static void drive_do_step(struct mac* this, JSMAC_DRIVE *drv)
     drv->head.stepping.end = this->clock.master_cycles + ((704*370 * 60) / 100); //10ms
 }
 
-static u32 get_drive_reg(struct mac* this) {
+static u32 get_drive_reg(mac* this) {
     struct JSMAC_DRIVE *drv = &this->iwm.drive[this->iwm.selected_drive];
 
     u8 reg = (this->iwm.lines.CA0 | (this->iwm.lines.CA1 << 1) | (this->iwm.lines.CA2 << 2) | (this->iwm.lines.SELECT << 3));
@@ -246,7 +246,7 @@ static u32 get_drive_reg(struct mac* this) {
     return 0;
 }
 
-void mac_iwm_clock(struct mac* this)
+void mac_iwm_clock(mac* this)
 {
     u32 clk, bit;
     struct JSMAC_DRIVE *drv = &this->iwm.drive[this->iwm.selected_drive];
@@ -282,7 +282,7 @@ void mac_iwm_clock(struct mac* this)
     drv->write_pos = drv->cur_track_pos;*/
 }
 
-static void set_drive_reg(struct mac* this)
+static void set_drive_reg(mac* this)
 {
     struct JSMAC_DRIVE *drv = &this->iwm.drive[this->iwm.selected_drive];
     u8 reg = (this->iwm.lines.CA0 | (this->iwm.lines.CA1 << 1) | (this->iwm.lines.SELECT << 2));
@@ -324,7 +324,7 @@ static void set_drive_reg(struct mac* this)
     }
 }
 
-u16 mac_iwm_control(struct mac* this, u8 addr, u8 val, u32 is_write) {
+u16 mac_iwm_control(mac* this, u8 addr, u8 val, u32 is_write) {
     u32 onoff = (addr & 1); // 0 = turn off, 1 = turn on
     switch (addr & 0xFE) { // Phase lines
         case 0: // CA0
@@ -471,12 +471,12 @@ u16 mac_iwm_control(struct mac* this, u8 addr, u8 val, u32 is_write) {
     return 0xFF;
 }
 
-u16 mac_iwm_read(struct mac *this, u8 addr)
+u16 mac_iwm_read(mac *this, u8 addr)
 {
     return mac_iwm_control(this, addr, 0, 0);
 }
 
-void mac_iwm_write(struct mac *this, u8 addr, u8 val)
+void mac_iwm_write(mac *this, u8 addr, u8 val)
 {
     mac_iwm_control(this, addr, val, 1);
 }

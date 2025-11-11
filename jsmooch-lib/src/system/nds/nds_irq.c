@@ -5,13 +5,13 @@
 #include "nds_irq.h"
 #include "nds_bus.h"
 
-void NDS_eval_irqs_7(struct NDS *this)
+void NDS_eval_irqs_7(NDS *this)
 {
     this->arm7.regs.IRQ_line = (!!(this->io.arm7.IE & this->io.arm7.IF)) & this->io.arm7.IME;
     ARM7TDMI_IRQcheck(&this->arm7, this->arm7_ins);
 }
 
-void NDS_eval_irqs_9(struct NDS *this)
+void NDS_eval_irqs_9(NDS *this)
 {
     // Bit 21 can't go down while certain conditions are true
     //printf("\neval_irqs_9 IF:%08x IE:%08x IME:%d", this->io.arm9.IF, this->io.arm9.IE, this->io.arm9.IME);
@@ -22,7 +22,7 @@ void NDS_eval_irqs_9(struct NDS *this)
     ARM946ES_IRQcheck(&this->arm9, this->arm9_ins);
 }
 
-void NDS_eval_irqs(struct NDS *this)
+void NDS_eval_irqs(NDS *this)
 {
     /*
 0     LCD V-Blank
@@ -61,7 +61,7 @@ void NDS_eval_irqs(struct NDS *this)
     this->arm9.regs.IRQ_line = (!!(this->io.arm9.IE & this->io.arm9.IF & 0x3FFF)) & this->io.arm9.IME;
 }
 
-void NDS_update_IF7(struct NDS *this, u32 bitnum)
+void NDS_update_IF7(NDS *this, u32 bitnum)
 {
     u32 old_IF = this->io.arm7.IF;
     this->io.arm7.IF |= 1 << bitnum;
@@ -71,21 +71,21 @@ void NDS_update_IF7(struct NDS *this, u32 bitnum)
     ARM7TDMI_IRQcheck(&this->arm7, this->arm7_ins);
 }
 
-void NDS_update_IF9(struct NDS *this, u32 bitnum)
+void NDS_update_IF9(NDS *this, u32 bitnum)
 {
     u32 old_IF = this->io.arm9.IF;
     this->io.arm9.IF |= 1 << bitnum;
     NDS_eval_irqs_9(this);
 }
 
-void NDS_update_IFs_card(struct NDS *this, u32 bitnum)
+void NDS_update_IFs_card(NDS *this, u32 bitnum)
 {
     if (this->io.rights.nds_slot_is7) NDS_update_IF7(this, bitnum);
     else NDS_update_IF9(this, bitnum);
 }
 
 
-void NDS_update_IFs(struct NDS *this, u32 bitnum)
+void NDS_update_IFs(NDS *this, u32 bitnum)
 {
     NDS_update_IF7(this, bitnum);
     NDS_update_IF9(this, bitnum);

@@ -14,12 +14,12 @@
 
 #include "mac_floppy.h"
 
-void mac_floppy_init(struct mac_floppy *this)
+void mac_floppy_init(mac_floppy *this)
 {
     generic_floppy_init(&this->disc);
 }
 
-void mac_floppy_delete(struct mac_floppy *this)
+void mac_floppy_delete(mac_floppy *this)
 {
     generic_floppy_delete(&this->disc);
 }
@@ -42,7 +42,7 @@ static double track_RPM[5] = {
         401.9241, 438.4626, 482.3089, 535.8988, 602.8861
 };
 
-static void mac_floppy_save(struct mac_floppy *mflpy)
+static void mac_floppy_save(mac_floppy *mflpy)
 {
     char PATH[500];
     snprintf(PATH, 500, "/Users/dave/dev/system11.bin");
@@ -73,7 +73,7 @@ static void mac_floppy_save(struct mac_floppy *mflpy)
 }
 
 
-int mac_floppy_load(struct mac_floppy *mflpy, const char* fname, buf *b)
+int mac_floppy_load(mac_floppy *mflpy, const char* fname, buf *b)
 {
     int r;
     if (ends_with(fname, ".image")) {
@@ -86,7 +86,7 @@ int mac_floppy_load(struct mac_floppy *mflpy, const char* fname, buf *b)
     return r;
 }
 
-void fill_mac_floppy_tracks(struct mac_floppy *mflpy, u32 num_heads) {
+void fill_mac_floppy_tracks(mac_floppy *mflpy, u32 num_heads) {
     mflpy->num_heads = num_heads;
     assert(num_heads==1);
     u64 track_radius = 395000 + 1875;
@@ -136,7 +136,7 @@ u32 dc42_calc_checksum(const u8 *buf, u32 count, u32 chk)
     return chk;
 }
 
-void *dc42_load_gcr(struct mac_floppy *mflpy, buf *b, u32 head_count, u32 *check, u32 fmt)
+void *dc42_load_gcr(mac_floppy *mflpy, buf *b, u32 head_count, u32 *check, u32 fmt)
 {
     u32 tracki, headi, sectori;
     u32 sector_count;
@@ -169,7 +169,7 @@ void *dc42_load_gcr(struct mac_floppy *mflpy, buf *b, u32 head_count, u32 *check
     return bptr;
 }
 
-int dc42_load_tags(struct mac_floppy *mflpy, u8 *bptr, u32 tags_size, u32 *check)
+int dc42_load_tags(mac_floppy *mflpy, u8 *bptr, u32 tags_size, u32 *check)
 {
     *check = 0;
     for (u32 headi = 0; headi < mflpy->num_heads; headi++) {
@@ -195,7 +195,7 @@ int dc42_load_tags(struct mac_floppy *mflpy, u8 *bptr, u32 tags_size, u32 *check
     return 1;
 }
 
-int mac_floppy_dc42_load(struct mac_floppy *mflpy, buf *b)
+int mac_floppy_dc42_load(mac_floppy *mflpy, buf *b)
 {
     u32 check = 0;
     fill_mac_floppy_tracks(mflpy, 1);
@@ -264,7 +264,7 @@ int mac_floppy_dc42_load(struct mac_floppy *mflpy, buf *b)
 }
 
 
-int mac_floppy_plain_load(struct mac_floppy *mflpy, buf *b)
+int mac_floppy_plain_load(mac_floppy *mflpy, buf *b)
 {
     printf("\nDISC SIZE: %lldb %lldKb", b->size, b->size >> 10);
     u8 *buf_ptr = (u8 *)b->ptr;
@@ -310,7 +310,7 @@ u32 gcr6_encode(u8 va, u8 vb, u8 vc)
 }
 
 
-void mac_floppy_encode_track(struct generic_floppy_track *track)
+void mac_floppy_encode_track(generic_floppy_track *track)
 {
     // Thank-you to MAME for this!
     // 30318342 = 60.0 / 1.979e-6

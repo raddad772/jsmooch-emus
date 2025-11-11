@@ -53,7 +53,7 @@ static void init_env_table()
     env_table_done = 1;
 }
 
-void ay_3_8910_init(struct ay_3_8910* this, enum ay_3_8910_variants variant)
+void ay_3_8910_init(ay_3_8910* this, enum ay_3_8910_variants variant)
 {
     this->variant = variant;
     this->divider_16 = 0;
@@ -63,20 +63,20 @@ void ay_3_8910_init(struct ay_3_8910* this, enum ay_3_8910_variants variant)
     }
 }
 
-void ay_3_8910_reset(struct ay_3_8910* this)
+void ay_3_8910_reset(ay_3_8910* this)
 {
     this->divider_16 = 0;
 
 }
 
-void ay_3_8910_delete(struct ay_3_8910* this)
+void ay_3_8910_delete(ay_3_8910* this)
 {
 
 }
 
 
 
-void ay_3_8910_write(struct ay_3_8910* this, u8 addr, u8 val)
+void ay_3_8910_write(ay_3_8910* this, u8 addr, u8 val)
 {
     addr &= 0x1F;
     switch(addr) {
@@ -138,13 +138,13 @@ void ay_3_8910_write(struct ay_3_8910* this, u8 addr, u8 val)
     }
 }
 
-u8 ay_3_8910_read(struct ay_3_8910* this, u8 addr)
+u8 ay_3_8910_read(ay_3_8910* this, u8 addr)
 {
     addr &= 0x1F;
     return 0;
 }
 
-static void tick_sw(struct ay_3_8910* this, u32 i)
+static void tick_sw(ay_3_8910* this, u32 i)
 {
     if (this->sw[i].counter == 0) {
         this->sw[i].counter = this->sw[i].freq;
@@ -154,7 +154,7 @@ static void tick_sw(struct ay_3_8910* this, u32 i)
     this->sw[i].counter--;
 }
 
-static void tick_noise(struct ay_3_8910* this)
+static void tick_noise(ay_3_8910* this)
 {
     if (this->noise.counter == 0) {
         this->noise.counter = this->noise.period;
@@ -165,7 +165,7 @@ static void tick_noise(struct ay_3_8910* this)
     this->noise.counter--;
 }
 
-static void tick_env(struct ay_3_8910* this)
+static void tick_env(ay_3_8910* this)
 {
     if (this->env.count_up) this->env.counter++;
     else this->env.counter--;
@@ -173,7 +173,7 @@ static void tick_env(struct ay_3_8910* this)
 
 }
 
-void ay_3_8910_cycle(struct ay_3_8910* this)
+void ay_3_8910_cycle(ay_3_8910* this)
 {
     u32 cdc = this->divider_16;
     this->divider_16 = (this->divider_16 + 1) & 15;

@@ -16,10 +16,10 @@
 
 //#define BREAKPOINT 0x40016e
 
-void M68k_disasm_RESET_POWER(struct M68k_ins_t *ins, u32 *PC, jsm_debug_read_trace *rt, jsm_string *out);
-void M68k_init(struct M68k* this, u32 megadrive_bug)
+void M68k_disasm_RESET_POWER(M68k_ins_t *ins, u32 *PC, jsm_debug_read_trace *rt, jsm_string *out);
+void M68k_init(M68k* this, u32 megadrive_bug)
 {
-    memset(this, 0, sizeof(struct M68k));
+    memset(this, 0, sizeof(M68k));
     do_M68k_decode();
     this->SPEC_RESET.sz = 4;
     this->SPEC_RESET.operand_mode = M68k_OM_none;
@@ -28,12 +28,12 @@ void M68k_init(struct M68k* this, u32 megadrive_bug)
     this->megadrive_bug = megadrive_bug;
     //this->regs.D[0] = this->regs.A[0] = 0xFFFFFFFF;
     jsm_string_init(&this->trace.str, 1000);
-    cvec_init(&this->iack_handlers, sizeof(struct M68k_iack_handler), 2);
+    cvec_init(&this->iack_handlers, sizeof(M68k_iack_handler), 2);
     DBG_EVENT_VIEW_INIT;
 
 }
 
-void M68k_setup_tracing(struct M68k* this, jsm_debug_read_trace *strct, u64 *trace_cycle_pointer)
+void M68k_setup_tracing(M68k* this, jsm_debug_read_trace *strct, u64 *trace_cycle_pointer)
 {
     this->trace.strct.read_trace_m68k = strct->read_trace_m68k;
     this->trace.strct.ptr = strct->ptr;
@@ -42,13 +42,13 @@ void M68k_setup_tracing(struct M68k* this, jsm_debug_read_trace *strct, u64 *tra
     this->trace.cycles = trace_cycle_pointer;
 }
 
-void M68k_delete(struct M68k* this)
+void M68k_delete(M68k* this)
 {
     jsm_string_delete(&this->trace.str);
     cvec_delete(&this->iack_handlers);
 }
 
-static void M68k_decode(struct M68k* this)
+static void M68k_decode(M68k* this)
 {
     u32 IRD = this->regs.IR;
     this->regs.IRD = IRD;
@@ -67,7 +67,7 @@ static void M68k_decode(struct M68k* this)
     this->state.instruction.prefetch = 1; // 1 prefetches are needed currently
 }
 
-void M68k_set_SR(struct M68k* this, u32 val, u32 immediate_t)
+void M68k_set_SR(M68k* this, u32 val, u32 immediate_t)
 {
     u32 new_s = (val & 0x2000) >> 13;
     // CCR
@@ -84,7 +84,7 @@ void M68k_set_SR(struct M68k* this, u32 val, u32 immediate_t)
     if (immediate_t || (this->regs.next_SR_T == 0)) this->regs.SR.T = this->regs.next_SR_T;
 }
 
-static void pprint_ea(struct M68k* this, M68k_ins_t *ins, u32 opnum, jsm_string *outstr)
+static void pprint_ea(M68k* this, M68k_ins_t *ins, u32 opnum, jsm_string *outstr)
 {
     struct M68k_EA *ea = &ins->ea[opnum];
     u32 kind = 0; // 0 = NONE, 1 = addr reg, 2 = data reg, 3 = EA
@@ -181,7 +181,7 @@ static void pprint_ea(struct M68k* this, M68k_ins_t *ins, u32 opnum, jsm_string 
     }
 }
 
-static void M68k_trace_format(struct M68k* this)
+static void M68k_trace_format(M68k* this)
 {
     jsm_string_quickempty(&this->trace.str);
     M68k_disassemble(this->regs.PC-2, this->regs.IR, &this->trace.strct, &this->trace.str);
@@ -200,14 +200,14 @@ static void M68k_trace_format(struct M68k* this)
 #endif
 }
 
-void M68k_register_iack_handler(struct M68k *this, void *ptr, void (*handler)(void*))
+void M68k_register_iack_handler(M68k *this, void *ptr, void (*handler)(void*))
 {
     struct M68k_iack_handler *nh = cvec_push_back(&this->iack_handlers);
     nh->ptr = ptr;
     nh->handler = handler;
 }
 
-void M68k_set_interrupt_level(struct M68k* this, u32 val)
+void M68k_set_interrupt_level(M68k* this, u32 val)
 {
     if ((this->pins.IPL < 7) && (val == 7)) {
         this->state.nmi = 1;
@@ -215,7 +215,7 @@ void M68k_set_interrupt_level(struct M68k* this, u32 val)
     this->pins.IPL = val;
 }
 
-static u32 M68k_process_interrupts(struct M68k* this)
+static u32 M68k_process_interrupts(M68k* this)
 {
     if (this->state.exception.interrupt.on_next_instruction) {
         //printf("\nM68K IRQFIRE cyc:%lld", *this->trace.cycles);
@@ -236,7 +236,7 @@ static u32 M68k_process_interrupts(struct M68k* this)
     return 0;
 }
 
-static void lycoder_pprint2(struct M68k* this)
+static void lycoder_pprint2(M68k* this)
 {
     // d:FFFFFFFF FFFFFFFF B6DB6DB6 DB6DB6DB 6DB6DB6D 00000000 00000000 00000000
     dbg_printf(" d:%08X %08X %08X %08X %08X %08X %08X %08X",
@@ -250,14 +250,14 @@ static void lycoder_pprint2(struct M68k* this)
     dbg_printf(" pc:%08X sr:%04X asp:%08X\n", this->opc, this->regs.SR.u, this->regs.ASP);
 }
 
-static void lycoder_pprint1(struct M68k* this)
+static void lycoder_pprint1(M68k* this)
 {
     // cyc:14742674 a:004002D0 opc:21FC
     dbg_printf("cyc:%lld a:%08X opc:%04X", *this->trace.cycles, this->regs.PC-4, this->regs.IRD);
     this->opc = this->regs.PC - 4;
 }
 
-void M68k_cycle(struct M68k* this)
+void M68k_cycle(M68k* this)
 {
     u32 quit = 0;
     while (!quit) {
@@ -349,13 +349,13 @@ void M68k_cycle(struct M68k* this)
 #endif
 }
 
-void M68k_unstop(struct M68k* this)
+void M68k_unstop(M68k* this)
 {
     if (this->state.current == M68kS_stopped)
         this->state.current = this->state.stopped.next_state;
 }
 
-void M68k_reset(struct M68k* this)
+void M68k_reset(M68k* this)
 {
     this->state.current = M68kS_exec;
     this->state.instruction.done = 0;
@@ -368,7 +368,7 @@ void M68k_reset(struct M68k* this)
     this->opc = 0xFFFFFFFF;
 }
 
-void M68k_disassemble_entry(struct M68k *this, disassembly_entry* entry)
+void M68k_disassemble_entry(M68k *this, disassembly_entry* entry)
 {
     u16 IR = this->trace.strct.read_trace_m68k(this->trace.strct.ptr, entry->addr, 1, 1);
     u16 opcode = IR;
@@ -384,7 +384,7 @@ void M68k_disassemble_entry(struct M68k *this, disassembly_entry* entry)
 }
 
 #define S(x) Sadd(state, &this-> x, sizeof(this-> x))
-static void serialize_regs(struct M68k_regs *this, serialized_state *state) {
+static void serialize_regs(M68k_regs *this, serialized_state *state) {
     S(D);
     S(A);
     S(IPC);
@@ -397,7 +397,7 @@ static void serialize_regs(struct M68k_regs *this, serialized_state *state) {
     S(next_SR_T);
 }
 
-static void serialize_pins(struct M68k_pins* this, serialized_state *state) {
+static void serialize_pins(M68k_pins* this, serialized_state *state) {
     S(FC);
     S(Addr);
     S(D);
@@ -413,7 +413,7 @@ static void serialize_pins(struct M68k_pins* this, serialized_state *state) {
 }
 
 // #define S(x) Sadd(state, &this-> x, sizeof(this-> x))
-void M68k_serialize(struct M68k *this, serialized_state *state)
+void M68k_serialize(M68k *this, serialized_state *state)
 {
     serialize_regs(&this->regs, state);
     serialize_pins(&this->pins, state);
@@ -440,7 +440,7 @@ void M68k_serialize(struct M68k *this, serialized_state *state)
 
 
 #define L(x) Sload(state, &this-> x, sizeof(this-> x))
-static void deserialize_regs(struct M68k_regs* this, serialized_state *state)
+static void deserialize_regs(M68k_regs* this, serialized_state *state)
 {
     L(D);
     L(A);
@@ -454,7 +454,7 @@ static void deserialize_regs(struct M68k_regs* this, serialized_state *state)
     L(next_SR_T);
 }
 
-static void deserialize_pins(struct M68k_pins* this, serialized_state *state)
+static void deserialize_pins(M68k_pins* this, serialized_state *state)
 {
     L(FC);
     L(Addr);
@@ -470,7 +470,7 @@ static void deserialize_pins(struct M68k_pins* this, serialized_state *state)
     L(RESET);
 }
 
-void M68k_deserialize(struct M68k*this, serialized_state *state)
+void M68k_deserialize(M68k*this, serialized_state *state)
 {
     deserialize_regs(&this->regs, state);
     deserialize_pins(&this->pins, state);

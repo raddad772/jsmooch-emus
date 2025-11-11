@@ -16,9 +16,9 @@ struct SMSGG_gamepad {
     struct cvec_ptr device_ptr;
 };
 
-void SMSGG_gamepad_init(struct SMSGG_gamepad*, enum jsm::systems variant, u32 num);
-u32 SMSGG_gamepad_read(struct SMSGG_gamepad*);
-void SMSGG_gamepad_latch(struct SMSGG_gamepad*);
-void SMSGG_gamepad_setup_pio(struct physical_io_device *d, u32 num, const char*name, u32 connected, u32 pause_button);
+void SMSGG_gamepad_init(SMSGG_gamepad*, enum jsm::systems variant, u32 num);
+u32 SMSGG_gamepad_read(SMSGG_gamepad*);
+void SMSGG_gamepad_latch(SMSGG_gamepad*);
+void SMSGG_gamepad_setup_pio(physical_io_device *d, u32 num, const char*name, u32 connected, u32 pause_button);
 
 #endif //JSMOOCH_EMUS_SMS_GAMEPAD_H

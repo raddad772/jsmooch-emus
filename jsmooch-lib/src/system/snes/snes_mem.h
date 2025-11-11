@@ -24,8 +24,8 @@ struct SNES_memmap_block {
 };
 
 struct SNES;
-typedef void (*SNES_memmap_write)(struct SNES *, u32 addr, u32 val, SNES_memmap_block *bl);
-typedef u32 (*SNES_memmap_read)(struct SNES *, u32 addr, u32 old, u32 has_effect, SNES_memmap_block *bl);
+typedef void (*SNES_memmap_write)(SNES *, u32 addr, u32 val, SNES_memmap_block *bl);
+typedef u32 (*SNES_memmap_read)(SNES *, u32 addr, u32 old, u32 has_effect, SNES_memmap_block *bl);
 
 struct SNES_mem {
     struct SNES_memmap_block blockmap[0x1000];
@@ -42,11 +42,11 @@ struct SNES_mem {
 };
 
 struct SNES;
-void SNES_mem_init(struct SNES *);
-u32 SNES_wdc65816_read(struct SNES *, u32 addr, u32 old, u32 has_effect);
-void SNES_wdc65816_write(struct SNES *, u32 addr, u32 val);
-u32 SNES_spc700_read(struct SNES *, u32 addr, u32 old, u32 has_effect);
-void SNES_spc700_write(struct SNES *, u32 addr, u32 val);
-void SNES_mem_cart_inserted(struct SNES *);
+void SNES_mem_init(SNES *);
+u32 SNES_wdc65816_read(SNES *, u32 addr, u32 old, u32 has_effect);
+void SNES_wdc65816_write(SNES *, u32 addr, u32 val);
+u32 SNES_spc700_read(SNES *, u32 addr, u32 old, u32 has_effect);
+void SNES_spc700_write(SNES *, u32 addr, u32 val);
+void SNES_mem_cart_inserted(SNES *);
 
 #endif //JSMOOCH_EMUS_SNES_MEM_H

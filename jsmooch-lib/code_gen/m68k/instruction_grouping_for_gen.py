@@ -79,7 +79,7 @@ def main():
         ins: ins_t
         iname: str
 
-        o += '\n    (struct m68k_gentest_item) { .name="' + ins.ins_name + '", .num_opcodes = ' + str(
+        o += '\n    (m68k_gentest_item) { .name="' + ins.ins_name + '", .num_opcodes = ' + str(
             len(ins.opcodes)) + ', .opcodes = (u32 []) { '
         for opcode in ins.opcodes:
             o += str(opcode) + ','

@@ -42,14 +42,14 @@ struct inifile {
     struct cvec sections;
 };
 
-void inifile_init(struct inifile*);
-void inifile_delete(struct inifile*);
+void inifile_init(inifile*);
+void inifile_delete(inifile*);
 
-u32 inifile_has_key(struct inifile*, const char* section, const char* key);
-struct kv_pair* inifile_get_or_make_key(struct inifile *, const char* section, const char* key);
+u32 inifile_has_key(inifile*, const char* section, const char* key);
+struct kv_pair* inifile_get_or_make_key(inifile *, const char* section, const char* key);
 
-int inifile_load(struct inifile*, const char* path);
-void inifile_save(struct inifile*);
+int inifile_load(inifile*, const char* path);
+void inifile_save(inifile*);
 
 char *construct_path_with_home(char *w, size_t w_sz, const char *who);
 

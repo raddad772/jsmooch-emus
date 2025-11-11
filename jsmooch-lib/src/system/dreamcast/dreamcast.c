@@ -25,7 +25,7 @@
 
 #define sched_printf(...) (void)0
 
-#define JTHIS struct DC* this = (struct DC*)jsm->ptr
+#define JTHIS struct DC* this = (DC*)jsm->ptr
 #define JSM struct jsm_system* jsm
 
 #define THIS struct NES* this
@@ -44,8 +44,8 @@ u32 DCJ_step_master(JSM, u32 howmany);
 void DCJ_load_BIOS(JSM, multi_file_set* mfs);
 void DCJ_enable_tracing(JSM);
 void DCJ_disable_tracing(JSM);
-static void DC_schedule_frame(struct DC* this);
-static void new_frame(struct DC* this, u32 copy_buf);
+static void DC_schedule_frame(DC* this);
+static void new_frame(DC* this, u32 copy_buf);
 void DCJ_describe_io(JSM, cvec* IOs);
 static void DCJ_sideload(JSM, multi_file_set* mfs);
 static void DCJ_setup_debugger_interface(JSM, debugger_interface *intf);
@@ -55,7 +55,7 @@ static void DCJ_setup_debugger_interface(JSM, debugger_interface *intf);
 void DC_new(JSM)
 {
     fflush(stdout);
-    struct DC* this = (struct DC*)malloc(sizeof(struct DC));
+    struct DC* this = (DC*)malloc(sizeof(DC));
     scheduler_init(&this->scheduler, &this->trace_cycles, &this->waitstates);
     this->scheduler.max_block_size = 150;
     snprintf(jsm->label, sizeof(jsm->label), "Sega Dreamcast");
@@ -124,7 +124,7 @@ void DC_new(JSM)
     jsm->setup_debugger_interface = &DCJ_setup_debugger_interface;
 }
 
-void DC_delete(struct jsm_system* jsm)
+void DC_delete(jsm_system* jsm)
 {
     JTHIS;
 
@@ -152,7 +152,7 @@ static void DCJ_setup_debugger_interface(JSM, debugger_interface *intf)
 }
 
 
-void DC_copy_fb(struct DC* this, u32* where) {
+void DC_copy_fb(DC* this, u32* where) {
     u32* ptr = (u32*)this->VRAM;
     ptr += this->holly.FB_R_SOF1.field;
     //ptr += 0x00020000;
@@ -227,7 +227,7 @@ void DCJ_killall(JSM)
 
 }
 
-static void new_frame(struct DC* this, u32 copy_buf)
+static void new_frame(DC* this, u32 copy_buf)
 {
     this->clock.frame_cycle = 0;
     this->clock.frame_start_cycle = (i64)this->trace_cycles;
@@ -254,7 +254,7 @@ struct DCF_event {
 
 static void handle_keyed_event(void *ptr, u64 key, u64 clock, u32 jitter)
 {
-    struct DC *this = (struct DC*)ptr;
+    struct DC *this = (DC*)ptr;
     switch ((enum DC_frame_events)key) {
         case evt_FRAME_START:
             sched_printf("\nFRAME START: %llu", this->trace_cycles);
@@ -280,7 +280,7 @@ static void handle_keyed_event(void *ptr, u64 key, u64 clock, u32 jitter)
     }
 }
 
-static void DC_schedule_frame(struct DC* this)
+static void DC_schedule_frame(DC* this)
 {
     // events
     // frame start @0.
@@ -403,7 +403,7 @@ static void DCIO_insert_disc(JSM, physical_io_device *pio, multi_file_set *mfs)
     GDI_load(mfs->files[0].path, mfs->files[0].name, &this->gdrom.gdi);
 }
 
-static void new_button(struct JSM_CONTROLLER* cnt, const char* name, enum JKEYS common_id)
+static void new_button(JSM_CONTROLLER* cnt, const char* name, enum JKEYS common_id)
 {
     struct HID_digital_button *b = cvec_push_back(&cnt->digital_buttons);
     snprintf(b->name, sizeof(b->name), "%s", name);
@@ -413,7 +413,7 @@ static void new_button(struct JSM_CONTROLLER* cnt, const char* name, enum JKEYS 
     b->common_id = common_id;
 }
 
-static void setup_controller(struct DC* this, u32 num, const char*name, u32 connected)
+static void setup_controller(DC* this, u32 num, const char*name, u32 connected)
 {
     struct physical_io_device *d = cvec_push_back(this->IOs);
     physical_io_device_init(d, HID_CONTROLLER, 0, 0, 1, 1);
@@ -435,7 +435,7 @@ static void setup_controller(struct DC* this, u32 num, const char*name, u32 conn
     new_button(cnt, "start", DBCID_co_start);
 }
 
-static void setup_crt(struct JSM_DISPLAY *d)
+static void setup_crt(JSM_DISPLAY *d)
 {
     d->standard = JSS_CRT;
     d->enabled = 1;
@@ -510,7 +510,7 @@ void DCJ_describe_io(JSM, cvec* IOs)
     this->c1.devices = IOs;
     this->c1.device_index = 0;
 
-    this->holly.display = &((struct physical_io_device *)cpg(this->holly.display_ptr))->display;
+    this->holly.display = &((physical_io_device *)cpg(this->holly.display_ptr))->display;
 }
 
 
@@ -554,7 +554,7 @@ void DCJ_old_load_ROM(JSM, multi_file_set* mfs)
 }
 
 // Thank you for this Deecey
-static void DC_CPU_state_after_boot_rom(struct DC* this)
+static void DC_CPU_state_after_boot_rom(DC* this)
 {
     struct SH4* sh4 = &this->sh4;
     //SH4_SR_set(sh4, 0x400000F1);
@@ -607,7 +607,7 @@ static void DC_CPU_state_after_boot_rom(struct DC* this)
     sh4->regs.PC = 0xAC008300; // IP.bin start address
 }
 
-static void DC_RAM_state_after_boot_rom(struct DC* this, read_file_buf *IPBIN)
+static void DC_RAM_state_after_boot_rom(DC* this, read_file_buf *IPBIN)
 {
     memset(&this->RAM[0x00200000], 0, 0x1000000);
 

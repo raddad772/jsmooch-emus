@@ -160,7 +160,9 @@ struct jsm_debug_read_trace {
     u32 (*read_trace_m68k)(void *, u32, u32, u32){};
 };
 
+#ifndef DEBUG_IMPL
 extern jsm_debug_struct dbg;
+#endif
 
 int dbg_printf(char *format, ...);
 void dbg_seek_in_line(u32 pos);
@@ -189,11 +191,11 @@ void dbg_delete();
 void dbg_break(const char *reason, u64 cycles);
 void dbg_unbreak();
 
-void LT_init(struct last_traces_t *);
-void LT_printf(struct last_traces_t *, char *format, ...);
-void LT_endline(struct last_traces_t *);
-void LT_seek_in_line(struct last_traces_t *, u32 where);
-void LT_dump_to_dbg(struct last_traces_t *);
+void LT_init(last_traces_t *);
+void LT_printf(last_traces_t *, char *format, ...);
+void LT_endline(last_traces_t *);
+void LT_seek_in_line(last_traces_t *, u32 where);
+void LT_dump_to_dbg(last_traces_t *);
 
 void DFT(char *format, ...);
 
@@ -212,7 +214,7 @@ void dbg_init();
 #define dbg_LT_dump() (void)0
 #define dbg_LT_clear() (void)0
 #endif
-void jsm_copy_read_trace(struct jsm_debug_read_trace *dst, jsm_debug_read_trace *src);
+void jsm_copy_read_trace(jsm_debug_read_trace *dst, jsm_debug_read_trace *src);
 
 
 #ifdef TRACE_COLORS

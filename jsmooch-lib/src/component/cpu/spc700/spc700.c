@@ -13,7 +13,7 @@
 
 extern SPC700_ins_func spc700_decoded_opcodes[0x100];
 
-void SPC700_init(struct SPC700 *this, u64 *clock_ptr)
+void SPC700_init(SPC700 *this, u64 *clock_ptr)
 {
     memset(this, 0, sizeof(*this));
     this->clock = clock_ptr;
@@ -21,14 +21,14 @@ void SPC700_init(struct SPC700 *this, u64 *clock_ptr)
     jsm_string_init(&this->trace.str2, 200);
 }
 
-void SPC700_delete(struct SPC700* this)
+void SPC700_delete(SPC700* this)
 {
     jsm_string_delete(&this->trace.str);
     jsm_string_delete(&this->trace.str2);
 }
 
 
-void SPC700_reset(struct SPC700 *this)
+void SPC700_reset(SPC700 *this)
 {
     this->io.ROM_readable = 1;
     for (u32 i = 0; i < 3; i++) {
@@ -51,7 +51,7 @@ static SPC700_ins_func get_decoded_opcode(u32 opcode)
     return spc700_decoded_opcodes[opcode];
 }
 
-static void advance_timers(struct SPC700 *this, i32 cycles)
+static void advance_timers(SPC700 *this, i32 cycles)
 {
     this->timers[0].divider += cycles;
     this->timers[1].divider += cycles;
@@ -97,7 +97,7 @@ static void advance_timers(struct SPC700 *this, i32 cycles)
     }
 }
 
-static void spc700_trace_format(struct SPC700 *this)
+static void spc700_trace_format(SPC700 *this)
 {
     //dbg.traces.add(TRACERS.SPC, this.clock.apu_has, this.trace_format(this.disassemble(), (this.regs.PC - 1) & 0xFFFF));
     u32 do_dbglog = 0;
@@ -130,7 +130,7 @@ static void spc700_trace_format(struct SPC700 *this)
     }
 }
 
-void SPC700_cycle(struct SPC700 *this, i64 how_many) {
+void SPC700_cycle(SPC700 *this, i64 how_many) {
     this->cycles += how_many;
     while(this->cycles > 0) {
         this->regs.opc_cycles = 0;
@@ -158,7 +158,7 @@ void SPC700_cycle(struct SPC700 *this, i64 how_many) {
     }
 }
 
-void SPC700_sync_to(struct SPC700 *this, i64 to_what)
+void SPC700_sync_to(SPC700 *this, i64 to_what)
 {
     /*long double apu_clock = (long double)to_what * this->ratio;
     i64 cycles = (i64)floorl((apu_clock - this->clock->apu.has) / 24.0) + 1;
@@ -166,7 +166,7 @@ void SPC700_sync_to(struct SPC700 *this, i64 to_what)
     SPC700_cycle(this, cycles);*/
 }
 
-static u8 readIO(struct SPC700 *this, u32 addr)
+static u8 readIO(SPC700 *this, u32 addr)
 {
     u32 val;
     switch(addr) {
@@ -216,7 +216,7 @@ static u8 readIO(struct SPC700 *this, u32 addr)
     }
 }
 
-static void writeIO(struct SPC700 *this, u32 addr, u32 val)
+static void writeIO(SPC700 *this, u32 addr, u32 val)
 {
     switch(addr) {
         case 0xF0: // TEST register, should not be written
@@ -267,7 +267,7 @@ static void writeIO(struct SPC700 *this, u32 addr, u32 val)
     }
 }
 
-static void log_write(struct SPC700 *this, u32 addr, u32 val)
+static void log_write(SPC700 *this, u32 addr, u32 val)
 {
     if (this->trace.dbglog.view && this->trace.dbglog.view->ids_enabled[this->trace.dbglog.id_write]) {
         u64 tc;
@@ -295,7 +295,7 @@ static void log_write(struct SPC700 *this, u32 addr, u32 val)
 }
 
 
-static void log_read(struct SPC700 *this, u32 addr, u32 val)
+static void log_read(SPC700 *this, u32 addr, u32 val)
 {
     if (this->trace.dbglog.view && this->trace.dbglog.view->ids_enabled[this->trace.dbglog.id_read]) {
         u64 tc;
@@ -317,7 +317,7 @@ static void log_read(struct SPC700 *this, u32 addr, u32 val)
     }
 }
 
-u8 SPC700_read8(struct SPC700 *this, u32 addr)
+u8 SPC700_read8(SPC700 *this, u32 addr)
 {
     u8 r;
     if ((addr >= 0x00F1) && (addr <= 0x00FF)) r = readIO(this, addr);
@@ -329,12 +329,12 @@ u8 SPC700_read8(struct SPC700 *this, u32 addr)
     return r;
 }
 
-u8 SPC700_read8D(struct SPC700 *this, u32 addr)
+u8 SPC700_read8D(SPC700 *this, u32 addr)
 {
     return SPC700_read8(this, (addr & 0xFF) + this->regs.P.DO);
 }
 
-void SPC700_write8(struct SPC700 *this, u32 addr, u32 val)
+void SPC700_write8(SPC700 *this, u32 addr, u32 val)
 {
     if ((addr >= 0x00F1) && (addr <= 0x00FF))
         writeIO(this, addr, val);
@@ -342,14 +342,14 @@ void SPC700_write8(struct SPC700 *this, u32 addr, u32 val)
     log_write(this, addr, val);
 }
 
-void SPC700_write8D(struct SPC700 *this, u32 addr, u32 val)
+void SPC700_write8D(SPC700 *this, u32 addr, u32 val)
 {
     SPC700_write8(this, (addr & 0xFF) + this->regs.P.DO, val);
 }
 
 static u32 read_trace(void *ptr, u32 addr)
 {
-    struct SPC700 *this = (struct SPC700 *)ptr;
+    struct SPC700 *this = (SPC700 *)ptr;
     u8 r;
     if ((addr >= 0x00F1) && (addr <= 0x00FF)) r = readIO(this, addr);
     else if ((addr >= 0xFFC0) && this->io.ROM_readable) r = SPC700_boot_rom[addr - 0xFFC0];
@@ -359,7 +359,7 @@ static u32 read_trace(void *ptr, u32 addr)
 
 }
 
-void SPC700_setup_tracing(struct SPC700* this, jsm_debug_read_trace *strct)
+void SPC700_setup_tracing(SPC700* this, jsm_debug_read_trace *strct)
 {
     this->trace.strct.ptr = this;
     this->trace.strct.read_trace = &read_trace;

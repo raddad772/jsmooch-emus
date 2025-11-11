@@ -8,9 +8,9 @@
 #include "physical_io.h"
 
 
-void physical_io_device_init(struct physical_io_device* this, enum IO_CLASSES kind, u32 enabled, u32 connected, u32 input, u32 output)
+void physical_io_device_init(physical_io_device* this, enum IO_CLASSES kind, u32 enabled, u32 connected, u32 input, u32 output)
 {
-    memset(this, 0, sizeof(struct physical_io_device));
+    memset(this, 0, sizeof(physical_io_device));
     this->kind = kind;
     this->enabled = enabled;
     this->connected = connected;
@@ -22,8 +22,8 @@ void physical_io_device_init(struct physical_io_device* this, enum IO_CLASSES ki
         case HID_TOUCHSCREEN:
             break;
         case HID_CONTROLLER:
-            cvec_init(&this->controller.analog_axes, sizeof(struct HID_analog_axis), 2);
-            cvec_init(&this->controller.digital_buttons, sizeof(struct HID_digital_button), 12);
+            cvec_init(&this->controller.analog_axes, sizeof(HID_analog_axis), 2);
+            cvec_init(&this->controller.digital_buttons, sizeof(HID_digital_button), 12);
             break;
         case HID_DISPLAY:
             break;
@@ -32,7 +32,7 @@ void physical_io_device_init(struct physical_io_device* this, enum IO_CLASSES ki
         case HID_MOUSE:
             break;
         case HID_CHASSIS:
-            cvec_init(&this->chassis.digital_buttons, sizeof(struct HID_digital_button), 2);
+            cvec_init(&this->chassis.digital_buttons, sizeof(HID_digital_button), 2);
             break;
         case HID_AUDIO_CHANNEL:
             break;
@@ -48,7 +48,7 @@ void physical_io_device_init(struct physical_io_device* this, enum IO_CLASSES ki
     }
 }
 
-void physical_io_device_delete(struct physical_io_device* this)
+void physical_io_device_delete(physical_io_device* this)
 {
     switch(this->kind) {
         case HID_TOUCHSCREEN:
@@ -87,7 +87,7 @@ void physical_io_device_delete(struct physical_io_device* this)
     }
 }
 
-void pio_new_button(struct JSM_CONTROLLER* cnt, const char* name, enum JKEYS common_id)
+void pio_new_button(JSM_CONTROLLER* cnt, const char* name, enum JKEYS common_id)
 {
     struct HID_digital_button *b = cvec_push_back(&cnt->digital_buttons);
     snprintf(b->name, sizeof(b->name), "%s", name);

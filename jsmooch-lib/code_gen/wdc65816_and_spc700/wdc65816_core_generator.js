@@ -2762,7 +2762,7 @@ function generate_instruction_table(indent, E, M, X, last) {
 
 function generate_instruction_code_c(opcode, indent, E, M, X)
 {
-    let outstr = '\n\nstatic void ' + func_name(opcode, E, M, X) + '(struct WDC65816_regs *regs, WDC65816_pins *pins) { ';
+    let outstr = '\n\nstatic void ' + func_name(opcode, E, M, X) + '(WDC65816_regs *regs, WDC65816_pins *pins) { ';
     let opcode_info = WDC_opcode_matrix[opcode];
     let r = WDC_generate_instruction_function('    ', opcode_info, E, M, X);
     if (r.strout.length === 0) {

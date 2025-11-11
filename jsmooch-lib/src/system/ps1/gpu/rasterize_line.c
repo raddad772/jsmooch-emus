@@ -5,7 +5,7 @@
 #include "rasterize_line.h"
 #include "pixel_helpers.h"
 
-void bresenham_opaque(struct PS1_GPU *this, RT_POINT2D *v1, RT_POINT2D *v2, u32 color)
+void bresenham_opaque(PS1_GPU *this, RT_POINT2D *v1, RT_POINT2D *v2, u32 color)
 {
     i32 m_new = 2 * (v2->y - v1->y);
     i32 slope_error_new = m_new - (v2->x - v1->x);

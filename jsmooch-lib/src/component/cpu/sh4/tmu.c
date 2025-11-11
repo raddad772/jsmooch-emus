@@ -39,7 +39,7 @@ static u32 expected_TCNT[] = {
 //#define REGTCNT (((u32)(this->tmu.base[ch] - ((TCUSE >> this->tmu.shift[ch])& this->tmu.mask[ch])))) - 0x80A
 #define REGTCNT (((u32)(this->tmu.base[ch] - ((TCUSE >> this->tmu.shift[ch])& this->tmu.mask[ch]))))
 
-static u32 read_TMU_TCNT(struct SH4* this, u32 ch, u32 is_regread)
+static u32 read_TMU_TCNT(SH4* this, u32 ch, u32 is_regread)
 {
 #ifdef REICAST_DIFF
     static int num = 0;
@@ -58,13 +58,13 @@ static u32 read_TMU_TCNT(struct SH4* this, u32 ch, u32 is_regread)
     return REGTCNT;
 }
 
-static i64 read_TMU_TCNT64(struct SH4* this, u32 ch)
+static i64 read_TMU_TCNT64(SH4* this, u32 ch)
 {
     return (i64)this->tmu.base64[ch] - (i64)((TCUSE >> this->tmu.shift[ch])& this->tmu.mask64[ch]);
 }
 
 
-static void sched_chan_tick(struct SH4* this, u32 ch)
+static void sched_chan_tick(SH4* this, u32 ch)
 {
     u32 togo = read_TMU_TCNT(this, ch, 0) / 8;
     if (togo > SH4_CYCLES_PER_SEC)
@@ -85,7 +85,7 @@ static void sched_chan_tick(struct SH4* this, u32 ch)
 }
 
 
-static void write_TMU_TCNT(struct SH4* this, u32 ch, u32 data)
+static void write_TMU_TCNT(SH4* this, u32 ch, u32 data)
 {
     this->tmu.base[ch] = data + ((TCUSE >> this->tmu.shift[ch]) & this->tmu.mask[ch]);
     this->tmu.base64[ch] = data + ((TCUSE >> this->tmu.shift[ch]) & this->tmu.mask64[ch]);
@@ -94,7 +94,7 @@ static void write_TMU_TCNT(struct SH4* this, u32 ch, u32 data)
 }
 
 
-static void turn_onoff(struct SH4* this, u32 ch, u32 on)
+static void turn_onoff(SH4* this, u32 ch, u32 on)
 {
     u32 TCNT = read_TMU_TCNT(this, ch, 0);
     //printf("\nTURN CH%d TO %d cyc:%llu tcyc:%llu", ch, on, this->clock.trace_cycles, this->clock.timer_cycles);
@@ -105,7 +105,7 @@ static void turn_onoff(struct SH4* this, u32 ch, u32 on)
     sched_chan_tick(this,ch);
 }
 
-static void write_TSTR(struct SH4* this, u32 val)
+static void write_TSTR(SH4* this, u32 val)
 {
     this->tmu.TSTR = val;
     for (u32 i = 0; i < 3; i++) {
@@ -113,7 +113,7 @@ static void write_TSTR(struct SH4* this, u32 val)
     }
 }
 
-static void UpdateTMUCounts(struct SH4* this, u32 ch)
+static void UpdateTMUCounts(SH4* this, u32 ch)
 {
     u32 irq_num = 10 + ch;
     // TODO: IRQ stuff
@@ -173,11 +173,11 @@ static void UpdateTMUCounts(struct SH4* this, u32 ch)
     sched_chan_tick(this, ch);
 }
 
-void TMU_init(struct SH4* this)
+void TMU_init(SH4* this)
 {
 }
 
-void TMU_reset(struct SH4* this)
+void TMU_reset(SH4* this)
 {
     this->tmu.TOCR = this->tmu.TSTR = 0;
     this->tmu.TCOR[0] = this->tmu.TCOR[1] = this->tmu.TCOR[2] = 0xFFFFFFFF;
@@ -193,13 +193,13 @@ void TMU_reset(struct SH4* this)
         write_TMU_TCNT(this, i, 0xffffffff);
 }
 
-static void write_TCR(struct SH4* this, u32 ch, u32 val)
+static void write_TCR(SH4* this, u32 ch, u32 val)
 {
     this->tmu.TCR[ch] = val & 0xFFFF;
     UpdateTMUCounts(this, ch);
 }
 
-void TMU_write(struct SH4* this, u32 addr, u64 val, u32 sz, u32* success)
+void TMU_write(SH4* this, u32 addr, u64 val, u32 sz, u32* success)
 {
     switch(addr | 0xF0000000) {
         case 0xFFD80000: // TOCR
@@ -238,7 +238,7 @@ void TMU_write(struct SH4* this, u32 addr, u64 val, u32 sz, u32* success)
     }
 }
 
-u64 TMU_read(struct SH4* this, u32 addr, u32 sz, u32* success)
+u64 TMU_read(SH4* this, u32 addr, u32 sz, u32* success)
 {
     switch(addr | 0xF0000000) {
         case 0xFFD80004: // TSTR
@@ -270,7 +270,7 @@ struct sh4ifunc_struct {
 //typedef u32 (*scheduler_callback)(void*,u64,i64,u32);
 static u32 sh4ifunc(void *ptr, u64 key, i64 timecode, u32 jitter)
 {
-    struct sh4ifunc_struct *ifs = (struct sh4ifunc_struct *)ptr;
+    struct sh4ifunc_struct *ifs = (sh4ifunc_struct *)ptr;
     struct SH4* this = ifs->sh4;
     u32 ch = ifs->ch;
 
@@ -282,7 +282,7 @@ static u32 sh4ifunc(void *ptr, u64 key, i64 timecode, u32 jitter)
 
 void scheduled_tmu_callback(void *ptr, u64 key, u64 sch_cycle, u32 jitter)
 {
-    struct SH4* this = (struct SH4*)ptr;
+    struct SH4* this = (SH4*)ptr;
     u32 ch = key;
     //printf("\nSCHEDULED CALLBACK! %d %08x cyc:%llu tcyc:%llu", ch, this->tmu.mask[ch], this->clock.trace_cycles, this->clock.timer_cycles);
     if (this->tmu.mask[ch]) {

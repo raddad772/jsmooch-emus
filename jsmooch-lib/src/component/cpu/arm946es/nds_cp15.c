@@ -56,7 +56,7 @@ static enum CP15_regs get_register(u32 opcode, u32 cn, u32 cm, u32 cp)
     return CP15r_unknown;
 }
 
-u32 NDS_CP_read(struct ARM946ES *this, u32 num, u32 opcode, u32 Cn, u32 Cm, u32 CP)
+u32 NDS_CP_read(ARM946ES *this, u32 num, u32 opcode, u32 Cn, u32 Cm, u32 CP)
 {
     if (num != 15) {
         printf("\n!BAD! CP.r:%d opcode:%d Cn:%d Cm:%d CP:%d", num, opcode, Cn, Cm, CP);
@@ -127,7 +127,7 @@ u32 NDS_CP_read(struct ARM946ES *this, u32 num, u32 opcode, u32 Cn, u32 Cm, u32 
     return 0;
 }
 
-static void update_dtcm(struct ARM946ES *this)
+static void update_dtcm(ARM946ES *this)
 {
     if (!this->cp15.regs.control.dtcm_enable) {
         this->cp15.dtcm.size = this->cp15.dtcm.mask = 0;
@@ -148,7 +148,7 @@ static void update_dtcm(struct ARM946ES *this)
 #endif
 }
 
-static void update_itcm(struct ARM946ES *this)
+static void update_itcm(ARM946ES *this)
 {
     if (!this->cp15.regs.control.itcm_enable) {
         this->cp15.itcm.size = 0;
@@ -165,7 +165,7 @@ static void update_itcm(struct ARM946ES *this)
 }
 
 
-void NDS_CP_write(struct ARM946ES *this, u32 num, u32 opcode, u32 Cn, u32 Cm, u32 CP, u32 val)
+void NDS_CP_write(ARM946ES *this, u32 num, u32 opcode, u32 Cn, u32 Cm, u32 CP, u32 val)
 {
     if (num != 15) {
         printf("\n!BAD! CP.w:%d opcode:%d Cn:%d Cm:%d CP:%d val:%08x", num, opcode, Cn, Cm, CP, val);
@@ -265,12 +265,12 @@ void NDS_CP_write(struct ARM946ES *this, u32 num, u32 opcode, u32 Cn, u32 Cm, u3
 
 }
 
-void NDS_CP_init(struct ARM946ES *this)
+void NDS_CP_init(ARM946ES *this)
 {
 
 }
 
-void NDS_CP_reset(struct ARM946ES *this)
+void NDS_CP_reset(ARM946ES *this)
 {
     this->cp15.regs.control.u = 0x2078; // MelonDS says this
 
@@ -294,7 +294,7 @@ void NDS_CP_reset(struct ARM946ES *this)
     this->cp15.regs.pu_code_rw = 0;
 }
 
-void ARM946ES_NDS_direct_boot(struct ARM946ES *this)
+void ARM946ES_NDS_direct_boot(ARM946ES *this)
 {
     NDS_CP_write(this, 15, 0, 1, 0, 0, 0x0005707D);
     NDS_CP_write(this, 15, 0, 9, 1, 0, 0x0300000A);

@@ -44,8 +44,8 @@ struct GB_clock {
 };
 
 
-void GB_clock_init(struct GB_clock*);
-void GB_clock_setCPU_can_OAM(struct GB_clock*, u32 to);
-void GB_clock_reset(struct GB_clock*);
+void GB_clock_init(GB_clock*);
+void GB_clock_setCPU_can_OAM(GB_clock*, u32 to);
+void GB_clock_reset(GB_clock*);
 
 #endif

@@ -16,7 +16,7 @@ struct dasm_support {
     struct buf strout;
 };
 
-void dasm_support_init(struct dasm_support*);
-void dasm_support_delete(struct dasm_support*);
+void dasm_support_init(dasm_support*);
+void dasm_support_delete(dasm_support*);
 
 #endif //JSMOOCH_EMUS_SH4_DISASSEMBLER_H

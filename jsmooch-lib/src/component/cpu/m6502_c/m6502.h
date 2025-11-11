@@ -21,9 +21,9 @@ struct M6502_P {
     u32 N;
 };
 
-void M6502_P_init(struct M6502_P *);
-void M6502_regs_P_setbyte(struct M6502_P*, u32 val);
-u32 M6502_regs_P_getbyte(struct M6502_P*);
+void M6502_P_init(M6502_P *);
+void M6502_regs_P_setbyte(M6502_P*, u32 val);
+u32 M6502_regs_P_getbyte(M6502_P*);
 
 struct M6502_regs {
     u32 A, X, Y;
@@ -53,8 +53,8 @@ struct M6502_pins {
     u32 RDY;
 };
 
-void M6502_regs_init(struct M6502_regs*);
-void M6502_pins_init(struct M6502_pins*);
+void M6502_regs_init(M6502_regs*);
+void M6502_pins_init(M6502_pins*);
 
 struct M6502 {
     struct M6502_regs regs;
@@ -80,14 +80,14 @@ struct M6502 {
     M6502_ins_func *opcode_table;
 };
 
-void M6502_init(struct M6502 *, M6502_ins_func *opcode_set);
-void M6502_cycle(struct M6502*);
-void M6502_reset(struct M6502*);
-void M6502_setup_tracing(struct M6502*, jsm_debug_read_trace* dbg_read_trace, u64 *trace_cycles);
-void M6502_poll_IRQs(struct M6502_regs *regs, M6502_pins *pins);
-void M6502_poll_NMI_only(struct M6502_regs *regs, M6502_pins *pins);
+void M6502_init(M6502 *, M6502_ins_func *opcode_set);
+void M6502_cycle(M6502*);
+void M6502_reset(M6502*);
+void M6502_setup_tracing(M6502*, jsm_debug_read_trace* dbg_read_trace, u64 *trace_cycles);
+void M6502_poll_IRQs(M6502_regs *regs, M6502_pins *pins);
+void M6502_poll_NMI_only(M6502_regs *regs, M6502_pins *pins);
 struct serialized_state;
-void M6502_serialize(struct M6502*, serialized_state *state);
-void M6502_deserialize(struct M6502*, serialized_state *state);
+void M6502_serialize(M6502*, serialized_state *state);
+void M6502_deserialize(M6502*, serialized_state *state);
 
 #endif //JSMOOCH_EMUS_M6502_H

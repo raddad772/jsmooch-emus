@@ -44,6 +44,6 @@ struct SMSGG_clock {
     } timing;
 };
 
-void SMSGG_clock_init(struct SMSGG_clock*, enum jsm::systems variant, enum jsm_regions region);
+void SMSGG_clock_init(SMSGG_clock*, enum jsm::systems variant, enum jsm_regions region);
 
 #endif //JSMOOCH_EMUS_SMS_GG_CLOCK_H

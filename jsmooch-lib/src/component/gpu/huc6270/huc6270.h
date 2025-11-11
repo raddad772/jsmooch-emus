@@ -167,13 +167,13 @@ struct HUC6270 {
 };
 
 
-void HUC6270_init(struct HUC6270 *, scheduler_t *scheduler);
-void HUC6270_delete(struct HUC6270 *);
-void HUC6270_reset(struct HUC6270 *);
-void HUC6270_write(struct HUC6270 *, u32 addr, u32 val);
-u32 HUC6270_read(struct HUC6270 *, u32 addr, u32 old);
-void HUC6270_cycle(struct HUC6270 *);
-void HUC6270_hsync(struct HUC6270 *, u32 val);
-void HUC6270_vsync(struct HUC6270 *, u32 val);
+void HUC6270_init(HUC6270 *, scheduler_t *scheduler);
+void HUC6270_delete(HUC6270 *);
+void HUC6270_reset(HUC6270 *);
+void HUC6270_write(HUC6270 *, u32 addr, u32 val);
+u32 HUC6270_read(HUC6270 *, u32 addr, u32 old);
+void HUC6270_cycle(HUC6270 *);
+void HUC6270_hsync(HUC6270 *, u32 val);
+void HUC6270_vsync(HUC6270 *, u32 val);
 
 #endif //JSMOOCH_EMUS_HUC6270_H

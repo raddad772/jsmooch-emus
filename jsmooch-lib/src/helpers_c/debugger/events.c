@@ -10,16 +10,16 @@
 #include "helpers/physical_io.h"
 #include "events.h"
 
-void debugger_event_init(struct debugger_event *this)
+void debugger_event_init(debugger_event *this)
 {
-    cvec_init(&this->updates[0], sizeof(struct debugger_event_update), 100);
-    cvec_init(&this->updates[1], sizeof(struct debugger_event_update), 100);
+    cvec_init(&this->updates[0], sizeof(debugger_event_update), 100);
+    cvec_init(&this->updates[1], sizeof(debugger_event_update), 100);
     this->updates_index = 1;
     cvec_ptr_init(&this->category);
     this->tag.context[0] = 0;
 }
 
-void debugger_event_delete(struct debugger_event *this)
+void debugger_event_delete(debugger_event *this)
 {
     cvec_ptr_delete(&this->category);
     cvec_delete(&this->updates[0]);
@@ -27,18 +27,18 @@ void debugger_event_delete(struct debugger_event *this)
     this->tag.context[0] = 0;
 }
 
-void event_category_init(struct event_category *this)
+void event_category_init(event_category *this)
 {
     this->name[0] = 0;
 }
 
 
-void event_category_delete(struct event_category *this)
+void event_category_delete(event_category *this)
 {
     this->name[0] = 0;
 }
 
-void events_view_add_category(struct debugger_interface *dbgr, events_view *ev, const char *name, u32 color, u32 id)
+void events_view_add_category(debugger_interface *dbgr, events_view *ev, const char *name, u32 color, u32 id)
 {
     assert(id==cvec_len(&ev->categories));
     struct event_category *ec = cvec_push_back(&ev->categories);
@@ -48,7 +48,7 @@ void events_view_add_category(struct debugger_interface *dbgr, events_view *ev, 
     ec->id = id;
 }
 
-void events_view_add_event(struct debugger_interface *dbgr, events_view *ev, u32 category_id, const char *name, u32 color, enum debugger_event_kind display_kind, u32 default_enable, u32 order, const char* context, u32 id)
+void events_view_add_event(debugger_interface *dbgr, events_view *ev, u32 category_id, const char *name, u32 color, enum debugger_event_kind display_kind, u32 default_enable, u32 order, const char* context, u32 id)
 {
     if (cvec_len(&ev->events) <= id) {
         assert(1==0);
@@ -64,7 +64,7 @@ void events_view_add_event(struct debugger_interface *dbgr, events_view *ev, u32
     event->display_enabled = default_enable;
 }
 
-void events_view_report_frame(struct events_view *this)
+void events_view_report_frame(events_view *this)
 {
     this->last_frame = this->current_frame;
     this->current_frame++;
@@ -79,7 +79,7 @@ void events_view_report_frame(struct events_view *this)
     this->master_clocks.front_buffer ^= 1;
 }
 
-void events_view_init(struct events_view *this)
+void events_view_init(events_view *this)
 {
     for (u32 i = 0; i < 2; i++) {
         this->display[i].buf = NULL;
@@ -91,50 +91,50 @@ void events_view_init(struct events_view *this)
     this->current_frame = -1;
     this->last_frame = -1;
 
-    cvec_init(&this->events, sizeof(struct debugger_event), 1000);
-    cvec_init(&this->categories, sizeof(struct event_category), 100);
+    cvec_init(&this->events, sizeof(debugger_event), 1000);
+    cvec_init(&this->categories, sizeof(event_category), 100);
 
     this->master_clocks.back_buffer = 1;
     this->master_clocks.front_buffer = 0;
 }
 
-void events_view_delete(struct events_view *this)
+void events_view_delete(events_view *this)
 {
     DTOR_child_cvec(events, debugger_event);
     DTOR_child_cvec(categories, event_category);
     DTOR_child(associated_display, cvec_ptr);
 }
 
-u64 events_view_get_current_line(struct cvec_ptr viewptr)
+u64 events_view_get_current_line(cvec_ptr viewptr)
 {
     if (viewptr.vec == NULL) {
         return 0;
     }
-    struct events_view *this = &((struct debugger_view *)cpg(viewptr))->events;
+    struct events_view *this = &((debugger_view *)cpg(viewptr))->events;
     return this->master_clocks.cur_line;
 }
 
-u64 events_view_get_current_line_start(struct cvec_ptr viewptr)
+u64 events_view_get_current_line_start(cvec_ptr viewptr)
 {
     if (viewptr.vec == NULL) {
         return 0;
     }
-    struct events_view *this = &((struct debugger_view *)cpg(viewptr))->events;
+    struct events_view *this = &((debugger_view *)cpg(viewptr))->events;
     u32 line_num = this->master_clocks.cur_line;
     return this->master_clocks.lines[this->master_clocks.back_buffer][line_num];
 }
 
-u64 events_view_get_current_line_pos(struct cvec_ptr viewptr)
+u64 events_view_get_current_line_pos(cvec_ptr viewptr)
 {
     if (viewptr.vec == NULL) {
         return 0;
     }
-    struct events_view *this = &((struct debugger_view *)cpg(viewptr))->events;
+    struct events_view *this = &((debugger_view *)cpg(viewptr))->events;
     u32 line_num = this->master_clocks.cur_line;
     return (*this->master_clocks.ptr) - this->master_clocks.lines[this->master_clocks.back_buffer][line_num];
 }
 
-void debugger_report_event(struct cvec_ptr viewptr, i32 event_id)
+void debugger_report_event(cvec_ptr viewptr, i32 event_id)
 {
     if (viewptr.vec == NULL) {
         return;
@@ -142,9 +142,9 @@ void debugger_report_event(struct cvec_ptr viewptr, i32 event_id)
     if (event_id == -1) {
         return;
     }
-    struct events_view *this = &((struct debugger_view *)cpg(viewptr))->events;
+    struct events_view *this = &((debugger_view *)cpg(viewptr))->events;
     struct debugger_event *ev = cvec_get(&this->events, event_id);
-    struct JSM_DISPLAY *d = &((struct physical_io_device *)cpg(this->associated_display))->display;
+    struct JSM_DISPLAY *d = &((physical_io_device *)cpg(this->associated_display))->display;
     struct debugger_event_update *upd = cvec_push_back(&ev->updates[ev->updates_index]);
     upd->frame_num = this->current_frame;
     switch(this->timing) {
@@ -179,7 +179,7 @@ static void draw_box_3x3(u32 *buf, u32 x_center, u32 y_center, u32 out_width, u3
     }
 }
 
-void events_view_report_draw_start(struct events_view *this)
+void events_view_report_draw_start(events_view *this)
 {
     switch(this->timing) {
         case ev_timing_master_clock:
@@ -194,7 +194,7 @@ void events_view_report_draw_start(struct events_view *this)
     }
 }
 
-void events_view_report_line(struct events_view *this, i32 line_num)
+void events_view_report_line(events_view *this, i32 line_num)
 {
     switch(this->timing) {
         case ev_timing_master_clock: {
@@ -214,7 +214,7 @@ void events_view_report_line(struct events_view *this, i32 line_num)
     }
 }
 
-void events_view_render(struct debugger_interface *dbgr, events_view *this, u32 *buf, u32 out_width, u32 out_height)
+void events_view_render(debugger_interface *dbgr, events_view *this, u32 *buf, u32 out_width, u32 out_height)
 {
     // Render our current events to buf
     u32 frame_to_use = this->current_frame - 1;

@@ -8,17 +8,17 @@
 #include "serialize.h"
 
 
-void serialized_state_init(struct serialized_state *this)
+void serialized_state_init(serialized_state *this)
 {
     memset(this, 0, sizeof(*this));
     cvec_init(&this->buf, 1, 2048);
-    cvec_init(&this->sections, sizeof(struct serialized_state_section), 5);
+    cvec_init(&this->sections, sizeof(serialized_state_section), 5);
     jsimg_init(&this->screenshot);
     jsm_string_init(&this->fpath, 200);
     jsm_string_init(&this->fname, 200);
 }
 
-void serialized_state_delete(struct serialized_state *this)
+void serialized_state_delete(serialized_state *this)
 {
     cvec_delete(&this->buf);
     cvec_delete(&this->sections);
@@ -27,7 +27,7 @@ void serialized_state_delete(struct serialized_state *this)
     jsm_string_delete(&this->fname);
 }
 
-void serialized_state_new_section(struct serialized_state *this, const char *friendly_name, int kind, int version)
+void serialized_state_new_section(serialized_state *this, const char *friendly_name, int kind, int version)
 {
     struct serialized_state_section *sec = cvec_push_back(&this->sections);
     memset(sec, 0, sizeof(*sec));
@@ -39,19 +39,19 @@ void serialized_state_new_section(struct serialized_state *this, const char *fri
     snprintf(sec->friendly_name, 50, "%s", friendly_name);
 }
 
-static inline void add_sz(struct serialized_state *this, u64 howmuch)
+static inline void add_sz(serialized_state *this, u64 howmuch)
 {
     cvec_alloc_atleast(&this->buf, this->buf.len+howmuch);
 }
 
-void Sload(struct serialized_state *this, void *ptr, u64 howmuch)
+void Sload(serialized_state *this, void *ptr, u64 howmuch)
 {
     if (howmuch == 0) return;
     memcpy(ptr, ((u8 *)this->buf.data) + this->iter.offset, howmuch);
     this->iter.offset += howmuch;
 }
 
-void serialized_state_write_to_file(struct serialized_state *state, FILE *f)
+void serialized_state_write_to_file(serialized_state *state, FILE *f)
 {
     u32 fout;
 #define WV(x) fwrite(&(x), 1, sizeof(x), f);
@@ -76,7 +76,7 @@ void serialized_state_write_to_file(struct serialized_state *state, FILE *f)
 #undef WV
 }
 
-int serialized_state_read_from_file(struct serialized_state *state, FILE *f, size_t file_size)
+int serialized_state_read_from_file(serialized_state *state, FILE *f, size_t file_size)
 {
 #define RV(x) fread(&(x), 1, sizeof(x), f);
     state->buf.len = file_size;
@@ -121,7 +121,7 @@ int serialized_state_read_from_file(struct serialized_state *state, FILE *f, siz
     return 0;
 }
 
-void Sadd(struct serialized_state *this, void *ptr, u64 howmuch)
+void Sadd(serialized_state *this, void *ptr, u64 howmuch)
 {
     if (howmuch == 0) return;
     add_sz(this, howmuch);

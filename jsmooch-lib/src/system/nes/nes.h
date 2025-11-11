@@ -78,8 +78,8 @@ struct NES {
 
     } dbg_data{};
 
-    void serialize(struct serialized_state &state) const;
-    void deserialize(struct serialized_state &state);
+    void serialize(serialized_state &state) const;
+    void deserialize(serialized_state &state);
 };
 
 struct NESJ : jsm_system {

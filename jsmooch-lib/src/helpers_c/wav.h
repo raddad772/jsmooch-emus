@@ -40,8 +40,8 @@ struct wav_stream {
     FILE *f;
 };
 
-void wav_stream_create(struct wav_stream *, char *fpath, u32 sampling_rate, u32 bytes_per_sample);
-void wav_stream_output(struct wav_stream *, u32 num_samples, void *data);
-void wav_stream_close(struct wav_stream *);
+void wav_stream_create(wav_stream *, char *fpath, u32 sampling_rate, u32 bytes_per_sample);
+void wav_stream_output(wav_stream *, u32 num_samples, void *data);
+void wav_stream_close(wav_stream *);
 
 #endif //JSMOOCH_EMUS_WAV_H

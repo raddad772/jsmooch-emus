@@ -7,6 +7,6 @@
 
 struct NES_mapper;
 struct NES;
-void MMC5_init(struct NES_mapper *bus, NES *nes);
+void MMC5_init(NES_mapper *bus, NES *nes);
 
 #endif //JSMOOCH_EMUS_MMC5_H

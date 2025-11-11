@@ -10,7 +10,7 @@
 #include "helpers/int.h"
 #include "helpers/sys_interface.h"
 
-void NDS_new(struct jsm_system*);
-void NDS_delete(struct jsm_system* system);
+void NDS_new(jsm_system*);
+void NDS_delete(jsm_system* system);
 
 #endif //JSMOOCH_EMUS_GBA_H

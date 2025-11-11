@@ -105,17 +105,17 @@ struct R3000 {
     DBG_END
 };
 
-struct R3000_pipeline_item *R3000_pipe_move_forward(struct R3000_pipeline *);
-void R3000_init(struct R3000 *, u64 *master_clock, u64 *waitstates, scheduler_t *scheduler, IRQ_multiplexer_b *IRQ_multiplexer);
-void R3000_delete(struct R3000 *);
-void R3000_setup_tracing(struct R3000*, jsm_debug_read_trace *strct, u64 *trace_cycle_pointer, i32 source_id);
-void R3000_reset(struct R3000*);
-void R3000_exception(struct R3000 *, u32 code, u32 branch_delay, u32 cop0);
-void R3000_flush_pipe(struct R3000 *);
-void R3000_cycle(struct R3000 *, i32 howmany);
-void R3000_check_IRQ(struct R3000 *);
-void R3000_update_I_STAT(struct R3000 *);
-void R3000_write_reg(struct R3000 *, u32 addr, u32 sz, u32 val);
-u32 R3000_read_reg(struct R3000 *, u32 addr, u32 sz);
-void R3000_idle(struct R3000 *this, u32 howlong);
+struct R3000_pipeline_item *R3000_pipe_move_forward(R3000_pipeline *);
+void R3000_init(R3000 *, u64 *master_clock, u64 *waitstates, scheduler_t *scheduler, IRQ_multiplexer_b *IRQ_multiplexer);
+void R3000_delete(R3000 *);
+void R3000_setup_tracing(R3000*, jsm_debug_read_trace *strct, u64 *trace_cycle_pointer, i32 source_id);
+void R3000_reset(R3000*);
+void R3000_exception(R3000 *, u32 code, u32 branch_delay, u32 cop0);
+void R3000_flush_pipe(R3000 *);
+void R3000_cycle(R3000 *, i32 howmany);
+void R3000_check_IRQ(R3000 *);
+void R3000_update_I_STAT(R3000 *);
+void R3000_write_reg(R3000 *, u32 addr, u32 sz, u32 val);
+u32 R3000_read_reg(R3000 *, u32 addr, u32 sz);
+void R3000_idle(R3000 *this, u32 howlong);
 #endif //JSMOOCH_EMUS_R3000_H

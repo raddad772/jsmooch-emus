@@ -60,8 +60,21 @@ set(SOURCE_LIST
         "src/helpers/inifile.h"
         "src/helpers/irq_multiplexer.cpp"
         "src/helpers/irq_multiplexer.h"
-        src/helpers/cvec.cpp
-        src/helpers/cvec.h
+        "src/helpers/audiobuf.cpp"
+        "src/helpers/audiobuf.h"
+        "src/helpers/inifile.cpp"
+        "src/helpers/inifile.h"
+        "src/helpers/buf.cpp"
+        "src/helpers/buf.h"
+        "src/helpers/debug.cpp"
+        "src/helpers/debug.h"
+        "src/helpers/sys_interface.cpp"
+        "src/helpers/sys_interface.h"
+        "src/helpers/serialize/serialize.cpp"
+        "src/helpers/serialize/serialize.h"
+
+        "src/helpers/cvec.cpp"
+        "src/helpers/cvec.h"
 )
 
 # TODO: Fix elf-parser repo for windows

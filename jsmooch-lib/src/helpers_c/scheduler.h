@@ -63,7 +63,7 @@ struct scheduler_t {
     u64 id_counter;
 };
 
-//void scheduler_allocate(struct scheduler_t*, u32 howmany);
+//void scheduler_allocate(scheduler_t*, u32 howmany);
 
 enum scheduler_actions {
     SA_run_cycles,
@@ -76,27 +76,27 @@ struct scheduler_action_return {
     u64 arg;
 };
 
-void scheduler_init(struct scheduler_t*, u64 *clock, u64 *waitstates);
-void scheduler_delete(struct scheduler_t*);
-void scheduler_clear(struct scheduler_t*);
+void scheduler_init(scheduler_t*, u64 *clock, u64 *waitstates);
+void scheduler_delete(scheduler_t*);
+void scheduler_clear(scheduler_t*);
 
-u64 scheduler_only_add_abs(struct scheduler_t *, i64 timecode, u64 key, void *ptr, scheduler_callback callback, u32 *still_sched);
-struct scheduler_event *scheduler_add_abs(struct scheduler_t*, i64 timecode, u64 key, u32 do_instant);
-void scheduler_delete_if_exist(struct scheduler_t *, u64 id);
-u64 scheduler_add_next(struct scheduler_t *, u64 key, void *ptr, scheduler_callback callback, u32 *still_sched);
+u64 scheduler_only_add_abs(scheduler_t *, i64 timecode, u64 key, void *ptr, scheduler_callback callback, u32 *still_sched);
+struct scheduler_event *scheduler_add_abs(scheduler_t*, i64 timecode, u64 key, u32 do_instant);
+void scheduler_delete_if_exist(scheduler_t *, u64 id);
+u64 scheduler_add_next(scheduler_t *, u64 key, void *ptr, scheduler_callback callback, u32 *still_sched);
 
-void scheduler_run_for_cycles(struct scheduler_t *, u64 howmany);
-void scheduler_run_til_tag(struct scheduler_t *, u32 tag);
-void scheduler_run_til_tag_tg16(struct scheduler_t *, u32 tag);
-void scheduler_run_for_cycles_tg16(struct scheduler_t *, u64 howmany);
-u64 scheduler_bind_or_run(struct scheduler_event *e, void *ptr, scheduler_callback func, i64 timecode, u64 key, u32 *still_sched);
+void scheduler_run_for_cycles(scheduler_t *, u64 howmany);
+void scheduler_run_til_tag(scheduler_t *, u32 tag);
+void scheduler_run_til_tag_tg16(scheduler_t *, u32 tag);
+void scheduler_run_for_cycles_tg16(scheduler_t *, u64 howmany);
+u64 scheduler_bind_or_run(scheduler_event *e, void *ptr, scheduler_callback func, i64 timecode, u64 key, u32 *still_sched);
 
 // Combine add with bind
-u64 scheduler_add_or_run_abs(struct scheduler_t *, i64 timecode, u64 key, void *ptr, scheduler_callback callback, u32 *still_sched);
-u64 scheduler_only_add_abs_w_tag(struct scheduler_t *, i64 timecode, u64 key, void *ptr, scheduler_callback callback, u32 *still_sched, u32 tag);
+u64 scheduler_add_or_run_abs(scheduler_t *, i64 timecode, u64 key, void *ptr, scheduler_callback callback, u32 *still_sched);
+u64 scheduler_only_add_abs_w_tag(scheduler_t *, i64 timecode, u64 key, void *ptr, scheduler_callback callback, u32 *still_sched, u32 tag);
 
 struct scheduled_bound_function* scheduler_bind_function(scheduler_callback func, void *ptr);
 
-void scheduler_from_event_adjust_master_clock(struct scheduler_t *, i64 howmany);
+void scheduler_from_event_adjust_master_clock(scheduler_t *, i64 howmany);
 
 #endif //JSMOOCH_EMUS_SCHEDULER_H

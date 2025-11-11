@@ -46,9 +46,9 @@ static void memcpy_t0(char *dest, char *src, int max_len) {
     dest[i] = 0;
 }
 
-void genesis_cart_init(struct genesis_cart* this)
+void genesis_cart_init(genesis_cart* this)
 {
-    *this = (struct genesis_cart) {}; // Set all fields to 0
+    *this = (genesis_cart) {}; // Set all fields to 0
 
     buf_init(&this->ROM);
     for (u32 i = 0; i < 8; i++) {
@@ -56,7 +56,7 @@ void genesis_cart_init(struct genesis_cart* this)
     }
 }
 
-void genesis_cart_delete(struct genesis_cart *this)
+void genesis_cart_delete(genesis_cart *this)
 {
     buf_delete(&this->ROM);
 }
@@ -65,7 +65,7 @@ static u32 UDS_mask[4] = { 0, 0xFF, 0xFF00, 0xFFFF };
 #define UDSMASK UDS_mask[((UDS) << 1) | (LDS)]
 
 
-static void write_cart_RAM8(struct genesis_cart* this, u32 addr, u32 val)
+static void write_cart_RAM8(genesis_cart* this, u32 addr, u32 val)
 {
     if (!this->SRAM) {
         printf("\nAttempt to write bad SRAM!");
@@ -82,7 +82,7 @@ static void write_cart_RAM8(struct genesis_cart* this, u32 addr, u32 val)
     this->SRAM->dirty = 1;
 }
 
-static void write_cart_RAM16(struct genesis_cart* this, u32 addr, u32 val)
+static void write_cart_RAM16(genesis_cart* this, u32 addr, u32 val)
 {
     if (!this->SRAM) {
         printf("\nAttempt to write bad SRAM!");
@@ -98,7 +98,7 @@ static void write_cart_RAM16(struct genesis_cart* this, u32 addr, u32 val)
     this->SRAM->dirty = 1;
 }
 
-static u8 read_cart_RAM8(struct genesis_cart* this, u32 addr)
+static u8 read_cart_RAM8(genesis_cart* this, u32 addr)
 {
     if (!this->SRAM) {
         printf("\nAttempt to read bad SRAM!");
@@ -113,7 +113,7 @@ static u8 read_cart_RAM8(struct genesis_cart* this, u32 addr)
     return v;
 }
 
-static u16 read_cart_RAM16(struct genesis_cart* this, u32 addr)
+static u16 read_cart_RAM16(genesis_cart* this, u32 addr)
 {
     if (!this->SRAM) {
         printf("\nAttempt to read bad SRAM!");
@@ -128,7 +128,7 @@ static u16 read_cart_RAM16(struct genesis_cart* this, u32 addr)
 
 }
 
-void genesis_cart_write(struct genesis_cart *this, u32 addr, u32 mask, u32 val, u32 SRAM_enable) {
+void genesis_cart_write(genesis_cart *this, u32 addr, u32 mask, u32 val, u32 SRAM_enable) {
     u32 ramaddr = addr - 0x200000;
     val &= mask;
 
@@ -157,7 +157,7 @@ void genesis_cart_write(struct genesis_cart *this, u32 addr, u32 mask, u32 val, 
 }
 
 // Carts are read in 16 bits at a time
-u16 genesis_cart_read(struct genesis_cart *this, u32 addr, u32 mask, u32 has_effect, u32 SRAM_enable)
+u16 genesis_cart_read(genesis_cart *this, u32 addr, u32 mask, u32 has_effect, u32 SRAM_enable)
 {
     u32 saddr = addr & 0x7FFFF;
     u32 offs = this->bank_offset[(addr >> 19) & 7];
@@ -204,7 +204,7 @@ static u32 get_closest_pow2(u32 b)
     return out;
 }
 
-static char *eval_cart_RAM(struct genesis_cart* this, char *tptr)
+static char *eval_cart_RAM(genesis_cart* this, char *tptr)
 {
     u32 silly_goose = 0;
     // If Sonic & Knuckles 3, use Sonic 3's header for RAM
@@ -281,7 +281,7 @@ static char *eval_cart_RAM(struct genesis_cart* this, char *tptr)
     return tptr;
 }
 
-u32 genesis_cart_load_ROM_from_RAM(struct genesis_cart* this, char* fil, u64 fil_sz, physical_io_device *pio, u32 *SRAM_enable)
+u32 genesis_cart_load_ROM_from_RAM(genesis_cart* this, char* fil, u64 fil_sz, physical_io_device *pio, u32 *SRAM_enable)
 {
     buf_allocate(&this->ROM, fil_sz);
     memcpy(this->ROM.ptr, fil, fil_sz);

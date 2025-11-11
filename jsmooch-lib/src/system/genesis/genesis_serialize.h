@@ -21,7 +21,7 @@ enum genesisSS_kinds {
 struct jsm_system;
 struct serialized_state;
 struct deserialize_ret;
-void genesisJ_save_state(struct jsm_system *, serialized_state *state);
-void genesisJ_load_state(struct jsm_system *, serialized_state *state, deserialize_ret *ret);
+void genesisJ_save_state(jsm_system *, serialized_state *state);
+void genesisJ_load_state(jsm_system *, serialized_state *state, deserialize_ret *ret);
 
 #endif //JSMOOCH_EMUS_GENESIS_SERIALIZE_H

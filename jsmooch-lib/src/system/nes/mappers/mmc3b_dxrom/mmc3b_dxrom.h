@@ -7,6 +7,6 @@
 
 struct NES_mapper;
 struct NES;
-void MMC3b_init(struct NES_mapper *bus, NES *nes, enum NES_mappers kind);
+void MMC3b_init(NES_mapper *bus, NES *nes, enum NES_mappers kind);
 
 #endif //JSMOOCH_EMUS_MMC3B_DXROM_H

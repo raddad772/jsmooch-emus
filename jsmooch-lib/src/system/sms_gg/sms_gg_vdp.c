@@ -16,7 +16,7 @@ u8 SMSGG_PALETTE[16] = {
         0x02, 0x03, 0x05, 0x0F, 0x04, 0x33, 0x15, 0x3F
 };
 
-static void bg_gfx1(struct SMSGG_VDP* this) {
+static void bg_gfx1(SMSGG_VDP* this) {
     u32 nta = ((this->bus->clock.hpos >> 3) & 0x1F) | ((this->bus->clock.vpos  << 2) & 0x3E0) | (this->io.bg_name_table_address << 10);
     u32 pattern = this->VRAM[nta];
 
@@ -32,7 +32,7 @@ static void bg_gfx1(struct SMSGG_VDP* this) {
         this->bg_color = (color >> 4) & 0x0F;
 }
 
-static void bg_gfx2(struct SMSGG_VDP* this) {
+static void bg_gfx2(SMSGG_VDP* this) {
     u32 nta = ((this->bus->clock.hpos >> 3) & 0x1F) | ((this->bus->clock.vpos  << 2) & 0x3E0) | (this->io.bg_name_table_address << 10);
     u32 pattern = this->VRAM[nta];
 
@@ -53,7 +53,7 @@ static void bg_gfx2(struct SMSGG_VDP* this) {
         this->bg_color = (color >> 4) & 0x0F;
 }
 
-static void bg_gfx3(struct SMSGG_VDP* this) {
+static void bg_gfx3(SMSGG_VDP* this) {
     u32 hpos = this->bus->clock.hpos;
     u32 vpos = this->bus->clock.vpos;
 
@@ -106,7 +106,7 @@ static void bg_gfx3(struct SMSGG_VDP* this) {
     this->bg_palette = palette;
 }
 
-static void sprite_gfx2(struct SMSGG_VDP* this) {
+static void sprite_gfx2(SMSGG_VDP* this) {
     u32 hlimit = (8 << (this->io.sprite_zoom + this->io.sprite_size)) - 1;
     u32 vlimit = hlimit;
     u32 sl = this->sprite_limit_override ? 64 : 8;
@@ -131,7 +131,7 @@ static void sprite_gfx2(struct SMSGG_VDP* this) {
     }
 }
 
-static void sprite_gfx3(struct SMSGG_VDP* this) {
+static void sprite_gfx3(SMSGG_VDP* this) {
     u32 hlimit = (8 << this->io.sprite_zoom) - 1;
     u32 vlimit = (8 << (this->io.sprite_zoom + this->io.sprite_size)) - 1;
     u32 sl = this->sprite_limit_override ? 64 : 8;
@@ -160,7 +160,7 @@ static void sprite_gfx3(struct SMSGG_VDP* this) {
 }
 
 
-void SMSGG_VDP_update_videomode(struct SMSGG_VDP* this) {
+void SMSGG_VDP_update_videomode(SMSGG_VDP* this) {
     u32 bottom_row = 192;
     if (this->variant == jsm::systems::SMS1) bottom_row = 192;
     if (false) {}
@@ -218,7 +218,7 @@ void SMSGG_VDP_update_videomode(struct SMSGG_VDP* this) {
     }
 }
 
-static void update_irqs(struct SMSGG_VDP* this)
+static void update_irqs(SMSGG_VDP* this)
 {
     /*u32 level = 0;
     if (this->io.irq_frame_pending && this->io.irq_frame_enabled) {
@@ -232,7 +232,7 @@ static void update_irqs(struct SMSGG_VDP* this)
     SMSGG_bus_notify_IRQ(this->bus, ((this->io.irq_frame_pending && this->io.irq_frame_enabled) || (this->io.irq_line_pending && this->io.irq_line_enabled)));
 }
 
-static void sprite_setup(struct SMSGG_VDP* this)
+static void sprite_setup(SMSGG_VDP* this)
 {
     u32 valid = 0;
     u32 vlimit = (8 << (this->io.sprite_zoom + this->io.sprite_size)) - 1;
@@ -305,7 +305,7 @@ static void sprite_setup(struct SMSGG_VDP* this)
     }    
 }
 
-u32 dac_palette(struct SMSGG_VDP* this, u32 index)
+u32 dac_palette(SMSGG_VDP* this, u32 index)
 {
     if (this->variant != jsm::systems::GG) {
         if (!(this->io.video_mode & 8)) return SMSGG_PALETTE[index & 0x0F];
@@ -332,7 +332,7 @@ u32 dac_palette(struct SMSGG_VDP* this, u32 index)
     return 0;
 }
 
-static void dac_gfx(struct SMSGG_VDP* this)
+static void dac_gfx(SMSGG_VDP* this)
 {
     u32 color = dac_palette(this, 16 | this->io.bg_color);
 
@@ -350,12 +350,12 @@ static void dac_gfx(struct SMSGG_VDP* this)
     this->doi++;    
 }
 
-static void scanline_invisible(struct SMSGG_VDP* this)
+static void scanline_invisible(SMSGG_VDP* this)
 {
 
 }
 
-static void scanline_visible(struct SMSGG_VDP* this)
+static void scanline_visible(SMSGG_VDP* this)
 {
     this->bg_color = this->bg_priority = this->bg_palette = 0;
     this->sprite_color = 0;
@@ -372,7 +372,7 @@ static void scanline_visible(struct SMSGG_VDP* this)
     }
 }
 
-void SMSGG_VDP_init(struct SMSGG_VDP* this, SMSGG* bus, enum jsm::systems variant)
+void SMSGG_VDP_init(SMSGG_VDP* this, SMSGG* bus, enum jsm::systems variant)
 {
     this->variant = variant;
     this->bus = bus;
@@ -382,10 +382,10 @@ void SMSGG_VDP_init(struct SMSGG_VDP* this, SMSGG* bus, enum jsm::systems varian
     this->mode = variant == jsm::systems::GG ? VDP_GG : VDP_SMS;
     
     for (u32 i = 0; i < 64; i++) {
-        this->objects[i] = (struct SMSGG_object) {0, 0, 0, 0 };
+        this->objects[i] = (SMSGG_object) {0, 0, 0, 0 };
     }
     
-    this->io = (struct SMSGG_VDP_io) {
+    this->io = (SMSGG_VDP_io) {
         .code = 0, .video_mode = 0, .display_enable = 0,
         .bg_name_table_address = 0, .bg_color_table_address = 0,
         .bg_pattern_table_address = 0, .sprite_attr_table_address = 0,
@@ -402,7 +402,7 @@ void SMSGG_VDP_init(struct SMSGG_VDP* this, SMSGG* bus, enum jsm::systems varian
         .address = 0
     };
     
-    this->latch = (struct SMSGG_VDP_latch) {
+    this->latch = (SMSGG_VDP_latch) {
         .control = 0,
         .vram = 0,
         .cram = 0,
@@ -423,7 +423,7 @@ void SMSGG_VDP_init(struct SMSGG_VDP* this, SMSGG* bus, enum jsm::systems varian
     this->scanline_cycle = &scanline_visible;
 }
 
-static void new_frame(struct SMSGG_VDP* this)
+static void new_frame(SMSGG_VDP* this)
 {
     debugger_report_frame(this->bus->dbg.interface);
     this->display->scan_x = this->display->scan_y = 0;
@@ -435,7 +435,7 @@ static void new_frame(struct SMSGG_VDP* this)
     this->display->last_written ^= 1;
 }
 
-void SMSGG_VDP_set_scanline_kind(struct SMSGG_VDP* this, u32 vpos)
+void SMSGG_VDP_set_scanline_kind(SMSGG_VDP* this, u32 vpos)
 {
     if (vpos < this->bus->clock.timing.rendered_lines)
         this->scanline_cycle = &scanline_visible;
@@ -443,7 +443,7 @@ void SMSGG_VDP_set_scanline_kind(struct SMSGG_VDP* this, u32 vpos)
         this->scanline_cycle = &scanline_invisible;
 }
 
-static void new_scanline(struct SMSGG_VDP* this)
+static void new_scanline(SMSGG_VDP* this)
 {
     this->display->scan_x = 0;
     this->display->scan_y++;
@@ -491,7 +491,7 @@ static void new_scanline(struct SMSGG_VDP* this)
         this->bus->clock.ccounter = (this->bus->clock.ccounter + 1) & 0xFFF;
 }
 
-void SMSGG_VDP_cycle(struct SMSGG_VDP* this)
+void SMSGG_VDP_cycle(SMSGG_VDP* this)
 {
     this->scanline_cycle(this);
     this->bus->clock.vdp_frame_cycle += this->bus->clock.vdp_divisor;
@@ -500,7 +500,7 @@ void SMSGG_VDP_cycle(struct SMSGG_VDP* this)
     if (this->bus->clock.hpos == 342) new_scanline(this);
 }
 
-void SMSGG_VDP_reset(struct SMSGG_VDP* this)
+void SMSGG_VDP_reset(SMSGG_VDP* this)
 {
     this->io.line_irq_reload = 255;
     this->bus->clock.hpos = 0;
@@ -517,14 +517,14 @@ void SMSGG_VDP_reset(struct SMSGG_VDP* this)
     SMSGG_VDP_update_videomode(this);
 }
 
-u32 SMSGG_VDP_read_hcounter(struct SMSGG_VDP* this)
+u32 SMSGG_VDP_read_hcounter(SMSGG_VDP* this)
 {
     u32 hcounter = this->latch.hcounter;
     if (hcounter >= 592) hcounter += 340;
     return hcounter >> 2;
 }
 
-u32 SMSGG_VDP_read_data(struct SMSGG_VDP* this)
+u32 SMSGG_VDP_read_data(SMSGG_VDP* this)
 {
     this->latch.control = 0;
     u32 r = this->latch.vram;
@@ -533,7 +533,7 @@ u32 SMSGG_VDP_read_data(struct SMSGG_VDP* this)
     return r;
 }
 
-void SMSGG_VDP_write_data(struct SMSGG_VDP* this, u32 val)
+void SMSGG_VDP_write_data(SMSGG_VDP* this, u32 val)
 {
     DBG_EVENT(DBG_SMSGG_EVENT_WRITE_VRAM);
     this->latch.control = 0;
@@ -560,7 +560,7 @@ void SMSGG_VDP_write_data(struct SMSGG_VDP* this, u32 val)
     this->io.address = (this->io.address + 1) & 0x3FFF;
 }
 
-u32 SMSGG_VDP_read_vcounter(struct SMSGG_VDP* this)
+u32 SMSGG_VDP_read_vcounter(SMSGG_VDP* this)
 {
     if (this->bus->clock.timing.region == NTSC) {
         switch(this->io.video_mode) {
@@ -584,7 +584,7 @@ u32 SMSGG_VDP_read_vcounter(struct SMSGG_VDP* this)
     }
 }
 
-u32 SMSGG_VDP_read_status(struct SMSGG_VDP* this)
+u32 SMSGG_VDP_read_status(SMSGG_VDP* this)
 {
     this->latch.control = 0;
 
@@ -600,7 +600,7 @@ u32 SMSGG_VDP_read_status(struct SMSGG_VDP* this)
     return val;
 }
 
-static void register_write(struct SMSGG_VDP* this, u32 addr, u32 val)
+static void register_write(SMSGG_VDP* this, u32 addr, u32 val)
 {
     switch(addr) {
         case 0: // mode control thing, #1
@@ -657,7 +657,7 @@ static void register_write(struct SMSGG_VDP* this, u32 addr, u32 val)
     
 }
 
-void SMSGG_VDP_write_control(struct SMSGG_VDP* this, u32 val)
+void SMSGG_VDP_write_control(SMSGG_VDP* this, u32 val)
 {
     if (this->latch.control == 0) {
         this->latch.control = 1;

@@ -11,8 +11,8 @@ extern "C" {
 
 #include "debugger.h"
 
-void trace_view_init(struct trace_view *);
-void trace_view_delete(struct trace_view *);
+void trace_view_init(trace_view *);
+void trace_view_delete(trace_view *);
 
 #ifdef __cplusplus
 }

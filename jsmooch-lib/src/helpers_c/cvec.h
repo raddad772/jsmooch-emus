@@ -35,28 +35,28 @@ struct cvec_ptr {
     u32 index;
 };
 
-void cvec_init(struct cvec *, u32 data_size, u32 prealloc);
-void cvec_delete(struct cvec *);
-//u32 cvec_len(struct cvec *);
+void cvec_init(cvec *, u32 data_size, u32 prealloc);
+void cvec_delete(cvec *);
+//u32 cvec_len(cvec *);
 #define cvec_len(a) ((a)->len)
-void *cvec_push_back(struct cvec *);
-u32 cvec_index_of(struct cvec*, void* ptr);
-void *cvec_pop_back(struct cvec *);
-void cvec_clear(struct cvec *);
-void *cvec_get(struct cvec *, u32 index);
-void *cvec_get_unsafe(struct cvec *, u32 index);
-void cvec_lock_reallocs(struct cvec *); // For locking reallocs to preserve pointers
-void cvec_push_back_copy(struct cvec *, void *src);
-void cvec_grow_by(struct cvec *, u32 num); // Grow a specific # of elements
-void cvec_alloc_atleast(struct cvec*, u64 howmuch); // Make sure at least # elements are allocated
+void *cvec_push_back(cvec *);
+u32 cvec_index_of(cvec*, void* ptr);
+void *cvec_pop_back(cvec *);
+void cvec_clear(cvec *);
+void *cvec_get(cvec *, u32 index);
+void *cvec_get_unsafe(cvec *, u32 index);
+void cvec_lock_reallocs(cvec *); // For locking reallocs to preserve pointers
+void cvec_push_back_copy(cvec *, void *src);
+void cvec_grow_by(cvec *, u32 num); // Grow a specific # of elements
+void cvec_alloc_atleast(cvec*, u64 howmuch); // Make sure at least # elements are allocated
 
-void cvec_iterator_init(struct cvec_iterator *);
+void cvec_iterator_init(cvec_iterator *);
 
-struct cvec_ptr make_cvec_ptr(struct cvec *, u32 idx);
-void cvec_ptr_init(struct cvec_ptr *vec);
-void cvec_ptr_delete(struct cvec_ptr *vec);
+struct cvec_ptr make_cvec_ptr(cvec *, u32 idx);
+void cvec_ptr_init(cvec_ptr *vec);
+void cvec_ptr_delete(cvec_ptr *vec);
 
-void *cpg(struct cvec_ptr p);
+void *cpg(cvec_ptr p);
 
 #ifdef __cplusplus
 }

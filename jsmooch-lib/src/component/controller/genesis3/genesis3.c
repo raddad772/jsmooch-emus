@@ -7,17 +7,17 @@
 
 #include "genesis3.h"
 
-void genesis_controller_3button_init(struct genesis_controller_3button* this)
+void genesis_controller_3button_init(genesis_controller_3button* this)
 {
     this->pio = NULL;
 }
 
-void genesis_controller_3button_delete(struct genesis_controller_3button* this)
+void genesis_controller_3button_delete(genesis_controller_3button* this)
 {
     this->pio = NULL;
 }
 
-void genesis_controller_3button_latch(struct genesis_controller_3button* this)
+void genesis_controller_3button_latch(genesis_controller_3button* this)
 {
     struct cvec* bl = &this->pio->controller.digital_buttons;
     struct HID_digital_button *b;
@@ -33,7 +33,7 @@ void genesis_controller_3button_latch(struct genesis_controller_3button* this)
 #undef B_GET
 }
 
-void genesis3_setup_pio(struct physical_io_device *d, u32 num, const char*name, u32 connected)
+void genesis3_setup_pio(physical_io_device *d, u32 num, const char*name, u32 connected)
 {
     physical_io_device_init(d, HID_CONTROLLER, 0, 0, 1, 1);
 
@@ -56,7 +56,7 @@ void genesis3_setup_pio(struct physical_io_device *d, u32 num, const char*name, 
     pio_new_button(cnt, "start", DBCID_co_start);
 }
 
-u8 genesis3_read_data(struct genesis_controller_3button *this)
+u8 genesis3_read_data(genesis_controller_3button *this)
 {
     u8 out = 0;
     if (this->pio == NULL) return 0;
@@ -82,7 +82,7 @@ u8 genesis3_read_data(struct genesis_controller_3button *this)
     return out ^ 0x3F;
 }
 
-void genesis3_write_data(struct genesis_controller_3button *this, u8 val)
+void genesis3_write_data(genesis_controller_3button *this, u8 val)
 {
     this->select = (val >> 6) & 1;
 }

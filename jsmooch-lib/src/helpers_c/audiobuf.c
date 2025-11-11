@@ -7,12 +7,12 @@
 
 #include "audiobuf.h"
 
-void audiobuf_init(struct audiobuf *this)
+void audiobuf_init(audiobuf *this)
 {
-    memset(this, 0, sizeof(struct audiobuf));
+    memset(this, 0, sizeof(audiobuf));
 }
 
-void audiobuf_allocate(struct audiobuf* this, u32 num_channels, float num_samples)
+void audiobuf_allocate(audiobuf* this, u32 num_channels, float num_samples)
 {
     this->samples_len = num_samples;
     this->alloc_len = ((u32)num_samples + 1) * 4 * num_channels;
@@ -26,11 +26,11 @@ void audiobuf_allocate(struct audiobuf* this, u32 num_channels, float num_sample
     this->ptr = malloc(this->alloc_len);
 }
 
-void audiobuf_delete(struct audiobuf *this)
+void audiobuf_delete(audiobuf *this)
 {
     if (this->ptr) {
         free(this->ptr);
         this->ptr = NULL;
     }
-    memset(this, 0, sizeof(struct audiobuf));
+    memset(this, 0, sizeof(audiobuf));
 }

@@ -9,8 +9,8 @@
 
 struct PS1;
 
-u32 PS1_DMA_read(struct PS1 *, u32 addr, u32 sz);
-void PS1_DMA_write(struct PS1 *, u32 addr, u32 sz, u32 val);
+u32 PS1_DMA_read(PS1 *, u32 addr, u32 sz);
+void PS1_DMA_write(PS1 *, u32 addr, u32 sz, u32 val);
 
 
 #endif //JSMOOCH_EMUS_PS1_DMA_H

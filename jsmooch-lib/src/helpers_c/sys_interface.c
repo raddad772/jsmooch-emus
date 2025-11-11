@@ -24,10 +24,10 @@
 struct jsm_system* new_system(enum jsm::systems which)
 {
     dbg_init();
-    struct jsm_system* out = malloc(sizeof(struct jsm_system));
-    memset(out, 0, sizeof(struct jsm_system));
-    cvec_init(&out->IOs, sizeof(struct physical_io_device), 20);
-    cvec_init(&out->opts, sizeof(struct debugger_widget), 5);
+    struct jsm_system* out = malloc(sizeof(jsm_system));
+    memset(out, 0, sizeof(jsm_system));
+    cvec_init(&out->IOs, sizeof(physical_io_device), 20);
+    cvec_init(&out->opts, sizeof(debugger_widget), 5);
     cvec_lock_reallocs(&out->IOs);
     out->kind = which;
 	switch (which) {
@@ -101,7 +101,7 @@ struct jsm_system* new_system(enum jsm::systems which)
     return out;
 }
 
-void jsm_clearfuncs(struct jsm_system *jsm)
+void jsm_clearfuncs(jsm_system *jsm)
 {
     jsm->finish_frame = NULL;
     jsm->finish_scanline = NULL;
@@ -117,7 +117,7 @@ void jsm_clearfuncs(struct jsm_system *jsm)
     jsm->set_audiobuf = NULL;
 }
 
-void jsm_delete(struct jsm_system* jsm)
+void jsm_delete(jsm_system* jsm)
 {
     struct cvec* o = &jsm->IOs;
     switch(jsm->kind) {

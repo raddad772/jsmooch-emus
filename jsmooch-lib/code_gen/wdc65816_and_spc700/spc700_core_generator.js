@@ -1220,7 +1220,7 @@ function SPC_func_name(opcode)
 
 function SPC_generate_instruction_code_c(opcode)
 {
-    let outstr = '\n\nstatic void ' + SPC_func_name(opcode) + '(struct SPC700 *cpu) { ';
+    let outstr = '\n\nstatic void ' + SPC_func_name(opcode) + '(SPC700 *cpu) { ';
     let r = SPC_generate_instruction_function('', opcode);
     if (r.length === 0) {
         console.log('EMPTY?', )

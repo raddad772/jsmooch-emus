@@ -207,7 +207,7 @@ void NES_APU::write_IO(u32 addr, u8 val)
     }
 }
 
-static inline u8 lc_halted(struct NES_APU *apu, u32 pc)
+static inline u8 lc_halted(NES_APU *apu, u32 pc)
 {
     /*
 N/T/2/1 will read as 1 if the corresponding length counter has not been halted through either expiring or a write of 0 to the corresponding bit. For the triangle channel, the status of the linear counter is irrelevant.     */
@@ -322,7 +322,7 @@ void NES_APU::clock_envs_and_linear_counters()
     clock_linear_counter();
 }
 
-static inline void clock_sweep(struct NES_APU *apu, u32 pc)
+static inline void clock_sweep(NES_APU *apu, u32 pc)
 {
     struct NES_APU::NESSNDCHAN &c = apu->channels[pc];
     i32 v = (c.period.reload >> c.sweep.shift);
@@ -521,7 +521,7 @@ float NES_APU::sample_channel(int cnum)
     return 0.0f;
 }
 
-void NES_APU::serialize(struct serialized_state &state)
+void NES_APU::serialize(serialized_state &state)
 {
 #define S(x) Sadd(state, &(this-> x), sizeof(this-> x))
     S(channels[0]);
@@ -536,7 +536,7 @@ void NES_APU::serialize(struct serialized_state &state)
 #undef S
 }
 
-void NES_APU::deserialize(struct serialized_state &state)
+void NES_APU::deserialize(serialized_state &state)
 {
 #define L(x) Sload(state, &(this-> x), sizeof(this-> x))
     L(channels[0]);

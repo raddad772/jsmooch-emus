@@ -15,11 +15,11 @@
 #include "mbc2.h"
 
 
-#define THIS struct GB_mapper_MBC2* this = (struct GB_mapper_MBC2*)parent->ptr
+#define THIS struct GB_mapper_MBC2* this = (GB_mapper_MBC2*)parent->ptr
 
-static void GBMBC2_update_banks(struct GB_mapper_MBC2 *this);
+static void GBMBC2_update_banks(GB_mapper_MBC2 *this);
 
-static void serialize(struct GB_mapper *parent, serialized_state *state)
+static void serialize(GB_mapper *parent, serialized_state *state)
 {
     THIS;
 #define S(x) Sadd(state, &(this-> x), sizeof(this-> x))
@@ -29,7 +29,7 @@ static void serialize(struct GB_mapper *parent, serialized_state *state)
 #undef S
 }
 
-static void deserialize(struct GB_mapper *parent, serialized_state *state)
+static void deserialize(GB_mapper *parent, serialized_state *state)
 {
     THIS;
 #define L(x) Sload(state, &(this-> x), sizeof(this-> x))
@@ -40,9 +40,9 @@ static void deserialize(struct GB_mapper *parent, serialized_state *state)
 }
 
 
-void GB_mapper_MBC2_new(struct GB_mapper *parent, GB_clock *clock, GB_bus *bus)
+void GB_mapper_MBC2_new(GB_mapper *parent, GB_clock *clock, GB_bus *bus)
 {
-    struct GB_mapper_MBC2 *this = (struct GB_mapper_MBC2 *)malloc(sizeof(struct GB_mapper_MBC2));
+    struct GB_mapper_MBC2 *this = (GB_mapper_MBC2 *)malloc(sizeof(GB_mapper_MBC2));
     parent->ptr = (void *)this;
 
     this->ROM = NULL;
@@ -65,7 +65,7 @@ void GB_mapper_MBC2_new(struct GB_mapper *parent, GB_clock *clock, GB_bus *bus)
     this->regs.ext_RAM_enable = 0;
 }
 
-void GB_mapper_MBC2_delete(struct GB_mapper *parent)
+void GB_mapper_MBC2_delete(GB_mapper *parent)
 {
     if (parent->ptr == NULL) return;
     THIS;
@@ -78,7 +78,7 @@ void GB_mapper_MBC2_delete(struct GB_mapper *parent)
     free(parent->ptr);
 }
 
-void GBMBC2_reset(struct GB_mapper* parent)
+void GBMBC2_reset(GB_mapper* parent)
 {
     THIS;
     this->ROM_bank_hi_offset = 16384;
@@ -94,7 +94,7 @@ void GBMBC2_reset(struct GB_mapper* parent)
 #pragma warning(disable: 4724) // warning C4724: potential mod by 0
 #endif
 
-static void GBMBC2_update_banks(struct GB_mapper_MBC2 *this)
+static void GBMBC2_update_banks(GB_mapper_MBC2 *this)
 {
     this->ROM_bank_hi_offset = (this->regs.ROMB % this->num_ROM_banks) * 16384;
 }
@@ -103,7 +103,7 @@ static void GBMBC2_update_banks(struct GB_mapper_MBC2 *this)
 #pragma warning(pop)
 #endif
 
-u32 GBMBC2_CPU_read(struct GB_mapper* parent, u32 addr, u32 val, u32 has_effect)
+u32 GBMBC2_CPU_read(GB_mapper* parent, u32 addr, u32 val, u32 has_effect)
 {
     THIS;
     if (addr < 0x4000) // ROM lo bank
@@ -119,7 +119,7 @@ u32 GBMBC2_CPU_read(struct GB_mapper* parent, u32 addr, u32 val, u32 has_effect)
     return 0xFF;
 }
 
-void GBMBC2_CPU_write(struct GB_mapper* parent, u32 addr, u32 val)
+void GBMBC2_CPU_write(GB_mapper* parent, u32 addr, u32 val)
 {
     THIS;
     if (addr < 0x4000) {
@@ -144,7 +144,7 @@ void GBMBC2_CPU_write(struct GB_mapper* parent, u32 addr, u32 val)
     }
 }
 
-void GBMBC2_set_cart(struct GB_mapper* parent, GB_cart* cart)
+void GBMBC2_set_cart(GB_mapper* parent, GB_cart* cart)
 {
     THIS;
     this->cart = cart;

@@ -6,7 +6,7 @@
 #include "helpers/int.h"
 #include "helpers/sys_interface.h"
 
-void TG16_new(struct jsm_system*, enum jsm::systems kind);
-void TG16_delete(struct jsm_system* system);
+void TG16_new(jsm_system*, enum jsm::systems kind);
+void TG16_delete(jsm_system* system);
 
 #endif //JSMOOCH_EMUS_TG16_H

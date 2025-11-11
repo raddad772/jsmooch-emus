@@ -15,11 +15,11 @@
 #include "mbc5.h"
 
 
-#define THIS struct GB_mapper_MBC5* this = (struct GB_mapper_MBC5*)parent->ptr
+#define THIS struct GB_mapper_MBC5* this = (GB_mapper_MBC5*)parent->ptr
 
-static void GBMBC5_update_banks(struct GB_mapper_MBC5 *this);
+static void GBMBC5_update_banks(GB_mapper_MBC5 *this);
 
-static void serialize(struct GB_mapper *parent, serialized_state *state)
+static void serialize(GB_mapper *parent, serialized_state *state)
 {
     THIS;
 #define S(x) Sadd(state, &(this-> x), sizeof(this-> x))
@@ -33,7 +33,7 @@ static void serialize(struct GB_mapper *parent, serialized_state *state)
 #undef S
 }
 
-static void deserialize(struct GB_mapper *parent, serialized_state *state)
+static void deserialize(GB_mapper *parent, serialized_state *state)
 {
     THIS;
 #define L(x) Sload(state, &(this-> x), sizeof(this-> x))
@@ -48,9 +48,9 @@ static void deserialize(struct GB_mapper *parent, serialized_state *state)
 }
 
 
-void GB_mapper_MBC5_new(struct GB_mapper *parent, GB_clock *clock, GB_bus *bus)
+void GB_mapper_MBC5_new(GB_mapper *parent, GB_clock *clock, GB_bus *bus)
 {
-    struct GB_mapper_MBC5 *this = (struct GB_mapper_MBC5 *)malloc(sizeof(struct GB_mapper_MBC5));
+    struct GB_mapper_MBC5 *this = (GB_mapper_MBC5 *)malloc(sizeof(GB_mapper_MBC5));
     parent->ptr = (void *)this;
 
     this->ROM = NULL;
@@ -78,7 +78,7 @@ void GB_mapper_MBC5_new(struct GB_mapper *parent, GB_clock *clock, GB_bus *bus)
     this->cartRAM_offset = 0;
 }
 
-void GB_mapper_MBC5_delete(struct GB_mapper *parent)
+void GB_mapper_MBC5_delete(GB_mapper *parent)
 {
     if (parent->ptr == NULL) return;
     THIS;
@@ -91,7 +91,7 @@ void GB_mapper_MBC5_delete(struct GB_mapper *parent)
     free(parent->ptr);
 }
 
-void GBMBC5_reset(struct GB_mapper* parent)
+void GBMBC5_reset(GB_mapper* parent)
 {
     THIS;
     this->ROM_bank_lo_offset = 0;
@@ -104,14 +104,14 @@ void GBMBC5_reset(struct GB_mapper* parent)
     GBMBC5_update_banks(this);
 }
 
-static void GBMBC5_update_banks(struct GB_mapper_MBC5 *this)
+static void GBMBC5_update_banks(GB_mapper_MBC5 *this)
 {
     this->cartRAM_offset = (this->regs.RAMB % this->num_RAM_banks) * 8192;
     this->ROM_bank_lo_offset = 0;
     this->ROM_bank_hi_offset = (((this->regs.ROMB1 << 8) | this->regs.ROMB0) % this->num_ROM_banks) * 16384;
 }
 
-u32 GBMBC5_CPU_read(struct GB_mapper* parent, u32 addr, u32 val, u32 has_effect)
+u32 GBMBC5_CPU_read(GB_mapper* parent, u32 addr, u32 val, u32 has_effect)
 {
     THIS;
     if (addr < 0x4000) // ROM lo bank
@@ -127,7 +127,7 @@ u32 GBMBC5_CPU_read(struct GB_mapper* parent, u32 addr, u32 val, u32 has_effect)
     return 0xFF;
 }
 
-void GBMBC5_CPU_write(struct GB_mapper* parent, u32 addr, u32 val)
+void GBMBC5_CPU_write(GB_mapper* parent, u32 addr, u32 val)
 {
     THIS;
     if (addr < 0x8000) {
@@ -161,7 +161,7 @@ void GBMBC5_CPU_write(struct GB_mapper* parent, u32 addr, u32 val)
     }
 }
 
-void GBMBC5_set_cart(struct GB_mapper* parent, GB_cart* cart)
+void GBMBC5_set_cart(GB_mapper* parent, GB_cart* cart)
 {
     THIS;
     this->cart = cart;

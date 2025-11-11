@@ -8,7 +8,7 @@
 #include "ccircular.h"
 
 /*
-void ccircular_init(struct ccircular* this, u32 data_size, u32 prealloc)
+void ccircular_init(ccircular* this, u32 data_size, u32 prealloc)
 {
     this->data = NULL;
     this->data_sz = data_size;
@@ -19,12 +19,12 @@ void ccircular_init(struct ccircular* this, u32 data_size, u32 prealloc)
     this->data = malloc(data_size * this->len_allocated);
 }
 
-void ccircular_delete(struct ccircular* this)
+void ccircular_delete(ccircular* this)
 {
 
 }
 
-u32 ccircular_len(struct ccircular* this)
+u32 ccircular_len(ccircular* this)
 {
 
 }

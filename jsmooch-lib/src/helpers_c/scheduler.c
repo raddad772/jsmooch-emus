@@ -10,11 +10,11 @@
 #include "helpers/debug.h"
 
 
-static inline i64 current_time(struct scheduler_t *this) {
+static inline i64 current_time(scheduler_t *this) {
     return (i64)(*this->clock) + (i64)(*this->waitstates);
 }
 
-static void del_event(struct scheduler_t *this, scheduler_event *e)
+static void del_event(scheduler_t *this, scheduler_event *e)
 {
     this->to_delete.items[this->to_delete.num++] = e;
     //printf("\nDELETE EVENT ID %lld", e->id);
@@ -34,7 +34,7 @@ static void del_event(struct scheduler_t *this, scheduler_event *e)
     }
 }
 
-void scheduler_init(struct scheduler_t* this, u64 *clock, u64 *waitstates)
+void scheduler_init(scheduler_t* this, u64 *clock, u64 *waitstates)
 {
     memset(this, 0, sizeof(*this));
     this->clock = clock;
@@ -42,12 +42,12 @@ void scheduler_init(struct scheduler_t* this, u64 *clock, u64 *waitstates)
     this->id_counter = 100;
 }
 
-void scheduler_delete(struct scheduler_t* this)
+void scheduler_delete(scheduler_t* this)
 {
     scheduler_clear(this);
 }
 
-void scheduler_clear(struct scheduler_t* this)
+void scheduler_clear(scheduler_t* this)
 {
     struct scheduler_event* cur = this->first_event;
     while(cur != NULL) {
@@ -60,7 +60,7 @@ void scheduler_clear(struct scheduler_t* this)
     this->first_event = NULL;
 }
 
-struct scheduler_event* alloc_event(struct scheduler_t *this, i64 timecode, u64 key, scheduler_event* next, u64 id) {
+struct scheduler_event* alloc_event(scheduler_t *this, i64 timecode, u64 key, scheduler_event* next, u64 id) {
     struct scheduler_event *se;
 
     // Reuse a struct if we can. FOR SPEED!
@@ -69,7 +69,7 @@ struct scheduler_event* alloc_event(struct scheduler_t *this, i64 timecode, u64 
         se = this->to_delete.items[this->to_delete.num];
         this->to_delete.items[this->to_delete.num] = NULL;
     }
-    else se = malloc(sizeof(struct scheduler_event));
+    else se = malloc(sizeof(scheduler_event));
 
     se->timecode = timecode;
     se->id = id;
@@ -81,13 +81,13 @@ struct scheduler_event* alloc_event(struct scheduler_t *this, i64 timecode, u64 
 
 struct scheduled_bound_function* scheduler_bind_function(scheduler_callback func, void *ptr)
 {
-    struct scheduled_bound_function *f = malloc(sizeof(struct scheduled_bound_function));
+    struct scheduled_bound_function *f = malloc(sizeof(scheduled_bound_function));
     f->func = func;
     f->ptr = ptr;
     return f;
 }
 
-void scheduler_delete_if_exist(struct scheduler_t *this, u64 id)
+void scheduler_delete_if_exist(scheduler_t *this, u64 id)
 {
     // If empty...
     if (this->first_event == NULL) return;
@@ -122,7 +122,7 @@ void scheduler_delete_if_exist(struct scheduler_t *this, u64 id)
     }
 }
 
-u64 scheduler_bind_or_run(struct scheduler_event *e, void *ptr, scheduler_callback func, i64 timecode, u64 key, u32 *still_sched)
+u64 scheduler_bind_or_run(scheduler_event *e, void *ptr, scheduler_callback func, i64 timecode, u64 key, u32 *still_sched)
 {
     if (!e) {
         if (still_sched) *still_sched = 0;
@@ -150,13 +150,13 @@ static void pprint_list(char *s, scheduler_t *this)
     //printf("\n");
 }
 
-u64 scheduler_add_or_run_abs(struct scheduler_t *this, i64 timecode, u64 key, void *ptr, scheduler_callback callback, u32 *still_sched)
+u64 scheduler_add_or_run_abs(scheduler_t *this, i64 timecode, u64 key, void *ptr, scheduler_callback callback, u32 *still_sched)
 {
     struct scheduler_event *e = scheduler_add_abs(this, timecode, key, 1);
     return scheduler_bind_or_run(e, ptr, callback, timecode, key, still_sched);
 }
 
-u64 scheduler_only_add_abs_w_tag(struct scheduler_t *this, i64 timecode, u64 key, void *ptr, scheduler_callback callback, u32 *still_sched, u32 tag)
+u64 scheduler_only_add_abs_w_tag(scheduler_t *this, i64 timecode, u64 key, void *ptr, scheduler_callback callback, u32 *still_sched, u32 tag)
 {
     struct scheduler_event *e = scheduler_add_abs(this, timecode, key, 0);
     u64 id = scheduler_bind_or_run(e, ptr, callback, timecode, key, still_sched);
@@ -165,7 +165,7 @@ u64 scheduler_only_add_abs_w_tag(struct scheduler_t *this, i64 timecode, u64 key
     return id;
 }
 
-u64 scheduler_only_add_abs(struct scheduler_t *this, i64 timecode, u64 key, void *ptr, scheduler_callback callback, u32 *still_sched)
+u64 scheduler_only_add_abs(scheduler_t *this, i64 timecode, u64 key, void *ptr, scheduler_callback callback, u32 *still_sched)
 {
     struct scheduler_event *e = scheduler_add_abs(this, timecode, key, 0);
     u64 id = scheduler_bind_or_run(e, ptr, callback, timecode, key, still_sched);
@@ -173,7 +173,7 @@ u64 scheduler_only_add_abs(struct scheduler_t *this, i64 timecode, u64 key, void
     return id;
 }
 
-u64 scheduler_add_next(struct scheduler_t *this, u64 key, void *ptr, scheduler_callback callback, u32 *still_sched)
+u64 scheduler_add_next(scheduler_t *this, u64 key, void *ptr, scheduler_callback callback, u32 *still_sched)
 {
     u64 id = this->id_counter++;
     //printf("\nscheduler_add_next(id:%lld)", id-100);
@@ -185,7 +185,7 @@ u64 scheduler_add_next(struct scheduler_t *this, u64 key, void *ptr, scheduler_c
     return id;
 }
 
-struct scheduler_event *scheduler_add_abs(struct scheduler_t* this, i64 timecode, u64 key, u32 do_instant) {
+struct scheduler_event *scheduler_add_abs(scheduler_t* this, i64 timecode, u64 key, u32 do_instant) {
     u32 instant = 0;
     //assert(timecode>=-2);
     //assert(timecode<50000);
@@ -245,7 +245,7 @@ struct scheduler_event *scheduler_add_abs(struct scheduler_t* this, i64 timecode
 }
 
 
-void scheduler_run_for_cycles(struct scheduler_t *this, u64 howmany)
+void scheduler_run_for_cycles(scheduler_t *this, u64 howmany)
 {
     this->cycles_left_to_run += (i64)howmany;
     //printf("\nRun %lld. Cycles left to run: %lld", howmany, this->cycles_left_to_run);
@@ -307,7 +307,7 @@ void scheduler_run_for_cycles(struct scheduler_t *this, u64 howmany)
 }
 
 
-void scheduler_run_for_cycles_tg16(struct scheduler_t *this, u64 howmany)
+void scheduler_run_for_cycles_tg16(scheduler_t *this, u64 howmany)
 {
     //printf("\nRun %lld. Cycles left to run: %lld", howmany, this->cycles_left_to_run);
     assert(this->first_event);
@@ -342,7 +342,7 @@ void scheduler_run_for_cycles_tg16(struct scheduler_t *this, u64 howmany)
     this->in_event = 0;
 }
 
-void scheduler_run_til_tag_tg16(struct scheduler_t *this, u32 tag)
+void scheduler_run_til_tag_tg16(scheduler_t *this, u32 tag)
 {
     assert(this->first_event);
     this->in_event = 1;
@@ -377,7 +377,7 @@ void scheduler_run_til_tag_tg16(struct scheduler_t *this, u32 tag)
 }
 
 
-void scheduler_run_til_tag(struct scheduler_t *this, u32 tag)
+void scheduler_run_til_tag(scheduler_t *this, u32 tag)
 {
     assert(this->first_event);
 
@@ -439,7 +439,7 @@ void scheduler_run_til_tag(struct scheduler_t *this, u32 tag)
     this->in_event = 0;
 }
 
-void scheduler_from_event_adjust_master_clock(struct scheduler_t *this, i64 howmany)
+void scheduler_from_event_adjust_master_clock(scheduler_t *this, i64 howmany)
 {
     // If called from an event, this will accurately adjust the clock.
     // If called from inside a cycle block, this may cause jitter; adjust there as well!

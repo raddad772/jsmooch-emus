@@ -11,8 +11,8 @@ extern "C" {
 
 #include "debugger.h"
 
-void image_view_init(struct image_view *);
-void image_view_delete(struct image_view *);
+void image_view_init(image_view *);
+void image_view_delete(image_view *);
 
 #ifdef __cplusplus
 }

@@ -11,29 +11,29 @@
 #include "iou.h"
 #include "mmu.h"
 
-static void aux_card_RAMwrite(struct apple2* this, u32 addr, u8 val)
+static void aux_card_RAMwrite(apple2* this, u32 addr, u8 val)
 {
     assert(1==2);
 }
 
-static u8 slot_read(struct apple2* this, u32 addr)
+static u8 slot_read(apple2* this, u32 addr)
 {
     printf("\nSLOT READ %04x cyc:%lld", addr, this->clock.master_cycles);
     return 0;
 }
 
-static u8 aux_card_RAMread(struct apple2* this, u32 addr)
+static u8 aux_card_RAMread(apple2* this, u32 addr)
 {
     printf("\nAUX RAM READ %04x cyc:%lld", addr, this->clock.master_cycles);
     return 0;
 }
 
-static void apple2_MMU_reset_io(struct apple2* this)
+static void apple2_MMU_reset_io(apple2* this)
 {
-    memset(&this->mmu.io, 0, sizeof(struct APL2SS));
+    memset(&this->mmu.io, 0, sizeof(APL2SS));
 }
 
-void apple2_MMU_reset(struct apple2* this)
+void apple2_MMU_reset(apple2* this)
 {
     this->mmu.RAM_bank = 0xD000; // 0xC000 or 0xD000
     this->mmu.page1_accesses = 0;
@@ -42,7 +42,7 @@ void apple2_MMU_reset(struct apple2* this)
     printf("\nMMU RESET!");
 }
 
-static u8 read_cxxx(struct apple2* this, u32 addr, u32 is_write, u8 old_val, u32 has_effect)
+static u8 read_cxxx(apple2* this, u32 addr, u32 is_write, u8 old_val, u32 has_effect)
 {
     // access C3XX with SLOTC3ROM reset, will enabled SLOTC8ROM,
     //  which fill fix motherboard ROM to C800-CFFF.
@@ -88,7 +88,7 @@ sed.
     return 0;
 }
 
-static u8 access_c0xx(struct apple2* this, u32 addr, u32 is_write, u8 old_val, u32 has_effect)
+static u8 access_c0xx(apple2* this, u32 addr, u32 is_write, u8 old_val, u32 has_effect)
 {
     // 80STORE
     u32 r = 0;
@@ -190,7 +190,7 @@ static u8 access_c0xx(struct apple2* this, u32 addr, u32 is_write, u8 old_val, u
     return r | MSB;
 }
 
-static u32 addr_is_aux(struct apple2* this, u32 addr, u32 RDWRT) {
+static u32 addr_is_aux(apple2* this, u32 addr, u32 RDWRT) {
     // 0-0x1FF, always main RAM
     if (addr < 0x200) {
         if (this->mmu.io.ALTZP) return 1;
@@ -220,7 +220,7 @@ static u32 addr_is_aux(struct apple2* this, u32 addr, u32 RDWRT) {
     return RDWRT;
 }
 
-u8 apple2_cpu_bus_read(struct apple2* this, u32 addr, u8 old_val, u32 has_effect)
+u8 apple2_cpu_bus_read(apple2* this, u32 addr, u8 old_val, u32 has_effect)
 {
     if (has_effect) {
         if ((addr >= 0x100) && (addr < 0x200)) {
@@ -251,7 +251,7 @@ u8 apple2_cpu_bus_read(struct apple2* this, u32 addr, u8 old_val, u32 has_effect
     return this->mmu.RAM.ptr[addr];
 }
 
-void apple2_cpu_bus_write(struct apple2* this, u32 addr, u8 val)
+void apple2_cpu_bus_write(apple2* this, u32 addr, u8 val)
 {
     if (addr < 0xC000) {
         if (addr_is_aux(this, addr, this->mmu.io.RAMWRT))

@@ -27,9 +27,9 @@ struct elf_symbol_list32 {
 };
 
 
-void elf_symbol_list32_init(struct elf_symbol_list32*);
-void elf_symbol_list32_delete(struct elf_symbol_list32*);
-void elf_symbol_list32_add(struct elf_symbol_list32*, u32 offset, const char* fname, const char*name, enum elf_symbol32_kind kind);
-struct elf_symbol32* elf_symbol_list32_find(struct elf_symbol_list32*, u32 addr, u32 mask);
+void elf_symbol_list32_init(elf_symbol_list32*);
+void elf_symbol_list32_delete(elf_symbol_list32*);
+void elf_symbol_list32_add(elf_symbol_list32*, u32 offset, const char* fname, const char*name, enum elf_symbol32_kind kind);
+struct elf_symbol32* elf_symbol_list32_find(elf_symbol_list32*, u32 addr, u32 mask);
 
 #endif

@@ -8,12 +8,12 @@
 #include "sms_gg.h"
 #include "component/controller/sms/sms_gamepad.h"
 
-void SMSGG_io_init(struct SMSGG *this)
+void SMSGG_io_init(SMSGG *this)
 {
     this->io.GGreg = 0xFF;
 }
 
-void SMSGG_controller_port_init(struct SMSGG_controller_port* this, enum jsm::systems variant, u32 which)
+void SMSGG_controller_port_init(SMSGG_controller_port* this, enum jsm::systems variant, u32 which)
 {
     this->attached_device = NULL;
     this->TR_level = this->TH_level = this->TR_direction = this->TH_direction = 1;
@@ -22,19 +22,19 @@ void SMSGG_controller_port_init(struct SMSGG_controller_port* this, enum jsm::sy
     this->which = which;
 }
 
-u32 SMSGG_controller_port_read(struct SMSGG_controller_port* this)
+u32 SMSGG_controller_port_read(SMSGG_controller_port* this)
 {
     if (this->attached_device == NULL) return 0x7F;
-    return SMSGG_gamepad_read((struct SMSGG_gamepad*)this->attached_device);
+    return SMSGG_gamepad_read((SMSGG_gamepad*)this->attached_device);
 }
 
-void SMSGG_controller_port_reset(struct SMSGG_controller_port* this)
+void SMSGG_controller_port_reset(SMSGG_controller_port* this)
 {
     this->TR_level = this->TH_level = 1;
     this->TR_direction = this->TH_direction = 1;
 }
 
-static u32 read_reg_ioport1(struct SMSGG *this, u32 val)
+static u32 read_reg_ioport1(SMSGG *this, u32 val)
 {
     /*
     D7 : Port B DOWN pin input
@@ -60,7 +60,7 @@ static u32 read_reg_ioport1(struct SMSGG *this, u32 val)
     return r;
 }
 
-static u32 read_reg_ioport2(struct SMSGG *this, u32 val)
+static u32 read_reg_ioport2(SMSGG *this, u32 val)
 {
     /*
      D7 : Port B TH pin input
@@ -91,7 +91,7 @@ static u32 read_reg_ioport2(struct SMSGG *this, u32 val)
     return r;
 }
 
-void write_reg_memory_ctrl(struct SMSGG* this, u32 val) {
+void write_reg_memory_ctrl(SMSGG* this, u32 val) {
     if (this->variant != jsm::systems::GG) {
         //SMSGG_mapper_sega_set_BIOS(&this->mapper, ((val & 8) >> 3) ^ 1); // 1 = disabled, 0 = enabled
 
@@ -104,7 +104,7 @@ void write_reg_memory_ctrl(struct SMSGG* this, u32 val) {
     this->io.disable = (val & 4) >> 2;
 }
 
-void write_reg_io_ctrl(struct SMSGG* this, u32 val) {
+void write_reg_io_ctrl(SMSGG* this, u32 val) {
         u32 thl1 = this->io.portA.TH_level;
         u32 thl2 = this->io.portB.TH_level;
 
@@ -127,7 +127,7 @@ void write_reg_io_ctrl(struct SMSGG* this, u32 val) {
 }
 
 
-u32 SMSGG_bus_cpu_in_sms1(struct SMSGG* bus, u32 addr, u32 val, u32 has_effect) {
+u32 SMSGG_bus_cpu_in_sms1(SMSGG* bus, u32 addr, u32 val, u32 has_effect) {
     addr &= 0xFF;
     if (addr <= 0x3F) {
         // reads return last byte of the instruction kind read the port
@@ -147,7 +147,7 @@ u32 SMSGG_bus_cpu_in_sms1(struct SMSGG* bus, u32 addr, u32 val, u32 has_effect) 
     return read_reg_ioport1(bus, val);
 }
 
-void SMSGG_bus_cpu_out_sms1(struct SMSGG* this, u32 addr, u32 val) {
+void SMSGG_bus_cpu_out_sms1(SMSGG* this, u32 addr, u32 val) {
     addr &= 0xFF;
     if (addr == 2) {
         this->io.GGreg = val;
@@ -176,7 +176,7 @@ void SMSGG_bus_cpu_out_sms1(struct SMSGG* this, u32 addr, u32 val) {
     // C0-FF, no effect
 }
 
-u32 SMSGG_bus_cpu_in_gg(struct SMSGG* bus, u32 addr, u32 val, u32 has_effect)
+u32 SMSGG_bus_cpu_in_gg(SMSGG* bus, u32 addr, u32 val, u32 has_effect)
 {
     addr &= 0xFF;
     //console.log('IN', hex2(addr));

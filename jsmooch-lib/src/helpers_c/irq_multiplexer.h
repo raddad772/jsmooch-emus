@@ -12,8 +12,8 @@ struct IRQ_multiplexer {
     u32 current_level;
 };
 
-void IRQ_multiplexer_init(struct IRQ_multiplexer *);
-u32 IRQ_multiplexer_set_level(struct IRQ_multiplexer *, u32 level, u32 from);
-void IRQ_multiplexer_clear(struct IRQ_multiplexer *);
+void IRQ_multiplexer_init(IRQ_multiplexer *);
+u32 IRQ_multiplexer_set_level(IRQ_multiplexer *, u32 level, u32 from);
+void IRQ_multiplexer_clear(IRQ_multiplexer *);
 
 #endif //JSMOOCH_EMUS_IRQ_MULTIPLEXER_H

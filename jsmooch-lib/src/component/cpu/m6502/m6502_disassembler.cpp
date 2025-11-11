@@ -6,14 +6,14 @@
 
 #include "helpers/debugger/debugger.h"
 
-static u16 dbg_read(struct jsm_debug_read_trace &trace, u32 *PC)
+static u16 dbg_read(jsm_debug_read_trace &trace, u32 *PC)
 {
     u16 v = trace.read_trace(trace.ptr, *PC);
     (*PC)++;
     return v;
 }
 
-static u16 dbg_read16(struct jsm_debug_read_trace &trace, u32 *PC)
+static u16 dbg_read16(jsm_debug_read_trace &trace, u32 *PC)
 {
     u16 v = dbg_read(trace,PC);
     v |= dbg_read(trace,PC) << 8;
@@ -276,7 +276,7 @@ void M6502_disassemble(u32 *PC, jsm_debug_read_trace &trace, jsm_string &outstr)
 #undef op
 }
 
-void M6502_disassemble_entry(struct M6502 *cpu, disassembly_entry &entry)
+void M6502_disassemble_entry(M6502 *cpu, disassembly_entry &entry)
 {
     entry.dasm.quickempty();
     entry.context.quickempty();

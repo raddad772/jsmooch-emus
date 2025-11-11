@@ -27,10 +27,10 @@ struct jsimg {
     enum JSI_pixel_format pixel_format;
 };
 
-void jsimg_init(struct jsimg *);
-void jsimg_delete(struct jsimg *);
-void jsimg_allocate(struct jsimg *, u32 width, u32 height);
-void jsimg_clear(struct jsimg *);
+void jsimg_init(jsimg *);
+void jsimg_delete(jsimg *);
+void jsimg_allocate(jsimg *, u32 width, u32 height);
+void jsimg_clear(jsimg *);
 
 #ifdef __cplusplus
 }

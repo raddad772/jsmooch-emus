@@ -8,6 +8,6 @@
 #include "../int.h"
 #include "debugger.h"
 
-void debug_waveform_delete(struct debug_waveform *);
+void debug_waveform_delete(debug_waveform *);
 
 #endif //JSMOOCH_EMUS_WAVEFORM_H

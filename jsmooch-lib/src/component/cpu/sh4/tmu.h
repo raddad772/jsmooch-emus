@@ -15,9 +15,9 @@ struct SH4_TMU {
 };
 
 struct SH4;
-void TMU_init(struct SH4*);
-void TMU_reset(struct SH4*);
-void TMU_write(struct SH4*, u32 addr, u64 val, u32 sz, u32* success);
-u64 TMU_read(struct SH4*, u32 addr, u32 sz, u32* success);
+void TMU_init(SH4*);
+void TMU_reset(SH4*);
+void TMU_write(SH4*, u32 addr, u64 val, u32 sz, u32* success);
+u64 TMU_read(SH4*, u32 addr, u32 sz, u32* success);
 
 #endif //JSMOOCH_EMUS_TMU_H

@@ -32,7 +32,7 @@ static const u32 VRAM_masks[9] = {
         0x03FFF  // I - 16K
 };
 
-static void map_arm9(struct NDS *this, u32 addr_start, u32 addr_end, u8 *ptr, u32 wh)
+static void map_arm9(NDS *this, u32 addr_start, u32 addr_end, u8 *ptr, u32 wh)
 {
     for (u32 addr = addr_start; addr < addr_end; addr += 0x4000) {
         u32 v = (ptr == NULL) ? 0 : ((addr - addr_start) & VRAM_masks[wh]);
@@ -40,7 +40,7 @@ static void map_arm9(struct NDS *this, u32 addr_start, u32 addr_end, u8 *ptr, u3
     }
 }
 
-static void map_arm7(struct NDS *this, u32 which, u8 *ptr)
+static void map_arm7(NDS *this, u32 which, u8 *ptr)
 {
     this->mem.vram.map.arm7[which] = ptr;
 }
@@ -48,7 +48,7 @@ static void map_arm7(struct NDS *this, u32 which, u8 *ptr)
 #define ENG_A 0
 #define ENG_B 1
 
-static void map_eng2d_bg_vram(struct NDS *this, u32 engnum, u32 addr_start, u32 addr_end, u8 *ptr)
+static void map_eng2d_bg_vram(NDS *this, u32 engnum, u32 addr_start, u32 addr_end, u8 *ptr)
 {
     struct NDSENG2D *eng = &this->ppu.eng2d[engnum];
     for (u32 addr = addr_start; addr < addr_end; addr += 0x4000) {
@@ -57,7 +57,7 @@ static void map_eng2d_bg_vram(struct NDS *this, u32 engnum, u32 addr_start, u32 
     }
 }
 
-static void map_eng2d_obj_vram(struct NDS *this, u32 engnum, u32 addr_start, u32 addr_end, u8 *ptr)
+static void map_eng2d_obj_vram(NDS *this, u32 engnum, u32 addr_start, u32 addr_end, u8 *ptr)
 {
     struct NDSENG2D *eng = &this->ppu.eng2d[engnum];
     for (u32 addr = addr_start; addr < addr_end; addr += 0x4000) {
@@ -66,7 +66,7 @@ static void map_eng2d_obj_vram(struct NDS *this, u32 engnum, u32 addr_start, u32
     }
 }
 
-static void map_eng2d_bg_extended_palette8k(struct NDS *this, u32 engnum, u32 slot_start, u32 slot_end, u8 *ptr)
+static void map_eng2d_bg_extended_palette8k(NDS *this, u32 engnum, u32 slot_start, u32 slot_end, u8 *ptr)
 {
     struct NDSENG2D *eng = &this->ppu.eng2d[engnum];
     for (u32 slot = slot_start; slot <= slot_end; slot++) {
@@ -75,18 +75,18 @@ static void map_eng2d_bg_extended_palette8k(struct NDS *this, u32 engnum, u32 sl
     }
 }
 
-static void map_eng2d_obj_extended_palette(struct NDS *this, u32 engnum, u8 *ptr)
+static void map_eng2d_obj_extended_palette(NDS *this, u32 engnum, u8 *ptr)
 {
     struct NDSENG2D *eng = &this->ppu.eng2d[engnum];
     eng->memp.obj_extended_palette = ptr;
 }
 
-static void map_eng3d_texture_slot(struct NDS *this, u32 slot, u8 *ptr)
+static void map_eng3d_texture_slot(NDS *this, u32 slot, u8 *ptr)
 {
     this->ppu.eng3d.slots.texture[slot] = ptr;
 }
 
-static void map_eng3d_palette_slot(struct NDS *this, u32 slot_start, u32 slot_end, u8 *ptr)
+static void map_eng3d_palette_slot(NDS *this, u32 slot_start, u32 slot_end, u8 *ptr)
 {
     for (u32 slot = slot_start; slot <= slot_end; slot++) {
         this->ppu.eng3d.slots.palette[slot] = ptr;
@@ -94,7 +94,7 @@ static void map_eng3d_palette_slot(struct NDS *this, u32 slot_start, u32 slot_en
     }
 }
 
-static void set_bankA(struct NDS *this, u32 mst, u32 ofs, u8 *ptr)
+static void set_bankA(NDS *this, u32 mst, u32 ofs, u8 *ptr)
 {
     u32 offset;
     switch(mst) {
@@ -119,7 +119,7 @@ static void set_bankA(struct NDS *this, u32 mst, u32 ofs, u8 *ptr)
     }
 }
 
-static void set_bankB(struct NDS *this, u32 mst, u32 ofs, u8 *ptr)
+static void set_bankB(NDS *this, u32 mst, u32 ofs, u8 *ptr)
 {
     u32 offset;
     switch(mst) {
@@ -145,7 +145,7 @@ static void set_bankB(struct NDS *this, u32 mst, u32 ofs, u8 *ptr)
 }
 
 
-static void set_bankC(struct NDS *this, u32 mst, u32 ofs, u8 *ptr)
+static void set_bankC(NDS *this, u32 mst, u32 ofs, u8 *ptr)
 {
     // 128KB
     u32 offset;
@@ -173,7 +173,7 @@ static void set_bankC(struct NDS *this, u32 mst, u32 ofs, u8 *ptr)
     }
 }
 
-static void set_bankD(struct NDS *this, u32 mst, u32 ofs, u8 *ptr)
+static void set_bankD(NDS *this, u32 mst, u32 ofs, u8 *ptr)
 {
     // 128KB
     u32 offset;
@@ -225,7 +225,7 @@ static void set_bankD(struct NDS *this, u32 mst, u32 ofs, u8 *ptr)
 
  * */
 
-static void set_bankE(struct NDS *this, u32 mst, u32 ofs, u8 *ptr)
+static void set_bankE(NDS *this, u32 mst, u32 ofs, u8 *ptr)
 {
     // 64K
     switch(mst) {
@@ -250,7 +250,7 @@ static void set_bankE(struct NDS *this, u32 mst, u32 ofs, u8 *ptr)
     }
 }
 
-static void set_bankF(struct NDS *this, u32 mst, u32 ofs, u8 *ptr)
+static void set_bankF(NDS *this, u32 mst, u32 ofs, u8 *ptr)
 {
     // 16K
     // MST 0, map to ARM9 06890000
@@ -290,7 +290,7 @@ static void set_bankF(struct NDS *this, u32 mst, u32 ofs, u8 *ptr)
     }
 }
 
-static void set_bankG(struct NDS *this, u32 mst, u32 ofs, u8 *ptr)
+static void set_bankG(NDS *this, u32 mst, u32 ofs, u8 *ptr)
 {
     // 16KB
     // other MSTs are not allowed
@@ -324,7 +324,7 @@ static void set_bankG(struct NDS *this, u32 mst, u32 ofs, u8 *ptr)
     }
 }
 
-static void set_bankH(struct NDS *this, u32 mst, u32 ofs, u8 *ptr)
+static void set_bankH(NDS *this, u32 mst, u32 ofs, u8 *ptr)
 {
     // 32KB
     // MST 0, map to ARM9 6898000
@@ -347,7 +347,7 @@ static void set_bankH(struct NDS *this, u32 mst, u32 ofs, u8 *ptr)
     }
 }
 
-static void set_bankI(struct NDS *this, u32 mst, u32 ofs, u8 *ptr)
+static void set_bankI(NDS *this, u32 mst, u32 ofs, u8 *ptr)
 {
     // 16KB
     // MST 0, map to ARM9 68A0000
@@ -374,7 +374,7 @@ static void set_bankI(struct NDS *this, u32 mst, u32 ofs, u8 *ptr)
 }
 
 
-void NDS_VRAM_set_bank(struct NDS *this, u32 bank_num, u32 mst, u32 ofs, u8 *ptr, u32 force, u32 update_io)
+void NDS_VRAM_set_bank(NDS *this, u32 bank_num, u32 mst, u32 ofs, u8 *ptr, u32 force, u32 update_io)
 {
     if (force || (this->mem.vram.io.bank[bank_num].ofs != ofs) || (this->mem.vram.io.bank[bank_num].mst != mst)) {
         switch (bank_num) {
@@ -413,7 +413,7 @@ void NDS_VRAM_set_bank(struct NDS *this, u32 bank_num, u32 mst, u32 ofs, u8 *ptr
     }
 }
 
-void NDS_VRAM_resetup_banks(struct NDS *this) {
+void NDS_VRAM_resetup_banks(NDS *this) {
 #define clear(a) memset(&a, 0, sizeof(a))
     clear(this->mem.vram.map);
     clear(this->ppu.eng2d[0].memp);
@@ -434,7 +434,7 @@ void NDS_VRAM_resetup_banks(struct NDS *this) {
 #undef setbank
 }
 
-u32 NDS_VRAM_tex_read(struct NDS *this, u32 addr, u32 sz)
+u32 NDS_VRAM_tex_read(NDS *this, u32 addr, u32 sz)
 {
     // 128KB * up to 4, in up to 4 slots
     // A B C D always occupy one of the slots if it's occupied
@@ -453,7 +453,7 @@ u32 NDS_VRAM_tex_read(struct NDS *this, u32 addr, u32 sz)
     return cR[sz](this->ppu.eng3d.slots.texture[bank], addr & 0x1FFFF);
 }
 
-u32 NDS_VRAM_pal_read(struct NDS *this, u32 addr, u32 sz)
+u32 NDS_VRAM_pal_read(NDS *this, u32 addr, u32 sz)
 {
     // 96k accross 6 slots
     u32 bank = (addr >> 14) & 7;

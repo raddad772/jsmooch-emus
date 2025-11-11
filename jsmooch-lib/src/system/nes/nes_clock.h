@@ -4,6 +4,7 @@
 
 #pragma once
 #include "helpers/int.h"
+#include "helpers/serialize/serialize.h"
 
 struct NES_clock {
     void reset();
@@ -38,6 +39,6 @@ struct NES_clock {
     i32 ppu_y{};
     u32 frame_odd{};
 
-    void serialize(struct serialized_state &state) const;
-    void deserialize(struct serialized_state &state);
+    void serialize(serialized_state &state) const;
+    void deserialize(serialized_state &state);
 };

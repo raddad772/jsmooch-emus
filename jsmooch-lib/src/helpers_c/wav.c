@@ -5,7 +5,7 @@
 #include <string.h>
 #include "wav.h"
 
-void wav_stream_create(struct wav_stream *this, char *fpath, u32 sampling_rate, u32 bytes_per_sample)
+void wav_stream_create(wav_stream *this, char *fpath, u32 sampling_rate, u32 bytes_per_sample)
 {
     memset(this, 0, sizeof(*this));
     struct wav_header *h = &this->header;
@@ -37,7 +37,7 @@ void wav_stream_create(struct wav_stream *this, char *fpath, u32 sampling_rate, 
     h->num_channels = 1;
     h->audio_format = 1;
     h->fmt_chunk_sz = 16;
-    h->file_sz = sizeof(struct wav_header) - 8;
+    h->file_sz = sizeof(wav_header) - 8;
     h->data_sz = 0;
 
     this->bytes_per_sample = bytes_per_sample;
@@ -48,7 +48,7 @@ void wav_stream_create(struct wav_stream *this, char *fpath, u32 sampling_rate, 
     //fwrite(h, sizeof(*h), 1, this->f);
 }
 
-void wav_stream_output(struct wav_stream *this, u32 num_samples, void *data)
+void wav_stream_output(wav_stream *this, u32 num_samples, void *data)
 {
     if (this->f) {
         this->total_samples_written += num_samples;
@@ -66,7 +66,7 @@ void wav_stream_output(struct wav_stream *this, u32 num_samples, void *data)
     }
 }
 
-void wav_stream_close(struct wav_stream *this)
+void wav_stream_close(wav_stream *this)
 {
     if (this->f) {
         //fseek(this->f, 0, SEEK_SET);

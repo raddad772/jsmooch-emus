@@ -1125,7 +1125,7 @@ function M6502_C_func_name(mo, func_prefix) {
 }
 
 function M6502_C_func_signature(mo, func_prefix) {
-    return 'static void ' + M6502_C_func_name(mo, func_prefix) + '(struct M6502_regs *regs, M6502_pins *pins)';
+    return 'static void ' + M6502_C_func_name(mo, func_prefix) + '(M6502_regs *regs, M6502_pins *pins)';
 }
 
 function M6502_C_func_dec(mo, func_prefix) {

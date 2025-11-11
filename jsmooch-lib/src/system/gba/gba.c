@@ -16,7 +16,7 @@
 
 #include "helpers/multisize_memaccess.c"
 
-#define JTHIS struct GBA* this = (struct GBA*)jsm->ptr
+#define JTHIS struct GBA* this = (GBA*)jsm->ptr
 #define JSM struct jsm_system* jsm
 
 static void GBAJ_play(JSM);
@@ -45,7 +45,7 @@ static u32 timer_reload_ticks(u32 reload)
     return 0x10000 - reload;
 }
 
-static void setup_debug_waveform(struct debug_waveform *dw)
+static void setup_debug_waveform(debug_waveform *dw)
 {
     if (dw->samples_requested == 0) return;
     dw->samples_rendered = dw->samples_requested;
@@ -53,7 +53,7 @@ static void setup_debug_waveform(struct debug_waveform *dw)
     dw->user.buf_pos = 0;
 }
 
-void GBAJ_set_audiobuf(struct jsm_system* jsm, audiobuf *ab)
+void GBAJ_set_audiobuf(jsm_system* jsm, audiobuf *ab)
 {
     JTHIS;
     this->audio.buf = ab;
@@ -64,7 +64,7 @@ void GBAJ_set_audiobuf(struct jsm_system* jsm, audiobuf *ab)
         struct debug_waveform *wf = cpg(this->dbg.waveforms.main);
         this->audio.master_cycles_per_max_sample = (float)MASTER_CYCLES_PER_FRAME / (float)wf->samples_requested;
 
-        wf = (struct debug_waveform *)cpg(this->dbg.waveforms.chan[0]);
+        wf = (debug_waveform *)cpg(this->dbg.waveforms.chan[0]);
         this->audio.master_cycles_per_min_sample = (float)MASTER_CYCLES_PER_FRAME / (float)wf->samples_requested;
     }
 
@@ -72,7 +72,7 @@ void GBAJ_set_audiobuf(struct jsm_system* jsm, audiobuf *ab)
     setup_debug_waveform(cvec_get(this->dbg.waveforms.main.vec, this->dbg.waveforms.main.index));
     for (u32 i = 0; i < 6; i++) {
         setup_debug_waveform(cvec_get(this->dbg.waveforms.chan[i].vec, this->dbg.waveforms.chan[i].index));
-        struct debug_waveform *wf = (struct debug_waveform *)cvec_get(this->dbg.waveforms.chan[i].vec, this->dbg.waveforms.chan[i].index);
+        struct debug_waveform *wf = (debug_waveform *)cvec_get(this->dbg.waveforms.chan[i].vec, this->dbg.waveforms.chan[i].index);
         if (i < 4)
             this->apu.channels[i].ext_enable = wf->ch_output_enabled;
         else
@@ -82,13 +82,13 @@ void GBAJ_set_audiobuf(struct jsm_system* jsm, audiobuf *ab)
 }
 
 static u32 read_trace_cpu(void *ptr, u32 addr, u32 sz) {
-    struct GBA* this = (struct GBA*)ptr;
+    struct GBA* this = (GBA*)ptr;
     return GBA_mainbus_read(this, addr, sz, this->io.cpu.open_bus_data, 0);
 }
 
-void GBA_new(struct jsm_system *jsm)
+void GBA_new(jsm_system *jsm)
 {
-    struct GBA* this = (struct GBA*)malloc(sizeof(struct GBA));
+    struct GBA* this = (GBA*)malloc(sizeof(GBA));
     memset(this, 0, sizeof(*this));
 
     scheduler_init(&this->scheduler, &this->clock.master_cycle_count, &this->waitstates.current_transaction);
@@ -139,7 +139,7 @@ void GBA_new(struct jsm_system *jsm)
     
 }
 
-void GBA_delete(struct jsm_system *jsm)
+void GBA_delete(jsm_system *jsm)
 {
     JTHIS;
 
@@ -216,7 +216,7 @@ void GBAJ_get_framevars(JSM, framevars* out)
     out->master_cycle = this->clock.master_cycle_count;
 }
 
-static void skip_BIOS(struct GBA* this)
+static void skip_BIOS(GBA* this)
 {
 /*
 SWI 00h (GBA/NDS7/NDS9) - SoftReset
@@ -252,7 +252,7 @@ Host  sp_svc    sp_irq    sp_svc    zerofilled area       return address
 
 static void tick_APU(void *ptr, u64 key, u64 clock, u32 jitter)
 {
-    struct GBA *this = (struct GBA *)ptr;
+    struct GBA *this = (GBA *)ptr;
     GBA_APU_cycle(this);
     i64 cur = clock - jitter;
     scheduler_only_add_abs(&this->scheduler, cur + 16, 0, this, &tick_APU, NULL);
@@ -260,7 +260,7 @@ static void tick_APU(void *ptr, u64 key, u64 clock, u32 jitter)
 
 
 static void sample_audio(void *ptr, u64 key, u64 clock, u32 jitter) {
-    struct GBA *this = (struct GBA *) ptr;
+    struct GBA *this = (GBA *) ptr;
     if (this->audio.buf) {
 
         this->audio.next_sample_cycle += this->audio.master_cycles_per_audio_sample;
@@ -277,7 +277,7 @@ static void sample_audio(void *ptr, u64 key, u64 clock, u32 jitter) {
 
 static void sample_audio_debug_max(void *ptr, u64 key, u64 clock, u32 jitter)
 {
-    struct GBA *this = (struct GBA *)ptr;
+    struct GBA *this = (GBA *)ptr;
 
     struct debug_waveform *dw = this->audio.main_waveform;
 
@@ -293,7 +293,7 @@ static void sample_audio_debug_max(void *ptr, u64 key, u64 clock, u32 jitter)
 
 static void sample_audio_debug_min(void *ptr, u64 key, u64 clock, u32 jitter)
 {
-    struct GBA *this = (struct GBA *)ptr;
+    struct GBA *this = (GBA *)ptr;
 
     struct debug_waveform *dw;
     for (int j = 0; j < 6; j++) {
@@ -310,7 +310,7 @@ static void sample_audio_debug_min(void *ptr, u64 key, u64 clock, u32 jitter)
     scheduler_only_add_abs(&this->scheduler, (i64)this->audio.next_sample_cycle_min, 0, this, &sample_audio_debug_min, NULL);
 }
 
-static void schedule_first(struct GBA *this)
+static void schedule_first(GBA *this)
 {
     scheduler_only_add_abs(&this->scheduler, (i64)this->audio.next_sample_cycle_max, 0, this, &sample_audio_debug_max, NULL);
     scheduler_only_add_abs(&this->scheduler, (i64)this->audio.next_sample_cycle_min, 0, this, &sample_audio_debug_min, NULL);
@@ -341,7 +341,7 @@ void GBAJ_reset(JSM)
 
 void GBA_block_step_halted(void *ptr, u64 key, u64 clock, u32 jitter)
 {
-    struct GBA *this = (struct GBA *)ptr;
+    struct GBA *this = (GBA *)ptr;
     this->io.halted &= ((!!(this->io.IF & this->io.IE)) ^ 1);
     if (!this->io.halted) {
         this->waitstates.current_transaction = 1;
@@ -355,7 +355,7 @@ void GBA_block_step_halted(void *ptr, u64 key, u64 clock, u32 jitter)
 
 void GBA_block_step_cpu(void *ptr, u64 key, u64 clock, u32 jitter)
 {
-    struct GBA *this = (struct GBA *)ptr;
+    struct GBA *this = (GBA *)ptr;
     this->waitstates.current_transaction = 0;
     ARM7TDMI_IRQcheck(&this->cpu, 0);
     ARM7TDMI_run_noIRQcheck(&this->cpu);
@@ -366,7 +366,7 @@ void GBA_block_step_cpu(void *ptr, u64 key, u64 clock, u32 jitter)
     this->waitstates.current_transaction = 0;
 }
 
-u64 GBA_clock_current(struct GBA *this)
+u64 GBA_clock_current(GBA *this)
 {
     return this->clock.master_cycle_count + this->waitstates.current_transaction;
 }
@@ -405,7 +405,7 @@ static void GBAIO_load_cart(JSM, multi_file_set *mfs, physical_io_device *pio) {
     GBAJ_reset(jsm);
 }
 
-static void setup_lcd(struct JSM_DISPLAY *d)
+static void setup_lcd(JSM_DISPLAY *d)
 {
     d->standard = JSS_LCD;
     d->enabled = 1;
@@ -433,7 +433,7 @@ static void setup_lcd(struct JSM_DISPLAY *d)
     d->pixelometry.overscan.top = d->pixelometry.overscan.bottom = 0;
 }
 
-static void setup_audio(struct cvec* IOs)
+static void setup_audio(cvec* IOs)
 {
     struct physical_io_device *pio = cvec_push_back(IOs);
     pio->kind = HID_AUDIO_CHANNEL;
@@ -489,5 +489,5 @@ static void GBAJ_describe_io(JSM, cvec* IOs)
 
     setup_audio(IOs);
 
-    this->ppu.display = &((struct physical_io_device *)cpg(this->ppu.display_ptr))->display;
+    this->ppu.display = &((physical_io_device *)cpg(this->ppu.display_ptr))->display;
 }

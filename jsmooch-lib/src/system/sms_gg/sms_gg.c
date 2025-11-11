@@ -16,7 +16,7 @@
 #include "smsgg_debugger.h"
 #include "sms_gg_serialize.h"
 
-#define JTHIS struct SMSGG* this = (struct SMSGG*)jsm->ptr
+#define JTHIS struct SMSGG* this = (SMSGG*)jsm->ptr
 #define JSM struct jsm_system* jsm
 
 #define THIS struct SMSGG* this
@@ -45,12 +45,12 @@ static void SMSGGIO_load_cart(JSM, multi_file_set *mfs, physical_io_device *pio)
 
 u32 SMSGG_CPU_read_trace(void *ptr, u32 addr)
 {
-    struct SMSGG* this = (struct SMSGG*)ptr;
+    struct SMSGG* this = (SMSGG*)ptr;
     return SMSGG_bus_read(this, addr, 0);
 }
 
 #define MASTER_CYCLES_PER_FRAME 179208
-static void setup_debug_waveform(struct debug_waveform *dw)
+static void setup_debug_waveform(debug_waveform *dw)
 {
     if (dw->samples_requested == 0) return;
     dw->samples_rendered = dw->samples_requested;
@@ -58,14 +58,14 @@ static void setup_debug_waveform(struct debug_waveform *dw)
     dw->user.buf_pos = 0;
 }
 
-void SMSGGJ_set_audiobuf(struct jsm_system* jsm, audiobuf *ab)
+void SMSGGJ_set_audiobuf(jsm_system* jsm, audiobuf *ab)
 {
     JTHIS;
     this->audio.buf = ab;
     if (this->audio.master_cycles_per_audio_sample == 0) {
         this->audio.master_cycles_per_audio_sample = ((float)MASTER_CYCLES_PER_FRAME / (float)ab->samples_len);
         this->audio.next_sample_cycle = 0;
-        struct debug_waveform *wf = (struct debug_waveform *)cpg(this->dbg.waveforms.main);
+        struct debug_waveform *wf = (debug_waveform *)cpg(this->dbg.waveforms.main);
         this->sn76489.ext_enable = wf->ch_output_enabled;
     }
     struct debug_waveform *wf = cpg(this->dbg.waveforms.main);
@@ -73,7 +73,7 @@ void SMSGGJ_set_audiobuf(struct jsm_system* jsm, audiobuf *ab)
     if (wf->clock_divider == 0) wf->clock_divider = wf->default_clock_divider;
     this->clock.apu_divisor = wf->clock_divider;
     for (u32 i = 0; i < 4; i++) {
-        wf = (struct debug_waveform *)cpg(this->dbg.waveforms.chan[i]);
+        wf = (debug_waveform *)cpg(this->dbg.waveforms.chan[i]);
         setup_debug_waveform(wf);
         if (i < 3) {
             this->sn76489.sw[i].ext_enable = wf->ch_output_enabled;
@@ -83,9 +83,9 @@ void SMSGGJ_set_audiobuf(struct jsm_system* jsm, audiobuf *ab)
     }
 }
 
-void SMSGG_new(struct jsm_system* jsm, enum jsm::systems variant, enum jsm_regions region) {
-    struct SMSGG* this = (struct SMSGG*)malloc(sizeof(struct SMSGG));
-    memset(this, 0, sizeof(struct SMSGG));
+void SMSGG_new(jsm_system* jsm, enum jsm::systems variant, enum jsm_regions region) {
+    struct SMSGG* this = (SMSGG*)malloc(sizeof(SMSGG));
+    memset(this, 0, sizeof(SMSGG));
     SMSGG_clock_init(&this->clock, variant, region);
     SMSGG_VDP_init(&this->vdp, this, variant);
     SMSGG_mapper_sega_init(&this->mapper, variant);
@@ -163,7 +163,7 @@ void SMSGG_new(struct jsm_system* jsm, enum jsm::systems variant, enum jsm_regio
     //SMSGGJ_reset(jsm);
 }
 
-static void new_button(struct JSM_CONTROLLER* cnt, const char* name, enum JKEYS common_id)
+static void new_button(JSM_CONTROLLER* cnt, const char* name, enum JKEYS common_id)
 {
     struct HID_digital_button *b = cvec_push_back(&cnt->digital_buttons);
     snprintf(b->name, sizeof(b->name), "%s", name);
@@ -175,7 +175,7 @@ static void new_button(struct JSM_CONTROLLER* cnt, const char* name, enum JKEYS 
 
 
 
-static void setup_crt_sms(struct JSM_DISPLAY *d)
+static void setup_crt_sms(JSM_DISPLAY *d)
 {
     d->standard = JSS_NTSC;
     d->enabled = 1;
@@ -202,7 +202,7 @@ static void setup_crt_sms(struct JSM_DISPLAY *d)
     d->pixelometry.overscan.top = d->pixelometry.overscan.bottom = 0;
 }
 
-void setup_lcd_gg(struct JSM_DISPLAY *d)
+void setup_lcd_gg(JSM_DISPLAY *d)
 {
     d->standard = JSS_LCD;
     d->enabled = 1;
@@ -230,7 +230,7 @@ void setup_lcd_gg(struct JSM_DISPLAY *d)
     d->pixelometry.overscan.top = d->pixelometry.overscan.bottom = 24;
 }
 
-static void setup_audio(struct cvec* IOs)
+static void setup_audio(cvec* IOs)
 {
     struct physical_io_device *pio = cvec_push_back(IOs);
     pio->kind = HID_AUDIO_CHANNEL;
@@ -315,7 +315,7 @@ void SMSGGJ_describe_io(JSM, cvec *IOs)
     this->vdp.display = &pio->display;
 }
 
-void SMSGG_delete(struct jsm_system* jsm)
+void SMSGG_delete(jsm_system* jsm)
 {
     JTHIS;
     SMSGG_mapper_sega_delete(&this->mapper);
@@ -370,7 +370,7 @@ u32 SMSGGJ_finish_scanline(JSM)
     return 0;
 }
 
-static void cpu_cycle(struct SMSGG* this)
+static void cpu_cycle(SMSGG* this)
 {
     if (this->cpu.pins.RD) {
         if (this->cpu.pins.MRQ) {// read ROM/RAM
@@ -413,23 +413,23 @@ static void cpu_cycle(struct SMSGG* this)
     this->clock.cpu_frame_cycle += this->clock.cpu_divisor;
 }
 
-static void SMSGG_notify_NMI(struct SMSGG* this, u32 level)
+static void SMSGG_notify_NMI(SMSGG* this, u32 level)
 {
     Z80_notify_NMI(&this->cpu, level);
 }
 
-void SMSGG_bus_notify_IRQ(struct SMSGG* this, u32 level)
+void SMSGG_bus_notify_IRQ(SMSGG* this, u32 level)
 {
     Z80_notify_IRQ(&this->cpu, level);
 }
 
-static void poll_pause(struct SMSGG* this)
+static void poll_pause(SMSGG* this)
 {
     if (this->variant != jsm::systems::GG)
         SMSGG_notify_NMI(this, this->io.pause_button->state);
 }
 
-static void sample_audio(struct SMSGG* this)
+static void sample_audio(SMSGG* this)
 {
     if (this->audio.buf && (this->clock.master_cycles >= (u64)this->audio.next_sample_cycle)) {
         this->audio.next_sample_cycle += this->audio.master_cycles_per_audio_sample;
@@ -445,7 +445,7 @@ static void sample_audio(struct SMSGG* this)
     }
 }
 
-static void debug_audio(struct SMSGG* this)
+static void debug_audio(SMSGG* this)
 {
     struct debug_waveform *dw = cpg(this->dbg.waveforms.main);
     if (this->clock.master_cycles >= dw->user.next_sample_cycle) {

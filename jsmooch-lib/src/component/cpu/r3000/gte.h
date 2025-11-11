@@ -64,9 +64,9 @@ struct R3000_GTE {
 };
 
 
-void GTE_init(struct R3000_GTE *);
-void GTE_command(struct R3000_GTE *this, u32 opcode, u64 current_clock);
-void GTE_write_reg(struct R3000_GTE *, u32 num, u32 val);
-u32 GTE_read_reg(struct R3000_GTE *, u32 num);
+void GTE_init(R3000_GTE *);
+void GTE_command(R3000_GTE *this, u32 opcode, u64 current_clock);
+void GTE_write_reg(R3000_GTE *, u32 num, u32 val);
+u32 GTE_read_reg(R3000_GTE *, u32 num);
 
 #endif //JSMOOCH_EMUS_GTE_H

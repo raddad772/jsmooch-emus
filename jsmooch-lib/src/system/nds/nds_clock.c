@@ -4,7 +4,7 @@
 
 #include "nds_clock.h"
 
-void NDS_clock_init(struct NDS_clock *this)
+void NDS_clock_init(NDS_clock *this)
 {
     this->ppu.scanline_start = 0;
     this->master_cycle_count7 = 0;
@@ -26,6 +26,6 @@ void NDS_clock_init(struct NDS_clock *this)
     this->timing.apu.hz = 32768;
 }
 
-void NDS_clock_reset(struct NDS_clock *this)
+void NDS_clock_reset(NDS_clock *this)
 {
 }

@@ -89,33 +89,33 @@ struct jsm_system {
 
     enum jsm::systems kind; // Which system is it?
 
-    u32 (*finish_frame)(struct jsm_system* jsm);
-    u32 (*finish_scanline)(struct jsm_system* jsm);
-    u32 (*step_master)(struct jsm_system* jsm, u32);
-    void (*reset)(struct jsm_system* jsm);
-    void (*load_BIOS)(struct jsm_system* jsm, multi_file_set* mfs);
-    void (*describe_io)(struct jsm_system *jsm, cvec* IOs);
-    void (*get_framevars)(struct jsm_system* jsm, framevars* out);
+    u32 (*finish_frame)(jsm_system* jsm);
+    u32 (*finish_scanline)(jsm_system* jsm);
+    u32 (*step_master)(jsm_system* jsm, u32);
+    void (*reset)(jsm_system* jsm);
+    void (*load_BIOS)(jsm_system* jsm, multi_file_set* mfs);
+    void (*describe_io)(jsm_system *jsm, cvec* IOs);
+    void (*get_framevars)(jsm_system* jsm, framevars* out);
 
-    void (*sideload)(struct jsm_system* jsm, multi_file_set* mfs);
+    void (*sideload)(jsm_system* jsm, multi_file_set* mfs);
 
-    void (*set_audiobuf)(struct jsm_system* jsm, audiobuf *ab);
-    void (*play)(struct jsm_system* jsm);
-    void (*pause)(struct jsm_system* jsm);
-    void (*stop)(struct jsm_system* jsm);
+    void (*set_audiobuf)(jsm_system* jsm, audiobuf *ab);
+    void (*play)(jsm_system* jsm);
+    void (*pause)(jsm_system* jsm);
+    void (*stop)(jsm_system* jsm);
 
-    void (*setup_debugger_interface)(struct jsm_system* jsm, debugger_interface *intf);
+    void (*setup_debugger_interface)(jsm_system* jsm, debugger_interface *intf);
 
-    void (*save_state)(struct jsm_system *jsm, serialized_state *state);
-    void (*load_state)(struct jsm_system *jsm, serialized_state *state, deserialize_ret *ret);
+    void (*save_state)(jsm_system *jsm, serialized_state *state);
+    void (*load_state)(jsm_system *jsm, serialized_state *state, deserialize_ret *ret);
 
     struct cvec IOs;
     struct cvec opts;
 };
 
 struct jsm_system* new_system(enum jsm::systems which);
-void jsm_delete(struct jsm_system*);
-void jsm_clearfuncs(struct jsm_system*);
+void jsm_delete(jsm_system*);
+void jsm_clearfuncs(jsm_system*);
 
 #ifdef __cplusplus
 }

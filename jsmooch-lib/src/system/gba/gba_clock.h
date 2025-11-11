@@ -19,7 +19,7 @@ struct GBA_clock {
 };
 
 
-void GBA_clock_init(struct GBA_clock *);
-void GBA_clock_reset(struct GBA_clock *);
+void GBA_clock_init(GBA_clock *);
+void GBA_clock_reset(GBA_clock *);
 
 #endif //JSMOOCH_EMUS_GBA_CLOCK_H

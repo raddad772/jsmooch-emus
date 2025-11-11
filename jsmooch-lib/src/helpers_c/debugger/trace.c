@@ -10,7 +10,7 @@
 #define DEFAULT_STRING_SZ 80
 
 
-static void trace_view_line_init(struct trace_line *this)
+static void trace_view_line_init(trace_line *this)
 {
     for (u32 i = 0; i < MAX_TRACE_COLS; i++) {
         jsm_string_init(&this->cols[i], DEFAULT_STRING_SZ);
@@ -19,14 +19,14 @@ static void trace_view_line_init(struct trace_line *this)
     this->empty = 1;
 }
 
-static void trace_view_line_delete(struct trace_line *this)
+static void trace_view_line_delete(trace_line *this)
 {
     for (u32 i = 0; i < MAX_TRACE_COLS; i++) {
         jsm_string_delete(&this->cols[i]);
     }
 }
 
-static void trace_view_line_clear(struct trace_line *this, u32 num_cols)
+static void trace_view_line_clear(trace_line *this, u32 num_cols)
 {
     this->empty = 1;
     for (u32 i = 0; i < num_cols; i++) {
@@ -34,12 +34,12 @@ static void trace_view_line_clear(struct trace_line *this, u32 num_cols)
     }
 }
 
-void trace_view_init(struct trace_view *this)
+void trace_view_init(trace_view *this)
 {
     this->name[0] = 0;
     this->max_trace_lines = 100;
-    cvec_init(&this->lines, sizeof(struct trace_line), this->max_trace_lines);
-    cvec_init(&this->columns, sizeof(struct trace_view_col), MAX_TRACE_COLS);
+    cvec_init(&this->lines, sizeof(trace_line), this->max_trace_lines);
+    cvec_init(&this->columns, sizeof(trace_view_col), MAX_TRACE_COLS);
     for (u32 i = 0; i < this->max_trace_lines; i++) {
         trace_view_line_init(cvec_push_back(&this->lines));
     }
@@ -52,19 +52,19 @@ void trace_view_init(struct trace_view *this)
     this->first_line = 1;
 }
 
-static void trace_view_category_init(struct trace_view_col *this)
+static void trace_view_category_init(trace_view_col *this)
 {
     this->name[0] = 0;
     this->default_size = -1;
 }
 
-static void trace_view_category_delete(struct trace_view_col *this)
+static void trace_view_category_delete(trace_view_col *this)
 {
     this->name[0] = 0;
     this->default_size = -1;
 }
 
-void trace_view_delete(struct trace_view *this) {
+void trace_view_delete(trace_view *this) {
     for (u32 i = 0; i < cvec_len(&this->lines); i++) {
         trace_view_line_delete(cvec_get(&this->lines, i));
     }
@@ -75,7 +75,7 @@ void trace_view_delete(struct trace_view *this) {
     cvec_delete(&this->columns);
 }
 
-void trace_view_add_col(struct trace_view *this, const char *name, i32 default_size)
+void trace_view_add_col(trace_view *this, const char *name, i32 default_size)
 {
     assert(cvec_len(&this->columns) < MAX_TRACE_COLS);
     struct trace_view_col *new_col = cvec_push_back(&this->columns);
@@ -83,7 +83,7 @@ void trace_view_add_col(struct trace_view *this, const char *name, i32 default_s
     new_col->default_size = default_size;
 }
 
-void trace_view_clear(struct trace_view *this)
+void trace_view_clear(trace_view *this)
 {
     this->num_trace_lines = 0;
     this->waiting_for_endline = 1;
@@ -91,7 +91,7 @@ void trace_view_clear(struct trace_view *this)
     this->lptr = cvec_get(&this->lines, 0);
 }
 
-void trace_view_printf(struct trace_view *this, u32 col, char *format, ...)
+void trace_view_printf(trace_view *this, u32 col, char *format, ...)
 {
     if (this->waiting_for_startline) {
         assert(1==2);
@@ -105,7 +105,7 @@ void trace_view_printf(struct trace_view *this, u32 col, char *format, ...)
     va_end(va);
 }
 
-void trace_view_startline(struct trace_view *this, i32 source)
+void trace_view_startline(trace_view *this, i32 source)
 {
     struct trace_line *l;
     if (this->first_line) {
@@ -127,7 +127,7 @@ void trace_view_startline(struct trace_view *this, i32 source)
     this->lptr = l;
 }
 
-void trace_view_endline(struct trace_view *this)
+void trace_view_endline(trace_view *this)
 {
     this->waiting_for_endline = 0;
     this->waiting_for_startline = 1;
@@ -135,7 +135,7 @@ void trace_view_endline(struct trace_view *this)
     if (this->num_trace_lines > this->max_trace_lines) this->num_trace_lines--;
 }
 
-struct trace_line *trace_view_get_line(struct trace_view *this, int row)
+struct trace_line *trace_view_get_line(trace_view *this, int row)
 {
     if (row >= this->num_trace_lines - 1)
       row = (int)this->num_trace_lines - 1;

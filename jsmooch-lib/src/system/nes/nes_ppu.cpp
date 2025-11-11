@@ -47,7 +47,7 @@ void NES_PPU::scanline_prerender() {
     }
 }
 
-NES_PPU::NES_PPU(struct NES* nes) : nes(nes)
+NES_PPU::NES_PPU(NES* nes) : nes(nes)
 {
 }
 

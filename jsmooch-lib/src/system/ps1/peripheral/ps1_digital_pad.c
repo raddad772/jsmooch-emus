@@ -12,7 +12,7 @@ enum cmd_kinds {
     PCMD_unknown
 };
 
-static void latch_buttons(struct PS1_SIO_digital_gamepad *this)
+static void latch_buttons(PS1_SIO_digital_gamepad *this)
 {
     struct physical_io_device* p = this->pio;
     if (p->connected) {
@@ -48,7 +48,7 @@ static void latch_buttons(struct PS1_SIO_digital_gamepad *this)
 }
 
 static void set_CS(void *ptr, u32 level, u64 clock_cycle) {
-    struct PS1_SIO_digital_gamepad *this = (struct PS1_SIO_digital_gamepad *)ptr;
+    struct PS1_SIO_digital_gamepad *this = (PS1_SIO_digital_gamepad *)ptr;
     u32 old_CS = this->interface.CS;
     this->interface.CS = level;
     if (old_CS != this->interface.CS) {
@@ -72,7 +72,7 @@ static void set_CS(void *ptr, u32 level, u64 clock_cycle) {
 
 static void scheduler_call(void *ptr, u64 key, u64 current_clock, u32 jitter);
 
-static void schedule_ack(struct PS1_SIO_digital_gamepad *this, u64 clock_cycle, u64 time, u32 level)
+static void schedule_ack(PS1_SIO_digital_gamepad *this, u64 clock_cycle, u64 time, u32 level)
 {
     //printf("\ncycle:%lld Schedule ack: %d", clock_cycle, level);
     if (level == 1) {
@@ -86,7 +86,7 @@ static void schedule_ack(struct PS1_SIO_digital_gamepad *this, u64 clock_cycle, 
 
 static void scheduler_call(void *ptr, u64 key, u64 current_clock, u32 jitter)
 {
-    struct PS1_SIO_digital_gamepad *this = (struct PS1_SIO_digital_gamepad *)ptr;
+    struct PS1_SIO_digital_gamepad *this = (PS1_SIO_digital_gamepad *)ptr;
     enum PS1_SIO0_port p = this->pio->id == 1 ? PS1S0_controller1 : PS1S0_controller2;
     //printf("\ncyc:%lld Callback execute ack: %lld", current_clock, key);
     PS1_SIO0_update_ACKs(this->bus, p, key);
@@ -98,7 +98,7 @@ static void scheduler_call(void *ptr, u64 key, u64 current_clock, u32 jitter)
 }
 
 static u8 exchange_byte(void *ptr, u8 byte, u64 clock_cycle) {
-    struct PS1_SIO_digital_gamepad *this = (struct PS1_SIO_digital_gamepad *)ptr;
+    struct PS1_SIO_digital_gamepad *this = (PS1_SIO_digital_gamepad *)ptr;
     if (!this->interface.CS) return 0xFF;
 
     if (this->protocol_step == 0) {
@@ -142,7 +142,7 @@ static u8 exchange_byte(void *ptr, u8 byte, u64 clock_cycle) {
     return r;
 }
 
-void PS1_SIO_digital_gamepad_init(struct PS1_SIO_digital_gamepad *this, PS1 *bus)
+void PS1_SIO_digital_gamepad_init(PS1_SIO_digital_gamepad *this, PS1 *bus)
 {
     memset(this, 0, sizeof(*this));
     this->interface.device_ptr = this;
@@ -152,7 +152,7 @@ void PS1_SIO_digital_gamepad_init(struct PS1_SIO_digital_gamepad *this, PS1 *bus
     this->bus = bus;
 }
 
-void PS1_SIO_gamepad_setup_pio(struct physical_io_device *d, u32 num, const char*name, u32 connected)
+void PS1_SIO_gamepad_setup_pio(physical_io_device *d, u32 num, const char*name, u32 connected)
 {
     physical_io_device_init(d, HID_CONTROLLER, 0, 0, 1, 1);
 

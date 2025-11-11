@@ -211,7 +211,7 @@ struct mac {
         u32 IRQ_signal;
         u32 IRQ_out;
 
-        void (*scanline_func)(struct mac*);
+        void (*scanline_func)(mac*);
     } display;
 
     struct {
@@ -249,25 +249,25 @@ struct mac {
     } rtc;
 };
 
-u16 mac_mainbus_read(struct mac*, u32 addr, u32 UDS, u32 LDS, u16 old, u32 has_effect);
+u16 mac_mainbus_read(mac*, u32 addr, u32 UDS, u32 LDS, u16 old, u32 has_effect);
 
-void mac_iwm_init(struct mac*);
-void mac_iwm_delete(struct mac*);
-void mac_iwm_reset(struct mac*);
+void mac_iwm_init(mac*);
+void mac_iwm_delete(mac*);
+void mac_iwm_reset(mac*);
 
-void mac_step_bus(struct mac*);
+void mac_step_bus(mac*);
 
-void mac_mainbus_write(struct mac*, u32 addr, u32 UDS, u32 LDS, u16 val);
-u16 mac_mainbus_read(struct mac*, u32 addr, u32 UDS, u32 LDS, u16 old, u32 has_effect);
+void mac_mainbus_write(mac*, u32 addr, u32 UDS, u32 LDS, u16 val);
+u16 mac_mainbus_read(mac*, u32 addr, u32 UDS, u32 LDS, u16 old, u32 has_effect);
 
-u16 mac_mainbus_read_via(struct mac*, u32 addr, u16 mask, u16 old, u32 has_effect);
-void mac_mainbus_write_via(struct mac*, u32 addr, u16 mask, u16 val);
-u16 mac_mainbus_read_iwm(struct mac*, u32 addr, u16 mask, u16 old, u32 has_effect);
-void mac_mainbus_write_iwm(struct mac*, u32 addr, u16 mask, u16 val);
-u16 mac_mainbus_read_scc(struct mac*, u32 addr, u16 mask, u16 old, u32 has_effect);
-void mac_mainbus_write_scc(struct mac*, u32 addr, u16 mask, u16 val);
-void mac_reset_via(struct mac*);
-void mac_clock_init(struct mac* this);
+u16 mac_mainbus_read_via(mac*, u32 addr, u16 mask, u16 old, u32 has_effect);
+void mac_mainbus_write_via(mac*, u32 addr, u16 mask, u16 val);
+u16 mac_mainbus_read_iwm(mac*, u32 addr, u16 mask, u16 old, u32 has_effect);
+void mac_mainbus_write_iwm(mac*, u32 addr, u16 mask, u16 val);
+u16 mac_mainbus_read_scc(mac*, u32 addr, u16 mask, u16 old, u32 has_effect);
+void mac_mainbus_write_scc(mac*, u32 addr, u16 mask, u16 val);
+void mac_reset_via(mac*);
+void mac_clock_init(mac* this);
 
 
 #endif //JSMOOCH_EMUS_MAC_INTERNAL_H

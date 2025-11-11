@@ -17,7 +17,7 @@
 #include "apple2_internal.h"
 #include "iou.h"
 
-#define JTHIS struct apple2* this = (struct apple2*)jsm->ptr
+#define JTHIS struct apple2* this = (apple2*)jsm->ptr
 #define JSM struct jsm_system* jsm
 
 #define THIS struct apple2* this
@@ -46,7 +46,7 @@ $E000 - $FFFF (57344 - 65535): Bank-Switched RAM (1 Bank RAM, 1 Bank ROM)
  */
 void apple2_new(JSM)
 {
-    struct apple2* this = (struct apple2*)malloc(sizeof(struct apple2));
+    struct apple2* this = (apple2*)malloc(sizeof(apple2));
     this->described_inputs = 0;
 
     simplebuf8_init(&this->mmu.RAM);
@@ -108,7 +108,7 @@ static void apple2J_setup_debugger_interface(JSM, debugger_interface *intf)
     printf("\nWARNING: debugger interface not supported on core: apple2");
 }
 
-static void new_button(struct JSM_CONTROLLER* cnt, const char* name, enum JKEYS common_id)
+static void new_button(JSM_CONTROLLER* cnt, const char* name, enum JKEYS common_id)
 {
     struct HID_digital_button *b = cvec_push_back(&cnt->digital_buttons);
     snprintf(b->name, sizeof(b->name), "%s", name);
@@ -122,7 +122,7 @@ static void new_button(struct JSM_CONTROLLER* cnt, const char* name, enum JKEYS 
 #define MAX_WIDTH 560
 #define MAX_HEIGHT 192
 
-static void setup_crt(struct JSM_DISPLAY *d)
+static void setup_crt(JSM_DISPLAY *d)
 {
     d->standard = JSS_NTSC;
     d->enabled = 1;
@@ -184,7 +184,7 @@ void apple2J_describe_io(JSM, cvec *IOs)
     //d->display.last_displayed = 1;
     setup_crt(&d->display);
 
-    this->iou.display = &((struct physical_io_device *)cpg(this->iou.display_ptr))->display;
+    this->iou.display = &((physical_io_device *)cpg(this->iou.display_ptr))->display;
 }
 
 void apple2J_enable_tracing(JSM)

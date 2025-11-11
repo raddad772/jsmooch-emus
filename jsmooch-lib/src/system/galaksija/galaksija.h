@@ -10,7 +10,7 @@
 #include "helpers/int.h"
 #include "helpers/sys_interface.h"
 
-void galaksija_new(struct jsm_system* system);
-void galaksija_delete(struct jsm_system* system);
+void galaksija_new(jsm_system* system);
+void galaksija_delete(jsm_system* system);
 
 #endif //JSMOOCH_EMUS_GALAKSIJA_H

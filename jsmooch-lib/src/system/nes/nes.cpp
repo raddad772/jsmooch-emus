@@ -17,32 +17,18 @@
 #include "nes_debugger.h"
 #include "nes_serialize.h"
 
-#define JTHIS struct NES* this = (struct NES*)jsm->ptr
+#define JTHIS struct NES* this = (NES*)jsm->ptr
 #define JSM struct jsm_system* jsm
-
-static void NESJ_play(JSM);
-static void NESJ_pause(JSM);
-static void NESJ_stop(JSM);
-static void NESJ_get_framevars(JSM, framevars* out);
-static void NESJ_reset(JSM);
-static void NESJ_killall(JSM);
-static u32 NESJ_finish_frame(JSM);
-static u32 NESJ_finish_scanline(JSM);
-static u32 NESJ_step_master(JSM, u32 howmany);
-static void NESJ_load_BIOS(JSM, multi_file_set* mfs);
-static void NESJ_enable_tracing(JSM);
-static void NESJ_disable_tracing(JSM);
-static void NESJ_describe_io(JSM, cvec* IOs);
 
 static u32 read_trace(void *ptr, u32 addr)
 {
-    NES* nes= (struct NES*)ptr;
+    NES* nes= (NES*)ptr;
     return nes->bus.CPU_read(addr, 0, 0);
 }
 
 #define APU_CYCLES_PER_FRAME  29780
 
-static void setup_debug_waveform(struct debug_waveform &dw)
+static void setup_debug_waveform(debug_waveform &dw)
 {
     if (dw.samples_requested == 0) return;
     dw.samples_rendered = dw.samples_requested;
@@ -122,7 +108,7 @@ static void NESIO_unload_cart(JSM)
 {
 }
 
-static void setup_crt(struct JSM_DISPLAY *d)
+static void setup_crt(JSM_DISPLAY *d)
 {
     d->standard = JSS_NTSC;
     d->enabled = 1;

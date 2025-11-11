@@ -23,7 +23,7 @@ struct NDS_tsc_cd {
     i32 screen_y2;
 };
 
-static void apply_calib_data(struct NDS *this, NDS_tsc_cd *data)
+static void apply_calib_data(NDS *this, NDS_tsc_cd *data)
 {
     struct NDS_SPI_TOUCHSCREEN *t = &this->spi.touchscr;
     t->adc_x_top_left = data->adc_x1;
@@ -39,7 +39,7 @@ static void apply_calib_data(struct NDS *this, NDS_tsc_cd *data)
     if (!t->screen_y_delta) t->screen_y_delta = 1;
 }
 
-static void read_and_apply_touchscreen_calibration(struct NDS *this)
+static void read_and_apply_touchscreen_calibration(NDS *this)
 {
     u32 userdata_offset = cR16(this->mem.firmware, 0x20) << 3;
     u32 offset = userdata_offset + 0x58;
@@ -58,7 +58,7 @@ static void read_and_apply_touchscreen_calibration(struct NDS *this)
     apply_calib_data(this, &calibration_data);
 }
 
-void NDS_SPI_reset(struct NDS *this)
+void NDS_SPI_reset(NDS *this)
 {
     this->spi.enable = 1;
     read_and_apply_touchscreen_calibration(this);
@@ -66,7 +66,7 @@ void NDS_SPI_reset(struct NDS *this)
 
 // On read OR write, value is transferred in and data is transferred out
 
-static void pwm_transaction(struct NDS *this, u32 val)
+static void pwm_transaction(NDS *this, u32 val)
 {
     if (!PWM.hold) {
         PWM.hold = 1;
@@ -108,7 +108,7 @@ static void pwm_transaction(struct NDS *this, u32 val)
         SPI.output = 0;
 }
 
-static void firmware_transaction(struct NDS *this, u32 val)
+static void firmware_transaction(NDS *this, u32 val)
 {
     if (!FMW.hold) {
         FMW.hold = 1;
@@ -182,7 +182,7 @@ static void firmware_transaction(struct NDS *this, u32 val)
     }
 }
 
-static void touchscreen_transaction(struct NDS *this, u32 val)
+static void touchscreen_transaction(NDS *this, u32 val)
 {
     switch(TSC.pos) {
         case 1:
@@ -232,7 +232,7 @@ static void touchscreen_transaction(struct NDS *this, u32 val)
     TSC.pos++;
 }
 
-void NDS_SPI_release_hold(struct NDS *this)
+void NDS_SPI_release_hold(NDS *this)
 {
     switch(SPI.cnt.device) {
         case 0:
@@ -250,14 +250,14 @@ void NDS_SPI_release_hold(struct NDS *this)
 
 static void SPI_irq(void *ptr, u64 num_cycles, u64 clock, u32 jitter)
 {
-    struct NDS *this = (struct NDS *)ptr;
+    struct NDS *this = (NDS *)ptr;
     this->spi.irq_id = 0;
     if (SPI.cnt.irq_enable)
         NDS_update_IF7(this, NDS_IRQ_SPI);
 }
 
 
-static void SPI_transaction(struct NDS *this, u32 val)
+static void SPI_transaction(NDS *this, u32 val)
 {
     SPI.input = val;
     SPI.output = 0;
@@ -293,13 +293,13 @@ static void SPI_transaction(struct NDS *this, u32 val)
     SPI.irq_id = scheduler_add_or_run_abs(&this->scheduler, SPI.busy_until, 0, this, &SPI_irq, NULL);
 }
 
-u32 NDS_SPI_read(struct NDS *this, u32 sz)
+u32 NDS_SPI_read(NDS *this, u32 sz)
 {
     //SPI_transaction(this, 0);
     return this->spi.output;
 }
 
-void NDS_SPI_write(struct NDS *this, u32 sz, u32 val)
+void NDS_SPI_write(NDS *this, u32 sz, u32 val)
 {
     SPI_transaction(this, val & 0xFF);
 }

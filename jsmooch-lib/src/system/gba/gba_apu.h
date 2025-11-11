@@ -103,11 +103,11 @@ struct GBA_APU {
 };
 
 struct GBA;
-void GBA_APU_init(struct GBA*);
-u32 GBA_APU_read_IO(struct GBA*, u32 addr, u32 sz, u32 access, u32 has_effect);
-void GBA_APU_write_IO(struct GBA*, u32 addr, u32 sz, u32 access, u32 val);
-void GBA_APU_cycle(struct GBA*);
-void GBA_APU_sound_FIFO(struct GBA*, u32 num);
-float GBA_APU_mix_sample(struct GBA*, u32 is_debug);
-float GBA_APU_sample_channel(struct GBA*, u32 num);
+void GBA_APU_init(GBA*);
+u32 GBA_APU_read_IO(GBA*, u32 addr, u32 sz, u32 access, u32 has_effect);
+void GBA_APU_write_IO(GBA*, u32 addr, u32 sz, u32 access, u32 val);
+void GBA_APU_cycle(GBA*);
+void GBA_APU_sound_FIFO(GBA*, u32 num);
+float GBA_APU_mix_sample(GBA*, u32 is_debug);
+float GBA_APU_sample_channel(GBA*, u32 num);
 #endif //JSMOOCH_EMUS_GBA_APU_H

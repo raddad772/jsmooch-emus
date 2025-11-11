@@ -4,9 +4,9 @@
 
 #include "sms_gg_clock.h"
 
-void SMSGG_clock_init(struct SMSGG_clock* this, enum jsm::systems variant, enum jsm_regions region)
+void SMSGG_clock_init(SMSGG_clock* this, enum jsm::systems variant, enum jsm_regions region)
 {
-    *this = (struct SMSGG_clock) {
+    *this = (SMSGG_clock) {
         .variant = variant,
         .region = region,
         .master_cycles = 0,
@@ -25,7 +25,7 @@ void SMSGG_clock_init(struct SMSGG_clock* this, enum jsm::systems variant, enum 
         .hpos = 0,
         .vpos = 0,
         .line_counter = 0,
-        .timing = (struct SMSGG_clock_timing) {
+        .timing = (SMSGG_clock_timing) {
             .fps = 60,
             .frame_lines = 262, // PAL 313
             .cc_line = 260, // PAL 311

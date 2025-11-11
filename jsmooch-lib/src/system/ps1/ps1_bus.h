@@ -116,13 +116,13 @@ struct PS1 {
 };
 
 
-void PS1_bus_init(struct PS1 *);
-void PS1_bus_reset(struct PS1 *);
+void PS1_bus_init(PS1 *);
+void PS1_bus_reset(PS1 *);
 u32 PS1_mainbus_read(void *ptr, u32 addr, u32 sz, u32 has_effect);
 void PS1_mainbus_write(void *ptr, u32 addr, u32 sz, u32 val);
 u32 PS1_mainbus_fetchins(void *ptr, u32 addr, u32 sz);
-void PS1_set_irq(struct PS1 *, enum PS1_IRQ from, u32 level);
-u64 PS1_clock_current(struct PS1 *);
+void PS1_set_irq(PS1 *, enum PS1_IRQ from, u32 level);
+u64 PS1_clock_current(PS1 *);
 
 #endif //JSMOOCH_EMUS_PS1_BUS_H
 

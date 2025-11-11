@@ -11,7 +11,7 @@
 #include "nds_bus.h"
 #include "nds_debugger.h"
 
-#define JTHIS struct NDS* this = (struct NDS*)jsm->ptr
+#define JTHIS struct NDS* this = (NDS*)jsm->ptr
 #define JSM struct jsm_system* jsm
 
 #define THIS struct NDS* this
@@ -19,14 +19,14 @@
 #define PAL_BOX_SIZE 10
 #define PAL_BOX_SIZE_W_BORDER 11
 
-static void render_image_view_palette(struct debugger_interface *dbgr, debugger_view *dview, void *ptr, u32 out_width) {
-    struct NDS *this = (struct NDS *) ptr;
+static void render_image_view_palette(debugger_interface *dbgr, debugger_view *dview, void *ptr, u32 out_width) {
+    struct NDS *this = (NDS *) ptr;
     if (this->clock.master_frame == 0) return;
     struct image_view *iv = &dview->image;
     iv->draw_which_buf ^= 1;
     u32 *outbuf = iv->img_buf[iv->draw_which_buf].ptr;
     memset(outbuf, 0, out_width * (((16 * PAL_BOX_SIZE_W_BORDER) * 5) + 2));
-    u32 which = ((struct debugger_widget *)cvec_get(&dview->options, 0))->radiogroup.value;
+    u32 which = ((debugger_widget *)cvec_get(&dview->options, 0))->radiogroup.value;
 
     // We get a 32x32 playground, ish.
     // That's 1000 colors, but extended palettes have 4000.
@@ -75,7 +75,7 @@ static void render_image_view_palette(struct debugger_interface *dbgr, debugger_
 #define PAL_BOX_SIZE 10
 #define PAL_BOX_SIZE_W_BORDER 11
 
-static void setup_image_view_palettes(struct NDS* this, debugger_interface *dbgr)
+static void setup_image_view_palettes(NDS* this, debugger_interface *dbgr)
 {
     struct debugger_view *dview;
     this->dbg.image_views.palettes = debugger_view_new(dbgr, dview_image);
@@ -87,8 +87,8 @@ static void setup_image_view_palettes(struct NDS* this, debugger_interface *dbgr
 
     iv->viewport.exists = 1;
     iv->viewport.enabled = 1;
-    iv->viewport.p[0] = (struct ivec2){ 0, 0 };
-    iv->viewport.p[1] = (struct ivec2){ iv->width, iv->height };
+    iv->viewport.p[0] = (ivec2){ 0, 0 };
+    iv->viewport.p[1] = (ivec2){ iv->width, iv->height };
 
     iv->update_func.ptr = this;
     iv->update_func.func = &render_image_view_palette;
@@ -118,8 +118,8 @@ static void draw_line(u32 *outbuf, u32 out_width, u32 out_height, i32 x0, i32 y0
     }
 }
 
-static void render_image_view_re_wireframe(struct debugger_interface *dbgr, debugger_view *dview, void *ptr, u32 out_width) {
-    struct NDS *this = (struct NDS *) ptr;
+static void render_image_view_re_wireframe(debugger_interface *dbgr, debugger_view *dview, void *ptr, u32 out_width) {
+    struct NDS *this = (NDS *) ptr;
     if (this->clock.master_frame == 0) return;
 
     struct image_view *iv = &dview->image;
@@ -128,7 +128,7 @@ static void render_image_view_re_wireframe(struct debugger_interface *dbgr, debu
     memset(outbuf, 0, out_width * 4 * 192);
     struct NDS_GE_BUFFERS *b = &this->ge.buffers[this->ge.ge_has_buffer ^ 1];
 
-    struct debugger_widget_textbox *tb = &((struct debugger_widget *)cvec_get(&dview->options, 0))->textbox;
+    struct debugger_widget_textbox *tb = &((debugger_widget *)cvec_get(&dview->options, 0))->textbox;
     debugger_widgets_textbox_clear(tb);
     debugger_widgets_textbox_sprintf(tb, "#poly:%d", b->polygon_index);
 
@@ -161,8 +161,8 @@ static inline u32 C18to15(u32 c)
     return (((c >> 13) & 0x1F) << 10) | (((c >> 7) & 0x1F) << 5) | ((c >> 1) & 0x1F);
 }
 
-static void render_image_view_re_output(struct debugger_interface *dbgr, debugger_view *dview, void *ptr, u32 out_width) {
-    struct NDS *this = (struct NDS *) ptr;
+static void render_image_view_re_output(debugger_interface *dbgr, debugger_view *dview, void *ptr, u32 out_width) {
+    struct NDS *this = (NDS *) ptr;
     if (this->clock.master_frame == 0) return;
 
     struct image_view *iv = &dview->image;
@@ -423,7 +423,7 @@ static void set_info_I(char *mapstr, u32 mst, u32 ofs, u32 *mapaddr_start, u32 *
     *mapaddr_end = *mapaddr_start + 0x3FFF;
 }
 
-static void classify_bg_kind(struct NDS *this, NDSENG2D *eng, u32 bgnum, jsm_string *js)
+static void classify_bg_kind(NDS *this, NDSENG2D *eng, u32 bgnum, jsm_string *js)
 {
     struct NDS_PPU_bg *bg = &eng->bg[bgnum];
 
@@ -463,7 +463,7 @@ static void classify_bg_kind(struct NDS *this, NDSENG2D *eng, u32 bgnum, jsm_str
 #undef cl
 }
 
-static void print_layer_info(struct NDS *this, NDSENG2D *eng, u32 bgnum, debugger_widget_textbox *tb)
+static void print_layer_info(NDS *this, NDSENG2D *eng, u32 bgnum, debugger_widget_textbox *tb)
 {
     if (bgnum < 4) {
         struct NDS_PPU_bg *bg = &eng->bg[bgnum];
@@ -488,10 +488,10 @@ static void print_layer_info(struct NDS *this, NDSENG2D *eng, u32 bgnum, debugge
     }
 }
 
-static void render_image_view_sys_info(struct debugger_interface *dbgr, debugger_view *dview, void *ptr, u32 out_width) {
-    struct NDS *this = (struct NDS *) ptr;
+static void render_image_view_sys_info(debugger_interface *dbgr, debugger_view *dview, void *ptr, u32 out_width) {
+    struct NDS *this = (NDS *) ptr;
     //memset(ptr, 0, out_width * 4 * 10);
-    struct debugger_widget_textbox *tb = &((struct debugger_widget *)cvec_get(&dview->options, 0))->textbox;
+    struct debugger_widget_textbox *tb = &((debugger_widget *)cvec_get(&dview->options, 0))->textbox;
     debugger_widgets_textbox_clear(tb);
     for (u32 ppun = 0; ppun < 2; ppun++) {
         struct NDSENG2D *eng = &this->ppu.eng2d[ppun];
@@ -562,13 +562,13 @@ static void render_image_view_sys_info(struct debugger_interface *dbgr, debugger
 
 }
 
-static void render_image_view_dispcap(struct debugger_interface *dbgr, debugger_view *dview, void *ptr, u32 out_width)
+static void render_image_view_dispcap(debugger_interface *dbgr, debugger_view *dview, void *ptr, u32 out_width)
 {
-    struct NDS *this = (struct NDS *) ptr;
+    struct NDS *this = (NDS *) ptr;
     if (this->clock.master_frame == 0) return;
 
-    struct debugger_widget_radiogroup *engrg = &((struct debugger_widget *)cvec_get(&dview->options, 0))->radiogroup;
-    struct debugger_widget_textbox *tb = &((struct debugger_widget *)cvec_get(&dview->options, 1))->textbox;
+    struct debugger_widget_radiogroup *engrg = &((debugger_widget *)cvec_get(&dview->options, 0))->radiogroup;
+    struct debugger_widget_textbox *tb = &((debugger_widget *)cvec_get(&dview->options, 1))->textbox;
 
     struct image_view *iv = &dview->image;
     iv->draw_which_buf ^= 1;
@@ -593,14 +593,14 @@ static void render_image_view_dispcap(struct debugger_interface *dbgr, debugger_
     }
 }
 
-static void render_image_view_ppu_layers(struct debugger_interface *dbgr, debugger_view *dview, void *ptr, u32 out_width)
+static void render_image_view_ppu_layers(debugger_interface *dbgr, debugger_view *dview, void *ptr, u32 out_width)
 {
-    struct NDS *this = (struct NDS *) ptr;
+    struct NDS *this = (NDS *) ptr;
     if (this->clock.master_frame == 0) return;
-    struct debugger_widget_radiogroup *engrg = &((struct debugger_widget *)cvec_get(&dview->options, 0))->radiogroup;
-    struct debugger_widget_radiogroup *layernum = &((struct debugger_widget *)cvec_get(&dview->options, 1))->radiogroup;
-    struct debugger_widget_radiogroup *attrkind = &((struct debugger_widget *)cvec_get(&dview->options, 2))->radiogroup;
-    struct debugger_widget_textbox *tb = &((struct debugger_widget *)cvec_get(&dview->options, 3))->textbox;
+    struct debugger_widget_radiogroup *engrg = &((debugger_widget *)cvec_get(&dview->options, 0))->radiogroup;
+    struct debugger_widget_radiogroup *layernum = &((debugger_widget *)cvec_get(&dview->options, 1))->radiogroup;
+    struct debugger_widget_radiogroup *attrkind = &((debugger_widget *)cvec_get(&dview->options, 2))->radiogroup;
+    struct debugger_widget_textbox *tb = &((debugger_widget *)cvec_get(&dview->options, 3))->textbox;
 
     struct image_view *iv = &dview->image;
     iv->draw_which_buf ^= 1;
@@ -669,10 +669,10 @@ static void render_image_view_ppu_layers(struct debugger_interface *dbgr, debugg
 }
 
 
-static void render_image_view_re_attr(struct debugger_interface *dbgr, debugger_view *dview, void *ptr, u32 out_width) {
-    struct NDS *this = (struct NDS *) ptr;
+static void render_image_view_re_attr(debugger_interface *dbgr, debugger_view *dview, void *ptr, u32 out_width) {
+    struct NDS *this = (NDS *) ptr;
     if (this->clock.master_frame == 0) return;
-    struct debugger_widget_radiogroup *attr_kind = &((struct debugger_widget *)cvec_get(&dview->options, 0))->radiogroup;
+    struct debugger_widget_radiogroup *attr_kind = &((debugger_widget *)cvec_get(&dview->options, 0))->radiogroup;
 
     u32 tm_colors[8] = {
             0xFF000000, // no texture/color
@@ -685,7 +685,7 @@ static void render_image_view_re_attr(struct debugger_interface *dbgr, debugger_
             0xFFFFFFFF, // color 7, white
     };
 
-    struct debugger_widget_colorkey *colorkey = &((struct debugger_widget *)cvec_get(&dview->options, 1))->colorkey;
+    struct debugger_widget_colorkey *colorkey = &((debugger_widget *)cvec_get(&dview->options, 1))->colorkey;
 
     switch(attr_kind->value) {
         case 0: // Texture format
@@ -749,7 +749,7 @@ static void render_image_view_re_attr(struct debugger_interface *dbgr, debugger_
 }
 
 
-static void setup_cpu_trace(struct debugger_interface *dbgr, NDS *this)
+static void setup_cpu_trace(debugger_interface *dbgr, NDS *this)
 {
     struct cvec_ptr p = debugger_view_new(dbgr, dview_trace);
     struct debugger_view *dview = cpg(p);
@@ -768,7 +768,7 @@ static void setup_cpu_trace(struct debugger_interface *dbgr, NDS *this)
     this->arm9.dbg.tvptr = tv;
 }
 
-static void setup_dbglog(struct debugger_interface *dbgr, NDS *this)
+static void setup_dbglog(debugger_interface *dbgr, NDS *this)
 {
     struct cvec_ptr p = debugger_view_new(dbgr, dview_dbglog);
     struct debugger_view *dview = cpg(p);
@@ -803,7 +803,7 @@ static void setup_dbglog(struct debugger_interface *dbgr, NDS *this)
 }
 
 
-static void setup_image_view_re_wireframe(struct NDS* this, debugger_interface *dbgr)
+static void setup_image_view_re_wireframe(NDS* this, debugger_interface *dbgr)
 {
     struct debugger_view *dview;
     this->dbg.image_views.re_wireframe = debugger_view_new(dbgr, dview_image);
@@ -814,8 +814,8 @@ static void setup_image_view_re_wireframe(struct NDS* this, debugger_interface *
     iv->height = 192;
     iv->viewport.exists = 1;
     iv->viewport.enabled = 1;
-    iv->viewport.p[0] = (struct ivec2){ 0, 0 };
-    iv->viewport.p[1] = (struct ivec2){ 256, 192 };
+    iv->viewport.p[0] = (ivec2){ 0, 0 };
+    iv->viewport.p[1] = (ivec2){ 256, 192 };
 
     iv->update_func.ptr = this;
     iv->update_func.func = &render_image_view_re_wireframe;
@@ -826,7 +826,7 @@ static void setup_image_view_re_wireframe(struct NDS* this, debugger_interface *
 
 }
 
-static void setup_image_view_dispcap(struct NDS *this, debugger_interface *dbgr) {
+static void setup_image_view_dispcap(NDS *this, debugger_interface *dbgr) {
     struct debugger_view *dview;
     this->dbg.image_views.dispcap = debugger_view_new(dbgr, dview_image);
     dview = cpg(this->dbg.image_views.dispcap);
@@ -836,8 +836,8 @@ static void setup_image_view_dispcap(struct NDS *this, debugger_interface *dbgr)
     iv->height = 192;
     iv->viewport.exists = 1;
     iv->viewport.enabled = 1;
-    iv->viewport.p[0] = (struct ivec2) {0, 0};
-    iv->viewport.p[1] = (struct ivec2) {256, 192};
+    iv->viewport.p[0] = (ivec2) {0, 0};
+    iv->viewport.p[1] = (ivec2) {256, 192};
 
     iv->update_func.ptr = this;
     iv->update_func.func = &render_image_view_dispcap;
@@ -849,7 +849,7 @@ static void setup_image_view_dispcap(struct NDS *this, debugger_interface *dbgr)
     debugger_widgets_add_textbox(&dview->options, "Default!", 0);
 }
 
-static void setup_image_view_ppu_layers(struct NDS *this, debugger_interface *dbgr)
+static void setup_image_view_ppu_layers(NDS *this, debugger_interface *dbgr)
 {
     struct debugger_view *dview;
     this->dbg.image_views.ppu_layers = debugger_view_new(dbgr, dview_image);
@@ -860,8 +860,8 @@ static void setup_image_view_ppu_layers(struct NDS *this, debugger_interface *db
     iv->height = 192;
     iv->viewport.exists = 1;
     iv->viewport.enabled = 1;
-    iv->viewport.p[0] = (struct ivec2){ 0, 0 };
-    iv->viewport.p[1] = (struct ivec2){ 256, 192 };
+    iv->viewport.p[0] = (ivec2){ 0, 0 };
+    iv->viewport.p[1] = (ivec2){ 256, 192 };
 
     iv->update_func.ptr = this;
     iv->update_func.func = &render_image_view_ppu_layers;
@@ -889,7 +889,7 @@ static void setup_image_view_ppu_layers(struct NDS *this, debugger_interface *db
     debugger_widgets_add_textbox(&dview->options, "Layer Info", 0);
 }
 
-static void setup_image_view_ppu_info(struct NDS *this, debugger_interface *dbgr)
+static void setup_image_view_ppu_info(NDS *this, debugger_interface *dbgr)
 {
     struct debugger_view *dview;
     this->dbg.image_views.ppu_info = debugger_view_new(dbgr, dview_image);
@@ -900,8 +900,8 @@ static void setup_image_view_ppu_info(struct NDS *this, debugger_interface *dbgr
     iv->height = 10;
     iv->viewport.exists = 1;
     iv->viewport.enabled = 1;
-    iv->viewport.p[0] = (struct ivec2){ 0, 0 };
-    iv->viewport.p[1] = (struct ivec2){ 10, 10 };
+    iv->viewport.p[0] = (ivec2){ 0, 0 };
+    iv->viewport.p[1] = (ivec2){ 10, 10 };
 
     iv->update_func.ptr = this;
     iv->update_func.func = &render_image_view_sys_info;
@@ -911,7 +911,7 @@ static void setup_image_view_ppu_info(struct NDS *this, debugger_interface *dbgr
     debugger_widgets_add_textbox(&dview->options, "blah!", 1);
 }
 
-static void setup_image_view_re_attr(struct NDS* this, debugger_interface *dbgr)
+static void setup_image_view_re_attr(NDS* this, debugger_interface *dbgr)
 {
     struct debugger_view *dview;
     this->dbg.image_views.re_attr = debugger_view_new(dbgr, dview_image);
@@ -922,8 +922,8 @@ static void setup_image_view_re_attr(struct NDS* this, debugger_interface *dbgr)
     iv->height = 192;
     iv->viewport.exists = 1;
     iv->viewport.enabled = 1;
-    iv->viewport.p[0] = (struct ivec2){ 0, 0 };
-    iv->viewport.p[1] = (struct ivec2){ 256, 192 };
+    iv->viewport.p[0] = (ivec2){ 0, 0 };
+    iv->viewport.p[1] = (ivec2){ 256, 192 };
 
     iv->update_func.ptr = this;
     iv->update_func.func = &render_image_view_re_attr;
@@ -938,7 +938,7 @@ static void setup_image_view_re_attr(struct NDS* this, debugger_interface *dbgr)
 }
 
 
-static void setup_image_view_re_output(struct NDS* this, debugger_interface *dbgr)
+static void setup_image_view_re_output(NDS* this, debugger_interface *dbgr)
 {
     struct debugger_view *dview;
     this->dbg.image_views.re_wireframe = debugger_view_new(dbgr, dview_image);
@@ -949,8 +949,8 @@ static void setup_image_view_re_output(struct NDS* this, debugger_interface *dbg
     iv->height = 192;
     iv->viewport.exists = 1;
     iv->viewport.enabled = 1;
-    iv->viewport.p[0] = (struct ivec2){ 0, 0 };
-    iv->viewport.p[1] = (struct ivec2){ 256, 192 };
+    iv->viewport.p[0] = (ivec2){ 0, 0 };
+    iv->viewport.p[1] = (ivec2){ 256, 192 };
 
     iv->update_func.ptr = this;
     iv->update_func.func = &render_image_view_re_output;

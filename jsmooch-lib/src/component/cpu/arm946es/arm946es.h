@@ -103,7 +103,7 @@ struct ARM946ES_regs {
 
 struct ARM946ES;
 struct arm9_ins {
-    void (*exec)(struct ARM946ES*, u32 opcode);
+    void (*exec)(ARM946ES*, u32 opcode);
     u32 valid;
 };
 
@@ -227,22 +227,22 @@ struct ARM946ES {
 };
 
 
-void ARM946ES_init(struct ARM946ES *, u64 *master_clock, u64 *waitstates, scheduler_t *scheduler);
-void ARM946ES_delete(struct ARM946ES *);
+void ARM946ES_init(ARM946ES *, u64 *master_clock, u64 *waitstates, scheduler_t *scheduler);
+void ARM946ES_delete(ARM946ES *);
 
-void ARM946ES_reset(struct ARM946ES *);
-void ARM946ES_disassemble_entry(struct ARM946ES*, disassembly_entry* entry);
-void ARM946ES_setup_tracing(struct ARM946ES*, jsm_debug_read_trace *strct, u64 *trace_cycle_pointer, i32 source_id);
-void ARM946ES_run_noIRQcheck(struct ARM946ES*);
-void ARM946ES_IRQcheck(struct ARM946ES*, u32 do_sched);
-void ARM946ES_flush_pipeline(struct ARM946ES *);
-void ARM946ES_fill_regmap(struct ARM946ES *);
-void ARM946ES_reload_pipeline(struct ARM946ES *);
-void ARM946ES_idle(struct ARM946ES*this, u32 num);
-void ARM946ES_NDS_direct_boot(struct ARM946ES *);
-u32 ARM946ES_fetch_ins(struct ARM946ES *, u32 addr, u32 sz, u32 access);
-u32 ARM946ES_read(struct ARM946ES *, u32 addr, u32 sz, u32 access, u32 has_effect);
-void ARM946ES_write(struct ARM946ES *, u32 addr, u32 sz, u32 access, u32 val);
-void ARM946ES_schedule_IRQ_check(struct ARM946ES *);
+void ARM946ES_reset(ARM946ES *);
+void ARM946ES_disassemble_entry(ARM946ES*, disassembly_entry* entry);
+void ARM946ES_setup_tracing(ARM946ES*, jsm_debug_read_trace *strct, u64 *trace_cycle_pointer, i32 source_id);
+void ARM946ES_run_noIRQcheck(ARM946ES*);
+void ARM946ES_IRQcheck(ARM946ES*, u32 do_sched);
+void ARM946ES_flush_pipeline(ARM946ES *);
+void ARM946ES_fill_regmap(ARM946ES *);
+void ARM946ES_reload_pipeline(ARM946ES *);
+void ARM946ES_idle(ARM946ES*this, u32 num);
+void ARM946ES_NDS_direct_boot(ARM946ES *);
+u32 ARM946ES_fetch_ins(ARM946ES *, u32 addr, u32 sz, u32 access);
+u32 ARM946ES_read(ARM946ES *, u32 addr, u32 sz, u32 access, u32 has_effect);
+void ARM946ES_write(ARM946ES *, u32 addr, u32 sz, u32 access, u32 val);
+void ARM946ES_schedule_IRQ_check(ARM946ES *);
 
 #endif //JSMOOCH_EMUS_ARM946ES_H

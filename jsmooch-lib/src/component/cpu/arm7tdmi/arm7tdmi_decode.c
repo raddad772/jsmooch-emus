@@ -284,7 +284,7 @@ static enum ARM_ins_kind decode_arm(u32 opc)
 }
 
 
-void ARM7TDMI_fill_arm_table(struct ARM7TDMI *this)
+void ARM7TDMI_fill_arm_table(ARM7TDMI *this)
 {
     for (u32 opc = 0; opc < 4096; opc++) {
         struct ARM7_ins *ins = &this->opcode_table_arm[opc];

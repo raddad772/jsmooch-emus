@@ -29,11 +29,11 @@ static u32 ZXSpectrum_keyboard_halfrows_consts[8] = {
         0x08, 0x10, 0x04, 0x20, 0x02, 0x40, 0x01, 0x80
 };
 
-static u32 ula_readmem(struct ZXSpectrum* this, u16 addr) {
+static u32 ula_readmem(ZXSpectrum* this, u16 addr) {
     return this->bank.display[addr & 0x3FFF];
 }
 
-static void scanline_vblank(struct ZXSpectrum* bus)
+static void scanline_vblank(ZXSpectrum* bus)
 {
     BTHIS;
     bus->clock.contended = 0;
@@ -50,7 +50,7 @@ static void scanline_vblank(struct ZXSpectrum* bus)
     }
 }
 
-static void scanline_border_top(struct ZXSpectrum* bus)
+static void scanline_border_top(ZXSpectrum* bus)
 {
     BTHIS;
     if ((this->screen_x >= 0) && (this->screen_x < 352)) {
@@ -59,12 +59,12 @@ static void scanline_border_top(struct ZXSpectrum* bus)
     }
 }
 
-static void scanline_border_bottom(struct ZXSpectrum* bus)
+static void scanline_border_bottom(ZXSpectrum* bus)
 {
     scanline_border_top(bus);
 }
 
-static void scanline_visible(struct ZXSpectrum* bus)
+static void scanline_visible(ZXSpectrum* bus)
 {
     BTHIS;
     /* each scanline is 448 pixels wide.
@@ -113,10 +113,10 @@ static void scanline_visible(struct ZXSpectrum* bus)
     this->cur_output[bo] = this->attr.colors[out_bit];
 }
 
-void ZXSpectrum_ULA_init(struct ZXSpectrum* bus, enum ZXSpectrum_variants variant)
+void ZXSpectrum_ULA_init(ZXSpectrum* bus, enum ZXSpectrum_variants variant)
 {
     struct ZXSpectrum_ULA *this = &bus->ula;
-    memset(this, 0, sizeof(struct ZXSpectrum_ULA));
+    memset(this, 0, sizeof(ZXSpectrum_ULA));
     this->variant = variant;
 
     switch(bus->variant) {
@@ -140,12 +140,12 @@ void ZXSpectrum_ULA_init(struct ZXSpectrum* bus, enum ZXSpectrum_variants varian
     this->screen_x = this->screen_y = 0;
 }
 
-void ZXSpectrum_ULA_delete(struct ZXSpectrum_ULA* this)
+void ZXSpectrum_ULA_delete(ZXSpectrum_ULA* this)
 {
 
 }
 
-void ZXSpectrum_ULA_reset(struct ZXSpectrum* bus)
+void ZXSpectrum_ULA_reset(ZXSpectrum* bus)
 {
     BTHIS;
     bus->clock.ula_frame_cycle = bus->clock.ula_x = bus->clock.ula_y = 0;
@@ -162,7 +162,7 @@ void ZXSpectrum_ULA_reset(struct ZXSpectrum* bus)
     this->next_attr = 0;
 }
 
-static u32 get_keypress(struct ZXSpectrum* bus, enum JKEYS key)
+static u32 get_keypress(ZXSpectrum* bus, enum JKEYS key)
 {
     struct physical_io_device *d = cvec_get(bus->ula.keyboard_devices, bus->ula.keyboard_device_index);
     struct JSM_KEYBOARD *kbd = &d->keyboard;
@@ -178,7 +178,7 @@ static u32 get_keypress(struct ZXSpectrum* bus, enum JKEYS key)
     return v == 0xFFFFFFFF ? 0 : v;
 }
 
-static u32 kb_scan_row(struct ZXSpectrum* bus, const u32 *row) {
+static u32 kb_scan_row(ZXSpectrum* bus, const u32 *row) {
     u32 out = 0xE0;
     for (u32 i = 0; i < 5; i++) {
         u32 key = row[i];
@@ -189,7 +189,7 @@ static u32 kb_scan_row(struct ZXSpectrum* bus, const u32 *row) {
     return out;
 }
 
-u32 ZXSpectrum_ULA_reg_read(struct ZXSpectrum* bus, u32 addr) {
+u32 ZXSpectrum_ULA_reg_read(ZXSpectrum* bus, u32 addr) {
     BTHIS;
     if ((addr & 1) == 1) {
         printf("\nUHOH IN TO %04x", addr);
@@ -205,7 +205,7 @@ u32 ZXSpectrum_ULA_reg_read(struct ZXSpectrum* bus, u32 addr) {
     return out;
 }
 
-void ZXSpectrum_ULA_reg_write(struct ZXSpectrum* bus, u32 addr, u32 val)
+void ZXSpectrum_ULA_reg_write(ZXSpectrum* bus, u32 addr, u32 val)
 {
     BTHIS;
     if (addr & 1) {
@@ -236,7 +236,7 @@ void ZXSpectrum_ULA_reg_write(struct ZXSpectrum* bus, u32 addr, u32 val)
     this->io.border_color = val & 7;
 }
 
-static void new_scanline(struct ZXSpectrum* bus)
+static void new_scanline(ZXSpectrum* bus)
 {
     BTHIS;
     bus->clock.ula_x = 0;
@@ -292,7 +292,7 @@ static void new_scanline(struct ZXSpectrum* bus)
     
 }
 
-void ZXSpectrum_ULA_cycle(struct ZXSpectrum* bus)
+void ZXSpectrum_ULA_cycle(ZXSpectrum* bus)
 {
     BTHIS;
     this->scanline_func(bus);

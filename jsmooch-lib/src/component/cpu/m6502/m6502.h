@@ -8,7 +8,8 @@
 #include "helpers/int.h"
 #include "helpers/debug.h"
 #include "helpers/debugger/debuggerdefs.h"
-
+#include "helpers/debugger/debugger.h"
+#include "helpers/serialize/serialize.h"
 #include "m6502_misc.h"
 
 struct M6502_P {
@@ -38,8 +39,8 @@ struct M6502_regs {
 
     u32 NMI_old{}, NMI_level_detected{}, do_NMI{};
 
-    void serialize(struct serialized_state &state);
-    void deserialize(struct serialized_state &state);
+    void serialize(serialized_state &state);
+    void deserialize(serialized_state &state);
 };
 
 struct M6502_pins {
@@ -53,8 +54,8 @@ struct M6502_pins {
 
     u8 RDY{};
 
-    void serialize(struct serialized_state &state);
-    void deserialize(struct serialized_state &state);
+    void serialize(serialized_state &state);
+    void deserialize(serialized_state &state);
 };
 
 struct M6502 {
@@ -64,10 +65,10 @@ struct M6502 {
     void power_on();
     void reset();
     void cycle();
-    void setup_tracing(struct jsm_debug_read_trace *strct, u64 *trace_cycle_pointer);
-    void serialize(struct serialized_state &state);
-    void deserialize(struct serialized_state &state);
-    void disassemble_entry(struct disassembly_entry* entry);
+    void setup_tracing(jsm_debug_read_trace *strct, u64 *trace_cycle_pointer);
+    void serialize(serialized_state &state);
+    void deserialize(serialized_state &state);
+    void disassemble_entry(disassembly_entry* entry);
 
 
     M6502_regs regs{};
@@ -91,8 +92,8 @@ struct M6502 {
     M6502_ins_func *opcode_table{};
 };
 
-void M6502_poll_IRQs(struct M6502_regs *regs, M6502_pins *pins);
-void M6502_poll_NMI_only(struct M6502_regs *regs, M6502_pins *pins);
+void M6502_poll_IRQs(M6502_regs *regs, M6502_pins *pins);
+void M6502_poll_NMI_only(M6502_regs *regs, M6502_pins *pins);
 
 struct serialized_state;
 

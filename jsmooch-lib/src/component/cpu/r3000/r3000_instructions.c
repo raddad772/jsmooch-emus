@@ -26,12 +26,12 @@ static const char reg_alias_arr[33][12] = {
         "unknown reg"
 };
 
-static inline u64 R3000_current_clock(struct R3000 *core)
+static inline u64 R3000_current_clock(R3000 *core)
 {
     return *core->clock + *core->waitstates;
 }
 
-static void COP_write_reg(struct R3000 *core, u32 COP, u32 num, u32 val)
+static void COP_write_reg(R3000 *core, u32 COP, u32 num, u32 val)
 {
     switch(COP) {
         case 0:
@@ -49,7 +49,7 @@ static void COP_write_reg(struct R3000 *core, u32 COP, u32 num, u32 val)
     }
 }
 
-static u32 COP_read_reg(struct R3000 *core, u32 COP, u32 num)
+static u32 COP_read_reg(R3000 *core, u32 COP, u32 num)
 {
     switch(COP) {
         case 0:
@@ -64,7 +64,7 @@ static u32 COP_read_reg(struct R3000 *core, u32 COP, u32 num)
 
 
 // default link reg to 31
-static inline void R3000_fs_reg_write(struct R3000 *core, u32 target, u32 value)
+static inline void R3000_fs_reg_write(R3000 *core, u32 target, u32 value)
 {
     if (target != 0) core->regs.R[target] = value;
 
@@ -75,7 +75,7 @@ static inline void R3000_fs_reg_write(struct R3000 *core, u32 target, u32 value)
     if (p->target == target) p->target = -1;
 }
 
-static inline void R3000_branch(struct R3000 *core, i64 rel, u32 doit, u32 link, u32 link_reg)
+static inline void R3000_branch(R3000 *core, i64 rel, u32 doit, u32 link, u32 link_reg)
 {
     if (doit) {
         if (core->pipe.current.new_PC != 0xFFFFFFFF)
@@ -88,7 +88,7 @@ static inline void R3000_branch(struct R3000 *core, i64 rel, u32 doit, u32 link,
         R3000_fs_reg_write(core, link_reg, core->regs.PC+4);
 }
 
-static inline void R3000_jump(struct R3000 *core, u32 new_addr, u32 doit, u32 link, u32 link_reg)
+static inline void R3000_jump(R3000 *core, u32 new_addr, u32 doit, u32 link, u32 link_reg)
 {
     core->pipe.item0.new_PC = new_addr;
 
@@ -97,7 +97,7 @@ static inline void R3000_jump(struct R3000 *core, u32 new_addr, u32 doit, u32 li
 }
 
 
-static inline u32 R3000_fs_reg_delay_read(struct R3000 *core, i32 target) {
+static inline u32 R3000_fs_reg_delay_read(R3000 *core, i32 target) {
     struct R3000_pipeline_item *p = &core->pipe.current;
     if (p->target == target) {
         p->target = -1;
@@ -108,7 +108,7 @@ static inline u32 R3000_fs_reg_delay_read(struct R3000 *core, i32 target) {
     }
 }
 
-static inline void R3000_fs_reg_delay(struct R3000 *core, i32 target, u32 value)
+static inline void R3000_fs_reg_delay(R3000 *core, i32 target, u32 value)
 {
     struct R3000_pipeline_item *p = &core->pipe.item0;
     p->target = target;
@@ -208,7 +208,7 @@ void R3000_fBREAK(u32 opcode, R3000_opcode *op, R3000 *core)
     R3000_exception(core, 9, 0, 0);
 }
 
-static void wait_for(struct R3000 *core, u64 timecode)
+static void wait_for(R3000 *core, u64 timecode)
 {
     u64 current = *core->clock + *core->waitstates;
     if (current < timecode) {

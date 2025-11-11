@@ -6,12 +6,12 @@
 #include <stdio.h>
 #include "dbglog.h"
 
-struct dbglog_category_node *dbglog_category_get_root(struct dbglog_view *this)
+struct dbglog_category_node *dbglog_category_get_root(dbglog_view *this)
 {
     return &this->category_root;
 }
 
-struct dbglog_category_node *dbglog_category_add_node(struct dbglog_view *dv, dbglog_category_node *this, const char *name, const char *short_name, u32 id, u32 color)
+struct dbglog_category_node *dbglog_category_add_node(dbglog_view *dv, dbglog_category_node *this, const char *name, const char *short_name, u32 id, u32 color)
 {
     struct dbglog_category_node *d = cvec_push_back(&this->children);
     category_node_init(d);
@@ -24,7 +24,7 @@ struct dbglog_category_node *dbglog_category_add_node(struct dbglog_view *dv, db
     return d;
 }
 
-void dbglog_view_add_item(struct dbglog_view *this, u32 id, u64 timecode, enum dbglog_severity severity, const char *txt)
+void dbglog_view_add_item(dbglog_view *this, u32 id, u64 timecode, enum dbglog_severity severity, const char *txt)
 {
     if (!this->ids_enabled[id]) return;
     if (this->items.len >= MAX_DBGLOG_LINES) {
@@ -47,7 +47,7 @@ void dbglog_view_add_item(struct dbglog_view *this, u32 id, u64 timecode, enum d
 }
 
 
-void dbglog_view_extra_printf(struct dbglog_view *this, const char *format, ...) {
+void dbglog_view_extra_printf(dbglog_view *this, const char *format, ...) {
     dbglog_entry *e = this->last_added;
     if (!e) {
         printf("\nWARN IT IS NULL!?");
@@ -62,7 +62,7 @@ void dbglog_view_extra_printf(struct dbglog_view *this, const char *format, ...)
 
 }
 
-void dbglog_view_add_printf(struct dbglog_view *this, u32 id, u64 timecode, enum dbglog_severity severity, const char *format, ...) {
+void dbglog_view_add_printf(dbglog_view *this, u32 id, u64 timecode, enum dbglog_severity severity, const char *format, ...) {
     if (!this->ids_enabled[id]) return;
     if (this->items.len >= MAX_DBGLOG_LINES) {
         // Move first entry forward
@@ -88,7 +88,7 @@ void dbglog_view_add_printf(struct dbglog_view *this, u32 id, u64 timecode, enum
     this->updated = 3;
 }
 
-void dbglog_view_render_to_buffer(struct dbglog_view *this, char *output, u64 sz)
+void dbglog_view_render_to_buffer(dbglog_view *this, char *output, u64 sz)
 {
     u32 total_line = 0;
     u32 total_len = 0;
@@ -111,7 +111,7 @@ void dbglog_view_render_to_buffer(struct dbglog_view *this, char *output, u64 sz
     }
 }
 
-u32 dbglog_count_visible_lines(struct dbglog_view *this)
+u32 dbglog_count_visible_lines(dbglog_view *this)
 {
     u32 n = 0;
     u32 idx = this->items.first_entry;
@@ -124,7 +124,7 @@ u32 dbglog_count_visible_lines(struct dbglog_view *this)
     return n;
 }
 
-u32 dbglog_get_nth_visible(struct dbglog_view *this, u32 n)
+u32 dbglog_get_nth_visible(dbglog_view *this, u32 n)
 {
     u32 nth = 0;
     u32 idx = this->items.first_entry;
@@ -140,7 +140,7 @@ u32 dbglog_get_nth_visible(struct dbglog_view *this, u32 n)
     return 0;
 }
 
-u32 dbglog_get_next_visible(struct dbglog_view *this, u32 start)
+u32 dbglog_get_next_visible(dbglog_view *this, u32 start)
 {
     u32 idx = (start + 1) % this->items.len;
     for (u32 i = 0; i < this->items.len; i++) {

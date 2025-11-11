@@ -28,7 +28,7 @@ struct PS1_SIO_digital_gamepad {
     u32 still_sched;
 };
 
-void PS1_SIO_digital_gamepad_init(struct PS1_SIO_digital_gamepad *, PS1 *bus);
-void PS1_SIO_gamepad_setup_pio(struct physical_io_device *d, u32 num, const char*name, u32 connected);
+void PS1_SIO_digital_gamepad_init(PS1_SIO_digital_gamepad *, PS1 *bus);
+void PS1_SIO_gamepad_setup_pio(physical_io_device *d, u32 num, const char*name, u32 connected);
 
 #endif //JSMOOCH_EMUS_PS1_DIGITAL_PAD_H

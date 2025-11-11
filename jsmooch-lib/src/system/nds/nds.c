@@ -23,7 +23,7 @@
 
 #include "helpers/multisize_memaccess.c"
 
-#define JTHIS struct NDS* this = (struct NDS*)jsm->ptr
+#define JTHIS struct NDS* this = (NDS*)jsm->ptr
 #define JSM struct jsm_system* jsm
 
 #define THIS struct genesis* this
@@ -52,7 +52,7 @@ static u32 timer_reload_ticks(u32 reload)
     return 0x10000 - reload;
 }
 
-static void setup_debug_waveform(struct debug_waveform *dw)
+static void setup_debug_waveform(debug_waveform *dw)
 {
     if (dw->samples_requested == 0) return;
     dw->samples_rendered = dw->samples_requested;
@@ -60,14 +60,14 @@ static void setup_debug_waveform(struct debug_waveform *dw)
     dw->user.buf_pos = 0;
 }
 
-void NDSJ_set_audiobuf(struct jsm_system* jsm, audiobuf *ab)
+void NDSJ_set_audiobuf(jsm_system* jsm, audiobuf *ab)
 {
     JTHIS;
     this->audio.buf = ab;
     /*if (this->audio.master_cycles_per_audio_sample == 0) {
         this->audio.master_cycles_per_audio_sample = ((float)(MASTER_CYCLES_PER_FRAME / (float)ab->samples_len));
         this->audio.next_sample_cycle = 0;
-        struct debug_waveform *wf = (struct debug_waveform *)cvec_get(this->dbg.waveforms.main.vec, this->dbg.waveforms.main.index);
+        struct debug_waveform *wf = (debug_waveform *)cvec_get(this->dbg.waveforms.main.vec, this->dbg.waveforms.main.index);
         this->apu.ext_enable = wf->ch_output_enabled;
     }
 
@@ -75,7 +75,7 @@ void NDSJ_set_audiobuf(struct jsm_system* jsm, audiobuf *ab)
     setup_debug_waveform(cvec_get(this->dbg.waveforms.main.vec, this->dbg.waveforms.main.index));
     for (u32 i = 0; i < 6; i++) {
         setup_debug_waveform(cvec_get(this->dbg.waveforms.chan[i].vec, this->dbg.waveforms.chan[i].index));
-        struct debug_waveform *wf = (struct debug_waveform *)cvec_get(this->dbg.waveforms.chan[i].vec, this->dbg.waveforms.chan[i].index);
+        struct debug_waveform *wf = (debug_waveform *)cvec_get(this->dbg.waveforms.chan[i].vec, this->dbg.waveforms.chan[i].index);
         if (i < 4)
             this->apu.channels[i].ext_enable = wf->ch_output_enabled;
         else
@@ -85,24 +85,24 @@ void NDSJ_set_audiobuf(struct jsm_system* jsm, audiobuf *ab)
 }
 
 static u32 read_trace_cpu9(void *ptr, u32 addr, u32 sz) {
-    struct NDS* this = (struct NDS*)ptr;
+    struct NDS* this = (NDS*)ptr;
     return NDS_mainbus_read9(this, addr, sz, 0, 0);
 }
 
 static u32 read_trace_cpu7(void *ptr, u32 addr, u32 sz) {
-    struct NDS* this = (struct NDS*)ptr;
+    struct NDS* this = (NDS*)ptr;
     return NDS_mainbus_read7(this, addr, sz, 0, 0);
 }
 
-static void schedule_frame(struct NDS *this, u64 start_clock, u32 is_first);
+static void schedule_frame(NDS *this, u64 start_clock, u32 is_first);
 
 static void do_next_scheduled_frame(void *bound_ptr, u64 key, u64 current_clock, u32 jitter)
 {
-    struct NDS *this = (struct NDS *)bound_ptr;
+    struct NDS *this = (NDS *)bound_ptr;
     schedule_frame(this, current_clock-jitter, 0);
 }
 
-static void schedule_frame(struct NDS *this, u64 start_clock, u32 is_first)
+static void schedule_frame(NDS *this, u64 start_clock, u32 is_first)
 {
     // Schedule out a frame!
     i64 cur_clock = start_clock;
@@ -138,7 +138,7 @@ static void schedule_frame(struct NDS *this, u64 start_clock, u32 is_first)
 
 static void NDS_run_block(void *ptr, u64 num_cycles, u64 clock, u32 jitter)
 {
-    struct NDS *this = (struct NDS *)ptr;
+    struct NDS *this = (NDS *)ptr;
 
     this->waitstates.current_transaction = 0;
     this->clock.cycles7 += (i64)num_cycles;
@@ -180,9 +180,9 @@ static void NDS_run_block(void *ptr, u64 num_cycles, u64 clock, u32 jitter)
     //ARM946ES_IRQcheck(&this->arm9, 0);
 }
 
-void NDS_new(struct jsm_system *jsm)
+void NDS_new(jsm_system *jsm)
 {
-    struct NDS* this = (struct NDS*)malloc(sizeof(struct NDS));
+    struct NDS* this = (NDS*)malloc(sizeof(NDS));
     memset(this, 0, sizeof(*this));
     this->waitstates.current_transaction = 0;
     scheduler_init(&this->scheduler, &this->clock.master_cycle_count7, &this->waitstates.current_transaction);
@@ -254,7 +254,7 @@ void NDS_new(struct jsm_system *jsm)
     jsm->load_state = NULL;
 }
 
-void NDS_delete(struct jsm_system *jsm)
+void NDS_delete(jsm_system *jsm)
 {
     JTHIS;
 
@@ -277,7 +277,7 @@ void NDS_delete(struct jsm_system *jsm)
     jsm_clearfuncs(jsm);
 }
 
-static void sample_audio(struct NDS* this)
+static void sample_audio(NDS* this)
 {
     // Take NDS samples into our buffer
     float *outptr = (float *)this->audio.buf->ptr;
@@ -338,7 +338,7 @@ void NDSJ_get_framevars(JSM, framevars* out)
     out->master_cycle = this->clock.master_cycle_count7;
 }
 
-static void skip_BIOS(struct NDS *this)
+static void skip_BIOS(NDS *this)
 {
     // Load 170h bytes of header into main RAM starting at 27FFE00
     u32 *hdr_start = (u32 *)this->cart.ROM.ptr;
@@ -509,7 +509,7 @@ static void NDSIO_load_cart(JSM, multi_file_set *mfs, physical_io_device *pio) {
     //NDSJ_reset(jsm);
 }
 
-static void setup_lcd(struct JSM_DISPLAY *d)
+static void setup_lcd(JSM_DISPLAY *d)
 {
     d->standard = JSS_LCD;
     d->enabled = 1;
@@ -537,7 +537,7 @@ static void setup_lcd(struct JSM_DISPLAY *d)
     d->pixelometry.overscan.top = d->pixelometry.overscan.bottom = 0;
 }
 
-static void setup_audio(struct cvec* IOs)
+static void setup_audio(cvec* IOs)
 {
     struct physical_io_device *pio = cvec_push_back(IOs);
     pio->kind = HID_AUDIO_CHANNEL;
@@ -602,5 +602,5 @@ static void NDSJ_describe_io(JSM, cvec* IOs)
 
     setup_audio(IOs);
 
-    this->ppu.display = &((struct physical_io_device *)cpg(this->ppu.display_ptr))->display;
+    this->ppu.display = &((physical_io_device *)cpg(this->ppu.display_ptr))->display;
 }

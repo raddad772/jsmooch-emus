@@ -133,9 +133,9 @@ struct NDS_APU {
 };
 
 struct NDS;
-void NDS_APU_init(struct NDS *);
-u32 NDS_APU_read(struct NDS *, u32 addr, u32 sz, u32 access);
-void NDS_APU_write(struct NDS *, u32 addr, u32 sz, u32 access, u32 val);
+void NDS_APU_init(NDS *);
+u32 NDS_APU_read(NDS *, u32 addr, u32 sz, u32 access);
+void NDS_APU_write(NDS *, u32 addr, u32 sz, u32 access, u32 val);
 
 void NDS_master_sample_callback(void *, u64 nothing, u64 cur_clock, u32 jitter);
 

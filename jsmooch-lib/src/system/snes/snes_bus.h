@@ -25,7 +25,7 @@
 
 struct snesched_item;
 struct SNES;
-typedef void (*snesched_callback)(struct SNES *, snesched_item *);
+typedef void (*snesched_callback)(SNES *, snesched_item *);
 
 #define NUM_SNESCHED 12
 

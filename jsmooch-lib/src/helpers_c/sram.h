@@ -40,8 +40,8 @@ struct persistent_store {
 
 };
 
-void persistent_store_init(struct persistent_store*);
-void persistent_store_delete(struct persistent_store*);
+void persistent_store_init(persistent_store*);
+void persistent_store_delete(persistent_store*);
 
 #ifdef __cplusplus
 }

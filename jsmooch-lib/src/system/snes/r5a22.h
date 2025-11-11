@@ -73,20 +73,20 @@ struct R5A22 {
 
 struct SNES;
 struct SNES_memmap_block;
-void R5A22_init(struct R5A22 *, u64 *master_cycle_count);
-void R5A22_delete(struct R5A22 *);
-void R5A22_reset(struct R5A22 *);
-//void R5A22_cycle(struct SNES *);
-void R5A22_reg_write(struct SNES *, u32 addr, u32 val, SNES_memmap_block *bl);
-u32 R5A22_reg_read(struct SNES *, u32 addr, u32 old, u32 has_effect, SNES_memmap_block *bl);
-void R5A22_setup_tracing(struct R5A22 *, jsm_debug_read_trace *strct);
-void R5A22_set_IRQ_level(struct R5A22 *, u32 level);
-void R5A22_set_NMI_level(struct R5A22 *, u32 level);
-void R5A22_schedule_first(struct SNES *);
-void R5A22_update_irq(struct SNES *);
-void R5A22_update_nmi(struct SNES *);
-void R5A22_hblank(struct SNES *, u32 which);
-void SNES_latch_ppu_counters(struct SNES *snes);
+void R5A22_init(R5A22 *, u64 *master_cycle_count);
+void R5A22_delete(R5A22 *);
+void R5A22_reset(R5A22 *);
+//void R5A22_cycle(SNES *);
+void R5A22_reg_write(SNES *, u32 addr, u32 val, SNES_memmap_block *bl);
+u32 R5A22_reg_read(SNES *, u32 addr, u32 old, u32 has_effect, SNES_memmap_block *bl);
+void R5A22_setup_tracing(R5A22 *, jsm_debug_read_trace *strct);
+void R5A22_set_IRQ_level(R5A22 *, u32 level);
+void R5A22_set_NMI_level(R5A22 *, u32 level);
+void R5A22_schedule_first(SNES *);
+void R5A22_update_irq(SNES *);
+void R5A22_update_nmi(SNES *);
+void R5A22_hblank(SNES *, u32 which);
+void SNES_latch_ppu_counters(SNES *snes);
 void R5A22_cycle(void *ptr, u64 key, u64 clock, u32 jitter);
 
 #endif //JSMOOCH_EMUS_R5A22_H

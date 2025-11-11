@@ -149,7 +149,7 @@ void dbg_delete()
     dbg.msg_last_newline = 0;
 }
 
-void jsm_copy_read_trace (struct jsm_debug_read_trace *dst, jsm_debug_read_trace *src)
+void jsm_copy_read_trace (jsm_debug_read_trace *dst, jsm_debug_read_trace *src)
 {
     dst->ptr = src->ptr;
     dst->read_trace = src->read_trace;
@@ -229,7 +229,7 @@ void dbg_disable_cpu_trace(enum debug_sources source)
 
 
 // Last Traces, a rolling buffer of the last traces
-void LT_init(struct last_traces_t* this)
+void LT_init(last_traces_t* this)
 {
     for (u32 i = 0; i < LAST_TRACES_LEN; i++) {
         memset(this->entries[i], 0, LAST_TRACES_MSG_LEN);
@@ -239,7 +239,7 @@ void LT_init(struct last_traces_t* this)
     this->curptr = &this->entries[0][0];
 }
 
-void LT_printf(struct last_traces_t* this, char *format, ...)
+void LT_printf(last_traces_t* this, char *format, ...)
 {
     u32 cur_entry = (this->head + this->len) % LAST_TRACES_LEN;
     u32 cur_len = this->curptr - this->entries[cur_entry];
@@ -252,7 +252,7 @@ void LT_printf(struct last_traces_t* this, char *format, ...)
     va_end(va);
 }
 
-void LT_endline(struct last_traces_t* this)
+void LT_endline(last_traces_t* this)
 {
     this->len = (this->len + 1);
     if (this->len == LAST_TRACES_LEN) {
@@ -264,7 +264,7 @@ void LT_endline(struct last_traces_t* this)
     this->curptr = &this->entries[cur_entry][0];
 }
 
-void LT_seek_in_line(struct last_traces_t* this, u32 where)
+void LT_seek_in_line(last_traces_t* this, u32 where)
 {
     u32 cur_entry = (this->head + this->len) % LAST_TRACES_LEN;
     i64 current_line_pos = this->curptr - &this->entries[cur_entry][0];
@@ -277,7 +277,7 @@ void LT_seek_in_line(struct last_traces_t* this, u32 where)
     *this->curptr = 0;
 }
 
-void LT_dump_to_dbg(struct last_traces_t* this)
+void LT_dump_to_dbg(last_traces_t* this)
 {
     u32 old_dbg = dbg.trace_on;
     dbg.trace_on = 1;

@@ -12,7 +12,7 @@
 #define DEFAULT_WAITSTATES 1
 
 
-void PS1_bus_init(struct PS1 *this)
+void PS1_bus_init(PS1 *this)
 {
     this->dma.control = 0x7654321;
     for (u32 i = 0; i < 7; i++) {
@@ -23,7 +23,7 @@ void PS1_bus_init(struct PS1 *this)
     }
 }
 
-void PS1_bus_reset(struct PS1 *this)
+void PS1_bus_reset(PS1 *this)
 {
     this->io.cached_isolated = 0;
 }
@@ -32,7 +32,7 @@ static const u32 alignmask[5] = { 0, 0xFFFFFFFF, 0xFFFFFFFE, 0, 0xFFFFFFFC };
 
 u32 PS1_mainbus_read(void *ptr, u32 addr, u32 sz, u32 has_effect)
 {
-    struct PS1* this = (struct PS1*)ptr;
+    struct PS1* this = (PS1*)ptr;
     this->clock.waitstates += DEFAULT_WAITSTATES;
 
     addr = deKSEG(addr) & alignmask[sz];
@@ -110,12 +110,12 @@ u32 PS1_mainbus_read(void *ptr, u32 addr, u32 sz, u32 has_effect)
 
 void PS1_mainbus_write(void *ptr, u32 addr, u32 sz, u32 val)
 {
-    struct PS1* this = (struct PS1*)ptr;
+    struct PS1* this = (PS1*)ptr;
     this->clock.waitstates += DEFAULT_WAITSTATES;
     if (this->mem.cache_isolated) return;
     addr = deKSEG(addr) & alignmask[sz];
     /*if (addr == 0) {
-        printf("\nWRITE %08x:%08x ON cycle %lld", addr, val, ((struct PS1 *)ptr)->clock.master_cycle_count);
+        printf("\nWRITE %08x:%08x ON cycle %lld", addr, val, ((PS1 *)ptr)->clock.master_cycle_count);
         dbg_break("GHAHA", 0);
     }*/
     if ((addr < 0x00800000) && !this->mem.cache_isolated) {
@@ -208,17 +208,17 @@ void PS1_mainbus_write(void *ptr, u32 addr, u32 sz, u32 val)
 
 u32 PS1_mainbus_fetchins(void *ptr, u32 addr, u32 sz)
 {
-    struct PS1 *this = (struct PS1 *)ptr;
+    struct PS1 *this = (PS1 *)ptr;
     return PS1_mainbus_read(ptr, addr, sz, 1);
 }
 
-void PS1_set_irq(struct PS1 *this, enum PS1_IRQ from, u32 level)
+void PS1_set_irq(PS1 *this, enum PS1_IRQ from, u32 level)
 {
     IRQ_multiplexer_b_set_level(&this->IRQ_multiplexer, from, level);
     R3000_update_I_STAT(&this->cpu);
 }
 
-u64 PS1_clock_current(struct PS1 *this)
+u64 PS1_clock_current(PS1 *this)
 {
     return this->clock.master_cycle_count + this->clock.waitstates;
 }

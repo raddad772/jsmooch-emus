@@ -27,11 +27,11 @@ struct IRQ_multiplexer_b {
     } irqs[MAX_IRQS_MULTIPLEXED];
 };
 
-void IRQ_multiplexer_b_init(struct IRQ_multiplexer_b *, u32 num_IRQs);
-void IRQ_multiplexer_b_set_level(struct IRQ_multiplexer_b *this, u32 num, u32 new_level);
-void IRQ_multiplexer_b_reset(struct IRQ_multiplexer_b *);
-void IRQ_multiplexer_b_mask(struct IRQ_multiplexer_b *, u64 val);
-void IRQ_multiplexer_b_setup_irq(struct IRQ_multiplexer_b *, u32 num, const char *name, enum IRQ_multiplexer_b_kind kind);
+void IRQ_multiplexer_b_init(IRQ_multiplexer_b *, u32 num_IRQs);
+void IRQ_multiplexer_b_set_level(IRQ_multiplexer_b *this, u32 num, u32 new_level);
+void IRQ_multiplexer_b_reset(IRQ_multiplexer_b *);
+void IRQ_multiplexer_b_mask(IRQ_multiplexer_b *, u64 val);
+void IRQ_multiplexer_b_setup_irq(IRQ_multiplexer_b *, u32 num, const char *name, enum IRQ_multiplexer_b_kind kind);
 
 #endif //JSMOOCH_EMUS_BETTER_IRQ_MULTIPLEXER_H
 

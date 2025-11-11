@@ -23,7 +23,7 @@
 
 static const u32 maskalign[5] = {0, 0xFFFFFFFF, 0xFFFFFFFE, 0, 0xFFFFFFFC};
 
-void GBA_PPU_init(struct GBA *this)
+void GBA_PPU_init(GBA *this)
 {
     memset(&this->ppu, 0, sizeof(this->ppu));
     this->ppu.mosaic.bg.hsize = this->ppu.mosaic.bg.vsize = 1;
@@ -32,12 +32,12 @@ void GBA_PPU_init(struct GBA *this)
     this->ppu.bg[3].pa = 1 << 8; this->ppu.bg[3].pd = 1 << 8;
 }
 
-void GBA_PPU_delete(struct GBA *this)
+void GBA_PPU_delete(GBA *this)
 {
 
 }
 
-void GBA_PPU_reset(struct GBA *this)
+void GBA_PPU_reset(GBA *this)
 {
     this->ppu.mosaic.bg.hsize = this->ppu.mosaic.bg.vsize = 1;
     this->ppu.mosaic.obj.hsize = this->ppu.mosaic.obj.vsize = 1;
@@ -48,7 +48,7 @@ void GBA_PPU_reset(struct GBA *this)
 static void vblank(void *ptr, u64 val, u64 clock, u32 jitter)
 {
     //pprint_palette_ram(this);
-    struct GBA *this = (struct GBA *)ptr;
+    struct GBA *this = (GBA *)ptr;
     this->clock.ppu.vblank_active = val;
     if (val) {
         GBA_check_dma_at_vblank(this);
@@ -99,7 +99,7 @@ static u32 se_index_fast(u32 tx, u32 ty, u32 bgcnt) {
     return n;
 }
 
-static void get_affine_bg_pixel(struct GBA *this, u32 bgnum, GBA_PPU_bg *bg, i32 px, i32 py, GBA_PX *opx)
+static void get_affine_bg_pixel(GBA *this, u32 bgnum, GBA_PPU_bg *bg, i32 px, i32 py, GBA_PX *opx)
 {
     // Now px and py represent a number inside 0...hpixels and 0...vpixels
     u32 block_x = px >> 3;
@@ -128,7 +128,7 @@ static void get_affine_bg_pixel(struct GBA *this, u32 bgnum, GBA_PPU_bg *bg, i32
 }
 
 // get color from (px,py)
-static void get_affine_sprite_pixel(struct GBA *this, u32 mode, i32 px, i32 py, u32 tile_num, u32 htiles, u32 vtiles, u32 bpp8, u32 palette, u32 priority, u32 obj_mapping_1d, u32 dsize, i32 screen_x, u32 blended, GBA_PPU_window *w)
+static void get_affine_sprite_pixel(GBA *this, u32 mode, i32 px, i32 py, u32 tile_num, u32 htiles, u32 vtiles, u32 bpp8, u32 palette, u32 priority, u32 obj_mapping_1d, u32 dsize, i32 screen_x, u32 blended, GBA_PPU_window *w)
 {
     i32 hpixels = htiles * 8;
     i32 vpixels = vtiles * 8;
@@ -186,7 +186,7 @@ static void get_affine_sprite_pixel(struct GBA *this, u32 mode, i32 px, i32 py, 
     }
 }
 
-static u32 get_sprite_tile_addr(struct GBA *this, u32 tile_num, u32 htiles, u32 block_y, u32 line_in_tile, u32 bpp8, u32 d1)
+static u32 get_sprite_tile_addr(GBA *this, u32 tile_num, u32 htiles, u32 block_y, u32 line_in_tile, u32 bpp8, u32 d1)
 {
     if (this->ppu.io.obj_mapping_1d) {
         tile_num += ((htiles << bpp8) * block_y);
@@ -207,7 +207,7 @@ static u32 get_sprite_tile_addr(struct GBA *this, u32 tile_num, u32 htiles, u32 
     return tile_line_addr;
 }
 
-static void draw_sprite_affine(struct GBA *this, u16 *ptr, GBA_PPU_window *w, u32 num)
+static void draw_sprite_affine(GBA *this, u16 *ptr, GBA_PPU_window *w, u32 num)
 {
     this->ppu.obj.drawing_cycles -= 1;
     if (this->ppu.obj.drawing_cycles < 1) return;
@@ -271,7 +271,7 @@ static void draw_sprite_affine(struct GBA *this, u16 *ptr, GBA_PPU_window *w, u3
     }
 }
 
-static void output_sprite_8bpp(struct GBA *this, u8 *tptr, u32 mode, i32 screen_x, u32 priority, u32 hflip, u32 mosaic, GBA_PPU_window *w) {
+static void output_sprite_8bpp(GBA *this, u8 *tptr, u32 mode, i32 screen_x, u32 priority, u32 hflip, u32 mosaic, GBA_PPU_window *w) {
     for (i32 tile_x = 0; tile_x < 8; tile_x++) {
         i32 sx;
         if (hflip) sx = (7 - tile_x) + screen_x;
@@ -304,7 +304,7 @@ static void output_sprite_8bpp(struct GBA *this, u8 *tptr, u32 mode, i32 screen_
 }
 
 
-static void output_sprite_4bpp(struct GBA *this, u8 *tptr, u32 mode, i32 screen_x, u32 priority, u32 hflip, u32 palette, u32 mosaic, GBA_PPU_window *w) {
+static void output_sprite_4bpp(GBA *this, u8 *tptr, u32 mode, i32 screen_x, u32 priority, u32 hflip, u32 palette, u32 mosaic, GBA_PPU_window *w) {
     for (i32 tile_x = 0; tile_x < 4; tile_x++) {
         i32 sx;
         if (hflip) sx = (7 - (tile_x * 2)) + screen_x;
@@ -343,7 +343,7 @@ static void output_sprite_4bpp(struct GBA *this, u8 *tptr, u32 mode, i32 screen_
     }
 }
 
-static void draw_sprite_normal(struct GBA *this, u16 *ptr, GBA_PPU_window *w, u32 num)
+static void draw_sprite_normal(GBA *this, u16 *ptr, GBA_PPU_window *w, u32 num)
 {
     // 1 cycle to evaluate and 1 cycle per pixel
     this->ppu.obj.drawing_cycles -= 1;
@@ -409,7 +409,7 @@ static void draw_sprite_normal(struct GBA *this, u16 *ptr, GBA_PPU_window *w, u3
 }
 
 
-static void draw_obj_line(struct GBA *this)
+static void draw_obj_line(GBA *this)
 {
     this->ppu.obj.drawing_cycles = this->ppu.io.hblank_free ? 954 : 1210;
 
@@ -430,7 +430,7 @@ static void draw_obj_line(struct GBA *this)
     }
 }
 
-static void fetch_bg_slice(struct GBA *this, GBA_PPU_bg *bg, u32 bgnum, u32 block_x, u32 vpos, GBA_PX px[8], u32 screen_x)
+static void fetch_bg_slice(GBA *this, GBA_PPU_bg *bg, u32 bgnum, u32 block_x, u32 vpos, GBA_PX px[8], u32 screen_x)
 {
     u32 block_y = vpos >> 3;
     u32 screenblock_addr = bg->screen_base_block + (se_index_fast(block_x, block_y, bg->screen_size) << 1);
@@ -493,7 +493,7 @@ static void fetch_bg_slice(struct GBA *this, GBA_PPU_bg *bg, u32 bgnum, u32 bloc
     }
 }
 
-static void apply_mosaic(struct GBA *this)
+static void apply_mosaic(GBA *this)
 {
     // This function updates vertical mosaics, and applies horizontal.
     struct GBA_PPU_bg *bg;
@@ -552,7 +552,7 @@ static void apply_mosaic(struct GBA *this)
     }
 }
 
-static void calculate_windows_vflag(struct GBA *this)
+static void calculate_windows_vflag(GBA *this)
 {
     for (u32 wn = 0; wn < 2; wn++) {
         struct GBA_PPU_window *w = &this->ppu.window[wn];
@@ -561,7 +561,7 @@ static void calculate_windows_vflag(struct GBA *this)
     }
 }
 
-static void calculate_windows(struct GBA *this, u32 in_vblank)
+static void calculate_windows(GBA *this, u32 in_vblank)
 {
     //if (!force && !this->ppu.window[0].enable && !this->ppu.window[1].enable && !this->ppu.window[GBA_WINOBJ].enable) return;
 
@@ -606,7 +606,7 @@ static void calculate_windows(struct GBA *this, u32 in_vblank)
     }
 }
 
-static struct GBA_PPU_window *get_active_window(struct GBA *this, u32 x)
+static struct GBA_PPU_window *get_active_window(GBA *this, u32 x)
 {
     struct GBA_PPU_window *active_window = NULL;
     if (this->ppu.window[GBA_WIN0].enable || this->ppu.window[GBA_WIN1].enable || this->ppu.window[GBA_WINOBJ].enable) {
@@ -625,7 +625,7 @@ static struct GBA_PPU_window *get_active_window(struct GBA *this, u32 x)
 #define GBACTIVE_BG4 4
 #define GBACTIVE_SFX 5
 
-static void affine_line_start(struct GBA *this, GBA_PPU_bg *bg, i32 *fx, i32 *fy)
+static void affine_line_start(GBA *this, GBA_PPU_bg *bg, i32 *fx, i32 *fy)
 {
     if (!bg->enable) {
         if (bg->mosaic_y != bg->last_y_rendered) {
@@ -639,7 +639,7 @@ static void affine_line_start(struct GBA *this, GBA_PPU_bg *bg, i32 *fx, i32 *fy
     *fy = bg->y_lerp;
 }
 
-static void affine_line_end(struct GBA *this, GBA_PPU_bg *bg)
+static void affine_line_end(GBA *this, GBA_PPU_bg *bg)
 {
     if (bg->mosaic_y != bg->last_y_rendered) {
         bg->x_lerp += bg->pb * this->ppu.mosaic.bg.vsize;
@@ -648,7 +648,7 @@ static void affine_line_end(struct GBA *this, GBA_PPU_bg *bg)
     }
 }
 
-static void draw_bg_line_affine(struct GBA *this, u32 bgnum)
+static void draw_bg_line_affine(GBA *this, u32 bgnum)
 {
     struct GBA_PPU_bg *bg = &this->ppu.bg[bgnum];
     memset(bg->line, 0, sizeof(bg->line));
@@ -680,7 +680,7 @@ static void draw_bg_line_affine(struct GBA *this, u32 bgnum)
     affine_line_end(this, bg);
 }
 
-static void draw_bg_line_normal(struct GBA *this, u32 bgnum)
+static void draw_bg_line_normal(GBA *this, u32 bgnum)
 {
     struct GBA_PPU_bg *bg = &this->ppu.bg[bgnum];
     memset(bg->line, 0, sizeof(bg->line));
@@ -721,7 +721,7 @@ static void draw_bg_line_normal(struct GBA *this, u32 bgnum)
     }
 }
 
-static void find_targets_and_priorities(struct GBA *this, u32 bg_enables[6], GBA_PX *layers[6], u32 *layer_a_out, u32 *layer_b_out, i32 x, u32 *actives)
+static void find_targets_and_priorities(GBA *this, u32 bg_enables[6], GBA_PX *layers[6], u32 *layer_a_out, u32 *layer_b_out, i32 x, u32 *actives)
 {
     u32 laout = 5;
     u32 lbout = 5;
@@ -739,7 +739,7 @@ static void find_targets_and_priorities(struct GBA *this, u32 bg_enables[6], GBA
     *layer_b_out = lbout;
 }
 
-static void output_pixel(struct GBA *this, u32 x, u32 obj_enable, u32 bg_enables[4], u16 *line_output) {
+static void output_pixel(GBA *this, u32 x, u32 obj_enable, u32 bg_enables[4], u16 *line_output) {
     // Find which window applies to us.
     u32 default_active[6] = {1, 1, 1, 1, 1, 1}; // Default to active if no window.
 
@@ -800,7 +800,7 @@ static void output_pixel(struct GBA *this, u32 x, u32 obj_enable, u32 bg_enables
     line_output[x] = output_color;
 }
 
-static void draw_line0(struct GBA *this, u16 *line_output)
+static void draw_line0(GBA *this, u16 *line_output)
 {
     draw_obj_line(this);
     draw_bg_line_normal(this, 0);
@@ -815,7 +815,7 @@ static void draw_line0(struct GBA *this, u16 *line_output)
     }
 }
 
-static void draw_line1(struct GBA *this, u16 *line_output)
+static void draw_line1(GBA *this, u16 *line_output)
 {
     draw_obj_line(this);
     draw_bg_line_normal(this, 0);
@@ -831,7 +831,7 @@ static void draw_line1(struct GBA *this, u16 *line_output)
     }
 }
 
-static void draw_line2(struct GBA *this, u16 *line_output)
+static void draw_line2(GBA *this, u16 *line_output)
 {
     draw_obj_line(this);
     memset(&this->ppu.bg[0].line, 0, sizeof(this->ppu.bg[0].line));
@@ -846,7 +846,7 @@ static void draw_line2(struct GBA *this, u16 *line_output)
     }
 }
 
-static void draw_bg_line3(struct GBA *this)
+static void draw_bg_line3(GBA *this)
 {
     struct GBA_PPU_bg *bg = &this->ppu.bg[2];
     memset(bg->line, 0, sizeof(bg->line));
@@ -870,7 +870,7 @@ static void draw_bg_line3(struct GBA *this)
     affine_line_end(this, bg);
 }
 
-static void draw_bg_line4(struct GBA *this)
+static void draw_bg_line4(GBA *this)
 {
     struct GBA_PPU_bg *bg = &this->ppu.bg[2];
     memset(bg->line, 0, sizeof(bg->line));
@@ -903,7 +903,7 @@ static void draw_bg_line4(struct GBA *this)
     affine_line_end(this, bg);
 }
 
-static void draw_bg_line5(struct GBA *this)
+static void draw_bg_line5(GBA *this)
 {
     struct GBA_PPU_bg *bg = &this->ppu.bg[2];
     memset(bg->line, 0, sizeof(bg->line));
@@ -931,7 +931,7 @@ static void draw_bg_line5(struct GBA *this)
     affine_line_end(this, bg);
 }
 
-static void draw_line3(struct GBA *this, u16 *line_output)
+static void draw_line3(GBA *this, u16 *line_output)
 {
     draw_obj_line(this);
     memset(&this->ppu.bg[0].line, 0, sizeof(this->ppu.bg[0].line));
@@ -947,7 +947,7 @@ static void draw_line3(struct GBA *this, u16 *line_output)
     }
 }
 
-static void draw_line4(struct GBA *this, u16 *line_output)
+static void draw_line4(GBA *this, u16 *line_output)
 {
     draw_obj_line(this);
     memset(&this->ppu.bg[0].line, 0, sizeof(this->ppu.bg[0].line));
@@ -963,7 +963,7 @@ static void draw_line4(struct GBA *this, u16 *line_output)
     }
 }
 
-static void draw_line5(struct GBA *this, u16 *line_output)
+static void draw_line5(GBA *this, u16 *line_output)
 {
     draw_obj_line(this);
     memset(&this->ppu.bg[0].line, 0, sizeof(this->ppu.bg[0].line));
@@ -979,7 +979,7 @@ static void draw_line5(struct GBA *this, u16 *line_output)
     }
 }
 
-static void process_button_IRQ(struct GBA *this)
+static void process_button_IRQ(GBA *this)
 {
     if (this->io.button_irq.enable) {
         u32 bits = GBA_get_controller_state(this->controller.pio);
@@ -1008,7 +1008,7 @@ static void process_button_IRQ(struct GBA *this)
 
 static void hblank(void *ptr, u64 key, u64 clock, u32 jitter)
 {
-    struct GBA *this = (struct GBA *)ptr;
+    struct GBA *this = (GBA *)ptr;
     this->clock.ppu.hblank_active = key;
 
     if (key == 1) { // mid-scanline
@@ -1131,7 +1131,7 @@ static void hblank(void *ptr, u64 key, u64 clock, u32 jitter)
 
 void GBA_PPU_schedule_frame(void *ptr, u64 key, u64 clock, u32 jitter)
 {
-    struct GBA *this = (struct GBA *)ptr;
+    struct GBA *this = (GBA *)ptr;
     i64 cur_clock = clock - jitter;
     i64 start_clock = cur_clock;
     for (u32 line = 0; line < 228; line++) {
@@ -1172,20 +1172,20 @@ void GBA_PPU_schedule_frame(void *ptr, u64 key, u64 clock, u32 jitter)
 }
 
 
-static u32 GBA_PPU_read_invalid(struct GBA *this, u32 addr, u32 sz, u32 access, u32 has_effect)
+static u32 GBA_PPU_read_invalid(GBA *this, u32 addr, u32 sz, u32 access, u32 has_effect)
 {
     printf("\nREAD UNKNOWN PPU ADDR:%08x sz:%d", addr, sz);
     return GBA_open_bus_byte(this, addr);
 }
 
-static void GBA_PPU_write_invalid(struct GBA *this, u32 addr, u32 sz, u32 access, u32 val)
+static void GBA_PPU_write_invalid(GBA *this, u32 addr, u32 sz, u32 access, u32 val)
 {
     printf("\nWRITE UNKNOWN PPU ADDR:%08x sz:%d DATA:%08x", addr, sz, val);
     //dbg.var++;
     //if (dbg.var > 5) dbg_break("too many ppu write", this->clock.master_cycle_count);
 }
 
-u32 GBA_PPU_mainbus_read_palette(struct GBA *this, u32 addr, u32 sz, u32 access, u32 has_effect)
+u32 GBA_PPU_mainbus_read_palette(GBA *this, u32 addr, u32 sz, u32 access, u32 has_effect)
 {
     addr &= maskalign[sz];
 
@@ -1199,7 +1199,7 @@ u32 GBA_PPU_mainbus_read_palette(struct GBA *this, u32 addr, u32 sz, u32 access,
     //return GBA_PPU_read_invalid(this, addr, sz, access, has_effect);
 }
 
-u32 GBA_PPU_mainbus_read_VRAM(struct GBA *this, u32 addr, u32 sz, u32 access, u32 has_effect)
+u32 GBA_PPU_mainbus_read_VRAM(GBA *this, u32 addr, u32 sz, u32 access, u32 has_effect)
 {
     addr &= maskalign[sz];
     this->waitstates.current_transaction += (sz == 4) ? 2 : 1;
@@ -1210,7 +1210,7 @@ u32 GBA_PPU_mainbus_read_VRAM(struct GBA *this, u32 addr, u32 sz, u32 access, u3
         return cR[sz](this->ppu.VRAM, addr - 0x8000);
 }
 
-u32 GBA_PPU_mainbus_read_OAM(struct GBA *this, u32 addr, u32 sz, u32 access, u32 has_effect) {
+u32 GBA_PPU_mainbus_read_OAM(GBA *this, u32 addr, u32 sz, u32 access, u32 has_effect) {
     addr &= maskalign[sz];
     this->waitstates.current_transaction++;
     //if (addr < 0x07000400)
@@ -1219,7 +1219,7 @@ u32 GBA_PPU_mainbus_read_OAM(struct GBA *this, u32 addr, u32 sz, u32 access, u32
     //return GBA_PPU_read_invalid(this, addr, sz, access, has_effect);
 }
 
-void GBA_PPU_mainbus_write_palette(struct GBA *this, u32 addr, u32 sz, u32 access, u32 val)
+void GBA_PPU_mainbus_write_palette(GBA *this, u32 addr, u32 sz, u32 access, u32 val)
 {
     this->waitstates.current_transaction += (sz == 4) ? 2 : 1;
     addr &= maskalign[sz];
@@ -1229,7 +1229,7 @@ void GBA_PPU_mainbus_write_palette(struct GBA *this, u32 addr, u32 sz, u32 acces
     return cW[sz](this->ppu.palette_RAM, addr & 0x3FF, val);
 }
 
-void GBA_PPU_mainbus_write_VRAM(struct GBA *this, u32 addr, u32 sz, u32 access, u32 val)
+void GBA_PPU_mainbus_write_VRAM(GBA *this, u32 addr, u32 sz, u32 access, u32 val)
 {
     DBG_EVENT(DBG_GBA_EVENT_WRITE_VRAM);
     addr &= maskalign[sz];
@@ -1264,7 +1264,7 @@ void GBA_PPU_mainbus_write_VRAM(struct GBA *this, u32 addr, u32 sz, u32 access, 
     GBA_PPU_write_invalid(this, addr, sz, access, val);
 }
 
-void GBA_PPU_mainbus_write_OAM(struct GBA *this, u32 addr, u32 sz, u32 access, u32 val)
+void GBA_PPU_mainbus_write_OAM(GBA *this, u32 addr, u32 sz, u32 access, u32 val)
 {
     this->waitstates.current_transaction++;
     addr &= maskalign[sz];
@@ -1293,7 +1293,7 @@ void GBA_PPU_mainbus_write_OAM(struct GBA *this, u32 addr, u32 sz, u32 access, u
 #define BLDALPHA 0x04000052
 #define BLDY 0x04000054
 
-u32 GBA_PPU_mainbus_read_IO(struct GBA *this, u32 addr, u32 sz, u32 access, u32 has_effect)
+u32 GBA_PPU_mainbus_read_IO(GBA *this, u32 addr, u32 sz, u32 access, u32 has_effect)
 {
     u32 v = 0;
     addr &= maskalign[sz];
@@ -1488,7 +1488,7 @@ u32 GBA_PPU_mainbus_read_IO(struct GBA *this, u32 addr, u32 sz, u32 access, u32 
     return GBA_PPU_read_invalid(this, addr, sz, access, has_effect);
 }
 
-static void calc_screen_size(struct GBA *this, u32 num, u32 mode)
+static void calc_screen_size(GBA *this, u32 num, u32 mode)
 {
     if (mode >= 3) return;
     struct GBA_PPU_bg *bg = &this->ppu.bg[num];
@@ -1516,7 +1516,7 @@ static void calc_screen_size(struct GBA *this, u32 num, u32 mode)
     bg->vpixels_mask = bg->vpixels - 1;
 }
 
-static void update_bg_x(struct GBA *this, u32 bgnum, u32 which, u32 val)
+static void update_bg_x(GBA *this, u32 bgnum, u32 which, u32 val)
 {
     i32 v = this->ppu.bg[bgnum].x & 0x0FFFFFFF;
     val &= 0xFF;
@@ -1532,7 +1532,7 @@ static void update_bg_x(struct GBA *this, u32 bgnum, u32 which, u32 val)
     //printf("\nline:%d X%d update:%08x", this->clock.ppu.y, bgnum, v);
 }
 
-static void update_bg_y(struct GBA *this, u32 bgnum, u32 which, u32 val)
+static void update_bg_y(GBA *this, u32 bgnum, u32 which, u32 val)
 {
     u32 v = this->ppu.bg[bgnum].y & 0x0FFFFFFF;
     val &= 0xFF;
@@ -1548,7 +1548,7 @@ static void update_bg_y(struct GBA *this, u32 bgnum, u32 which, u32 val)
     //printf("\nline:%d Y%d update:%08x", this->clock.ppu.y, bgnum, v);
 }
 
-void GBA_PPU_mainbus_write_IO(struct GBA *this, u32 addr, u32 sz, u32 access, u32 val) {
+void GBA_PPU_mainbus_write_IO(GBA *this, u32 addr, u32 sz, u32 access, u32 val) {
     addr &= maskalign[sz];
     struct GBA_PPU *ppu = &this->ppu;
     if ((addr >= 0x04000020) && (addr < 0x04000040)) {

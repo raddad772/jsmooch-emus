@@ -41,11 +41,11 @@ struct generic_floppy {
     } geometry;
 };
 
-void generic_floppy_init(struct generic_floppy *);
-void generic_floppy_delete(struct generic_floppy *);
-void generic_floppy_track_init(struct generic_floppy_track *this);
-void generic_floppy_sector_init(struct generic_floppy_sector *);
-void generic_floppy_sector_delete(struct generic_floppy_sector *);
+void generic_floppy_init(generic_floppy *);
+void generic_floppy_delete(generic_floppy *);
+void generic_floppy_track_init(generic_floppy_track *this);
+void generic_floppy_sector_init(generic_floppy_sector *);
+void generic_floppy_sector_delete(generic_floppy_sector *);
 
 #ifdef __cplusplus
 }

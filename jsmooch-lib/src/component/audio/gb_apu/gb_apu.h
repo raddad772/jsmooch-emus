@@ -61,11 +61,11 @@ struct GB_APU {
     } clocks;
 };
 
-void GB_APU_init(struct GB_APU* this);
-void GB_APU_write_IO(struct GB_APU* this, u32 addr, u8 val);
-u8 GB_APU_read_IO(struct GB_APU* this, u32 addr, u8 old_val, u32 has_effect);
-void GB_APU_cycle(struct GB_APU* this);
-float GB_APU_mix_sample(struct GB_APU* this, u32 is_debug);
-float GB_APU_sample_channel(struct GB_APU* this, int cnum);
+void GB_APU_init(GB_APU* this);
+void GB_APU_write_IO(GB_APU* this, u32 addr, u8 val);
+u8 GB_APU_read_IO(GB_APU* this, u32 addr, u8 old_val, u32 has_effect);
+void GB_APU_cycle(GB_APU* this);
+float GB_APU_mix_sample(GB_APU* this, u32 is_debug);
+float GB_APU_sample_channel(GB_APU* this, int cnum);
 
 #endif //JSMOOCH_EMUS_GB_APU_H

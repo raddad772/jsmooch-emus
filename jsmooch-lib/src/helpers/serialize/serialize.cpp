@@ -17,12 +17,12 @@ void serialized_state::new_section(const char *friendly_name, int kind, int vers
     snprintf(sec.friendly_name, 50, "%s", friendly_name);
 }
 
-/*static inline void add_sz(struct serialized_state *this, u64 howmuch)
+/*static inline void add_sz(serialized_state *this, u64 howmuch)
 {
     cvec_alloc_atleast(&buf, buf.len+howmuch);
 }*/
 
-void Sload(struct serialized_state &th, void *ptr, u64 howmuch)
+void Sload(serialized_state &th, void *ptr, u64 howmuch)
 {
     if (howmuch == 0) return;
     memcpy(ptr, &th.buf[0] + th.iter.offset, howmuch);
@@ -95,7 +95,7 @@ int serialized_state::read_from_file(FILE *f, size_t file_size)
     return 0;
 }
 
-void Sadd(struct serialized_state &th, const void *ptr, u64 howmuch)
+void Sadd(serialized_state &th, const void *ptr, u64 howmuch)
 {
     if (howmuch == 0) return;
     u64 p = th.buf.size();

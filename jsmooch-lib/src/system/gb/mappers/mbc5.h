@@ -34,12 +34,12 @@ struct GB_mapper_MBC5 {
     u32 cartRAM_offset;
 };
 
-void GB_mapper_MBC5_new(struct GB_mapper *parent, GB_clock *clock, GB_bus *bus);
-void GB_mapper_MBC5_delete(struct GB_mapper *parent);
-void GBMBC5_reset(struct GB_mapper* parent);
-void GBMBC5_set_cart(struct GB_mapper* parent, GB_cart* cart);
+void GB_mapper_MBC5_new(GB_mapper *parent, GB_clock *clock, GB_bus *bus);
+void GB_mapper_MBC5_delete(GB_mapper *parent);
+void GBMBC5_reset(GB_mapper* parent);
+void GBMBC5_set_cart(GB_mapper* parent, GB_cart* cart);
 
-u32 GBMBC5_CPU_read(struct GB_mapper* parent, u32 addr, u32 val, u32 has_effect);
-void GBMBC5_CPU_write(struct GB_mapper* parent, u32 addr, u32 val);
+u32 GBMBC5_CPU_read(GB_mapper* parent, u32 addr, u32 val, u32 has_effect);
+void GBMBC5_CPU_write(GB_mapper* parent, u32 addr, u32 val);
 
 #endif //JSMOOCH_EMUS_MBC5_H

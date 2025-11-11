@@ -20,12 +20,12 @@
 
 static const u32 maskalign[5] = {0, 0xFFFFFFFF, 0xFFFFFFFE, 0, 0xFFFFFFFC};
 
-static u32 fetch_ins(struct ARM7TDMI *this, u32 sz) {
+static u32 fetch_ins(ARM7TDMI *this, u32 sz) {
     u32 r = ARM7TDMI_fetch_ins(this, this->regs.PC, sz, this->pipeline.access);
     return r;
 }
 
-static void do_IRQ(struct ARM7TDMI* this)
+static void do_IRQ(ARM7TDMI* this)
 {
     if (this->regs.CPSR.T) {
         fetch_ins(this, 2);
@@ -56,20 +56,20 @@ static void do_IRQ(struct ARM7TDMI* this)
 
 static void sch_check_irq(void *ptr, u64 key, u64 timecode, u32 jitter)
 {
-    struct ARM7TDMI *this = (struct ARM7TDMI *)ptr;
+    struct ARM7TDMI *this = (ARM7TDMI *)ptr;
     if (this->regs.IRQ_line && !this->regs.CPSR.I) {
         do_IRQ(this);
     }
 }
 
-void ARM7TDMI_schedule_IRQ_check(struct ARM7TDMI *this)
+void ARM7TDMI_schedule_IRQ_check(ARM7TDMI *this)
 {
     if (this->scheduler && !this->sch_irq_sch) {
         scheduler_add_next(this->scheduler, 0, this, &sch_check_irq, NULL);
     }
 }
 
-void ARM7TDMI_init(struct ARM7TDMI *this, u64 *clock, u64 *waitstates, scheduler_t *scheduler)
+void ARM7TDMI_init(ARM7TDMI *this, u64 *clock, u64 *waitstates, scheduler_t *scheduler)
 {
     //dbg.trace_on = 1;
     memset(this, 0, sizeof(*this));
@@ -90,12 +90,12 @@ void ARM7TDMI_init(struct ARM7TDMI *this, u64 *clock, u64 *waitstates, scheduler
     DBG_TRACE_VIEW_INIT;
 }
 
-void ARM7TDMI_delete(struct ARM7TDMI *this)
+void ARM7TDMI_delete(ARM7TDMI *this)
 {
 
 }
 
-void ARM7TDMI_reset(struct ARM7TDMI *this)
+void ARM7TDMI_reset(ARM7TDMI *this)
 {
     this->pipeline.flushed = 0;
 
@@ -110,7 +110,7 @@ void ARM7TDMI_reset(struct ARM7TDMI *this)
 
 }
 
-void ARM7TDMI_setup_tracing(struct ARM7TDMI* this, jsm_debug_read_trace *strct, u64 *trace_cycle_pointer, i32 source_id)
+void ARM7TDMI_setup_tracing(ARM7TDMI* this, jsm_debug_read_trace *strct, u64 *trace_cycle_pointer, i32 source_id)
 {
     this->trace.strct.read_trace_m68k = strct->read_trace_m68k;
     this->trace.strct.ptr = strct->ptr;
@@ -120,7 +120,7 @@ void ARM7TDMI_setup_tracing(struct ARM7TDMI* this, jsm_debug_read_trace *strct, 
     this->trace.source_id = source_id;
 }
 
-void ARM7TDMI_disassemble_entry(struct ARM7TDMI *this, disassembly_entry* entry)
+void ARM7TDMI_disassemble_entry(ARM7TDMI *this, disassembly_entry* entry)
 {
     u16 IR = this->trace.strct.read_trace_m68k(this->trace.strct.ptr, entry->addr, 1, 1);
     u16 opcode = IR;
@@ -129,7 +129,7 @@ void ARM7TDMI_disassemble_entry(struct ARM7TDMI *this, disassembly_entry* entry)
     assert(1==0);
 }
 
-static void do_FIQ(struct ARM7TDMI *this)
+static void do_FIQ(ARM7TDMI *this)
 {
     this->regs.SPSR_irq = this->regs.CPSR.u;
     this->regs.CPSR.mode = ARM7_fiq;
@@ -154,7 +154,7 @@ static void do_FIQ(struct ARM7TDMI *this)
 static struct jsm_string arryo;
 static u32 did_yo = 0;
 
-static void bad_trace(struct ARM7TDMI *this, u32 r, u32 sz)
+static void bad_trace(ARM7TDMI *this, u32 r, u32 sz)
 {
     if (!did_yo) {
         jsm_string_init(&arryo, 250);
@@ -171,7 +171,7 @@ static void bad_trace(struct ARM7TDMI *this, u32 r, u32 sz)
 
 }
 
-static int condition_passes(struct ARM7TDMI_regs *this, int which) {
+static int condition_passes(ARM7TDMI_regs *this, int which) {
 #define flag(x) (this->CPSR. x)
     switch(which) {
         case ARM7CC_AL:    return 1;
@@ -198,7 +198,7 @@ static int condition_passes(struct ARM7TDMI_regs *this, int which) {
 }
 
 
-void ARM7TDMI_reload_pipeline(struct ARM7TDMI* this)
+void ARM7TDMI_reload_pipeline(ARM7TDMI* this)
 {
     this->pipeline.flushed = 0;
     if (this->regs.CPSR.T) {
@@ -223,7 +223,7 @@ void ARM7TDMI_reload_pipeline(struct ARM7TDMI* this)
     }
 }
 
-static void print_context(struct ARM7TDMI *this, ARMctxt *ct, jsm_string *out)
+static void print_context(ARM7TDMI *this, ARMctxt *ct, jsm_string *out)
 {
     jsm_string_quickempty(out);
     u32 needs_commaspace = 0;
@@ -238,7 +238,7 @@ static void print_context(struct ARM7TDMI *this, ARMctxt *ct, jsm_string *out)
     }
 }
 
-static void armv4_trace_format(struct ARM7TDMI *this, u32 opcode, u32 addr, u32 T)
+static void armv4_trace_format(ARM7TDMI *this, u32 opcode, u32 addr, u32 T)
 {
 #ifdef TRACE
     struct ARMctxt ct;
@@ -299,7 +299,7 @@ static void armv4_trace_format(struct ARM7TDMI *this, u32 opcode, u32 addr, u32 
 #endif
 }
 
-static void decode_and_exec_thumb(struct ARM7TDMI *this, u32 opcode, u32 opcode_addr)
+static void decode_and_exec_thumb(ARM7TDMI *this, u32 opcode, u32 opcode_addr)
 {
 #ifdef TRACE
     armv4_trace_format(this, opcode, opcode_addr, 1);
@@ -312,7 +312,7 @@ static void decode_and_exec_thumb(struct ARM7TDMI *this, u32 opcode, u32 opcode_
         ARM7TDMI_reload_pipeline(this);
 }
 
-static void decode_and_exec_arm(struct ARM7TDMI *this, u32 opcode, u32 opcode_addr)
+static void decode_and_exec_arm(ARM7TDMI *this, u32 opcode, u32 opcode_addr)
 {
     // bits 27-0 and 7-4
 #ifdef TRACE
@@ -325,12 +325,12 @@ static void decode_and_exec_arm(struct ARM7TDMI *this, u32 opcode, u32 opcode_ad
     this->arm7_ins->exec(this, opcode);
 }
 
-void ARM7TDMI_idle(struct ARM7TDMI*this, u32 num)
+void ARM7TDMI_idle(ARM7TDMI*this, u32 num)
 {
     (*this->waitstates) += num;
 }
 
-void ARM7TDMI_IRQcheck(struct ARM7TDMI *this, u32 do_sched)
+void ARM7TDMI_IRQcheck(ARM7TDMI *this, u32 do_sched)
 {
     if (do_sched) {
         scheduler_add_next(this->scheduler, 0, this, &sch_check_irq, NULL);
@@ -341,7 +341,7 @@ void ARM7TDMI_IRQcheck(struct ARM7TDMI *this, u32 do_sched)
     }
 }
 
-void ARM7TDMI_run_noIRQcheck(struct ARM7TDMI*this)
+void ARM7TDMI_run_noIRQcheck(ARM7TDMI*this)
 {
     u32 opcode = this->pipeline.opcode[0];
     u32 opcode_addr = this->pipeline.addr[0];
@@ -377,13 +377,13 @@ void ARM7TDMI_run_noIRQcheck(struct ARM7TDMI*this)
     }
 }
 
-void ARM7TDMI_flush_pipeline(struct ARM7TDMI *this)
+void ARM7TDMI_flush_pipeline(ARM7TDMI *this)
 {
     //assert(1==2);
     this->pipeline.flushed = 1;
 }
 
-u32 ARM7TDMI_fetch_ins(struct ARM7TDMI *this, u32 addr, u32 sz, u32 access)
+u32 ARM7TDMI_fetch_ins(ARM7TDMI *this, u32 addr, u32 sz, u32 access)
 {
     //addr &= maskalign[sz];
     u32 v = this->fetch_ins(this->fetch_ptr, addr, sz, access);
@@ -392,14 +392,14 @@ u32 ARM7TDMI_fetch_ins(struct ARM7TDMI *this, u32 addr, u32 sz, u32 access)
 
 static const u32 masksz[5] = { 0, 0xFF, 0xFFFF, 0, 0xFFFFFFFF };
 
-u32 ARM7TDMI_read(struct ARM7TDMI *this, u32 addr, u32 sz, u32 access, u32 has_effect)
+u32 ARM7TDMI_read(ARM7TDMI *this, u32 addr, u32 sz, u32 access, u32 has_effect)
 {
     //addr &= maskalign[sz];
     u32 v = this->read(this->read_ptr, addr, sz, access, has_effect) & masksz[sz];
     return v;
 }
 
-void ARM7TDMI_write(struct ARM7TDMI *this, u32 addr, u32 sz, u32 access, u32 val)
+void ARM7TDMI_write(ARM7TDMI *this, u32 addr, u32 sz, u32 access, u32 val)
 {
     //addr &= maskalign[sz];
     this->write(this->write_ptr, addr, sz, access, val);

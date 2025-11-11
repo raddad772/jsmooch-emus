@@ -11,10 +11,12 @@
 #include <cassert>
 #include <cstdarg>
 
+#define DEBUG_IMPL
 #include "debug.h"
+
 #include "user.h"
 
-struct jsm_debug_struct dbg();
+jsm_debug_struct dbg{};
 static u32 init_already = 0;
 
 void dbg_init()
@@ -28,8 +30,8 @@ void dbg_init()
     dbg.first_flush = 1;
     dbg.do_break = false;
     dbg.trace_on = 0;
-    dbg.msg_last_newline = 0;
-    jsm_string_init(&dbg.msg, 5*1024*1024);
+    dbg.msg_last_newline = nullptr;
+    //dbg.msg., 5*1024*1024);
     LT_init(&dbg.last_traces);
     dbg.var = 0;
 }
@@ -40,7 +42,7 @@ void dbg_init()
 
 void dbg_clear_msg()
 {
-    jsm_string_empty(&dbg.msg);
+    dbg.msg.empty();
     dbg.msg_last_newline = dbg.msg.cur;
 }
 
@@ -50,11 +52,11 @@ static char DFT_buf[4096];
 
 #define DFT_file "/Users/Dave/js_sonic3_save.log"
 
-static FILE* DFTf = NULL;
+static FILE* DFTf = nullptr;
 
 void DFT(char *format, ...)
 {
-    if (DFTf == NULL) {
+    if (DFTf == nullptr) {
         DFTf = fopen(DFT_file, "w");
     }
     va_list va;
@@ -70,24 +72,24 @@ void DFT(char *format, ...)
 int dbg_printf(char *format, ...)
 {
     if (!dbg.trace_on) return 0;
-    struct jsm_string*this = &dbg.msg;
+    jsm_string *th = &dbg.msg;
     // do jsm_sprintf, basically, minus one line
-    if (this->ptr == NULL) {
+    if (th->ptr == nullptr) {
         assert(1==0);
         return 0;
     }
     va_list va;
     va_start(va, format);
-    int a = vsnprintf(this->cur, this->allocated_len - (this->cur - this->ptr), format, va);
+    int a = vsnprintf(th->cur, th->allocated_len - (th->cur - th->ptr), format, va);
     va_end(va);
 
     // Scan for newlines
-    while(*(this->cur)!=0) {
-        if (*(this->cur) == '\n')
-            dbg.msg_last_newline = this->cur;
-        this->cur++;
+    while(*(th->cur)!=0) {
+        if (*(th->cur) == '\n')
+            dbg.msg_last_newline = th->cur;
+        th->cur++;
     }
-    if ((this->allocated_len - (this->cur - this->ptr)) < 1000) {
+    if ((th->allocated_len - (th->cur - th->ptr)) < 1000) {
         dbg_flush();
     }
     return a;
@@ -145,10 +147,10 @@ void dbg_flush()
 void dbg_delete()
 {
     dbg_clear_msg();
-    dbg.msg_last_newline = 0;
+    dbg.msg_last_newline = nullptr;
 }
 
-void jsm_copy_read_trace (struct jsm_debug_read_trace *dst, jsm_debug_read_trace *src)
+void jsm_copy_read_trace (jsm_debug_read_trace *dst, jsm_debug_read_trace *src)
 {
     dst->ptr = src->ptr;
     dst->read_trace = src->read_trace;
@@ -228,68 +230,68 @@ void dbg_disable_cpu_trace(enum debug_sources source)
 
 
 // Last Traces, a rolling buffer of the last traces
-void LT_init(struct last_traces_t* this)
+void LT_init(last_traces_t* th)
 {
-    for (u32 i = 0; i < LAST_TRACES_LEN; i++) {
-        memset(this->entries[i], 0, LAST_TRACES_MSG_LEN);
+    for (auto & entrie : th->entries) {
+        memset(entrie, 0, LAST_TRACES_MSG_LEN);
     }
-    this->head = 0;
-    this->len = 0;
-    this->curptr = &this->entries[0][0];
+    th->head = 0;
+    th->len = 0;
+    th->curptr = &th->entries[0][0];
 }
 
-void LT_printf(struct last_traces_t* this, char *format, ...)
+void LT_printf(last_traces_t* th, char *format, ...)
 {
-    u32 cur_entry = (this->head + this->len) % LAST_TRACES_LEN;
-    u32 cur_len = this->curptr - this->entries[cur_entry];
+    u32 cur_entry = (th->head + th->len) % LAST_TRACES_LEN;
+    u32 cur_len = th->curptr - th->entries[cur_entry];
     u32 len_left = LAST_TRACES_MSG_LEN - cur_len;
 
     va_list va;
     va_start(va, format);
 
-    this->curptr += vsnprintf(this->curptr, len_left, format, va);
+    th->curptr += vsnprintf(th->curptr, len_left, format, va);
     va_end(va);
 }
 
-void LT_endline(struct last_traces_t* this)
+void LT_endline(last_traces_t* th)
 {
-    this->len = (this->len + 1);
-    if (this->len == LAST_TRACES_LEN) {
-        this->len--;
-        this->head = (this->head + 1) % LAST_TRACES_LEN;
+    th->len = (th->len + 1);
+    if (th->len == LAST_TRACES_LEN) {
+        th->len--;
+        th->head = (th->head + 1) % LAST_TRACES_LEN;
     }
-    u32 cur_entry = (this->head + this->len) % LAST_TRACES_LEN;
-    memset(&this->entries[cur_entry][0], 0, LAST_TRACES_MSG_LEN);
-    this->curptr = &this->entries[cur_entry][0];
+    u32 cur_entry = (th->head + th->len) % LAST_TRACES_LEN;
+    memset(&th->entries[cur_entry][0], 0, LAST_TRACES_MSG_LEN);
+    th->curptr = &th->entries[cur_entry][0];
 }
 
-void LT_seek_in_line(struct last_traces_t* this, u32 where)
+void LT_seek_in_line(last_traces_t* th, u32 where)
 {
-    u32 cur_entry = (this->head + this->len) % LAST_TRACES_LEN;
-    i64 current_line_pos = this->curptr - &this->entries[cur_entry][0];
+    u32 cur_entry = (th->head + th->len) % LAST_TRACES_LEN;
+    i64 current_line_pos = th->curptr - &th->entries[cur_entry][0];
     i64 number_to_move = (i32)where - current_line_pos;
     while(number_to_move > 0) {
-        *this->curptr = ' ';
-        this->curptr++;
+        *th->curptr = ' ';
+        th->curptr++;
         number_to_move--;
     }
-    *this->curptr = 0;
+    *th->curptr = 0;
 }
 
-void LT_dump_to_dbg(struct last_traces_t* this)
+void LT_dump_to_dbg(last_traces_t* th)
 {
     u32 old_dbg = dbg.trace_on;
     dbg.trace_on = 1;
-    u32 len = this->len;
-    u32 index = this->head;
+    u32 len = th->len;
+    u32 index = th->head;
     printf("\n-------------LAST TRACES");
     while(len > 0) {
-        printf("%s", this->entries[index]);
-        //printf("%s", this->entries[index]);
+        printf("%s", th->entries[index]);
+        //printf("%s", th->entries[index]);
         index = (index + 1) % LAST_TRACES_LEN;
         len--;
     }
 
-    LT_init(this);
+    LT_init(th);
     dbg.trace_on = old_dbg;
 }

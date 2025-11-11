@@ -12,8 +12,8 @@
 #include "ula.h"
 #include "tape_deck.h"
 
-void ZXSpectrum_new(struct jsm_system* system, enum ZXSpectrum_variants variant);
-void ZXSpectrum_delete(struct jsm_system* system);
+void ZXSpectrum_new(jsm_system* system, enum ZXSpectrum_variants variant);
+void ZXSpectrum_delete(jsm_system* system);
 
 struct ZXSpectrum {
     struct ZXSpectrum_ULA ula;
@@ -67,6 +67,6 @@ struct ZXSpectrum {
 
 };
 
-void ZXSpectrum_notify_IRQ(struct ZXSpectrum*, u32 level);
+void ZXSpectrum_notify_IRQ(ZXSpectrum*, u32 level);
 
 #endif //JSMOOCH_EMUS_ZXSPECTRUM_H

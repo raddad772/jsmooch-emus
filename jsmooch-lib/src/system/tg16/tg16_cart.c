@@ -7,23 +7,23 @@
 #include "helpers/physical_io.h"
 #include "tg16_cart.h"
 
-void TG16_cart_init(struct TG16_cart *this)
+void TG16_cart_init(TG16_cart *this)
 {
     memset(this, 0, sizeof(*this));
     buf_init(&this->ROM);
 }
 
-void TG16_cart_delete(struct TG16_cart *this)
+void TG16_cart_delete(TG16_cart *this)
 {
     buf_delete(&this->ROM);
 }
 
-void TG16_cart_reset(struct TG16_cart *this)
+void TG16_cart_reset(TG16_cart *this)
 {
 
 }
 
-void TG16_cart_write(struct TG16_cart *this, u32 addr, u32 val)
+void TG16_cart_write(TG16_cart *this, u32 addr, u32 val)
 {
     // NEUTOPIA!!!
     printf("\nWARN cart write %06x %02x", addr, val);
@@ -33,14 +33,14 @@ void TG16_cart_write(struct TG16_cart *this, u32 addr, u32 val)
     //dbg_break("WHATHO", 0);
 }
 
-u32 TG16_cart_read(struct TG16_cart *this, u32 addr, u32 old)
+u32 TG16_cart_read(TG16_cart *this, u32 addr, u32 old)
 {
     u32 bank = (addr >> 17) & 7;
     u32 inner = addr & 0x1FFFF;
     return this->cart_ptrs[bank][inner];
 }
 
-void TG16_cart_load_ROM_from_RAM(struct TG16_cart *this, void *ptr, u64 sz, physical_io_device *pio)
+void TG16_cart_load_ROM_from_RAM(TG16_cart *this, void *ptr, u64 sz, physical_io_device *pio)
 {
     buf_allocate(&this->ROM, sz);
     memcpy(this->ROM.ptr, ptr, sz);
@@ -81,13 +81,13 @@ void TG16_cart_load_ROM_from_RAM(struct TG16_cart *this, void *ptr, u64 sz, phys
     }
 }
 
-u8 TG16_cart_read_SRAM(struct TG16_cart *this, u32 addr)
+u8 TG16_cart_read_SRAM(TG16_cart *this, u32 addr)
 {
     if (!this->SRAM) return 0;
     return ((u8 *)this->SRAM->data)[addr & 0x1FFF];
 }
 
-void TG16_cart_write_SRAM(struct TG16_cart *this, u32 addr, u8 val)
+void TG16_cart_write_SRAM(TG16_cart *this, u32 addr, u8 val)
 {
     if (this->SRAM) {
         ((u8 *)this->SRAM->data)[addr & 0x1FFF] = val;

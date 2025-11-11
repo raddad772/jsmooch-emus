@@ -12,7 +12,7 @@ static i16 SMSGG_voltable[16] = {
         1298, 1031, 819, 650, 516, 410, 326, 0
 };
 
-void SN76489_reset(struct SN76489* this)
+void SN76489_reset(SN76489* this)
 {
     this->polarity[0] = this->polarity[1] = this->polarity[2] = this->polarity[3] = 1;
     this->vol[0] = this->vol[1] = this->vol[2] = 0x0F;
@@ -25,10 +25,10 @@ void SN76489_reset(struct SN76489* this)
     this->io_reg = 0;
 }
 
-void SN76489_init(struct SN76489* this)
+void SN76489_init(SN76489* this)
 {
     memset(this, 0, sizeof(*this));
-    this->sw[0] = this->sw[1] = this->sw[2] = (struct SN76489_SW) { .counter=0, .freq=0 };
+    this->sw[0] = this->sw[1] = this->sw[2] = (SN76489_SW) { .counter=0, .freq=0 };
     this->io_kind = 0;
     DBG_EVENT_VIEW_INIT;
     SN76489_reset(this);
@@ -38,7 +38,7 @@ void SN76489_init(struct SN76489* this)
     this->ext_enable = 1;
 }
 
-static void SN76489_cycle_squares(struct SN76489* this)
+static void SN76489_cycle_squares(SN76489* this)
 {
     for (u32 i = 0; i < 3; i++) {
         struct SN76489_SW* tone = &this->sw[i];
@@ -57,7 +57,7 @@ static void SN76489_cycle_squares(struct SN76489* this)
     }
 }
 
-static void SN76489_cycle_noise(struct SN76489* this)
+static void SN76489_cycle_noise(SN76489* this)
 {
     this->noise.counter--;
     if (this->noise.counter <= 0) {
@@ -94,12 +94,12 @@ static void SN76489_cycle_noise(struct SN76489* this)
     }
 }
 
-void SN76489_cycle(struct SN76489* this) {
+void SN76489_cycle(SN76489* this) {
     SN76489_cycle_noise(this);
     SN76489_cycle_squares(this);
 }
 
-i16 SN76489_sample_channel(struct SN76489* this, int i)
+i16 SN76489_sample_channel(SN76489* this, int i)
 {
     i16 sample = 0;
     i16 intensity = SMSGG_voltable[this->vol[i]];
@@ -112,7 +112,7 @@ i16 SN76489_sample_channel(struct SN76489* this, int i)
     return sample;
 }
 
-i16 SN76489_mix_sample(struct SN76489* this, u32 for_debug)
+i16 SN76489_mix_sample(SN76489* this, u32 for_debug)
 {
     i16 sample = 0;
     if ((!this->ext_enable) && (!for_debug)) return 0;
@@ -134,7 +134,7 @@ i16 SN76489_mix_sample(struct SN76489* this, u32 for_debug)
     return sample;
 }
 
-void SN76489_write_data(struct SN76489* this, u32 val)
+void SN76489_write_data(SN76489* this, u32 val)
 {
     if (val & 0x80) { // LATCH/DATA byte
         this->io_reg = (val >> 5) & 3;
@@ -168,7 +168,7 @@ void SN76489_write_data(struct SN76489* this, u32 val)
     }
 }
 
-void SN76489_serialize(struct SN76489 *this, serialized_state *state)
+void SN76489_serialize(SN76489 *this, serialized_state *state)
 {
     u32 i;
 #define S(x) Sadd(state, &this-> x, sizeof(this-> x))
@@ -194,7 +194,7 @@ void SN76489_serialize(struct SN76489 *this, serialized_state *state)
 }
 
 #define L(x) Sload(state, &this-> x, sizeof(this-> x))
-void SN76489_deserialize(struct SN76489 *this, serialized_state *state)
+void SN76489_deserialize(SN76489 *this, serialized_state *state)
 {
     u32 i;
     L(io_reg);

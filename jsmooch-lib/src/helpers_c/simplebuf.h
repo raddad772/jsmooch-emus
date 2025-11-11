@@ -17,11 +17,11 @@ struct simplebuf8 {
 };
 
 struct buf;
-void simplebuf8_init(struct simplebuf8*);
-void simplebuf8_delete(struct simplebuf8*);
-void simplebuf8_allocate(struct simplebuf8*, u64 sz);
-void simplebuf8_clear(struct simplebuf8 *);
-void simplebuf8_copy_from_buf(struct simplebuf8 *dest, buf *src);
+void simplebuf8_init(simplebuf8*);
+void simplebuf8_delete(simplebuf8*);
+void simplebuf8_allocate(simplebuf8*, u64 sz);
+void simplebuf8_clear(simplebuf8 *);
+void simplebuf8_copy_from_buf(simplebuf8 *dest, buf *src);
 
 #ifdef __cplusplus
 }

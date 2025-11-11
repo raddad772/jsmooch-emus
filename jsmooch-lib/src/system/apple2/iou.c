@@ -12,23 +12,23 @@
 #include "apple2_internal.h"
 #include "iou.h"
 
-void apple2_IOU_reset(struct apple2* this)
+void apple2_IOU_reset(apple2* this)
 {
     if (!this->iou.display)
-        this->iou.display = (struct JSM_DISPLAY*)cpg(this->iou.display_ptr);
+        this->iou.display = (JSM_DISPLAY*)cpg(this->iou.display_ptr);
 
     this->clock.crt_x = this->clock.crt_y = 0;
     this->clock.frames_since_restart = 0;
     this->iou.flash_counter = 0;
     this->iou.flash = 0;
-    memset(&this->iou.io, 0, sizeof(struct APPLE2IOUIO));
+    memset(&this->iou.io, 0, sizeof(APPLE2IOUIO));
     this->iou.io.VBL = 0;
     this->iou.io.HIRES = this->iou.io.PAGE2 = 0;
 
     // TODO: paddle timers
 }
 
-static void advance_frame(struct apple2* this)
+static void advance_frame(apple2* this)
 {
     this->clock.crt_y = 0;
     this->clock.frames_since_restart++;
@@ -44,7 +44,7 @@ static void advance_frame(struct apple2* this)
     // TODO: flash counter, keyboard auto-repeat,
 }
 
-static void advance_line(struct apple2* this)
+static void advance_line(apple2* this)
 {
     this->clock.crt_x = 0;
     this->clock.crt_y++;
@@ -62,12 +62,12 @@ enum {
     gm_mixed
 };
 
-static void pixels_lores(struct apple2* this)
+static void pixels_lores(apple2* this)
 {
 
 }
 
-static void IOU_pixels(struct apple2* this)
+static void IOU_pixels(apple2* this)
 {
     // output 1-14 pixels depending on video mode
     // 1 pixel in LORES, 7 in HIRES or 40COL, and 14 in DOUBLE HIRES or 80COL
@@ -93,7 +93,7 @@ static void IOU_pixels(struct apple2* this)
     }
 }
 
-void apple2_IOU_cycle(struct apple2* this)
+void apple2_IOU_cycle(apple2* this)
 {
     // for visible lines, 40 CPU cycles = output, 25 = blank (with the last elongated)
 
@@ -123,7 +123,7 @@ void apple2_IOU_cycle(struct apple2* this)
     }
 }
 
-static void keystrobe(struct apple2* this)
+static void keystrobe(apple2* this)
 {
     printf("\nKEYSTROBE!");
 }
@@ -145,7 +145,7 @@ static u32 apple2_keyboard_keymap[51] = {
         JK_EQUALS, JK_COMMA, JK_SLASH_FW, JK_DOT
 };
 
-void apple2_setup_keyboard(struct apple2* this)
+void apple2_setup_keyboard(apple2* this)
 {
     struct physical_io_device *d = cvec_push_back(this->IOs);
     physical_io_device_init(d, HID_KEYBOARD, 0, 0, 1, 1);
@@ -156,7 +156,7 @@ void apple2_setup_keyboard(struct apple2* this)
     d->enabled = 1;
 
     struct JSM_KEYBOARD* kbd = &d->keyboard;
-    memset(kbd, 0, sizeof(struct JSM_KEYBOARD));
+    memset(kbd, 0, sizeof(JSM_KEYBOARD));
     kbd->num_keys = NUMKEYS;
 
     for (u32 i = 0; i < NUMKEYS; i++) {
@@ -173,7 +173,7 @@ static u32 is_matrix_key(enum JKEYS jkey)
 #undef CK
 }
 
-static u32 AKD(struct apple2* this)
+static u32 AKD(apple2* this)
 {
     struct physical_io_device *pio = cpg(this->iou.keyboard_ptr);
     struct JSM_KEYBOARD *kbd = &pio->keyboard;
@@ -186,14 +186,14 @@ static u32 AKD(struct apple2* this)
     return 0;
 }
 
-u8 apple2_read_keyboard(struct apple2* this)
+u8 apple2_read_keyboard(apple2* this)
 {
     // TODO: this
     return 0;
 }
 
 
-void apple2_IOU_access_c0xx(struct apple2* this, u32 addr, u32 has_effect, u32 is_write, u32 *r, u32 *MSB) {
+void apple2_IOU_access_c0xx(apple2* this, u32 addr, u32 has_effect, u32 is_write, u32 *r, u32 *MSB) {
     u32 addr3 = addr & 0xFFF0;
     u32 did_AKD = 5;
     if ((is_write && (addr3 == 0xC010)) || (addr == 0xC010)) {

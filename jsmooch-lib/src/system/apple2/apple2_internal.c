@@ -10,7 +10,7 @@
 #include "iou.h"
 #include "mmu.h"
 
-static void apple2_CPU_cycle(struct apple2* this)
+static void apple2_CPU_cycle(apple2* this)
 {
     M6502_cycle(&this->cpu);
     if (!this->cpu.pins.RW) {
@@ -21,7 +21,7 @@ static void apple2_CPU_cycle(struct apple2* this)
     }
 }
 
-void apple2_reset(struct apple2* this)
+void apple2_reset(apple2* this)
 {
     M6502_reset(&this->cpu);
     this->clock.cpu_divisor = 14;
@@ -32,7 +32,7 @@ void apple2_reset(struct apple2* this)
     apple2_IOU_reset(this);
 }
 
-void apple2_cycle(struct apple2* this)
+void apple2_cycle(apple2* this)
 {
     this->clock.cpu_adder++;
     //this->clock.iou_adder++;
@@ -54,6 +54,6 @@ void apple2_cycle(struct apple2* this)
 
 u32 apple2_CPU_read_trace(void *ptr, u32 addr)
 {
-    struct apple2* this = (struct apple2*)ptr;
+    struct apple2* this = (apple2*)ptr;
     return apple2_cpu_bus_read(this, addr, 0, 0);
 }

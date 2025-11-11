@@ -73,7 +73,7 @@ static const u32 ZXS_palette[2][8] = {
           0xFFFFFF00, 0xFFFFFFFF}
 };
 
-void mac512k_present(struct physical_io_device *device, void *out_buf, u32 out_width, u32 out_height)
+void mac512k_present(physical_io_device *device, void *out_buf, u32 out_width, u32 out_height)
 {
     u8* output = (u8 *)device->display.output[device->display.last_written];
     u32* imgdata = (u32 *)out_buf;
@@ -91,7 +91,7 @@ void mac512k_present(struct physical_io_device *device, void *out_buf, u32 out_w
     }
 }
 
-void apple2_present(struct physical_io_device *device, void *out_buf, u32 x_offset, u32 y_offset, u32 out_width, u32 out_height)
+void apple2_present(physical_io_device *device, void *out_buf, u32 x_offset, u32 y_offset, u32 out_width, u32 out_height)
 {
     u16* ibuf = (u16 *)device->display.output[device->display.last_written];
     u32* img32 = calc_start_pos(out_buf, x_offset, y_offset, out_width);
@@ -108,7 +108,7 @@ void apple2_present(struct physical_io_device *device, void *out_buf, u32 x_offs
     }
 }
 
-void galaksija_present(struct physical_io_device *device, void *out_buf, u32 out_width, u32 out_height)
+void galaksija_present(physical_io_device *device, void *out_buf, u32 out_width, u32 out_height)
 {
     u8* output = (u8 *)device->display.output[device->display.last_written];
     const u32 gwidth = 384;
@@ -135,7 +135,7 @@ void galaksija_present(struct physical_io_device *device, void *out_buf, u32 out
     }
 }
 
-void zx_spectrum_present(struct physical_io_device *device, void *out_buf, u32 out_width, u32 out_height)
+void zx_spectrum_present(physical_io_device *device, void *out_buf, u32 out_width, u32 out_height)
 {
     u8* output = (u8 *)device->display.output[device->display.last_written];
     u32* imgdata = (u32 *)out_buf;
@@ -155,7 +155,7 @@ void zx_spectrum_present(struct physical_io_device *device, void *out_buf, u32 o
     }
 }
 
-void atari2600_present(struct physical_io_device *device, void *out_buf, u32 out_width, u32 out_height)
+void atari2600_present(physical_io_device *device, void *out_buf, u32 out_width, u32 out_height)
 {
     u8* ibuf = (u8 *)device->display.output[device->display.last_written];
     for (u32 y = 0; y < 192; y++) {
@@ -178,7 +178,7 @@ void atari2600_present(struct physical_io_device *device, void *out_buf, u32 out
 }
 
 // Translate from DMG output to 32-bit RGBA
-void DMG_present(struct physical_io_device *device, void *out_buf, u32 x_offset, u32 y_offset, u32 out_width, u32 out_height, bool is_event_view_present)
+void DMG_present(physical_io_device *device, void *out_buf, u32 x_offset, u32 y_offset, u32 out_width, u32 out_height, bool is_event_view_present)
 {
     u16* ibuf = (u16 *)device->display.output[device->display.last_written];
     u16* mdbuf = (u16 *)device->display.output_debug_metadata[device->display.last_written];
@@ -216,7 +216,7 @@ void DMG_present(struct physical_io_device *device, void *out_buf, u32 x_offset,
     }
 }
 
-void GBC_present(struct physical_io_device *device, void *out_buf, u32 x_offset, u32 y_offset, u32 out_width, u32 out_height, bool is_event_view_present)
+void GBC_present(physical_io_device *device, void *out_buf, u32 x_offset, u32 y_offset, u32 out_width, u32 out_height, bool is_event_view_present)
 {
     u16* ibuf = (u16 *)device->display.output[device->display.last_written];
     u16* mdbuf = (u16 *)device->display.output_debug_metadata[device->display.last_written];
@@ -291,7 +291,7 @@ static const u32 NES_palette[512] = {
         0xFF989898, 0xFF6C7C97, 0xFF7675A0, 0xFF81709F, 0xFF8A6D94, 0xFF8F6E82, 0xFF8E726E, 0xFF88785E, 0xFF7E7F56, 0xFF738457, 0xFF6A8761, 0xFF658672, 0xFF668286, 0xFF5E5E5E, 0xFF000000, 0xFF000000
 };
 
-void NES_present(struct physical_io_device *device, void *out_buf, u32 x_offset, u32 y_offset, u32 out_width, u32 out_height)
+void NES_present(physical_io_device *device, void *out_buf, u32 x_offset, u32 y_offset, u32 out_width, u32 out_height)
 {
     u16* neso = (u16 *)device->display.output[device->display.last_written];
 
@@ -311,7 +311,7 @@ void NES_present(struct physical_io_device *device, void *out_buf, u32 x_offset,
     }
 }
 
-void NDS_present(struct physical_io_device *device, void *out_buf, u32 out_width, u32 out_height, u32 is_event_view_present)
+void NDS_present(physical_io_device *device, void *out_buf, u32 out_width, u32 out_height, u32 is_event_view_present)
 {
     u32 *gbao = (u32 *)device->display.output[device->display.last_written ^ 1];
     u32 *img32 = (u32 *) out_buf;
@@ -331,7 +331,7 @@ void NDS_present(struct physical_io_device *device, void *out_buf, u32 out_width
     }
 }
 
-void PS1_present(struct physical_io_device *device, void *out_buf, u32 out_width, u32 out_height, u32 is_event_view_present) {
+void PS1_present(physical_io_device *device, void *out_buf, u32 out_width, u32 out_height, u32 is_event_view_present) {
     u16 *gbao = (u16 *)device->display.output[device->display.last_written];
     u32 *img32 = (u32 *) out_buf;
 
@@ -349,7 +349,7 @@ void PS1_present(struct physical_io_device *device, void *out_buf, u32 out_width
     }
 }
 
-void GBA_present(struct physical_io_device *device, void *out_buf, u32 out_width, u32 out_height, u32 is_event_view_present)
+void GBA_present(physical_io_device *device, void *out_buf, u32 out_width, u32 out_height, u32 is_event_view_present)
 {
     u16 *gbao = (u16 *)device->display.output[device->display.last_written];
     u32 *img32 = (u32 *) out_buf;
@@ -376,7 +376,7 @@ static u32 genesis_color_lookup[4][8] =  {
         {0,0,0,0,0,0,0,0}
 };
 
-void tg16_present(struct physical_io_device *device, void *out_buf, u32 out_width, u32 out_height, u32 is_event_view_present, events_view *evp)
+void tg16_present(physical_io_device *device, void *out_buf, u32 out_width, u32 out_height, u32 is_event_view_present, events_view *evp)
 {
     u16 *tg16o = (u16 *)device->display.output[device->display.last_written];
     u32 w = out_width;//256 - (overscan_left + overscan_right);
@@ -432,7 +432,7 @@ void tg16_present(struct physical_io_device *device, void *out_buf, u32 out_widt
 }
 
 
-void snes_present(struct physical_io_device *device, void *out_buf, u32 out_width, u32 out_height, u32 is_event_view_present)
+void snes_present(physical_io_device *device, void *out_buf, u32 out_width, u32 out_height, u32 is_event_view_present)
 {
     u16 *sneso = (u16 *)device->display.output[device->display.last_written];
     //u16 *geno = (u16 *)device->display.output[0];
@@ -455,7 +455,7 @@ void snes_present(struct physical_io_device *device, void *out_buf, u32 out_widt
     }
 }
 
-void genesis_present(struct physical_io_device *device, void *out_buf, u32 out_width, u32 out_height, u32 is_event_view_present)
+void genesis_present(physical_io_device *device, void *out_buf, u32 out_width, u32 out_height, u32 is_event_view_present)
 {
     u16 *geno = (u16 *)device->display.output[device->display.last_written];
     //u16 *geno = (u16 *)device->display.output[0];
@@ -491,7 +491,7 @@ void genesis_present(struct physical_io_device *device, void *out_buf, u32 out_w
 }
 
 
-void SMS_present(struct physical_io_device *device, void *out_buf, u32 x_offset, u32 y_offset, u32 out_width, u32 out_height)
+void SMS_present(physical_io_device *device, void *out_buf, u32 x_offset, u32 y_offset, u32 out_width, u32 out_height)
 {
     u16 *smso = (u16 *)device->display.output[device->display.last_written];
 
@@ -520,7 +520,7 @@ void SMS_present(struct physical_io_device *device, void *out_buf, u32 x_offset,
 }
 
 
-void GG_present(struct physical_io_device *device, void *out_buf, u32 x_offset, u32 y_offset, u32 out_width, u32 out_height) {
+void GG_present(physical_io_device *device, void *out_buf, u32 x_offset, u32 y_offset, u32 out_width, u32 out_height) {
     u16 *smso = (u16 *) device->display.output[device->display.last_written];
 
     u32 *img32 = calc_start_pos(out_buf, x_offset, y_offset, out_width);
@@ -554,7 +554,7 @@ void GG_present(struct physical_io_device *device, void *out_buf, u32 x_offset, 
 }
 
 
-void DC_present(struct physical_io_device *device, void *out_buf, u32 out_width, u32 out_height)
+void DC_present(physical_io_device *device, void *out_buf, u32 out_width, u32 out_height)
 {
     u32 *dco = (u32 *)device->display.output[device->display.last_written];
     u32 w = out_width;

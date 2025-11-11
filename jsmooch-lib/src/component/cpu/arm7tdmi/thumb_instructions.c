@@ -13,7 +13,7 @@
 #define PC R[15]
 #define rSP R[13]
 
-static u32 LSL(struct ARM7TDMI *this, u32 v, u32 amount, u32 set_flags) {
+static u32 LSL(ARM7TDMI *this, u32 v, u32 amount, u32 set_flags) {
     this->carry = this->regs.CPSR.C;
     if (amount == 0) return v;
     this->carry = amount > 32 ? 0 : !!(v & 1 << (32 - amount));
@@ -22,7 +22,7 @@ static u32 LSL(struct ARM7TDMI *this, u32 v, u32 amount, u32 set_flags) {
 }
 
 // Logical shift right
-static u32 LSR(struct ARM7TDMI *this, u32 v, u32 amount, u32 set_flags)
+static u32 LSR(ARM7TDMI *this, u32 v, u32 amount, u32 set_flags)
 {
     if (set_flags) this->carry = this->regs.CPSR.C;
     if (amount == 0) return v;
@@ -32,7 +32,7 @@ static u32 LSR(struct ARM7TDMI *this, u32 v, u32 amount, u32 set_flags)
 }
 
 // Arithemtic (sign-extend) shift right
-static u32 ASR(struct ARM7TDMI *this, u32 v, u32 amount, u32 set_flags)
+static u32 ASR(ARM7TDMI *this, u32 v, u32 amount, u32 set_flags)
 {
     //   carry = cpsr().c;
     this->carry = this->regs.CPSR.C;
@@ -51,11 +51,11 @@ static u32 ASR(struct ARM7TDMI *this, u32 v, u32 amount, u32 set_flags)
 }
 
 
-static inline void write_reg(struct ARM7TDMI *this, u32 *r, u32 v) {
+static inline void write_reg(ARM7TDMI *this, u32 *r, u32 v) {
     *r = v;
 }
 
-static inline u32 *getR(struct ARM7TDMI *this, u32 num) {
+static inline u32 *getR(ARM7TDMI *this, u32 num) {
     return this->regmap[num];
 }
 /*
@@ -66,7 +66,7 @@ THUMB_ADC_R6_R7: 000019BF
 THUMB_NOP: 000046C0
  */
 
-static int condition_passes(struct ARM7TDMI_regs *this, int which) {
+static int condition_passes(ARM7TDMI_regs *this, int which) {
 #define flag(x) (this->CPSR. x)
     switch(which) {
         case ARM7CC_AL:    return 1;
@@ -105,12 +105,12 @@ static u32 align_val(u32 addr, u32 tmp)
 }
 
 
-void ARM7TDMI_THUMB_ins_INVALID(struct ARM7TDMI *this, thumb_instruction *ins)
+void ARM7TDMI_THUMB_ins_INVALID(ARM7TDMI *this, thumb_instruction *ins)
 {
     UNIMPLEMENTED;
 }
 
-static u32 ADD(struct ARM7TDMI *this, u32 op1, u32 op2)
+static u32 ADD(ARM7TDMI *this, u32 op1, u32 op2)
 {
     u32 result = op1 + op2;
     this->regs.CPSR.N = (result >> 31) & 1;
@@ -121,7 +121,7 @@ static u32 ADD(struct ARM7TDMI *this, u32 op1, u32 op2)
     return result;
 }
 
-static u32 SUB(struct ARM7TDMI *this, u32 op1, u32 op2, u32 set_flags)
+static u32 SUB(ARM7TDMI *this, u32 op1, u32 op2, u32 set_flags)
 {
     u32 result = op1 - op2;
     this->regs.CPSR.N = (result >> 31) & 1;
@@ -132,7 +132,7 @@ static u32 SUB(struct ARM7TDMI *this, u32 op1, u32 op2, u32 set_flags)
     return result;
 }
 
-void ARM7TDMI_THUMB_ins_ADD_SUB(struct ARM7TDMI *this, thumb_instruction *ins)
+void ARM7TDMI_THUMB_ins_ADD_SUB(ARM7TDMI *this, thumb_instruction *ins)
 {
     u64 val;
     if (ins->I) {
@@ -149,7 +149,7 @@ void ARM7TDMI_THUMB_ins_ADD_SUB(struct ARM7TDMI *this, thumb_instruction *ins)
     else *Rd = ADD(this, op1, val);
 }
 
-void ARM7TDMI_THUMB_ins_LSL_LSR_ASR(struct ARM7TDMI *this, thumb_instruction *ins)
+void ARM7TDMI_THUMB_ins_LSL_LSR_ASR(ARM7TDMI *this, thumb_instruction *ins)
 {
     u32 *Rd = getR(this, ins->Rd);
     u32 Rs = *getR(this, ins->Rs);
@@ -172,7 +172,7 @@ void ARM7TDMI_THUMB_ins_LSL_LSR_ASR(struct ARM7TDMI *this, thumb_instruction *in
     this->regs.CPSR.N = ((*Rd) >> 31) & 1;
 }
 
-void ARM7TDMI_THUMB_ins_MOV_CMP_ADD_SUB(struct ARM7TDMI *this, thumb_instruction *ins)
+void ARM7TDMI_THUMB_ins_MOV_CMP_ADD_SUB(ARM7TDMI *this, thumb_instruction *ins)
 {
     u32 *Rd = getR(this, ins->Rd);
     switch(ins->sub_opcode) {
@@ -195,7 +195,7 @@ void ARM7TDMI_THUMB_ins_MOV_CMP_ADD_SUB(struct ARM7TDMI *this, thumb_instruction
     this->regs.PC += 2;
 }
 
-static u32 ROR(struct ARM7TDMI *this, u32 v, u32 amount)
+static u32 ROR(ARM7TDMI *this, u32 v, u32 amount)
 {
     this->carry = this->regs.CPSR.C;
     if (amount == 0) return v;
@@ -216,7 +216,7 @@ static inline u32 thumb_mul_ticks(u32 multiplier, u32 is_signed)
     return n;
 }
 
-void ARM7TDMI_THUMB_ins_data_proc(struct ARM7TDMI *this, thumb_instruction *ins)
+void ARM7TDMI_THUMB_ins_data_proc(ARM7TDMI *this, thumb_instruction *ins)
 {
 #define setnz(x) this->regs.CPSR.N = ((x) >> 31) & 1; \
               this->regs.CPSR.Z = (x) == 0;
@@ -299,7 +299,7 @@ void ARM7TDMI_THUMB_ins_data_proc(struct ARM7TDMI *this, thumb_instruction *ins)
     this->regs.CPSR.C = this->carry;
 }
 
-void ARM7TDMI_THUMB_ins_BX(struct ARM7TDMI *this, thumb_instruction *ins)
+void ARM7TDMI_THUMB_ins_BX(ARM7TDMI *this, thumb_instruction *ins)
 {
     u32 addr = *getR(this, ins->Rs);
     this->regs.CPSR.T = addr & 1;
@@ -308,7 +308,7 @@ void ARM7TDMI_THUMB_ins_BX(struct ARM7TDMI *this, thumb_instruction *ins)
     ARM7TDMI_flush_pipeline(this);
 }
 
-void ARM7TDMI_THUMB_ins_ADD_CMP_MOV_hi(struct ARM7TDMI *this, thumb_instruction *ins)
+void ARM7TDMI_THUMB_ins_ADD_CMP_MOV_hi(ARM7TDMI *this, thumb_instruction *ins)
 {
     assert(ins->sub_opcode != 3);
     u32 op1 = *getR(this, ins->Rs);
@@ -337,7 +337,7 @@ void ARM7TDMI_THUMB_ins_ADD_CMP_MOV_hi(struct ARM7TDMI *this, thumb_instruction 
     }
 }
 
-void ARM7TDMI_THUMB_ins_LDR_PC_relative(struct ARM7TDMI *this, thumb_instruction *ins)
+void ARM7TDMI_THUMB_ins_LDR_PC_relative(ARM7TDMI *this, thumb_instruction *ins)
 {
     u32 addr = (this->regs.PC & (~3)) + ins->imm;
     this->regs.PC += 2;
@@ -348,7 +348,7 @@ void ARM7TDMI_THUMB_ins_LDR_PC_relative(struct ARM7TDMI *this, thumb_instruction
     ARM7TDMI_idle(this, 1);
 }
 
-void ARM7TDMI_THUMB_ins_LDRH_STRH_reg_offset(struct ARM7TDMI *this, thumb_instruction *ins)
+void ARM7TDMI_THUMB_ins_LDRH_STRH_reg_offset(ARM7TDMI *this, thumb_instruction *ins)
 {
     u32 addr = *getR(this, ins->Rb) + *getR(this, ins->Ro);
     u32 *Rd = getR(this, ins->Rd);
@@ -364,7 +364,7 @@ void ARM7TDMI_THUMB_ins_LDRH_STRH_reg_offset(struct ARM7TDMI *this, thumb_instru
     }
 }
 
-void ARM7TDMI_THUMB_ins_LDRSH_LDRSB_reg_offset(struct ARM7TDMI *this, thumb_instruction *ins)
+void ARM7TDMI_THUMB_ins_LDRSH_LDRSB_reg_offset(ARM7TDMI *this, thumb_instruction *ins)
 {
     u32 addr = *getR(this, ins->Rb) + *getR(this, ins->Ro);
     this->regs.PC += 2;
@@ -385,7 +385,7 @@ void ARM7TDMI_THUMB_ins_LDRSH_LDRSB_reg_offset(struct ARM7TDMI *this, thumb_inst
     *Rd = v;
 }
 
-void ARM7TDMI_THUMB_ins_LDR_STR_reg_offset(struct ARM7TDMI *this, thumb_instruction *ins)
+void ARM7TDMI_THUMB_ins_LDR_STR_reg_offset(ARM7TDMI *this, thumb_instruction *ins)
 {
     u32 addr = *getR(this, ins->Rb) + *getR(this, ins->Ro);
     this->regs.PC += 2;
@@ -406,7 +406,7 @@ void ARM7TDMI_THUMB_ins_LDR_STR_reg_offset(struct ARM7TDMI *this, thumb_instruct
     }
 }
 
-void ARM7TDMI_THUMB_ins_LDRB_STRB_reg_offset(struct ARM7TDMI *this, thumb_instruction *ins)
+void ARM7TDMI_THUMB_ins_LDRB_STRB_reg_offset(ARM7TDMI *this, thumb_instruction *ins)
 {
     u32 addr = *getR(this, ins->Rb) + *getR(this, ins->Ro);
     this->regs.PC += 2;
@@ -422,7 +422,7 @@ void ARM7TDMI_THUMB_ins_LDRB_STRB_reg_offset(struct ARM7TDMI *this, thumb_instru
     }
 }
 
-void ARM7TDMI_THUMB_ins_LDR_STR_imm_offset(struct ARM7TDMI *this, thumb_instruction *ins)
+void ARM7TDMI_THUMB_ins_LDR_STR_imm_offset(ARM7TDMI *this, thumb_instruction *ins)
 {
     u32 addr = *getR(this, ins->Rb) + ins->imm;
     this->regs.PC += 2;
@@ -439,7 +439,7 @@ void ARM7TDMI_THUMB_ins_LDR_STR_imm_offset(struct ARM7TDMI *this, thumb_instruct
     }
 }
 
-void ARM7TDMI_THUMB_ins_LDRB_STRB_imm_offset(struct ARM7TDMI *this, thumb_instruction *ins)
+void ARM7TDMI_THUMB_ins_LDRB_STRB_imm_offset(ARM7TDMI *this, thumb_instruction *ins)
 {
     u32 addr = *getR(this, ins->Rb) + ins->imm;
     u32 *Rd = getR(this, ins->Rd);
@@ -456,7 +456,7 @@ void ARM7TDMI_THUMB_ins_LDRB_STRB_imm_offset(struct ARM7TDMI *this, thumb_instru
     }
 }
 
-void ARM7TDMI_THUMB_ins_LDRH_STRH_imm_offset(struct ARM7TDMI *this, thumb_instruction *ins)
+void ARM7TDMI_THUMB_ins_LDRH_STRH_imm_offset(ARM7TDMI *this, thumb_instruction *ins)
 {
     u32 addr = *getR(this, ins->Rb) + ins->imm;
     u32 *Rd = getR(this, ins->Rd);
@@ -473,7 +473,7 @@ void ARM7TDMI_THUMB_ins_LDRH_STRH_imm_offset(struct ARM7TDMI *this, thumb_instru
     }
 }
 
-void ARM7TDMI_THUMB_ins_LDR_STR_SP_relative(struct ARM7TDMI *this, thumb_instruction *ins)
+void ARM7TDMI_THUMB_ins_LDR_STR_SP_relative(ARM7TDMI *this, thumb_instruction *ins)
 {
     u32 addr = *getR(this, 13) + ins->imm;
     this->regs.PC += 2;
@@ -489,7 +489,7 @@ void ARM7TDMI_THUMB_ins_LDR_STR_SP_relative(struct ARM7TDMI *this, thumb_instruc
     }
 }
 
-void ARM7TDMI_THUMB_ins_ADD_SP_or_PC(struct ARM7TDMI *this, thumb_instruction *ins)
+void ARM7TDMI_THUMB_ins_ADD_SP_or_PC(ARM7TDMI *this, thumb_instruction *ins)
 {
     u32 *Rd = getR(this, ins->Rd);
     if (ins->SP) *Rd = *getR(this, 13) + ins->imm;
@@ -498,7 +498,7 @@ void ARM7TDMI_THUMB_ins_ADD_SP_or_PC(struct ARM7TDMI *this, thumb_instruction *i
     this->pipeline.access = ARM7P_sequential | ARM7P_code;
 }
 
-void ARM7TDMI_THUMB_ins_ADD_SUB_SP(struct ARM7TDMI *this, thumb_instruction *ins)
+void ARM7TDMI_THUMB_ins_ADD_SUB_SP(ARM7TDMI *this, thumb_instruction *ins)
 {
     u32 *sp = getR(this, 13);
     if (ins->S) *sp -= ins->imm;
@@ -507,7 +507,7 @@ void ARM7TDMI_THUMB_ins_ADD_SUB_SP(struct ARM7TDMI *this, thumb_instruction *ins
     this->pipeline.access = ARM7P_sequential | ARM7P_code;
 }
 
-void ARM7TDMI_THUMB_ins_PUSH_POP(struct ARM7TDMI *this, thumb_instruction *ins)
+void ARM7TDMI_THUMB_ins_PUSH_POP(ARM7TDMI *this, thumb_instruction *ins)
 {
     u32 *r13 = getR(this, 13);
     u32 pop = ins->sub_opcode;
@@ -565,7 +565,7 @@ void ARM7TDMI_THUMB_ins_PUSH_POP(struct ARM7TDMI *this, thumb_instruction *ins)
     }
 }
 
-void ARM7TDMI_THUMB_ins_LDM_STM(struct ARM7TDMI *this, thumb_instruction *ins)
+void ARM7TDMI_THUMB_ins_LDM_STM(ARM7TDMI *this, thumb_instruction *ins)
 {
     u32 *r13 = getR(this, ins->Rb);
     u32 load = ins->sub_opcode;
@@ -620,7 +620,7 @@ void ARM7TDMI_THUMB_ins_LDM_STM(struct ARM7TDMI *this, thumb_instruction *ins)
     }
 }
 
-void ARM7TDMI_THUMB_ins_SWI(struct ARM7TDMI *this, thumb_instruction *ins)
+void ARM7TDMI_THUMB_ins_SWI(ARM7TDMI *this, thumb_instruction *ins)
 {
     /*
 Execution SWI/BKPT:
@@ -640,12 +640,12 @@ Execution SWI/BKPT:
     ARM7TDMI_flush_pipeline(this);
 }
 
-void ARM7TDMI_THUMB_ins_UNDEFINED_BCC(struct ARM7TDMI *this, thumb_instruction *ins)
+void ARM7TDMI_THUMB_ins_UNDEFINED_BCC(ARM7TDMI *this, thumb_instruction *ins)
 {
     ARM7TDMI_THUMB_ins_BCC(this, ins);
 }
 
-void ARM7TDMI_THUMB_ins_BCC(struct ARM7TDMI *this, thumb_instruction *ins)
+void ARM7TDMI_THUMB_ins_BCC(ARM7TDMI *this, thumb_instruction *ins)
 {
     this->regs.PC += 2;
     if (condition_passes(&this->regs, ins->sub_opcode)) {
@@ -658,13 +658,13 @@ void ARM7TDMI_THUMB_ins_BCC(struct ARM7TDMI *this, thumb_instruction *ins)
     }
 }
 
-void ARM7TDMI_THUMB_ins_B(struct ARM7TDMI *this, thumb_instruction *ins)
+void ARM7TDMI_THUMB_ins_B(ARM7TDMI *this, thumb_instruction *ins)
 {
     this->regs.PC += ins->imm;
     ARM7TDMI_flush_pipeline(this);
 }
 
-void ARM7TDMI_THUMB_ins_BL_BLX_prefix(struct ARM7TDMI *this, thumb_instruction *ins)
+void ARM7TDMI_THUMB_ins_BL_BLX_prefix(ARM7TDMI *this, thumb_instruction *ins)
 {
     u32 *lr = getR(this, 14);
     this->regs.PC += 2;
@@ -672,7 +672,7 @@ void ARM7TDMI_THUMB_ins_BL_BLX_prefix(struct ARM7TDMI *this, thumb_instruction *
     this->pipeline.access = ARM7P_sequential | ARM7P_code;
 }
 
-void ARM7TDMI_THUMB_ins_BL_suffix(struct ARM7TDMI *this, thumb_instruction *ins)
+void ARM7TDMI_THUMB_ins_BL_suffix(ARM7TDMI *this, thumb_instruction *ins)
 {
     u32 v = (this->regs.PC - 2) | 1;
     u32 *LR = getR(this, 14);

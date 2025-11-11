@@ -19,7 +19,7 @@
 
 #include "component/cpu/m68000/m68000.h"
 
-#define JTHIS struct mac* this = (struct mac*)jsm->ptr
+#define JTHIS struct mac* this = (mac*)jsm->ptr
 #define JSM struct jsm_system* jsm
 
 #define THIS struct mac* this
@@ -40,14 +40,14 @@ static void macJ_disable_tracing(JSM);
 static void macJ_describe_io(JSM, cvec* IOs);
 
 static u32 read_trace_m68k(void *ptr, u32 addr, u32 UDS, u32 LDS) {
-    struct mac* this = (struct mac*)ptr;
+    struct mac* this = (mac*)ptr;
     return mac_mainbus_read(this, addr, UDS, LDS, this->io.cpu.last_read_data, 0);
 }
 
 
-void mac_new(struct jsm_system* jsm, enum mac_variants variant)
+void mac_new(jsm_system* jsm, enum mac_variants variant)
 {
-    struct mac* this = (struct mac*)calloc(1, sizeof(struct mac));
+    struct mac* this = (mac*)calloc(1, sizeof(mac));
     this->dbgr = NULL;
     this->kind = variant;
     mac_clock_init(this);
@@ -106,7 +106,7 @@ void mac_new(struct jsm_system* jsm, enum mac_variants variant)
 
 }
 
-void mac_delete(struct jsm_system* jsm)
+void mac_delete(jsm_system* jsm)
 {
     JTHIS;
 
@@ -156,7 +156,7 @@ static u32 mac_keyboard_keymap[77] = {
         JK_NUM_DIVIDE, JK_NUM_STAR, JK_NUM_LOCK, JK_NUM_CLEAR
 };
 
-static void setup_keyboard(struct mac* this)
+static void setup_keyboard(mac* this)
 {
     struct physical_io_device *d = cvec_push_back(this->IOs);
     physical_io_device_init(d, HID_KEYBOARD, 0, 0, 1, 1);
@@ -166,7 +166,7 @@ static void setup_keyboard(struct mac* this)
     d->connected = 1;
 
     struct JSM_KEYBOARD* kbd = &d->keyboard;
-    memset(kbd, 0, sizeof(struct JSM_KEYBOARD));
+    memset(kbd, 0, sizeof(JSM_KEYBOARD));
     kbd->num_keys = 77;
 
     for (u32 i = 0; i < kbd->num_keys; i++) {
@@ -174,7 +174,7 @@ static void setup_keyboard(struct mac* this)
     }
 }
 
-void macJ_IO_insert_disk(struct jsm_system *jsm, physical_io_device* pio, multi_file_set* mfs)
+void macJ_IO_insert_disk(jsm_system *jsm, physical_io_device* pio, multi_file_set* mfs)
 {
     JTHIS;
     struct mac_floppy *mflpy = cvec_push_back(&this->iwm.my_disks);
@@ -183,7 +183,7 @@ void macJ_IO_insert_disk(struct jsm_system *jsm, physical_io_device* pio, multi_
     this->iwm.drive[0].disc = mflpy;
 }
 
-static void setup_crt(struct JSM_DISPLAY *d)
+static void setup_crt(JSM_DISPLAY *d)
 {
     d->standard = JSS_NTSC;
     d->enabled = 1;
@@ -262,7 +262,7 @@ void macJ_describe_io(JSM, cvec *IOs)
     d->display.last_written = 1;
     //d->display.last_displayed = 1;
 
-    this->display.crt = &((struct physical_io_device *)cpg(this->display.crt_ptr))->display;
+    this->display.crt = &((physical_io_device *)cpg(this->display.crt_ptr))->display;
 }
 
 void macJ_play(JSM)

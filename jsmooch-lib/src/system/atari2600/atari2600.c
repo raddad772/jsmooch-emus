@@ -15,13 +15,13 @@
 #include "atari2600.h"
 #include "cart.h"
 
-#define JTHIS struct atari2600* this = (struct atari2600*)jsm->ptr
+#define JTHIS struct atari2600* this = (atari2600*)jsm->ptr
 #define JSM struct jsm_system* jsm
 
 #define THIS struct atari2600* this
 
-static void atari2600_inputs_init(struct atari2600_inputs* this) {
-    *this = (struct atari2600_inputs) {
+static void atari2600_inputs_init(atari2600_inputs* this) {
+    *this = (atari2600_inputs) {
         .fire = 0,
         .up = 0,
         .down = 0,
@@ -50,7 +50,7 @@ static void atari2600J_setup_debugger_interface(JSM, debugger_interface *intf);
 
 void atari2600_new(JSM)
 {
-    struct atari2600* this = (struct atari2600*)malloc(sizeof(struct atari2600));
+    struct atari2600* this = (atari2600*)malloc(sizeof(atari2600));
 
     M6502_init(&this->cpu, M6502_decoded_opcodes);
     M6532_init(&this->riot);
@@ -114,7 +114,7 @@ static void atari2600J_setup_debugger_interface(JSM, debugger_interface *intf)
 }
 
 
-static void new_button(struct JSM_CONTROLLER* cnt, const char* name, enum JKEYS common_id)
+static void new_button(JSM_CONTROLLER* cnt, const char* name, enum JKEYS common_id)
 {
     struct HID_digital_button *b = cvec_push_back(&cnt->digital_buttons);
     snprintf(b->name, sizeof(b->name), "%s", name);
@@ -124,7 +124,7 @@ static void new_button(struct JSM_CONTROLLER* cnt, const char* name, enum JKEYS 
     b->common_id = common_id;
 }
 
-static void setup_controller(struct atari2600* this, u32 num, const char*name, u32 connected)
+static void setup_controller(atari2600* this, u32 num, const char*name, u32 connected)
 {
     struct physical_io_device *d = cvec_push_back(this->IOs);
     physical_io_device_init(d, HID_CONTROLLER, 0, 0, 1, 1);
@@ -144,7 +144,7 @@ static void setup_controller(struct atari2600* this, u32 num, const char*name, u
     new_button(cnt, "fire", DBCID_co_fire1);
 }
 
-static void setup_crt(struct JSM_DISPLAY *d)
+static void setup_crt(JSM_DISPLAY *d)
 {
     d->standard = JSS_NTSC;
     d->enabled = 1;
@@ -231,7 +231,7 @@ void atari2600J_describe_io(JSM, cvec *IOs)
     d->display.last_written = 1;
     //d->display.last_displayed = 1;
 
-    this->tia.display = &((struct physical_io_device *)cpg(this->tia.display_ptr))->display;
+    this->tia.display = &((physical_io_device *)cpg(this->tia.display_ptr))->display;
 }
 
 void atari2600J_enable_tracing(JSM)
@@ -266,7 +266,7 @@ void atari2600J_get_framevars(JSM, framevars* out)
     out->scanline = this->tia.vcounter;
 }
 
-static void CPU_reset(struct atari2600* this)
+static void CPU_reset(atari2600* this)
 {
     M6502_reset(&this->cpu);
 }
@@ -287,7 +287,7 @@ void atari2600J_reset(JSM)
 void atari2600_map_inputs(JSM)
 {
     JTHIS;
-    struct physical_io_device* p = (struct physical_io_device*)cvec_get(this->IOs, 0);
+    struct physical_io_device* p = (physical_io_device*)cvec_get(this->IOs, 0);
     struct cvec* bl = &p->controller.digital_buttons;
     struct HID_digital_button* b;
 
@@ -300,7 +300,7 @@ void atari2600_map_inputs(JSM)
 #undef B_GET
 
     // TODO
-    this->controller2_in = (struct atari2600_inputs) {
+    this->controller2_in = (atari2600_inputs) {
         .down = 0,
         .up = 0,
         .left = 0,
@@ -308,7 +308,7 @@ void atari2600_map_inputs(JSM)
         .fire = 0
     };
 
-    p = (struct physical_io_device*)cvec_get(this->IOs, 2);
+    p = (physical_io_device*)cvec_get(this->IOs, 2);
     bl = &p->chassis.digital_buttons;
 
 #define B_GET(button, num) { b = cvec_get(bl, num); this->case_switches. button = b->state; }

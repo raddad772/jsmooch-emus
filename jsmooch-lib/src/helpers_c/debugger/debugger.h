@@ -108,7 +108,7 @@ struct cpu_reg_context {
     char name[20];
     u32 is_bitflag;
     u32 index;
-    int (*custom_render)(struct cpu_reg_context*, void *outbuf, size_t outbuf_sz);
+    int (*custom_render)(cpu_reg_context*, void *outbuf, size_t outbuf_sz);
 };
 
 struct memory_view_module {
@@ -306,7 +306,7 @@ struct ivec2 {
 struct debugger_view;
 struct debugger_update_func {
     void *ptr;
-    void (*func)(struct debugger_interface*, debugger_view *, void *, u32);
+    void (*func)(debugger_interface*, debugger_view *, void *, u32);
 };
 
 enum debug_waveform_kinds {
@@ -463,77 +463,77 @@ struct debugger_interface {
 
 
 // General functions
-void debugger_interface_init(struct debugger_interface *);
-void debugger_interface_delete(struct debugger_interface *);
-struct cvec_ptr debugger_view_new(struct debugger_interface *, enum debugger_view_kinds kind);
+void debugger_interface_init(debugger_interface *);
+void debugger_interface_delete(debugger_interface *);
+struct cvec_ptr debugger_view_new(debugger_interface *, enum debugger_view_kinds kind);
 
-void debugger_view_init(struct debugger_view *, enum debugger_view_kinds kind);
-void debugger_interface_dirty_mem(struct debugger_interface *, u32 mem_bus, u32 addr_start, u32 addr_end);
+void debugger_view_init(debugger_view *, enum debugger_view_kinds kind);
+void debugger_interface_dirty_mem(debugger_interface *, u32 mem_bus, u32 addr_start, u32 addr_end);
 
-void debugger_widgets_add_checkbox(struct cvec *widgets, const char *text, u32 enabled, u32 default_value, u32 same_line);
-struct debugger_widget *debugger_widgets_add_radiogroup(struct cvec* widgets, const char *text, u32 enabled, u32 default_value, u32 same_line);
-struct debugger_widget *debugger_widgets_add_color_key(struct cvec *widgets, const char *default_text, u32 default_visible);
-void debugger_widget_radiogroup_add_button(struct debugger_widget *radiogroup, const char *text, u32 value, u32 same_line);
-void debugger_widgets_textbox_clear(struct debugger_widget_textbox *tb);
-int debugger_widgets_textbox_sprintf(struct debugger_widget_textbox *tb, const char *format, ...);
-void debugger_widgets_add_textbox(struct cvec *widgets, char *text, u32 same_line);
+void debugger_widgets_add_checkbox(cvec *widgets, const char *text, u32 enabled, u32 default_value, u32 same_line);
+struct debugger_widget *debugger_widgets_add_radiogroup(cvec* widgets, const char *text, u32 enabled, u32 default_value, u32 same_line);
+struct debugger_widget *debugger_widgets_add_color_key(cvec *widgets, const char *default_text, u32 default_visible);
+void debugger_widget_radiogroup_add_button(debugger_widget *radiogroup, const char *text, u32 value, u32 same_line);
+void debugger_widgets_textbox_clear(debugger_widget_textbox *tb);
+int debugger_widgets_textbox_sprintf(debugger_widget_textbox *tb, const char *format, ...);
+void debugger_widgets_add_textbox(cvec *widgets, char *text, u32 same_line);
 
 // Memory view functions
-void memory_view_add_module(struct debugger_interface *dbgr, memory_view *mv, const char *name, u32 id, u32 addr_digits, u32 range_start, u32 range_end, void *readptr, void (*readmem16func)(void *ptr, u32 addr, void *dest));
-u32 memory_view_num_modules(struct memory_view *mv);
-struct memory_view_module *memory_view_get_module(struct memory_view *mv, u32 id);
-void memory_view_get_line(struct memory_view_module *mm, u32 addr, char *out);
+void memory_view_add_module(debugger_interface *dbgr, memory_view *mv, const char *name, u32 id, u32 addr_digits, u32 range_start, u32 range_end, void *readptr, void (*readmem16func)(void *ptr, u32 addr, void *dest));
+u32 memory_view_num_modules(memory_view *mv);
+struct memory_view_module *memory_view_get_module(memory_view *mv, u32 id);
+void memory_view_get_line(memory_view_module *mm, u32 addr, char *out);
 
 // Disassembly view functions
-int disassembly_view_get_rows(struct debugger_interface *di, disassembly_view *dview, u32 instruction_addr, u32 bytes_before, u32 total_lines, cvec *out_lines);
-void cpu_reg_context_render(struct cpu_reg_context*, char* outbuf, size_t outbuf_sz);
+int disassembly_view_get_rows(debugger_interface *di, disassembly_view *dview, u32 instruction_addr, u32 bytes_before, u32 total_lines, cvec *out_lines);
+void cpu_reg_context_render(cpu_reg_context*, char* outbuf, size_t outbuf_sz);
 
 // Event view functions
-void events_view_add_category(struct debugger_interface *dbgr, events_view *ev, const char *name, u32 color, u32 id);
-void events_view_add_event(struct debugger_interface *dbgr, events_view *ev, u32 category_id, const char *name, u32 color, enum debugger_event_kind display_kind, u32 default_enable, u32 order, const char* context, u32 id);
-void events_view_report_draw_start(struct events_view *);
+void events_view_add_category(debugger_interface *dbgr, events_view *ev, const char *name, u32 color, u32 id);
+void events_view_add_event(debugger_interface *dbgr, events_view *ev, u32 category_id, const char *name, u32 color, enum debugger_event_kind display_kind, u32 default_enable, u32 order, const char* context, u32 id);
+void events_view_report_draw_start(events_view *);
 
-void debugger_report_frame(struct debugger_interface *dbgr);
-void debugger_report_event(struct cvec_ptr viewptr, i32 event_id);
-u64 events_view_get_current_line_pos(struct cvec_ptr viewptr);
-u64 events_view_get_current_line_start(struct cvec_ptr viewptr);
-u64 events_view_get_current_line(struct cvec_ptr viewptr);
+void debugger_report_frame(debugger_interface *dbgr);
+void debugger_report_event(cvec_ptr viewptr, i32 event_id);
+u64 events_view_get_current_line_pos(cvec_ptr viewptr);
+u64 events_view_get_current_line_start(cvec_ptr viewptr);
+u64 events_view_get_current_line(cvec_ptr viewptr);
 
-void debugger_report_line(struct debugger_interface *dbgr, i32 line_num);
-void debugger_report_line_mclks(struct cvec_ptr event_view, u64 mclks, u32 line_num);
+void debugger_report_line(debugger_interface *dbgr, i32 line_num);
+void debugger_report_line_mclks(cvec_ptr event_view, u64 mclks, u32 line_num);
 
-void events_view_render(struct debugger_interface *dbgr, events_view *, u32 *buf, u32 out_width, u32 out_height);
+void events_view_render(debugger_interface *dbgr, events_view *, u32 *buf, u32 out_width, u32 out_height);
 
-void debug_waveform_init(struct debug_waveform *);
+void debug_waveform_init(debug_waveform *);
 
-void waveform_view_init(struct waveform_view *);
-void waveform_view_delete(struct waveform_view *);
+void waveform_view_init(waveform_view *);
+void waveform_view_delete(waveform_view *);
 
-void trace_view_add_col(struct trace_view *, const char *name, i32 default_size);
-void trace_view_clear(struct trace_view *);
-void trace_view_printf(struct trace_view *, u32 col, char *format, ...);
-void trace_view_startline(struct trace_view *, i32 source);
-void trace_view_endline(struct trace_view *);
-struct trace_line *trace_view_get_line(struct trace_view *, int row);
+void trace_view_add_col(trace_view *, const char *name, i32 default_size);
+void trace_view_clear(trace_view *);
+void trace_view_printf(trace_view *, u32 col, char *format, ...);
+void trace_view_startline(trace_view *, i32 source);
+void trace_view_endline(trace_view *);
+struct trace_line *trace_view_get_line(trace_view *, int row);
 
-void events_view_report_line(struct events_view *, i32 line_num);
+void events_view_report_line(events_view *, i32 line_num);
 
-void console_view_add_char(struct console_view *, u8 c);
-void console_view_add_cstr(struct console_view *, char *s);
-void console_view_render_to_buffer(struct console_view *tv, char *output, u64 sz);
+void console_view_add_char(console_view *, u8 c);
+void console_view_add_cstr(console_view *, char *s);
+void console_view_render_to_buffer(console_view *tv, char *output, u64 sz);
 
-struct dbglog_category_node *dbglog_category_get_root(struct dbglog_view *);
-struct dbglog_category_node *dbglog_category_add_node(struct dbglog_view *dv, dbglog_category_node *, const char *name, const char *short_name, u32 id, u32 color);
-void dbglog_view_add_item(struct dbglog_view *, u32 id, u64 timecode, enum dbglog_severity severity, const char *txt);
-void dbglog_view_add_printf(struct dbglog_view *, u32 id, u64 timecode, enum dbglog_severity severity, const char *format, ...);
-void dbglog_view_extra_printf(struct dbglog_view *, const char *format, ...);
-void dbglog_view_render_to_buffer(struct dbglog_view *, char *output, u64 sz);
-u32 dbglog_count_visible_lines(struct dbglog_view *);
-u32 dbglog_get_nth_visible(struct dbglog_view *, u32 n);
-u32 dbglog_get_next_visible(struct dbglog_view *, u32 start);
+struct dbglog_category_node *dbglog_category_get_root(dbglog_view *);
+struct dbglog_category_node *dbglog_category_add_node(dbglog_view *dv, dbglog_category_node *, const char *name, const char *short_name, u32 id, u32 color);
+void dbglog_view_add_item(dbglog_view *, u32 id, u64 timecode, enum dbglog_severity severity, const char *txt);
+void dbglog_view_add_printf(dbglog_view *, u32 id, u64 timecode, enum dbglog_severity severity, const char *format, ...);
+void dbglog_view_extra_printf(dbglog_view *, const char *format, ...);
+void dbglog_view_render_to_buffer(dbglog_view *, char *output, u64 sz);
+u32 dbglog_count_visible_lines(dbglog_view *);
+u32 dbglog_get_nth_visible(dbglog_view *, u32 n);
+u32 dbglog_get_next_visible(dbglog_view *, u32 start);
 
-void debugger_widgets_colorkey_set_title(struct debugger_widget_colorkey *, const char *str);
-void debugger_widgets_colorkey_add_item(struct debugger_widget_colorkey *, const char *str, u32 color);
+void debugger_widgets_colorkey_set_title(debugger_widget_colorkey *, const char *str);
+void debugger_widgets_colorkey_add_item(debugger_widget_colorkey *, const char *str, u32 color);
 
 
 #define DEBUG_REGISTER_EVENT_CATEGORY(name, id) events_view_add_category(dbgr, ev, name, 0, id)

@@ -14,12 +14,12 @@
 
 #define LINE_PX (LEFT_HBLANK_PX + DRAW_PX + RIGHT_HBLANK_PX)
 
-void galaksija_bus_init(struct galaksija *this)
+void galaksija_bus_init(galaksija *this)
 {
 
 }
 
-static u32 read_kb(struct galaksija *this, u32 addr)
+static u32 read_kb(galaksija *this, u32 addr)
 {
     if (addr == 0) return 1;
     addr--;
@@ -76,19 +76,19 @@ static u32 read_kb(struct galaksija *this, u32 addr)
     return 1; // no key pressed atm
 }
 
-static u32 read_IO(struct galaksija *this, u32 addr, u32 open_bus, u32 has_effect)
+static u32 read_IO(galaksija *this, u32 addr, u32 open_bus, u32 has_effect)
 {
     if (addr < 0x38) return read_kb(this, addr);
     return this->io.latch;
 }
 
-static void write_IO(struct galaksija *this, u32 addr, u32 val)
+static void write_IO(galaksija *this, u32 addr, u32 val)
 {
     if (addr < 0x38) return;
     this->io.latch = val & 0b11111100; // 6 bits!
 }
 
-u32 galaksija_mainbus_read(struct galaksija *this, u32 addr, u32 open_bus, u32 has_effect)
+u32 galaksija_mainbus_read(galaksija *this, u32 addr, u32 open_bus, u32 has_effect)
 {
     if (addr < 0x1000)
         return this->ROMA[addr];
@@ -103,7 +103,7 @@ u32 galaksija_mainbus_read(struct galaksija *this, u32 addr, u32 open_bus, u32 h
     return open_bus;
 }
 
-void galaksija_mainbus_write(struct galaksija *this, u32 addr, u32 val)
+void galaksija_mainbus_write(galaksija *this, u32 addr, u32 val)
 {
     if (addr < 0x2000) // ROMA & B
         return;
@@ -120,7 +120,7 @@ void galaksija_mainbus_write(struct galaksija *this, u32 addr, u32 val)
     }
 }
 
-static void new_frame(struct galaksija *this)
+static void new_frame(galaksija *this)
 {
     this->crt.y = 0;
     this->crt.cur_output = ((u8 *)this->crt.display->output[this->crt.display->last_written ^ 1]);
@@ -128,7 +128,7 @@ static void new_frame(struct galaksija *this)
     this->clock.master_frame++;
 }
 
-static void new_scanline(struct galaksija *this)
+static void new_scanline(galaksija *this)
 {
     this->crt.x = 0;
     this->crt.y++;
@@ -146,7 +146,7 @@ Video synchronization
     this->crt.shift_count = 0;
 }
 
-static void reload_shift_register(struct galaksija *this)
+static void reload_shift_register(galaksija *this)
 {
     u32 addr = (this->z80.regs.I << 8) | this->z80.regs.R & 0x7F;
     addr = galaksija_mainbus_read(this, addr, 0, 1);
@@ -181,7 +181,7 @@ static void reload_shift_register(struct galaksija *this)
     this->crt.shift_count = 8;
 }
 
-static void cpu_cycle (struct galaksija *this)
+static void cpu_cycle (galaksija *this)
 {
     Z80_cycle(&this->z80);
     if (this->z80.pins.RD) {
@@ -215,7 +215,7 @@ static void cpu_cycle (struct galaksija *this)
     }
 }
 
-void galaksija_cycle(struct galaksija *this)
+void galaksija_cycle(galaksija *this)
 {
     // Run CPU at clock divisor of 2
     if (this->clock.z80_divider == 0) {

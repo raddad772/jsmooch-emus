@@ -22,10 +22,10 @@ struct ccircular {
     u32 end_index;
 };
 
-u32 ccircular_len(struct ccircular*);
+u32 ccircular_len(ccircular*);
 
-void ccircular_delete(struct ccircular*);
-void ccircular_init(struct ccircular*, u32 data_size, u32 prealloc);
+void ccircular_delete(ccircular*);
+void ccircular_init(ccircular*, u32 data_size, u32 prealloc);
 
 
 */

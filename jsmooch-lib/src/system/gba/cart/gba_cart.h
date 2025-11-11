@@ -89,17 +89,17 @@ struct GBA_cart {
     } prefetch;
 };
 
-void GBA_cart_init(struct GBA_cart*);
-void GBA_cart_delete(struct GBA_cart *);
-void GBA_cart_write(struct GBA *this, u32 addr, u32 sz, u32 access, u32 val);
-u32 GBA_cart_read(struct GBA *this, u32 addr, u32 sz, u32 access, u32 has_effect, u32 ws);
-u32 GBA_cart_load_ROM_from_RAM(struct GBA_cart*, char* fil, u64 fil_sz, physical_io_device *pio, u32 *SRAM_enable);
-u64 GBA_clock_current(struct GBA *);
+void GBA_cart_init(GBA_cart*);
+void GBA_cart_delete(GBA_cart *);
+void GBA_cart_write(GBA *this, u32 addr, u32 sz, u32 access, u32 val);
+u32 GBA_cart_read(GBA *this, u32 addr, u32 sz, u32 access, u32 has_effect, u32 ws);
+u32 GBA_cart_load_ROM_from_RAM(GBA_cart*, char* fil, u64 fil_sz, physical_io_device *pio, u32 *SRAM_enable);
+u64 GBA_clock_current(GBA *);
 
 struct GBA;
-u32 GBA_cart_read_wait0(struct GBA*, u32 addr, u32 sz, u32 access, u32 has_effect);
-u32 GBA_cart_read_wait1(struct GBA*, u32 addr, u32 sz, u32 access, u32 has_effect);
-u32 GBA_cart_read_wait2(struct GBA*, u32 addr, u32 sz, u32 access, u32 has_effect);
-u32 GBA_cart_read_sram(struct GBA*, u32 addr, u32 sz, u32 access, u32 has_effect);
-void GBA_cart_write_sram(struct GBA*, u32 addr, u32 sz, u32 access, u32 val);
+u32 GBA_cart_read_wait0(GBA*, u32 addr, u32 sz, u32 access, u32 has_effect);
+u32 GBA_cart_read_wait1(GBA*, u32 addr, u32 sz, u32 access, u32 has_effect);
+u32 GBA_cart_read_wait2(GBA*, u32 addr, u32 sz, u32 access, u32 has_effect);
+u32 GBA_cart_read_sram(GBA*, u32 addr, u32 sz, u32 access, u32 has_effect);
+void GBA_cart_write_sram(GBA*, u32 addr, u32 sz, u32 access, u32 val);
 #endif //JSMOOCH_EMUS_GBA_CART_H

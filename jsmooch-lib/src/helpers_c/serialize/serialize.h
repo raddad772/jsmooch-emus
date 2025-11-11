@@ -56,13 +56,13 @@ struct serialized_state {
 };
 
 
-void serialized_state_init(struct serialized_state *);
-void serialized_state_delete(struct serialized_state *);
-void serialized_state_new_section(struct serialized_state *, const char *friendly_name, int kind, int version);
-void Sadd(struct serialized_state *, const void *ptr, u64 howmuch);
-void Sload(struct serialized_state *, void *ptr, u64 howmuch);
-void serialized_state_write_to_file(struct serialized_state *, FILE *f);
-int serialized_state_read_from_file(struct serialized_state *, FILE *f, size_t file_size);
+void serialized_state_init(serialized_state *);
+void serialized_state_delete(serialized_state *);
+void serialized_state_new_section(serialized_state *, const char *friendly_name, int kind, int version);
+void Sadd(serialized_state *, const void *ptr, u64 howmuch);
+void Sload(serialized_state *, void *ptr, u64 howmuch);
+void serialized_state_write_to_file(serialized_state *, FILE *f);
+int serialized_state_read_from_file(serialized_state *, FILE *f, size_t file_size);
 #define u64S(x) Sadd(state, &(x), 8)
 #define i64S(x) u64S(x)
 #define u32S(x) Sadd(state, &(x), 4)

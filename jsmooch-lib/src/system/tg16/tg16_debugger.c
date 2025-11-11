@@ -11,23 +11,23 @@
 #include "component/gpu/huc6260/huc6260.h"
 #include "component/cpu/huc6280/huc6280_disassembler.h"
 
-#define JTHIS struct TG16* this = (struct TG16*)jsm->ptr
+#define JTHIS struct TG16* this = (TG16*)jsm->ptr
 #define JSM struct jsm_system* jsm
 
 #define THIS struct TG16* this
 #define PAL_BOX_SIZE 10
 #define PAL_BOX_SIZE_W_BORDER 11
 
-static inline u16 read_VRAM(struct HUC6270 *this, u32 addr)
+static inline u16 read_VRAM(HUC6270 *this, u32 addr)
 {
     return (addr & 0x8000) ? 0 : this->VRAM[addr];
 }
 
 
-static void render_image_view_sys_info(struct debugger_interface *dbgr, debugger_view *dview, void *ptr, u32 out_width)
+static void render_image_view_sys_info(debugger_interface *dbgr, debugger_view *dview, void *ptr, u32 out_width)
 {
-    struct TG16 *this = (struct TG16 *)ptr;
-    struct debugger_widget_textbox *tb = &((struct debugger_widget *) cvec_get(&dview->options, 0))->textbox;
+    struct TG16 *this = (TG16 *)ptr;
+    struct debugger_widget_textbox *tb = &((debugger_widget *) cvec_get(&dview->options, 0))->textbox;
     debugger_widgets_textbox_clear(tb);
 #define tbp(...) debugger_widgets_textbox_sprintf(tb, __VA_ARGS__)
 #define YN(x) (x) ? "yes" : "no"
@@ -58,9 +58,9 @@ static void render_image_view_sys_info(struct debugger_interface *dbgr, debugger
 }
 
 
-static void render_image_view_bg(struct debugger_interface *dbgr, debugger_view *dview, void *ptr, u32 out_width)
+static void render_image_view_bg(debugger_interface *dbgr, debugger_view *dview, void *ptr, u32 out_width)
 {
-    struct TG16 *this = (struct TG16 *) ptr;
+    struct TG16 *this = (TG16 *) ptr;
     if (this->vce.master_frame == 0) return;
 
     struct image_view *iv = &dview->image;
@@ -109,8 +109,8 @@ static void render_image_view_bg(struct debugger_interface *dbgr, debugger_view 
     }
 }
 
-static void render_image_view_tiles(struct debugger_interface *dbgr, debugger_view *dview, void *ptr, u32 out_width) {
-    struct TG16 *this = (struct TG16 *) ptr;
+static void render_image_view_tiles(debugger_interface *dbgr, debugger_view *dview, void *ptr, u32 out_width) {
+    struct TG16 *this = (TG16 *) ptr;
     if (this->vce.master_frame == 0) return;
 
     struct image_view *iv = &dview->image;
@@ -148,7 +148,7 @@ static void render_image_view_tiles(struct debugger_interface *dbgr, debugger_vi
     }
 }
 
-static void render_image_view_palette(struct debugger_interface *dbgr, debugger_view *dview, void *ptr, u32 out_width) {
+static void render_image_view_palette(debugger_interface *dbgr, debugger_view *dview, void *ptr, u32 out_width) {
     const struct TG16 *this = ptr;
     if (this->vce.master_frame == 0) return;
     struct image_view *iv = &dview->image;
@@ -177,7 +177,7 @@ static void render_image_view_palette(struct debugger_interface *dbgr, debugger_
     }
 }
 
-static void setup_events_view(struct TG16* this, debugger_interface *dbgr, jsm_system *jsm)
+static void setup_events_view(TG16* this, debugger_interface *dbgr, jsm_system *jsm)
 {
     this->dbg.events.view = debugger_view_new(dbgr, dview_events);
     struct debugger_view *dview = cpg(this->dbg.events.view);
@@ -244,7 +244,7 @@ static void setup_events_view(struct TG16* this, debugger_interface *dbgr, jsm_s
 }
 
 
-static void setup_dbglog(struct debugger_interface *dbgr, TG16 *this)
+static void setup_dbglog(debugger_interface *dbgr, TG16 *this)
 {
     struct cvec_ptr p = debugger_view_new(dbgr, dview_dbglog);
     struct debugger_view *dview = cpg(p);
@@ -267,7 +267,7 @@ static void setup_dbglog(struct debugger_interface *dbgr, TG16 *this)
     dbglog_category_add_node(dv, cpu, "IRQs", "CPU", TG16_CAT_CPU_IRQS, 0xA0AF80);
 }
 
-static void setup_image_view_bg(struct TG16* this, debugger_interface *dbgr)
+static void setup_image_view_bg(TG16* this, debugger_interface *dbgr)
 {
     // 1024x512 max size!
     struct debugger_view *dview;
@@ -279,8 +279,8 @@ static void setup_image_view_bg(struct TG16* this, debugger_interface *dbgr)
     iv->height = 512;
     iv->viewport.exists = 1;
     iv->viewport.enabled = 1;
-    iv->viewport.p[0] = (struct ivec2){ 0, 0 };
-    iv->viewport.p[1] = (struct ivec2){ 1024, 512 };
+    iv->viewport.p[0] = (ivec2){ 0, 0 };
+    iv->viewport.p[1] = (ivec2){ 1024, 512 };
 
     iv->update_func.ptr = this;
     iv->update_func.func = &render_image_view_bg;
@@ -288,7 +288,7 @@ static void setup_image_view_bg(struct TG16* this, debugger_interface *dbgr)
 }
 
 
-static void setup_image_view_tiles(struct TG16* this, debugger_interface *dbgr)
+static void setup_image_view_tiles(TG16* this, debugger_interface *dbgr)
 {
     struct debugger_view *dview;
     this->dbg.image_views.tiles = debugger_view_new(dbgr, dview_image);
@@ -299,15 +299,15 @@ static void setup_image_view_tiles(struct TG16* this, debugger_interface *dbgr)
     iv->height = 512;
     iv->viewport.exists = 1;
     iv->viewport.enabled = 1;
-    iv->viewport.p[0] = (struct ivec2){ 0, 0 };
-    iv->viewport.p[1] = (struct ivec2){ 512, 512 };
+    iv->viewport.p[0] = (ivec2){ 0, 0 };
+    iv->viewport.p[1] = (ivec2){ 512, 512 };
 
     iv->update_func.ptr = this;
     iv->update_func.func = &render_image_view_tiles;
     snprintf(iv->label, sizeof(iv->label), "Tile Viewer");
 }
 
-static void setup_image_view_palettes(struct TG16* this, debugger_interface *dbgr) {
+static void setup_image_view_palettes(TG16* this, debugger_interface *dbgr) {
     struct debugger_view *dview;
     this->dbg.image_views.palettes = debugger_view_new(dbgr, dview_image);
     dview = cpg(this->dbg.image_views.palettes);
@@ -318,8 +318,8 @@ static void setup_image_view_palettes(struct TG16* this, debugger_interface *dbg
 
     iv->viewport.exists = 1;
     iv->viewport.enabled = 1;
-    iv->viewport.p[0] = (struct ivec2){ 0, 0 };
-    iv->viewport.p[1] = (struct ivec2){ iv->width, iv->height };
+    iv->viewport.p[0] = (ivec2){ 0, 0 };
+    iv->viewport.p[1] = (ivec2){ iv->width, iv->height };
 
     iv->update_func.ptr = this;
     iv->update_func.func = &render_image_view_palette;
@@ -341,7 +341,7 @@ static void readcpumembus(void *ptr, u32 addr, void *dest)
 
 static void readcpumemnative(void *ptr, u32 addr, void *dest)
 {
-    struct TG16 *this = (struct TG16*) ptr;
+    struct TG16 *this = (TG16*) ptr;
     // Read 16 bytes from addr into dest
     u8 *out = dest;
     for (u32 i = 0; i < 16; i++) {
@@ -370,11 +370,11 @@ static void readvram(void *ptr, u32 addr, void *dest)
     }
 }
 
-static void setup_waveforms_psg(struct TG16* this, debugger_interface *dbgr)
+static void setup_waveforms_psg(TG16* this, debugger_interface *dbgr)
 {
     this->dbg.waveforms_psg.view = debugger_view_new(dbgr, dview_waveforms);
     struct debugger_view *dview = cpg(this->dbg.waveforms_psg.view);
-    struct waveform_view *wv = (struct waveform_view *)&dview->waveform;
+    struct waveform_view *wv = (waveform_view *)&dview->waveform;
     snprintf(wv->name, sizeof(wv->name), "Huc6280 PSG");
 
     cvec_alloc_atleast(&wv->waveforms, 8);
@@ -439,7 +439,7 @@ static void setup_waveforms_psg(struct TG16* this, debugger_interface *dbgr)
 }
 
 
-static void setup_memory_view(struct TG16* this, debugger_interface *dbgr) {
+static void setup_memory_view(TG16* this, debugger_interface *dbgr) {
     this->dbg.memory = debugger_view_new(dbgr, dview_memory);
     struct debugger_view *dview = cpg(this->dbg.memory);
     struct memory_view *mv = &dview->memory;
@@ -449,7 +449,7 @@ static void setup_memory_view(struct TG16* this, debugger_interface *dbgr) {
 
 }
 
-static int render_p(struct cpu_reg_context *ctx, void *outbuf, size_t outbuf_sz)
+static int render_p(cpu_reg_context *ctx, void *outbuf, size_t outbuf_sz)
 {
     u32 val = ctx->int32_data;
     return snprintf(outbuf, outbuf_sz, "%c%c%c%c%c%c%c%c",
@@ -463,7 +463,7 @@ static int render_p(struct cpu_reg_context *ctx, void *outbuf, size_t outbuf_sz)
                     val & 1 ? 'C' : 'c');
 }
 
-static int render_mpr(struct cpu_reg_context *ctx, void *outbuf, size_t outbuf_sz)
+static int render_mpr(cpu_reg_context *ctx, void *outbuf, size_t outbuf_sz)
 {
     switch (ctx->int32_data) {
         case 0xF7: // SRAM
@@ -483,7 +483,7 @@ static int render_mpr(struct cpu_reg_context *ctx, void *outbuf, size_t outbuf_s
 
 static void fill_disassembly_view(void *tg16ptr, debugger_interface *dbgr, disassembly_view *dview)
 {
-    struct TG16* this = (struct TG16*)tg16ptr;
+    struct TG16* this = (TG16*)tg16ptr;
 
     this->dbg.dasm.A->int8_data = this->cpu.regs.A;
     this->dbg.dasm.X->int8_data = this->cpu.regs.X;
@@ -498,7 +498,7 @@ static void fill_disassembly_view(void *tg16ptr, debugger_interface *dbgr, disas
 }
 
 
-static void create_and_bind_registers(struct TG16* this, disassembly_view *dv)
+static void create_and_bind_registers(TG16* this, disassembly_view *dv)
 {
     u32 tkindex = 0;
     cvec_alloc_atleast(&dv->cpu.regs, 16);
@@ -607,7 +607,7 @@ static void create_and_bind_registers(struct TG16* this, disassembly_view *dv)
 
 static struct disassembly_vars get_disassembly_vars(void *tg16ptr, debugger_interface *dbgr, disassembly_view *dv)
 {
-    struct TG16* this = (struct TG16*)tg16ptr;
+    struct TG16* this = (TG16*)tg16ptr;
     struct disassembly_vars dvar;
     dvar.address_of_executing_instruction = this->cpu.PCO;
     dvar.current_clock_cycle = this->clock.master_cycles;
@@ -616,13 +616,13 @@ static struct disassembly_vars get_disassembly_vars(void *tg16ptr, debugger_inte
 
 static void get_dissasembly(void *tg16ptr, debugger_interface *dbgr, disassembly_view *dview, disassembly_entry *entry)
 {
-    struct TG16* this = (struct TG16*)tg16ptr;
+    struct TG16* this = (TG16*)tg16ptr;
     HUC6280_disassemble_entry(&this->cpu, entry);
 }
 
 static int print_disassembly_addr(void *ptr, u32 addr, char *out, size_t sz_out)
 {
-    struct TG16 *this = (struct TG16 *)ptr;
+    struct TG16 *this = (TG16 *)ptr;
     addr &= 0xFFFF;
     u32 mprnum = addr >> 13;
     u32 bank = this->cpu.regs.MPR[mprnum] >> 13;
@@ -642,7 +642,7 @@ static int print_disassembly_addr(void *ptr, u32 addr, char *out, size_t sz_out)
     }
 }
 
-static void setup_disassembly_view(struct TG16* this, debugger_interface *dbgr)
+static void setup_disassembly_view(TG16* this, debugger_interface *dbgr)
 {
     struct cvec_ptr p = debugger_view_new(dbgr, dview_disassembly);
     struct debugger_view *dview = cpg(p);
@@ -668,7 +668,7 @@ static void setup_disassembly_view(struct TG16* this, debugger_interface *dbgr)
     dv->get_disassembly_vars.func = &get_disassembly_vars;
 }
 
-static void setup_image_view_sys_info(struct TG16 *this, debugger_interface *dbgr)
+static void setup_image_view_sys_info(TG16 *this, debugger_interface *dbgr)
 {
     struct debugger_view *dview;
     this->dbg.image_views.sys_info = debugger_view_new(dbgr, dview_image);
@@ -679,8 +679,8 @@ static void setup_image_view_sys_info(struct TG16 *this, debugger_interface *dbg
     iv->height = 10;
     iv->viewport.exists = 1;
     iv->viewport.enabled = 1;
-    iv->viewport.p[0] = (struct ivec2){ 0, 0 };
-    iv->viewport.p[1] = (struct ivec2){ 10, 10 };
+    iv->viewport.p[0] = (ivec2){ 0, 0 };
+    iv->viewport.p[1] = (ivec2){ 10, 10 };
 
     iv->update_func.ptr = this;
     iv->update_func.func = &render_image_view_sys_info;

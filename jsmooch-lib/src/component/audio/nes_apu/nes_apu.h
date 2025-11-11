@@ -5,6 +5,7 @@
 #pragma once
 
 #include "helpers/int.h"
+#include "helpers/serialize/serialize.h"
 
 struct NES;
 
@@ -17,8 +18,8 @@ struct NES_APU {
     float mix_sample(u32 is_debug);
     float sample_channel(int cnum);
     void reset();
-    void serialize(struct serialized_state &state);
-    void deserialize(struct serialized_state &state);
+    void serialize(serialized_state &state);
+    void deserialize(serialized_state &state);
 
 private:
     i32 get_pulse_channel_output(u32 pc, u32 is_debug);

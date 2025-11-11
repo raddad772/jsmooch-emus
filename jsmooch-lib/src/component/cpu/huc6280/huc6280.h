@@ -131,16 +131,16 @@ struct HUC6280 {
 
 };
 
-void HUC6280_init(struct HUC6280 *, scheduler_t *scheduler, u64 clocks_per_second);
-void HUC6280_delete(struct HUC6280 *);
-void HUC6280_reset(struct HUC6280 *);
-void HUC6280_setup_tracing(struct HUC6280 *, jsm_debug_read_trace *strct, u64 *trace_cycle_ptr, i32 source_id);
-void HUC6280_poll_IRQs(struct HUC6280_regs *regs, HUC6280_pins *pins);
-void HUC6280_tick_timer(struct HUC6280 *);
+void HUC6280_init(HUC6280 *, scheduler_t *scheduler, u64 clocks_per_second);
+void HUC6280_delete(HUC6280 *);
+void HUC6280_reset(HUC6280 *);
+void HUC6280_setup_tracing(HUC6280 *, jsm_debug_read_trace *strct, u64 *trace_cycle_ptr, i32 source_id);
+void HUC6280_poll_IRQs(HUC6280_regs *regs, HUC6280_pins *pins);
+void HUC6280_tick_timer(HUC6280 *);
 
-void HUC6280_schedule_first(struct HUC6280 *, u64 clock);
+void HUC6280_schedule_first(HUC6280 *, u64 clock);
 
-void HUC6280_cycle(struct HUC6280 *); // Only really affects "CPU-ish" stuff
+void HUC6280_cycle(HUC6280 *); // Only really affects "CPU-ish" stuff
 
 // Internal cycle, handles catching IO or scheduling
 void HUC6280_internal_cycle(void *ptr, u64 key, u64 clock, u32 jitter);

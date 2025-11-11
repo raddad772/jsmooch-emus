@@ -148,11 +148,11 @@ struct SNES_APU {
 };
 
 struct SNES;
-void SNES_APU_init(struct SNES *);
-void SNES_APU_delete(struct SNES *);
-void SNES_APU_reset(struct SNES *);
-void SNES_APU_schedule_first(struct SNES *);
-u32 SNES_APU_read(struct SNES *, u32 addr, u32 old, u32 has_effect);
-void SNES_APU_write(struct SNES *, u32 addr, u32 val);
+void SNES_APU_init(SNES *);
+void SNES_APU_delete(SNES *);
+void SNES_APU_reset(SNES *);
+void SNES_APU_schedule_first(SNES *);
+u32 SNES_APU_read(SNES *, u32 addr, u32 old, u32 has_effect);
+void SNES_APU_write(SNES *, u32 addr, u32 val);
 
 #endif //JSMOOCH_EMUS_SNES_APU_H

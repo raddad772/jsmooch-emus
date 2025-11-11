@@ -15,18 +15,18 @@ static u32 timer_reload_ticks(u32 reload)
     return 0x10000 - reload;
 }
 
-u32 NDS_timer7_enabled(struct NDS *this, u32 tn) {
+u32 NDS_timer7_enabled(NDS *this, u32 tn) {
     return NDS_clock_current7(this) >= this->timer7[tn].enable_at;
 }
 
-u32 NDS_timer9_enabled(struct NDS *this, u32 tn) {
+u32 NDS_timer9_enabled(NDS *this, u32 tn) {
     return NDS_clock_current9(this) >= this->timer9[tn].enable_at;
 }
 
-static void overflow_timer7(struct NDS *this, u32 tn, u64 current_time);
-static void overflow_timer9(struct NDS *this, u32 tn, u64 current_time);
+static void overflow_timer7(NDS *this, u32 tn, u64 current_time);
+static void overflow_timer9(NDS *this, u32 tn, u64 current_time);
 
-static void cascade_timer7_step(struct NDS *this, u32 tn, u64 current_time)
+static void cascade_timer7_step(NDS *this, u32 tn, u64 current_time)
 {
     //printf("\nCASCADE TIMER STEP!");
     struct NDS_TIMER *t = &this->timer7[tn];
@@ -36,7 +36,7 @@ static void cascade_timer7_step(struct NDS *this, u32 tn, u64 current_time)
     }
 }
 
-static void cascade_timer9_step(struct NDS *this, u32 tn, u64 current_time)
+static void cascade_timer9_step(NDS *this, u32 tn, u64 current_time)
 {
     //printf("\nCASCADE TIMER STEP!");
     struct NDS_TIMER *t = &this->timer9[tn];
@@ -46,7 +46,7 @@ static void cascade_timer9_step(struct NDS *this, u32 tn, u64 current_time)
     }
 }
 
-static void overflow_timer7(struct NDS *this, u32 tn, u64 current_time) {
+static void overflow_timer7(NDS *this, u32 tn, u64 current_time) {
     struct NDS_TIMER *t = &this->timer7[tn];
     //printf("\nOVERFLOW: %d", tn);
     t->enable_at = current_time;
@@ -70,7 +70,7 @@ static void overflow_timer7(struct NDS *this, u32 tn, u64 current_time) {
     }
 }
 
-static void overflow_timer9(struct NDS *this, u32 tn, u64 current_time)
+static void overflow_timer9(NDS *this, u32 tn, u64 current_time)
 {
     struct NDS_TIMER *t = &this->timer9[tn];
     t->enable_at = current_time;
@@ -93,7 +93,7 @@ static void overflow_timer9(struct NDS *this, u32 tn, u64 current_time)
     }
 }
 
-u32 NDS_read_timer7(struct NDS *this, u32 tn)
+u32 NDS_read_timer7(NDS *this, u32 tn)
 {
     struct NDS_TIMER *t = &this->timer7[tn];
     u64 current_time = this->clock.master_cycle_count7 + this->waitstates.current_transaction;
@@ -105,7 +105,7 @@ u32 NDS_read_timer7(struct NDS *this, u32 tn)
     return v;
 }
 
-u32 NDS_read_timer9(struct NDS *this, u32 tn)
+u32 NDS_read_timer9(NDS *this, u32 tn)
 {
     struct NDS_TIMER *t = &this->timer9[tn];
     u64 current_time = this->clock.master_cycle_count9 + this->waitstates.current_transaction;
@@ -119,12 +119,12 @@ u32 NDS_read_timer9(struct NDS *this, u32 tn)
 
 static void timer_overflow(void *ptr, u64 timer_num, u64 current_clock, u32 jitter)
 {
-    struct NDS *this = (struct NDS *)ptr;
+    struct NDS *this = (NDS *)ptr;
     if (timer_num & 0x10) overflow_timer9(this, timer_num & 0x0F, NDS_clock_current7(this));
     else overflow_timer7(this, timer_num, NDS_clock_current7(this));
 }
 
-void NDS_timer7_write_cnt(struct NDS *this, u32 tn, u32 val)
+void NDS_timer7_write_cnt(NDS *this, u32 tn, u32 val)
 {
     struct NDS_TIMER *t = &this->timer7[tn];
 
@@ -162,7 +162,7 @@ void NDS_timer7_write_cnt(struct NDS *this, u32 tn, u32 val)
 }
 
 
-void NDS_timer9_write_cnt(struct NDS *this, u32 tn, u32 val)
+void NDS_timer9_write_cnt(NDS *this, u32 tn, u32 val)
 {
     struct NDS_TIMER *t = &this->timer9[tn];
 

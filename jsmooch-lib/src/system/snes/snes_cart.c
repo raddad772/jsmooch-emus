@@ -9,17 +9,17 @@
 #include "snes_bus.h"
 #include "snes_mem.h"
 
-void SNES_cart_init(struct SNES *this)
+void SNES_cart_init(SNES *this)
 {
     buf_init(&this->cart.ROM);
 }
 
-void SNES_cart_delete(struct SNES *this)
+void SNES_cart_delete(SNES *this)
 {
     buf_delete(&this->cart.ROM);
 }
 
-static void read_ver1_header(struct SNES *this)
+static void read_ver1_header(SNES *this)
 {
     u8 *rom = (u8 *)this->cart.ROM.ptr;
     this->cart.header.sram_sizebit = rom[this->cart.header.offset + 0x28];
@@ -28,12 +28,12 @@ static void read_ver1_header(struct SNES *this)
     memcpy(this->cart.header.internal_name, rom+this->cart.header.offset+0x10, 20);
 }
 
-static void read_ver2_header(struct SNES *this)
+static void read_ver2_header(SNES *this)
 {
     read_ver1_header(this);
 }
 
-static void read_ver3_header(struct SNES *this)
+static void read_ver3_header(SNES *this)
 {
     read_ver1_header(this);
     //  FFBCh  Expansion FLASH Size (1 SHL n) Kbytes (used in JRA PAT)
@@ -69,7 +69,7 @@ static const u32 terrible_opcodes[NUM_TERRIBLE] = {
         0x00, 0x02, 0xDB, 0x42, 0xFF
 };
 
-static i32 score_header(struct SNES *this, u32 addr)
+static i32 score_header(SNES *this, u32 addr)
 {
     /*
      * The main ideas behind this detection are from Ares.
@@ -109,7 +109,7 @@ static i32 score_header(struct SNES *this, u32 addr)
     return score > 0 ? score : 0;
 }
 
-static u32 find_cart_header(struct SNES *this)
+static u32 find_cart_header(SNES *this)
 {
     u32 first_offset = 0x7F00;
     i32 lorom = score_header(this, 0x7FB0);
@@ -132,7 +132,7 @@ static u32 find_cart_header(struct SNES *this)
     return header_addr;
 }
 
-u32 SNES_cart_load_ROM_from_RAM(struct SNES* this, char* fil, u64 fil_sz, physical_io_device *pio)
+u32 SNES_cart_load_ROM_from_RAM(SNES* this, char* fil, u64 fil_sz, physical_io_device *pio)
 {
     u32 SMCheader_size = fil_sz % 1024;
     if (SMCheader_size != 0) {

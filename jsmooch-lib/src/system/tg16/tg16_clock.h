@@ -37,7 +37,7 @@ struct TG16_clock {
     } timing;
 };
 
-void TG16_clock_init(struct TG16_clock *);
-void TG16_clock_reset(struct TG16_clock *);
+void TG16_clock_init(TG16_clock *);
+void TG16_clock_reset(TG16_clock *);
 
 #endif //JSMOOCH_EMUS_TG16_CLOCK_H

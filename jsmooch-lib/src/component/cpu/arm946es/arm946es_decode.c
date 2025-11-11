@@ -101,7 +101,7 @@ static enum ARM_ins_kind decode_arm_never(u32 opc)
 #undef OB
 
 
-void ARM946ES_fill_arm_table(struct ARM946ES *this)
+void ARM946ES_fill_arm_table(ARM946ES *this)
 {
     for (u32 opc = 0; opc < 4096; opc++) {
         struct arm9_ins *ins = &this->opcode_table_arm[opc];

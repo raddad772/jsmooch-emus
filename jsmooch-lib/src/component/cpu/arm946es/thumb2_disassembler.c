@@ -25,12 +25,12 @@ static u16 doBITS(u16 val, u16 hi, u16 lo)
 #define BITS(hi,lo) (doBITS(opc, hi, lo))
 #define ostr(...) jsm_string_sprintf(out, __VA_ARGS__)
 
-static void add_context(struct ARMctxt *t, u32 rnum)
+static void add_context(ARMctxt *t, u32 rnum)
 {
     if (t) t->regs |= (1 << rnum);
 }
 
-static void outreg(struct jsm_string *out, u32 num, u32 add_comma) {
+static void outreg(jsm_string *out, u32 num, u32 add_comma) {
     if (num == 13) ostr("SP");
     else if (num == 14) ostr("LR");
     else if (num == 15) ostr("PC");
@@ -38,14 +38,14 @@ static void outreg(struct jsm_string *out, u32 num, u32 add_comma) {
     if (add_comma) ostr(",");
 }
 
-static void outhex(struct jsm_string *out, u32 num, u32 num_size, u32 add_comma) {
+static void outhex(jsm_string *out, u32 num, u32 num_size, u32 add_comma) {
     char fstr[50];
     snprintf(fstr, sizeof(fstr), "%%0%dx", num_size);
     jsm_string_sprintf(out, fstr, num);
     if (add_comma) ostr(",");
 }
 
-static void outdec(struct jsm_string *out, u32 num, u32 add_comma)
+static void outdec(jsm_string *out, u32 num, u32 add_comma)
 {
     ostr("%d", num);
     if (add_comma) ostr(",");
@@ -383,7 +383,7 @@ static void dasm_ADD_SUB_SP(u16 opc, jsm_string *out, i64 ins_addr, ARMctxt *ct)
     }
 }
 
-static void do_rlist(struct jsm_string *out, u16 rlist)
+static void do_rlist(jsm_string *out, u16 rlist)
 {
     if (rlist == 0) return;
     u32 did_opening = 0;

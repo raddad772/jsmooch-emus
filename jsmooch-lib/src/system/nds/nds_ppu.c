@@ -29,7 +29,7 @@ static inline u32 c15to18(u32 color)
 }
 
 
-void NDS_PPU_init(struct NDS *this)
+void NDS_PPU_init(NDS *this)
 {
     memset(&this->ppu, 0, sizeof(this->ppu));
 
@@ -47,12 +47,12 @@ void NDS_PPU_init(struct NDS *this)
     this->ppu.eng2d[0].io.bg.do_3d = 0;
 }
 
-void NDS_PPU_delete(struct NDS *this)
+void NDS_PPU_delete(NDS *this)
 {
     
 }
 
-void NDS_PPU_reset(struct NDS *this)
+void NDS_PPU_reset(NDS *this)
 {
     for (u32 en=0; en<2; en++) {
         struct NDSENG2D *p = &this->ppu.eng2d[en];
@@ -63,7 +63,7 @@ void NDS_PPU_reset(struct NDS *this)
     }
 }
 
-static u64 read_vram_bg(struct NDS *this, NDSENG2D *eng, u32 addr, u32 sz)
+static u64 read_vram_bg(NDS *this, NDSENG2D *eng, u32 addr, u32 sz)
 {
     assert((addr >> 14) < 32);
     u8 *ptr = eng->memp.bg_vram[(addr >> 14) & 31];
@@ -78,7 +78,7 @@ static u64 read_vram_bg(struct NDS *this, NDSENG2D *eng, u32 addr, u32 sz)
     return cR[sz](ptr, addr & 0x3FFF);
 }
 
-static u32 read_vram_obj(struct NDS *this, NDSENG2D *eng, u32 addr, u32 sz)
+static u32 read_vram_obj(NDS *this, NDSENG2D *eng, u32 addr, u32 sz)
 {
     assert((addr >> 14) < 16);
     u8 *ptr = eng->memp.obj_vram[(addr >> 14) & 15];
@@ -93,7 +93,7 @@ static u32 read_vram_obj(struct NDS *this, NDSENG2D *eng, u32 addr, u32 sz)
     return cR[sz](ptr, addr & 0x3FFF);
 }
 
-static u32 read_pram_bg_ext(struct NDS *this, NDSENG2D *eng, u32 bgnum, u32 slotnum, u32 addr)
+static u32 read_pram_bg_ext(NDS *this, NDSENG2D *eng, u32 bgnum, u32 slotnum, u32 addr)
 {
     if (!eng->memp.bg_extended_palette[slotnum & 3]) {
         static int a = 1;
@@ -107,12 +107,12 @@ static u32 read_pram_bg_ext(struct NDS *this, NDSENG2D *eng, u32 bgnum, u32 slot
     return cR16(eng->memp.bg_extended_palette[slotnum & 3], addr);
 }
 
-static u32 read_pram_bg(struct NDS *this, NDSENG2D *eng, u32 addr, u32 sz)
+static u32 read_pram_bg(NDS *this, NDSENG2D *eng, u32 addr, u32 sz)
 {
     return cR[sz](eng->mem.bg_palette, addr & 0x1FF);
 }
 
-static u32 read_ext_palette_obj(struct NDS *this, NDSENG2D *eng, u32 palette, u32 index)
+static u32 read_ext_palette_obj(NDS *this, NDSENG2D *eng, u32 palette, u32 index)
 {
     u32 addr = 0x600 + ((palette << 5) | (index << 1)) + (0x200 * eng->num);
     addr &= 0x1FFF;
@@ -123,7 +123,7 @@ static u32 read_ext_palette_obj(struct NDS *this, NDSENG2D *eng, u32 palette, u3
     return 0;
 }
 
-static u32 read_pram_obj2(struct NDS *this, NDSENG2D *eng, u32 palette, u32 index)
+static u32 read_pram_obj2(NDS *this, NDSENG2D *eng, u32 palette, u32 index)
 {
     if (eng->io.obj.extended_palettes)
         return read_ext_palette_obj(this, eng, palette, index) & 0x7FFF;
@@ -134,12 +134,12 @@ static u32 read_pram_obj2(struct NDS *this, NDSENG2D *eng, u32 palette, u32 inde
 
 
 
-static u32 read_pram_obj(struct NDS *this, NDSENG2D *eng, u32 addr, u32 sz)
+static u32 read_pram_obj(NDS *this, NDSENG2D *eng, u32 addr, u32 sz)
 {
     return cR[sz](eng->mem.obj_palette, addr & 0x1FF);
 }
 
-static u32 read_oam(struct NDS *this, NDSENG2D *eng, u32 addr, u32 sz)
+static u32 read_oam(NDS *this, NDSENG2D *eng, u32 addr, u32 sz)
 {
     return cR[sz](eng->mem.oam, addr & 0x3FF);
 }
@@ -173,7 +173,7 @@ static void get_obj_tile_size(u32 sz, u32 shape, u32 *htiles, u32 *vtiles)
 #undef T
 }
 
-static void calculate_windows_vflags(struct NDS *this, NDSENG2D *eng)
+static void calculate_windows_vflags(NDS *this, NDSENG2D *eng)
 {
     for (u32 wn = 0; wn < 2; wn++) {
         struct NDS_PPU_window *w = &eng->window[wn];
@@ -190,7 +190,7 @@ static int obj_size[4][4][2] = {
         { { 8 , 8  }, { 8 , 8  }, { 8 , 8  }, { 8 , 8  } }
 };
 
-static inline void draw_obj_on_line(struct NDS *this, NDSENG2D *eng, u32 oam_offset, u32 prio_to_draw)
+static inline void draw_obj_on_line(NDS *this, NDSENG2D *eng, u32 oam_offset, u32 prio_to_draw)
 {
     i32 cycles_per_pixel;
     i32 pa, pb, pc, pd;
@@ -356,7 +356,7 @@ static inline void draw_obj_on_line(struct NDS *this, NDSENG2D *eng, u32 oam_off
     }
 }
 
-static void draw_obj_line(struct NDS *this, NDSENG2D *eng)
+static void draw_obj_line(NDS *this, NDSENG2D *eng)
 {
     //eng->obj.drawing_cycles = eng->io.hblank_free ? 1530 : 2124;
     eng->obj.drawing_cycles = 10000;
@@ -399,7 +399,7 @@ static inline u32 C18to15(u32 c)
     //return (((c >> 13) & 0x1F) << 10) | (((c >> 7) & 0x1F) << 5) | ((c >> 1) & 0x1F);
 }
 
-static void draw_3d_line(struct NDS *this, NDSENG2D *eng, u32 bgnum)
+static void draw_3d_line(NDS *this, NDSENG2D *eng, u32 bgnum)
 {
     u32 line_num = this->clock.ppu.y;
     if (line_num > 191) return;
@@ -420,7 +420,7 @@ static void draw_3d_line(struct NDS *this, NDSENG2D *eng, u32 bgnum)
 #pragma warning(disable: 4146) // unary minus operator applied to unsigned type, result still unsigned
 #endif
 
-static void draw_bg_line_normal(struct NDS *this, NDSENG2D *eng, u32 bgnum)
+static void draw_bg_line_normal(NDS *this, NDSENG2D *eng, u32 bgnum)
 {
     struct NDS_PPU_bg *bg = &eng->bg[bgnum];
     memset(bg->line, 0, sizeof(bg->line));
@@ -545,7 +545,7 @@ static void draw_bg_line_normal(struct NDS *this, NDSENG2D *eng, u32 bgnum)
 #pragma warning(pop)
 #endif
 
-static void affine_line_start(struct NDS *this, NDSENG2D *eng, NDS_PPU_bg *bg)
+static void affine_line_start(NDS *this, NDSENG2D *eng, NDS_PPU_bg *bg)
 {
     if (!bg->enable) {
         if (bg->mosaic_y != bg->last_y_rendered) {
@@ -556,7 +556,7 @@ static void affine_line_start(struct NDS *this, NDSENG2D *eng, NDS_PPU_bg *bg)
     }
 }
 
-static void affine_line_end(struct NDS *this, NDSENG2D *eng, NDS_PPU_bg *bg)
+static void affine_line_end(NDS *this, NDSENG2D *eng, NDS_PPU_bg *bg)
 {
     if (bg->mosaic_y != bg->last_y_rendered) {
         bg->x_lerp += bg->pb * eng->mosaic.bg.vsize;
@@ -565,7 +565,7 @@ static void affine_line_end(struct NDS *this, NDSENG2D *eng, NDS_PPU_bg *bg)
     }
 }
 
-typedef void (*affinerenderfunc)(struct NDS *, NDSENG2D *, NDS_PPU_bg *, i32 x, i32 y, union NDS_PX *, void *);
+typedef void (*affinerenderfunc)(NDS *, NDSENG2D *, NDS_PPU_bg *, i32 x, i32 y, union NDS_PX *, void *);
 
 // map_base, block_width, tile_base
 
@@ -575,9 +575,9 @@ struct affine_normal_xtradata {
     i32 width, height;
 };
 
-static void affine_normal(struct NDS *this, NDSENG2D *eng, NDS_PPU_bg *bg, i32 x, i32 y, union NDS_PX *out, void *xtra)
+static void affine_normal(NDS *this, NDSENG2D *eng, NDS_PPU_bg *bg, i32 x, i32 y, union NDS_PX *out, void *xtra)
 {
-    struct affine_normal_xtradata *xd = (struct affine_normal_xtradata *)xtra;
+    struct affine_normal_xtradata *xd = (affine_normal_xtradata *)xtra;
     u32 tile_number = read_vram_bg(this, eng, xd->map_base + (y >> 3) * xd->block_width + (x >> 3), 1);
 
     u32 addr = (xd->tile_base + tile_number * 64);
@@ -595,7 +595,7 @@ static void affine_normal(struct NDS *this, NDSENG2D *eng, NDS_PPU_bg *bg, i32 x
     }
 }
 
-static void render_affine_loop(struct NDS *this, NDSENG2D *eng, NDS_PPU_bg *bg, i32 width, i32 height, affinerenderfunc render_func, void *xtra)
+static void render_affine_loop(NDS *this, NDSENG2D *eng, NDS_PPU_bg *bg, i32 width, i32 height, affinerenderfunc render_func, void *xtra)
 {
     i32 fx = bg->x_lerp;
     i32 fy = bg->y_lerp;
@@ -624,9 +624,9 @@ static void render_affine_loop(struct NDS *this, NDSENG2D *eng, NDS_PPU_bg *bg, 
     affine_line_end(this, eng, bg);
 }
 
-static void affine_rotodc(struct NDS *this, NDSENG2D *eng, NDS_PPU_bg *bg, i32 x, i32 y, union NDS_PX *out, void *xtra)
+static void affine_rotodc(NDS *this, NDSENG2D *eng, NDS_PPU_bg *bg, i32 x, i32 y, union NDS_PX *out, void *xtra)
 {
-    struct affine_normal_xtradata *xd = (struct affine_normal_xtradata *)xtra;
+    struct affine_normal_xtradata *xd = (affine_normal_xtradata *)xtra;
 
     u32 color = read_vram_bg(this, eng, bg->screen_base_block + (y * xd->width + x) * 2, 2);
     if (color & 0x8000) {
@@ -638,9 +638,9 @@ static void affine_rotodc(struct NDS *this, NDSENG2D *eng, NDS_PPU_bg *bg, i32 x
     }
 }
 
-static void affine_rotobpp8(struct NDS *this, NDSENG2D *eng, NDS_PPU_bg *bg, i32 x, i32 y, union NDS_PX *out, void *xtra)
+static void affine_rotobpp8(NDS *this, NDSENG2D *eng, NDS_PPU_bg *bg, i32 x, i32 y, union NDS_PX *out, void *xtra)
 {
-    struct affine_normal_xtradata *xd = (struct affine_normal_xtradata *)xtra;
+    struct affine_normal_xtradata *xd = (affine_normal_xtradata *)xtra;
 
     u32 color = read_vram_bg(this, eng, bg->screen_base_block+ y * xd->width + x, 1);
     if (color) {
@@ -652,9 +652,9 @@ static void affine_rotobpp8(struct NDS *this, NDSENG2D *eng, NDS_PPU_bg *bg, i32
     }
 }
 
-static void affine_rotobpp16(struct NDS *this, NDSENG2D *eng, NDS_PPU_bg *bg, i32 x, i32 y, union NDS_PX *out, void *xtra)
+static void affine_rotobpp16(NDS *this, NDSENG2D *eng, NDS_PPU_bg *bg, i32 x, i32 y, union NDS_PX *out, void *xtra)
 {
-    struct affine_normal_xtradata *xd = (struct affine_normal_xtradata *)xtra;
+    struct affine_normal_xtradata *xd = (affine_normal_xtradata *)xtra;
     u32 encoder = read_vram_bg(this, eng, xd->map_base + ((y >> 3) * xd->block_width + (x >> 3)) * 2, 2);
     u32 number = encoder & 0x3FF;
     u32 palette = encoder >> 12;
@@ -682,7 +682,7 @@ static void affine_rotobpp16(struct NDS *this, NDSENG2D *eng, NDS_PPU_bg *bg, i3
 }
 
 
-static void draw_bg_line_extended(struct NDS *this, NDSENG2D *eng, u32 bgnum)
+static void draw_bg_line_extended(NDS *this, NDSENG2D *eng, u32 bgnum)
 {
     struct NDS_PPU_bg *bg = &eng->bg[bgnum];
     memset(bg->line, 0, sizeof(bg->line));
@@ -719,7 +719,7 @@ static void draw_bg_line_extended(struct NDS *this, NDSENG2D *eng, u32 bgnum)
 }
 
 
-static void draw_bg_line_affine(struct NDS *this, NDSENG2D *eng, u32 bgnum)
+static void draw_bg_line_affine(NDS *this, NDSENG2D *eng, u32 bgnum)
 {
     struct NDS_PPU_bg *bg = &eng->bg[bgnum];
 
@@ -742,7 +742,7 @@ static void draw_bg_line_affine(struct NDS *this, NDSENG2D *eng, u32 bgnum)
 
 
 
-static void apply_mosaic(struct NDS *this, NDSENG2D *eng)
+static void apply_mosaic(NDS *this, NDSENG2D *eng)
 {
     // This function updates vertical mosaics, and applies horizontal.
     struct NDS_PPU_bg *bg;
@@ -802,7 +802,7 @@ static void apply_mosaic(struct NDS *this, NDSENG2D *eng)
 
 #define NDSCTIVE_SFX 5
 
-static inline struct NDS_PPU_window *get_active_window(struct NDS *this, NDSENG2D *eng, u32 x)
+static inline struct NDS_PPU_window *get_active_window(NDS *this, NDSENG2D *eng, u32 x)
 {
     struct NDS_PPU_window *active_window = NULL;
     if (eng->window[NDS_WIN0].enable || eng->window[NDS_WIN1].enable || eng->window[NDS_WINOBJ].enable) {
@@ -849,7 +849,7 @@ static void find_targets_and_priorities(u32 bg_enables[6], union NDS_PX *layers[
     *layer_b_out = lbout;
 }
 
-static void calculate_windows(struct NDS *this, NDSENG2D *eng)
+static void calculate_windows(NDS *this, NDSENG2D *eng)
 {
     //if (!force && !this->ppu.window[0].enable && !this->ppu.window[1].enable && !this->ppu.window[GBA_WINOBJ].enable) return;
 
@@ -895,7 +895,7 @@ static void calculate_windows(struct NDS *this, NDSENG2D *eng)
 }
 
 
-static void output_pixel(struct NDS *this, NDSENG2D *eng, u32 x, u32 obj_enable, u32 bg_enables[4]) {
+static void output_pixel(NDS *this, NDSENG2D *eng, u32 x, u32 obj_enable, u32 bg_enables[4]) {
     // Find which window applies to us.
     u32 default_active[6] = {1, 1, 1, 1, 1, 1}; // Default to active if no window.
 
@@ -960,7 +960,7 @@ static void output_pixel(struct NDS *this, NDSENG2D *eng, u32 x, u32 obj_enable,
     eng->line_px[x] = output_color;
 }
 
-static void draw_line0(struct NDS *this, NDSENG2D *eng, NDS_DBG_line *l)
+static void draw_line0(NDS *this, NDSENG2D *eng, NDS_DBG_line *l)
 {
     draw_obj_line(this, eng);
     if ((eng->num == 0) && (eng->io.bg.do_3d)) {
@@ -980,7 +980,7 @@ static void draw_line0(struct NDS *this, NDSENG2D *eng, NDS_DBG_line *l)
     }
 }
 
-static void draw_line1(struct NDS *this, NDSENG2D *eng, NDS_DBG_line *l)
+static void draw_line1(NDS *this, NDSENG2D *eng, NDS_DBG_line *l)
 {
     draw_obj_line(this, eng);
     if ((eng->num == 0) && (eng->io.bg.do_3d)) {
@@ -1002,7 +1002,7 @@ static void draw_line1(struct NDS *this, NDSENG2D *eng, NDS_DBG_line *l)
     }
 }
 
-static void draw_line2(struct NDS *this, NDSENG2D *eng, NDS_DBG_line *l)
+static void draw_line2(NDS *this, NDSENG2D *eng, NDS_DBG_line *l)
 {
     draw_obj_line(this, eng);
     if ((eng->num == 0) && (eng->io.bg.do_3d)) {
@@ -1025,7 +1025,7 @@ static void draw_line2(struct NDS *this, NDSENG2D *eng, NDS_DBG_line *l)
 }
 
 
-static void draw_line3(struct NDS *this, NDSENG2D *eng, NDS_DBG_line *l)
+static void draw_line3(NDS *this, NDSENG2D *eng, NDS_DBG_line *l)
 {
     draw_obj_line(this, eng);
     if ((eng->num == 0) && (eng->io.bg.do_3d)) {
@@ -1047,7 +1047,7 @@ static void draw_line3(struct NDS *this, NDSENG2D *eng, NDS_DBG_line *l)
     }
 }
 
-static void draw_line5(struct NDS *this, NDSENG2D *eng, NDS_DBG_line *l)
+static void draw_line5(NDS *this, NDSENG2D *eng, NDS_DBG_line *l)
 {
     draw_obj_line(this, eng);
     if ((eng->num == 0) && (eng->io.bg.do_3d)) {
@@ -1088,7 +1088,7 @@ static const u32 VRAM_offsets[9] = {
         0x60000, // D - 128KB
 };
 
-static void run_dispcap(struct NDS *this)
+static void run_dispcap(NDS *this)
 {
     if (!this->ppu.io.DISPCAPCNT.capture_enable) return;
     // 0=128x128, 1=256x64, 2=256x128, 3=256x192 dots
@@ -1179,7 +1179,7 @@ static void run_dispcap(struct NDS *this)
     memcpy(this->dbg_info.eng[0].line[this->clock.ppu.y].dispcap_px, src, x_size * 2);
 }
 
-static void draw_line(struct NDS *this, u32 eng_num)
+static void draw_line(NDS *this, u32 eng_num)
 {
     struct NDSENG2D *eng = &this->ppu.eng2d[eng_num];
     struct NDS_DBG_line *l = &this->dbg_info.eng[eng_num].line[this->clock.ppu.y];
@@ -1251,11 +1251,11 @@ static void draw_line(struct NDS *this, u32 eng_num)
     }
 }
 
-static void new_frame(struct NDS *this);
+static void new_frame(NDS *this);
 
 void NDS_PPU_hblank(void *ptr, u64 key, u64 clock, u32 jitter) // Called at hblank time
 {
-    struct NDS *this = (struct NDS *)ptr;
+    struct NDS *this = (NDS *)ptr;
     this->clock.ppu.hblank_active = key;
     if (key == 0) { // end hblank...new line!
         this->clock.ppu.scanline_start = clock - jitter;
@@ -1310,7 +1310,7 @@ void NDS_PPU_hblank(void *ptr, u64 key, u64 clock, u32 jitter) // Called at hbla
 }
 
 #define MASTER_CYCLES_PER_FRAME 570716
-static void new_frame(struct NDS *this) {
+static void new_frame(NDS *this) {
     this->clock.ppu.y = 0;
     this->clock.frame_start_cycle = NDS_clock_current7(this);
     this->ppu.cur_output = ((u32 *) this->ppu.display->output[this->ppu.display->last_written ^ 1]);
@@ -1337,7 +1337,7 @@ static void new_frame(struct NDS *this) {
 
 void NDS_PPU_vblank(void *ptr, u64 key, u64 clock, u32 jitter)
 {
-    struct NDS *this = (struct NDS *)ptr;
+    struct NDS *this = (NDS *)ptr;
     //printf("\nvblank %lld: line %d cyc:%lld", key, this->clock.ppu.y, NDS_clock_current7(this));
 
     this->clock.ppu.vblank_active = key;
@@ -1353,17 +1353,17 @@ void NDS_PPU_vblank(void *ptr, u64 key, u64 clock, u32 jitter)
     // else { // line 0
 }
 
-void NDS_PPU_write_2d_bg_palette(struct NDS *this, u32 eng_num, u32 addr, u32 sz, u32 val)
+void NDS_PPU_write_2d_bg_palette(NDS *this, u32 eng_num, u32 addr, u32 sz, u32 val)
 {
     cW[sz](this->ppu.eng2d[eng_num].mem.bg_palette, addr, val);
 }
 
-void NDS_PPU_write_2d_obj_palette(struct NDS *this, u32 eng_num, u32 addr, u32 sz, u32 val)
+void NDS_PPU_write_2d_obj_palette(NDS *this, u32 eng_num, u32 addr, u32 sz, u32 val)
 {
     cW[sz](this->ppu.eng2d[eng_num].mem.obj_palette, addr, val);
 }
 
-static void calc_screen_sizeA(struct NDS *this, NDSENG2D *eng, u32 num) {
+static void calc_screen_sizeA(NDS *this, NDSENG2D *eng, u32 num) {
     struct NDS_PPU_bg *bg = &eng->bg[num];
     if ((num == 0) && bg->do3d) {
         bg->hpixels = 256;
@@ -1447,7 +1447,7 @@ screen base however NOT used at all for Large screen bitmap mode
     bg->vpixels_mask = bg->vpixels - 1;
 }
 
-static void calc_screen_sizeB(struct NDS *this, NDSENG2D *eng, u32 num)
+static void calc_screen_sizeB(NDS *this, NDSENG2D *eng, u32 num)
 {
     struct NDS_PPU_bg *bg = &eng->bg[num];
     u32 mode = eng->io.bg_mode;
@@ -1487,13 +1487,13 @@ static void calc_screen_sizeB(struct NDS *this, NDSENG2D *eng, u32 num)
     bg->vpixels_mask = bg->vpixels - 1;
 }
 
-static void calc_screen_size(struct NDS *this, NDSENG2D *eng, u32 num)
+static void calc_screen_size(NDS *this, NDSENG2D *eng, u32 num)
 {
     if (eng->num == 0) calc_screen_sizeA(this, eng, num);
     else calc_screen_sizeB(this, eng, num);
 }
 
-static void update_bg_x(struct NDS *this, NDSENG2D *eng, u32 bgnum, u32 which, u32 val)
+static void update_bg_x(NDS *this, NDSENG2D *eng, u32 bgnum, u32 which, u32 val)
 {
     i32 v = eng->bg[bgnum].x & 0x0FFFFFFF;
     val &= 0xFF;
@@ -1508,7 +1508,7 @@ static void update_bg_x(struct NDS *this, NDSENG2D *eng, u32 bgnum, u32 which, u
     eng->bg[bgnum].x_written = 1;
 }
 
-static void update_bg_y(struct NDS *this, NDSENG2D *eng, u32 bgnum, u32 which, u32 val)
+static void update_bg_y(NDS *this, NDSENG2D *eng, u32 bgnum, u32 which, u32 val)
 {
     u32 v = eng->bg[bgnum].y & 0x0FFFFFFF;
     val &= 0xFF;
@@ -1526,7 +1526,7 @@ static void update_bg_y(struct NDS *this, NDSENG2D *eng, u32 bgnum, u32 which, u
 static const u32 boundary_to_stride[4] = {32, 64, 128, 256};
 static const u32 boundary_to_stride_bitmap[2] = { 32, 64}; // ??
 
-void NDS_PPU_write7_io8(struct NDS *this, u32 addr, u32 sz, u32 access, u32 val) {
+void NDS_PPU_write7_io8(NDS *this, u32 addr, u32 sz, u32 access, u32 val) {
     u32 en = 0;
     if (addr >= 0x04001000) {
         addr -= 0x1000;
@@ -1547,7 +1547,7 @@ void NDS_PPU_write7_io8(struct NDS *this, u32 addr, u32 sz, u32 access, u32 val)
     printf("\nUNKNOWN PPU WR7 ADDR:%08x sz:%d VAL:%08x", addr, sz, val);
 }
 
-void NDS_PPU_write9_io8(struct NDS *this, u32 addr, u32 sz, u32 access, u32 val)
+void NDS_PPU_write9_io8(NDS *this, u32 addr, u32 sz, u32 access, u32 val)
 {
     u32 en = 0;
     if (addr >= 0x04001000) {
@@ -1853,7 +1853,7 @@ void NDS_PPU_write9_io8(struct NDS *this, u32 addr, u32 sz, u32 access, u32 val)
     printf("\nUNKNOWN PPU WR9 ADDR:%08x sz:%d VAL:%08x", addr, sz, val);
 }
 
-void NDS_PPU_write9_io(struct NDS *this, u32 addr, u32 sz, u32 access, u32 val)
+void NDS_PPU_write9_io(NDS *this, u32 addr, u32 sz, u32 access, u32 val)
 {
     NDS_PPU_write9_io8(this, addr, sz, access, val & 0xFF);
     if (sz >= 2) NDS_PPU_write9_io8(this, addr+1, sz, access, (val >> 8) & 0xFF);
@@ -1863,7 +1863,7 @@ void NDS_PPU_write9_io(struct NDS *this, u32 addr, u32 sz, u32 access, u32 val)
     }
 }
 
-u32 NDS_PPU_read9_io8(struct NDS *this, u32 addr, u32 sz, u32 access, u32 has_effect)
+u32 NDS_PPU_read9_io8(NDS *this, u32 addr, u32 sz, u32 access, u32 has_effect)
 {
     u32 en = 0;
     if (addr >= 0x04001000) {
@@ -2035,7 +2035,7 @@ u32 NDS_PPU_read9_io8(struct NDS *this, u32 addr, u32 sz, u32 access, u32 has_ef
     return 0;
 }
 
-u32 NDS_PPU_read7_io8(struct NDS *this, u32 addr, u32 sz, u32 access, u32 has_effect)
+u32 NDS_PPU_read7_io8(NDS *this, u32 addr, u32 sz, u32 access, u32 has_effect)
 {
     u32 v;
    switch(addr) {
@@ -2060,7 +2060,7 @@ u32 NDS_PPU_read7_io8(struct NDS *this, u32 addr, u32 sz, u32 access, u32 has_ef
    return 0;
 }
 
-u32 NDS_PPU_read7_io(struct NDS *this, u32 addr, u32 sz, u32 access, u32 has_effect)
+u32 NDS_PPU_read7_io(NDS *this, u32 addr, u32 sz, u32 access, u32 has_effect)
 {
     u32 v = NDS_PPU_read7_io8(this, addr, sz, access, has_effect);
     if (sz >= 2) v |= NDS_PPU_read7_io8(this, addr+1, sz, access, has_effect) << 8;
@@ -2071,7 +2071,7 @@ u32 NDS_PPU_read7_io(struct NDS *this, u32 addr, u32 sz, u32 access, u32 has_eff
     return v;
 }
 
-u32 NDS_PPU_read9_io(struct NDS *this, u32 addr, u32 sz, u32 access, u32 has_effect)
+u32 NDS_PPU_read9_io(NDS *this, u32 addr, u32 sz, u32 access, u32 has_effect)
 {
     u32 v = NDS_PPU_read9_io8(this, addr, sz, access, has_effect);
     if (sz >= 2) v |= NDS_PPU_read9_io8(this, addr+1, sz, access, has_effect) << 8;
@@ -2082,7 +2082,7 @@ u32 NDS_PPU_read9_io(struct NDS *this, u32 addr, u32 sz, u32 access, u32 has_eff
     return v;
 }
 
-void NDS_PPU_write7_io(struct NDS *this, u32 addr, u32 sz, u32 access, u32 val)
+void NDS_PPU_write7_io(NDS *this, u32 addr, u32 sz, u32 access, u32 val)
 {
     NDS_PPU_write7_io8(this, addr, sz, access, val & 0xFF);
     if (sz >= 2) NDS_PPU_write7_io8(this, addr+1, sz, access, (val >> 8) & 0xFF);

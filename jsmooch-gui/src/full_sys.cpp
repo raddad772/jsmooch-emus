@@ -59,7 +59,7 @@ static u32 get_closest_pow2(u32 b)
 }
 
 void test_gdi() {
-    GDI_image foo;
+    GDI_image foo{};
     GDI_init(&foo);
     const char *homeDir = getenv("HOME");
 

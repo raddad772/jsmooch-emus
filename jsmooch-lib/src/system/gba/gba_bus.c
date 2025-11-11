@@ -11,7 +11,7 @@
 
 static const u32 maskalign[5] = {0, 0xFFFFFFFF, 0xFFFFFFFE, 0, 0xFFFFFFFC};
 
-static u32 busrd_invalid(struct GBA *this, u32 addr, u32 sz, u32 access, u32 has_effect) {
+static u32 busrd_invalid(GBA *this, u32 addr, u32 sz, u32 access, u32 has_effect) {
     printf("\nREAD UNKNOWN ADDR:%08x sz:%d", addr, sz);
     this->waitstates.current_transaction++;
     if (addr == 0x83001888) {
@@ -31,7 +31,7 @@ static u32 busrd_invalid(struct GBA *this, u32 addr, u32 sz, u32 access, u32 has
     return v;
 }
 
-static void buswr_invalid(struct GBA *this, u32 addr, u32 sz, u32 access, u32 val) {
+static void buswr_invalid(GBA *this, u32 addr, u32 sz, u32 access, u32 val) {
     printf("\nWRITE UNKNOWN ADDR:%08x sz:%d DATA:%08x", addr, sz, val);
     this->waitstates.current_transaction++;
     dbg.var++;
@@ -40,7 +40,7 @@ static void buswr_invalid(struct GBA *this, u32 addr, u32 sz, u32 access, u32 va
 
 #define WAITCNT 0x04000204
 
-static u32 busrd_bios(struct GBA *this, u32 addr, u32 sz, u32 access, u32 has_effect) {
+static u32 busrd_bios(GBA *this, u32 addr, u32 sz, u32 access, u32 has_effect) {
     addr &= maskalign[sz];
     this->waitstates.current_transaction++;
     if (addr < 0x4000) {
@@ -57,13 +57,13 @@ static u32 busrd_bios(struct GBA *this, u32 addr, u32 sz, u32 access, u32 has_ef
     return GBA_open_bus(this, addr, sz);
 }
 
-static void buswr_bios(struct GBA *this, u32 addr, u32 sz, u32 access, u32 val) {
+static void buswr_bios(GBA *this, u32 addr, u32 sz, u32 access, u32 val) {
     this->waitstates.current_transaction++;
     //printf("\nWarning write to BIOS...");
 }
 
 
-static u32 busrd_WRAM_slow(struct GBA *this, u32 addr, u32 sz, u32 access, u32 has_effect) {
+static u32 busrd_WRAM_slow(GBA *this, u32 addr, u32 sz, u32 access, u32 has_effect) {
     addr &= maskalign[sz];
     this->waitstates.current_transaction += 3;
     if (sz == 4) {
@@ -74,7 +74,7 @@ static u32 busrd_WRAM_slow(struct GBA *this, u32 addr, u32 sz, u32 access, u32 h
     return cR[sz](this->WRAM_slow, addr & 0x3FFFF);
 }
 
-static u32 busrd_WRAM_fast(struct GBA *this, u32 addr, u32 sz, u32 access, u32 has_effect) {
+static u32 busrd_WRAM_fast(GBA *this, u32 addr, u32 sz, u32 access, u32 has_effect) {
     addr &= maskalign[sz];
     this->waitstates.current_transaction++;
     if (sz == 4) addr &= ~3;
@@ -82,7 +82,7 @@ static u32 busrd_WRAM_fast(struct GBA *this, u32 addr, u32 sz, u32 access, u32 h
     return cR[sz](this->WRAM_fast, addr & 0x7FFF);
 }
 
-static void buswr_WRAM_slow(struct GBA *this, u32 addr, u32 sz, u32 access, u32 val) {
+static void buswr_WRAM_slow(GBA *this, u32 addr, u32 sz, u32 access, u32 val) {
     addr &= maskalign[sz];
     this->waitstates.current_transaction += 3;
     if (sz == 4) {
@@ -94,7 +94,7 @@ static void buswr_WRAM_slow(struct GBA *this, u32 addr, u32 sz, u32 access, u32 
     cW[sz](this->WRAM_slow, addr & 0x3FFFF, val);
 }
 
-static void set_waitstates(struct GBA *this) {
+static void set_waitstates(GBA *this) {
 
 // 8 and 8+1  are set to...based on the thing....
 #define DOV4(n, a, b, c, d) switch(this->waitstates.io. n) { case 0: this->waitstates. n = a; break; case 1: this->waitstates. n = b; break; case 2: this->waitstates. n = c; break; case 3: this->waitstates. n = d; break; }
@@ -151,7 +151,7 @@ static void set_waitstates(struct GBA *this) {
 }
 
 
-static void buswr_WRAM_fast(struct GBA *this, u32 addr, u32 sz, u32 access, u32 val) {
+static void buswr_WRAM_fast(GBA *this, u32 addr, u32 sz, u32 access, u32 val) {
     addr &= maskalign[sz];
     this->waitstates.current_transaction++;
     if (sz == 4) addr &= ~3;
@@ -168,7 +168,7 @@ static u32 DMA_CH_NUM(u32 addr)
     return 3;
 }
 
-static u32 busrd_IO8(struct GBA *this, u32 addr, u32 sz, u32 access, u32 has_effect) {
+static u32 busrd_IO8(GBA *this, u32 addr, u32 sz, u32 access, u32 has_effect) {
     if (addr < 0x4000060) return GBA_PPU_mainbus_read_IO(this, addr, sz, access, has_effect);
     if ((addr >= 0x04000060) && (addr < 0x040000B0)) return GBA_APU_read_IO(this, addr, sz, access, has_effect);
 
@@ -319,7 +319,7 @@ static u32 busrd_IO8(struct GBA *this, u32 addr, u32 sz, u32 access, u32 has_eff
     return GBA_open_bus_byte(this, addr);
 }
 
-static u32 busrd_IO(struct GBA *this, u32 addr, u32 sz, u32 access, u32 has_effect) {
+static u32 busrd_IO(GBA *this, u32 addr, u32 sz, u32 access, u32 has_effect) {
     addr &= maskalign[sz];
     this->waitstates.current_transaction++;
     u32 r = busrd_IO8(this, addr, 1, access, has_effect) << 0;
@@ -334,7 +334,7 @@ static u32 busrd_IO(struct GBA *this, u32 addr, u32 sz, u32 access, u32 has_effe
 }
 
 
-void GBA_eval_irqs(struct GBA *this)
+void GBA_eval_irqs(GBA *this)
 {
     u32 old_line = this->cpu.regs.IRQ_line;
     this->cpu.regs.IRQ_line = (!!(this->io.IE & this->io.IF & 0x3FFF)) & this->io.IME;
@@ -359,7 +359,7 @@ void GBA_eval_irqs(struct GBA *this)
 }
 
 
-static void enable_prefetch(struct GBA *this)
+static void enable_prefetch(GBA *this)
 {
     u32 page = this->cpu.regs.R[15] >> 28;
     if ((page < 8) || (page >= 0xE)) { // Prefetch is enabled but not great...
@@ -373,7 +373,7 @@ static void enable_prefetch(struct GBA *this)
     this->cart.prefetch.duty_cycle = this->waitstates.timing16[0][page];
 }
 
-static void buswr_IO8(struct GBA *this, u32 addr, u32 sz, u32 access, u32 val) {
+static void buswr_IO8(GBA *this, u32 addr, u32 sz, u32 access, u32 val) {
     val &= 0xFF;
     if (addr < 0x04000060) return GBA_PPU_mainbus_write_IO(this, addr, sz, access, val);
     u32 mask = 0xFF;
@@ -699,7 +699,7 @@ static void buswr_IO8(struct GBA *this, u32 addr, u32 sz, u32 access, u32 val) {
     //buswr_invalid(this, addr, sz, access, val);
 }
 
-static void buswr_IO(struct GBA *this, u32 addr, u32 sz, u32 access, u32 val) {
+static void buswr_IO(GBA *this, u32 addr, u32 sz, u32 access, u32 val) {
     addr &= maskalign[sz];
     this->waitstates.current_transaction++;
     if ((addr >= 0x04000060) && (addr < 0x040000B0)) return GBA_APU_write_IO(this, addr, sz, access, val);
@@ -729,7 +729,7 @@ static void buswr_IO(struct GBA *this, u32 addr, u32 sz, u32 access, u32 val) {
     }
 }
 
-void GBA_bus_init(struct GBA *this)
+void GBA_bus_init(GBA *this)
 {
     for (u32 i = 0; i < 4; i++) {
         struct GBA_TIMER *t = &this->timer[i];
@@ -776,18 +776,18 @@ void GBA_bus_init(struct GBA *this)
     set_waitstates(this);
 }
 
-static u32 GBA_mainbus_IO_read(struct GBA *this, u32 addr, u32 sz, u32 has_effect)
+static u32 GBA_mainbus_IO_read(GBA *this, u32 addr, u32 sz, u32 has_effect)
 {
     printf("\nUnknown IO read addr:%08x sz:%d", addr, sz);
     return 0;
 }
 
-static void GBA_mainbus_IO_write(struct GBA *this, u32 addr, u32 sz, u32 val)
+static void GBA_mainbus_IO_write(GBA *this, u32 addr, u32 sz, u32 val)
 {
     printf("\nUnknown IO write addr:%08x sz:%d val:%08x", addr, sz, val);
 }
 
-static void trace_read(struct GBA *this, u32 addr, u32 sz, u32 val)
+static void trace_read(GBA *this, u32 addr, u32 sz, u32 val)
 {
     struct trace_view *tv = this->cpu.dbg.tvptr;
     if (!tv) return;
@@ -799,7 +799,7 @@ static void trace_read(struct GBA *this, u32 addr, u32 sz, u32 val)
     trace_view_endline(tv);
 }
 
-static void trace_write(struct GBA *this, u32 addr, u32 sz, u32 val)
+static void trace_write(GBA *this, u32 addr, u32 sz, u32 val)
 {
     struct trace_view *tv = this->cpu.dbg.tvptr;
     if (!tv) return;
@@ -814,7 +814,7 @@ static void trace_write(struct GBA *this, u32 addr, u32 sz, u32 val)
 
 u32 GBA_mainbus_read(void *ptr, u32 addr, u32 sz, u32 access, u32 has_effect)
 {
-    struct GBA *this = (struct GBA *)ptr;
+    struct GBA *this = (GBA *)ptr;
     u32 v;
 
     if (addr < 0x10000000) v = this->mem.read[(addr >> 24) & 15](this, addr, sz, access, has_effect);
@@ -825,7 +825,7 @@ u32 GBA_mainbus_read(void *ptr, u32 addr, u32 sz, u32 access, u32 has_effect)
 
 u32 GBA_mainbus_fetchins(void *ptr, u32 addr, u32 sz, u32 access)
 {
-    struct GBA *this = (struct GBA*)ptr;
+    struct GBA *this = (GBA*)ptr;
     u32 v = GBA_mainbus_read(ptr, addr, sz, access, 1);
     switch(sz) {
         case 4:
@@ -840,7 +840,7 @@ u32 GBA_mainbus_fetchins(void *ptr, u32 addr, u32 sz, u32 access)
 
 void GBA_mainbus_write(void *ptr, u32 addr, u32 sz, u32 access, u32 val)
 {
-    struct GBA *this = (struct GBA *)ptr;
+    struct GBA *this = (GBA *)ptr;
     //if (dbg.trace_on) trace_write(this, addr, sz, val);
     if (addr < 0x10000000) {
         //printf("\nWRITE addr:%08x sz:%d val:%08x", addr, sz, val);
@@ -850,7 +850,7 @@ void GBA_mainbus_write(void *ptr, u32 addr, u32 sz, u32 access, u32 val)
     buswr_invalid(this, addr, sz, access, val);
 }
 
-void GBA_check_dma_at_hblank(struct GBA *this)
+void GBA_check_dma_at_hblank(GBA *this)
 {
     // Check if any DMA channels are at enabled=1, started=0, time=hblank
     for (u32 i = 0; i < 4; i++) {
@@ -869,7 +869,7 @@ void GBA_check_dma_at_hblank(struct GBA *this)
     // And if it's channel 3 and "special", if we're in the correct lines.
 }
 
-u32 GBA_open_bus_byte(struct GBA *this, u32 addr)
+u32 GBA_open_bus_byte(GBA *this, u32 addr)
 {
     switch(addr & 3) {
         case 0:
@@ -884,7 +884,7 @@ u32 GBA_open_bus_byte(struct GBA *this, u32 addr)
     return 0;
 }
 
-u32 GBA_open_bus(struct GBA *this, u32 addr, u32 sz)
+u32 GBA_open_bus(GBA *this, u32 addr, u32 sz)
 {
     u32 v = GBA_open_bus_byte(this, addr);
     if (sz >= 2) {
@@ -898,7 +898,7 @@ u32 GBA_open_bus(struct GBA *this, u32 addr, u32 sz)
 }
 
 
-void GBA_check_dma_at_vblank(struct GBA *this)
+void GBA_check_dma_at_vblank(GBA *this)
 {
     // Check if any DMA channels are at enabled=1, started=0, time=hblank
     for (u32 i = 0; i < 4; i++) {

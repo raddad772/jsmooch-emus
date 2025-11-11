@@ -25,11 +25,11 @@ struct MAPLE_port {
 
 struct DC;
 
-void MAPLE_port_init(struct MAPLE_port*);
+void MAPLE_port_init(MAPLE_port*);
 
-u64 maple_read(struct DC*, u32 addr, u32 sz, u32* success);
-void maple_write(struct DC*, u32 addr, u64 val, u32 sz, u32* success);
-void maple_dma_init(struct DC*);
+u64 maple_read(DC*, u32 addr, u32 sz, u32* success);
+void maple_write(DC*, u32 addr, u64 val, u32 sz, u32* success);
+void maple_dma_init(DC*);
 
 
 #endif //JSMOOCH_EMUS_MAPLE_H

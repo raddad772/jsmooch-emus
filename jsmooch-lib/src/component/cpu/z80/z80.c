@@ -12,12 +12,12 @@
 #include "z80_opcodes.h"
 #include "z80_disassembler.h"
 
-void Z80_regs_F_init(struct Z80_regs_F* this)
+void Z80_regs_F_init(Z80_regs_F* this)
 {
     this->S = this->Z = this->Y = this->H = this->X = this->PV = this->N = this->C = 0;
 }
 
-void Z80_regs_F_setbyte(struct Z80_regs_F* this, u32 val)
+void Z80_regs_F_setbyte(Z80_regs_F* this, u32 val)
 {
     this->C = val & 1;
     this->N = (val & 2) >> 1;
@@ -29,12 +29,12 @@ void Z80_regs_F_setbyte(struct Z80_regs_F* this, u32 val)
     this->S = (val & 0x80) >> 7;
 }
 
-u32 Z80_regs_F_getbyte(struct Z80_regs_F* this)
+u32 Z80_regs_F_getbyte(Z80_regs_F* this)
 {
     return this->C | (this->N << 1) | (this->PV << 2) | (this->X << 3) | (this->H << 4) | (this->Y << 5) | (this->Z << 6) | (this->S << 7);
 }
 
-void Z80_regs_init(struct Z80_regs* this)
+void Z80_regs_init(Z80_regs* this)
 {
     this->IR = this->TCU = 0;
     this->A = this->B = this->C = this->D = 0;
@@ -64,12 +64,12 @@ void Z80_regs_init(struct Z80_regs* this)
     this->poll_IRQ = 0;
 }
 
-void Z80_regs_inc_R(struct Z80_regs* this)
+void Z80_regs_inc_R(Z80_regs* this)
 {
     this->R = (this->R & 0x80) | ((this->R + 1) & 0x7F);
 }
 
-void Z80_regs_exchange_shadow(struct Z80_regs* this)
+void Z80_regs_exchange_shadow(Z80_regs* this)
 {
     this->BCt = (this->B << 8) | this->C;
     this->DEt = (this->D << 8) | this->E;
@@ -88,7 +88,7 @@ void Z80_regs_exchange_shadow(struct Z80_regs* this)
 
 }
 
-void Z80_regs_exchange_de_hl(struct Z80_regs* this)
+void Z80_regs_exchange_de_hl(Z80_regs* this)
 {
     this->Ht = this->H;
     this->Lt = this->L;
@@ -99,7 +99,7 @@ void Z80_regs_exchange_de_hl(struct Z80_regs* this)
 
 }
 
-void Z80_regs_exchange_shadow_af(struct Z80_regs* this)
+void Z80_regs_exchange_shadow_af(Z80_regs* this)
 {
     this->AFt = (this->A << 8) | Z80_regs_F_getbyte(&this->F);
 
@@ -109,7 +109,7 @@ void Z80_regs_exchange_shadow_af(struct Z80_regs* this)
     this->AF_ = this->AFt;
 }
 
-void Z80_pins_init(struct Z80_pins* this)
+void Z80_pins_init(Z80_pins* this)
 {
     this->Addr = 0;
     this->D = 0;
@@ -118,7 +118,7 @@ void Z80_pins_init(struct Z80_pins* this)
     this->RD = this->WR = this->IO = this->MRQ = 0;
 }
 
-void Z80_init(struct Z80* this, u32 CMOS)
+void Z80_init(Z80* this, u32 CMOS)
 {
     memset(this, 0, sizeof(*this));
     Z80_regs_init(&this->regs);
@@ -143,7 +143,7 @@ void Z80_init(struct Z80* this, u32 CMOS)
 
 #define THIS struct Z80* this
 
-void Z80_setup_tracing(struct Z80* this, jsm_debug_read_trace* dbg_read_trace, u64 *trace_cycle_pointer)
+void Z80_setup_tracing(Z80* this, jsm_debug_read_trace* dbg_read_trace, u64 *trace_cycle_pointer)
 {
     jsm_copy_read_trace(&this->read_trace, dbg_read_trace);
     this->trace.cycles = trace_cycle_pointer;
@@ -177,7 +177,7 @@ Z80_ins_func Z80_fetch_decoded(u32 opcode, u32 prefix)
     return Z80_decoded_opcodes[Z80_prefix_to_codemap(prefix) + opcode];
 }
 
-void Z80_reset(struct Z80* this)
+void Z80_reset(Z80* this)
 {
     this->regs.rprefix = Z80P_HL;
     this->regs.prefix = 0;
@@ -199,29 +199,29 @@ void Z80_reset(struct Z80* this)
     this->regs.TCU = 0;
 }
 
-void Z80_notify_IRQ(struct Z80* this, u32 level) {
+void Z80_notify_IRQ(Z80* this, u32 level) {
     this->IRQ_pending = level != 0;
 }
 
-void Z80_notify_NMI(struct Z80* this, u32 level) {
+void Z80_notify_NMI(Z80* this, u32 level) {
     if ((level == 0) && this->NMI_ack) { this->NMI_ack = false; }
     this->NMI_pending = this->NMI_pending || (level > 0);
 }
 
-void Z80_set_pins_opcode(struct Z80* this)
+void Z80_set_pins_opcode(Z80* this)
 {
     this->pins.RD = this->pins.MRQ = this->pins.WR = this->pins.IO = 0;
     this->pins.Addr = this->regs.PC;
     this->regs.PC = (this->regs.PC + 1) & 0xFFFF;
 }
 
-void Z80_set_pins_nothing(struct Z80* this)
+void Z80_set_pins_nothing(Z80* this)
 {
     this->pins.RD = this->pins.MRQ = 0;
     this->pins.WR = this->pins.IO = 0;
 }
 
-void Z80_set_instruction(struct Z80* this, u32 to)
+void Z80_set_instruction(Z80* this, u32 to)
 {
     this->regs.IR = to;
     this->current_instruction = Z80_fetch_decoded(this->regs.IR, this->regs.prefix);
@@ -230,7 +230,7 @@ void Z80_set_instruction(struct Z80* this, u32 to)
     this->regs.rprefix = Z80P_HL;
 }
 
-void Z80_ins_cycles(struct Z80* this)
+void Z80_ins_cycles(Z80* this)
 {
     switch(this->regs.TCU) {
         // 1-4 is fetch next thing and interpret
@@ -380,7 +380,7 @@ void Z80_ins_cycles(struct Z80* this)
 }
 
 
-void Z80_printf_trace(struct Z80* this) {
+void Z80_printf_trace(Z80* this) {
     char t[250];
     t[0] = 0;
     u32 b = this->read_trace.read_trace(this->read_trace.ptr, this->PCO);
@@ -394,7 +394,7 @@ void Z80_printf_trace(struct Z80* this) {
            this->regs.WZ, Z80_regs_F_getbyte(&this->regs.F), this->regs.TCU);
 }
 
-void Z80_trace_format(struct Z80* this)
+void Z80_trace_format(Z80* this)
 {
     char t[250];
     t[0] = 0;
@@ -414,14 +414,14 @@ void Z80_trace_format(struct Z80* this)
                this->regs.WZ, Z80_regs_F_getbyte(&this->regs.F), this->regs.TCU);
 }
 
-void Z80_lycoder_print(struct Z80* this)
+void Z80_lycoder_print(Z80* this)
 {
     dbg_printf("\n%08d %04X %02X%02X %02X%02X %02X%02X %02X%02X %04X %04X", *this->trace.cycles, this->regs.PC, this->regs.A,
                Z80_regs_F_getbyte(&this->regs.F), this->regs.B, this->regs.C, this->regs.D, this->regs.E,
                this->regs.H, this->regs.L, this->regs.IX, this->regs.IY);
 }
 
-void Z80_cycle(struct Z80* this)
+void Z80_cycle(Z80* this)
 {
     this->regs.TCU++;
     this->trace.my_cycles++;
@@ -462,7 +462,7 @@ u32 Z80_parity(u32 val) {
 }
 
 #define S(x) Sadd(state, &this-> x, sizeof(this-> x))
-static void serialize_regs(struct Z80_regs *this, serialized_state *state)
+static void serialize_regs(Z80_regs *this, serialized_state *state)
 {
     S(IR);
     S(TCU);
@@ -511,7 +511,7 @@ static void serialize_regs(struct Z80_regs *this, serialized_state *state)
     S(poll_IRQ);
 }
 
-static void serialize_pins(struct Z80_pins* this, serialized_state *state)
+static void serialize_pins(Z80_pins* this, serialized_state *state)
 {
     S(Addr);
     S(D);
@@ -524,7 +524,7 @@ static void serialize_pins(struct Z80_pins* this, serialized_state *state)
     S(WAIT);
 }
 
-void Z80_serialize(struct Z80 *this, serialized_state *state)
+void Z80_serialize(Z80 *this, serialized_state *state)
 {
     serialize_regs(&this->regs, state);
     serialize_pins(&this->pins, state);
@@ -539,7 +539,7 @@ void Z80_serialize(struct Z80 *this, serialized_state *state)
 #undef S
 
 #define L(x) Sload(state, &this-> x, sizeof(this-> x))
-static void deserialize_regs(struct Z80_regs* this, serialized_state *state)
+static void deserialize_regs(Z80_regs* this, serialized_state *state)
 {
     L(IR);
     L(TCU);
@@ -589,7 +589,7 @@ static void deserialize_regs(struct Z80_regs* this, serialized_state *state)
     L(poll_IRQ);
 }
 
-static void deserialize_pins(struct Z80_pins* this, serialized_state *state)
+static void deserialize_pins(Z80_pins* this, serialized_state *state)
 {
     L(Addr);
     L(D);
@@ -602,7 +602,7 @@ static void deserialize_pins(struct Z80_pins* this, serialized_state *state)
     L(WAIT);
 }
 
-void Z80_deserialize(struct Z80* this, serialized_state *state)
+void Z80_deserialize(Z80* this, serialized_state *state)
 {
     deserialize_regs(&this->regs, state);
     deserialize_pins(&this->pins, state);

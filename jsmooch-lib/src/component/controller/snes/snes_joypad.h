@@ -20,10 +20,10 @@ struct SNES_joypad {
     u32 counter, latched;
 };
 
-void SNES_joypad_latch(struct SNES_joypad*, u32 val);
-u32 SNES_joypad_data(struct SNES_joypad*);
-void SNES_joypad_setup_pio(struct physical_io_device *d, u32 num, const char*name, u32 connected);
-void SNES_joypad_init(struct SNES_joypad* this);
-void SNES_joypad_delete(struct SNES_joypad* this);
+void SNES_joypad_latch(SNES_joypad*, u32 val);
+u32 SNES_joypad_data(SNES_joypad*);
+void SNES_joypad_setup_pio(physical_io_device *d, u32 num, const char*name, u32 connected);
+void SNES_joypad_init(SNES_joypad* this);
+void SNES_joypad_delete(SNES_joypad* this);
 
 #endif //JSMOOCH_EMUS_SNES_JOYPAD_H

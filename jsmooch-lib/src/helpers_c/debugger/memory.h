@@ -11,8 +11,8 @@ extern "C" {
 
 #include "debugger.h"
 
-void memory_view_init(struct memory_view *);
-void memory_view_delete(struct memory_view *);
+void memory_view_init(memory_view *);
+void memory_view_delete(memory_view *);
 
 
 #ifdef __cplusplus

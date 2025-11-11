@@ -115,10 +115,10 @@ struct ISO9660_volume_descriptor {
     u32 path_version;
 };
 
-void GDI_init(struct GDI_image *);
-void GDI_delete(struct GDI_image *);
+void GDI_init(GDI_image *);
+void GDI_delete(GDI_image *);
 void GDI_load(char *folder, const char *filename, GDI_image *img);
-void GDI_GetToc(struct GDI_image *, u32 *toc, u32 area);
+void GDI_GetToc(GDI_image *, u32 *toc, u32 area);
 
 #ifdef __cplusplus
 }

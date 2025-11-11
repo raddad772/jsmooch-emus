@@ -19,27 +19,27 @@ char *construct_path_with_home(char *w, size_t w_sz, const char *who)
     return w + snprintf(w, w_sz, "%s/%s", homeDir, who);
 }
 
-void inifile_init(struct inifile *this)
+void inifile_init(inifile *this)
 {
-    cvec_init(&this->sections, sizeof(struct kv_section), 10);
+    cvec_init(&this->sections, sizeof(kv_section), 10);
 }
 
-struct kv_section *section_new(struct inifile *inifile, const char *name)
+struct kv_section *section_new(inifile *inifile, const char *name)
 {
     struct kv_section *this = cvec_push_back(&inifile->sections);
 
-    cvec_init(&this->kvs, sizeof(struct kv_pair), 10);
+    cvec_init(&this->kvs, sizeof(kv_pair), 10);
     snprintf(this->name, sizeof(this->name), "%s", name);
 
     return this;
 }
 
-static void section_delete(struct kv_section *this)
+static void section_delete(kv_section *this)
 {
     cvec_delete(&this->kvs);
 }
 
-static void inifile_clear(struct inifile* this)
+static void inifile_clear(inifile* this)
 {
     u32 len = cvec_len(&this->sections);
     for (u32 i = 0; i < len; i++) {
@@ -51,17 +51,17 @@ static void inifile_clear(struct inifile* this)
 
 
 
-struct kv_pair *pair_new(struct kv_section *sec, const char *name)
+struct kv_pair *pair_new(kv_section *sec, const char *name)
 {
     struct kv_pair *this = cvec_push_back(&sec->kvs);
 
-    *this = (struct kv_pair) { .kind=kvk_empty };
+    *this = (kv_pair) { .kind=kvk_empty };
     snprintf(this->key, sizeof(this->key), "%s", name);
 
     return this;
 }
 
-void inifile_delete(struct inifile *this)
+void inifile_delete(inifile *this)
 {
     u32 len = cvec_len(&this->sections);
     for (u32 i = 0; i < len; i++) {
@@ -81,7 +81,7 @@ static int strcicmp(char const *a, char const *b)
     return 0;
 }
 
-static struct kv_section *find_section(struct inifile *this, const char* name)
+static struct kv_section *find_section(inifile *this, const char* name)
 {
     u32 len = cvec_len(&this->sections);
     for (u32 i = 0; i < len; i++) {
@@ -92,7 +92,7 @@ static struct kv_section *find_section(struct inifile *this, const char* name)
     return NULL;
 }
 
-static struct kv_pair *find_key(struct kv_section* this, const char* name)
+static struct kv_pair *find_key(kv_section* this, const char* name)
 {
     u32 len = cvec_len(&this->kvs);
     for (u32 i = 0; i < len; i++) {
@@ -104,7 +104,7 @@ static struct kv_pair *find_key(struct kv_section* this, const char* name)
 }
 
 
-u32 inifile_has_key(struct inifile *this, const char* section, const char* key)
+u32 inifile_has_key(inifile *this, const char* section, const char* key)
 {
     struct kv_section *sec = find_section(this, section);
     if (sec == NULL) return 0;
@@ -115,7 +115,7 @@ u32 inifile_has_key(struct inifile *this, const char* section, const char* key)
     return 1;
 }
 
-static struct kv_section* get_or_make_section(struct inifile *this, const char* section)
+static struct kv_section* get_or_make_section(inifile *this, const char* section)
 {
     struct kv_section *sec = find_section(this, section);
     if (sec == NULL) {
@@ -124,7 +124,7 @@ static struct kv_section* get_or_make_section(struct inifile *this, const char* 
     return sec;
 }
 
-struct kv_pair* inifile_get_or_make_key(struct inifile *this, const char* section, const char* key)
+struct kv_pair* inifile_get_or_make_key(inifile *this, const char* section, const char* key)
 {
     struct kv_section *sec = find_section(this, section);
     if (sec == NULL) {
@@ -153,7 +153,7 @@ enum get_line_retval {
     eof = 2
 };
 
-static enum get_line_retval get_line(struct read_file_buf *rfb, char *line, size_t line_size)
+static enum get_line_retval get_line(read_file_buf *rfb, char *line, size_t line_size)
 {
     snprintf(line, line_size, "");
     char *line_ptr = line;
@@ -204,7 +204,7 @@ enum parse_line_ret {
     plr_section
 };
 
-static enum parse_line_ret parse_line(struct inifile *this, char *line, size_t line_sz, char *str1buf, size_t str1sz, char *str2buf, size_t str2sz)
+static enum parse_line_ret parse_line(inifile *this, char *line, size_t line_sz, char *str1buf, size_t str1sz, char *str2buf, size_t str2sz)
 {
     char *line_ptr = line - 1;
     char *line_end_ptr = line + line_sz;
@@ -280,7 +280,7 @@ static enum parse_line_ret parse_line(struct inifile *this, char *line, size_t l
 }
 
 
-static void parse_kvp(struct kv_section *sec, char *key, char *val)
+static void parse_kvp(kv_section *sec, char *key, char *val)
 {
     u32 is_int = 1; // finding a non-int character in value will set this to 0
     u32 is_float = 1; // finding a non-float character will set this to 0
@@ -332,7 +332,7 @@ static void parse_kvp(struct kv_section *sec, char *key, char *val)
     }
 }
 
-int inifile_load(struct inifile *this, const char* path)
+int inifile_load(inifile *this, const char* path)
 {
     struct kv_section *current_section = NULL;
     inifile_clear(this);
@@ -382,7 +382,7 @@ int inifile_load(struct inifile *this, const char* path)
     return 1;
 }
 
-void inifile_save(struct inifile *this)
+void inifile_save(inifile *this)
 {
 
 }

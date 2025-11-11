@@ -67,7 +67,7 @@ struct TG16 {
     DBG_END
 };
 
-u32 TG16_bus_read(struct TG16 *, u32 addr, u32 old, u32 has_effect);
+u32 TG16_bus_read(TG16 *, u32 addr, u32 old, u32 has_effect);
 
 u32 TG16_huc_read_mem(void *ptr, u32 addr, u32 old, u32 has_effect);
 void TG16_huc_write_mem(void *ptr, u32 addr, u32 val);

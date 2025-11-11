@@ -19,8 +19,8 @@ struct audiobuf {
     u32 finished;
 };
 
-void audiobuf_init(struct audiobuf *);
-void audiobuf_delete(struct audiobuf *);
-void audiobuf_allocate(struct audiobuf*, u32 num_channels, float num_samples);
+void audiobuf_init(audiobuf *);
+void audiobuf_delete(audiobuf *);
+void audiobuf_allocate(audiobuf*, u32 num_channels, float num_samples);
 
 #endif //JSMOOCH_EMUS_AUDIOBUF_H

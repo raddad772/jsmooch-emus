@@ -1,7 +1,7 @@
 #include "stdio.h"
 #include "gb_clock.h"
 
-void GB_clock_init(struct GB_clock* this) {
+void GB_clock_init(GB_clock* this) {
     this->ppu_mode = OAM_search;
     this->frames_since_restart = this->master_frame = this->trace_cycles = this->master_clock = this->ppu_master_clock = this->cpu_master_clock = 0;
     this->ly = this->lx = this->wly = this->cpu_frame_cycle = this->old_OAM_can = this->CPU_can_OAM = 0;
@@ -18,7 +18,7 @@ void GB_clock_init(struct GB_clock* this) {
     this->cgb_enable = this->turbo = FALSE;
 }
 
-void GB_clock_reset(struct GB_clock* this) {
+void GB_clock_reset(GB_clock* this) {
     this->ppu_mode = 2;
     this->frames_since_restart = 0;
     this->master_clock = 0;
@@ -35,7 +35,7 @@ void GB_clock_reset(struct GB_clock* this) {
     this->turbo = FALSE;
 }
 
-void GB_clock_setCPU_can_OAM(struct GB_clock* this, u32 to) {
+void GB_clock_setCPU_can_OAM(GB_clock* this, u32 to) {
     this->CPU_can_OAM = to;
     this->old_OAM_can = to;
 }

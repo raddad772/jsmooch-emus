@@ -18,7 +18,7 @@ enum ZXSpectrum_variants {
 struct ZXSpectrum;
 
 struct ZXSpectrum_ULA {
-    void (*scanline_func)(struct ZXSpectrum*);
+    void (*scanline_func)(ZXSpectrum*);
     struct JSM_DISPLAY* display;
     struct cvec_ptr display_ptr;
     struct cvec* keyboard_devices;
@@ -43,13 +43,13 @@ struct ZXSpectrum_ULA {
     } io;
 };
 
-void ZXSpectrum_ULA_init(struct ZXSpectrum* bus, enum ZXSpectrum_variants variant);
-void ZXSpectrum_ULA_delete(struct ZXSpectrum_ULA*);
+void ZXSpectrum_ULA_init(ZXSpectrum* bus, enum ZXSpectrum_variants variant);
+void ZXSpectrum_ULA_delete(ZXSpectrum_ULA*);
 
-void ZXSpectrum_ULA_reset(struct ZXSpectrum* bus);
-void ZXSpectrum_ULA_cycle(struct ZXSpectrum* bus);
+void ZXSpectrum_ULA_reset(ZXSpectrum* bus);
+void ZXSpectrum_ULA_cycle(ZXSpectrum* bus);
 
-void ZXSpectrum_ULA_reg_write(struct ZXSpectrum* bus, u32 addr, u32 val);
-u32 ZXSpectrum_ULA_reg_read(struct ZXSpectrum* bus, u32 addr);
+void ZXSpectrum_ULA_reg_write(ZXSpectrum* bus, u32 addr, u32 val);
+u32 ZXSpectrum_ULA_reg_read(ZXSpectrum* bus, u32 addr);
 
 #endif //JSMOOCH_EMUS_ULA_H

@@ -14,7 +14,7 @@
 #include "imgui_internal.h"
 #include <SDL3/SDL.h>
 
-#include "helpers_c/cvec.h"
+#include "helpers/cvec.h"
 #define FRAME_MULTI 10
 
 #ifdef JSM_OPENGL

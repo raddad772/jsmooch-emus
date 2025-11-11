@@ -66,7 +66,7 @@ static u32 read16(u32* PC, jsm_debug_read_trace *rt) {
 }
 
 
-void Z80_disassemble_entry(struct Z80*this, disassembly_entry* entry)
+void Z80_disassemble_entry(Z80*this, disassembly_entry* entry)
 {
     jsm_string_quickempty(&entry->dasm);
     jsm_string_quickempty(&entry->context);

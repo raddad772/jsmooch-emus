@@ -147,20 +147,20 @@ struct NDS_cart {
     struct buf ROM;
 };
 
-void NDS_cart_init(struct NDS *);
-void NDS_cart_reset(struct NDS *);
-void NDS_cart_delete(struct NDS *);
-void NDS_cart_direct_boot(struct NDS *);
-u32 NDS_cart_load_ROM_from_RAM(struct NDS_cart*, char* fil, u64 fil_sz, physical_io_device *pio, u32 *SRAM_enable);
-void NDS_cart_spi_write_spicnt(struct NDS *, u32 val, u32 bnum);
-void NDS_cart_spi_transaction(struct NDS *, u32 val);
-void NDS_cart_write_romctrl(struct NDS *, u32 val);
-void NDS_cart_write_cmd(struct NDS *, u32 addr, u32 val);
-u32 NDS_cart_read_romctrl(struct NDS *);
-u32 NDS_cart_read_rom(struct NDS *, u32 addr, u32 sz);
+void NDS_cart_init(NDS *);
+void NDS_cart_reset(NDS *);
+void NDS_cart_delete(NDS *);
+void NDS_cart_direct_boot(NDS *);
+u32 NDS_cart_load_ROM_from_RAM(NDS_cart*, char* fil, u64 fil_sz, physical_io_device *pio, u32 *SRAM_enable);
+void NDS_cart_spi_write_spicnt(NDS *, u32 val, u32 bnum);
+void NDS_cart_spi_transaction(NDS *, u32 val);
+void NDS_cart_write_romctrl(NDS *, u32 val);
+void NDS_cart_write_cmd(NDS *, u32 addr, u32 val);
+u32 NDS_cart_read_romctrl(NDS *);
+u32 NDS_cart_read_rom(NDS *, u32 addr, u32 sz);
 void NDS_cart_check_transfer(void *ptr, u64 key, u64 clock, u32 jitter);
-u32 NDS_cart_read_spicnt(struct NDS *);
-u32 NDS_cart_read_spi(struct NDS *, u32 bnum);
-void NDS_cart_detect_kind(struct NDS *, u32 from, u32 val);
+u32 NDS_cart_read_spicnt(NDS *);
+u32 NDS_cart_read_spi(NDS *, u32 bnum);
+void NDS_cart_detect_kind(NDS *, u32 from, u32 val);
 
 #endif //JSMOOCH_EMUS_NDS_CART_H

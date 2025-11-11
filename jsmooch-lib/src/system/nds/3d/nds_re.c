@@ -27,7 +27,7 @@ struct NDS_RE_interp {
     u32 yfactor;
 };
 
-static void NDS_RE_interp_setup(struct NDS_RE_interp *this, u32 bit_precision, i32 x0, i32 x1, i32 w0, i32 w1)
+static void NDS_RE_interp_setup(NDS_RE_interp *this, u32 bit_precision, i32 x0, i32 x1, i32 w0, i32 w1)
 {
     this->x0 = x0;
     this->x1 = x1;
@@ -70,11 +70,11 @@ static void NDS_RE_interp_setup(struct NDS_RE_interp *this, u32 bit_precision, i
     }
 }
 
-static void clear_stencil(struct NDS *this, NDS_RE_LINEBUFFER *l) {
+static void clear_stencil(NDS *this, NDS_RE_LINEBUFFER *l) {
     memset(&l->stencil, 0, sizeof(l->stencil));
 }
 
-static void clear_line(struct NDS *this, NDS_RE_LINEBUFFER *l) {
+static void clear_line(NDS *this, NDS_RE_LINEBUFFER *l) {
     for (u32 x = 0; x < 256; x++) {
         l->poly_id[x] = this->re.io.CLEAR.poly_id;
         l->rgb[x] = this->re.io.CLEAR.COLOR;
@@ -128,7 +128,7 @@ struct NDS_RE_EDGE {
 
 #define DBGL 165
 
-void find_closest_points_marked(struct NDS *this, NDS_GE_BUFFERS *b, NDS_RE_POLY *p, u32 comp_y, NDS_RE_EDGE *edges)
+void find_closest_points_marked(NDS *this, NDS_GE_BUFFERS *b, NDS_RE_POLY *p, u32 comp_y, NDS_RE_EDGE *edges)
 {
     struct NDS_GE_VTX_list_node *first_vertex = p->highest_vertex;
     edges[0].v[1] = first_vertex;
@@ -193,7 +193,7 @@ void find_closest_points_marked(struct NDS *this, NDS_GE_BUFFERS *b, NDS_RE_POLY
     }
 }
 
-static void NDS_RE_interp_set_x(struct NDS_RE_interp *this, i32 x)
+static void NDS_RE_interp_set_x(NDS_RE_interp *this, i32 x)
 {
     x -= this->x0;
     this->x = x;
@@ -207,7 +207,7 @@ static void NDS_RE_interp_set_x(struct NDS_RE_interp *this, i32 x)
     }
 }
 
-static i32 NDS_RE_interpolate(struct NDS_RE_interp *this, i32 y0, i32 y1)
+static i32 NDS_RE_interpolate(NDS_RE_interp *this, i32 y0, i32 y1)
 {
     if ((!this->xdiff) || y0 == y1) return y0;
 
@@ -225,7 +225,7 @@ static i32 NDS_RE_interpolate(struct NDS_RE_interp *this, i32 y0, i32 y1)
     }
 }
 
-static void interpolate_edge_to_vertex(struct NDS_RE_EDGE *e, NDS_RE_VERTEX *v, i32 y, u32 do_tex) {
+static void interpolate_edge_to_vertex(NDS_RE_EDGE *e, NDS_RE_VERTEX *v, i32 y, u32 do_tex) {
     /*struct NDS_GE_VTX_list_node *t = e->v[0];
     e->v[0] = e->v[1];
     e->v[1] = t;*/
@@ -320,7 +320,7 @@ static void ct_blend5(u32 color, u32 balance, u32 *r, u32 *g, u32 *b, u32 *a)
     *a = 31;
 }
 
-static void sample_texture_a3i5(struct NDS *this, NDS_RE_TEX_SAMPLER *ts, NDS_RE_POLY *p, u32 s, u32 t, u32 *r, u32 *g, u32 *b, u32 *a)
+static void sample_texture_a3i5(NDS *this, NDS_RE_TEX_SAMPLER *ts, NDS_RE_POLY *p, u32 s, u32 t, u32 *r, u32 *g, u32 *b, u32 *a)
 {
     //Alpha=(Alpha*4)+(Alpha/2).
     u8 sample = NDS_VRAM_tex_read(this, ts->tex_addr+((t*ts->s_size)+s), 1);
@@ -331,7 +331,7 @@ static void sample_texture_a3i5(struct NDS *this, NDS_RE_TEX_SAMPLER *ts, NDS_RE
     *a =  ((sample >> 3) & 0x1C) + (sample >> 6);
 }
 
-static void sample_texture_a5i3(struct NDS *this, NDS_RE_TEX_SAMPLER *ts, NDS_RE_POLY *p, u32 s, u32 t, u32 *r, u32 *g, u32 *b, u32 *a)
+static void sample_texture_a5i3(NDS *this, NDS_RE_TEX_SAMPLER *ts, NDS_RE_POLY *p, u32 s, u32 t, u32 *r, u32 *g, u32 *b, u32 *a)
 {
     //Each Texel occupies 8bit, the 1st Texel is located in 1st byte.
     //  Bit0-2: Color Index (0..7) of a 8-color Palette
@@ -345,7 +345,7 @@ static void sample_texture_a5i3(struct NDS *this, NDS_RE_TEX_SAMPLER *ts, NDS_RE
     *a = sample >> 3;
 }
 
-static void sample_texture_compressed(struct NDS *this, NDS_RE_TEX_SAMPLER *ts, NDS_RE_POLY *p, u32 s, u32 t, u32 *r, u32 *g, u32 *b, u32 *a)
+static void sample_texture_compressed(NDS *this, NDS_RE_TEX_SAMPLER *ts, NDS_RE_POLY *p, u32 s, u32 t, u32 *r, u32 *g, u32 *b, u32 *a)
 {
     u32 vramaddr = ts->tex_addr;
     vramaddr += ((t & 0x3FC) * (ts->s_size>>2)) + (s & 0x3FC);
@@ -473,7 +473,7 @@ static void sample_texture_compressed(struct NDS *this, NDS_RE_TEX_SAMPLER *ts, 
 }
 
 
-static void sample_texture_palette_4bpp(struct NDS *this, NDS_RE_TEX_SAMPLER *ts, NDS_RE_POLY *p, u32 s, u32 t, u32 *r, u32 *g, u32 *b, u32 *a)
+static void sample_texture_palette_4bpp(NDS *this, NDS_RE_TEX_SAMPLER *ts, NDS_RE_POLY *p, u32 s, u32 t, u32 *r, u32 *g, u32 *b, u32 *a)
 {
     u32 addr = ((t * ts->s_size) + s);
     u32 c = NDS_VRAM_tex_read(this, ts->tex_addr + (addr >> 1), 1) & 0xFF;
@@ -488,7 +488,7 @@ static void sample_texture_palette_4bpp(struct NDS *this, NDS_RE_TEX_SAMPLER *ts
     *b = texc(c >> 10);
 }
 
-static void sample_texture_palette_2bpp(struct NDS *this, NDS_RE_TEX_SAMPLER *ts, NDS_RE_POLY *p, u32 s, u32 t, u32 *r, u32 *g, u32 *b, u32 *a)
+static void sample_texture_palette_2bpp(NDS *this, NDS_RE_TEX_SAMPLER *ts, NDS_RE_POLY *p, u32 s, u32 t, u32 *r, u32 *g, u32 *b, u32 *a)
 {
     u32 addr = ((t * ts->s_size) + s);
     u32 c = NDS_VRAM_tex_read(this, ts->tex_addr + (addr >> 2), 1) & 0xFF;
@@ -502,7 +502,7 @@ static void sample_texture_palette_2bpp(struct NDS *this, NDS_RE_TEX_SAMPLER *ts
     *b = texc(c >> 10);
 }
 
-static void sample_texture_palette_8bpp(struct NDS *this, NDS_RE_TEX_SAMPLER *ts, NDS_RE_POLY *p, u32 s, u32 t, u32 *r, u32 *g, u32 *b, u32 *a)
+static void sample_texture_palette_8bpp(NDS *this, NDS_RE_TEX_SAMPLER *ts, NDS_RE_POLY *p, u32 s, u32 t, u32 *r, u32 *g, u32 *b, u32 *a)
 {
     u32 addr = ((t * ts->s_size) + s);
     u32 c = NDS_VRAM_tex_read(this, ts->tex_addr+addr, 1) & 0xFF;
@@ -516,7 +516,7 @@ static void sample_texture_palette_8bpp(struct NDS *this, NDS_RE_TEX_SAMPLER *ts
 }
 
 
-static void sample_texture_direct(struct NDS *this, NDS_RE_TEX_SAMPLER *ts, NDS_RE_POLY *p, u32 s, u32 t, u32 *r, u32 *g, u32 *b, u32 *a)
+static void sample_texture_direct(NDS *this, NDS_RE_TEX_SAMPLER *ts, NDS_RE_POLY *p, u32 s, u32 t, u32 *r, u32 *g, u32 *b, u32 *a)
 {
     // 16-bit read from VRAM @ ptr ((t * size) + s) * 2
     u32 c = NDS_VRAM_tex_read(this, ts->tex_addr+(((t * ts->s_size) + s) << 1), 2) & 0xFFFF;
@@ -526,7 +526,7 @@ static void sample_texture_direct(struct NDS *this, NDS_RE_TEX_SAMPLER *ts, NDS_
     *a = ((c >> 15) & 1) * 31;
 }
 
-static void final_tex_coord(struct NDS_RE_TEX_SAMPLER *ts, i32 *s, i32 *t)
+static void final_tex_coord(NDS_RE_TEX_SAMPLER *ts, i32 *s, i32 *t)
 {
     //printf("\nINPUT S,T: %f, %f", uv_to_float(*s), uv_to_float(*t));
     i32 ms = ((i32)*s) >> 4;
@@ -568,14 +568,14 @@ static void final_tex_coord(struct NDS_RE_TEX_SAMPLER *ts, i32 *s, i32 *t)
 
 }
 
-/*static void get_vram_ptr(struct NDS *this, tex_sampler *ts)
+/*static void get_vram_ptr(NDS *this, tex_sampler *ts)
 {
     u32 addr =
     ts->tex_ptr
 }*/
 
 
-static void fill_tex_sampler(struct NDS *this, NDS_RE_POLY *p)
+static void fill_tex_sampler(NDS *this, NDS_RE_POLY *p)
 {
     struct NDS_RE_TEX_SAMPLER *ts = &p->sampler;
     ts->s_size = 8 << p->tex_param.sz_s;
@@ -634,7 +634,7 @@ static void fill_tex_sampler(struct NDS *this, NDS_RE_POLY *p)
     }
 }
 
-void render_line(struct NDS *this, NDS_GE_BUFFERS *b, i32 line_num)
+void render_line(NDS *this, NDS_GE_BUFFERS *b, i32 line_num)
 {
     struct NDS_RE_LINEBUFFER *line = &this->re.out.linebuffer[line_num];
     //printf("\n\nLine num %d", line_num);
@@ -841,10 +841,10 @@ void render_line(struct NDS *this, NDS_GE_BUFFERS *b, i32 line_num)
 
 int poly_comparator(const void *a, const void *b)
 {
-    return ((struct NDS_RE_POLY *)a)->sorting_key - ((struct NDS_RE_POLY *)b)->sorting_key;
+    return ((NDS_RE_POLY *)a)->sorting_key - ((NDS_RE_POLY *)b)->sorting_key;
 }
 
-static void copy_and_sort_list(struct NDS *this, NDS_GE_BUFFERS *b)
+static void copy_and_sort_list(NDS *this, NDS_GE_BUFFERS *b)
 {
     this->re.render_list.len = 0;
     this->re.render_list.num_opaque = 0;
@@ -869,7 +869,7 @@ static void copy_and_sort_list(struct NDS *this, NDS_GE_BUFFERS *b)
     qsort(this->re.render_list.items, num_to_sort, sizeof(this->re.render_list.items[0]), &poly_comparator);
 }
 
-void NDS_RE_render_frame(struct NDS *this)
+void NDS_RE_render_frame(NDS *this)
 {
     struct NDS_GE_BUFFERS *b = &this->ge.buffers[this->ge.ge_has_buffer ^ 1];
     copy_and_sort_list(this, b);
@@ -877,12 +877,12 @@ void NDS_RE_render_frame(struct NDS *this)
         render_line(this, b, i);
 }
 
-void NDS_RE_init(struct NDS *this)
+void NDS_RE_init(NDS *this)
 {
 
 }
 
-void NDS_RE_reset(struct NDS *this)
+void NDS_RE_reset(NDS *this)
 {
 
 }

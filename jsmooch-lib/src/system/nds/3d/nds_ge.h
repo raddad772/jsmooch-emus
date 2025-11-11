@@ -172,7 +172,7 @@ struct NDS_RE_TEX_SAMPLER {
     u32 s_repeat, t_repeat;
     u32 filled_out;
 
-    void (*sample)(struct NDS *, NDS_RE_TEX_SAMPLER *, NDS_RE_POLY *, u32 s, u32 t, u32 *r, u32 *g, u32 *b, u32 *a);
+    void (*sample)(NDS *, NDS_RE_TEX_SAMPLER *, NDS_RE_POLY *, u32 s, u32 t, u32 *r, u32 *g, u32 *b, u32 *a);
 };
 
 
@@ -462,11 +462,11 @@ struct NDS_GE {
 };
 
 struct NDS;
-void NDS_GE_init(struct NDS *);
-void NDS_GE_reset(struct NDS *);
-u32 NDS_GE_check_irq(struct NDS *);
-void NDS_GE_write(struct NDS *, u32 addr, u32 sz, u32 val);
-u32 NDS_GE_read(struct NDS *, u32 addr, u32 sz);
-void NDS_GE_vblank_up(struct NDS *);
+void NDS_GE_init(NDS *);
+void NDS_GE_reset(NDS *);
+u32 NDS_GE_check_irq(NDS *);
+void NDS_GE_write(NDS *, u32 addr, u32 sz, u32 val);
+u32 NDS_GE_read(NDS *, u32 addr, u32 sz);
+void NDS_GE_vblank_up(NDS *);
 
 #endif //JSMOOCH_EMUS_NDS_GE_H

@@ -24,7 +24,7 @@
 #define DBG_DISASSEMBLE_MAX_BLOCK_SIZE 50
 
 
-static void mark_disassembly_range_invalid(struct disassembly_view *dview, disassembly_range *range, u32 index)
+static void mark_disassembly_range_invalid(disassembly_view *dview, disassembly_range *range, u32 index)
 {
     range->valid = 0;
 
@@ -40,7 +40,7 @@ static void mark_disassembly_range_invalid(struct disassembly_view *dview, disas
 }
 
 
-static int range_collides(struct disassembly_range *range, u32 addr_start, u32 addr_end)
+static int range_collides(disassembly_range *range, u32 addr_start, u32 addr_end)
 {
     // So we want to check...
     if (is_range_dirty(range)) return 0; // If it's dirty, it doesn't collide
@@ -64,7 +64,7 @@ static int range_collides(struct disassembly_range *range, u32 addr_start, u32 a
     return !((whole_of_range_before) || (whole_of_range_after));
 }
 
-void disassembly_view_dirty_mem(struct debugger_interface *dbgr, disassembly_view *dview, u32 mem_bus, u32 addr_start, u32 addr_end)
+void disassembly_view_dirty_mem(debugger_interface *dbgr, disassembly_view *dview, u32 mem_bus, u32 addr_start, u32 addr_end)
 {
     for (u32 i = 0; i < cvec_len(&dview->ranges); i++) {
         struct disassembly_range *range = cvec_get(&dview->ranges, i);
@@ -75,11 +75,11 @@ void disassembly_view_dirty_mem(struct debugger_interface *dbgr, disassembly_vie
     }
 }
 
-void disassembly_view_init(struct disassembly_view *this)
+void disassembly_view_init(disassembly_view *this)
 {
     memset(this, 0, sizeof(*this));
-    cvec_init(&this->ranges, sizeof(struct disassembly_range), 100);
-    cvec_init(&this->cpu.regs, sizeof(struct cpu_reg_context), 32);
+    cvec_init(&this->ranges, sizeof(disassembly_range), 100);
+    cvec_init(&this->cpu.regs, sizeof(cpu_reg_context), 32);
     cvec_init(&this->dirty_range_indices, sizeof(u32), 100);
     jsm_string_init(&this->processor_name, 40);
 }
@@ -97,40 +97,40 @@ void disassembly_entry::clear_for_reuse()
     ins_size_bytes = 0;
 }
 
-void disassembly_entry_delete(struct disassembly_entry* this)
+void disassembly_entry_delete(disassembly_entry* this)
 {
     jsm_string_delete(&this->dasm);
     jsm_string_delete(&this->context);
     this->addr = 0;
 }
 
-void disassembly_range_init(struct disassembly_range *this)
+void disassembly_range_init(disassembly_range *this)
 {
     CTOR_ZERO_SELF;
-    cvec_init(&this->entries, sizeof(struct disassembly_range), 20);
+    cvec_init(&this->entries, sizeof(disassembly_range), 20);
 }
 
-void disassembly_range_delete(struct disassembly_range *this)
+void disassembly_range_delete(disassembly_range *this)
 {
     DTOR_child_cvec(entries, disassembly_entry)
 }
 
-void cpu_reg_context_init(struct cpu_reg_context *this)
+void cpu_reg_context_init(cpu_reg_context *this)
 {
     CTOR_ZERO_SELF;
 }
 
-void cpu_reg_context_delete(struct cpu_reg_context *this)
+void cpu_reg_context_delete(cpu_reg_context *this)
 {
 }
 
-void disassembly_view_delete(struct disassembly_view *this)
+void disassembly_view_delete(disassembly_view *this)
 {
     DTOR_child_cvec(ranges, disassembly_range);
     DTOR_child_cvec(cpu.regs, cpu_reg_context)
 }
 
-static void w_entry_to_strs(struct disassembly_entry_strings *strs, disassembly_entry *entry, int col_size)
+static void w_entry_to_strs(disassembly_entry_strings *strs, disassembly_entry *entry, int col_size)
 {
     switch(col_size) {
         case 4:
@@ -147,7 +147,7 @@ static void w_entry_to_strs(struct disassembly_entry_strings *strs, disassembly_
     snprintf(strs->context, 400, "%s", entry->context.ptr);
 }
 
-static void mark_block_dirty(struct disassembly_range *r)
+static void mark_block_dirty(disassembly_range *r)
 {
     r->addr_range_start = r->addr_range_end = -1;
     r->valid = 0;
@@ -155,19 +155,19 @@ static void mark_block_dirty(struct disassembly_range *r)
     DTOR_child_cvec(entries, disassembly_entry);
 }
 
-/*static int is_range_dirty(struct disassembly_range *r)
+/*static int is_range_dirty(disassembly_range *r)
 {
     return r->addr_range_start == -1;
 }*/
 
-static struct disassembly_range *find_range_including(struct disassembly_view *dview, u32 instruction_addr)
+static struct disassembly_range *find_range_including(disassembly_view *dview, u32 instruction_addr)
 {
     for (u32 i = 0; i < cvec_len(&dview->ranges); i++) {
-        struct disassembly_range *r = (struct disassembly_range *) cvec_get(&dview->ranges, i);
+        struct disassembly_range *r = (disassembly_range *) cvec_get(&dview->ranges, i);
         if (!is_range_dirty(r) && (r->addr_range_start <= instruction_addr) &&
             (r->addr_range_end >= instruction_addr)) {
             for (u32 j = 0; j < cvec_len(&r->entries); j++) {
-                struct disassembly_entry *e = (struct disassembly_entry *) cvec_get(&r->entries, j);
+                struct disassembly_entry *e = (disassembly_entry *) cvec_get(&r->entries, j);
                 if (e->addr == instruction_addr) return r;
             }
             mark_block_dirty(r);
@@ -177,7 +177,7 @@ static struct disassembly_range *find_range_including(struct disassembly_view *d
     return NULL;
 }
 
-static struct disassembly_range *find_next_range(struct disassembly_view *dview, u32 what_addr) {
+static struct disassembly_range *find_next_range(disassembly_view *dview, u32 what_addr) {
     i64 lowest_addr = -1;
     struct disassembly_range *lowest_r = NULL;
     // Only called if there is no CURRENT range
@@ -195,11 +195,11 @@ static struct disassembly_range *find_next_range(struct disassembly_view *dview,
 }
 
 #define CVEC_FOREACH(iterval, cvec, struct_type, iterator) for (u32 iterval = 0; iterval < cvec_len(&cvec); iterval++) {\
-    struct struct_type * iterator = (struct struct_type *)cvec_get(&cvec, iterval)
+    struct struct_type * iterator = (struct_type *)cvec_get(&cvec, iterval)
 
 #define CVEC_FOREACH_END }
 
-static struct disassembly_range *get_range(struct disassembly_view *dview)
+static struct disassembly_range *get_range(disassembly_view *dview)
 {
     // Get either a dirty range to re-use, or a new range
     struct disassembly_range *r = NULL;
@@ -217,7 +217,7 @@ static struct disassembly_range *get_range(struct disassembly_view *dview)
     return r;
 }
 
-static struct disassembly_range *create_diassembly_block(struct debugger_interface *di, disassembly_view *dview, u32 range_start, u32 range_end)
+static struct disassembly_range *create_diassembly_block(debugger_interface *di, disassembly_view *dview, u32 range_start, u32 range_end)
 {
     assert(range_start<(dview->mem_end+1));
     u32 cur_addr = range_start;
@@ -243,7 +243,7 @@ static struct disassembly_range *create_diassembly_block(struct debugger_interfa
     return r;
 }
 
-int disassembly_view_get_rows(struct debugger_interface *di, disassembly_view *dview, u32 instruction_addr, u32 bytes_before, u32 total_lines, cvec *out_lines) {
+int disassembly_view_get_rows(debugger_interface *di, disassembly_view *dview, u32 instruction_addr, u32 bytes_before, u32 total_lines, cvec *out_lines) {
     for (u32 i = 0; i < cvec_len(out_lines); i++) {
         struct disassembly_entry_strings *strs = cvec_get(out_lines, i);
         strs->addr[0] = strs->dasm[0] = strs->context[0] = 0;
@@ -350,7 +350,7 @@ int disassembly_view_get_rows(struct debugger_interface *di, disassembly_view *d
 }
 
 
-void cpu_reg_context_render(struct cpu_reg_context *ctx, char* outbuf, size_t outbuf_sz) {
+void cpu_reg_context_render(cpu_reg_context *ctx, char* outbuf, size_t outbuf_sz) {
     if (ctx->custom_render) {
         ctx->custom_render(ctx, outbuf, outbuf_sz);
     }

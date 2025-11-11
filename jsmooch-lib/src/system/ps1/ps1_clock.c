@@ -20,7 +20,7 @@
 #define GPU_HZ this->timing.gpu.hz
 #define FPS this->timing.fps
 #define FRAME_LINES this->timing.frame.lines
-static void finish_timing(struct PS1_clock *this)
+static void finish_timing(PS1_clock *this)
 {
     this->timing.frame.cycles = CPU_HZ / (u64)FPS; // 564480
     this->timing.scanline.cycles = this->timing.frame.cycles / FRAME_LINES; // 2154
@@ -32,7 +32,7 @@ static void finish_timing(struct PS1_clock *this)
 }
 
 
-static void setup_ntsc(struct PS1_clock *this)
+static void setup_ntsc(PS1_clock *this)
 {
     // 3413
     CPU_HZ = 33868800;
@@ -45,7 +45,7 @@ static void setup_ntsc(struct PS1_clock *this)
     finish_timing(this);
 }
 
-static void setup_pal(struct PS1_clock *this)
+static void setup_pal(PS1_clock *this)
 {
     CPU_HZ = 33868800;
     GPU_HZ = 53203425;
@@ -57,7 +57,7 @@ static void setup_pal(struct PS1_clock *this)
     // In PAL, it occupies 12 μs out of every 64 μs scan line (18.8%).
 }
 
-void PS1_clock_init(struct PS1_clock *this, u32 is_ntsc)
+void PS1_clock_init(PS1_clock *this, u32 is_ntsc)
 {
     memset(this, 0, sizeof(*this));
     this->is_ntsc = is_ntsc;
@@ -66,7 +66,7 @@ void PS1_clock_init(struct PS1_clock *this, u32 is_ntsc)
 
 }
 
-void PS1_clock_reset(struct PS1 *this)
+void PS1_clock_reset(PS1 *this)
 {
     PS1_clock_init(&this->clock, this->clock.is_ntsc);
 }

@@ -291,26 +291,26 @@ struct JSM_TOUCHSCREEN {
 };
 
 struct JSM_CARTRIDGE_PORT {
-    void (*load_cart)(struct jsm_system *ptr, multi_file_set* mfs, physical_io_device *whichpio);
-    void (*unload_cart)(struct jsm_system *ptr);
+    void (*load_cart)(jsm_system *ptr, multi_file_set* mfs, physical_io_device *whichpio);
+    void (*unload_cart)(jsm_system *ptr);
     struct persistent_store SRAM;
 };
 
 struct physical_io_device;
 
 struct JSM_DISC_DRIVE {
-    void (*insert_disc)(struct jsm_system *ptr, physical_io_device *pio, multi_file_set* mfs);
-    void (*remove_disc)(struct jsm_system *ptr);
-    void (*close_drive)(struct jsm_system *ptr);
-    void (*open_drive)(struct jsm_system *ptr);
+    void (*insert_disc)(jsm_system *ptr, physical_io_device *pio, multi_file_set* mfs);
+    void (*remove_disc)(jsm_system *ptr);
+    void (*close_drive)(jsm_system *ptr);
+    void (*open_drive)(jsm_system *ptr);
 };
 
 struct JSM_AUDIO_CASSETTE {
-    void (*insert_tape)(struct jsm_system *ptr, physical_io_device *pio, multi_file_set* mfs, buf* sram);
-    void (*remove_tape)(struct jsm_system *ptr);
-    void (*rewind)(struct jsm_system *ptr);
-    void (*play)(struct jsm_system *ptr);
-    void (*stop)(struct jsm_system *ptr);
+    void (*insert_tape)(jsm_system *ptr, physical_io_device *pio, multi_file_set* mfs, buf* sram);
+    void (*remove_tape)(jsm_system *ptr);
+    void (*rewind)(jsm_system *ptr);
+    void (*play)(jsm_system *ptr);
+    void (*stop)(jsm_system *ptr);
 };
 
 struct physical_io_device {
@@ -338,9 +338,9 @@ struct physical_io_device {
     };
 };
 
-void physical_io_device_init(struct physical_io_device*, enum IO_CLASSES kind, u32 enabled, u32 connected, u32 input, u32 output);
-void physical_io_device_delete(struct physical_io_device*);
-void pio_new_button(struct JSM_CONTROLLER* cnt, const char* name, enum JKEYS common_id);
+void physical_io_device_init(physical_io_device*, enum IO_CLASSES kind, u32 enabled, u32 connected, u32 input, u32 output);
+void physical_io_device_delete(physical_io_device*);
+void pio_new_button(JSM_CONTROLLER* cnt, const char* name, enum JKEYS common_id);
 
 #ifdef __cplusplus
 }

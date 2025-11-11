@@ -33,7 +33,7 @@ struct triangle_multi_list {
 };
 
 
-void triangle_list_init(struct triangle_list*);
-void triangle_multi_list_init(struct triangle_multi_list*);
-void triangle_multi_list_clear(struct triangle_multi_list*);
+void triangle_list_init(triangle_list*);
+void triangle_multi_list_init(triangle_multi_list*);
+void triangle_multi_list_clear(triangle_multi_list*);
 #endif //JSMOOCH_EMUS_TRIANGLE_H

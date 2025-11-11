@@ -6,28 +6,28 @@
 #include "fail"
 #include "helpers/serialize/serialize.h"
 
-u32 SM83_regs_F_getbyte(struct SM83_regs_F* this) {
+u32 SM83_regs_F_getbyte(SM83_regs_F* this) {
 	return (this->C << 4) | (this->H << 5) | (this->N << 6) | (this->Z << 7);
 }
 
-void SM83_regs_F_setbyte(struct SM83_regs_F* this, u32 val) {
+void SM83_regs_F_setbyte(SM83_regs_F* this, u32 val) {
 	this->C = (val & 0x10) >> 4;
 	this->H = (val & 0x20) >> 5;
 	this->N = (val & 0x40) >> 6;
 	this->Z = (val & 0x80) >> 7;
 }
 
-void SM83_regs_F_init(struct SM83_regs_F* this) {
+void SM83_regs_F_init(SM83_regs_F* this) {
 	this->Z = this->N = this->H = this->C = 0;
 }
 
-void SM83_pins_init(struct SM83_pins* this) {
+void SM83_pins_init(SM83_pins* this) {
 	this->RD = this->WR = this->MRQ = 0;
 	this->D = 0;
 	this->Addr = 0;
 }
 
-void SM83_regs_init(struct SM83_regs* this) {
+void SM83_regs_init(SM83_regs* this) {
 	SM83_regs_F_init(&(this->F));
 	this->A = this->B = this->C = this->D = this->E = this->H = this->L = this->SP = this->PC = 0;
 
@@ -40,7 +40,7 @@ void SM83_regs_init(struct SM83_regs* this) {
 }
 
 
-void SM83_init(struct SM83* this) {
+void SM83_init(SM83* this) {
     dbg_init();
     this->last_decoded_opcode = SM83_S_RESET;
 	this->current_instruction = SM83_decoded_opcodes[SM83_S_RESET];
@@ -61,7 +61,7 @@ void SM83_init(struct SM83* this) {
     this->read_trace.ptr = NULL;
 }
 
-void SM83_reset(struct SM83* this) {
+void SM83_reset(SM83* this) {
 	this->regs.PC = 1;
 	this->regs.TCU = 0;
 	this->pins.Addr = 0;
@@ -71,7 +71,7 @@ void SM83_reset(struct SM83* this) {
 }
 
 // Instruction fetch cycles
-void SM83_ins_cycles(struct SM83* this) {
+void SM83_ins_cycles(SM83* this) {
 	switch (this->regs.TCU) {
 	case 1: // Initial opcode fetch has already been done as last cycle of last instruction
 		this->regs.IR = this->pins.D;
@@ -102,7 +102,7 @@ void SM83_ins_cycles(struct SM83* this) {
 	}
 }
 
-void SM83_cycle(struct SM83* this) {
+void SM83_cycle(SM83* this) {
 	//printf("\nCYCLE %04x", this->regs.PC);
     this->regs.TCU++;
 	this->trace_cycles++;
@@ -183,20 +183,20 @@ void SM83_cycle(struct SM83* this) {
 	}
 }
 
-void SM83_enable_tracing(struct SM83* this, jsm_debug_read_trace *dbg_read_trace)
+void SM83_enable_tracing(SM83* this, jsm_debug_read_trace *dbg_read_trace)
 {
     this->trace_on = 1;
 
     jsm_copy_read_trace(&this->read_trace, dbg_read_trace);
 }
 
-void SM83_disable_tracing(struct SM83* this)
+void SM83_disable_tracing(SM83* this)
 {
     this->trace_on = 0;
 }
 
 #define S(x) Sadd(state, &this-> x, sizeof(this-> x))
-static void serialize_regs(struct SM83_regs *this, serialized_state *state)
+static void serialize_regs(SM83_regs *this, serialized_state *state)
 {
     S(A);
     S(F.Z);
@@ -230,7 +230,7 @@ static void serialize_regs(struct SM83_regs *this, serialized_state *state)
     S(poll_IRQ);
 }
 
-static void serialize_pins(struct SM83_pins* this, serialized_state *state)
+static void serialize_pins(SM83_pins* this, serialized_state *state)
 {
     S(RD);
     S(WR);
@@ -239,7 +239,7 @@ static void serialize_pins(struct SM83_pins* this, serialized_state *state)
     S(Addr);
 }
 
-void SM83_serialize(struct SM83 *this, serialized_state *state) {
+void SM83_serialize(SM83 *this, serialized_state *state) {
     serialize_regs(&this->regs, state);
     serialize_pins(&this->pins, state);
     S(last_decoded_opcode);
@@ -247,7 +247,7 @@ void SM83_serialize(struct SM83 *this, serialized_state *state) {
 #undef S
 
 #define L(x) Sload(state, &this-> x, sizeof(this-> x))
-static void deserialize_regs(struct SM83_regs *this, serialized_state *state)
+static void deserialize_regs(SM83_regs *this, serialized_state *state)
 {
     L(A);
     L(F.Z);
@@ -281,7 +281,7 @@ static void deserialize_regs(struct SM83_regs *this, serialized_state *state)
     L(poll_IRQ);
 }
 
-static void deserialize_pins(struct SM83_pins *this, serialized_state *state)
+static void deserialize_pins(SM83_pins *this, serialized_state *state)
 {
     L(RD);
     L(WR);
@@ -291,7 +291,7 @@ static void deserialize_pins(struct SM83_pins *this, serialized_state *state)
 }
 
 
-void SM83_deserialize(struct SM83 *this, serialized_state *state) {
+void SM83_deserialize(SM83 *this, serialized_state *state) {
     deserialize_regs(&this->regs, state);
     deserialize_pins(&this->pins, state);
     L(last_decoded_opcode);

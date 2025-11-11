@@ -20,12 +20,12 @@ static u16 doBITS(u16 val, u16 hi, u16 lo)
 #define BITS(hi,lo) (doBITS(opcode, hi, lo))
 #define ostr(...) jsm_string_sprintf(out, __VA_ARGS__)
 
-static void add_context(struct ARMctxt *t, u32 rnum)
+static void add_context(ARMctxt *t, u32 rnum)
 {
     if (t) t->regs |= (1 << rnum);
 }
 
-static void outreg(struct jsm_string *out, u32 num, u32 add_comma) {
+static void outreg(jsm_string *out, u32 num, u32 add_comma) {
     if (num == 13) ostr("sp");
     else if (num == 14) ostr("lr");
     else if (num == 15) ostr("pc");
@@ -33,20 +33,20 @@ static void outreg(struct jsm_string *out, u32 num, u32 add_comma) {
     if (add_comma) ostr(",");
 }
 
-static void outhex(struct jsm_string *out, u32 num, u32 num_size, u32 add_comma) {
+static void outhex(jsm_string *out, u32 num, u32 num_size, u32 add_comma) {
     char fstr[50];
     snprintf(fstr, sizeof(fstr), "%%0%dx", num_size);
     jsm_string_sprintf(out, fstr, num);
     if (add_comma) ostr(",");
 }
 
-static void outdec(struct jsm_string *out, u32 num, u32 add_comma)
+static void outdec(jsm_string *out, u32 num, u32 add_comma)
 {
     ostr("%d", num);
     if (add_comma) ostr(",");
 }
 
-static int out_cond(struct jsm_string *out, u32 opc, int num_space)
+static int out_cond(jsm_string *out, u32 opc, int num_space)
 {
     u32 cond = opc >> 28;
     switch(cond) {
@@ -77,7 +77,7 @@ static int out_cond(struct jsm_string *out, u32 opc, int num_space)
 
 
 
-static void annoying(struct jsm_string *out, u32 opcode, char *name, int num_spaces, char *suffix)
+static void annoying(jsm_string *out, u32 opcode, char *name, int num_spaces, char *suffix)
 {
     u32 cnd = opcode >> 28;
     ostr(name);
@@ -131,7 +131,7 @@ static void annoying(struct jsm_string *out, u32 opcode, char *name, int num_spa
 #define mn(x,y) { ostr(x); cond(y); }
 #define mnp(x,y,z) { annoying(out, opcode, x, y, z); }
 
-static void out_shifted_imm(struct jsm_string *out, u32 shift_type, u32 Is) {
+static void out_shifted_imm(jsm_string *out, u32 shift_type, u32 Is) {
     if ((shift_type != 0) || (Is != 0)) {
         ostr(", ");
         switch (shift_type) {

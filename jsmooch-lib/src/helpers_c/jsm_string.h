@@ -16,13 +16,13 @@ struct jsm_string {
 };
 
 
-void jsm_string_init(struct jsm_string *str, u32 size);
-void jsm_string_delete(struct jsm_string *str);
-void jsm_string_seek(struct jsm_string *str, i32 pos);
-int jsm_string_sprintf(struct jsm_string *str, const char* format, ...);
-int jsm_string_vsprintf(struct jsm_string *str, const char* format, va_list va);
-void jsm_string_empty(struct jsm_string *str);
-void jsm_string_quickempty(struct jsm_string *);
+void jsm_string_init(jsm_string *str, u32 size);
+void jsm_string_delete(jsm_string *str);
+void jsm_string_seek(jsm_string *str, i32 pos);
+int jsm_string_sprintf(jsm_string *str, const char* format, ...);
+int jsm_string_vsprintf(jsm_string *str, const char* format, va_list va);
+void jsm_string_empty(jsm_string *str);
+void jsm_string_quickempty(jsm_string *);
 
 
 // thanks https://stackoverflow.com/questions/744766/how-to-compare-ends-of-strings-in-c

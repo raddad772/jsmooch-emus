@@ -9,7 +9,7 @@
 
 #include "gdi.h"
 
-void GDI_init(struct GDI_image *this)
+void GDI_init(GDI_image *this)
 {
     this->num_tracks = 0;
     for (u32 i = 0; i < 50; i++) {
@@ -18,7 +18,7 @@ void GDI_init(struct GDI_image *this)
     }
 }
 
-void GDI_clear(struct GDI_image* this)
+void GDI_clear(GDI_image* this)
 {
     for (u32 i = 0; i < 50; i++) {
         if (this->tracks[i].data != NULL) {
@@ -28,7 +28,7 @@ void GDI_clear(struct GDI_image* this)
     }
 }
 
-void GDI_delete(struct GDI_image *this)
+void GDI_delete(GDI_image *this)
 {
     GDI_clear(this);
 }
@@ -71,7 +71,7 @@ static u32 ru32be(const u8 *w)
     return out;
 }
 
-static void read_datetime(struct ISO9660_dt* this, u8* whr)
+static void read_datetime(ISO9660_dt* this, u8* whr)
 {
     char str[5];
     char *where = (char *)whr;
@@ -88,7 +88,7 @@ static void read_datetime(struct ISO9660_dt* this, u8* whr)
     this->tz_offset = (u32)where[16];
 }
 
-static void read_directory_datetime(struct ISO9660_directroy_dt* this, u8* whr)
+static void read_directory_datetime(ISO9660_directroy_dt* this, u8* whr)
 {
     this->year = whr[0] + 1900;
     this->month = whr[1];
@@ -99,9 +99,9 @@ static void read_directory_datetime(struct ISO9660_directroy_dt* this, u8* whr)
     this->tz_offset = whr[6];
 }
 
-static void read_directory_entry(struct ISO9660_directory_record* this, u8* w, u32 lba_start, GDI_track *track, u32 is_root)
+static void read_directory_entry(ISO9660_directory_record* this, u8* w, u32 lba_start, GDI_track *track, u32 is_root)
 {
-    memset(this, 0, sizeof(struct ISO9660_directory_record));
+    memset(this, 0, sizeof(ISO9660_directory_record));
     buf_init(&this->data);
     this->len = w[0];
     this->extended_attr_record_len = w[1];
@@ -121,7 +121,7 @@ static void read_directory_entry(struct ISO9660_directory_record* this, u8* w, u
     read_sectors_to_buffer(this->data.ptr, track, this->location_extant, sz / 2048);
 }
 
-void pprint_directory_entry(struct ISO9660_directory_record* this)
+void pprint_directory_entry(ISO9660_directory_record* this)
 {
     printf("\nDirectory name: %s\nLBA: %d SIZE:%d", this->id, this->location_extant, this->size_extant);
 }
@@ -134,9 +134,9 @@ struct ISO9660_path_table_entry{
     char volume_id[500];
 };
 
-static void read_primary_volume_descriptor(struct ISO9660_volume_descriptor *vd, u8* sector, u32 lba_start, GDI_track *track)
+static void read_primary_volume_descriptor(ISO9660_volume_descriptor *vd, u8* sector, u32 lba_start, GDI_track *track)
 {
-    memset(vd, 0, sizeof(struct ISO9660_volume_descriptor));
+    memset(vd, 0, sizeof(ISO9660_volume_descriptor));
     assert(sector[1] == 'C' && sector[2] == 'D' && sector[3] == '0' && sector[4] == '0' && sector[5] == '1' && sector[6] == 1);
     vd->type = 1;
     memcpy(vd->system_id, sector+8, 32);
@@ -194,7 +194,7 @@ static u32 CreateTrackInfo_se(u32 ctrl,u32 addr,u32 tracknum)
 }
 
 
-void GDI_GetToc(struct GDI_image *this, u32* to, u32 area)
+void GDI_GetToc(GDI_image *this, u32* to, u32 area)
 {
     memset(to, 0xFFFFFFFF, 102*4);
 
