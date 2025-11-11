@@ -108,7 +108,7 @@ void DC_new(JSM)
     this->settings.language = 6; //1; // EN
 
     jsm->ptr = (void*)this;
-    jsm->kind = SYS_DREAMCAST;
+    jsm->kind = jsm::systems::DREAMCAST;
 
     jsm->finish_frame = &DCJ_finish_frame;
     jsm->finish_scanline = &DCJ_finish_scanline;

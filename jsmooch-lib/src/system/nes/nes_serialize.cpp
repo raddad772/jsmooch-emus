@@ -11,7 +11,7 @@
 #include "component/audio/nes_apu/nes_apu.h"
 #include "component/cpu/m6502/m6502.h"
 
-void NES::serialize(struct serialized_state &state) const {
+void NES::serialize(serialized_state &state) const {
     state.new_section("console", NESSS_console, 1);
 #define S(x) Sadd(state, &(this-> x), sizeof(this-> x))
     S(cycles_left);
@@ -20,7 +20,7 @@ void NES::serialize(struct serialized_state &state) const {
 #undef S
 }
 
-void NES_clock::serialize(struct serialized_state &state) const {
+void NES_clock::serialize(serialized_state &state) const {
     state.new_section("clock", NESSS_clock, 1);
 #define S(x) Sadd(state, &x, sizeof(x))
     S(master_clock);
@@ -40,12 +40,12 @@ void NES_clock::serialize(struct serialized_state &state) const {
 #undef S
 }
 
-static void serialize_apu(struct NES &nes, struct serialized_state &state) {
+static void serialize_apu(NES &nes, serialized_state &state) {
     state.new_section("APU", NESSS_apu, 1);
     nes.apu.serialize(state);
 }
 
-void r2A03::serialize(struct serialized_state &state) {
+void r2A03::serialize(serialized_state &state) {
     state.new_section("CPU", NESSS_cpu, 1);
 #define S(x) Sadd(state, &x, sizeof(x))
     S(open_bus);
@@ -55,7 +55,7 @@ void r2A03::serialize(struct serialized_state &state) {
 #undef S
 }
 
-void NES_PPU::serialize(struct serialized_state &state) {
+void NES_PPU::serialize(serialized_state &state) {
     state.new_section("PPU", NESSS_ppu, 1);
 #define S(x) Sadd(state, &x, sizeof(x))
 
@@ -107,11 +107,11 @@ void NES_PPU::serialize(struct serialized_state &state) {
 #undef S
 }
 
-void serialize_cart(struct NES &nes, struct serialized_state &state) {
+void serialize_cart(NES &nes, serialized_state &state) {
     state.new_section("cart", NESSS_cartridge, 1);
 #define S(x) Sadd(state, &(nes.bus. x), sizeof(nes.bus. x))
     S(ppu_mirror_mode);
-    //void NES_bus_PPU_mirror_set(struct NES_bus *bus)
+    //void NES_bus_PPU_mirror_set(NES_bus *bus)
 
     Sadd(state, nes.bus.CIRAM.ptr, nes.bus.CIRAM.sz);
     Sadd(state, nes.bus.CPU_RAM.ptr, nes.bus.CPU_RAM.sz);
@@ -125,7 +125,7 @@ void serialize_cart(struct NES &nes, struct serialized_state &state) {
 #undef S
 }
 
-void NESJ::save_state(struct serialized_state &state) {
+void NESJ::save_state(serialized_state &state) {
     // Basic info
     state.version = 1;
     state.opt.len = 0;
@@ -144,7 +144,7 @@ void NESJ::save_state(struct serialized_state &state) {
     serialize_cart(nes, state);
 }
 
-void NES::deserialize(struct serialized_state &state) {
+void NES::deserialize(serialized_state &state) {
 #define L(x) Sload(state, &this-> x, sizeof(this-> x))
     L(cycles_left);
     L(display_enabled);
@@ -152,7 +152,7 @@ void NES::deserialize(struct serialized_state &state) {
 #undef L
 }
 
-void NES_clock::deserialize(struct serialized_state &state) {
+void NES_clock::deserialize(serialized_state &state) {
 #define L(x) Sload(state, &x, sizeof(x))
     L(master_clock);
     L(master_frame);
@@ -171,11 +171,11 @@ void NES_clock::deserialize(struct serialized_state &state) {
 #undef L
 }
 
-void deserialize_apu(struct NES &nes, struct serialized_state &state) {
+void deserialize_apu(NES &nes, serialized_state &state) {
     nes.apu.deserialize(state);
 }
 
-void r2A03::deserialize(struct serialized_state &state) {
+void r2A03::deserialize(serialized_state &state) {
 #define L(x) Sload(state, &x, sizeof(x))
     L(open_bus);
     L(irq);
@@ -184,7 +184,7 @@ void r2A03::deserialize(struct serialized_state &state) {
 #undef L
 }
 
-void NES_PPU::deserialize(struct serialized_state &state) {
+void NES_PPU::deserialize(serialized_state &state) {
 #define L(x) Sload(state, &x, sizeof(x))
     u32 v = 0;
     Sload(state, &v, sizeof(v));
@@ -245,7 +245,7 @@ void NES_PPU::deserialize(struct serialized_state &state) {
 #undef L
 }
 
-void deserialize_cart(struct NES &nes, struct serialized_state &state) {
+void deserialize_cart(NES &nes, serialized_state &state) {
 #define L(x) Sload(state, &nes.bus. x, sizeof(nes.bus. x))
     L(ppu_mirror_mode);
 
@@ -262,7 +262,7 @@ void deserialize_cart(struct NES &nes, struct serialized_state &state) {
 #undef L
 }
 
-void NESJ::load_state(struct serialized_state &state, struct deserialize_ret &ret) {
+void NESJ::load_state(serialized_state &state, deserialize_ret &ret) {
     state.iter.offset = 0;
     assert(state.version == 1);
 

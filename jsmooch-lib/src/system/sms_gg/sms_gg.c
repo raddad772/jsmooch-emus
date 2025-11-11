@@ -83,7 +83,7 @@ void SMSGGJ_set_audiobuf(struct jsm_system* jsm, struct audiobuf *ab)
     }
 }
 
-void SMSGG_new(struct jsm_system* jsm, enum jsm_systems variant, enum jsm_regions region) {
+void SMSGG_new(struct jsm_system* jsm, enum jsm::systems variant, enum jsm_regions region) {
     struct SMSGG* this = (struct SMSGG*)malloc(sizeof(struct SMSGG));
     memset(this, 0, sizeof(struct SMSGG));
     SMSGG_clock_init(&this->clock, variant, region);
@@ -108,22 +108,22 @@ void SMSGG_new(struct jsm_system* jsm, enum jsm_systems variant, enum jsm_region
     this->io.gg_start = 0;
 
     switch(variant) {
-        case SYS_SG1000:
+        case jsm::systems::SG1000:
             this->cpu_in = &SMSGG_bus_cpu_in_sms1;
             this->cpu_out = &SMSGG_bus_cpu_out_sms1;
             snprintf(jsm->label, sizeof(jsm->label), "Sega Game 1000");
             break;
-        case SYS_SMS1:
+        case jsm::systems::SMS1:
             this->cpu_in = &SMSGG_bus_cpu_in_sms1;
             this->cpu_out = &SMSGG_bus_cpu_out_sms1;
             snprintf(jsm->label, sizeof(jsm->label), "Sega Master System");
             break;
-        case SYS_SMS2:
+        case jsm::systems::SMS2:
             this->cpu_in = &SMSGG_bus_cpu_in_sms1;
             this->cpu_out = &SMSGG_bus_cpu_out_sms1;
             snprintf(jsm->label, sizeof(jsm->label), "Sega Master System II");
             break;
-        case SYS_GG:
+        case jsm::systems::GG:
             this->cpu_in = &SMSGG_bus_cpu_in_gg;
             this->cpu_out = &SMSGG_bus_cpu_out_sms1;
             snprintf(jsm->label, sizeof(jsm->label), "Sega Game Gear");
@@ -251,7 +251,7 @@ void SMSGGJ_describe_io(JSM, struct cvec *IOs)
     struct physical_io_device *d = cvec_push_back(this->IOs);
     SMSGG_gamepad_setup_pio(d, 0, "Player A", 1, 1);
     this->io.controllerA.device_ptr = make_cvec_ptr(IOs, cvec_len(IOs)-1);
-    if (this->variant != SYS_GG) {
+    if (this->variant != jsm::systems::GG) {
         d = cvec_push_back(this->IOs);
         SMSGG_gamepad_setup_pio(d, 1, "Player B", 0, 0);
         this->io.controllerB.device_ptr = make_cvec_ptr(IOs, cvec_len(IOs)-1);
@@ -266,7 +266,7 @@ void SMSGGJ_describe_io(JSM, struct cvec *IOs)
     b->state = 1;
     b->common_id = DBCID_ch_power;
 
-    if (this->variant != SYS_GG) {
+    if (this->variant != jsm::systems::GG) {
         b = cvec_push_back(&chassis->chassis.digital_buttons);
         b->common_id = DBCID_ch_reset;
         snprintf(b->name, sizeof(b->name), "Reset");
@@ -275,7 +275,7 @@ void SMSGGJ_describe_io(JSM, struct cvec *IOs)
 
     this->io.pause_button = NULL;
 
-    if (this->variant != SYS_GG) {
+    if (this->variant != jsm::systems::GG) {
         b = cvec_push_back(&chassis->chassis.digital_buttons);
         b->common_id = DBCID_ch_pause;
         snprintf(b->name, sizeof(b->name), "Pause");
@@ -298,7 +298,7 @@ void SMSGGJ_describe_io(JSM, struct cvec *IOs)
     d->display.output_debug_metadata[0] = NULL;
     d->display.output_debug_metadata[1] = NULL;
     this->vdp.display_ptr = make_cvec_ptr(IOs, cvec_len(IOs)-1);
-    if (this->variant == SYS_GG)
+    if (this->variant == jsm::systems::GG)
         setup_lcd_gg(&d->display);
     else
         setup_crt_sms(&d->display);
@@ -425,7 +425,7 @@ void SMSGG_bus_notify_IRQ(struct SMSGG* this, u32 level)
 
 static void poll_pause(struct SMSGG* this)
 {
-    if (this->variant != SYS_GG)
+    if (this->variant != jsm::systems::GG)
         SMSGG_notify_NMI(this, this->io.pause_button->state);
 }
 

@@ -77,23 +77,24 @@ NES::NES() : cpu(this), ppu(this), bus(this), cart(this) {
 NES::~NES() {
 }
 
-void NES_new(JSM)
+jsm_system *NES_new()
 {
-    NES *nes = new NES();
-    nes->apu.master_cycles = &nes->clock.master_clock;
+    NESJ *nes = new NESJ();
+    nes->nes.apu.master_cycles = &nes->nes.clock.master_clock;
 
     jsm_debug_read_trace dt;
     dt.read_trace = &read_trace;
     dt.ptr = static_cast<void *>(nes);
 
-    nes->cpu.cpu.setup_tracing(&dt, &nes->clock.master_clock);
-    snprintf(jsm->label, sizeof(jsm->label), "Nintendo Entertainment System");
+    nes->nes.cpu.cpu.setup_tracing(&dt, &nes->nes.clock.master_clock);
+    snprintf(nes->label, sizeof(nes->label), "Nintendo Entertainment System");
 
-    nes->described_inputs = 0;
+    nes->nes.described_inputs = 0;
 
-    nes->cycles_left = 0;
-    nes->display_enabled = 1;
+    nes->nes.cycles_left = 0;
+    nes->nes.display_enabled = 1;
     nes->IOs = nullptr;
+    return nes;
 }
 
 

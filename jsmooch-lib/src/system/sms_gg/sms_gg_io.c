@@ -13,7 +13,7 @@ void SMSGG_io_init(struct SMSGG *this)
     this->io.GGreg = 0xFF;
 }
 
-void SMSGG_controller_port_init(struct SMSGG_controller_port* this, enum jsm_systems variant, u32 which)
+void SMSGG_controller_port_init(struct SMSGG_controller_port* this, enum jsm::systems variant, u32 which)
 {
     this->attached_device = NULL;
     this->TR_level = this->TH_level = this->TR_direction = this->TH_direction = 1;
@@ -48,7 +48,7 @@ static u32 read_reg_ioport1(struct SMSGG *this, u32 val)
      */
     u32 pinsA = SMSGG_controller_port_read(&this->io.portA);
     u32 pinsB;
-    if (this->variant != SYS_GG)
+    if (this->variant != jsm::systems::GG)
         pinsB = SMSGG_controller_port_read(&this->io.portB);
     else
         pinsB = 0x7F;
@@ -74,7 +74,7 @@ static u32 read_reg_ioport2(struct SMSGG *this, u32 val)
      */
     u32 pinsA = SMSGG_controller_port_read(&this->io.portA);
     u32 pinsB;
-    if (this->variant != SYS_GG)
+    if (this->variant != jsm::systems::GG)
         pinsB = SMSGG_controller_port_read(&this->io.portB);
     else
         pinsB = 0x7F;
@@ -92,7 +92,7 @@ static u32 read_reg_ioport2(struct SMSGG *this, u32 val)
 }
 
 void write_reg_memory_ctrl(struct SMSGG* this, u32 val) {
-    if (this->variant != SYS_GG) {
+    if (this->variant != jsm::systems::GG) {
         //SMSGG_mapper_sega_set_BIOS(&this->mapper, ((val & 8) >> 3) ^ 1); // 1 = disabled, 0 = enabled
 
         //this->mapper.enable_cart = ((val & 0x40) >> 6) ^ 1;

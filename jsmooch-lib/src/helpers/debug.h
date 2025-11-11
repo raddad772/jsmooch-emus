@@ -197,6 +197,8 @@ void LT_dump_to_dbg(struct last_traces_t *);
 
 void DFT(char *format, ...);
 
+void dbg_init();
+
 #ifdef DO_LAST_TRACES
 #define dbg_LT_printf(...) LT_printf(&dbg.last_traces, __VA_ARGS__)
 #define dbg_LT_endline() LT_endline(&dbg.last_traces)

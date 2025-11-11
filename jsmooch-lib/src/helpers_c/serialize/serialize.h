@@ -38,7 +38,7 @@ struct serialized_state_section {
 };
 
 struct serialized_state {
-    enum jsm_systems kind;
+    enum jsm::systems kind;
     u32 version;
     struct serialized_opt_data opt;
 

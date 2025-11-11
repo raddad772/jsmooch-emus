@@ -251,7 +251,7 @@ static u32 get_gfx3(struct SMSGG* this, u32 hpos, u32 vpos, u32 nt_base, u32 pt_
         nta = (nt_base & 0x0E) << 10;
         nta += (vpos & 0xF8) << 3;
         nta += ((hpos & 0xF8) >> 3) << 1;
-        if (this->variant == SYS_SMS1) {
+        if (this->variant == jsm::systems::SMS1) {
             // NTA bit 10 (0x400) & with io nta bit 0
             nta &= (0x3BFF | ((nt_base & 1) << 10));
         }

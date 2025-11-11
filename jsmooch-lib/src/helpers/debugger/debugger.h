@@ -293,7 +293,7 @@ struct dbglog_view {
     char name[100]{};
 
     u32 ids_enabled[MAX_DBGLOG_IDS]{};
-    struct dbglog_category_node *id_to_category[MAX_DBGLOG_IDS]{};
+    dbglog_category_node *id_to_category[MAX_DBGLOG_IDS]{};
     u32 id_to_color[MAX_DBGLOG_IDS]{};
     u32 updated{};
     u32 has_extra{};
@@ -443,16 +443,17 @@ struct image_view {
     struct {
         u32 exists;
         u32 enabled;
-        struct ivec2 p[2];
+        ivec2 p[2];
     } viewport;
 
-    struct debugger_update_func update_func;
+    debugger_update_func update_func;
 
-    struct buf img_buf[2];
+    buf img_buf[2];
 };
 
 
 enum JSMD_widgets {
+    JSMD_none,
     JSMD_checkbox,
     JSMD_radiogroup,
     JSMD_textbox,
@@ -491,7 +492,8 @@ struct debugger_widget_textbox {
 };
 
 struct debugger_widget {
-    explicit debugger_widget(JSMD_widgets kind);
+    //explicit debugger_widget(JSMD_widgets kind);
+    void make(JSMD_widgets kind);
     ~debugger_widget();
 
     JSMD_widgets kind = JSMD_textbox;

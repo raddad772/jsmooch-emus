@@ -78,7 +78,7 @@ void atari2600_new(JSM)
     atari2600_inputs_init(&this->controller2_in);
 
     jsm->ptr = (void*)this;
-    jsm->kind = SYS_ATARI2600;
+    jsm->kind = jsm::systems::ATARI2600;
 
     jsm->finish_frame = &atari2600J_finish_frame;
     jsm->finish_scanline = &atari2600J_finish_scanline;

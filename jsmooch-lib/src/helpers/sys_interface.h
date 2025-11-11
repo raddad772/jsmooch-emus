@@ -1,8 +1,10 @@
-#ifndef JSMOOCH_SYS_INTERFACE_CPP_H
-#define JSMOOCH_SYS_INTERFACE_CPP_H
+#pragma once
+
 #include <helpers/sys_interface.h>
 #include <helpers/enums.h>
 #include <helpers/physical_io.h>
+#include <helpers/audiobuf.h>
+#include <helpers/serialize/serialize.h>
 #include <vector>
 
 #include "debugger/debugger.h"
@@ -15,7 +17,15 @@ struct framevars {
     u64 master_cycle{};
 };
 
+struct deserialize_ret {
+    char reason[50]{};
+    u32 success{};
+};
+
+jsm_system* new_system(jsm::systems which);
+
 struct jsm_system {
+public:
     virtual ~jsm_system() = default;
 
     char label[100]{};
@@ -25,25 +35,26 @@ struct jsm_system {
     virtual u32 finish_scanline() {return 0; };
     virtual u32 step_master(u32) { return 0; };
     virtual void reset() {};
-    virtual void load_BIOS(struct multi_file_set* mfs) {};
+    virtual void load_BIOS(multi_file_set& mfs) {};
     virtual void describe_io(std::vector<physical_io_device> &inIOs) {};
-    virtual void get_framevars(struct framevars* out) {};
+    virtual void get_framevars(framevars& out) {};
 
-    virtual void sideload(struct multi_file_set* mfs) {};
+    virtual void sideload(multi_file_set& mfs) {};
 
-    virtual void set_audiobuf(struct audiobuf *ab) {};
+    virtual void set_audiobuf(audiobuf *ab) {};
     virtual void play() {};
     virtual void pause() {};
     virtual void stop() {};
 
-    virtual void setup_debugger_interface(struct debugger_interface *intf) {};
+    virtual void setup_debugger_interface(debugger_interface &intf) {};
 
-    virtual void save_state(struct serialized_state &state) {};
-    virtual void load_state(struct serialized_state &state, struct deserialize_ret &ret) {};
+    struct {
+        bool save_state=false, load_BIOS=false;
+    } has{};
+
+    virtual void save_state(serialized_state &state) {};
+    virtual void load_state(serialized_state &state, deserialize_ret &ret) {};
 
     std::vector<physical_io_device> *IOs{};
     std::vector<debugger_widget> *opts{};
 };
-
-
-#endif

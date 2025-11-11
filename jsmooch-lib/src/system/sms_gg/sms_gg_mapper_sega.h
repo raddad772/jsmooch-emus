@@ -31,7 +31,7 @@ struct SMSGG_mapper_sega {
     struct simplebuf8 RAM;
     struct simplebuf8 cart_RAM;
 
-    enum jsm_systems variant;
+    enum jsm::systems variant;
 
     struct SMSGG_mem_region regions[256]; // upper 8 bits of an address
     u32 sega_mapper_enabled;
@@ -52,7 +52,7 @@ struct SMSGG_mapper_sega {
     } io;
 };
 
-void SMSGG_mapper_sega_init(struct SMSGG_mapper_sega*, enum jsm_systems variant);
+void SMSGG_mapper_sega_init(struct SMSGG_mapper_sega*, enum jsm::systems variant);
 void SMSGG_mapper_sega_delete(struct SMSGG_mapper_sega*);
 void SMSGG_mapper_sega_set_BIOS(struct SMSGG_mapper_sega*, u32 to);
 void SMSGG_mapper_sega_reset(struct SMSGG_mapper_sega*);

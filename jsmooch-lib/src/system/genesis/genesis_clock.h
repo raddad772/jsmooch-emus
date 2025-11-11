@@ -19,7 +19,7 @@ struct genesis_clock {
 
     u64 delta;
 
-    enum jsm_systems kind;
+    enum jsm::systems kind;
 
     u32 mem_break;
 
@@ -71,7 +71,7 @@ struct genesis_clock {
                  / 4 = ~13MHz VDP
  */
 
-void genesis_clock_init(struct genesis_clock*, enum jsm_systems kind);
+void genesis_clock_init(struct genesis_clock*, enum jsm::systems kind);
 void genesis_clock_reset(struct genesis_clock*);
 
 #endif //JSMOOCH_EMUS_GENESIS_CLOCK_H

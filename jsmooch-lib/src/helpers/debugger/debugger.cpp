@@ -98,7 +98,6 @@ debugger_view::debugger_view(debugger_view_kinds kind) : kind(kind), memory{}
             break;
         case dview_console:
             new (&console) console_view();
-            console_view_init(&console);
             break;
         case dview_image:
             new (&image) image_view();
@@ -124,9 +123,11 @@ debugger_view::debugger_view(debugger_view_kinds kind) : kind(kind), memory{}
     }
 }
 
-debugger_widget::debugger_widget(JSMD_widgets kind) : kind(kind)
+void debugger_widget::make(JSMD_widgets mkind)
 {
-    switch(kind) {
+    destroy_active();
+    kind = mkind;
+    switch(mkind) {
         case JSMD_checkbox:
             new (&checkbox) debugger_widget_checkbox();
             break;
@@ -146,8 +147,11 @@ debugger_widget::debugger_widget(JSMD_widgets kind) : kind(kind)
 
 void debugger_widget::destroy_active() {
     switch(kind) {
+        case JSMD_none:
+            break;
         case JSMD_colorkey:
             colorkey.~debugger_widget_colorkey();
+            break;
         case JSMD_checkbox:
             checkbox.~debugger_widget_checkbox();
             break;
@@ -160,6 +164,7 @@ void debugger_widget::destroy_active() {
         default:
             NOGOHERE;
     }
+    kind = JSMD_none;
 }
 
 debugger_widget::~debugger_widget()

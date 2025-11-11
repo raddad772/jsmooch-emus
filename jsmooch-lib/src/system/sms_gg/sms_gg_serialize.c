@@ -191,7 +191,7 @@ void SMSGGJ_save_state(struct jsm_system* jsm, struct serialized_state *state)
     jsimg_allocate(&state->screenshot, 256, 240);
     jsimg_clear(&state->screenshot);
     switch(this->variant) {
-        case SYS_GG:
+        case jsm::systems::GG:
             GG_present(cpg(this->vdp.display_ptr), state->screenshot.data.ptr, 0, 0, 256, 240);
             break;
         default:

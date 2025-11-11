@@ -80,6 +80,11 @@ int read_file_buf::read(const char *fname, const char *fpath)
     return 1;
 }
 
+void multi_file_set::clear() {
+    num_files = 0;
+}
+
+
 void multi_file_set::add(const char *fname, const char *fpath)
 {
     assert(num_files < (MFS_MAX - 1));

@@ -3,35 +3,29 @@
 #include <stdlib.h>
 
 #include "sys_interface.h"
-#include "system/gb/gb.h"
+//#include "system/gb/gb.h"
 #include "system/nes/nes.h"
-#include "system/nds/nds.h"
-#include "system/snes/snes.h"
-#include "system/sms_gg/sms_gg.h"
-#include "system/dreamcast/dreamcast.h"
-#include "system/ps1/ps1.h"
-#include "system/atari2600/atari2600.h"
-#include "system/zxspectrum/zxspectrum.h"
-#include "system/genesis/genesis.h"
-#include "system/apple2/apple2.h"
-#include "system/mac/mac.h"
+//#include "system/nds/nds.h"
+//#include "system/snes/snes.h"
+//#include "system/sms_gg/sms_gg.h"
+//#include "system/dreamcast/dreamcast.h"
+//#include "system/ps1/ps1.h"
+//#include "system/atari2600/atari2600.h"
+//#include "system/zxspectrum/zxspectrum.h"
+//#include "system/genesis/genesis.h"
+//#include "system/apple2/apple2.h"
+//#include "system/mac/mac.h"
 #include "helpers/debug.h"
-#include "fail"
 #include "system/gba/gba.h"
 #include "system/galaksija/galaksija.h"
 #include "system/tg16/tg16.h"
 
-struct jsm_system* new_system(enum jsm::systems which)
+jsm_system* new_system(jsm::systems which)
 {
     dbg_init();
-    struct jsm_system* out = malloc(sizeof(struct jsm_system));
-    memset(out, 0, sizeof(struct jsm_system));
-    cvec_init(&out->IOs, sizeof(struct physical_io_device), 20);
-    cvec_init(&out->opts, sizeof(struct debugger_widget), 5);
-    cvec_lock_reallocs(&out->IOs);
-    out->kind = which;
-	switch (which) {
-        case jsm::systems::GBA:
+    jsm_system* out = nullptr;
+    switch (which) {
+        /*case jsm::systems::GBA:
             GBA_new(out);
             break;
         case jsm::systems::NDS:
@@ -65,11 +59,11 @@ struct jsm_system* new_system(enum jsm::systems which)
             break;
         case jsm::systems::MACPLUS_1MB:
             mac_new(out, macplus_1mb);
-            break;
+            break;*/
         case jsm::systems::NES:
-            NES_new(out);
+            out = NES_new();
             break;
-        case jsm::systems::PS1:
+        /*case jsm::systems::PS1:
             PS1_new(out);
             break;
         case jsm::systems::SG1000:
@@ -92,16 +86,19 @@ struct jsm_system* new_system(enum jsm::systems which)
             break;
         case jsm::systems::ZX_SPECTRUM_128K:
             ZXSpectrum_new(out, ZXS_spectrum128);
-            break;
+            break;*/
         default:
             printf("CREATE UNKNOWN SYSTEM!");
             break;
 	}
+    out->kind = which;
+    out->IOs->reserve(20);
+    out->opts->reserve(5);
     out->describe_io(out, &out->IOs);
     return out;
 }
 
-void jsm_clearfuncs(struct jsm_system *jsm)
+void jsm_clearfuncs(jsm_system *jsm)
 {
     jsm->finish_frame = NULL;
     jsm->finish_scanline = NULL;
@@ -117,9 +114,9 @@ void jsm_clearfuncs(struct jsm_system *jsm)
     jsm->set_audiobuf = NULL;
 }
 
-void jsm_delete(struct jsm_system* jsm)
+void jsm_delete(jsm_system* jsm)
 {
-    struct cvec* o = &jsm->IOs;
+    cvec* o = &jsm->IOs;
     switch(jsm->kind) {
         case jsm::systems::GBA:
             GBA_delete(jsm);

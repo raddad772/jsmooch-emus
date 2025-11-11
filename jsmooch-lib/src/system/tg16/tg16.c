@@ -117,7 +117,7 @@ static struct events_view *TG16J_get_events_view(JSM)
     return cpg(this->dbg.events.view);
 }
 
-void TG16_new(JSM, enum jsm_systems kind)
+void TG16_new(JSM, enum jsm::systems kind)
 {
     struct TG16* this = (struct TG16*)malloc(sizeof(struct TG16));
     memset(this, 0, sizeof(*this));

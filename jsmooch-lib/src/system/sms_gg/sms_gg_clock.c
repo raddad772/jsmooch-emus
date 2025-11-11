@@ -4,7 +4,7 @@
 
 #include "sms_gg_clock.h"
 
-void SMSGG_clock_init(struct SMSGG_clock* this, enum jsm_systems variant, enum jsm_regions region)
+void SMSGG_clock_init(struct SMSGG_clock* this, enum jsm::systems variant, enum jsm_regions region)
 {
     *this = (struct SMSGG_clock) {
         .variant = variant,

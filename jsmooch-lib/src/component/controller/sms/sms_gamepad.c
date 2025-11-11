@@ -7,7 +7,7 @@
 #include "sms_gamepad.h"
 #include "string.h"
 
-void SMSGG_gamepad_init(struct SMSGG_gamepad* this, enum jsm_systems variant, u32 num)
+void SMSGG_gamepad_init(struct SMSGG_gamepad* this, enum jsm::systems variant, u32 num)
 {
     *this = (struct SMSGG_gamepad) {
             .variant = variant,
@@ -59,7 +59,7 @@ void SMSGG_gamepad_latch(struct SMSGG_gamepad* this)
         B_GET(right, 3);
         B_GET(tr, 4);
         B_GET(tl, 5);
-        if (this->variant == SYS_GG) {
+        if (this->variant == jsm::systems::GG) {
             B_GET(start, 6);
         }
 #undef B_GET

@@ -2,14 +2,17 @@
 // Created by . on 4/19/24.
 //
 
-#ifndef JSMOOCH_EMUS_PHYSICAL_IO_H
-#define JSMOOCH_EMUS_PHYSICAL_IO_H
+#pragma once
 
 #include <vector>
 
 #include "helpers/sram.h"
 #include "helpers/int.h"
 #include "helpers/buf.h"
+#include "helpers/physical_io.h"
+#include "helpers/cvec.h"
+
+struct physical_io_device;
 
 enum JKEYS {
     JK_NONE,
@@ -168,6 +171,7 @@ struct HID_digital_button {
     u32 id{};
 
     JKEYS common_id{};
+
 };
 
 struct HID_analog_axis {
@@ -184,12 +188,14 @@ struct JSM_CONTROLLER {
     char name[50]{};
     std::vector<HID_analog_axis> analog_axes{};
     std::vector<HID_digital_button> digital_buttons{};
+    cvec_ptr<physical_io_device> pio{};
 };
 
 struct JSM_KEYBOARD {
     JKEYS key_defs[100];
     u32 key_states[100];
     u32 num_keys;
+    cvec_ptr<physical_io_device> pio{};
 };
 
 
@@ -261,17 +267,22 @@ struct JSM_DISPLAY {
         if (output_debug_metadata[0] != nullptr) { free(output_debug_metadata[0]); output_debug_metadata[0] = nullptr; }
         if (output_debug_metadata[1] != nullptr) { free(output_debug_metadata[1]); output_debug_metadata[1] = nullptr; }
     }
+
+    cvec_ptr<physical_io_device> pio{};
+
 };
 
 struct JSM_MOUSE {
     HID_digital_button *left_button{};
     HID_digital_button *right_button{};
     i32 new_x{}, new_y{};
+    cvec_ptr<physical_io_device> pio{};
 };
 
 struct JSM_CHASSIS {
     //struct cvec indicators;
     std::vector<HID_digital_button> digital_buttons{};
+    cvec_ptr<physical_io_device> pio{};
 };
 
 struct JSM_AUDIO_CHANNEL {
@@ -291,30 +302,33 @@ struct JSM_TOUCHSCREEN {
         i32 width{}, height{};
         i32 x_offset{}, y_offset{};
     } params{};
+    cvec_ptr<physical_io_device> pio{};
 };
 
 struct JSM_CARTRIDGE_PORT {
-    void (*load_cart)(struct jsm_system *ptr, multi_file_set& mfs, struct physical_io_device &whichpio){};
-    void (*unload_cart)(struct jsm_system *ptr){};
+    void (*load_cart)(jsm_system *ptr, multi_file_set& mfs, physical_io_device &whichpio){};
+    void (*unload_cart)(jsm_system *ptr){};
     persistent_store SRAM{};
+    cvec_ptr<physical_io_device> pio{};
 };
 
-struct physical_io_device;
-
 struct JSM_DISC_DRIVE {
-    void (*insert_disc)(struct jsm_system *ptr, struct physical_io_device *pio, struct multi_file_set* mfs){};
-    void (*remove_disc)(struct jsm_system *ptr){};
-    void (*close_drive)(struct jsm_system *ptr){};
-    void (*open_drive)(struct jsm_system *ptr){};
+    void (*insert_disc)(jsm_system *ptr, physical_io_device &pio, multi_file_set& mfs){};
+    void (*remove_disc)(jsm_system *ptr){};
+    void (*close_drive)(jsm_system *ptr){};
+    void (*open_drive)(jsm_system *ptr){};
+    cvec_ptr<physical_io_device> pio{};
 };
 
 struct JSM_AUDIO_CASSETTE {
-    void (*insert_tape)(struct jsm_system *ptr, struct physical_io_device *pio, struct multi_file_set* mfs, struct buf* sram){};
-    void (*remove_tape)(struct jsm_system *ptr){};
-    void (*rewind)(struct jsm_system *ptr){};
-    void (*play)(struct jsm_system *ptr){};
-    void (*stop)(struct jsm_system *ptr){};
+    void (*insert_tape)(jsm_system *ptr, physical_io_device &pio, multi_file_set& mfs, buf* sram){};
+    void (*remove_tape)(jsm_system *ptr){};
+    void (*rewind)(jsm_system *ptr){};
+    void (*play)(jsm_system *ptr){};
+    void (*stop)(jsm_system *ptr){};
+    cvec_ptr<physical_io_device> pio{};
 };
+
 #include <utility>
 struct physical_io_device {
     physical_io_device() {};
@@ -361,6 +375,4 @@ private:
     void move_from(physical_io_device&& other) noexcept;
 };
 
-void pio_new_button(struct JSM_CONTROLLER* cnt, const char* name, enum JKEYS common_id);
-
-#endif //JSMOOCH_EMUS_PHYSICAL_IO_H
+void pio_new_button(JSM_CONTROLLER* cnt, const char* name, enum JKEYS common_id);

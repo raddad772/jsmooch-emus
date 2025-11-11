@@ -73,7 +73,7 @@ static void bg_gfx3(struct SMSGG_VDP* this) {
         nta = (this->io.bg_name_table_address & 0x0E) << 10;
         nta += (vpos & 0xF8) << 3;
         nta += ((hpos & 0xF8) >> 3) << 1;
-        if (this->variant == SYS_SMS1) {
+        if (this->variant == jsm::systems::SMS1) {
             // NTA bit 10 (0x400) & with io nta bit 0
             nta &= (0x3BFF | ((this->io.bg_name_table_address & 1) << 10));
         }
@@ -162,7 +162,7 @@ static void sprite_gfx3(struct SMSGG_VDP* this) {
 
 void SMSGG_VDP_update_videomode(struct SMSGG_VDP* this) {
     u32 bottom_row = 192;
-    if (this->variant == SYS_SMS1) bottom_row = 192;
+    if (this->variant == jsm::systems::SMS1) bottom_row = 192;
     if (false) {}
     else {
         if (this->io.video_mode == 0x0B) bottom_row = 224;
@@ -307,7 +307,7 @@ static void sprite_setup(struct SMSGG_VDP* this)
 
 u32 dac_palette(struct SMSGG_VDP* this, u32 index)
 {
-    if (this->variant != SYS_GG) {
+    if (this->variant != jsm::systems::GG) {
         if (!(this->io.video_mode & 8)) return SMSGG_PALETTE[index & 0x0F];
         return this->CRAM[index] & 0x3F;
     }
@@ -372,14 +372,14 @@ static void scanline_visible(struct SMSGG_VDP* this)
     }
 }
 
-void SMSGG_VDP_init(struct SMSGG_VDP* this, struct SMSGG* bus, enum jsm_systems variant)
+void SMSGG_VDP_init(struct SMSGG_VDP* this, struct SMSGG* bus, enum jsm::systems variant)
 {
     this->variant = variant;
     this->bus = bus;
 
-    if (variant == SYS_SG1000) this->sprite_limit = 4;
+    if (variant == jsm::systems::SG1000) this->sprite_limit = 4;
     else this->sprite_limit = 8;
-    this->mode = variant == SYS_GG ? VDP_GG : VDP_SMS;
+    this->mode = variant == jsm::systems::GG ? VDP_GG : VDP_SMS;
     
     for (u32 i = 0; i < 64; i++) {
         this->objects[i] = (struct SMSGG_object) {0, 0, 0, 0 };

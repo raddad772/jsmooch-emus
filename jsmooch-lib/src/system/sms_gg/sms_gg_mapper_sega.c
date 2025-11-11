@@ -95,7 +95,7 @@ void SMSGG_mapper_refresh_mapping(struct SMSGG_mapper_sega *this)
         refresh_sega_mapper(this);
 }
 
-void SMSGG_mapper_sega_init(struct SMSGG_mapper_sega* this, enum jsm_systems variant)
+void SMSGG_mapper_sega_init(struct SMSGG_mapper_sega* this, enum jsm::systems variant)
 {
     memset(this, 0, sizeof(struct SMSGG_mapper_sega));
     simplebuf8_init(&this->RAM);
@@ -103,19 +103,19 @@ void SMSGG_mapper_sega_init(struct SMSGG_mapper_sega* this, enum jsm_systems var
     simplebuf8_init(&this->BIOS);
     simplebuf8_init(&this->cart_RAM);
 
-    u32 is_sms = (variant == SYS_SMS1) || (variant == SYS_SMS2);
-    u32 is_gg = (variant == SYS_SG1000);
+    u32 is_sms = (variant == jsm::systems::SMS1) || (variant == jsm::systems::SMS2);
+    u32 is_gg = (variant == jsm::systems::SG1000);
     switch(variant) {
-        case SYS_SMS1:
-        case SYS_SMS2:
-        case SYS_GG:
+        case jsm::systems::SMS1:
+        case jsm::systems::SMS2:
+        case jsm::systems::GG:
             simplebuf8_allocate(&this->RAM, 8 * 1024);
             simplebuf8_allocate(&this->cart_RAM, 32 * 1024);
             simplebuf8_clear(&this->RAM);
             simplebuf8_clear(&this->cart_RAM);
             this->sega_mapper_enabled = 1;
             break;
-        case SYS_SG1000:
+        case jsm::systems::SG1000:
             simplebuf8_allocate(&this->RAM, 2 * 1024);
             simplebuf8_clear(&this->RAM);
             this->sega_mapper_enabled = 0;

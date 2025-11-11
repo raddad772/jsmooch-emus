@@ -9,7 +9,7 @@
 #include "helpers/sys_interface.h"
 
 struct SMSGG_controller_port {
-    enum jsm_systems variant;
+    enum jsm::systems variant;
     u32 which;
 
     u32 TR_level;
@@ -20,7 +20,7 @@ struct SMSGG_controller_port {
     void* attached_device;
 };
 
-void SMSGG_controller_port_init(struct SMSGG_controller_port*, enum jsm_systems variant, u32 which);
+void SMSGG_controller_port_init(struct SMSGG_controller_port*, enum jsm::systems variant, u32 which);
 u32 SMSGG_controller_port_read(struct SMSGG_controller_port*);
 void SMSGG_controller_port_reset(struct SMSGG_controller_port*);
 

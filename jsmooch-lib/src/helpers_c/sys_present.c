@@ -573,66 +573,66 @@ void DC_present(struct physical_io_device *device, void *out_buf, u32 out_width,
     }
 }
 
-void jsm_present(enum jsm_systems which, struct physical_io_device *display, void *out_buf, u32 x_offset, u32 y_offset, u32 out_width, u32 out_height, struct events_view *ev)
+void jsm_present(enum jsm::systems which, struct physical_io_device *display, void *out_buf, u32 x_offset, u32 y_offset, u32 out_width, u32 out_height, struct events_view *ev)
 {
     u32 is_event_view_present = ev != NULL;
     switch(which) {
-        case SYS_PS1:
+        case jsm::systems::PS1:
             PS1_present(display, out_buf, out_width, out_height, is_event_view_present);
             break;
-        case SYS_GBA:
+        case jsm::systems::GBA:
             GBA_present(display, out_buf, out_width, out_height, is_event_view_present);
             break;
-        case SYS_NDS:
+        case jsm::systems::NDS:
             NDS_present(display, out_buf, out_width, out_height, is_event_view_present);
             break;
-        case SYS_SNES:
+        case jsm::systems::SNES:
             snes_present(display, out_buf, out_width, out_height, is_event_view_present);
             break;
-        case SYS_TURBOGRAFX16:
+        case jsm::systems::TURBOGRAFX16:
             tg16_present(display, out_buf, out_width, out_height, is_event_view_present, ev);
             break;
-        case SYS_GENESIS_USA:
-        case SYS_GENESIS_JAP:
-        case SYS_MEGADRIVE_PAL:
+        case jsm::systems::GENESIS_USA:
+        case jsm::systems::GENESIS_JAP:
+        case jsm::systems::MEGADRIVE_PAL:
             genesis_present(display, out_buf, out_width, out_height, is_event_view_present);;
             break;
-        case SYS_DMG:
+        case jsm::systems::DMG:
             DMG_present(display, out_buf, x_offset, y_offset, out_width, out_height, is_event_view_present);
             break;
-        case SYS_GBC:
+        case jsm::systems::GBC:
             GBC_present(display, out_buf, x_offset, y_offset, out_width, out_height, is_event_view_present);
             break;
-        case SYS_NES:
+        case jsm::systems::NES:
             NES_present(display, out_buf, x_offset, y_offset, out_width, out_height);
             break;
-        case SYS_MAC128K:
-        case SYS_MAC512K:
-        case SYS_MACPLUS_1MB:
+        case jsm::systems::MAC128K:
+        case jsm::systems::MAC512K:
+        case jsm::systems::MACPLUS_1MB:
             mac512k_present(display, out_buf, out_width, out_height);
             break;
-        case SYS_SG1000:
-        case SYS_SMS1:
-        case SYS_SMS2:
+        case jsm::systems::SG1000:
+        case jsm::systems::SMS1:
+        case jsm::systems::SMS2:
             SMS_present(display, out_buf, x_offset, y_offset, out_width, out_height);
             break;
-        case SYS_GG:
+        case jsm::systems::GG:
             GG_present(display, out_buf, x_offset, y_offset, out_width, out_height);
             break;
-        case SYS_DREAMCAST:
+        case jsm::systems::DREAMCAST:
             DC_present(display, out_buf, out_width, out_height);
             break;
-        case SYS_ATARI2600:
+        case jsm::systems::ATARI2600:
             atari2600_present(display, out_buf, out_width, out_height);
             break;
-        case SYS_APPLEIIe:
+        case jsm::systems::APPLEIIe:
             apple2_present(display, out_buf, x_offset, y_offset, out_width, out_height);
             break;
-        case SYS_GALAKSIJA:
+        case jsm::systems::GALAKSIJA:
             galaksija_present(display, out_buf, out_width, out_height);
             break;
-        case SYS_ZX_SPECTRUM_48K:
-        case SYS_ZX_SPECTRUM_128K:
+        case jsm::systems::ZX_SPECTRUM_48K:
+        case jsm::systems::ZX_SPECTRUM_128K:
             zx_spectrum_present(display, out_buf, out_width, out_height);
             break;
         default:

@@ -286,7 +286,7 @@ static void block_step(void *ptr, u64 key, u64 clock, u32 jitter)
     }
 }*/
 
-void genesis_new(JSM, enum jsm_systems kind)
+void genesis_new(JSM, enum jsm::systems kind)
 {
     struct genesis* this = (struct genesis*)malloc(sizeof(struct genesis));
     memset(this, 0, sizeof(*this));
@@ -297,7 +297,7 @@ void genesis_new(JSM, enum jsm_systems kind)
     this->scheduler.run.func = &block_step;
     this->scheduler.run.ptr = this;
 
-    this->PAL = kind == SYS_MEGADRIVE_PAL;
+    this->PAL = kind == jsm::systems::MEGADRIVE_PAL;
     Z80_init(&this->z80, 0);
     M68k_init(&this->m68k, 1);
     genesis_clock_init(&this->clock, kind);

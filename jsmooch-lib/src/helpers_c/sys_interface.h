@@ -1,5 +1,5 @@
-#ifndef JSMOOCH_SYS_INTERFACE_H
-#define JSMOOCH_SYS_INTERFACE_H
+#ifndef JSMOOCH_jsm::systems::INTERFACE_H
+#define JSMOOCH_jsm::systems::INTERFACE_H
 
 #ifdef __cplusplus
 extern "C" {
@@ -87,7 +87,7 @@ struct jsm_system {
     void* ptr; // Pointer that holds the system
     char label[100];
 
-    enum jsm_systems kind; // Which system is it?
+    enum jsm::systems kind; // Which system is it?
 
     u32 (*finish_frame)(struct jsm_system* jsm);
     u32 (*finish_scanline)(struct jsm_system* jsm);
@@ -113,7 +113,7 @@ struct jsm_system {
     struct cvec opts;
 };
 
-struct jsm_system* new_system(enum jsm_systems which);
+struct jsm_system* new_system(enum jsm::systems which);
 void jsm_delete(struct jsm_system*);
 void jsm_clearfuncs(struct jsm_system*);
 

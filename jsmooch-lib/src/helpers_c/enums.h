@@ -1,32 +1,32 @@
 #ifndef _JSMOOCH_ENUMS_H
 #define _JSMOOCH_ENUMS_H
 
-enum jsm_systems {
-	SYS_DMG,
-	SYS_GBC,
-	SYS_NES,
-	SYS_SNES,
-    SYS_SG1000,
-	SYS_SMS1,
-    SYS_SMS2,
-	SYS_GG,
-    SYS_DREAMCAST,
-	SYS_ZX_SPECTRUM_48K,
-    SYS_ZX_SPECTRUM_128K,
-	SYS_BBC_MICRO,
-	SYS_GENESIS_USA,
-    SYS_MEGADRIVE_PAL,
-    SYS_GENESIS_JAP,
-	SYS_PS1,
-    SYS_ATARI2600,
-    SYS_MAC128K,
-    SYS_MAC512K,
-    SYS_MACPLUS_1MB,
-    SYS_APPLEIIe,
-    SYS_GBA,
-    SYS_NDS,
-    SYS_GALAKSIJA,
-    SYS_TURBOGRAFX16
+enum jsm::systems {
+	jsm::systems::DMG,
+	jsm::systems::GBC,
+	jsm::systems::NES,
+	jsm::systems::SNES,
+    jsm::systems::SG1000,
+	jsm::systems::SMS1,
+    jsm::systems::SMS2,
+	jsm::systems::GG,
+    jsm::systems::DREAMCAST,
+	jsm::systems::ZX_SPECTRUM_48K,
+    jsm::systems::ZX_SPECTRUM_128K,
+	jsm::systems::BBC_MICRO,
+	jsm::systems::GENESIS_USA,
+    jsm::systems::MEGADRIVE_PAL,
+    jsm::systems::GENESIS_JAP,
+	jsm::systems::PS1,
+    jsm::systems::ATARI2600,
+    jsm::systems::MAC128K,
+    jsm::systems::MAC512K,
+    jsm::systems::MACPLUS_1MB,
+    jsm::systems::APPLEIIe,
+    jsm::systems::GBA,
+    jsm::systems::NDS,
+    jsm::systems::GALAKSIJA,
+    jsm::systems::TURBOGRAFX16
 };
 
 enum jsm_regions {

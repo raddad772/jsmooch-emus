@@ -30,4 +30,5 @@ struct multi_file_set {
 
     u32 num_files;
     void add(const char *fname, const char *fpath);
+    void clear();
 };

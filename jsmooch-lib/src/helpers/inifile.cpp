@@ -10,7 +10,7 @@
 
 #include "inifile.h"
 #include "user.h"
-#include "helpers/cvec.h"
+#include "helpers/buf.h"
 
 char *construct_path_with_home(char *w, size_t w_sz, const char *who)
 {
@@ -18,110 +18,90 @@ char *construct_path_with_home(char *w, size_t w_sz, const char *who)
     return w + snprintf(w, w_sz, "%s/%s", homeDir, who);
 }
 
-kv_section *section_new(inifile *inifile, const char *name)
+
+kv_section &inifile::new_section(const char *name)
 {
-    kv_section &th = inifile->sections.emplace_back();
+    kv_section &th = sections.emplace_back();
 
     th.kvs.reserve(10);
     snprintf(th.name, sizeof(th.name), "%s", name);
 
-    return &th;
-}
-
-static void section_delete(kv_section *th)
-{
-    th->kvs.clear();
-}
-
-static void inifile_clear(inifile* th)
-{
-    u32 len = th->sections.size();
-    for (u32 i = 0; i < len; i++) {
-        kv_section *sec = &th->sections.at(i);
-        section_delete(sec);
-    }
-    th->sections.clear();
-}
-
-
-kv_pair *pair_new(kv_section *sec, const char *name)
-{
-    kv_pair *th = &sec->kvs.emplace_back();
-    th->kind = kvk_empty;
-    snprintf(th->key, sizeof(th->key), "%s", name);
-
     return th;
 }
 
-void inifile_delete(inifile *th)
+void inifile::clear()
 {
-    for (kv_section &sec : th->sections) {
-        section_delete(&sec);
-    }
-    th->sections.clear();
+    sections.clear();
+}
+
+
+kv_pair &kv_section::new_pair(const char *fname)
+{
+    kv_pair &th = kvs.emplace_back();
+    th.kind = kvk_empty;
+    snprintf(th.key, sizeof(th.key), "%s", fname);
+
+    return th;
 }
 
 static int strcicmp(char const *a, char const *b)
 {
     for (;; a++, b++) {
-        int d = tolower((unsigned char)*a) - tolower((unsigned char)*b);
+        int d = tolower(static_cast<unsigned char>(*a)) - tolower(static_cast<unsigned char>(*b));
         if (d != 0 || !*a)
             return d;
     }
-    return 0;
 }
 
-static struct kv_section *find_section(inifile *th, const char* name)
+kv_section *inifile::find_section(const char* name)
 {
-    for (auto &sec : th->sections) {
+    for (auto &sec : sections) {
         if (strcicmp(sec.name, name) == 0)
             return &sec;
     }
     return nullptr;
 }
 
-static struct kv_pair *find_key(kv_section* th, const char* name)
+kv_pair *kv_section::find_key(const char* fname)
 {
-    u32 len = cvec_len(&th->kvs);
-    for (u32 i = 0; i < len; i++) {
-        struct kv_pair *pair = cvec_get(&th->kvs, i);
-        if (strcicmp(pair->key, name) == 0)
-            return pair;
+    for (auto& pair : kvs) {
+        if (strcicmp(pair.key, fname) == 0)
+            return &pair;
     }
     return nullptr;
 }
 
 
-u32 inifile_has_key(inifile *th, const char* section, const char* key)
+u32 inifile::has_key(const char* section, const char* key)
 {
-    struct kv_section *sec = find_section(this, section);
-    if (sec == nullptr) return 0;
+    kv_section *sec = find_section(section);
+    if (!sec) return 0;
 
-    struct kv_pair *pair = find_key(sec, key);
-    if (pair == nullptr) return 0;
+    kv_pair *pair = sec->find_key(key);
+    if (!pair) return 0;
 
     return 1;
 }
 
-static struct kv_section* get_or_make_section(inifile *th, const char* section)
+kv_section* inifile::get_or_make_section(const char* section)
 {
-    struct kv_section *sec = find_section(this, section);
+    kv_section *sec = find_section(section);
     if (sec == nullptr) {
-        sec = section_new(this, section);
+        sec = &new_section(section);
     }
     return sec;
 }
 
-struct kv_pair* inifile_get_or_make_key(inifile *th, const char* section, const char* key)
+kv_pair* inifile::inifile_get_or_make_key(const char* section, const char* key)
 {
-    struct kv_section *sec = find_section(this, section);
+    kv_section *sec = find_section(section);
     if (sec == nullptr) {
-        sec = section_new(this, section);
+        sec = &new_section(section);
     }
 
-    struct kv_pair *pair = find_key(sec, key);
+    kv_pair *pair = sec->find_key(key);
     if (pair == nullptr) {
-        pair = pair_new(sec, key);
+        pair = &sec->new_pair(key);
     }
 
     return pair;
@@ -141,12 +121,12 @@ enum get_line_retval {
     eof = 2
 };
 
-static enum get_line_retval get_line(read_file_buf *rfb, char *line, size_t line_size)
+static get_line_retval get_line(read_file_buf *rfb, char *line, size_t line_size)
 {
     snprintf(line, line_size, "");
     char *line_ptr = line;
-    char *buf_ptr = ((char *)rfb->buf.ptr) + (rfb->pos - 1);
-    char *end_ptr = (char *)rfb->buf.ptr + rfb->buf.size;
+    char *buf_ptr = static_cast<char *>(rfb->buf.ptr) + (rfb->pos - 1);
+    char *end_ptr = static_cast<char *>(rfb->buf.ptr) + rfb->buf.size;
 
     u32 opening_spaces = 1;
     int line_good = 0;
@@ -180,8 +160,8 @@ static enum get_line_retval get_line(read_file_buf *rfb, char *line, size_t line
     // Cap off our line
     *line_ptr = 0;
 
-    int a = line_good ? good_line : empty_line;
-    if (buf_ptr == end_ptr) return eof | a;
+    get_line_retval a = line_good ? good_line : empty_line;
+    if (buf_ptr == end_ptr) return static_cast<get_line_retval>(eof | a);
 
     return a;
 }
@@ -192,7 +172,7 @@ enum parse_line_ret {
     plr_section
 };
 
-static enum parse_line_ret parse_line(inifile *th, char *line, size_t line_sz, char *str1buf, size_t str1sz, char *str2buf, size_t str2sz)
+static parse_line_ret parse_line(inifile *th, char *line, size_t line_sz, char *str1buf, size_t str1sz, char *str2buf, size_t str2sz)
 {
     char *line_ptr = line - 1;
     char *line_end_ptr = line + line_sz;
@@ -218,8 +198,7 @@ static enum parse_line_ret parse_line(inifile *th, char *line, size_t line_sz, c
         if (*line_ptr == '\n') break;
         if ((*line_ptr == ' ') && opening_spaces)
             continue;
-        else
-            opening_spaces = 0;
+        opening_spaces = 0;
 
         if (*line_ptr == '#') {
             break;
@@ -268,14 +247,14 @@ static enum parse_line_ret parse_line(inifile *th, char *line, size_t line_sz, c
 }
 
 
-static void parse_kvp(kv_section *sec, char *key, char *val)
+void kv_section::parse_pair(char *key, char *val)
 {
     u32 is_int = 1; // finding a non-int character in value will set this to 0
     u32 is_float = 1; // finding a non-float character will set this to 0
 
-    struct kv_pair *p = cvec_push_back(&sec->kvs);
-    snprintf(p->key, sizeof(p->key), "%s", key);
-    p->str_value[0] = 0;
+    auto &p = kvs.emplace_back();
+    snprintf(p.key, sizeof(p.key), "%s", key);
+    p.str_value[0] = 0;
 
     char *ptr = val;
     u32 len = 0;
@@ -304,42 +283,41 @@ static void parse_kvp(kv_section *sec, char *key, char *val)
         ptr++;
     }
     if (len == 0) {
-        p->kind = kvk_empty;
+        p.kind = kvk_empty;
     }
     else if (is_int) {
-        p->kind = kvk_int;
-        p->int_value = atoi(val);
+        p.kind = kvk_int;
+        p.int_value = atoi(val);
     }
     else if (is_float) {
-        p->kind = kvk_float;
-        p->float_value = atof(val);
+        p.kind = kvk_float;
+        p.float_value = atof(val);
     }
     else {
-        p->kind = kvk_string;
-        snprintf(p->str_value, sizeof(p->str_value), "%s", val);
+        p.kind = kvk_string;
+        snprintf(p.str_value, sizeof(p.str_value), "%s", val);
     }
 }
 
-int inifile_load(inifile *th, const char* path)
+int inifile::load(const char* mpath)
 {
-    struct kv_section *current_section = nullptr;
-    inifile_clear(this);
+    kv_section *current_section = nullptr;
+    clear();
 
-    struct read_file_buf rfb;
-    rfb_init(&rfb);
+    read_file_buf rfb;
 
-    if (!rfb_read(nullptr, path, &rfb)) {
+    if (!rfb.read(nullptr, mpath)) {
         printf("\nFAILED TO READ!");
         goto exit;
     }
+    snprintf(path, sizeof(path), "%s", mpath);;
 
     char line[2000];
 
-    u64 pos;
     char buf[2][2000];
     // Go line by line
     while(true) {
-        enum get_line_retval glr = get_line(&rfb, line, sizeof(line));
+        get_line_retval glr = get_line(&rfb, line, sizeof(line));
         if ((glr & 1) == empty_line){
             if (glr & eof) {
                 break;
@@ -348,16 +326,16 @@ int inifile_load(inifile *th, const char* path)
         }
 
         // Parse the line
-        enum parse_line_ret plr = parse_line(this, line, sizeof(line), buf[0], sizeof(buf[0]), buf[1], sizeof(buf[1]));
+        parse_line_ret plr = parse_line(this, line, sizeof(line), buf[0], sizeof(buf[0]), buf[1], sizeof(buf[1]));
         switch(plr) {
             case plr_none:
                 break;
             case plr_section:
-                current_section = get_or_make_section(this, buf[0]);
+                current_section = get_or_make_section(buf[0]);
                 break;
             case plr_kvp:
-                if (current_section == nullptr) current_section = get_or_make_section(this, "default");
-                parse_kvp(current_section, buf[0], buf[1]);
+                if (current_section == nullptr) current_section = get_or_make_section("default");
+                current_section->parse_pair(buf[0], buf[1]);
                 break;
         }
         if (glr & eof) {
@@ -366,7 +344,6 @@ int inifile_load(inifile *th, const char* path)
     }
 
     exit:
-    rfb_delete(&rfb);
     return 1;
 }
 

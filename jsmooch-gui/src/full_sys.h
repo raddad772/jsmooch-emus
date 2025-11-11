@@ -144,11 +144,11 @@ public:
         sys = nullptr;
         //cvec_ptr_init(&dasm);
         worked = 0;
-        state = FSS_pause;
+        run_state = FSS_pause;
     }
 
     ~full_system();
-    full_system_states state;
+    full_system_states run_state;
 
     struct fsio {
         JSM_TOUCHSCREEN *touchscreen{};
@@ -192,11 +192,11 @@ public:
     [[nodiscard]] ImVec2 output_size() const;
     [[nodiscard]] ImVec2 output_uv0() const;
     [[nodiscard]] ImVec2 output_uv1() const;
-    void setup_persistent_store(persistent_store *ps, multi_file_set *mfs);
+    void setup_persistent_store(persistent_store &ps, multi_file_set &mfs);
     void sync_persistent_storage();
     void update_touch(i32 x, i32 y, i32 button_down);
     persistent_store *my_ps{};
-    void setup_system(enum jsm::systems which);
+    void setup_system(jsm::systems which);
     void destroy_system();
     void save_state();
     void load_state();
@@ -217,13 +217,13 @@ public:
     void events_view_present();
     void pre_events_view_present();
     void waveform_view_present(WVIEW &wv);
-    void image_view_present(debugger_view *dview, my_texture &tex);
+    void image_view_present(debugger_view &dview, my_texture &tex);
     void setup_wgpu();
     void setup_audio();
     void setup_tracing();
 private:
     void debugger_pre_frame();
-    void debugger_pre_frame_waveforms(waveform_view *wv);
+    void debugger_pre_frame_waveforms(waveform_view &wv);
     void setup_ios();
     void load_default_ROM();
     void setup_bios();
@@ -236,7 +236,7 @@ private:
     void add_disassembly_view(u32);
     void add_image_view(u32);
     void add_waveform_view(u32 idx);
-    void waveform_view_present(debugger_view *dview, WFORM &wf);
+    void waveform_view_present(debugger_view &dview, WFORM &wf);
 };
 
 void newsys(full_system *fsys);

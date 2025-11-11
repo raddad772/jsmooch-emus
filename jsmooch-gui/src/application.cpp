@@ -1010,28 +1010,28 @@ void imgui_jsmooch_app::setup_wgpu()
 int imgui_jsmooch_app::do_setup_before_mainloop()
 {
 #ifdef DO_DREAMCAST
-    which = SYS_DREAMCAST;
+    which = jsm::systems::DREAMCAST;
 #else
-    //which = SYS_ATARI2600;
-    //which = SYS_GBC;
-    //which = SYS_APPLEIIe;
-    //which = SYS_DMG;
-    //which = SYS_PS1;
-    //which = SYS_SMS2;
-    //which = SYS_GG;
-    //which = SYS_ZX_SPECTRUM_48K;
-    //which = SYS_ZX_SPECTRUM_128K;
-    //which = SYS_SG1000;
-    //which = SYS_MAC512K;
-    //which = SYS_DREAMCAST;
-    //which = SYS_GBA;
-    //which = SYS_SNES;
-    //which = SYS_GENESIS_USA;
-    //which = SYS_MEGADRIVE_PAL;
-    which = SYS_NDS;
-    //which = SYS_TURBOGRAFX16;
-    //which = SYS_NES;
-    //which = SYS_GALAKSIJA;
+    //which = jsm::systems::ATARI2600;
+    //which = jsm::systems::GBC;
+    //which = jsm::systems::APPLEIIe;
+    //which = jsm::systems::DMG;
+    //which = jsm::systems::PS1;
+    //which = jsm::systems::SMS2;
+    //which = jsm::systems::GG;
+    //which = jsm::systems::ZX_SPECTRUM_48K;
+    //which = jsm::systems::ZX_SPECTRUM_128K;
+    //which = jsm::systems::SG1000;
+    //which = jsm::systems::MAC512K;
+    //which = jsm::systems::DREAMCAST;
+    //which = jsm::systems::GBA;
+    //which = jsm::systems::SNES;
+    //which = jsm::systems::GENESIS_USA;
+    //which = jsm::systems::MEGADRIVE_PAL;
+    which = jsm::systems::NDS;
+    //which = jsm::systems::TURBOGRAFX16;
+    //which = jsm::systems::NES;
+    //which = jsm::systems::GALAKSIJA;
     //dbg_enable_trace();
 #endif
 
@@ -1040,7 +1040,7 @@ int imgui_jsmooch_app::do_setup_before_mainloop()
         printf("\nCould not initialize system! %d", fsys.worked);
         return -1;
     }
-    fsys.state = FSS_pause;
+    fsys.run_state = FSS_pause;
     fsys.has_played_once = false;
 #ifdef JSM_WEBGPU
     setup_wgpu();
@@ -1077,8 +1077,8 @@ void imgui_jsmooch_app::mainloop(ImGuiIO& io) {
 
     // Update the system
     if (dbg.do_break) {
-        if (fsys.state == FSS_play)
-            fsys.state = FSS_pause;
+        if (fsys.run_state == FSS_play)
+            fsys.run_state = FSS_pause;
     }
 
     static u32 hotkeys[2];
@@ -1091,7 +1091,7 @@ void imgui_jsmooch_app::mainloop(ImGuiIO& io) {
     }
     static u32 key_was_down = 0;
     u32 frame_multi = ImGui::IsKeyDown(ImGuiKey_GraveAccent) ? FRAME_MULTI : 1;
-    if (fsys.state == FSS_play) {
+    if (fsys.run_state == FSS_play) {
         if (key_was_down && (frame_multi == 1)) {
             // Discard audio buffers!
             fsys.discard_audio_buffers();
@@ -1160,15 +1160,15 @@ void imgui_jsmooch_app::mainloop(ImGuiIO& io) {
         ImGui::EndChild(); // end sub-window
         ImGui::PopStyleVar();
         if (play_pause) {
-            switch(fsys.state) {
+            switch(fsys.run_state) {
                 case FSS_pause:
-                    fsys.state = FSS_play;
+                    fsys.run_state = FSS_play;
                     dbg_unbreak();
                     fsys.audio.pause();
                     break;
                 case FSS_play:
                     fsys.audio.play();
-                    fsys.state = FSS_pause;
+                    fsys.run_state = FSS_pause;
                     break;
             }
         }

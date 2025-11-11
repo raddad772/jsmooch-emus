@@ -59,12 +59,12 @@ static u32 get_closest_pow2(u32 b)
 }
 
 void test_gdi() {
-    struct GDI_image foo;
+    GDI_image foo;
     GDI_init(&foo);
     const char *homeDir = getenv("HOME");
 
     if (!homeDir) {
-        struct passwd* pwd = getpwuid(getuid());
+        passwd* pwd = getpwuid(getuid());
         if (pwd)
             homeDir = pwd->pw_dir;
     }
@@ -77,7 +77,7 @@ void test_gdi() {
     GDI_delete(&foo);
 }
 
-u32 grab_BIOSes(multi_file_set* BIOSes, enum jsm_systems which)
+u32 grab_BIOSes(multi_file_set* BIOSes, jsm::systems which)
 {
     char BIOS_PATH[255];
     char BASE_PATH[255];
@@ -85,7 +85,7 @@ u32 grab_BIOSes(multi_file_set* BIOSes, enum jsm_systems which)
     const char *homeDir = getenv("HOME");
 
     if (!homeDir) {
-        struct passwd* pwd = getpwuid(getuid());
+        passwd* pwd = getpwuid(getuid());
         if (pwd)
             homeDir = pwd->pw_dir;
     }
@@ -94,90 +94,90 @@ u32 grab_BIOSes(multi_file_set* BIOSes, enum jsm_systems which)
 
     u32 has_bios = 0;
     switch(which) {
-        case SYS_DREAMCAST:
+        case jsm::systems::DREAMCAST:
             has_bios = 1;
             snprintf(BIOS_PATH, sizeof(BIOS_PATH), "%s/dreamcast", BASE_PATH);
-            mfs_add("dc_boot.bin", BIOS_PATH, BIOSes);
-            mfs_add("dc_flash.bin", BIOS_PATH, BIOSes);
+            BIOSes->add("dc_boot.bin", BIOS_PATH);
+            BIOSes->add("dc_flash.bin", BIOS_PATH);
             break;
-        case SYS_DMG:
+        case jsm::systems::DMG:
             has_bios = 1;
             snprintf(BIOS_PATH, sizeof(BIOS_PATH), "%s/gameboy", BASE_PATH);
-            mfs_add("gb_bios.bin", BIOS_PATH, BIOSes);
+            BIOSes->add("gb_bios.bin", BIOS_PATH);
             break;
-        case SYS_GBC:
+        case jsm::systems::GBC:
             has_bios = 1;
             snprintf(BIOS_PATH, sizeof(BIOS_PATH), "%s/gameboy", BASE_PATH);
-            mfs_add("gbc_bios.bin", BIOS_PATH, BIOSes);
+            BIOSes->add("gbc_bios.bin", BIOS_PATH);
             break;
-        case SYS_APPLEIIe:
+        case jsm::systems::APPLEIIe:
             has_bios = 1;
             snprintf(BIOS_PATH, sizeof(BIOS_PATH), "%s/apple2", BASE_PATH);
-            mfs_add("apple2e.rom", BIOS_PATH, BIOSes);
-            mfs_add("apple2e_video.rom", BIOS_PATH, BIOSes);
+            BIOSes->add("apple2e.rom", BIOS_PATH);
+            BIOSes->add("apple2e_video.rom", BIOS_PATH);
             break;
-        case SYS_ZX_SPECTRUM_48K:
+        case jsm::systems::ZX_SPECTRUM_48K:
             has_bios = 1;
             snprintf(BIOS_PATH, sizeof(BIOS_PATH), "%s/zx_spectrum", BASE_PATH);
-            mfs_add("zx48.rom", BIOS_PATH, BIOSes);
+            BIOSes->add("zx48.rom", BIOS_PATH);
             break;
-        case SYS_ZX_SPECTRUM_128K:
+        case jsm::systems::ZX_SPECTRUM_128K:
             has_bios = 1;
             snprintf(BIOS_PATH, sizeof(BIOS_PATH), "%s/zx_spectrum", BASE_PATH);
-            mfs_add("zx128.rom", BIOS_PATH, BIOSes);
+            BIOSes->add("zx128.rom", BIOS_PATH);
             break;
-        case SYS_MAC128K:
+        case jsm::systems::MAC128K:
             has_bios = 1;
             snprintf(BIOS_PATH, sizeof(BIOS_PATH), "%s/mac", BASE_PATH);
-            mfs_add("mac128k.rom", BIOS_PATH, BIOSes);
+            BIOSes->add("mac128k.rom", BIOS_PATH);
             break;
-        case SYS_MAC512K:
+        case jsm::systems::MAC512K:
             has_bios = 1;
             snprintf(BIOS_PATH, sizeof(BIOS_PATH), "%s/mac", BASE_PATH);
-            mfs_add("mac512k.rom", BIOS_PATH, BIOSes);
+            BIOSes->add("mac512k.rom", BIOS_PATH);
             break;
-        case SYS_MACPLUS_1MB:
+        case jsm::systems::MACPLUS_1MB:
             has_bios = 1;
             snprintf(BIOS_PATH, sizeof(BIOS_PATH), "%s/mac", BASE_PATH);
-            mfs_add("macplus_1mb.rom", BIOS_PATH, BIOSes);
+            BIOSes->add("macplus_1mb.rom", BIOS_PATH);
             break;
-        case SYS_PS1:
+        case jsm::systems::PS1:
             has_bios = 1;
             snprintf(BIOS_PATH, sizeof(BIOS_PATH), "%s/ps1", BASE_PATH);
-            mfs_add("scph1001.bin", BIOS_PATH, BIOSes);
+            BIOSes->add("scph1001.bin", BIOS_PATH);
             break;
-        case SYS_GBA:
+        case jsm::systems::GBA:
             has_bios = 1;
             snprintf(BIOS_PATH, sizeof(BIOS_PATH), "%s/gba", BASE_PATH);
-            mfs_add("gba_bios.bin", BIOS_PATH, BIOSes);
+            BIOSes->add("gba_bios.bin", BIOS_PATH);
             break;
-        case SYS_NDS:
+        case jsm::systems::NDS:
             has_bios = 1;
             snprintf(BIOS_PATH, sizeof(BIOS_PATH), "%s/nds", BASE_PATH);
-            mfs_add("bios7.bin", BIOS_PATH, BIOSes);
-            mfs_add("bios9.bin", BIOS_PATH, BIOSes);
-            mfs_add("firmware.bin", BIOS_PATH, BIOSes);
+            BIOSes->add("bios7.bin", BIOS_PATH);
+            BIOSes->add("bios9.bin", BIOS_PATH);
+            BIOSes->add("firmware.bin", BIOS_PATH);
             break;
-        case SYS_GALAKSIJA:
+        case jsm::systems::GALAKSIJA:
             has_bios = 1;
             snprintf(BIOS_PATH, sizeof(BIOS_PATH), "%s/galaksija", BASE_PATH);
-            mfs_add("CHRGEN_MIPRO.bin", BIOS_PATH, BIOSes);
-            mfs_add("ROM_A_28.bin", BIOS_PATH, BIOSes);
-            //mfs_add("ROM_A_29.bin", BIOS_PATH, BIOSes);
-            //mfs_add("ROM_B.bin", BIOS_PATH, BIOSes);
+            BIOSes->add("CHRGEN_MIPRO.bin", BIOS_PATH);
+            BIOSes->add("ROM_A_28.bin", BIOS_PATH);
+            //BIOSes->add("ROM_A_29.bin", BIOS_PATH);
+            //BIOSes->add("ROM_B.bin", BIOS_PATH);
             break;
-        case SYS_SG1000:
-        case SYS_GENESIS_JAP:
-        case SYS_GENESIS_USA:
-        case SYS_MEGADRIVE_PAL:
-        case SYS_NES:
-        case SYS_BBC_MICRO:
-        case SYS_GG:
-        case SYS_ATARI2600:
-        case SYS_SMS1:
-        case SYS_SMS2:
-        case SYS_SNES:
-        case SYS_TURBOGRAFX16:
+        case jsm::systems::SG1000:
+        case jsm::systems::GENESIS_JAP:
+        case jsm::systems::GENESIS_USA:
+        case jsm::systems::MEGADRIVE_PAL:
+        case jsm::systems::NES:
+        case jsm::systems::BBC_MICRO:
+        case jsm::systems::GG:
+        case jsm::systems::ATARI2600:
+        case jsm::systems::SMS1:
+        case jsm::systems::SMS2:
+        case jsm::systems::SNES:
+        case jsm::systems::TURBOGRAFX16:
             has_bios = 0;
             break;
         default:
@@ -188,14 +188,14 @@ u32 grab_BIOSes(multi_file_set* BIOSes, enum jsm_systems which)
 }
 
 
-void GET_HOME_BASE_SYS(char *out, size_t out_sz, enum jsm_systems which, const char* sec_path, u32 *worked)
+void GET_HOME_BASE_SYS(char *out, size_t out_sz, jsm::systems which, const char* sec_path, u32 *worked)
 {
     char BASE_PATH[500];
     char BASER_PATH[500];
     const char *homeDir = getenv("HOME");
 
     if (!homeDir) {
-        struct passwd* pwd = getpwuid(getuid());
+        passwd* pwd = getpwuid(getuid());
         if (pwd)
             homeDir = pwd->pw_dir;
     }
@@ -204,82 +204,82 @@ void GET_HOME_BASE_SYS(char *out, size_t out_sz, enum jsm_systems which, const c
 
     u32 has_bios = 0;
     switch(which) {
-        case SYS_SG1000:
-        case SYS_SMS1:
-        case SYS_SMS2:
+        case jsm::systems::SG1000:
+        case jsm::systems::SMS1:
+        case jsm::systems::SMS2:
             snprintf(out, out_sz, "%s/master_system", BASER_PATH);
             *worked = 1;
             break;
-        case SYS_DREAMCAST:
+        case jsm::systems::DREAMCAST:
             if (sec_path)
                 snprintf(out, out_sz, "%s/dreamcast/%s", BASER_PATH, sec_path);
             else
                 snprintf(out, out_sz, "%s/dreamcast", BASER_PATH);
             *worked = 1;
             break;
-        case SYS_DMG:
-        case SYS_GBC:
+        case jsm::systems::DMG:
+        case jsm::systems::GBC:
             snprintf(out, out_sz, "%s/gameboy", BASER_PATH);
             *worked = 1;
             break;
-        case SYS_ATARI2600:
+        case jsm::systems::ATARI2600:
             snprintf(out, out_sz, "%s/atari2600", BASER_PATH);
             *worked = 1;
             break;
-        case SYS_NES:
+        case jsm::systems::NES:
             snprintf(out, out_sz, "%s/nes", BASER_PATH);
             *worked = 1;
             break;
-        case SYS_APPLEIIe:
+        case jsm::systems::APPLEIIe:
             snprintf(out, out_sz, "%s/appleii", BASER_PATH);
             *worked = 1;
             break;
-        case SYS_GALAKSIJA:
+        case jsm::systems::GALAKSIJA:
             snprintf(out, out_sz, "%s/galaksija", BASER_PATH);
             *worked = 1;
             break;
-        case SYS_ZX_SPECTRUM_48K:
-        case SYS_ZX_SPECTRUM_128K:
+        case jsm::systems::ZX_SPECTRUM_48K:
+        case jsm::systems::ZX_SPECTRUM_128K:
             snprintf(out, out_sz, "%s/zx_spectrum", BASER_PATH);
             *worked = 1;
             break;
-        case SYS_PS1:
+        case jsm::systems::PS1:
             snprintf(out, out_sz, "%s/ps1", BASER_PATH);
             *worked = 1;
             break;
-        case SYS_GBA:
+        case jsm::systems::GBA:
             snprintf(out, out_sz, "%s/gba", BASER_PATH);
             *worked = 1;
             break;
-        case SYS_NDS:
+        case jsm::systems::NDS:
             snprintf(out, out_sz, "%s/nds", BASER_PATH);
             *worked = 1;
             break;
-        case SYS_SNES:
+        case jsm::systems::SNES:
             snprintf(out, out_sz, "%s/snes", BASER_PATH);
             *worked = 1;
             break;
-        case SYS_TURBOGRAFX16:
+        case jsm::systems::TURBOGRAFX16:
             snprintf(out, out_sz, "%s/tg16", BASER_PATH);
             *worked = 1;
             break;
-        case SYS_GENESIS_USA:
-        case SYS_GENESIS_JAP:
-        case SYS_MEGADRIVE_PAL:
+        case jsm::systems::GENESIS_USA:
+        case jsm::systems::GENESIS_JAP:
+        case jsm::systems::MEGADRIVE_PAL:
             snprintf(out, out_sz, "%s/genesis", BASER_PATH);
             *worked = 1;
             break;
-        case SYS_MAC512K:
-        case SYS_MAC128K:
-        case SYS_MACPLUS_1MB:
+        case jsm::systems::MAC512K:
+        case jsm::systems::MAC128K:
+        case jsm::systems::MACPLUS_1MB:
             snprintf(out, out_sz, "%s/mac", BASER_PATH);
             *worked = 1;
             break;
-        case SYS_GG:
+        case jsm::systems::GG:
             snprintf(out, out_sz, "%s/gg", BASER_PATH);
             *worked = 1;
             break;
-        case SYS_BBC_MICRO:
+        case jsm::systems::BBC_MICRO:
             *worked = 0;
             break;
         default:
@@ -296,14 +296,14 @@ void mfs_add_IP_BIN(multi_file_set* mfs)
     char ROM_PATH[255];
     u32 worked = 0;
 
-    GET_HOME_BASE_SYS(BASE_PATH, 255, SYS_DREAMCAST, nullptr, &worked);
+    GET_HOME_BASE_SYS(BASE_PATH, 255, jsm::systems::DREAMCAST, nullptr, &worked);
     if (worked == 0) return;
 
-    mfs_add("IP.BIN", BASE_PATH, mfs);
+    mfs->add("IP.BIN", BASE_PATH);
     printf("\nLOADED IP.BIN SIZE %04llx", mfs->files[1].buf.size);
 }
 
-u32 grab_ROM(multi_file_set* ROMs, enum jsm_systems which, const char* fname, const char* sec_path)
+u32 grab_ROM(multi_file_set* ROMs, jsm::systems which, const char* fname, const char* sec_path)
 {
     char BASE_PATH[255];
     char ROM_PATH[255];
@@ -312,52 +312,53 @@ u32 grab_ROM(multi_file_set* ROMs, enum jsm_systems which, const char* fname, co
     GET_HOME_BASE_SYS(BASE_PATH, sizeof(BASE_PATH), which, sec_path, &worked);
     if (!worked) return 0;
 
-    mfs_add(fname, BASE_PATH, ROMs);
+    ROMs->add(fname, BASE_PATH);
     //printf("\n%d %s %s", ROMs->files[ROMs->num_files-1].buf.size > 0, BASE_PATH, fname);
     return ROMs->files[ROMs->num_files-1].buf.size > 0;
 }
 
-struct physical_io_device* load_ROM_into_emu(jsm_system* sys, cvec* IOs, multi_file_set* mfs)
-{
-    struct physical_io_device *pio = nullptr;
+physical_io_device* load_ROM_into_emu(jsm_system* sys, std::vector<physical_io_device> &IOs, multi_file_set& mfs) {
+    physical_io_device *pio = nullptr;
     switch(sys->kind) {
-        case SYS_ZX_SPECTRUM_48K:
-        case SYS_ZX_SPECTRUM_128K:
-        case SYS_DREAMCAST:
-        case SYS_MAC512K:
-        case SYS_MAC128K:
-        case SYS_MACPLUS_1MB:
-        case SYS_APPLEIIe:
-            for (u32 i = 0; i < cvec_len(IOs); i++) {
-                pio = (physical_io_device*)cvec_get(IOs, i);
+        case jsm::systems::ZX_SPECTRUM_48K:
+        case jsm::systems::ZX_SPECTRUM_128K:
+        case jsm::systems::DREAMCAST:
+        case jsm::systems::MAC512K:
+        case jsm::systems::MAC128K:
+        case jsm::systems::MACPLUS_1MB:
+        case jsm::systems::APPLEIIe:
+            for (u32 i = 0; i < IOs.size(); i++) {
+                pio = &IOs.at(i);
                 if (pio->kind == HID_DISC_DRIVE) {
                     printf("\nINSERT DISC!");
-                    pio->disc_drive.insert_disc(sys, pio, mfs);
+                    pio->disc_drive.insert_disc(sys, *pio, mfs);
                     break;
                 }
                 else if (pio->kind == HID_AUDIO_CASSETTE) {
-                    pio->audio_cassette.insert_tape(sys, pio, mfs, NULL);
+                    pio->audio_cassette.insert_tape(sys, *pio, mfs, nullptr);
                     break;
                 }
                 pio = nullptr;
             }
             return pio;
+        default: // don't do anything for others...
     }
     pio = nullptr;
-    for (u32 i = 0; i < cvec_len(IOs); i++) {
-        pio = (physical_io_device*)cvec_get(IOs, i);
+    for (u32 i = 0; i < IOs.size(); i++) {
+        pio = &IOs.at(i);
         if (pio->kind == HID_CART_PORT) break;
         pio = nullptr;
     }
-    if (pio) pio->cartridge_port.load_cart(sys, mfs, pio);
+    if (pio) pio->cartridge_port.load_cart(sys, mfs, *pio);
     return pio;
 }
 
-static void setup_controller(system_io* io, physical_io_device* pio, u32 pnum)
+static void setup_controller(system_io* io, physical_io_device& pio, u32 pnum)
 {
-    struct cvec* dbs = &pio->controller.digital_buttons;
-    for (u32 i = 0; i < cvec_len(dbs); i++) {
-        struct HID_digital_button* db = (HID_digital_button*)cvec_get(dbs, i);
+    auto &dbs = pio.controller.digital_buttons;
+    for (HID_digital_button &dbr : dbs) {
+        //HID_digital_button* db = (HID_digital_button*)cvec_get(dbs, i);
+        auto *db = &dbr;
         switch(db->common_id) {
             case DBCID_co_up:
                 io->p[pnum].up = db;
@@ -407,38 +408,37 @@ static void setup_controller(system_io* io, physical_io_device* pio, u32 pnum)
 
 void full_system::setup_ios()
 {
-    struct cvec *IOs = &sys->IOs;
-    memset(&inputs, 0, sizeof(system_io));
-    for (u32 i = 0; i < cvec_len(IOs); i++) {
-        struct physical_io_device* pio = (physical_io_device*)cvec_get(IOs, i);
-        switch(pio->kind) {
+    std::vector<physical_io_device> &IOs = *sys->IOs;
+    for (u32 i = 0; i < IOs.size(); i++) {
+        physical_io_device &pio = IOs.at(i);
+        switch(pio.kind) {
             case HID_TOUCHSCREEN:
-                if (io.touchscreen.vec == nullptr) {
-                    io.touchscreen = make_cvec_ptr(IOs, i);
+                if (io.touchscreen->pio.vec == nullptr) {
+                    io.touchscreen->pio.make(IOs, i);
                 }
                 continue;
             case HID_CONTROLLER: {
-                if (io.controller1.vec == nullptr) {
-                    io.controller1 = make_cvec_ptr(IOs, i);
+                if (io.controller1->pio.vec == nullptr) {
+                    io.controller1->pio.make(IOs, i);
                     setup_controller(&inputs, pio, 0);
                 }
                 else {
-                    io.controller2 = make_cvec_ptr(IOs, i);
+                    io.controller2->pio.make(IOs, i);
                     setup_controller(&inputs, pio, 1);
                 }
                 continue; }
             case HID_KEYBOARD: {
-                io.keyboard = make_cvec_ptr(IOs, i);
+                io.keyboard->pio.make(IOs, i);
                 continue; }
             case HID_DISPLAY: {
-                io.display = make_cvec_ptr(IOs, i);
+                io.display->pio.make(IOs, i);
                 continue; }
             case HID_CHASSIS: {
-                io.chassis = make_cvec_ptr(IOs, i);
+                io.chassis->pio.make(IOs, i);
                 //make_cvec_ptr(IOs, i);
-                struct cvec* dbs = &pio->chassis.digital_buttons;
-                for (u32 j = 0; j < cvec_len(dbs); j++) {
-                    struct HID_digital_button* db = (HID_digital_button*)cvec_get(dbs, j);
+                std::vector<HID_digital_button> &dbs = pio.chassis.digital_buttons;
+                for (auto &dbptr : dbs) {
+                    HID_digital_button *db = &dbptr;
                     switch(db->common_id) {
                         case DBCID_ch_pause:
                             inputs.ch_pause = db;
@@ -455,26 +455,26 @@ void full_system::setup_ios()
                 }
                 break; }
             case HID_MOUSE:
-                io.mouse = make_cvec_ptr(IOs, i);
+                io.mouse->pio.make(IOs, i);
                 break;
             case HID_DISC_DRIVE:
-                io.disk_drive = make_cvec_ptr(IOs, i);
+                io.disk_drive->pio.make(IOs, i);
                 break;
             case HID_CART_PORT:
-                io.cartridge_port = make_cvec_ptr(IOs, i);
+                io.cartridge_port->pio.make(IOs, i);
                 break;
             case HID_AUDIO_CASSETTE:
-                io.audio_cassette = make_cvec_ptr(IOs, i);
+                io.audio_cassette->pio.make(IOs, i);
                 break;
             default:
                 break;
         }
     }
-    assert(io.display.vec);
-    assert(io.chassis.vec);
+    assert(io.display->pio.vec);
+    assert(io.chassis->pio.vec);
 
 
-    output.display = &((physical_io_device *)cpg(io.display))->display;
+    output.display = &io.display->pio.get().display;
 }
 
 void full_system::setup_wgpu()
@@ -487,16 +487,15 @@ void full_system::setup_audio()
     u32 srate = 0;
     u32 lpf = 0;
     u32 num_chans =  0;
-    for (u32 i = 0; i < cvec_len(&sys->IOs); i++) {
-        struct physical_io_device *pio = (physical_io_device *)cvec_get(&sys->IOs, i);
-        switch(pio->kind) {
+    for (auto & pio: *sys->IOs) {
+        switch(pio.kind) {
             case HID_AUDIO_CHANNEL:
-                audiochans.push_back(&pio->audio_channel);
-                if (!pio->audio_channel.left && !pio->audio_channel.right) { pio->audio_channel.left = pio->audio_channel.right = 1; }
-                if (!pio->audio_channel.num) pio->audio_channel.num = 1;
-                srate = pio->audio_channel.sample_rate;
-                num_chans += pio->audio_channel.num;
-                lpf = pio->audio_channel.low_pass_filter;
+                audiochans.push_back(&pio.audio_channel);
+                if (!pio.audio_channel.left && !pio.audio_channel.right) { pio.audio_channel.left = pio.audio_channel.right = 1; }
+                if (!pio.audio_channel.num) pio.audio_channel.num = 1;
+                srate = pio.audio_channel.sample_rate;
+                num_chans += pio.audio_channel.num;
+                lpf = pio.audio_channel.low_pass_filter;
                 break;
         }
     }
@@ -510,57 +509,55 @@ void full_system::setup_audio()
 
 void full_system::setup_bios()
 {
-    enum jsm_systems which = sys->kind;
+    jsm::systems which = sys->kind;
 
-    struct multi_file_set BIOSes = {};
-    mfs_init(&BIOSes);
+    multi_file_set BIOSes = {};
 
     u32 has_bios = grab_BIOSes(&BIOSes, which);
     if (has_bios) {
-        sys->load_BIOS(sys, &BIOSes);
+        sys->load_BIOS(&BIOSes);
     }
-    mfs_delete(&BIOSes);
 }
 
-void full_system::setup_persistent_store(persistent_store *ps, multi_file_set *mfs)
+void full_system::setup_persistent_store(persistent_store &ps, multi_file_set &mfs)
 {
     printf("\nSETTING UP PERSISTENT STORE!");
-    struct read_file_buf *rfb = &mfs->files[0];
-    if (ps->persistent) {
-        snprintf(ps->filename, sizeof(ps->filename), "%s/%s.sram", rfb->path, rfb->name);
-        ps->kind = PSK_SIMPLE_FILE;
+    read_file_buf *rfb = &mfs.files[0];
+    if (ps.persistent) {
+        snprintf(ps.filename, sizeof(ps.filename), "%s/%s.sram", rfb->path, rfb->name);
+        ps.kind = PSK_SIMPLE_FILE;
         // get file size
-        printf("\nFILENAME:%s", ps->filename);
-        ps->fno = fopen(ps->filename, "rb+");
-        if (!ps->fno) {
-            ps->fno = fopen(ps->filename, "wb");
-            u8 *a = (u8 *) malloc(ps->requested_size);
-            memset(a, ps->fill_value, ps->requested_size);
-            fwrite(a, 1, ps->requested_size, ps->fno);
+        printf("\nFILENAME:%s", ps.filename);
+        ps.fno = fopen(ps.filename, "rb+");
+        if (!ps.fno) {
+            ps.fno = fopen(ps.filename, "wb");
+            u8 *a = static_cast<u8 *>(malloc(ps.requested_size));
+            memset(a, ps.fill_value, ps.requested_size);
+            fwrite(a, 1, ps.requested_size, ps.fno);
             free(a);
-            fflush(ps->fno);
-            fclose(ps->fno);
-            fopen(ps->filename, "rb+");
+            fflush(ps.fno);
+            fclose(ps.fno);
+            fopen(ps.filename, "rb+");
         }
 
-        fseek(ps->fno, 0, SEEK_SET);
-        ps->data = malloc(ps->requested_size);
-        fread(ps->data, 1, ps->requested_size, ps->fno);
-        ps->old_requested_size = ps->requested_size;
+        fseek(ps.fno, 0, SEEK_SET);
+        ps.data = malloc(ps.requested_size);
+        fread(ps.data, 1, ps.requested_size, ps.fno);
+        ps.old_requested_size = ps.requested_size;
     }
     else {
-        ps->data = malloc(ps->requested_size);
+        ps.data = malloc(ps.requested_size);
     }
 
-    if (ps->old_requested_size != ps->requested_size) {
-        printf("\nSIZE CHANGE FROM %lldkB to %lldkB", ps->old_requested_size / 1024, ps->requested_size / 1024);
+    if (ps.old_requested_size != ps.requested_size) {
+        printf("\nSIZE CHANGE FROM %lldkB to %lldkB", ps.old_requested_size / 1024, ps.requested_size / 1024);
         printf("\nRemember to implement this...");
-        ps->requested_size = ps->old_requested_size;
+        ps.requested_size = ps.old_requested_size;
     }
 
-    ps->actual_size = ps->requested_size;
-    ps->ready_to_use = 1;
-    my_ps = ps;
+    ps.actual_size = ps.requested_size;
+    ps.ready_to_use = 1;
+    my_ps = &ps;
 }
 
 void full_system::sync_persistent_storage()
@@ -586,23 +583,18 @@ full_system::~full_system() {
         fclose(my_ps->fno);
         my_ps = nullptr;
     }
-
-    for (auto & dv : dasm_views) {
-        cvec_delete(&dv.dasm_rows);
-    }
-    debugger_interface_delete(&dbgr);
 }
 
 
 void full_system::load_default_ROM()
 {
-    struct cvec *IOs = &sys->IOs;
-    enum jsm_systems which = sys->kind;
+    std::vector<physical_io_device> &IOs = *sys->IOs;
+    jsm::systems which = sys->kind;
 
-    mfs_init(&ROMs);
+    ROMs.clear();
     assert(sys);
     switch(which) {
-        case SYS_NES:
+        case jsm::systems::NES:
             //worked = grab_ROM(&ROMs, which, "apu_test.nes", nullptr);
             //NROM
             //worked = grab_ROM(&ROMs, which, "drmario.nes", nullptr);
@@ -651,17 +643,17 @@ void full_system::load_default_ROM()
             // MMC5
             //worked = grab_ROM(&ROMs, which, "castlevania3.nes", nullptr);
             break;
-        case SYS_SG1000:
+        case jsm::systems::SG1000:
             worked = grab_ROM(&ROMs, which, "choplifter.sg", nullptr);
             break;
-        case SYS_SMS1:
-        case SYS_SMS2:
+        case jsm::systems::SMS1:
+        case jsm::systems::SMS2:
             //worked = grab_ROM(&ROMs, which, "sinister.sms", nullptr);
             //worked = grab_ROM(&ROMs, which, "outrun.sms", nullptr);
             //worked = grab_ROM(&ROMs, which, "sonic.sms", nullptr);
             worked = grab_ROM(&ROMs, which, "space_harrier.sms", nullptr);
             break;
-        case SYS_GG:
+        case jsm::systems::GG:
             worked = grab_ROM(&ROMs, which, "megaman.gg", nullptr);
             //worked = grab_ROM(&ROMs, which, "sonic_triple.gg", nullptr);
             //worked = grab_ROM(&ROMs, which, "sonic_chaos.gg", nullptr);
@@ -671,7 +663,7 @@ void full_system::load_default_ROM()
             //worked = grab_ROM(&ROMs, which, "tails.gg", nullptr);
             //worked = grab_ROM(&ROMs, which, "sonicblast.gg", nullptr);
             break;
-        case SYS_DMG:
+        case jsm::systems::DMG:
             //worked = grab_ROM(&ROMs, which, "pokemonred.gb", nullptr);
             //worked = grab_ROM(&ROMs, which, "mm3.gb", nullptr);
             //worked = grab_ROM(&ROMs, which, "toystory.gb", nullptr);
@@ -685,7 +677,7 @@ void full_system::load_default_ROM()
             //worked = grab_ROM(&ROMs, which, "demo_in_pocket.gb", nullptr);
             //worked = grab_ROM(&ROMs, which, "m3_bgp_change_sprites.gb", nullptr);
             break;
-        case SYS_GBC:
+        case jsm::systems::GBC:
             //worked = grab_ROM(&ROMs, which, "linkdx.gbc", nullptr);
             //worked = grab_ROM(&ROMs, which, "badapple.gbc", nullptr);
             // worked = grab_ROM(&ROMs, which, "densha.gbc", nullptr);
@@ -696,32 +688,32 @@ void full_system::load_default_ROM()
             worked = grab_ROM(&ROMs, which, "tokitori.gbc", nullptr);
             //worked = grab_ROM(&ROMs, which, "m3_bgp_change_sprites.gb", nullptr);
             break;
-        case SYS_ATARI2600:
+        case jsm::systems::ATARI2600:
             //worked = grab_ROM(&ROMs, which, "space_invaders.a26", nullptr);
             worked = grab_ROM(&ROMs, which, "frogger.a26", nullptr);
             break;
-        case SYS_DREAMCAST:
+        case jsm::systems::DREAMCAST:
             worked = grab_ROM(&ROMs, which, "crazytaxi.gdi", "crazy_taxi");
             break;
-        case SYS_MAC512K:
-        case SYS_MAC128K:
-        case SYS_MACPLUS_1MB:
+        case jsm::systems::MAC512K:
+        case jsm::systems::MAC128K:
+        case jsm::systems::MACPLUS_1MB:
             //worked = grab_ROM(&ROMs, which, "system1_1.img", nullptr);
             worked = grab_ROM(&ROMs, which, "fd1.image", nullptr);
             break;
-        case SYS_GALAKSIJA:
+        case jsm::systems::GALAKSIJA:
             worked = 1;
             break;
-        case SYS_ZX_SPECTRUM_48K:
-        case SYS_ZX_SPECTRUM_128K:
+        case jsm::systems::ZX_SPECTRUM_48K:
+        case jsm::systems::ZX_SPECTRUM_128K:
             //worked = grab_ROM(&ROMs, which, "manic.tap", nullptr);
             worked = grab_ROM(&ROMs, which, "jetset.tap", nullptr);
             worked = 1;
             break;
-        case SYS_APPLEIIe:
+        case jsm::systems::APPLEIIe:
             worked = 1;
             break;
-        case SYS_NDS:
+        case jsm::systems::NDS:
             //worked = grab_ROM(&ROMs, which, "sims3.nds", nullptr); // save data corrupt complaint
             //worked = grab_ROM(&ROMs, which, "rockwrestler.nds", nullptr);
             //worked = grab_ROM(&ROMs, which, "armwrestler.nds", nullptr);
@@ -776,7 +768,7 @@ void full_system::load_default_ROM()
             // NORMAL mode
 
             break;
-        case SYS_PS1:
+        case jsm::systems::PS1:
             //RenderPolygon16BPP
             //worked = grab_ROM(&ROMs, which, "psxtest_cpu.exe", nullptr); // slammin'!
             //worked = grab_ROM(&ROMs, which, "psxtest_cpx.exe", nullptr);
@@ -798,7 +790,7 @@ void full_system::load_default_ROM()
             //worked = grab_ROM(&ROMs, which, "PSX/HelloWorld/16BPP/HelloWorld16BPP.exe", nullptr);
             //worked = grab_ROM(&ROMs, which, "PSX/GTE/GTETransfer/GTETransfer.exe", nullptr);
             break;
-        case SYS_GBA:
+        case jsm::systems::GBA:
             //worked = grab_ROM(&ROMs, which, "panda.gba", nullptr);
             //worked = grab_ROM(&ROMs, which, "armwrestler-gba-fixed.gba", nullptr);
             //worked = grab_ROM(&ROMs, which, "arm.gba", nullptr);
@@ -900,7 +892,7 @@ void full_system::load_default_ROM()
             //dbg_enable_trace();
 
             break;
-        case SYS_SNES:
+        case jsm::systems::SNES:
             //worked = grab_ROM(&ROMs, which, "smw.sfc", nullptr); // works!
             //worked = grab_ROM(&ROMs, which, "link_to_the_past.sfc", nullptr); // works! sprite issues
             //worked = grab_ROM(&ROMs, which, "super_metroid.sfc", nullptr); // gfx issues
@@ -927,7 +919,7 @@ void full_system::load_default_ROM()
             //worked = grab_ROM(&ROMs, which, "tetris_attack.sfc", nullptr); // ?
             //worked = grab_ROM(&ROMs, which, "tmnt4.sfc", nullptr); // cant even load ROM?
             break;
-        case SYS_TURBOGRAFX16:
+        case jsm::systems::TURBOGRAFX16:
             //worked = grab_ROM(&ROMs, which, "test.pce", nullptr);
             //worked = grab_ROM(&ROMs, which, "padtest2.pce", nullptr);
             //worked = grab_ROM(&ROMs, which, "bomberman.pce", nullptr); // work good
@@ -961,9 +953,9 @@ void full_system::load_default_ROM()
             worked = grab_ROM(&ROMs, which, "devils_crush.pce", nullptr); // WORKS GOOD
 
             break;
-        case SYS_GENESIS_USA:
-        case SYS_GENESIS_JAP:
-        case SYS_MEGADRIVE_PAL:
+        case jsm::systems::GENESIS_USA:
+        case jsm::systems::GENESIS_JAP:
+        case jsm::systems::MEGADRIVE_PAL:
             //dbg_enable_trace();
             //worked = grab_ROM(&ROMs, which, "sonic2.md", nullptr); // works!
             //worked = grab_ROM(&ROMs, which, "sonic3.md", nullptr); // works!
@@ -1061,15 +1053,15 @@ void full_system::load_default_ROM()
         return;
     }
 
-    if (which == SYS_PS1) {
-        sys->sideload(sys, &ROMs);
+    if (which == jsm::systems::PS1) {
+        sys->sideload(&ROMs);
     }
     else {
-        struct physical_io_device *fileioport = load_ROM_into_emu(sys, IOs, &ROMs);
-        if (fileioport != NULL) {
+        physical_io_device *fileioport = load_ROM_into_emu(sys, IOs, ROMs);
+        if (fileioport != nullptr) {
             printf("\nSRAM requested size: %lld\n", fileioport->cartridge_port.SRAM.requested_size);
             if (fileioport->cartridge_port.SRAM.requested_size > 0) {
-                setup_persistent_store(&fileioport->cartridge_port.SRAM, &ROMs);
+                setup_persistent_store(fileioport->cartridge_port.SRAM, ROMs);
             }
         }
     }
@@ -1077,15 +1069,14 @@ void full_system::load_default_ROM()
 
 void full_system::add_waveform_view(u32 idx)
 {
-    auto *dview = (debugger_view *)cvec_get(&dbgr.views, idx);
-    struct WVIEW myv;
-    myv.view = &dview->waveform;
-    auto *wv = (waveform_view *)&dview->waveform;
-    for (u32 i = 0; i < cvec_len(&wv->waveforms); i++) {
+    auto &dview = dbgr.views.at(idx);
+    WVIEW myv;
+    myv.view = &dview.waveform;
+    for (u32 i = 0; i < dview.waveform.waveforms.size(); i++) {
         WFORM wf;
         wf.enabled = true;
         wf.height = 80;
-        wf.wf = (debug_waveform *)cvec_get(&wv->waveforms, i);
+        wf.wf = &dview.waveform.waveforms.at(i);
         myv.waveforms.push_back(wf);
     }
 
@@ -1094,7 +1085,7 @@ void full_system::add_waveform_view(u32 idx)
 
 void full_system::add_console_view(u32 idx)
 {
-    auto *dview = (debugger_view *)cvec_get(&dbgr.views, idx);
+    auto *dview = &dbgr.views.at(idx);
     CVIEW myv;
     myv.view = dview;
     console_views.push_back(myv);
@@ -1103,7 +1094,7 @@ void full_system::add_console_view(u32 idx)
 
 void full_system::add_trace_view(u32 idx)
 {
-    auto *dview = (debugger_view *)cvec_get(&dbgr.views, idx);
+    auto *dview = &dbgr.views.at(idx);
     TVIEW myv;
     myv.view = dview;
     trace_views.push_back(myv);
@@ -1111,7 +1102,7 @@ void full_system::add_trace_view(u32 idx)
 
 void full_system::add_dbglog_view(u32 idx)
 {
-    auto *dview = (debugger_view *)cvec_get(&dbgr.views, idx);
+    auto *dview = &dbgr.views.at(idx);
     DLVIEW myv;
     myv.view = dview;
     dlviews.push_back(myv);
@@ -1120,14 +1111,14 @@ void full_system::add_dbglog_view(u32 idx)
 
 void full_system::add_disassembly_view(u32 idx)
 {
-    auto *dview = (debugger_view *)cvec_get(&dbgr.views, idx);
-    //printf("\nAdding disassembly view %s:", dview->disassembly.processor_name.ptr);
+    auto *dview = &dbgr.views.at(idx);
+    //printf("\nAdding disassembly view %s:", dview.disassembly.processor_name.ptr);
     DVIEW myv;
     myv.view = dview;
     myv.dasm_rows.reserve(150);
     for (u32 i = 0; i < 200; i++) {
-        auto *das = (disassembly_entry_strings *)cvec_push_back(&myv.dasm_rows);
-        memset(das, 0, sizeof(*das));
+        auto *das = &myv.dasm_rows.emplace_back();
+        //memset(das, 0, sizeof(*das));
     }
 
     dasm_views.push_back(myv);
@@ -1135,7 +1126,7 @@ void full_system::add_disassembly_view(u32 idx)
 
 void full_system::add_image_view(u32 idx)
 {
-    auto *dview = (debugger_view *)cvec_get(&dbgr.views, idx);
+    auto *dview = &dbgr.views.at(idx);
     IVIEW myv;
     myv.enabled = true;
     myv.view = dview;
@@ -1145,19 +1136,19 @@ void full_system::add_image_view(u32 idx)
 
 void full_system::setup_debugger_interface()
 {
-    sys->setup_debugger_interface(sys, &dbgr);
+    sys->setup_debugger_interface(&dbgr);
     debugger_setup = 1;
-    for (u32 i = 0; i < cvec_len(&dbgr.views); i++) {
-        auto view = (debugger_view *)cvec_get(&dbgr.views, i);
-        switch(view->kind) {
+    for (u32 i = 0; i < dbgr.views.size(); i++) {
+        auto &view = dbgr.views.at(i);
+        switch(view.kind) {
             case dview_disassembly:
                 add_disassembly_view(i);
                 break;
             case dview_memory:
-                memory.view = &view->memory;
+                memory.view = &view.memory;
                 break;
             case dview_events:
-                events.view = &view->events;
+                events.view = &view.events;
                 break;
             case dview_trace:
                 add_trace_view(i);
@@ -1181,7 +1172,7 @@ void full_system::setup_debugger_interface()
 }
 
 
-void full_system::setup_system(enum jsm_systems which)
+void full_system::setup_system(jsm::systems which)
 {
     // Create our emulator
     sys = new_system(which);
@@ -1198,7 +1189,7 @@ void full_system::setup_system(enum jsm_systems which)
     load_default_ROM();
 
 #ifdef SIDELOAD
-    struct multi_file_set sideload_image;
+    multi_file_set sideload_image;
     mfs_init(&sideload_image);
     grab_ROM(&sideload_image, which, "gl_matrix.elf", "kos");
     mfs_add_IP_BIN(&sideload_image);
@@ -1209,28 +1200,28 @@ void full_system::setup_system(enum jsm_systems which)
     setup_audio();
 
     setup_debugger_interface();
-    sys->reset(sys);
+    sys->reset();
 }
 
 void full_system::update_touch(i32 x, i32 y, i32 button_down)
 {
     if (io.touchscreen) {
-        struct physical_io_device *pio = (physical_io_device *)cpg(io.touchscreen);
-        struct JSM_TOUCHSCREEN *ts = &pio->touchscreen;
-        x += ts->params.x_offset;
-        y += ts->params.y_offset;
-        u32 in_screen =  (x >= 0) && (x < ts->params.width) && (y >= 0) && (y < ts->params.height);
-        ts->touch.down = in_screen && button_down;
+        physical_io_device &pio = io.touchscreen->pio.get();
+        JSM_TOUCHSCREEN &ts = pio.touchscreen;
+        x += ts.params.x_offset;
+        y += ts.params.y_offset;
+        u32 in_screen =  (x >= 0) && (x < ts.params.width) && (y >= 0) && (y < ts.params.height);
+        ts.touch.down = in_screen && button_down;
         if (in_screen) {
-            ts->touch.x = x;
-            ts->touch.y = y;
+            ts.touch.x = x;
+            ts.touch.y = y;
         }
     }
 }
 
 void full_system::get_savestate_filename(char *pth, size_t sz)
 {
-    struct read_file_buf *rfb = &ROMs.files[0];
+    read_file_buf *rfb = &ROMs.files[0];
     snprintf(pth, sz, "%s/%s.save", rfb->path, rfb->name);
     printf("\nSAVE NAME: %s", pth);
 }
@@ -1239,18 +1230,15 @@ void full_system::get_savestate_filename(char *pth, size_t sz)
 void full_system::save_state() {
     char PATH[500];
     PATH[0] = 0;
-    if (sys->save_state) {
+    if (sys->has.save_state) {
         printf("\nSaving...");
-        struct serialized_state state;
-        serialized_state_init(&state);
-        sys->save_state(sys, &state);
+        serialized_state state;
+        sys->save_state(state);
 
         get_savestate_filename(PATH, sizeof(PATH));
         FILE *f = fopen(PATH, "w");
-        serialized_state_write_to_file(&state, f);
+        state.write_to_file(f);
         fclose(f);
-
-        serialized_state_delete(&state);
     }
     else {
         printf("\nSaves not defined for system!");
@@ -1260,28 +1248,26 @@ void full_system::save_state() {
 void full_system::load_state() {
     char PATH[500];
     PATH[0] = 0;
-    if (sys->load_state) {
+    if (sys->has.save_state) {
         printf("\nLoading...");
-        struct serialized_state state;
-        serialized_state_init(&state);
-        struct deserialize_ret ret;
+        serialized_state state;
+        deserialize_ret ret;
         memset(&ret, 0, sizeof(ret));
 
         get_savestate_filename(PATH, sizeof(PATH));
         FILE *f = fopen(PATH, "r");
-        if (f == NULL) {
+        if (f == nullptr) {
             printf("\nFILE NOT FOUND!");
         }
         else {
             fseek(f, 0, SEEK_END);
             u64 sz = ftell(f);
             fseek(f, 0, SEEK_SET);
-            serialized_state_read_from_file(&state, f, sz);
+            state.read_from_file(f, sz);
             fclose(f);
 
-            sys->load_state(sys, &state, &ret);
+            sys->load_state(state, ret);
         }
-        serialized_state_delete(&state);
     }
     else {
         printf("\nSaves not defined for system!");
@@ -1292,14 +1278,14 @@ void full_system::load_state() {
 void full_system::destroy_system()
 {
     if (sys == nullptr) return;
-    jsm_delete(sys);
+    delete sys;
     sys = nullptr;
 }
 
-struct framevars full_system::get_framevars() const
+framevars full_system::get_framevars() const
 {
-    struct framevars fv = {};
-    sys->get_framevars(sys, &fv);
+    framevars fv = {};
+    sys->get_framevars(&fv);
     return fv;
 }
 
@@ -1307,7 +1293,7 @@ struct framevars full_system::get_framevars() const
 
 void full_system::setup_display()
 {
-    struct JSM_DISPLAY_PIXELOMETRY *p = &output.display->pixelometry;
+    JSM_DISPLAY_PIXELOMETRY *p = &output.display->pixelometry;
 
     // Determine final output resolution
     u32 wh = get_closest_pow2(MAX(p->cols.max_visible, p->rows.max_visible));
@@ -1400,10 +1386,10 @@ void full_system::take_screenshot(void *where, u32 buf_width, u32 buf_height)
     u32 x_blends = 1;
     u32 left_skip = 0, right_skip = 0;
     switch(sys->kind) {
-        case SYS_GENESIS_USA:
+        case jsm::systems::GENESIS_USA:
             x_blends = 4;
             break;
-        case SYS_TURBOGRAFX16:
+        case jsm::systems::TURBOGRAFX16:
             x_blends = 5;
             left_skip = 40;
             right_skip = 40;
@@ -1415,7 +1401,7 @@ void full_system::take_screenshot(void *where, u32 buf_width, u32 buf_height)
     construct_ss_path(mpath);
 
     // Get screen output
-    struct physical_io_device *pio = (physical_io_device *)cpg(io.display);
+    //physical_io_device *pio = &io.display->pio.get();
 
     // Create intermediate buffer
 
@@ -1432,9 +1418,9 @@ void full_system::take_screenshot(void *where, u32 buf_width, u32 buf_height)
 
 void full_system::present()
 {
-    struct framevars fv = {};
-    sys->get_framevars(sys, &fv);
-    jsm_present(sys->kind, (physical_io_device *)cpg(io.display), output.backbuffer_backer, 0, 0, output.backbuffer_texture.width, output.backbuffer_texture.height, NULL);
+    framevars fv = {};
+    sys->get_framevars(fv);
+    jsm_present(sys->kind, (physical_io_device *)cpg(io.display), output.backbuffer_backer, 0, 0, output.backbuffer_texture.width, output.backbuffer_texture.height, nullptr);
     if (screenshot) take_screenshot(output.backbuffer_backer, output.backbuffer_texture.width, output.backbuffer_texture.height);
     output.backbuffer_texture.upload_data(output.backbuffer_backer, output.backbuffer_texture.width * output.backbuffer_texture.height * 4, output.backbuffer_texture.width, output.backbuffer_texture.height);
 }
@@ -1465,11 +1451,11 @@ void full_system::events_view_present()
     if (events.view) {
         pre_events_view_present();
         assert(events.view->index_in_use<2);
-        struct events_view::DVDP *evd = &events.view->display[events.view->index_in_use];
+        events_view::DVDP *evd = &events.view->display[events.view->index_in_use];
 
-        struct framevars fv = {};
+        framevars fv = {};
         sys->get_framevars(sys, &fv);
-        struct JSM_DISPLAY *d = &((physical_io_device *) cpg(io.display))->display;
+        JSM_DISPLAY *d = &((physical_io_device *) cpg(io.display))->display;
         memset(evd->buf, 0, events.texture.width*events.texture.height*4);
         jsm_present(sys->kind, (physical_io_device *)cpg(io.display), evd->buf, d->pixelometry.offset.x, d->pixelometry.offset.y, events.texture.width, events.texture.height, events.view);
         events_view_render(&dbgr, events.view, evd->buf, events.texture.width, events.texture.height);
@@ -1547,7 +1533,7 @@ void full_system::waveform_view_present(WVIEW &wv)
 
 void full_system::image_view_present(debugger_view *dview, my_texture &tex)
 {
-    struct image_view *iview = &dview->image;
+    image_view *iview = &dview.image;
     if (!tex.is_good) {
         u32 szpo2 = get_closest_pow2(MAX(iview->height, iview->width));
         TS(tex, iview->label, szpo2, szpo2);
@@ -1597,7 +1583,7 @@ void full_system::debugger_pre_frame_waveforms(waveform_view *wv)
 void full_system::debugger_pre_frame() {
     for (auto &wview : waveform_views) {
         for (auto &dwe: wview.waveforms) {
-            struct debug_waveform *dw = dwe.wf;
+            debug_waveform *dw = dwe.wf;
             switch (dw->kind) {
                 case dwk_none:
                     assert(1 == 2);
@@ -1621,14 +1607,14 @@ void full_system::discard_audio_buffers()
 }
 
 void full_system::check_new_frame() {
-    struct framevars fv;
+    framevars fv;
     sys->get_framevars(sys, &fv);
     if (fv.master_frame != int_time.frames) {
         if (sys->set_audiobuf && int_time.has_audio_buf) {
             audio.commit_emu_buffer();
             int_time.has_audio_buf = false;
         }
-        struct audiobuf *b = audio.get_buf_for_emu();
+        audiobuf *b = audio.get_buf_for_emu();
         if (b && sys->set_audiobuf) {
             sys->set_audiobuf(sys, b);
             int_time.has_audio_buf = true;
@@ -1687,9 +1673,9 @@ void full_system::advance_time(u32 cycles, u32 scanlines, u32 frames)
 
 void full_system::do_frame() {
     if (sys) {
-        struct audiobuf *b = audio.get_buf_for_emu();
+        audiobuf *b = audio.get_buf_for_emu();
 
-        struct framevars fv = {};
+        framevars fv = {};
         if (!dbg.do_break) {
             if (b && sys->set_audiobuf) {
                 //printf("\nSetting EMU into audiobuf %d", audio.bufs.emu.current);

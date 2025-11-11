@@ -8,18 +8,18 @@
 void genesis_clock_ntsc(struct genesis_clock* this);
 void genesis_clock_pal(struct genesis_clock* this);
 
-void genesis_clock_init(struct genesis_clock* this, enum jsm_systems kind)
+void genesis_clock_init(struct genesis_clock* this, enum jsm::systems kind)
 {
     *this = (struct genesis_clock) {};
     this->master_cycle_count = 0;
     genesis_clock_reset(this);
     this->kind = kind;
     switch(kind) {
-        case SYS_GENESIS_USA:
-        case SYS_GENESIS_JAP:
+        case jsm::systems::GENESIS_USA:
+        case jsm::systems::GENESIS_JAP:
             genesis_clock_ntsc(this);
             break;
-        case SYS_MEGADRIVE_PAL:
+        case jsm::systems::MEGADRIVE_PAL:
             genesis_clock_pal(this);
             break;
         default:

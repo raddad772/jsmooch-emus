@@ -30,12 +30,12 @@ enum SMSGGSS_kinds {
     SMSGGSS_mapper
 };
 
-void SMSGG_new(struct jsm_system* jsm, enum jsm_systems variant, enum jsm_regions region);
+void SMSGG_new(struct jsm_system* jsm, enum jsm::systems variant, enum jsm_regions region);
 void SMSGG_delete(struct jsm_system* jsm);
 
 struct SMSGG {
     struct SMSGG_clock clock;
-    enum jsm_systems variant;
+    enum jsm::systems variant;
     enum jsm_regions region;
     struct Z80 cpu;
     struct SMSGG_mapper_sega mapper;

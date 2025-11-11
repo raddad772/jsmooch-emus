@@ -19,8 +19,11 @@ enum kv_kind {
 
 struct kv_pair;
 struct kv_section {
-    char name[500];
-    std::vector<kv_pair> kvs;
+    char name[500]{};
+    std::vector<kv_pair> kvs{};
+    kv_pair *find_key(const char *fname);
+    kv_pair &new_pair(const char *fname);
+    void parse_pair(char *key, char *val);
 };
 
 struct kv_pair {
@@ -33,6 +36,14 @@ struct kv_pair {
 };
 
 struct inifile {
+    kv_section *find_section(const char* name);
+    kv_section &new_section(const char *name);
+    void clear();
+    u32 has_key(const char* section, const char* key);
+    kv_section *get_or_make_section(const char* section);
+    kv_pair* inifile_get_or_make_key(const char* section, const char* key);
+    int  load(const char* path);
+
     char path[500]{};
     std::vector<kv_section> sections;
 };

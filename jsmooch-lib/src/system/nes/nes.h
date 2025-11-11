@@ -14,8 +14,8 @@
 #include "nes_ppu.h"
 #include "helpers/audiobuf.h"
 
-void NES_new(struct jsm_system* system);
-void NES_delete(struct jsm_system* system);
+jsm_system *NES_new();
+void NES_delete(jsm_system* system);
 
 #define NES_INPUTS_CHASSIS 0
 #define NES_INPUTS_CARTRIDGE 1
@@ -88,21 +88,26 @@ private:
     void sample_audio();
 
 public:
+    NESJ() {
+        has.save_state = true;
+        has.load_BIOS = false;
+    }
+
     void play() override;
     void pause() override;
     void stop() override;
-    void get_framevars(framevars* out) override;
+    void get_framevars(framevars& out) override;
     void reset() override;
     void killall();
     u32 finish_frame() override;
     u32 finish_scanline() override;
     u32 step_master(u32 howmany) override;
-    void load_BIOS(multi_file_set* mfs) override;
+    //void load_BIOS(multi_file_set& mfs) override;
     void enable_tracing();
     void disable_tracing();
     void describe_io(std::vector<physical_io_device> &inIOs) override;
     void save_state(serialized_state &state) override;
-    void load_state(serialized_state &state, struct deserialize_ret &ret) override;
+    void load_state(serialized_state &state, deserialize_ret &ret) override;
     void set_audiobuf(audiobuf *ab) override;
     NES nes{};
 };
