@@ -30,7 +30,6 @@ struct read_file_buf {
 struct multi_file_set {
     std::vector<read_file_buf> files{};
 
-    u32 num_files;
     void add(const char *fname, const char *fpath);
     void clear();
 };

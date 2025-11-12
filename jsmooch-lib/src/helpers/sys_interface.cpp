@@ -92,8 +92,8 @@ jsm_system* new_system(jsm::systems which)
             break;
 	}
     out->kind = which;
-    out->IOs->reserve(20);
+    //out->IOs->reserve(20);
     //out->opts->reserve(5);
-    out->describe_io(*out->IOs);
+    out->describe_io();
     return out;
 }

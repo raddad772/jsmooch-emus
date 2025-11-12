@@ -36,7 +36,7 @@ public:
     virtual u32 step_master(u32) { return 0; };
     virtual void reset() {};
     virtual void load_BIOS(multi_file_set& mfs) {};
-    virtual void describe_io(std::vector<physical_io_device> &inIOs) {};
+    virtual void describe_io() {};
     virtual void get_framevars(framevars& out) {};
 
     virtual void sideload(multi_file_set& mfs) {};
@@ -55,6 +55,6 @@ public:
     virtual void save_state(serialized_state &state) {};
     virtual void load_state(serialized_state &state, deserialize_ret &ret) {};
 
-    std::vector<physical_io_device> *IOs{};
-    std::vector<debugger_widget> *opts{};
+    std::vector<physical_io_device> IOs{};
+    std::vector<debugger_widget> opts{};
 };

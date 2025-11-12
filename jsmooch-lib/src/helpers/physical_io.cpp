@@ -32,14 +32,14 @@ void physical_io_device::move_from(physical_io_device&& other) noexcept {
     other.kind = IO_CLASSES{};
 }
 
-void physical_io_device::init(IO_CLASSES kind, u32 enabled, u32 connected, u32 input, u32 output)
+void physical_io_device::init(IO_CLASSES inkind, u32 inenabled, u32 inconnected, u32 ininput, u32 inoutput)
 {
-    kind = kind;
-    enabled = enabled;
-    connected = connected;
+    kind = inkind;
+    enabled = inenabled;
+    connected = inconnected;
     sys_ptr = nullptr;
-    input = input;
-    output = output;
+    input = ininput;
+    output = inoutput;
     id = 0;
     switch(kind) {
         case HID_TOUCHSCREEN:

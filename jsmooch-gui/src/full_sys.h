@@ -151,16 +151,16 @@ public:
     full_system_states run_state;
 
     struct fsio {
-        JSM_TOUCHSCREEN *touchscreen{};
-        JSM_CONTROLLER *controller1{};
-        JSM_CONTROLLER *controller2{};
-        JSM_DISPLAY *display{};
-        JSM_CHASSIS *chassis{};
-        JSM_KEYBOARD *keyboard{};
-        JSM_MOUSE *mouse{};
-        JSM_CARTRIDGE_PORT *cartridge_port{};
-        JSM_DISC_DRIVE *disk_drive{};
-        JSM_AUDIO_CASSETTE *audio_cassette{};
+        cvec_ptr<physical_io_device> touchscreen{};
+        cvec_ptr<physical_io_device> controller1{};
+        cvec_ptr<physical_io_device> controller2{};
+        cvec_ptr<physical_io_device> display{};
+        cvec_ptr<physical_io_device> chassis{};
+        cvec_ptr<physical_io_device> keyboard{};
+        cvec_ptr<physical_io_device> mouse{};
+        cvec_ptr<physical_io_device> cartridge_port{};
+        cvec_ptr<physical_io_device> disk_drive{};
+        cvec_ptr<physical_io_device> audio_cassette{};
 
         fsio() = default;
     } io{};

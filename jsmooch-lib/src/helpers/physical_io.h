@@ -188,14 +188,12 @@ struct JSM_CONTROLLER {
     char name[50]{};
     std::vector<HID_analog_axis> analog_axes{};
     std::vector<HID_digital_button> digital_buttons{};
-    cvec_ptr<physical_io_device> pio{};
 };
 
 struct JSM_KEYBOARD {
     JKEYS key_defs[100];
     u32 key_states[100];
     u32 num_keys;
-    cvec_ptr<physical_io_device> pio{};
 };
 
 
@@ -302,14 +300,12 @@ struct JSM_TOUCHSCREEN {
         i32 width{}, height{};
         i32 x_offset{}, y_offset{};
     } params{};
-    cvec_ptr<physical_io_device> pio{};
 };
 
 struct JSM_CARTRIDGE_PORT {
     void (*load_cart)(jsm_system *ptr, multi_file_set& mfs, physical_io_device &whichpio){};
     void (*unload_cart)(jsm_system *ptr){};
     persistent_store SRAM{};
-    cvec_ptr<physical_io_device> pio{};
 };
 
 struct JSM_DISC_DRIVE {
@@ -317,7 +313,6 @@ struct JSM_DISC_DRIVE {
     void (*remove_disc)(jsm_system *ptr){};
     void (*close_drive)(jsm_system *ptr){};
     void (*open_drive)(jsm_system *ptr){};
-    cvec_ptr<physical_io_device> pio{};
 };
 
 struct JSM_AUDIO_CASSETTE {
@@ -326,7 +321,6 @@ struct JSM_AUDIO_CASSETTE {
     void (*rewind)(jsm_system *ptr){};
     void (*play)(jsm_system *ptr){};
     void (*stop)(jsm_system *ptr){};
-    cvec_ptr<physical_io_device> pio{};
 };
 
 #include <utility>

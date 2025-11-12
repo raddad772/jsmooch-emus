@@ -314,7 +314,7 @@ u32 grab_ROM(multi_file_set* ROMs, jsm::systems which, const char* fname, const 
 
     ROMs->add(fname, BASE_PATH);
     //printf("\n%d %s %s", ROMs->files[ROMs->num_files-1].buf.size > 0, BASE_PATH, fname);
-    return ROMs->files[ROMs->num_files-1].buf.size > 0;
+    return ROMs->files[ROMs->files.size()-1].buf.size > 0;
 }
 
 physical_io_device* load_ROM_into_emu(jsm_system* sys, std::vector<physical_io_device> &IOs, multi_file_set& mfs) {
@@ -408,33 +408,33 @@ static void setup_controller(system_io* io, physical_io_device& pio, u32 pnum)
 
 void full_system::setup_ios()
 {
-    std::vector<physical_io_device> &IOs = *sys->IOs;
+    std::vector<physical_io_device> &IOs = sys->IOs;
     for (u32 i = 0; i < IOs.size(); i++) {
         physical_io_device &pio = IOs.at(i);
         switch(pio.kind) {
             case HID_TOUCHSCREEN:
-                if (io.touchscreen->pio.vec == nullptr) {
-                    io.touchscreen->pio.make(IOs, i);
+                if (!io.touchscreen.vec) {
+                    io.touchscreen.make(IOs, i);
                 }
                 continue;
             case HID_CONTROLLER: {
-                if (io.controller1->pio.vec == nullptr) {
-                    io.controller1->pio.make(IOs, i);
+                if (!io.controller1.vec) {
+                    io.controller1.make(IOs, i);
                     setup_controller(&inputs, pio, 0);
                 }
                 else {
-                    io.controller2->pio.make(IOs, i);
+                    io.controller2.make(IOs, i);
                     setup_controller(&inputs, pio, 1);
                 }
                 continue; }
             case HID_KEYBOARD: {
-                io.keyboard->pio.make(IOs, i);
+                io.keyboard.make(IOs, i);
                 continue; }
             case HID_DISPLAY: {
-                io.display->pio.make(IOs, i);
+                io.display.make(IOs, i);
                 continue; }
             case HID_CHASSIS: {
-                io.chassis->pio.make(IOs, i);
+                io.chassis.make(IOs, i);
                 //make_cvec_ptr(IOs, i);
                 std::vector<HID_digital_button> &dbs = pio.chassis.digital_buttons;
                 for (auto &dbptr : dbs) {
@@ -455,26 +455,26 @@ void full_system::setup_ios()
                 }
                 break; }
             case HID_MOUSE:
-                io.mouse->pio.make(IOs, i);
+                io.mouse.make(IOs, i);
                 break;
             case HID_DISC_DRIVE:
-                io.disk_drive->pio.make(IOs, i);
+                io.disk_drive.make(IOs, i);
                 break;
             case HID_CART_PORT:
-                io.cartridge_port->pio.make(IOs, i);
+                io.cartridge_port.make(IOs, i);
                 break;
             case HID_AUDIO_CASSETTE:
-                io.audio_cassette->pio.make(IOs, i);
+                io.audio_cassette.make(IOs, i);
                 break;
             default:
                 break;
         }
     }
-    assert(io.display->pio.vec);
-    assert(io.chassis->pio.vec);
+    assert(io.display.vec);
+    assert(io.chassis.vec);
 
 
-    output.display = &io.display->pio.get().display;
+    output.display = &io.display.get().display;
 }
 
 void full_system::setup_wgpu()
@@ -487,7 +487,7 @@ void full_system::setup_audio()
     u32 srate = 0;
     u32 lpf = 0;
     u32 num_chans =  0;
-    for (auto & pio: *sys->IOs) {
+    for (auto & pio: sys->IOs) {
         switch(pio.kind) {
             case HID_AUDIO_CHANNEL:
                 audiochans.push_back(&pio.audio_channel);
@@ -589,7 +589,7 @@ full_system::~full_system() {
 
 void full_system::load_default_ROM()
 {
-    std::vector<physical_io_device> &IOs = *sys->IOs;
+    std::vector<physical_io_device> &IOs = sys->IOs;
     jsm::systems which = sys->kind;
 
     ROMs.clear();
@@ -1206,8 +1206,8 @@ void full_system::setup_system(jsm::systems which)
 
 void full_system::update_touch(i32 x, i32 y, i32 button_down)
 {
-    if (io.touchscreen) {
-        physical_io_device &pio = io.touchscreen->pio.get();
+    if (io.touchscreen.vec) {
+        physical_io_device &pio = io.touchscreen.get();
         JSM_TOUCHSCREEN &ts = pio.touchscreen;
         x += ts.params.x_offset;
         y += ts.params.y_offset;
@@ -1421,7 +1421,7 @@ void full_system::present()
 {
     framevars fv = {};
     sys->get_framevars(fv);
-    jsm_present(sys->kind, io.display->pio.get(), output.backbuffer_backer, 0, 0, output.backbuffer_texture.width, output.backbuffer_texture.height, nullptr);
+    jsm_present(sys->kind, io.display.get(), output.backbuffer_backer, 0, 0, output.backbuffer_texture.width, output.backbuffer_texture.height, nullptr);
     if (screenshot) take_screenshot(output.backbuffer_backer, output.backbuffer_texture.width, output.backbuffer_texture.height);
     output.backbuffer_texture.upload_data(output.backbuffer_backer, output.backbuffer_texture.width * output.backbuffer_texture.height * 4, output.backbuffer_texture.width, output.backbuffer_texture.height);
 }
@@ -1456,9 +1456,9 @@ void full_system::events_view_present()
 
         framevars fv = {};
         sys->get_framevars(fv);
-        JSM_DISPLAY *d = &(io.display->pio.get()).display;
+        JSM_DISPLAY *d = &(io.display.get()).display;
         memset(evd->buf, 0, events.texture.width*events.texture.height*4);
-        jsm_present(sys->kind, io.display->pio.get(), evd->buf, d->pixelometry.offset.x, d->pixelometry.offset.y, events.texture.width, events.texture.height, events.view);
+        jsm_present(sys->kind, io.display.get(), evd->buf, d->pixelometry.offset.x, d->pixelometry.offset.y, events.texture.width, events.texture.height, events.view);
         events.view->render(evd->buf, events.texture.width, events.texture.height);
 
         events.texture.upload_data(evd->buf, events.texture.width*events.texture.height*4, events.texture.width, events.texture.height);

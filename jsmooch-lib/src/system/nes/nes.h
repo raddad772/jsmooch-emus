@@ -106,7 +106,7 @@ public:
     //void load_BIOS(multi_file_set& mfs) override;
     void enable_tracing();
     void disable_tracing();
-    void describe_io(std::vector<physical_io_device> &inIOs) override;
+    void describe_io() override;
     void save_state(serialized_state &state) override;
     void load_state(serialized_state &state, deserialize_ret &ret) override;
     void set_audiobuf(audiobuf *ab) override;

@@ -84,8 +84,8 @@ static void load_inifile(inifile& ini)
 static void update_input(full_system* fsys, u32 *hotkeys, ImGuiIO& io) {
     //if (io.WantCaptureKeyboard) {
         // Handle KB
-        if (fsys->io.keyboard->pio.vec) {
-            auto &pio = fsys->io.keyboard->pio.get();
+        if (fsys->io.keyboard.vec) {
+            auto &pio = fsys->io.keyboard.get();
             if (pio.connected && pio.enabled) {
                 JSM_KEYBOARD *kbd = &pio.keyboard;
                 for (u32 i = 0; i < kbd->num_keys; i++) {
@@ -96,8 +96,8 @@ static void update_input(full_system* fsys, u32 *hotkeys, ImGuiIO& io) {
         hotkeys[0] = ImGui::IsKeyPressed(ImGuiKey_K, false); // save
         hotkeys[1] = ImGui::IsKeyPressed(ImGuiKey_L, false); // load
         // Handle controller 1
-        if (fsys->io.controller1->pio.vec) {
-            auto &pio = fsys->io.controller1->pio.get();
+        if (fsys->io.controller1.vec) {
+            auto &pio = fsys->io.controller1.get();
             if (pio.connected && pio.enabled) {
                 JSM_CONTROLLER *ctr = &pio.controller;
                 for (auto &db : ctr->digital_buttons) {
@@ -901,7 +901,7 @@ void imgui_jsmooch_app::render_image_views()
 
 static void render_opt_view(full_system &fsys)
 {
-    std::vector<debugger_widget> &opts = *fsys.sys->opts;
+    std::vector<debugger_widget> &opts = fsys.sys->opts;
     if (opts.size() > 0) {
         if (ImGui::Begin("Core Options")) {
             for (auto &w : opts) {
@@ -1015,9 +1015,9 @@ int imgui_jsmooch_app::do_setup_before_mainloop()
     //which = jsm::systems::SNES;
     //which = jsm::systems::GENESIS_USA;
     //which = jsm::systems::MEGADRIVE_PAL;
-    which = jsm::systems::NDS;
+    //which = jsm::systems::NDS;
     //which = jsm::systems::TURBOGRAFX16;
-    //which = jsm::systems::NES;
+    which = jsm::systems::NES;
     //which = jsm::systems::GALAKSIJA;
     //dbg_enable_trace();
 #endif

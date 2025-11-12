@@ -17,8 +17,8 @@
 #include "nes_debugger.h"
 #include "nes_serialize.h"
 
-#define JTHIS struct NES* this = (NES*)jsm->ptr
-#define JSM struct jsm_system* jsm
+#define JTHIS NES* this = (NES*)jsm->ptr
+#define JSM jsm_system* jsm
 
 static u32 read_trace(void *ptr, u32 addr)
 {
@@ -43,16 +43,16 @@ void NESJ::set_audiobuf(audiobuf *ab)
         nes.audio.master_cycles_per_audio_sample = ((float)APU_CYCLES_PER_FRAME / (float)ab->samples_len);
         printf("\nCYCLES PER FRAME:%d PER SAMPLE:%f", APU_CYCLES_PER_FRAME, nes.audio.master_cycles_per_audio_sample);
         nes.audio.next_sample_cycle = 0;
-        struct debug_waveform &wf = nes.dbg.waveforms.main.get();
+        debug_waveform &wf = nes.dbg.waveforms.main.get();
         nes.apu.ext_enable = wf.ch_output_enabled;
     }
     setup_debug_waveform(nes.dbg.waveforms.main.get());
     for (u32 i = 0; i < 4; i++) {
-        struct debug_waveform &wf = nes.dbg.waveforms.chan[i].get();
+        debug_waveform &wf = nes.dbg.waveforms.chan[i].get();
         setup_debug_waveform(wf);
         nes.apu.channels[i].ext_enable = wf.ch_output_enabled;
     }
-    struct debug_waveform &wf = nes.dbg.waveforms.chan[4].get();
+    debug_waveform &wf = nes.dbg.waveforms.chan[4].get();
     nes.apu.dmc.ext_enable = wf.ch_output_enabled;
 }
 
@@ -76,10 +76,10 @@ jsm_system *NES_new()
     snprintf(nes->label, sizeof(nes->label), "Nintendo Entertainment System");
 
     nes->nes.described_inputs = 0;
+    nes->nes.IOs = &nes->IOs;
 
     nes->nes.cycles_left = 0;
     nes->nes.display_enabled = 1;
-    nes->IOs = nullptr;
     return nes;
 }
 
@@ -145,22 +145,22 @@ void NESJ::setup_audio(std::vector<physical_io_device> &inIOs)
     chan->low_pass_filter = 14000;
 }
 
-void NESJ::describe_io(std::vector<physical_io_device> &inIOs)
+void NESJ::describe_io()
 {
     if (nes.described_inputs) return;
     nes.described_inputs = 1;
 
-    nes.IOs = IOs;
-    IOs->reserve(15);
+    IOs.reserve(15);
 
     // controllers
-    physical_io_device &c1 = nes.IOs->emplace_back(); //0
-    //struct physical_io_device *c2 = cvec_push_back(nes.IOs); //1
+    physical_io_device &c1 = IOs.emplace_back(); //0
+    c1.init(HID_CONTROLLER, true, true, true, true);
+    //physical_io_device *c2 = cvec_push_back(nes.IOs); //1
     NES_joypad::setup_pio(c1, 0, "Player 1", 1);
     //NES_joypad_setup_pio(c2, 1, "Player 2", 0);
 
     // power and reset buttons
-    physical_io_device* chassis = &IOs->emplace_back(); //2
+    physical_io_device* chassis = &IOs.emplace_back(); //2
     chassis->init(HID_CHASSIS, 1, 1, 1, 1);
     HID_digital_button* b;
 
@@ -175,29 +175,29 @@ void NESJ::describe_io(std::vector<physical_io_device> &inIOs)
     b->state = 0;
 
     // cartridge port
-    physical_io_device *d = &IOs->emplace_back(); //4
+    physical_io_device *d = &IOs.emplace_back(); //4
     d->init(HID_CART_PORT, 1, 1, 1, 0);
     d->cartridge_port.load_cart = &NESIO_load_cart;
     d->cartridge_port.unload_cart = &NESIO_unload_cart;
 
     // screen
-    d = &IOs->emplace_back(); //4
+    d = &IOs.emplace_back(); //4
     d->init(HID_DISPLAY, 1, 1, 0, 1); //5
     d->display.output[0] = malloc(256 * 224 * 2);
     d->display.output[1] = malloc(256 * 224 * 2);
     d->display.output_debug_metadata[0] = NULL;
     d->display.output_debug_metadata[1] = NULL;
-    nes.ppu.display_ptr = cvec_ptr(*IOs, IOs->size()-1);
+    nes.ppu.display_ptr = cvec_ptr(IOs, IOs.size()-1);
     nes.ppu.cur_output = static_cast<u16 *>(d->display.output[0]);
     setup_crt(&d->display);
     d->display.last_written = 1;
     //d->display.last_displayed = 1;
 
-    setup_audio(*IOs);
+    setup_audio(IOs);
 
-    nes.cpu.joypad1.devices = IOs;
+    nes.cpu.joypad1.devices = &IOs;
     nes.cpu.joypad1.device_index = NES_INPUTS_PLAYER1;
-    nes.cpu.joypad2.devices = IOs;
+    nes.cpu.joypad2.devices = &IOs;
     nes.cpu.joypad2.device_index = NES_INPUTS_PLAYER2;
 
     nes.ppu.display = &nes.ppu.display_ptr.get().display;
@@ -261,7 +261,7 @@ void NESJ::sample_audio()
         nes.audio.buf->upos++;
     }
 
-    struct debug_waveform *dw = &nes.dbg.waveforms.main.get();
+    debug_waveform *dw = &nes.dbg.waveforms.main.get();
     if (nes.clock.master_clock >= dw->user.next_sample_cycle) {
         if (dw->user.buf_pos < dw->samples_requested) {
             dw->user.next_sample_cycle += dw->user.cycle_stride;
