@@ -322,22 +322,24 @@ void imgui_jsmooch_app::render_event_view()
             static bool things_open[50];
             static float color_edits[50 * 10][3];
             u32 idx = 0;
-            u32 evi = 0;
             for (auto &cat:fsys.events.view->categories) {
                 ImGuiTreeNodeFlags flags = ImGuiTreeNodeFlags_DefaultOpen;
                 if (ImGui::TreeNodeEx(cat.name, flags)) {
-                    for (auto &event : fsys.events.view->events) {
+                    for (u32 evi = 0; evi < fsys.events.view->events.size(); evi++) {
+                        auto &event = fsys.events.view->events.at(evi);
                         if (event.category_id == cat.id) {
                             color_edits[idx][0] = (float) (event.color & 0xFF) / 255.0;
                             color_edits[idx][1] = (float) ((event.color >> 8) & 0xFF) / 255.0;
                             color_edits[idx][2] = (float) ((event.color >> 16) & 0xFF) / 255.0;
                             bool mval = event.display_enabled;
-                            ImGui::PushID(evi++);
+                            ImGui::PushID(evi*2);
                             ImGui::Checkbox("", &mval);
                             event.display_enabled = mval;
                             ImGui::PopID();
                             ImGui::SameLine();
+                            ImGui::PushID((evi*2)+1);
                             ImGui::ColorEdit3(event.name, color_edits[idx], ImGuiColorEditFlags_NoInputs);
+                            ImGui::PopID();
                             idx++;
                         }
                     }

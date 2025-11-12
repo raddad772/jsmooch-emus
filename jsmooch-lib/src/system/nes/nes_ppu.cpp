@@ -495,6 +495,7 @@ void NES_PPU::scanline_visible()
         u32 agb = bg_palette_shifter;
         if (io.x + (sx & 0x07) < 8) agb >>= 2;
         bg_color = CGRAM[bg_color | ((agb & 3) << 2)];
+        printf("HAS PIXEL!");
     }
     else bg_color = CGRAM[0];
 

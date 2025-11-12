@@ -599,8 +599,8 @@ void full_system::load_default_ROM()
             //worked = grab_ROM(&ROMs, which, "apu_test.nes", nullptr);
             //NROM
             //worked = grab_ROM(&ROMs, which, "drmario.nes", nullptr);
-            //worked = grab_ROM(&ROMs, which, "mario.nes", nullptr);
-            worked = grab_ROM(&ROMs, which, "dkong.nes", nullptr);
+            worked = grab_ROM(&ROMs, which, "mario.nes", nullptr);
+            //worked = grab_ROM(&ROMs, which, "dkong.nes", nullptr);
 
             // MMC3
             //worked = grab_ROM(&ROMs, which, "kirby.nes", nullptr);
