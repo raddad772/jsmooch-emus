@@ -23,10 +23,10 @@ void events_view::add_category(const char *name, u32 color, u32 id)
 void events_view::add_event(u32 category_id, const char *name, u32 color, debugger_event_kind display_kind, u32 default_enable, u32 order, const char* context, u32 id)
 {
     if (events.size() <= id) {
-        assert(1==0);
+        events.resize(id+1);
     }
 
-    debugger_event &event = events.at(id);
+    debugger_event &event = events.emplace_back();
 
     snprintf(event.name, sizeof(event.name), "%s", name);
     event.category = cvec_ptr(categories, category_id);;

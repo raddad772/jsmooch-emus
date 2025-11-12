@@ -20,10 +20,11 @@ void trace_line::clear(u32 num_cols)
 
 trace_view::trace_view()
 {
+    lines.reserve(max_trace_lines);
+    lines.emplace_back();
     lptr = &lines[0];
     current_output_line = 0;
     lptr->source_id = -1;
-    lines.reserve(max_trace_lines);
     columns.reserve(MAX_TRACE_COLS);
 }
 

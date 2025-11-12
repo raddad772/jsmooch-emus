@@ -313,7 +313,6 @@ void debugger_view::destroy_active()
     options.clear();
     switch(kind) {
         case dview_null:
-            assert(1==2);
             break;
         case dview_disassembly:
             disassembly.~disassembly_view();

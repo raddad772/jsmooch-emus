@@ -17,7 +17,7 @@
 static void get_dissasembly(void *nesptr, debugger_interface *dbgr, disassembly_view *dview, disassembly_entry *entry)
 {
     NES* th = static_cast<NES *>(nesptr);
-    M6502_disassemble_entry(&th->cpu.cpu, entry);
+    M6502_disassemble_entry(&th->cpu.cpu, *entry);
 }
 
 
@@ -373,19 +373,18 @@ static void setup_events_view(NES& th, debugger_interface *dbgr)
     debugger_report_frame(th.dbg.interface);
 }
 
-void NESJ_setup_debugger_interface(jsm_system *jsm, debugger_interface *dbgr)
+void NESJ::setup_debugger_interface(debugger_interface &intf)
 {
-     NESJ* nesj = dynamic_cast<NESJ *>(jsm);
-
-    nesj->nes.dbg.interface = dbgr;
+    nes.dbg.interface = &intf;
+    auto* dbgr = &intf;
 
     dbgr->supported_by_core = 1;
     dbgr->smallest_step = 1;
 
-    setup_disassembly_view(nesj->nes, dbgr);
-    setup_events_view(nesj->nes, dbgr);
-    setup_image_view_nametables(nesj->nes, dbgr);
-    setup_image_view_tilemap(nesj->nes, dbgr);
-    setup_waveforms(nesj->nes, dbgr);
+    setup_disassembly_view(nes, dbgr);
+    setup_events_view(nes, dbgr);
+    setup_image_view_nametables(nes, dbgr);
+    setup_image_view_tilemap(nes, dbgr);
+    setup_waveforms(nes, dbgr);
 }
 

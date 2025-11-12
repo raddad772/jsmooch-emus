@@ -110,6 +110,7 @@ public:
     void save_state(serialized_state &state) override;
     void load_state(serialized_state &state, deserialize_ret &ret) override;
     void set_audiobuf(audiobuf *ab) override;
+    void setup_debugger_interface(debugger_interface &intf) override;
     NES nes{};
 };
 
