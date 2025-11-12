@@ -15,12 +15,11 @@ struct NES_memmap {
     u32 mask;
     u32 bank;
     u32 is_SRAM;
-    struct persistent_store *SRAM;
-    struct simplebuf8 *buf;         // Pointer to data
+    persistent_store *SRAM;
+    simplebuf8 *buf;         // Pointer to data
 
     u32 read(u32 read_addr, u32 old_val);
     void write(u32 write_addr, u32 val);
-
 };
 
 struct NES_mapper;

@@ -68,7 +68,7 @@ static void NROM_setcart(NES_mapper *bus, NES_cart *cart)
 
 void NROM_init(NES_mapper *bus, NES *nes)
 {
-    if (bus->ptr != NULL) free(bus->ptr);
+    if (bus->ptr != nullptr) free(bus->ptr);
     bus->ptr = malloc(sizeof(NROM));
     THISM;
 
@@ -79,8 +79,8 @@ void NROM_init(NES_mapper *bus, NES *nes)
     bus->writecart = &NROM_writecart;
     bus->readcart = &NROM_readcart;
     bus->setcart = &NROM_setcart;
-    bus->cpu_cycle = NULL;
-    bus->a12_watch = NULL;
+    bus->cpu_cycle = nullptr;
+    bus->a12_watch = nullptr;
     bus->serialize = &serialize;
     bus->deserialize = &deserialize;
 }

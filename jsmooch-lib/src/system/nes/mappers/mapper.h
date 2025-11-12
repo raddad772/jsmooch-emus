@@ -19,7 +19,7 @@ typedef u32 (*mirror_ppu_t)(u32);
 
 enum NES_mappers {
     NESM_UNKNOWN,
-    NESM_NONE,
+    NESM_NROM,
     NESM_MMC1,
     NESM_UXROM,
     NESM_CNROM,
@@ -81,8 +81,8 @@ struct NES_mapper {
         u32 has_sound{};
     } flags{};
 
-    simplebuf8 CIRAM{}; // 0x800 PPU RAM
-    simplebuf8 CPU_RAM{}; // 0x800 CPU RAM
+    simplebuf8 CIRAM{0x800}; // 0x800 PPU RAM
+    simplebuf8 CPU_RAM{0x800}; // 0x800 CPU RAM
 
     NES_memmap CPU_map[65536 / 0x2000]{};
     NES_memmap PPU_map[0x4000 / 0x400]{};

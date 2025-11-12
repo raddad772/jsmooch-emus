@@ -26,7 +26,7 @@ int popcount(u64 n)
     return c;
 }
 
-void simplebuf8::allocate(u64 insz)
+void simplebuf8::allocate(size_t insz)
 {
     if (ptr != nullptr) {
         free(ptr);

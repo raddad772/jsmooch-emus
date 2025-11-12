@@ -12,6 +12,7 @@
 
 void NES_memmap_map(NES_memmap *mmap, u32 shift, u32 range_start, u32 range_end, simplebuf8* buf, u32 offset, u32 is_readonly, debugger_interface *iface, u32 bus_num, persistent_store *SRAM)
 {
+    //printf("\nMemmap! Start:%04x End:%04x shift:%d", range_start, range_end, shift);
     u32 range_size = 1 << shift;
     u32 is_SRAM = 0;
     if (buf && SRAM) {
@@ -23,6 +24,7 @@ void NES_memmap_map(NES_memmap *mmap, u32 shift, u32 range_start, u32 range_end,
             // Mark as dirty!
             debugger_interface_dirty_mem(iface, bus_num, range_start, range_end);
         }
+        //printf("\n#%d set to%04x", addr >> shift, addr);
         m->offset = offset;
         m->buf = buf;
         m->empty = buf == nullptr;
@@ -31,6 +33,7 @@ void NES_memmap_map(NES_memmap *mmap, u32 shift, u32 range_start, u32 range_end,
         m->is_SRAM = is_SRAM;
         m->SRAM = SRAM;
         m->mask = range_size - 1;
+        m->empty = 0;
 
         offset = (offset + range_size) % buf->sz;
     }
@@ -52,7 +55,7 @@ void NES_memmap_init_empty(NES_memmap *map, u32 addr_start, u32 addr_end, u32 sh
 u32 NES_memmap::read(u32 read_addr, u32 old_val)
 {
     if (this->empty) {
-        printf("\nREAD EMPTY ADDR %04x", addr);
+        printf("\nREAD EMPTY ADDR %04x", read_addr);
         return old_val;
     }
     assert(this->buf);

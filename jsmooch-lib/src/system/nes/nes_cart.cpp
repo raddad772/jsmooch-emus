@@ -109,7 +109,6 @@ void NES_cart::read_ROM_RAM(const char* inp, size_t inp_size)
 
 u32 NES_cart::load_ROM_from_RAM(char* fil, u64 fil_sz)
 {
-
     if ((fil[0] != 0x4E) || (fil[1] != 0x45) ||
         (fil[2] != 0x53) || (fil[3] != 0x1A)) {
         printf("\nBad iNES header");

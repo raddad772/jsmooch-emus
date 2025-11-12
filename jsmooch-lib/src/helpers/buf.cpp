@@ -9,11 +9,7 @@
 #include "buf.h"
 #include "file_exists.h"
 
-buf::buf(int n) {
-    allocate(n);
-}
-
-void buf::allocate(u64 insize)
+void buf::allocate(size_t insize)
 {
     if (ptr != nullptr) {
         free(ptr);
@@ -30,15 +26,10 @@ void buf::allocate(u64 insize)
 }
 
 void buf::del() {
-    if (ptr != nullptr)
+    if (ptr)
         free(ptr);
     ptr = nullptr;
     size = 0;
-}
-
-buf::~buf()
-{
-    del();
 }
 
 void buf::copy(const buf* src) {

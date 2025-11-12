@@ -298,42 +298,41 @@ static void setup_waveforms(NES& th, debugger_interface *dbgr)
     snprintf(wv.name, sizeof(wv.name), "Audio");
 
     // 384 8x8 tiles, or 2x for CGB
-    debug_waveform &dw = wv.waveforms.emplace_back();
+    debug_waveform *dw = &wv.waveforms.emplace_back();
     th.dbg.waveforms.main.make(wv.waveforms, wv.waveforms.size()-1);
-    snprintf(dw.name, sizeof(dw.name), "Output");
-    dw.kind = dwk_main;
-    dw.samples_requested = 400;
+    snprintf(dw->name, sizeof(dw->name), "Output");
+    dw->kind = dwk_main;
+    dw->samples_requested = 400;
 
-    dw = wv.waveforms.emplace_back();
+    dw = &wv.waveforms.emplace_back();
     th.dbg.waveforms.chan[0].make(wv.waveforms, wv.waveforms.size()-1);
-    snprintf(dw.name, sizeof(dw.name), "Pulse 1");
-    dw.kind = dwk_channel;
-    dw.samples_requested = 200;
+    snprintf(dw->name, sizeof(dw->name), "Pulse 1");
+    dw->kind = dwk_channel;
+    dw->samples_requested = 200;
 
-    dw = wv.waveforms.emplace_back();
+    dw = &wv.waveforms.emplace_back();
     th.dbg.waveforms.chan[1].make(wv.waveforms, wv.waveforms.size()-1);
-    snprintf(dw.name, sizeof(dw.name), "Pulse 2");
-    dw.kind = dwk_channel;
-    dw.samples_requested = 200;
+    snprintf(dw->name, sizeof(dw->name), "Pulse 2");
+    dw->kind = dwk_channel;
+    dw->samples_requested = 200;
 
-    dw = wv.waveforms.emplace_back();
+    dw = &wv.waveforms.emplace_back();
     th.dbg.waveforms.chan[2].make(wv.waveforms, wv.waveforms.size()-1);
-    snprintf(dw.name, sizeof(dw.name), "Triangle");
-    dw.kind = dwk_channel;
-    dw.samples_requested = 200;
+    snprintf(dw->name, sizeof(dw->name), "Triangle");
+    dw->kind = dwk_channel;
+    dw->samples_requested = 200;
 
-    dw = wv.waveforms.emplace_back();
+    dw = &wv.waveforms.emplace_back();
     th.dbg.waveforms.chan[3].make(wv.waveforms, wv.waveforms.size()-1);
-    snprintf(dw.name, sizeof(dw.name), "Noise");
-    dw.kind = dwk_channel;
-    dw.samples_requested = 200;
+    snprintf(dw->name, sizeof(dw->name), "Noise");
+    dw->kind = dwk_channel;
+    dw->samples_requested = 200;
 
-    dw = wv.waveforms.emplace_back();
+    dw = &wv.waveforms.emplace_back();
     th.dbg.waveforms.chan[4].make(wv.waveforms, wv.waveforms.size()-1);
-    snprintf(dw.name, sizeof(dw.name), "DMC");
-    dw.kind = dwk_channel;
-    dw.samples_requested = 200;
-
+    snprintf(dw->name, sizeof(dw->name), "DMC");
+    dw->kind = dwk_channel;
+    dw->samples_requested = 200;
 }
 
 

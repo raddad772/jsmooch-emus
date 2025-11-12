@@ -300,7 +300,7 @@ void mfs_add_IP_BIN(multi_file_set* mfs)
     if (worked == 0) return;
 
     mfs->add("IP.BIN", BASE_PATH);
-    printf("\nLOADED IP.BIN SIZE %04llx", mfs->files[1].buf.size);
+    printf("\nLOADED IP.BIN SIZE %04lx", mfs->files[1].buf.size);
 }
 
 u32 grab_ROM(multi_file_set* ROMs, jsm::systems which, const char* fname, const char* sec_path)
@@ -600,7 +600,7 @@ void full_system::load_default_ROM()
             //NROM
             //worked = grab_ROM(&ROMs, which, "drmario.nes", nullptr);
             //worked = grab_ROM(&ROMs, which, "mario.nes", nullptr);
-            //worked = grab_ROM(&ROMs, which, "dkong.nes", nullptr);
+            worked = grab_ROM(&ROMs, which, "dkong.nes", nullptr);
 
             // MMC3
             //worked = grab_ROM(&ROMs, which, "kirby.nes", nullptr);
@@ -636,7 +636,7 @@ void full_system::load_default_ROM()
 
             // UxROM
             //worked = grab_ROM(&ROMs, which, "castlevania.nes", nullptr);
-            worked = grab_ROM(&ROMs, which, "contra.nes", nullptr);
+            //worked = grab_ROM(&ROMs, which, "contra.nes", nullptr);
 
             // SunSoft 5
             //worked = grab_ROM(&ROMs, which, "gimmick_jp.nes", nullptr);

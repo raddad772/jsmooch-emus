@@ -3,16 +3,18 @@
 //
 
 #pragma once
+#include <cstddef>
 
 #include "int.h"
 struct buf;
 struct simplebuf8 {
+    explicit simplebuf8(size_t n) { allocate(n); };
     simplebuf8() = default;
     ~simplebuf8();
-    void allocate(u64 sz);
+    void allocate(size_t sz);
     void clear();
     void copy_from_buf(buf &src);
     u8 *ptr{};
-    u64 sz{};
+    size_t sz{};
     u32 mask{};
 };

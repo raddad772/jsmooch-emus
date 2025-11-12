@@ -43,7 +43,7 @@ static NES_mappers iNES_mapper_to_my_mappers(u32 wh)
     NES_mappers which = NESM_UNKNOWN;
     switch(wh) {
         case 0: // no mapper
-            which = NESM_NONE;
+            which = NESM_NROM;;
             break;
         case 1: // MMC1
             which = NESM_MMC1;
@@ -101,7 +101,7 @@ void NES_mapper::set_which_mapper(u32 wh)
         case NESM_UNKNOWN:
             printf("\nERROR UNKNOWN VALUE...");
             return;
-        case NESM_NONE: // No mapper!
+        case NESM_NROM: // No mapper!
             NROM_init(this, nes);
             printf("\nNO MAPPER!");
             break;
@@ -170,7 +170,7 @@ u32 NES_mapper::CPU_read(u32 addr, u32 old_val, u32 has_effect)
         return nv;
     }
 
-    u32 v = nes->bus.CPU_map[addr >> 11].read(addr, old_val);
+    u32 v = nes->bus.CPU_map[addr >> 13].read(addr, old_val);
     return v;
 }
 
@@ -242,10 +242,10 @@ void NES_mapper::set_cart(physical_io_device &pio)
     if (num_PRG_ROM_banks16K == 0) num_PRG_ROM_banks16K = 1;
     if (num_PRG_ROM_banks32K == 0) num_PRG_ROM_banks32K = 1;
 
-    printf("\nPRG ROM sz:%lld  banks:%d", PRG_ROM.sz, num_PRG_ROM_banks8K);
+    printf("\nPRG ROM sz:%ld  banks:%d", PRG_ROM.sz, num_PRG_ROM_banks8K);
 
     if (nes->cart.header.chr_rom_size > 0) {
-        printf("\nCHR ROM: %d bytes/%lld", nes->cart.header.chr_rom_size, nes->cart.CHR_ROM.size);
+        printf("\nCHR ROM: %d bytes/%ld", nes->cart.header.chr_rom_size, nes->cart.CHR_ROM.size);
         CHR_ROM.copy_from_buf(nes->cart.CHR_ROM);
         num_CHR_ROM_banks1K = CHR_ROM.sz >> 10;
         num_CHR_ROM_banks2K = CHR_ROM.sz >> 11;
@@ -258,7 +258,7 @@ void NES_mapper::set_cart(physical_io_device &pio)
     }
     if (nes->cart.header.chr_ram_present) {
         CHR_RAM.allocate(nes->cart.header.chr_ram_size);
-        printf("\nCHR RAM: %lld bytes", CHR_RAM.sz);
+        printf("\nCHR RAM: %ld bytes", CHR_RAM.sz);
         num_CHR_RAM_banks = CHR_RAM.sz >> 10;
     }
     SRAM = &pio.cartridge_port.SRAM;
