@@ -98,7 +98,8 @@ static NES_mappers iNES_mapper_to_my_mappers(u32 wh)
 void NES_bus::set_which_mapper(u32 wh)
 {
     delete mapper;
-    switch (iNES_mapper_to_my_mappers(wh)) {
+    which = iNES_mapper_to_my_mappers(wh);
+    switch (which) {
         case NESM_UNKNOWN:
             printf("\nERROR UNKNOWN VALUE...");
             return;

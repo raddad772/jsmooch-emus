@@ -133,7 +133,7 @@ void sunsoft_5_7::write_reg(u32 val)
 
 void sunsoft_5_7::write_audio_reg(u32 val)
 {
-    printf("\nwrite A%d: %02x", io.audio.reg, val);
+    //printf("\nwrite A%d: %02x", io.audio.reg, val);
 }
 
 void sunsoft_5_7::writecart(u32 addr, u32 val, u32 &do_write)

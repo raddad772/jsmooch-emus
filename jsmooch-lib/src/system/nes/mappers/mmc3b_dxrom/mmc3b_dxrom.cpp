@@ -193,16 +193,18 @@ void MMC3b_DXROM::a12_watch(u32 addr)
 MMC3b_DXROM::MMC3b_DXROM(NES_bus *bus, NES_mappers in_kind) : NES_mapper(bus), kind(in_kind), a12_watcher(&bus->nes->clock)
 {
     this->overrides_PPU = false;
-    switch(kind) {
+    switch(in_kind) {
+        case NESM_DXROM:
         case NESM_MMC3b:
             has_IRQ = 1;
             has_mirroring_control = 1;
             break;
-        case NESM_DXROM:
-            has_IRQ = 0;
+        /*case NESM_DXROM:
+            has_IRQ = 1;
             has_mirroring_control = 0;
-            break;
+            break;*/
         default:
+            printf("\nERROR!?");
             assert(1==2);
             break;
     }
