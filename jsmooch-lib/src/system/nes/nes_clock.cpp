@@ -6,14 +6,22 @@
 
 void NES_clock::reset()
 {
-    this->nmi = 0;
-    this->master_clock = 0;
-    this->master_frame = 0;
-    this->cpu_master_clock = 0;
-    this->ppu_master_clock = 0;
-    //this->sound_master_clock = 0;
-    //this->vblank = 0;
-    this->ppu_y = 0;
-    this->frame_odd = 0;
-    this->frames_since_restart = 0;
+    nmi = 0;
+    master_clock = 0;
+    master_frame = 0;
+    cpu_master_clock = 0;
+    ppu_master_clock = 0;
+    //sound_master_clock = 0;
+    //vblank = 0;
+    ppu_y = 0;
+    frame_odd = 0;
+    frames_since_restart = 0;
+
+    master_clock = master_frame = 0;
+
+    frames_since_restart = 0;
+
+    cpu_master_clock = apu_master_clock = ppu_master_clock = 0;
+    trace_cycles = 0;
+
 }

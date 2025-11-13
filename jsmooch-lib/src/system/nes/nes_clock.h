@@ -30,7 +30,7 @@ struct NES_clock {
         u32 bottom_rendered_line = 239;
         u32 post_render_ppu_idle = 240;
         u32 hblank_start = 280;
-        u32 vblank_start = 261;
+        u32 vblank_start = 241;
         u32 vblank_end = 261;
         u32 ppu_pre_render = 261;
         u32 pixels_per_scanline = 280;
