@@ -1,23 +1,27 @@
+//
+// Created by . on 11/13/25.
+//
+
 #include <cstring>
 #include <cassert>
 
-#include "../nes.h"
-#include "mapper.h"
+#include "nes.h"
+#include "nes_bus.h"
+#include "mappers/mapper.h"
+#include "mappers/nes_memmap.h"
+#include "mappers/axrom.h"
+#include "mappers/cnrom_gnrom_jf11_jf14_color_dreams.h"
+#include "mappers/mmc1_sxrom.h"
+#include "mappers/mmc5.h"
+#include "mappers/nrom.h"
+#include "mappers/sunsoft_5_7.h"
+#include "mappers/uxrom.h"
+#include "mappers/vrc_2b_2e_4f.h"
+#include "mappers/mmc3b_dxrom/mmc3b_dxrom.h"
 
-#include "nrom.h"
-#include "system/nes/mappers/mmc3b_dxrom/mmc3b_dxrom.h"
-#include "axrom.h"
-#include "uxrom.h"
-#include "cnrom_gnrom_jf11_jf14_color_dreams.h"
-#include "mmc1_sxrom.h"
-#include "vrc_2b_2e_4f.h"
-#include "sunsoft_5_7.h"
-#include "mmc5.h"
-
-NES_mapper::NES_mapper(NES *nes) : nes(nes) {
+NES_bus::NES_bus(NES *nes) : nes(nes) {
     NES_memmap_init_empty(CPU_map, 0x0000, 0xFFFF, 13);
     NES_memmap_init_empty(PPU_map, 0x0000, 0x3FFF, 10);
-    NROM_init(this, nes);
     for (u32 addr = 0x2000; addr < 0x3FFF; addr += 0x400) {
         NES_memmap *m = &PPU_map[addr >> 10];
         m->empty = 0;
@@ -29,11 +33,13 @@ NES_mapper::NES_mapper(NES *nes) : nes(nes) {
         m->SRAM = nullptr;
     }
 
+    mapper = static_cast<NES_mapper *>(new NROM(this));
+    which = NESM_NROM;
 };
 
-NES_mapper::~NES_mapper()
+NES_bus::~NES_bus()
 {
-    if (destruct) destruct(this);
+    delete mapper;
     NES_memmap_init_empty(CPU_map, 0x0000, 0xFFFF, 13);
     NES_memmap_init_empty(PPU_map, 0x0000, 0x3FFF, 10);
 }
@@ -89,33 +95,28 @@ static NES_mappers iNES_mapper_to_my_mappers(u32 wh)
     return which;
 }
 
-void NES_mapper::set_which_mapper(u32 wh)
+void NES_bus::set_which_mapper(u32 wh)
 {
-    if (ptr != nullptr) {
-        if (destruct) destruct(this);
-        ptr = nullptr;
-        destruct = nullptr;
-    }
-
+    delete mapper;
     switch (iNES_mapper_to_my_mappers(wh)) {
         case NESM_UNKNOWN:
             printf("\nERROR UNKNOWN VALUE...");
             return;
         case NESM_NROM: // No mapper!
-            NROM_init(this, nes);
+            mapper = static_cast<NES_mapper *>(new NROM(this));
             printf("\nNO MAPPER!");
             break;
         case NESM_MMC3b:
         case NESM_DXROM:
-            MMC3b_init(this, nes, which);
+            mapper = static_cast<NES_mapper *>(new MMC3b_DXROM(this, which));
             printf("\nMMC3B or DXROM");
             break;
         case NESM_MMC5:
             printf("\nMMC5! GOOD LUCK!");
-            MMC5_init(this, nes);
+            mapper = static_cast<NES_mapper *>(new MMC5(this));
             break;
         case NESM_AXROM:
-            AXROM_init(this, nes);
+            mapper = static_cast<NES_mapper *>(new AXROM(this));
             printf("\nAXROM");
             break;
         case NESM_CNROM:
@@ -123,23 +124,23 @@ void NES_mapper::set_which_mapper(u32 wh)
         case NESM_COLOR_DREAMS:
         case NESM_JF11_JF14:
             printf("\nGNROM-like init!");
-            GNROM_JF11_JF14_color_dreams_init(this, nes, which);
+            mapper = static_cast<NES_mapper *>(new GNROM_JF11_JF14_color_dreams(this, which));
             break;
         case NESM_MMC1:
-            SXROM_init(this, nes);
+            mapper = static_cast<NES_mapper *>(new SXROM(this));
             printf("\nMMC1");
             break;
         case NESM_UXROM:
-            UXROM_init(this, nes);
+            mapper = static_cast<NES_mapper *>(new UXROM(this));
             printf("\nUXROM");
             break;
         case NESM_VRC4E_4F:
-            VRC2B_4E_4F_init(this, nes, which);
+            mapper = static_cast<NES_mapper *>(new VRC2B_4E_4F(this, which));
             printf("\nVRC4");
             break;
         case NESM_SUNSOFT_5b:
         case NESM_SUNSOFT_7:
-            sunsoft_5_7_init(this, nes, which);
+            mapper = static_cast<NES_mapper *>(new sunsoft_5_7(this, which));
             printf("\nSunsoft mapper");
             break;
         default:
@@ -147,15 +148,9 @@ void NES_mapper::set_which_mapper(u32 wh)
             printf("\nNO SUPPORTED MAPPER! %d", which);
             break;
     }
-
 }
 
-void NES_mapper::CPU_cycle()
-{
-    if (nes->bus.cpu_cycle) nes->bus.cpu_cycle(&nes->bus);
-}
-
-u32 NES_mapper::CPU_read(u32 addr, u32 old_val, u32 has_effect)
+u32 NES_bus::CPU_read(u32 addr, u32 old_val, u32 has_effect)
 {
     if (addr < 0x2000)
         return nes->bus.CPU_RAM.ptr[addr & 0x7FF];
@@ -165,7 +160,7 @@ u32 NES_mapper::CPU_read(u32 addr, u32 old_val, u32 has_effect)
         return nes->cpu.read_reg(addr, old_val, has_effect);
 
     u32 do_read = 1;
-    u32 nv = nes->bus.readcart(&nes->bus, addr, old_val, has_effect, &do_read);
+    u32 nv = mapper->readcart(addr, old_val, has_effect, do_read);
     if (!do_read) {
         return nv;
     }
@@ -174,7 +169,7 @@ u32 NES_mapper::CPU_read(u32 addr, u32 old_val, u32 has_effect)
     return v;
 }
 
-void NES_mapper::CPU_write(u32 addr, u32 val)
+void NES_bus::CPU_write(u32 addr, u32 val)
 {
     if (addr < 0x2000) {
         nes->bus.CPU_RAM.ptr[addr & 0x7FF] = val;
@@ -182,7 +177,7 @@ void NES_mapper::CPU_write(u32 addr, u32 val)
     }
 
     u32 do_write = 1;
-    nes->bus.writecart(&nes->bus, addr, val, &do_write); // Thanks to MMC4 this has to go here
+    mapper->writecart(addr, val, do_write); // Thanks to MMC4 this has to go here
 
     if (addr < 0x4000)
         return nes->ppu.write_regs(addr, val);
@@ -197,41 +192,40 @@ void NES_mapper::CPU_write(u32 addr, u32 val)
     CPU_map[addr >> 13].write(addr, val);
 }
 
-u32 NES_mapper::PPU_read_effect(u32 addr)
+u32 NES_bus::PPU_read_effect(u32 addr)
 {
     addr &= 0x3FFF;
-    if (PPU_read_override) return PPU_read_override(&nes->bus, addr, 1);
+    if (mapper->overrides_PPU) return mapper->PPU_read_override(addr, 1);
     if (addr > 0x2000) addr = (addr & 0xFFF) | 0x2000;
-    if (a12_watch) a12_watch(&nes->bus, addr);
+    mapper->a12_watch(addr);
     return PPU_map[addr >> 10].read(addr, 0);
 }
 
-u32 NES_mapper::PPU_read_noeffect(u32 addr)
+u32 NES_bus::PPU_read_noeffect(u32 addr)
 {
     addr &= 0x3FFF;
-    if (PPU_read_override) return PPU_read_override(&nes->bus, addr, 0);
+    if (mapper->overrides_PPU) return mapper->PPU_read_override(addr, 0);
     if (addr > 0x2000) addr = (addr & 0xFFF) | 0x2000;
     return PPU_map[addr >> 10].read(addr, 0);
 }
 
-void NES_mapper::PPU_write(u32 addr, u32 val)
+void NES_bus::PPU_write(u32 addr, u32 val)
 {
     addr &= 0x3FFF;
-    if (PPU_write_override) return PPU_write_override(&nes->bus, addr, val);
+    if (mapper->overrides_PPU) return mapper->PPU_write_override(addr, val);
     if (addr > 0x2000) addr = (addr & 0xFFF) | 0x2000;
     PPU_map[addr >> 10].write(addr, val);
 }
 
-void NES_mapper::do_reset()
+void NES_bus::do_reset()
 {
     if (fake_PRG_RAM.ptr == nullptr)
         fake_PRG_RAM.ptr = static_cast<u8 *>(SRAM->data);
-    if (reset) reset(this);
+    mapper->reset();
 }
 
-void NES_mapper::set_cart(physical_io_device &pio)
+void NES_bus::set_cart(physical_io_device &pio)
 {
-    assert(setcart);
     //NES_mapper *mp = &nes->bus;
     //printf("\nPRG ROM: %d bytes/%lld", nes->cart.header.prg_rom_size, nes->cart.PRG_ROM.size);
     PRG_ROM.copy_from_buf(nes->cart.PRG_ROM);
@@ -269,50 +263,44 @@ void NES_mapper::set_cart(physical_io_device &pio)
     SRAM->dirty = 1;
     SRAM->ready_to_use = 0;
 
-    setcart(&nes->bus, &nes->cart);
+    mapper->setcart(nes->cart);
 }
 
-void NES_mapper::do_a12_watch(u32 addr)
+
+void NES_bus::map_PRG32K(u32 range_start, u32 range_end, simplebuf8 *buf, u32 bank, u32 is_readonly)
 {
-    if (a12_watch) a12_watch(&nes->bus, addr);
+    NES_memmap_map(CPU_map, 13, range_start, range_end, buf, bank << 15, is_readonly, nes->dbg.interface, 0, SRAM);
 }
 
-
-void NES_bus_map_PRG32K(NES_mapper *bus, u32 range_start, u32 range_end, simplebuf8 *buf, u32 bank, u32 is_readonly)
+void NES_bus::map_PRG16K(u32 range_start, u32 range_end, simplebuf8 *buf, u32 bank, u32 is_readonly)
 {
-    NES_memmap_map(bus->CPU_map, 13, range_start, range_end, buf, bank << 15, is_readonly, bus->nes->dbg.interface, 0, bus->SRAM);
+    NES_memmap_map(CPU_map, 13, range_start, range_end, buf, bank << 14, is_readonly, nes->dbg.interface, 0, SRAM);
 }
 
-void NES_bus_map_PRG16K(NES_mapper *bus, u32 range_start, u32 range_end, simplebuf8 *buf, u32 bank, u32 is_readonly)
+void NES_bus::map_PRG8K(u32 range_start, u32 range_end, simplebuf8 *buf, u32 bank, u32 is_readonly)
 {
-    NES_memmap_map(bus->CPU_map, 13, range_start, range_end, buf, bank << 14, is_readonly, bus->nes->dbg.interface, 0, bus->SRAM);
+    NES_memmap_map(CPU_map, 13, range_start, range_end, buf, bank << 13, is_readonly, nes->dbg.interface, 0, SRAM);
 }
 
-void NES_bus_map_PRG8K(NES_mapper *bus, u32 range_start, u32 range_end, simplebuf8 *buf, u32 bank, u32 is_readonly)
+void NES_bus::map_CHR1K(u32 range_start, u32 range_end, simplebuf8 *buf, u32 bank, u32 is_readonly)
 {
-    NES_memmap_map(bus->CPU_map, 13, range_start, range_end, buf, bank << 13, is_readonly, bus->nes->dbg.interface, 0, bus->SRAM);
+    NES_memmap_map(PPU_map, 10, range_start, range_end, buf, bank << 10, is_readonly, nullptr, 1, SRAM);
 }
 
-void NES_bus_map_CHR1K(NES_mapper *bus, u32 range_start, u32 range_end, simplebuf8 *buf, u32 bank, u32 is_readonly)
+void NES_bus::map_CHR2K(u32 range_start, u32 range_end, simplebuf8 *buf, u32 bank, u32 is_readonly)
 {
-    NES_memmap_map(bus->PPU_map, 10, range_start, range_end, buf, bank << 10, is_readonly, nullptr, 1, bus->SRAM);
+    NES_memmap_map(PPU_map, 10, range_start, range_end, buf, bank << 11, is_readonly, nullptr, 1, SRAM);
 }
 
-void NES_bus_map_CHR2K(NES_mapper *bus, u32 range_start, u32 range_end, simplebuf8 *buf, u32 bank, u32 is_readonly)
+void NES_bus::map_CHR4K(u32 range_start, u32 range_end, simplebuf8 *buf, u32 bank, u32 is_readonly)
 {
-    NES_memmap_map(bus->PPU_map, 10, range_start, range_end, buf, bank << 11, is_readonly, nullptr, 1, bus->SRAM);
+    NES_memmap_map(PPU_map, 10, range_start, range_end, buf, bank << 12, is_readonly, nullptr, 1, SRAM);
 }
 
-void NES_bus_map_CHR4K(NES_mapper *bus, u32 range_start, u32 range_end, simplebuf8 *buf, u32 bank, u32 is_readonly)
+void NES_bus::map_CHR8K(u32 range_start, u32 range_end, simplebuf8 *buf, u32 bank, u32 is_readonly)
 {
-    NES_memmap_map(bus->PPU_map, 10, range_start, range_end, buf, bank << 12, is_readonly, nullptr, 1, bus->SRAM);
+    NES_memmap_map(PPU_map, 10, range_start, range_end, buf, bank << 13, is_readonly, nullptr, 1, SRAM);
 }
-
-void NES_bus_map_CHR8K(NES_mapper *bus, u32 range_start, u32 range_end, simplebuf8 *buf, u32 bank, u32 is_readonly)
-{
-    NES_memmap_map(bus->PPU_map, 10, range_start, range_end, buf, bank << 13, is_readonly, nullptr, 1, bus->SRAM);
-}
-
 
 static u32 NES_mirror_ppu_four(u32 addr) {
     return addr & 0xFFF;
@@ -330,35 +318,35 @@ static u32 NES_mirror_ppu_Aonly(u32 addr) {
     return addr & 0x3FF;
 }
 
-static u32  NES_mirror_ppu_Bonly(u32 addr) {
+static u32 NES_mirror_ppu_Bonly(u32 addr) {
     return 0x400 | (addr & 0x3FF);
 }
 
 
-void NES_bus_PPU_mirror_set(NES_mapper *bus)
+void NES_bus::PPU_mirror_set()
 {
-    switch(bus->ppu_mirror_mode) {
+    switch(ppu_mirror_mode) {
         case PPUM_Vertical:
-            bus->ppu_mirror = &NES_mirror_ppu_vertical;
+            ppu_mirror = &NES_mirror_ppu_vertical;
             break;
         case PPUM_Horizontal:
-            bus->ppu_mirror = &NES_mirror_ppu_horizontal;
+            ppu_mirror = &NES_mirror_ppu_horizontal;
             break;
         case PPUM_FourWay:
-            bus->ppu_mirror = &NES_mirror_ppu_four;
+            ppu_mirror = &NES_mirror_ppu_four;
             break;
         case PPUM_ScreenAOnly:
-            bus->ppu_mirror = &NES_mirror_ppu_Aonly;
+            ppu_mirror = &NES_mirror_ppu_Aonly;
             break;
         case PPUM_ScreenBOnly:
-            bus->ppu_mirror = &NES_mirror_ppu_Bonly;
+            ppu_mirror = &NES_mirror_ppu_Bonly;
             break;
         default:
             assert(1==0);
     }
     for (u32 addr = 0x2000; addr < 0x3FFF; addr += 0x400) {
-        struct NES_memmap *m = &bus->PPU_map[addr >> 10];
-        m->offset = bus->ppu_mirror(addr);
+        NES_memmap *m = &PPU_map[addr >> 10];
+        m->offset = ppu_mirror(addr);
         m->mask = 0x3FF;
         //printf("\nPPUmap %04x to offset %04x", addr, m->offset);
     }

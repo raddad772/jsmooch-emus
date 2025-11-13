@@ -14,14 +14,14 @@
 
 #define JSM jsm_system* jsm
 
-static void get_dissasembly(void *nesptr, debugger_interface *dbgr, disassembly_view *dview, disassembly_entry *entry)
+static void get_dissasembly(void *nesptr, disassembly_view &dview, disassembly_entry &entry)
 {
     NES* th = static_cast<NES *>(nesptr);
-    M6502_disassemble_entry(&th->cpu.cpu, *entry);
+    M6502_disassemble_entry(&th->cpu.cpu, entry);
 }
 
 
-static disassembly_vars get_disassembly_vars(void *nesptr, debugger_interface *dbgr, disassembly_view *dv)
+static disassembly_vars get_disassembly_vars(void *nesptr, disassembly_view &dv)
 {
     NES* th = static_cast<NES *>(nesptr);
     disassembly_vars dvar;
@@ -43,7 +43,7 @@ static int render_p(cpu_reg_context *ctx, void *outbuf, size_t outbuf_sz)
     );
 }
 
-static void fill_disassembly_view(void *nesptr, debugger_interface *dbgr, disassembly_view *dview)
+static void fill_disassembly_view(void *nesptr, disassembly_view &dview)
 {
     NES* th = static_cast<NES *>(nesptr);
 

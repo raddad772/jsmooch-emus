@@ -2,17 +2,18 @@
 // Created by Dave on 2/4/2024.
 //
 
-#ifndef JSMOOCH_EMUS_NES_H
-#define JSMOOCH_EMUS_NES_H
+#pragma once
+
+#include "helpers/audiobuf.h"
+#include "helpers/sys_interface.h"
 
 #include "component/audio/nes_apu/nes_apu.h"
 
 #include "nes_clock.h"
-#include "mappers/mapper.h"
 #include "nes_cart.h"
 #include "nes_cpu.h"
 #include "nes_ppu.h"
-#include "helpers/audiobuf.h"
+#include "nes_bus.h"
 
 jsm_system *NES_new();
 void NES_delete(jsm_system* system);
@@ -44,7 +45,7 @@ struct NES {
     u32 display_enabled=0;
     std::vector<physical_io_device> *IOs{};
 
-    NES_mapper bus;
+    NES_bus bus;
     NES_cart cart;
 
     struct {
@@ -114,5 +115,3 @@ public:
     NES nes{};
 };
 
-
-#endif //JSMOOCH_EMUS_NES_H

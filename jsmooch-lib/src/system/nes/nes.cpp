@@ -310,7 +310,7 @@ u32 NESJ::finish_scanline()
         nes.cpu.run_cycle();
         nes.apu.cycle();
         sample_audio();
-        nes.bus.CPU_cycle();
+        nes.bus.mapper->cpu_cycle();
         nes.clock.cpu_frame_cycle++;
         nes.clock.cpu_master_clock += cpu_step;
         i64 ppu_left = static_cast<i64>(nes.clock.master_clock) - static_cast<i64>(nes.clock.ppu_master_clock);
@@ -339,7 +339,7 @@ u32 NESJ::step_master(u32 howmany)
         nes.cpu.run_cycle();
         nes.apu.cycle();
         sample_audio();
-        nes.bus.CPU_cycle();
+        nes.bus.mapper->cpu_cycle();
         nes.clock.cpu_frame_cycle++;
         nes.clock.cpu_master_clock += cpu_step;
         i64 ppu_left = static_cast<i64>(nes.clock.master_clock) - static_cast<i64>(nes.clock.ppu_master_clock);

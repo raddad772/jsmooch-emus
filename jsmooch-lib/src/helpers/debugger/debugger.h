@@ -67,21 +67,6 @@ struct disassembly_entry_strings {
     char context[400]{};
 };
 
-struct disassembly_range {
-    disassembly_range() {
-        entries.reserve(20);
-    };
-    void mark_block_dirty();
-    int collides(u32 addr_start, u32 addr_end);
-    u32 valid{};
-    i64 addr_range_start{};
-    i64 addr_range_end{};
-    i64 addr_of_next_ins{}; // Address of next instruction we *would* disassemble
-    u32 index{};
-    std::vector<disassembly_entry> entries; // disassembly_entry
-    u32 num_entries_previously_made{};
-};
-
 enum cpu_reg_kinds {
     RK_bitflags,
     RK_bool,
@@ -149,20 +134,11 @@ struct memory_view {
 };
 
 struct disassembly_view {
-private:
-    cvec_ptr<disassembly_range> get_range();
-
-public:
     disassembly_view();
-    disassembly_range *create_diassembly_block(u32 range_start, u32 range_end);
-    void dirty_mem(u32 mem_bus, u32 addr_start, u32 addr_end);
-    void mark_range_invalid(disassembly_range &range, u32 index);
-    disassembly_range *find_next_range(u32 what_addr);
-    disassembly_range *find_range_including(u32 instruction_addr);    u32 mem_start{};
     int get_rows(u32 instruction_addr, u32 bytes_before, u32 total_lines, std::vector<disassembly_entry_strings> &out_lines);
+    void dirty_mem(u32 mem_bus, u32 addr_start, u32 addr_end);
 
     u32 mem_end{};
-    std::vector<disassembly_range> ranges{}; // 100
     std::vector<u32> dirty_range_indices{}; // 100 indices of dirty ranges we can re-use
     struct {
         std::vector<cpu_reg_context> regs{}; // 32 cpu_reg_context
@@ -174,12 +150,12 @@ public:
 
     struct { // get_disassembly_vars gets variables for disassembly such as address of currently-executing instructions
         void *ptr{};
-        disassembly_vars (*func)(void *, debugger_interface *, disassembly_view *){};
+        disassembly_vars (*func)(void *, disassembly_view &){};
     } get_disassembly_vars{};
 
     struct { // fill_view fills out variables and stuff
         void *ptr{};
-        void (*func)(void *, debugger_interface *dbgr, disassembly_view *dview){};
+        void (*func)(void *, disassembly_view &){};
     } fill_view{};
 
     struct {
@@ -187,9 +163,14 @@ public:
         int (*func)(void *, u32 addr, char *out, size_t out_sz){};
     } print_addr{};
 
+    struct {
+        void *ptr{};
+        void (*func)(void *, u32 addr, u32 lines_before, u32 total_lines, std::vector<disassembly_entry_strings> &out_lines){};
+    } adv_get_rows{};
+
     struct { // get_disaassembly gets disasssembly
         void *ptr{};
-        void (*func)(void *, debugger_interface *dbgr, disassembly_view *dview, disassembly_entry *entry){};
+        void (*func)(void *, disassembly_view &dview, disassembly_entry &entry){};
     } get_disassembly{};
 };
 

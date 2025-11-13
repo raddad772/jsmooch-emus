@@ -2,85 +2,55 @@
 // Created by . on 9/27/24.
 //
 
-#include <stdlib.h>
-#include <stdio.h>
-#include <assert.h>
-
 #include "helpers/debugger/debugger.h"
 #include "system/nes/nes.h"
 
 #include "mapper.h"
 #include "nrom.h"
 
-#define THISM NROM *mp = static_cast<NROM *>(bus->ptr)
-
-struct NROM {
-     NES *nes;
-    // Literally no state is needed for this actually...
-};
-
 #define READONLY 1
 #define READWRITE 0
 
-static void remap(NES_mapper *bus)
+void NROM::remap()
 {
-    NES_bus_map_PRG32K(bus, 0x8000, 0xFFFF, &bus->PRG_ROM, 0, READONLY);
-    NES_bus_map_CHR1K(bus, 0x0000, 0x1FFF, &bus->CHR_ROM, 0, READONLY);
-    NES_bus_PPU_mirror_set(bus);
+    bus->map_PRG32K( 0x8000, 0xFFFF, &bus->PRG_ROM, 0, READONLY);
+    bus->map_CHR1K(0x0000, 0x1FFF, &bus->CHR_ROM, 0, READONLY);
+    bus->PPU_mirror_set();
 }
 
-static void serialize(NES_mapper *bus, serialized_state &state)
-{
-
-}
-
-static void deserialize(NES_mapper *bus, serialized_state &state)
+void NROM::serialize(serialized_state &state)
 {
 
 }
 
-static void NROM_destruct(NES_mapper *bus)
+void NROM::deserialize(serialized_state &state)
 {
 
 }
 
-static void NROM_reset(NES_mapper *bus)
+void NROM::reset()
 {
     printf("\nNROM Resetting, so remapping bus...");
-    remap(bus);
+    remap();
 }
 
-static void NROM_writecart(NES_mapper *bus, u32 addr, u32 val, u32 *do_write)
+void NROM::writecart(u32 addr, u32 val, u32 &do_write)
 {
-    *do_write = 1;
+    do_write = 1;
 }
 
-static u32 NROM_readcart(NES_mapper *bus, u32 addr, u32 old_val, u32 has_effect, u32 *do_read)
+u32 NROM::readcart(u32 addr, u32 old_val, u32 has_effect, u32 &do_read)
 {
-    *do_read = 1;
+    do_read = 1;
     return old_val;
 }
 
-static void NROM_setcart(NES_mapper *bus, NES_cart *cart)
+void NROM::setcart(NES_cart &cart)
 {
-    bus->ppu_mirror_mode = cart->header.mirroring;
+    bus->ppu_mirror_mode = cart.header.mirroring;
 }
 
-void NROM_init(NES_mapper *bus, NES *nes)
+NROM::NROM(NES_bus *bus) : NES_mapper(bus)
 {
-    if (bus->ptr != nullptr) free(bus->ptr);
-    bus->ptr = malloc(sizeof(NROM));
-    THISM;
-
-    mp->nes = nes;
-
-    bus->destruct = &NROM_destruct;
-    bus->reset = &NROM_reset;
-    bus->writecart = &NROM_writecart;
-    bus->readcart = &NROM_readcart;
-    bus->setcart = &NROM_setcart;
-    bus->cpu_cycle = nullptr;
-    bus->a12_watch = nullptr;
-    bus->serialize = &serialize;
-    bus->deserialize = &deserialize;
+    this->overrides_PPU = false;
 }

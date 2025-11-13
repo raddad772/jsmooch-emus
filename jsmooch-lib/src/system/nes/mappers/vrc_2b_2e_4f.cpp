@@ -18,136 +18,102 @@ struct VRC24 {
     NES *nes;
     NES_mappers kind;
 
-    u32 is_vrc4;
-    u32 is_vrc2a;
-
-    struct {
-        u32 cycle_mode;
-        u32 enable;
-        u32 enable_after_ack;
-        u32 reload;
-        u32 prescaler;
-        u32 counter;
-    } irq;
-    struct {
-        u32 wram_enabled;
-        u32 latch60;
-        struct {
-            u32 banks_swapped;
-        } vrc4;
-        struct {
-            u32 banks[8];
-        } ppu;
-        struct {
-            u32 bank80;
-            u32 banka0;
-        } cpu;
-    } io;
 };
 
 #define READONLY 1
 #define READWRITE 0
 
-static void remap(NES_mapper *bus, u32 boot)
+void VRC2B_4E_4F::remap(bool boot)
 {
-    THISM;
+
     if (boot) {
         // VRC2 maps last c0 and e0 to last 2 banks
-        th->io.vrc4.banks_swapped = 0;
-        //NES_bus_map_PRG8K(bus, 0x6000, 0x7FFF, &bus->PRG_RAM, 0, READWRITE);
+        io.vrc4.banks_swapped = 0;
+        //bus->map_PRG8K( 0x6000, 0x7FFF, &bus->PRG_RAM, 0, READWRITE);
 
-        NES_bus_map_PRG8K(bus, 0xE000, 0xFFFF, &bus->PRG_ROM, bus->num_PRG_ROM_banks8K - 1, READONLY);
+        bus->map_PRG8K( 0xE000, 0xFFFF, &bus->PRG_ROM, bus->num_PRG_ROM_banks8K - 1, READONLY);
     }
 
-    NES_bus_map_PRG8K(bus, 0x6000, 0x7FFF, th->io.wram_enabled ? &bus->fake_PRG_RAM : nullptr, 0, READWRITE);
+    bus->map_PRG8K( 0x6000, 0x7FFF, io.wram_enabled ? &bus->fake_PRG_RAM : nullptr, 0, READWRITE);
 
-    if (th->is_vrc4 && th->io.vrc4.banks_swapped) {
-        NES_bus_map_PRG8K(bus, 0x8000, 0x9FFF, &bus->PRG_ROM, bus->num_PRG_ROM_banks8K - 2, READONLY);
-        NES_bus_map_PRG8K(bus, 0xA000, 0xBFFF, &bus->PRG_ROM, th->io.cpu.banka0, READONLY);
-        NES_bus_map_PRG8K(bus, 0xC000, 0xDFFF, &bus->PRG_ROM, th->io.cpu.bank80, READONLY);
+    if (is_vrc4 && io.vrc4.banks_swapped) {
+        bus->map_PRG8K( 0x8000, 0x9FFF, &bus->PRG_ROM, bus->num_PRG_ROM_banks8K - 2, READONLY);
+        bus->map_PRG8K( 0xA000, 0xBFFF, &bus->PRG_ROM, io.cpu.banka0, READONLY);
+        bus->map_PRG8K( 0xC000, 0xDFFF, &bus->PRG_ROM, io.cpu.bank80, READONLY);
     } else {
         // VRC2
-        NES_bus_map_PRG8K(bus, 0x8000, 0x9FFF, &bus->PRG_ROM, th->io.cpu.bank80, READONLY);
-        NES_bus_map_PRG8K(bus, 0xA000, 0xBFFF, &bus->PRG_ROM, th->io.cpu.banka0, READONLY);
-        NES_bus_map_PRG8K(bus, 0xC000, 0xDFFF, &bus->PRG_ROM, bus->num_PRG_ROM_banks8K - 2, READONLY);
+        bus->map_PRG8K( 0x8000, 0x9FFF, &bus->PRG_ROM, io.cpu.bank80, READONLY);
+        bus->map_PRG8K( 0xA000, 0xBFFF, &bus->PRG_ROM, io.cpu.banka0, READONLY);
+        bus->map_PRG8K( 0xC000, 0xDFFF, &bus->PRG_ROM, bus->num_PRG_ROM_banks8K - 2, READONLY);
     }
 
-    NES_bus_map_CHR1K(bus, 0x0000, 0x03FF, &bus->CHR_ROM, th->io.ppu.banks[0], READONLY);
-    NES_bus_map_CHR1K(bus, 0x0400, 0x07FF, &bus->CHR_ROM, th->io.ppu.banks[1], READONLY);
-    NES_bus_map_CHR1K(bus, 0x0800, 0x0BFF, &bus->CHR_ROM, th->io.ppu.banks[2], READONLY);
-    NES_bus_map_CHR1K(bus, 0x0C00, 0x0FFF, &bus->CHR_ROM, th->io.ppu.banks[3], READONLY);
-    NES_bus_map_CHR1K(bus, 0x1000, 0x13FF, &bus->CHR_ROM, th->io.ppu.banks[4], READONLY);
-    NES_bus_map_CHR1K(bus, 0x1400, 0x17FF, &bus->CHR_ROM, th->io.ppu.banks[5], READONLY);
-    NES_bus_map_CHR1K(bus, 0x1800, 0x1BFF, &bus->CHR_ROM, th->io.ppu.banks[6], READONLY);
-    NES_bus_map_CHR1K(bus, 0x1C00, 0x1FFF, &bus->CHR_ROM, th->io.ppu.banks[7], READONLY);
+    bus->map_CHR1K(0x0000, 0x03FF, &bus->CHR_ROM, io.ppu.banks[0], READONLY);
+    bus->map_CHR1K(0x0400, 0x07FF, &bus->CHR_ROM, io.ppu.banks[1], READONLY);
+    bus->map_CHR1K(0x0800, 0x0BFF, &bus->CHR_ROM, io.ppu.banks[2], READONLY);
+    bus->map_CHR1K(0x0C00, 0x0FFF, &bus->CHR_ROM, io.ppu.banks[3], READONLY);
+    bus->map_CHR1K(0x1000, 0x13FF, &bus->CHR_ROM, io.ppu.banks[4], READONLY);
+    bus->map_CHR1K(0x1400, 0x17FF, &bus->CHR_ROM, io.ppu.banks[5], READONLY);
+    bus->map_CHR1K(0x1800, 0x1BFF, &bus->CHR_ROM, io.ppu.banks[6], READONLY);
+    bus->map_CHR1K(0x1C00, 0x1FFF, &bus->CHR_ROM, io.ppu.banks[7], READONLY);
 }
 
-static void serialize(NES_mapper *bus, serialized_state &state)
+void VRC2B_4E_4F::serialize(serialized_state &state)
 {
-    THISM;
-#define S(x) Sadd(state, &th-> x, sizeof(th-> x))
+#define S(x) Sadd(state, & x, sizeof( x))
     S(irq);
     S(io);
 #undef S
 }
 
-static void deserialize(NES_mapper *bus, serialized_state &state)
+void VRC2B_4E_4F::deserialize(serialized_state &state)
 {
-    THISM;
-#define L(x) Sload(state, &th-> x, sizeof(th-> x))
+#define L(x) Sload(state, & x, sizeof( x))
     L(irq);
     L(io);
 #undef L
-    remap(bus, 0);
+    remap(false);
 }
 
-static void set_ppu_lo(NES_mapper *bus, u32 bank, u32 val)
+void VRC2B_4E_4F::set_ppu_lo(u32 bank, u32 val)
 {
-    THISM;
-    u32 b = th->io.ppu.banks[bank];
-    if (th->is_vrc2a) b <<= 1;
+
+    u32 b = io.ppu.banks[bank];
+    if (is_vrc2a) b <<= 1;
 
     b = (b & 0x1F0) | (val & 0x0F);
 
-    if (th->is_vrc2a) b >>= 1;
-    th->io.ppu.banks[bank] = b;
+    if (is_vrc2a) b >>= 1;
+    io.ppu.banks[bank] = b;
     u32 range_start = bank << 10;
-    NES_bus_map_CHR1K(bus, range_start, range_start + 0x3FF, &bus->CHR_ROM, b, READONLY);
+    bus->map_CHR1K(range_start, range_start + 0x3FF, &bus->CHR_ROM, b, READONLY);
 }
 
-void set_ppu_hi(NES_mapper* bus, u32 bank, u32 val)
+void VRC2B_4E_4F::set_ppu_hi(u32 bank, u32 val)
 {
-    THISM;
-    u32 b = th->io.ppu.banks[bank];
-    if (th->is_vrc2a) b <<= 1;
-    if (th->is_vrc4) val = (val & 0x1F) << 4;
+
+    u32 b = io.ppu.banks[bank];
+    if (is_vrc2a) b <<= 1;
+    if (is_vrc4) val = (val & 0x1F) << 4;
     else val = (val & 0x0F) << 4;
     b = (b & 0x0F) | val;
-    if (th->is_vrc2a) b >>= 1;
-    th->io.ppu.banks[bank] = b;
+    if (is_vrc2a) b >>= 1;
+    io.ppu.banks[bank] = b;
 
     u32 range_start = bank << 10;
-    NES_bus_map_CHR1K(bus, range_start, range_start + 0x3FF, &bus->CHR_ROM, b, READONLY);
+    bus->map_CHR1K(range_start, range_start + 0x3FF, &bus->CHR_ROM, b, READONLY);
 }
 
-
-
-static void VRC24_destruct(NES_mapper *bus)
+void VRC2B_4E_4F::reset()
 {
 
-}
-
-static void VRC24_reset(NES_mapper *bus)
-{
-    THISM;
     printf("\nVRC24 Resetting, so remapping bus...");
-    th->io.cpu.banka0 = 0;
-    th->io.cpu.bank80 = 0;
-    remap(bus, 1);
-    NES_bus_PPU_mirror_set(bus);
+    io.cpu.banka0 = 0;
+    io.cpu.bank80 = 0;
+    remap(true);
+    bus->PPU_mirror_set();
 }
 
-static u32 mess_up_addr(u32 addr) {
+static inline u32 mess_up_addr(u32 addr) {
     // Thanks Mesen! NESdev is not correct!
     u32 A0 = addr & 0x01;
     u32 A1 = (addr >> 1) & 0x01;
@@ -158,14 +124,12 @@ static u32 mess_up_addr(u32 addr) {
     return (addr & 0xFF00) | (A1 << 1) | A0;
 }
 
-
-static void VRC24_writecart(NES_mapper *bus, u32 addr, u32 val, u32 *do_write)
+void VRC2B_4E_4F::writecart(u32 addr, u32 val, u32 &do_write)
 {
-    THISM;
-    *do_write = 1;
+    do_write = 1;
     if ((addr >= 0x6000) && (addr < 0x8000)) {
-        if (!th->is_vrc4) {
-            th->io.latch60 = val & 1;
+        if (!is_vrc4) {
+            io.latch60 = val & 1;
         }
         return;
     }
@@ -180,14 +144,14 @@ static void VRC24_writecart(NES_mapper *bus, u32 addr, u32 val, u32 *do_write)
         case 0x8004:
         case 0x8005:
         case 0x8006: {
-            u32 old80 = th->io.cpu.bank80;
-            th->io.cpu.bank80 = val & 0x1F;
-            if (old80 != th->io.cpu.bank80) {
-                if (th->is_vrc4 && th->io.vrc4.banks_swapped) {
-                    NES_bus_map_PRG8K(bus, 0xC000, 0xDFFF, &bus->PRG_ROM, th->io.cpu.bank80, READONLY);
+            u32 old80 = io.cpu.bank80;
+            io.cpu.bank80 = val & 0x1F;
+            if (old80 != io.cpu.bank80) {
+                if (is_vrc4 && io.vrc4.banks_swapped) {
+                    bus->map_PRG8K( 0xC000, 0xDFFF, &bus->PRG_ROM, io.cpu.bank80, READONLY);
                 } else {
                     // VRC2
-                    NES_bus_map_PRG8K(bus, 0x8000, 0x9FFF, &bus->PRG_ROM, th->io.cpu.bank80, READONLY);
+                    bus->map_PRG8K( 0x8000, 0x9FFF, &bus->PRG_ROM, io.cpu.bank80, READONLY);
                 }
             }
             return; }
@@ -198,23 +162,23 @@ static void VRC24_writecart(NES_mapper *bus, u32 addr, u32 val, u32 *do_write)
         case 0x9004:
         case 0x9005:
         case 0x9006: {
-            if (th->is_vrc4 && (addr == 0x9002)) {
+            if (is_vrc4 && (addr == 0x9002)) {
                 // wram control
-                u32 oe = th->io.wram_enabled;
-                th->io.wram_enabled = (val & 1);
-                if (oe != th->io.wram_enabled) {
-                    NES_bus_map_PRG8K(bus, 0x6000, 0x7FFF, th->io.wram_enabled ? &bus->fake_PRG_RAM : nullptr, 0, READWRITE);
+                u32 oe = io.wram_enabled;
+                io.wram_enabled = (val & 1);
+                if (oe != io.wram_enabled) {
+                    bus->map_PRG8K( 0x6000, 0x7FFF, io.wram_enabled ? &bus->fake_PRG_RAM : nullptr, 0, READWRITE);
                 }
 
 
                 // swap mode
-                th->io.vrc4.banks_swapped = (val & 2) >> 1;
+                io.vrc4.banks_swapped = (val & 2) >> 1;
             }
-            if (th->is_vrc4 && (addr == 0x9003)) {
+            if (is_vrc4 && (addr == 0x9003)) {
                 return;
             }
 
-            if (th->is_vrc4) val &= 3;
+            if (is_vrc4) val &= 3;
             else val &= 1;
             // 0 vertical 1 horizontal 2 a 3 b
             u32 om = bus->ppu_mirror_mode;
@@ -225,7 +189,7 @@ static void VRC24_writecart(NES_mapper *bus, u32 addr, u32 val, u32 *do_write)
                 case 3: bus->ppu_mirror_mode = PPUM_ScreenBOnly; break;
                 default: break;
             }
-            if (om != bus->ppu_mirror_mode) NES_bus_PPU_mirror_set(bus);
+            if (om != bus->ppu_mirror_mode) bus->PPU_mirror_set();
             return; }
         case 0xA000:
         case 0xA001:
@@ -234,30 +198,30 @@ static void VRC24_writecart(NES_mapper *bus, u32 addr, u32 val, u32 *do_write)
         case 0xA004:
         case 0xA005:
         case 0xA006: {
-            u32 oldao = th->io.cpu.banka0;
-            th->io.cpu.banka0 = val & 0x1F;
-            if (oldao != th->io.cpu.banka0)
-                NES_bus_map_PRG8K(bus, 0xA000, 0xBFFF, &bus->PRG_ROM, th->io.cpu.banka0, READONLY);
+            u32 oldao = io.cpu.banka0;
+            io.cpu.banka0 = val & 0x1F;
+            if (oldao != io.cpu.banka0)
+                bus->map_PRG8K( 0xA000, 0xBFFF, &bus->PRG_ROM, io.cpu.banka0, READONLY);
             return; }
         case 0xF000: // IRQ latch low 4
-            if (!th->is_vrc4) return;
-            th->irq.reload = (th->irq.reload & 0xF0) | (val & 0x0F);
+            if (!is_vrc4) return;
+            irq.reload = (irq.reload & 0xF0) | (val & 0x0F);
             return;
         case 0xF001: // IRQ latch hi 4
-            if (!th->is_vrc4) return;
-            th->irq.reload = (th->irq.reload & 0x0F) | ((val & 0x0F) << 4);
+            if (!is_vrc4) return;
+            irq.reload = (irq.reload & 0x0F) | ((val & 0x0F) << 4);
             return;
         case 0xF002: // IRQ control
-            if (!th->is_vrc4) return;
-            th->irq.prescaler = 341;
-            if (val & 2) th->irq.counter = th->irq.reload;
-            th->irq.cycle_mode = (val & 4) >> 2;
-            th->irq.enable = (val & 2) >> 1;
-            th->irq.enable_after_ack = (val & 1);
+            if (!is_vrc4) return;
+            irq.prescaler = 341;
+            if (val & 2) irq.counter = irq.reload;
+            irq.cycle_mode = (val & 4) >> 2;
+            irq.enable = (val & 2) >> 1;
+            irq.enable_after_ack = (val & 1);
             return;
         case 0xF003: // IRQ ack
-            if (!th->is_vrc4) return;
-            th->irq.enable = th->irq.enable_after_ack;
+            if (!is_vrc4) return;
+            irq.enable = irq.enable_after_ack;
             bus->nes->cpu.notify_IRQ(0, 1);
             return;
         default: break;
@@ -268,83 +232,57 @@ static void VRC24_writecart(NES_mapper *bus, u32 addr, u32 val, u32 *do_write)
         u32 rn = ((((addr >> 12) & 0x07) - 3) << 1) + ((addr >> 1) & 0x01);
         if ((addr & 1) == 0) {
             //The other reg contains the low 4 bits
-            set_ppu_lo(bus, rn, val);
+            set_ppu_lo(rn, val);
         } else {
             //One reg contains the high 5 bits
-            set_ppu_hi(bus, rn, val);
+            set_ppu_hi(rn, val);
         }
     }
 }
 
-static u32 VRC24_readcart(NES_mapper *bus, u32 addr, u32 old_val, u32 has_effect, u32 *do_read)
+u32 VRC2B_4E_4F::readcart(u32 addr, u32 old_val, u32 has_effect, u32 &do_read)
 {
-    *do_read = 1;
+    do_read = 1;
     return old_val;
 }
 
-static void VRC24_setcart(NES_mapper *bus, NES_cart *cart)
+void VRC2B_4E_4F::setcart(NES_cart &cart)
 {
-    bus->ppu_mirror_mode = cart->header.mirroring;
-    THISM;
-    th->io.wram_enabled = bus->nes->cart.header.prg_ram_size > 0;
+    bus->ppu_mirror_mode = cart.header.mirroring;
+
+    io.wram_enabled = bus->nes->cart.header.prg_ram_size > 0;
 }
 
-static void VRC24_cpucycle(NES_mapper *bus)
+void VRC2B_4E_4F::cpu_cycle()
 {
-    THISM;
-    if (th->irq.enable) {
-        th->irq.prescaler -= 3;
-        if (th->irq.cycle_mode || ((th->irq.prescaler <= 0) && !th->irq.cycle_mode)) {
-            if (th->irq.counter == 0xFF) {
-                th->irq.counter = th->irq.reload;
+    if (is_vrc4 && irq.enable) {
+        irq.prescaler -= 3;
+        if (irq.cycle_mode || ((irq.prescaler <= 0) && !irq.cycle_mode)) {
+            if (irq.counter == 0xFF) {
+                irq.counter = irq.reload;
                 bus->nes->cpu.notify_IRQ(1, 1);
             } else {
-                th->irq.counter++;
+                irq.counter++;
             }
-            th->irq.prescaler += 341;
+            irq.prescaler += 341;
         }
     }
 }
 
-void VRC2B_4E_4F_init(NES_mapper *bus, NES *nes, enum NES_mappers kind)
+VRC2B_4E_4F::VRC2B_4E_4F(NES_bus *bus, NES_mappers in_kind) : NES_mapper(bus), kind(in_kind)
 {
-    if (bus->ptr != nullptr) free(bus->ptr);
-    bus->ptr = malloc(sizeof(VRC24));
-    THISM;
-
-    th->nes = nes;
-    th->kind = kind;
-
-    bus->cpu_cycle = nullptr;
+    this->overrides_PPU = false;
 
     switch(kind) {
         case NESM_VRC4E_4F:
-            th->is_vrc2a = false;
-            th->is_vrc4 = true;
-            bus->cpu_cycle = &VRC24_cpucycle;
+            is_vrc2a = false;
+            is_vrc4 = true;
             break;
         default:
             assert(1==2);
     }
 
     for (u32 i = 0; i < 8; i++) {
-        th->io.ppu.banks[i] = i;
+        io.ppu.banks[i] = i;
     }
-    th->irq.cycle_mode = 0;
-    th->irq.enable = 0;
-    th->irq.enable_after_ack = 0;
-    th->irq.reload = 0;
-    th->irq.prescaler = 341;
-    th->irq.counter = 0;
-    th->io.vrc4.banks_swapped = 0;
-    th->io.wram_enabled = 0;
-
-    bus->destruct = &VRC24_destruct;
-    bus->reset = &VRC24_reset;
-    bus->writecart = &VRC24_writecart;
-    bus->readcart = &VRC24_readcart;
-    bus->setcart = &VRC24_setcart;
-    bus->a12_watch = nullptr;
-    bus->serialize = &serialize;
-    bus->deserialize = &deserialize;
 }

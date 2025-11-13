@@ -63,7 +63,7 @@ void NES_PPU::reset()
 
 void NES_PPU::write_cgram(u32 addr, u32 val)
 {
-    nes->bus.do_a12_watch(addr | 0x3F00);
+    nes->bus.mapper->a12_watch(addr | 0x3F00);
     if((addr & 0x13) == 0x10) addr &= 0xEF;
     CGRAM[addr & 0x1F] = val & 0x3F;
 }
@@ -135,7 +135,7 @@ void NES_PPU::write_regs(u32 addr, u32 val)
 
                 //effect_buffer_set(&w2006_buffer, (nes->clock.ppu_master_clock / nes->clock.timing.ppu_divisor)+(3*nes->clock.timing.ppu_divisor), (i32)io.t);
                 io.v = io.t;
-                nes->bus.do_a12_watch(io.v);
+                nes->bus.mapper->a12_watch(io.v);
                 io.w = 0;
             }
             return;
@@ -323,7 +323,7 @@ void NES_PPU::oam_evaluate_slow() {
             case 1: // Read tile number 258, and do garbage NT access
                 sprite_pattern_shifters[secondary_OAM_sprite_index] = secondary_OAM[secondary_OAM_index];
                 secondary_OAM_index++;
-                nes->bus.do_a12_watch(io.v);
+                nes->bus.mapper->a12_watch(io.v);
                 //printf("\nGARBAGE 1! %04x", io.v);
                 break;
             case 2: // Read attributes 259
@@ -333,7 +333,7 @@ void NES_PPU::oam_evaluate_slow() {
             case 3: // Read X-coordinate 260 and do garbage NT access
                 sprite_x_counters[secondary_OAM_sprite_index] = secondary_OAM[secondary_OAM_index];
                 secondary_OAM_index++;
-                nes->bus.do_a12_watch(io.v);
+                nes->bus.mapper->a12_watch(io.v);
                 break;
             case 4: // Fetch tiles for the shifters 261
                 break;
@@ -359,7 +359,7 @@ void NES_PPU::oam_evaluate_slow() {
             case 6: // 263
                 break;
             case 7:
-                nes->bus.do_a12_watch(last_sprite_addr);
+                nes->bus.mapper->a12_watch(last_sprite_addr);
                 secondary_OAM_sprite_index++;
                 break;
             default:

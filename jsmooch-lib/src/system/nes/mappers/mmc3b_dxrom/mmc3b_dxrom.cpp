@@ -1,10 +1,10 @@
 //
 // Created by . on 9/27/24.
 //
-#include <string.h>
-#include <stdlib.h>
-#include <stdio.h>
-#include <assert.h>
+#include <cstring>
+#include <cstdlib>
+#include <cstdio>
+#include <cassert>
 
 #include "../../nes.h"
 #include "a12_watcher.h"
@@ -13,98 +13,64 @@
 
 #include "helpers/debugger/debugger.h"
 
-#define THISM MMC3b *mp = static_cast<MMC3b *>(bus->ptr)
-
-struct MMC3b {
-    NES *nes;
-
-    explicit MMC3b(NES *innes) : nes(innes), a12_watcher(&nes->clock) {};
-
-    NES_a12_watcher a12_watcher;
-
-    NES_mappers kind = NESM_MMC3b;
-
-    u32 has_IRQ{};
-    u32 has_mirroring_control{};
-    u32 fourway{};
-    struct {
-        u32 rC000{};
-        u32 bank_select{};
-        u32 bank[8]{};
-    } regs{};
-
-    struct {
-        u32 ROM_bank_mode{};
-        u32 CHR_mode{};
-        u32 PRG_mode{};
-    } status{};
-
-    struct {
-        u32 enable{}, reload{};
-        i32 counter{};
-    } irq{};
-};
-
 #define READONLY 1
 #define READWRITE 0
 
-static void remap(NES_mapper *bus, u32 is_boot)
+void MMC3b_DXROM::remap(bool is_boot)
 {
-    THISM;
-
     if (is_boot) {
         // PRG RAM
-        NES_bus_map_PRG8K(bus, 0x6000, 0x7FFF, &bus->fake_PRG_RAM, 0, READWRITE);
+        bus->map_PRG8K( 0x6000, 0x7FFF, &bus->fake_PRG_RAM, 0, READWRITE);
 
-        NES_bus_map_PRG8K(bus, 0xE000, 0xFFFF, &bus->PRG_ROM, bus->num_PRG_ROM_banks8K - 1, READONLY);
+        bus->map_PRG8K( 0xE000, 0xFFFF, &bus->PRG_ROM, bus->num_PRG_ROM_banks8K - 1, READONLY);
 
         // Map CHR ROM to basics
-        NES_bus_map_CHR1K(bus, 0x0000, 0x1FFF, &bus->CHR_ROM, 0, READONLY);
+        bus->map_CHR1K(0x0000, 0x1FFF, &bus->CHR_ROM, 0, READONLY);
     }
 
-    if (mp->status.PRG_mode == 0) {
+    if (status.PRG_mode == 0) {
         // 0 = 8000-9FFF swappable,
         //     C000-DFFF fixed to second-last bank
         // 1 = 8000-9FFF fixed to second-last bank
         //     C000-DFFF swappable
-        NES_bus_map_PRG8K(bus, 0x8000, 0x9FFF, &bus->PRG_ROM, mp->regs.bank[6], READONLY);
-        NES_bus_map_PRG8K(bus, 0xC000, 0xDFFF, &bus->PRG_ROM, bus->num_PRG_ROM_banks8K - 2, READONLY);
+        bus->map_PRG8K( 0x8000, 0x9FFF, &bus->PRG_ROM, regs.bank[6], READONLY);
+        bus->map_PRG8K( 0xC000, 0xDFFF, &bus->PRG_ROM, bus->num_PRG_ROM_banks8K - 2, READONLY);
     }
     else {
-        NES_bus_map_PRG8K(bus, 0x8000, 0x9FFF, &bus->PRG_ROM, bus->num_PRG_ROM_banks8K - 2, READONLY);
-        NES_bus_map_PRG8K(bus, 0xC000, 0xDFFF, &bus->PRG_ROM, mp->regs.bank[6], READONLY);
+        bus->map_PRG8K( 0x8000, 0x9FFF, &bus->PRG_ROM, bus->num_PRG_ROM_banks8K - 2, READONLY);
+        bus->map_PRG8K( 0xC000, 0xDFFF, &bus->PRG_ROM, regs.bank[6], READONLY);
     }
 
-    NES_bus_map_PRG8K(bus, 0xA000, 0xBFFF, &bus->PRG_ROM, mp->regs.bank[7], READONLY);
+    bus->map_PRG8K( 0xA000, 0xBFFF, &bus->PRG_ROM, regs.bank[7], READONLY);
 
-    if (mp->status.CHR_mode == 0) {
-        NES_bus_map_CHR1K(bus, 0x0000, 0x07FF, &bus->CHR_ROM, mp->regs.bank[0] & 0xFE, READONLY);
-        NES_bus_map_CHR1K(bus, 0x0800, 0x0FFF, &bus->CHR_ROM, mp->regs.bank[1] & 0xFE, READONLY);
-        NES_bus_map_CHR1K(bus, 0x1000, 0x13FF, &bus->CHR_ROM, mp->regs.bank[2], READONLY);
-        NES_bus_map_CHR1K(bus, 0x1400, 0x17FF, &bus->CHR_ROM, mp->regs.bank[3], READONLY);
-        NES_bus_map_CHR1K(bus, 0x1800, 0x1BFF, &bus->CHR_ROM, mp->regs.bank[4], READONLY);
-        NES_bus_map_CHR1K(bus, 0x1C00, 0x1FFF, &bus->CHR_ROM, mp->regs.bank[5], READONLY);
+    if (status.CHR_mode == 0) {
+        bus->map_CHR1K(0x0000, 0x07FF, &bus->CHR_ROM, regs.bank[0] & 0xFE, READONLY);
+        bus->map_CHR1K(0x0800, 0x0FFF, &bus->CHR_ROM, regs.bank[1] & 0xFE, READONLY);
+        bus->map_CHR1K(0x1000, 0x13FF, &bus->CHR_ROM, regs.bank[2], READONLY);
+        bus->map_CHR1K(0x1400, 0x17FF, &bus->CHR_ROM, regs.bank[3], READONLY);
+        bus->map_CHR1K(0x1800, 0x1BFF, &bus->CHR_ROM, regs.bank[4], READONLY);
+        bus->map_CHR1K(0x1C00, 0x1FFF, &bus->CHR_ROM, regs.bank[5], READONLY);
     }
     else {
-        NES_bus_map_CHR1K(bus, 0x0000, 0x03FF, &bus->CHR_ROM, mp->regs.bank[2], READONLY);
-        NES_bus_map_CHR1K(bus, 0x0400, 0x07FF, &bus->CHR_ROM, mp->regs.bank[3], READONLY);
-        NES_bus_map_CHR1K(bus, 0x0800, 0x0BFF, &bus->CHR_ROM, mp->regs.bank[4], READONLY);
-        NES_bus_map_CHR1K(bus, 0x0C00, 0x0FFF, &bus->CHR_ROM, mp->regs.bank[5], READONLY);
-        NES_bus_map_CHR1K(bus, 0x1000, 0x17FF, &bus->CHR_ROM, mp->regs.bank[0] & 0xFE, READONLY);
-        NES_bus_map_CHR1K(bus, 0x1800, 0x1FFF, &bus->CHR_ROM, mp->regs.bank[1] & 0xFE, READONLY);
+        bus->map_CHR1K(0x0000, 0x03FF, &bus->CHR_ROM, regs.bank[2], READONLY);
+        bus->map_CHR1K(0x0400, 0x07FF, &bus->CHR_ROM, regs.bank[3], READONLY);
+        bus->map_CHR1K(0x0800, 0x0BFF, &bus->CHR_ROM, regs.bank[4], READONLY);
+        bus->map_CHR1K(0x0C00, 0x0FFF, &bus->CHR_ROM, regs.bank[5], READONLY);
+        bus->map_CHR1K(0x1000, 0x17FF, &bus->CHR_ROM, regs.bank[0] & 0xFE, READONLY);
+        bus->map_CHR1K(0x1800, 0x1FFF, &bus->CHR_ROM, regs.bank[1] & 0xFE, READONLY);
     }
     debugger_interface_dirty_mem(bus->nes->dbg.interface, NESMEM_CPUBUS, 0x8000, 0xFFFF);
 }
 
-static void remap_PPU(NES_mapper *bus)
+void MMC3b_DXROM::remap_PPU()
 {
-    NES_bus_PPU_mirror_set(bus);
+    bus->PPU_mirror_set();
 }
 
-static void serialize(NES_mapper *bus, serialized_state &state)
+void MMC3b_DXROM::serialize(serialized_state &state)
 {
-     THISM;
-#define S(x) Sadd(state, &mp-> x, sizeof(mp-> x))
+
+#define S(x) Sadd(state, & x, sizeof( x))
      S(a12_watcher.last_cycle);
      S(a12_watcher.delay);
      S(a12_watcher.cycles_down);
@@ -117,10 +83,10 @@ static void serialize(NES_mapper *bus, serialized_state &state)
 #undef S
 }
 
-static void deserialize(NES_mapper *bus, serialized_state &state)
+void MMC3b_DXROM::deserialize(serialized_state &state)
 {
-    THISM;
-#define L(x) Sload(state, &mp-> x, sizeof(mp-> x))
+
+#define L(x) Sload(state, & x, sizeof( x))
     L(a12_watcher.last_cycle);
     L(a12_watcher.delay);
     L(a12_watcher.cycles_down);
@@ -131,138 +97,116 @@ static void deserialize(NES_mapper *bus, serialized_state &state)
     L(status);
     L(irq);
 #undef L
-    remap(bus, 0);
-    remap_PPU(bus);
+    remap(false);
+    remap_PPU();
 }
 
-static void MMC3b_destruct(NES_mapper *bus)
+void MMC3b_DXROM::reset()
 {
-
+    remap(true);
+    remap_PPU();
 }
 
-static void MMC3b_reset(NES_mapper *bus)
+void MMC3b_DXROM::writecart(u32 addr, u32 val, u32 &do_write)
 {
-    remap(bus, 1);
-    remap_PPU(bus);
-}
-
-static void MMC3b_writecart(NES_mapper *bus, u32 addr, u32 val, u32 *do_write)
-{
-    THISM;
-    *do_write = 1;
+    do_write = 1;
 
     switch(addr & 0xE001) {
         case 0x8000: // Bank select
-            mp->regs.bank_select = (val & 7);
-            mp->status.PRG_mode = (val & 0x40) >> 6;
-            mp->status.CHR_mode = (val & 0x80) >> 7;
+            regs.bank_select = (val & 7);
+            status.PRG_mode = (val & 0x40) >> 6;
+            status.CHR_mode = (val & 0x80) >> 7;
             break;
         case 0x8001: // Bank data
-            mp->regs.bank[mp->regs.bank_select] = val;
-            remap(bus, 0);
+            regs.bank[regs.bank_select] = val;
+            remap(false);
             break;
         case 0xA000:
-            if (mp->has_mirroring_control && !mp->fourway) {
+            if (has_mirroring_control && !fourway) {
                 bus->ppu_mirror_mode = val & 1 ? PPUM_Horizontal : PPUM_Vertical;
-                remap_PPU(bus);
+                remap_PPU();
             }
             break;
         case 0xA001:
             break;
         case 0xC000:
-            mp->regs.rC000 = val;
+            regs.rC000 = val;
             break;
         case 0xC001:
-            if (mp->has_IRQ) {
-                mp->irq.counter = 0;
-                mp->irq.reload = 1;
+            if (has_IRQ) {
+                irq.counter = 0;
+                irq.reload = 1;
             }
             break;
         case 0xE000:
-            if (mp->has_IRQ) {
-                mp->irq.enable = 0;
+            if (has_IRQ) {
+                irq.enable = 0;
                 bus->nes->cpu.notify_IRQ(0, 1);
             }
             break;
         case 0xE001:
-            if (mp->has_IRQ) {
-                mp->irq.enable = 1;
+            if (has_IRQ) {
+                irq.enable = 1;
             }
             break;
+        default:
     }
 }
 
-static u32 MMC3b_readcart(NES_mapper *bus, u32 addr, u32 old_val, u32 has_effect, u32 *do_read)
+u32 MMC3b_DXROM::readcart(u32 addr, u32 old_val, u32 has_effect, u32 &do_read)
 {
-    *do_read = 1;
+    do_read = 1;
     return old_val;
 }
 
-static void MMC3b_setcart(NES_mapper *bus, NES_cart *cart)
+void MMC3b_DXROM::setcart(NES_cart &cart)
 {
-    THISM;
-    bus->ppu_mirror_mode = cart->header.mirroring ^ 1;
-    if (cart->header.four_screen_mode) {
+
+    bus->ppu_mirror_mode = cart.header.mirroring ^ 1;
+    if (cart.header.four_screen_mode) {
         printf("\nFOUR SCREEN MODE!");
         bus->ppu_mirror_mode = PPUM_FourWay;
-        mp->fourway = 1;
+        fourway = 1;
     }
-    NES_bus_PPU_mirror_set(bus);
+    bus->PPU_mirror_set();
 }
 
-static void MMC3b_a12_watch(NES_mapper *bus, u32 addr)
+void MMC3b_DXROM::a12_watch(u32 addr)
 {
-    THISM;
-    if (!mp->has_IRQ) return;
-    if (mp->a12_watcher.update(addr) == A12_RISE) {
-        if ((mp->irq.counter == 0) || (mp->irq.reload)) {
-            mp->irq.counter = static_cast<i32>(mp->regs.rC000);
+
+    if (!has_IRQ) return;
+    if (a12_watcher.update(addr) == A12_RISE) {
+        if ((irq.counter == 0) || (irq.reload)) {
+            irq.counter = static_cast<i32>(regs.rC000);
         } else {
-            mp->irq.counter--;
-            if (mp->irq.counter < 0) mp->irq.counter = 0;
+            irq.counter--;
+            if (irq.counter < 0) irq.counter = 0;
         }
 
-        if ((mp->irq.counter == 0) && mp->irq.enable) {
+        if ((irq.counter == 0) && irq.enable) {
             bus->nes->cpu.notify_IRQ(1, 1);
         }
-        mp->irq.reload = 0;
+        irq.reload = 0;
     }
-
 }
 
-void MMC3b_init(NES_mapper *bus, NES *nes, enum NES_mappers kind)
+MMC3b_DXROM::MMC3b_DXROM(NES_bus *bus, NES_mappers in_kind) : NES_mapper(bus), kind(in_kind), a12_watcher(&bus->nes->clock)
 {
-    if (bus->ptr != nullptr) free(bus->ptr);
-    bus->ptr = malloc(sizeof(MMC3b));
-    MMC3b *mp = static_cast<MMC3b *>(bus->ptr);
-    new(mp) MMC3b(nes);
-
-    mp->nes = nes;
-
+    this->overrides_PPU = false;
     switch(kind) {
         case NESM_MMC3b:
-            mp->has_IRQ = 1;
-            mp->has_mirroring_control = 1;
+            has_IRQ = 1;
+            has_mirroring_control = 1;
             break;
         case NESM_DXROM:
-            mp->has_IRQ = 0;
-            mp->has_mirroring_control = 0;
+            has_IRQ = 0;
+            has_mirroring_control = 0;
             break;
         default:
             assert(1==2);
             break;
     }
 
-    bus->destruct = &MMC3b_destruct;
-    bus->reset = &MMC3b_reset;
-    bus->writecart = &MMC3b_writecart;
-    bus->readcart = &MMC3b_readcart;
-    bus->setcart = &MMC3b_setcart;
-    bus->cpu_cycle = nullptr;
-    bus->a12_watch = &MMC3b_a12_watch;
-    bus->serialize = &serialize;
-    bus->deserialize = &deserialize;
-
     // Map "something" to ROM here
-    NES_bus_map_PRG8K(bus, 0x8000, 0xFFFF, &bus->PRG_ROM, 0, READONLY);
+    bus->map_PRG8K( 0x8000, 0xFFFF, &bus->PRG_ROM, 0, READONLY);
 }

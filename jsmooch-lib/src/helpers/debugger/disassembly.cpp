@@ -23,73 +23,18 @@
 #define is_srange_dirty (addr_range_start == -1)
 #define DBG_DISASSEMBLE_MAX_BLOCK_SIZE 50
 
+/*
+ So, something requests disassembly
+*/
 
-void disassembly_view::mark_range_invalid(disassembly_range &range, u32 index)
-{
-    range.valid = 0;
+disassembly_view::disassembly_view() {
 
-    for (auto &entry : range.entries) {
-        entry.clear_for_reuse();
-    }
-    range.entries.clear();
-    range.addr_range_end = -1;
-    range.addr_range_start = -1;
-    range.addr_of_next_ins = -1;
-    dirty_range_indices.emplace_back(index);
 }
 
-
-int disassembly_range::collides(u32 addr_start, u32 addr_end)
-{
-    // So we want to check...
-    if (is_srange_dirty) return 0; // If it's dirty, it doesn't collide
-
-    // Whole of range is BEFORE check
-    // WHole of range is AFTER check
-    // If neither of those is true, it collides!
-
-    // #1                5, 10    before?    after?   intersect?
-    // compare...        1, 4     yes        no       no
-    //                   1, 7     no         no       yes
-    //                   4, 6     no         no       yes
-    //                   5, 6     no         no       yes
-    //                   4, 15    no         no       yes
-    //                  10, 12    no         no       yes
-    //                  11, 15    no         yes      no
-
-    u32 whole_of_range_before = ((addr_range_start < addr_start) && (addr_range_end < addr_start));
-    u32 whole_of_range_after = ((addr_range_start > addr_end) && (addr_range_end > addr_end));
-
-    return !((whole_of_range_before) || (whole_of_range_after));
-}
 
 void disassembly_view::dirty_mem(u32 mem_bus, u32 addr_start, u32 addr_end)
 {
-    for (size_t i = 0; i < ranges.size(); i++) {
-        auto &range = ranges[i];
-        if (!is_range_dirty(range) && range.collides(addr_start, addr_end)) {
-            mark_range_invalid(range, i);
-        }
-    }}
-
-disassembly_view::disassembly_view()
-{
-    ranges.reserve(100);
-    cpu.regs.reserve(32);
-    dirty_range_indices.reserve(100);
-}
-
-void disassembly_entry::clear_for_reuse()
-{
-    assert(dasm.ptr);
-    *dasm.ptr = 0;
-    dasm.cur = dasm.ptr;
-
-    *context.ptr = 0;
-    context.cur = context.ptr;
-
-    addr = -1;
-    ins_size_bytes = 0;
+    // Current version this does nothing!
 }
 
 static void w_entry_to_strs(disassembly_entry_strings *strs, disassembly_entry *entry, int col_size)
@@ -109,75 +54,37 @@ static void w_entry_to_strs(disassembly_entry_strings *strs, disassembly_entry *
     snprintf(strs->context, 400, "%s", entry->context.ptr);
 }
 
-void disassembly_range::mark_block_dirty()
-{
-    addr_range_start = addr_range_end = -1;
-    valid = 0;
-    entries.clear();
-}
-
-disassembly_range *disassembly_view::find_range_including(u32 instruction_addr)
-{
-    for (auto &r : ranges) {
-        if (!is_range_dirty(r) && (r.addr_range_start <= instruction_addr) &&
-            (r.addr_range_end >= instruction_addr)) {
-            for (auto &e : r.entries) {
-                if (e.addr == instruction_addr) return &r;
-            }
-            r.mark_block_dirty();
-            return nullptr;
-        }
-    }
-    return nullptr;
-}
-
-disassembly_range *disassembly_view::find_next_range(u32 what_addr) {
-    i64 lowest_addr = -1;
-    disassembly_range *lowest_r = nullptr;
-    // Only called if there is no CURRENT range
-    for (auto &r : ranges) {
-        if ((!is_range_dirty(r)) && (r.addr_range_start > what_addr)) {
-            if (r.addr_range_start < lowest_addr) {
-                lowest_addr = r.addr_range_start;
-                lowest_r = &r;
-            }
-        }
-    }
-    return lowest_r; // returns nullptr if none found
-}
-
-#define CVEC_FOREACH(iterval, cvec, struct_type, iterator) for (u32 iterval = 0; iterval < cvec_len(&cvec); iterval++) {\
-    struct_type * iterator = (struct_type *)cvec_get(&cvec, iterval)
-
-#define CVEC_FOREACH_END }
-
-cvec_ptr<disassembly_range> disassembly_view::get_range()
-{
-    // Get either a dirty range to re-use, or a new range
-    cvec_ptr<disassembly_range> a;
-    u32 *dp = nullptr;
-    if (dirty_range_indices.size() > 0)
-        dp = &dirty_range_indices.back();
-    if (dp) {
-        a.make(ranges, *dp);
-        disassembly_range &r = ranges.at(*dp);
-        assert(r.valid == 0);
-        r.valid = 1;
-    }
-    else {
-        a.make(ranges, ranges.size());
-    }
-    return a;
-}
-
-disassembly_range *disassembly_view::create_diassembly_block(u32 range_start, u32 range_end)
-{
-    return nullptr;
-}
 
 int disassembly_view::get_rows(u32 instruction_addr, u32 bytes_before, u32 total_lines, std::vector<disassembly_entry_strings> &out_lines) {
     for (auto &[addr, dasm, context] : out_lines) {
         addr[0] = dasm[0] = context[0] = 0;
+    }
+    assert(mem_end!=0);
+    if (!adv_get_rows.func) {
+        // Just do the disassembly pretty much, no fancy block basis now!
+        u32 num_rows = 0;
+        u32 cur_addr = instruction_addr;
+        u32 idx_in_rows = 0;
+        disassembly_entry e;
+        while (num_rows < total_lines) {
+            if (idx_in_rows >= out_lines.size()) {
+                out_lines.emplace_back();
+            }
+            auto &entrystr = out_lines.at(idx_in_rows);
+            idx_in_rows++;
+            num_rows++;
+            e.addr = cur_addr;
+            e.clear_for_reuse();
+            get_disassembly.func(get_disassembly.ptr, *this, e);
+            print_addr.func(print_addr.ptr, cur_addr, entrystr.addr, sizeof(entrystr.addr));
+            snprintf(entrystr.dasm, sizeof(entrystr.dasm), "%s", e.dasm.ptr);
+            if (has_context) snprintf(entrystr.context, sizeof(entrystr.context), "%s", e.context.ptr);
+            cur_addr += e.ins_size_bytes;
+            if (cur_addr > mem_end) cur_addr = 0;
+        }
+    }
+    else {
+        printf("\nIMPLEMENT ADVANCED DASM!");
     }
     return 0;
 }
@@ -213,4 +120,17 @@ void cpu_reg_context::render(char* outbuf, size_t outbuf_sz) {
         }
     }
 
+}
+
+void disassembly_entry::clear_for_reuse()
+{
+    assert(dasm.ptr);
+    *dasm.ptr = 0;
+    dasm.cur = dasm.ptr;
+
+    *context.ptr = 0;
+    context.cur = context.ptr;
+
+    addr = -1;
+    ins_size_bytes = 0;
 }

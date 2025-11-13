@@ -28,10 +28,8 @@ set(SOURCE_LIST
         "src/system/nes/nes_debugger.h"
         "src/system/nes/nes_serialize.cpp"
         "src/system/nes/nes_serialize.h"
-        "src/system/nes/mappers/mapper.cpp"
         "src/system/nes/mappers/mapper.h"
         "src/system/nes/mappers/mapper.h"
-        "src/system/nes/mappers/mapper.cpp"
         "src/system/nes/mappers/mapper.h"
         "src/system/nes/mappers/nrom.cpp"
         "src/system/nes/mappers/nrom.h"
@@ -110,6 +108,8 @@ set(SOURCE_LIST
 
         "src/helpers/cvec.cpp"
         "src/helpers/cvec.h"
+        src/system/nes/nes_bus.cpp
+        src/system/nes/nes_bus.h
 )
 
 # TODO: Fix elf-parser repo for windows

@@ -278,8 +278,6 @@ void M6502_disassemble(u32 *PC, jsm_debug_read_trace &trace, jsm_string &outstr)
 
 void M6502_disassemble_entry(M6502 *cpu, disassembly_entry &entry)
 {
-    entry.dasm.quickempty();
-    entry.context.quickempty();
     u32 PC = entry.addr;
     M6502_disassemble(&PC, cpu->trace.strct, entry.dasm);
     entry.ins_size_bytes = PC - entry.addr;

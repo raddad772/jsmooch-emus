@@ -121,7 +121,7 @@ void serialize_cart(NES &nes, serialized_state &state) {
         Sadd(state, nes.bus.SRAM->data, nes.bus.SRAM->actual_size);
     }
     Sadd(state, nes.bus.CHR_RAM.ptr, nes.bus.CHR_RAM.sz);
-    nes.bus.serialize(&nes.bus, state);
+    nes.bus.mapper->serialize(state);
 #undef S
 }
 
@@ -258,7 +258,7 @@ void deserialize_cart(NES &nes, serialized_state &state) {
         nes.bus.SRAM->dirty = 1;
     }
     Sload(state, nes.bus.CHR_RAM.ptr, nes.bus.CHR_RAM.sz);
-    nes.bus.deserialize(&nes.bus, state);
+    nes.bus.mapper->deserialize(state);
 #undef L
 }
 

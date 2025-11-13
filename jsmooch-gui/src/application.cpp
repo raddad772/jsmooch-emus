@@ -488,9 +488,7 @@ void imgui_jsmooch_app::render_disassembly_view(DVIEW &dview, bool update_dasm_s
             static const float TEXT_BASE_WIDTH = ImGui::CalcTextSize("A").x;
             static const float TEXT_BASE_HEIGHT = ImGui::GetTextLineHeightWithSpacing();
 
-            disassembly_vars dv = dasm->get_disassembly_vars.func(dasm->get_disassembly_vars.ptr,
-                                                                              &fsys.dbgr, dasm);
-            dasm_rows.clear();
+            disassembly_vars dv = dasm->get_disassembly_vars.func(dasm->get_disassembly_vars.ptr, *dasm);
             u32 cur_line_num = dasm->get_rows(dv.address_of_executing_instruction,
                                                          20,
                                                          100, dasm_rows);
@@ -535,7 +533,7 @@ void imgui_jsmooch_app::render_disassembly_view(DVIEW &dview, bool update_dasm_s
                     }
                 }
                 ImGui::EndTable();
-                dasm->fill_view.func(dasm->fill_view.ptr, &fsys.dbgr, dasm);
+                dasm->fill_view.func(dasm->fill_view.ptr, *dasm);
 
                 ImGui::SameLine();
                 outer_size = ImVec2(TEXT_BASE_WIDTH * 30, TEXT_BASE_HEIGHT * 20);
