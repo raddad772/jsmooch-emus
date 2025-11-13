@@ -74,6 +74,8 @@ set(SOURCE_LIST
         "src/helpers/sram.h"
         "src/helpers/img.cpp"
         "src/helpers/img.h"
+        "src/helpers/scheduler.cpp"
+        "src/helpers/scheduler.h"
         "src/helpers/file_exists.cpp"
         "src/helpers/file_exists.h"
         "src/helpers/simplebuf.cpp"
