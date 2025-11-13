@@ -14,6 +14,12 @@
 
 #define JSM jsm_system* jsm
 
+static int print_dasm_addr(void *nesptr, u32 addr, char *out, size_t out_sz) {
+    NES* th = static_cast<NES *>(nesptr);
+    snprintf(out, out_sz, "%04x", addr);
+    return 4;
+}
+
 static void get_dissasembly(void *nesptr, disassembly_view &dview, disassembly_entry &entry)
 {
     NES* th = static_cast<NES *>(nesptr);
@@ -118,6 +124,9 @@ static void setup_disassembly_view( NES& th, debugger_interface *dbgr)
     dv.mem_end = 0xFFFF;
     dv.fill_view.ptr = &th;
     dv.fill_view.func = &fill_disassembly_view;
+
+    dv.print_addr.ptr = &th;
+    dv.print_addr.func = &print_dasm_addr;
 
     dv.get_disassembly.ptr = &th;;
     dv.get_disassembly.func = &get_dissasembly;

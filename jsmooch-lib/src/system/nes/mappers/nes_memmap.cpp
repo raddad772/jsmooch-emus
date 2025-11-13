@@ -33,7 +33,6 @@ void NES_memmap_map(NES_memmap *mmap, u32 shift, u32 range_start, u32 range_end,
         m->is_SRAM = is_SRAM;
         m->SRAM = SRAM;
         m->mask = range_size - 1;
-        m->empty = 0;
 
         offset = (offset + range_size) % buf->sz;
     }
@@ -54,12 +53,12 @@ void NES_memmap_init_empty(NES_memmap *map, u32 addr_start, u32 addr_end, u32 sh
 
 u32 NES_memmap::read(u32 read_addr, u32 old_val)
 {
-    if (this->empty) {
+    if (empty) {
         printf("\nREAD EMPTY ADDR %04x", read_addr);
         return old_val;
     }
-    assert(this->buf);
-    assert(this->buf->ptr);
+    assert(buf);
+    assert(buf->ptr);
     //if (do_print) printf("\nADDR:%04x  mask:%04x   offset:%x  sz:%lld", addr, mask, offset, buf->sz);
     return buf->ptr[((read_addr & mask) + offset) % buf->sz];
 }

@@ -22,7 +22,7 @@
 
 static u32 read_trace(void *ptr, u32 addr)
 {
-    NES* nes= (NES*)ptr;
+    NES* nes= static_cast<NES *>(ptr);
     return nes->bus.CPU_read(addr, 0, 0);
 }
 
@@ -70,7 +70,7 @@ jsm_system *NES_new()
 
     jsm_debug_read_trace dt;
     dt.read_trace = &read_trace;
-    dt.ptr = static_cast<void *>(nes);
+    dt.ptr = static_cast<void *>(&nes->nes);
 
     nes->nes.cpu.cpu.setup_tracing(&dt, &nes->nes.clock.master_clock);
     snprintf(nes->label, sizeof(nes->label), "Nintendo Entertainment System");

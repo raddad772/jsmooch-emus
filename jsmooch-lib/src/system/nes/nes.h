@@ -41,7 +41,7 @@ struct NES {
     ~NES();
 
     u32 described_inputs=0;
-    u32 cycles_left=0;
+    i32 cycles_left=0;
     u32 display_enabled=0;
     std::vector<physical_io_device> *IOs{};
 

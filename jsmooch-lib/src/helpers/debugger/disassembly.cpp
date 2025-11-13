@@ -73,8 +73,8 @@ int disassembly_view::get_rows(u32 instruction_addr, u32 bytes_before, u32 total
             auto &entrystr = out_lines.at(idx_in_rows);
             idx_in_rows++;
             num_rows++;
-            e.addr = cur_addr;
             e.clear_for_reuse();
+            e.addr = cur_addr;
             get_disassembly.func(get_disassembly.ptr, *this, e);
             print_addr.func(print_addr.ptr, cur_addr, entrystr.addr, sizeof(entrystr.addr));
             snprintf(entrystr.dasm, sizeof(entrystr.dasm), "%s", e.dasm.ptr);
