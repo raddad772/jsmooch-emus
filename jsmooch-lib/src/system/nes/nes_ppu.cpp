@@ -32,6 +32,7 @@ void NES_PPU::update_nmi() const
 
 void NES_PPU::scanline_prerender() {
     // 261
+    printf("\nDO PRERENDER!");
     if (line_cycle == 1) {
         io.sprite0_hit = 0;
         io.sprite_overflow = 0;
@@ -161,6 +162,7 @@ u32 NES_PPU::read_regs(u32 addr, u32 val, u32 has_effect)
     switch(addr) {
         case 0x2002:
             output = (io.sprite_overflow << 5) | (io.sprite0_hit << 6) | (status.nmi_out << 7);
+            if (status.nmi_out) dbg_break("YAY!", 0);
             if (has_effect) {
                 status.nmi_out = 0;
                 update_nmi();
@@ -456,6 +458,7 @@ void NES_PPU::perform_bg_fetches() { // Only called from prerender and visible s
 
 void NES_PPU::scanline_visible()
 {
+printf("\nDO VISIBLE!");
     i32 sx = line_cycle-1;
     i32 sy = nes->clock.ppu_y;
     i32 bo = (sy * 256) + sx;
@@ -550,7 +553,9 @@ void NES_PPU::scanline_visible()
 void NES_PPU::scanline_postrender() {
     // 240, (also 241-260)
     // LITERALLY DO NOTHING
+    printf("\nDO POSTRENDER! %d/%d", nes->clock.ppu_y, nes->clock.timing.vblank_start);
     if ((nes->clock.ppu_y == nes->clock.timing.vblank_start) && (line_cycle == 1)) {
+        printf("\nPOSTY!");
         status.nmi_out = 1;
         update_nmi();
     }
@@ -572,10 +577,12 @@ void NES_PPU::new_frame() {
 }
 
 void NES_PPU::set_scanline(u32 to) {
+    printf("\n%d",nes->clock.timing.post_render_ppu_idle);
     if (to == 0) {
         render_cycle = &NES_PPU::scanline_visible;
     }
     else if (to == nes->clock.timing.post_render_ppu_idle) {
+        printf("\nSET POSTRENDER!");
         render_cycle = &NES_PPU::scanline_postrender;
     }
     else if (to == nes->clock.timing.ppu_pre_render) {
@@ -584,6 +591,7 @@ void NES_PPU::set_scanline(u32 to) {
 }
 
 void NES_PPU::new_scanline() {
+    printf("\nNEW SCANLINE @%lld", nes->clock.master_clock);
     display->scan_x = 0;
     display->scan_y++;
     if (nes->clock.ppu_y == nes->clock.timing.ppu_pre_render)
