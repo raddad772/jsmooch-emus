@@ -30,7 +30,7 @@ struct memory_view;
 #define DBG_MEMORY_VIEW cvec_ptr<memory_view> memory{};
 
 #define DBG_EVENT_VIEW struct { cvec_ptr<debugger_view> view; } events{};
-#define DBG_EVENT_VIEW_START struct { cvec_ptr view{}; u32
+#define DBG_EVENT_VIEW_START struct { cvec_ptr<debugger_view> view{}; u32
 #define DBG_EVENT_VIEW_END ;} events{};
 
 #define DBG_TRACE_VIEW struct trace_view *tvptr{};

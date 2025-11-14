@@ -20,184 +20,169 @@ to an IRQB input.
 
 extern WDC65816_ins_func wdc65816_decoded_opcodes[5][0x104];
 
-static void eval_WAI(WDC65816 *this)
+void WDC65816::eval_WAI()
 {
-    if (this->regs.interrupt_pending) this->regs.WAI = 0;
+    if (regs.interrupt_pending) regs.WAI = 0;
 }
 
-void WDC65816_set_IRQ_level(WDC65816 *this, u32 level)
+void WDC65816::set_IRQ_level(u32 level)
 {
-    this->regs.IRQ_pending = level;
+    regs.IRQ_pending = level;
     if (level)
-        this->regs.interrupt_pending = 1;
+        regs.interrupt_pending = 1;
     else
-        this->regs.interrupt_pending = this->regs.NMI_pending;
-    eval_WAI(this);
+        regs.interrupt_pending = regs.NMI_pending;
+    eval_WAI();
 }
 
-void WDC65816_set_NMI_level(WDC65816 *this, u32 level)
+void WDC65816::set_NMI_level(u32 level)
 {
-    if ((this->regs.NMI_old == 0) && level) { // 0->1
-        this->regs.NMI_pending = 1;
-        this->regs.interrupt_pending = 1;
+    if ((regs.NMI_old == 0) && level) { // 0->1
+        regs.NMI_pending = 1;
+        regs.interrupt_pending = 1;
     }
-    this->regs.NMI_old = level;
-    eval_WAI(this);
+    regs.NMI_old = level;
+    eval_WAI();
 }
 
-static WDC65816_ins_func get_decoded_opcode(WDC65816 *this)
+WDC65816_ins_func WDC65816::get_decoded_opcode()
 {
-    if (this->regs.E) {
-        return wdc65816_decoded_opcodes[4][this->regs.IR];
+    if (regs.E) {
+        return wdc65816_decoded_opcodes[4][regs.IR];
     }
-    u32 flag = (this->regs.P.M) | (this->regs.P.X << 1);
+    u32 flag = (regs.P.M) | (regs.P.X << 1);
 
-    WDC65816_ins_func ret = wdc65816_decoded_opcodes[flag][this->regs.IR];
-    if (ret == NULL) ret = wdc65816_decoded_opcodes[0][this->regs.IR];
+    WDC65816_ins_func ret = wdc65816_decoded_opcodes[flag][regs.IR];
+    if (ret == nullptr) ret = wdc65816_decoded_opcodes[0][regs.IR];
     return ret;
 }
 
-static void pprint_context(WDC65816 *this, jsm_string *out)
+void WDC65816::pprint_context(jsm_string *out)
 {
-    jsm_string_sprintf(out, "%c%c  A:%04x  D:%04x  X:%04x  Y:%04x  DBR:%02x  PBR:%02x  S:%04x, P:%c%c%c%c%c%c",
-        this->regs.P.M ? 'M' : 'm',
-        this->regs.P.X ? 'X' : 'x',
-        this->regs.C, this->regs.D,
-        this->regs.X, this->regs.Y,
-        this->regs.DBR, this->regs.PBR,
-        this->regs.S,
-        this->regs.P.C ? 'C' : 'c',
-        this->regs.P.Z ? 'Z' : 'z',
-        this->regs.P.I ? 'I' : 'i',
-        this->regs.P.D ? 'D' : 'd',
-        this->regs.P.V ? 'V' : 'v',
-        this->regs.P.N ? 'N' : 'n'
+    out->sprintf("%c%c  A:%04x  D:%04x  X:%04x  Y:%04x  DBR:%02x  PBR:%02x  S:%04x, P:%c%c%c%c%c%c",
+        regs.P.M ? 'M' : 'm',
+        regs.P.X ? 'X' : 'x',
+        regs.C, regs.D,
+        regs.X, regs.Y,
+        regs.DBR, regs.PBR,
+        regs.S,
+        regs.P.C ? 'C' : 'c',
+        regs.P.Z ? 'Z' : 'z',
+        regs.P.I ? 'I' : 'i',
+        regs.P.D ? 'D' : 'd',
+        regs.P.V ? 'V' : 'v',
+        regs.P.N ? 'N' : 'n'
         );
 }
 
-static void wdc_trace_format(WDC65816 *this)
+void WDC65816::trace_format()
 {
-    if (this->trace.dbglog.view && this->trace.dbglog.view->ids_enabled[this->trace.dbglog.id]) {
+    if (trace.dbglog.view && trace.dbglog.view->ids_enabled[trace.dbglog.id]) {
         // addr, regs, e, m, x, rt, out
-        jsm_string_quickempty(&this->trace.str);
-        jsm_string_quickempty(&this->trace.str2);
-        struct dbglog_view *dv = this->trace.dbglog.view;
+        trace.str.quickempty();
+        trace.str2.quickempty();
+        dbglog_view *dv = trace.dbglog.view;
         u64 tc;
-        if (!this->master_clock) tc = 0;
-        else tc = *this->master_clock;
+        if (!master_clock) tc = 0;
+        else tc = *master_clock;
 
 
-        if (this->regs.IR > 255) {
-            switch(this->regs.IR) {
+        if (regs.IR > 255) {
+            switch(regs.IR) {
                 case WDC65816_OP_RESET:
-                    jsm_string_sprintf(&this->trace.str, "RESET");
+                    trace.str.sprintf("RESET");
                     break;
                 case WDC65816_OP_IRQ:
-                    jsm_string_sprintf(&this->trace.str, "IRQ");
+                    trace.str.sprintf("IRQ");
                     break;
                 case WDC65816_OP_NMI:
-                    jsm_string_sprintf(&this->trace.str, "NMI");
+                    trace.str.sprintf("NMI");
                     break;
                 default:
-                    jsm_string_sprintf(&this->trace.str, "UKN %03x", this->regs.IR);
+                    trace.str.sprintf("UKN %03x", regs.IR);
                     break;
 
             }
-            dbglog_view_add_printf(dv, this->trace.dbglog.id, tc, DBGLS_TRACE, "%s", this->trace.str.ptr);
-            dbglog_view_extra_printf(dv, "%s", this->trace.str2.ptr);
+            dv->add_printf(trace.dbglog.id, tc, DBGLS_TRACE, "%s", trace.str.ptr);
+            dv->extra_printf("%s", trace.str2.ptr);
             return;
         }
-        struct WDC65816_ctxt ct;
-        WDC65816_disassemble(this->trace.ins_PC, &this->regs, this->regs.E, this->regs.P.M, this->regs.P.X, &this->trace.strct, &this->trace.str, &ct);
-        pprint_context(this, &this->trace.str2);
+        WDC65816_ctxt ct;
+        WDC65816_disassemble(trace.ins_PC, &regs, regs.E, regs.P.M, regs.P.X, &trace.strct, &trace.str, &ct);
+        pprint_context(&trace.str2);
 
-        dbglog_view_add_printf(dv, this->trace.dbglog.id, tc, DBGLS_TRACE, "%06x  %s", this->trace.ins_PC, this->trace.str.ptr);
-        dbglog_view_extra_printf(dv, "%s", this->trace.str2.ptr);
+        dv->add_printf(trace.dbglog.id, tc, DBGLS_TRACE, "%06x  %s", trace.ins_PC, trace.str.ptr);
+        dv->extra_printf("%s", trace.str2.ptr);
     }
 }
 
-static void irqdump(WDC65816 *this, u32 nmi)
+void WDC65816::irqdump(u32 nmi)
 {
-    printf("\nAT %s. PC:%06x  D:%04x  X:%04x  Y:%04x  S:%04x  E:%d  WAI:%d  cyc:%lld", nmi ? "NMI" : "IRQ", (this->regs.PBR << 16) | this->regs.PC, this->regs.D, this->regs.X, this->regs.Y, this->regs.S, this->regs.E, this->regs.WAI, *this->master_clock);
+    printf("\nAT %s. PC:%06x  D:%04x  X:%04x  Y:%04x  S:%04x  E:%d  WAI:%d  cyc:%lld", nmi ? "NMI" : "IRQ", (regs.PBR << 16) | regs.PC, regs.D, regs.X, regs.Y, regs.S, regs.E, regs.WAI, *master_clock);
 }
 
-void WDC65816_cycle(WDC65816* this)
+void WDC65816::cycle()
 {
-    this->int_clock++;
-    if (this->regs.STP) return;
+    int_clock++;
+    if (regs.STP) return;
 
-    this->regs.TCU++;
-    if (this->regs.TCU == 1) {
-        if (this->regs.NMI_pending || (this->regs.IRQ_pending && !this->regs.P.I)) {
-            if (this->regs.NMI_pending) {
-                this->regs.NMI_pending = 0;
-                this->regs.IR = WDC65816_OP_NMI;
-                DBG_EVENT(this->dbg.events.NMI);
-                this->regs.interrupt_pending = this->regs.IRQ_pending;
+    regs.TCU++;
+    if (regs.TCU == 1) {
+        if (regs.NMI_pending || (regs.IRQ_pending && !regs.P.I)) {
+            if (regs.NMI_pending) {
+                regs.NMI_pending = 0;
+                regs.IR = WDC65816_OP_NMI;
+                DBG_EVENT(dbg.events.NMI);
+                regs.interrupt_pending = regs.IRQ_pending;
             }
-            else if (this->regs.IRQ_pending) {
-                this->regs.IR = WDC65816_OP_IRQ;
-                DBG_EVENT(this->dbg.events.IRQ);
+            else if (regs.IRQ_pending) {
+                regs.IR = WDC65816_OP_IRQ;
+                DBG_EVENT(dbg.events.IRQ);
             }
-            this->regs.WAI = 0;
+            regs.WAI = 0;
         }
         else {
-            this->trace.ins_PC = (this->pins.BA << 16) | this->pins.Addr;
-            this->regs.IR = this->pins.D;
-            if ((this->regs.IR == 0) || ((this->trace.ins_PC >= 0x003113) && (this->trace.ins_PC < 0x003cff))) {
+            trace.ins_PC = (pins.BA << 16) | pins.Addr;
+            regs.IR = pins.D;
+            if ((regs.IR == 0) || ((trace.ins_PC >= 0x003113) && (trace.ins_PC < 0x003cff))) {
                 printf("\nCRAP!");
-                dbg_break("IR=0", *this->master_clock);
+                dbg_break("IR=0", *master_clock);
             }
-            /*if (this->trace.ins_PC == 0x8B88D2) {
-                dbg_break("BKPT!", *this->master_clock);
+            /*if (trace.ins_PC == 0x8B88D2) {
+                dbg_break("BKPT!", *master_clock);
             }*/
         }
-        this->regs.old_I = this->regs.P.I;
-        this->ins = get_decoded_opcode(this);
-        wdc_trace_format(this);
+        regs.old_I = regs.P.I;
+        ins = get_decoded_opcode();
+        trace_format();
     }
 
-    this->ins(&this->regs, &this->pins);
+    ins(&regs, &pins);
 }
 
-void WDC65816_init(WDC65816* this, u64 *master_clock)
-{
-    memset(this, 0, sizeof(*this));
-    this->master_clock = master_clock;
-
-    jsm_string_init(&this->trace.str, 1000);
-    jsm_string_init(&this->trace.str2, 200);
-
-    DBG_EVENT_VIEW_INIT;
-    this->dbg.events.IRQ = -1;
-    this->dbg.events.NMI = -1;
-
-    this->regs.S = 0x1FF;
+WDC65816::WDC65816(u64 *m_clock) : master_clock(m_clock) {
+    dbg.events.IRQ = -1;
+    dbg.events.NMI = -1;
+    regs.S = 0x1FF;
 }
 
-void WDC65816_delete(WDC65816* this)
+void WDC65816::reset()
 {
-    jsm_string_delete(&this->trace.str);
-    jsm_string_delete(&this->trace.str2);
-}
-
-void WDC65816_reset(WDC65816* this)
-{
-    this->pins.RES = 0;
-    this->regs.RES_pending = 0;
-    this->regs.TCU = 0;
-    if (this->regs.STP) {
-        this->regs.STP = 0;
+    pins.RES = 0;
+    regs.RES_pending = 0;
+    regs.TCU = 0;
+    if (regs.STP) {
+        regs.STP = 0;
     }
     else {
-        this->pins.D = WDC65816_OP_RESET;
+        pins.D = WDC65816_OP_RESET;
     }
 }
 
-void WDC65816_setup_tracing(WDC65816* this, jsm_debug_read_trace *strct)
+void WDC65816::setup_tracing(jsm_debug_read_trace *strct)
 {
-    this->trace.strct.read_trace_m68k = strct->read_trace_m68k;
-    this->trace.strct.ptr = strct->ptr;
-    this->trace.strct.read_trace = strct->read_trace;
-    this->trace.ok = 1;
+    trace.strct.read_trace_m68k = strct->read_trace_m68k;
+    trace.strct.ptr = strct->ptr;
+    trace.strct.read_trace = strct->read_trace;
+    trace.ok = 1;
 }

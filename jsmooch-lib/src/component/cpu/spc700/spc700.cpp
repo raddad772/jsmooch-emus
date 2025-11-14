@@ -1,48 +1,27 @@
 //
 // Created by . on 4/16/25.
 //
-#include <cstdio>
-#include <cstring>
-#include <math.h>
-
 #include "spc700.h"
 #include "spc700_boot_rom.h"
 #include "spc700_disassembler.h"
 
-#include "system/snes/snes_clock.h"
-
 extern SPC700_ins_func spc700_decoded_opcodes[0x100];
 
-void SPC700_init(SPC700 *this, u64 *clock_ptr)
+void SPC700::reset()
 {
-    memset(this, 0, sizeof(*this));
-    this->clock = clock_ptr;
-    jsm_string_init(&this->trace.str, 1000);
-    jsm_string_init(&this->trace.str2, 200);
-}
-
-void SPC700_delete(SPC700* this)
-{
-    jsm_string_delete(&this->trace.str);
-    jsm_string_delete(&this->trace.str2);
-}
-
-
-void SPC700_reset(SPC700 *this)
-{
-    this->io.ROM_readable = 1;
-    for (u32 i = 0; i < 3; i++) {
-        this->timers[i].out = 0xF;
+    io.ROM_readable = 1;
+    for (auto & timer : timers) {
+        timer.out = 0xF;
     }
 
-    for (u32 i = 0; i < 0x10000; i++) {
-        this->RAM[i] = 0;
+    for (unsigned char & i : RAM) {
+        i = 0;
     }
 
-    this->regs.PC = SPC700_boot_rom[62] + (SPC700_boot_rom[63] << 8);
+    regs.PC = SPC700_boot_rom[62] + (SPC700_boot_rom[63] << 8);
 
-    this->regs.SP = 0xEF;
-    this->regs.P.v = 2;
+    regs.SP = 0xEF;
+    regs.P.v = 2;
 }
 
 
@@ -51,164 +30,156 @@ static SPC700_ins_func get_decoded_opcode(u32 opcode)
     return spc700_decoded_opcodes[opcode];
 }
 
-static void advance_timers(SPC700 *this, i32 cycles)
+void SPC700::advance_timers(i32 num_cycles)
 {
-    this->timers[0].divider += cycles;
-    this->timers[1].divider += cycles;
-    this->timers[2].divider += cycles;
+    timers[0].divider += num_cycles;
+    timers[1].divider += num_cycles;
+    timers[2].divider += num_cycles;
 
-    if (!this->io.T0_enable)
-        this->timers[0].divider &= 127;
+    if (!io.T0_enable)
+        timers[0].divider &= 127;
     else {
-        while(this->timers[0].divider >= 128) {
-            this->timers[0].counter = (this->timers[0].counter + 1) & 255;
-            if (this->timers[0].counter == this->timers[0].target) {
-                this->timers[0].counter = 0;
-                this->timers[0].out = (this->timers[0].out + 1) & 15;
+        while(timers[0].divider >= 128) {
+            timers[0].counter = (timers[0].counter + 1) & 255;
+            if (timers[0].counter == timers[0].target) {
+                timers[0].counter = 0;
+                timers[0].out = (timers[0].out + 1) & 15;
             }
-            this->timers[0].divider -= 128;
+            timers[0].divider -= 128;
         }
     }
 
-    if (!this->io.T1_enable)
-        this->timers[1].divider &= 127;
+    if (!io.T1_enable)
+        timers[1].divider &= 127;
     else {
-        while(this->timers[1].divider >= 128) {
-            this->timers[1].counter = (this->timers[1].counter + 1) & 255;
-            if (this->timers[1].counter == this->timers[1].target) {
-                this->timers[1].counter = 0;
-                this->timers[1].out = (this->timers[1].out + 1) & 15;
+        while(timers[1].divider >= 128) {
+            timers[1].counter = (timers[1].counter + 1) & 255;
+            if (timers[1].counter == timers[1].target) {
+                timers[1].counter = 0;
+                timers[1].out = (timers[1].out + 1) & 15;
             }
-            this->timers[1].divider -= 128;
+            timers[1].divider -= 128;
         }
     }
 
-    if (!this->io.T2_enable)
-        this->timers[2].divider &= 15;
+    if (!io.T2_enable)
+        timers[2].divider &= 15;
     else {
-        while(this->timers[2].divider >= 16) {
-            this->timers[2].counter = (this->timers[2].counter + 1) & 255;
-            if (this->timers[2].counter == this->timers[2].target) {
-                this->timers[2].counter = 0;
-                this->timers[2].out = (this->timers[2].out + 1) & 15;
+        while(timers[2].divider >= 16) {
+            timers[2].counter = (timers[2].counter + 1) & 255;
+            if (timers[2].counter == timers[2].target) {
+                timers[2].counter = 0;
+                timers[2].out = (timers[2].out + 1) & 15;
             }
-            this->timers[2].divider -= 16;
+            timers[2].divider -= 16;
         }
     }
 }
 
-static void spc700_trace_format(SPC700 *this)
+void SPC700::trace_format()
 {
-    //dbg.traces.add(TRACERS.SPC, this.clock.apu_has, this.trace_format(this.disassemble(), (this.regs.PC - 1) & 0xFFFF));
+    //dbg.traces.add(TRACERS.SPC, this.clock.apu_has, this.trace_format(.disassemble(), (.regs.PC - 1) & 0xFFFF));
     u32 do_dbglog = 0;
-    if (this->trace.dbglog.view && this->trace.dbglog.view->ids_enabled[this->trace.dbglog.id]) {
-        jsm_string_quickempty(&this->trace.str);
-        jsm_string_quickempty(&this->trace.str2);
+    if (trace.dbglog.view && trace.dbglog.view->ids_enabled[trace.dbglog.id]) {
+        trace.str.quickempty();
+        trace.str2.quickempty();
         // PC, read, out, p_p
-        SPC700_disassemble(this->regs.PC, &this->trace.strct, &this->trace.str, this->regs.P.P);
-        jsm_string_sprintf(&this->trace.str2, "A:%02x  X:%02x  Y:%02x  SP:%04x  P:%c%c%c%c%c%c%c%c",
-                           this->regs.A,
-                           this->regs.X, this->regs.Y,
-                           this->regs.PC,
-                           this->regs.P.C ? 'C' : 'c',
-                           this->regs.P.Z ? 'Z' : 'z',
-                           this->regs.P.I ? 'I' : 'i',
-                           this->regs.P.H ? 'H' : 'h',
-                           this->regs.P.B ? 'B' : 'b',
-                           this->regs.P.P ? 'P' : 'p',
-                           this->regs.P.V ? 'V' : 'v',
-                           this->regs.P.N ? 'N' : 'n'
+        SPC700_disassemble(regs.PC, &trace.strct, &trace.str, regs.P.P);
+        trace.str2.sprintf("A:%02x  X:%02x  Y:%02x  SP:%04x  P:%c%c%c%c%c%c%c%c",
+                           regs.A,
+                           regs.X, regs.Y,
+                           regs.PC,
+                           regs.P.C ? 'C' : 'c',
+                           regs.P.Z ? 'Z' : 'z',
+                           regs.P.I ? 'I' : 'i',
+                           regs.P.H ? 'H' : 'h',
+                           regs.P.B ? 'B' : 'b',
+                           regs.P.P ? 'P' : 'p',
+                           regs.P.V ? 'V' : 'v',
+                           regs.P.N ? 'N' : 'n'
                            );
 
         u64 tc;
-        if (!this->clock) tc = 0;
-        else tc = *this->clock;
+        if (!clock) tc = 0;
+        else tc = *clock;
 
-        struct dbglog_view *dv = this->trace.dbglog.view;
-        dbglog_view_add_printf(dv, this->trace.dbglog.id, tc, DBGLS_TRACE, "%04x    %s", this->trace.ins_PC, this->trace.str.ptr);
-        dbglog_view_extra_printf(dv, "%s", this->trace.str2.ptr);
+        dbglog_view *dv = trace.dbglog.view;
+        dv->add_printf(trace.dbglog.id, tc, DBGLS_TRACE, "%04x    %s", trace.ins_PC, trace.str.ptr);
+        dv->extra_printf("%s", trace.str2.ptr);
     }
 }
 
-void SPC700_cycle(SPC700 *this, i64 how_many) {
-    this->cycles += how_many;
-    while(this->cycles > 0) {
-        this->regs.opc_cycles = 0;
-        if (this->STP || this->WAI) {
+void SPC700::cycle(i64 how_many) {
+    cycles += how_many;
+    while(cycles > 0) {
+        regs.opc_cycles = 0;
+        if (STP || WAI) {
             static int a = 1;
             if (a) {
                 a = 0;
                 printf("\nWARN STP OR WAI ON SPC700");
-                dbg_break("SPC700 STP OR BRK", *this->clock);
+                dbg_break("SPC700 STP OR BRK", *clock);
             }
             return;
         }
 
-        this->regs.IR = SPC700_read8(this, this->regs.PC);
-        this->trace.ins_PC = this->regs.PC;
-        spc700_trace_format(this);
+        regs.IR = read8(regs.PC);
+        trace.ins_PC = regs.PC;
+        trace_format();
 
-        this->regs.PC = (this->regs.PC + 1) & 0xFFFF;
-        SPC700_ins_func fptr = get_decoded_opcode(this->regs.IR);
+        regs.PC = (regs.PC + 1) & 0xFFFF;
+        SPC700_ins_func fptr = get_decoded_opcode(regs.IR);
         fptr(this);
-        (*this->clock) += this->regs.opc_cycles;
-        this->cycles -= this->regs.opc_cycles;
-        this->int_clock += this->regs.opc_cycles;
-        advance_timers(this, this->regs.opc_cycles);
+        (*clock) += regs.opc_cycles;
+        cycles -= regs.opc_cycles;
+        int_clock += regs.opc_cycles;
+        advance_timers(regs.opc_cycles);
     }
 }
 
-void SPC700_sync_to(SPC700 *this, i64 to_what)
-{
-    /*long double apu_clock = (long double)to_what * this->ratio;
-    i64 cycles = (i64)floorl((apu_clock - this->clock->apu.has) / 24.0) + 1;
-    if (cycles < 1) return;
-    SPC700_cycle(this, cycles);*/
-}
-
-static u8 readIO(SPC700 *this, u32 addr)
+u8 SPC700::readIO(u32 addr)
 {
     u32 val;
     switch(addr) {
         case 0xF0: // TEST register we do not emulate
             return 0x0A;
         case 0xF1: // CONTROL - I/O and timer control
-            val = this->io.ROM_readable << 7;
+            val = io.ROM_readable << 7;
             val += 0x30;
-            val += this->io.T2_enable << 2;
-            val += this->io.T1_enable << 1;
-            val += this->io.T0_enable;
+            val += io.T2_enable << 2;
+            val += io.T1_enable << 1;
+            val += io.T0_enable;
             return val;
         case 0xF2:
-            return this->io.DSPADDR;
+            return io.DSPADDR;
         case 0xF3:
-            return this->read_dsp(this->read_ptr, this->io.DSPADDR);
+            return read_dsp(read_ptr, io.DSPADDR);
         case 0xF4:
-            return this->io.CPUI[0];
+            return io.CPUI[0];
         case 0xF5:
-            return this->io.CPUI[1];
+            return io.CPUI[1];
         case 0xF6:
-            return this->io.CPUI[2];
+            return io.CPUI[2];
         case 0xF7:
-            return this->io.CPUI[3];
+            return io.CPUI[3];
         case 0xF8:
         case 0xF9:
-            return this->RAM[addr];
+            return RAM[addr];
         case 0xFA: // Read-only
         case 0xFB:
         case 0xFC:
             return 0;
         case 0xFD:
-            val = this->timers[0].out;
-            this->timers[0].out = 0;
+            val = timers[0].out;
+            timers[0].out = 0;
             return val;
         case 0xFE:
-            val = this->timers[1].out;
-            this->timers[1].out = 0;
+            val = timers[1].out;
+            timers[1].out = 0;
             return val;
         case 0xFF:
-            val = this->timers[2].out;
-            this->timers[2].out = 0;
+            val = timers[2].out;
+            timers[2].out = 0;
             return val;
         default:
             printf("\nUNEMULATED SPC REG %04x", addr);
@@ -216,7 +187,7 @@ static u8 readIO(SPC700 *this, u32 addr)
     }
 }
 
-static void writeIO(SPC700 *this, u32 addr, u32 val)
+void SPC700::writeIO(u32 addr, u32 val)
 {
     switch(addr) {
         case 0xF0: // TEST register, should not be written
@@ -225,143 +196,142 @@ static void writeIO(SPC700 *this, u32 addr, u32 val)
             }
             return;
         case 0xF1: // CONTROL reg
-            //this->io.ROM_readable = (val >> 7) & 1;
-            if (val & 0x20) this->io.CPUI[2] = this->io.CPUI[3] = 0;
-            if (val & 0x10) this->io.CPUI[0] = this->io.CPUI[1] = 0;
-            this->io.T2_enable = (val >> 2) & 1;
-            this->io.T1_enable = (val >> 1) & 1;
-            this->io.T0_enable = val & 1;
+            //io.ROM_readable = (val >> 7) & 1;
+            if (val & 0x20) io.CPUI[2] = io.CPUI[3] = 0;
+            if (val & 0x10) io.CPUI[0] = io.CPUI[1] = 0;
+            io.T2_enable = (val >> 2) & 1;
+            io.T1_enable = (val >> 1) & 1;
+            io.T0_enable = val & 1;
             return;
         case 0xF2:
-            this->io.DSPADDR = val;
+            io.DSPADDR = val;
             return;
         case 0xF3:
-            this->write_dsp(this->write_ptr, this->io.DSPADDR, val);
+            write_dsp(write_ptr, io.DSPADDR, val);
             return;
         case 0xF4:
         case 0xF5:
         case 0xF6:
         case 0xF7:
-            this->io.CPUO[addr - 0xF4] = val;
+            io.CPUO[addr - 0xF4] = val;
             //printf("\nAPU (%04X) to CPU (%d): %02X", addr & 0xFFFF, addr - 0xF4, val);
             return;
         case 0xF8:
         case 0xF9:
-            this->RAM[addr] = val;
+            RAM[addr] = val;
             return;
         case 0xFA:
-            this->timers[0].target = val;
+            timers[0].target = val;
             return;
         case 0xFB:
-            this->timers[1].target = val;
+            timers[1].target = val;
             return;
         case 0xFC:
-            this->timers[2].target = val;
+            timers[2].target = val;
             return;
         case 0xFD:
         case 0xFE:
         case 0xFF:
             // Read-only
             return;
-        
+        default:
     }
 }
 
-static void log_write(SPC700 *this, u32 addr, u32 val)
+void SPC700::log_write(u32 addr, u32 val)
 {
-    if (this->trace.dbglog.view && this->trace.dbglog.view->ids_enabled[this->trace.dbglog.id_write]) {
+    if (trace.dbglog.view && trace.dbglog.view->ids_enabled[trace.dbglog.id_write]) {
         u64 tc;
-        if (!this->clock) tc = 0;
-        else tc = *this->clock;
+        if (!clock) tc = 0;
+        else tc = *clock;
 
-        struct dbglog_view *dv = this->trace.dbglog.view;
+        dbglog_view *dv = trace.dbglog.view;
         /*if (addr == 1) {
-            dbglog_view_add_printf(dv, this->trace.dbglog.id_write, tc, DBGLS_TRACE, "%04x     (write WriteAdr) %02x", addr, val);
-            //printf("\nNEW WriteAdr: %04x  cyc:%lld", this->RAM[0] | (this->RAM[1] << 8), *this->clock);
+            dbglog_view_add_printf(dv, trace.dbglog.id_write, tc, DBGLS_TRACE, "%04x     (write WriteAdr) %02x", addr, val);
+            //printf("\nNEW WriteAdr: %04x  cyc:%lld", RAM[0] | (RAM[1] << 8), *clock);
         }
         else if ((addr >= 0xF4) && (addr <= 0xF7)) {
             // addr - 0xF4
-            dbglog_view_add_printf(dv, this->trace.dbglog.id_write, tc, DBGLS_TRACE, "%04x     (write MAIL%d) %02x", addr, addr - 0xF4, val);
+            dbglog_view_add_printf(dv, trace.dbglog.id_write, tc, DBGLS_TRACE, "%04x     (write MAIL%d) %02x", addr, addr - 0xF4, val);
         }
         else if (addr == 0xF1) {
-            dbglog_view_add_printf(dv, this->trace.dbglog.id_write, tc, DBGLS_TRACE, "%04x     (write CTRL REG) %02x", addr, val);
+            dbglog_view_add_printf(dv, trace.dbglog.id_write, tc, DBGLS_TRACE, "%04x     (write CTRL REG) %02x", addr, val);
             //printf("\nWRITE CTRL REG %02x", val);
 
         }
         else {*/
-            //dbglog_view_add_printf(dv, this->trace.dbglog.id_write, tc, DBGLS_TRACE, "%04x     (write) %02x", addr, val);
+            //dbglog_view_add_printf(dv, trace.dbglog.id_write, tc, DBGLS_TRACE, "%04x     (write) %02x", addr, val);
         //}
     }
 }
 
 
-static void log_read(SPC700 *this, u32 addr, u32 val)
+void SPC700::log_read(u32 addr, u32 val)
 {
-    if (this->trace.dbglog.view && this->trace.dbglog.view->ids_enabled[this->trace.dbglog.id_read]) {
+    if (trace.dbglog.view && trace.dbglog.view->ids_enabled[trace.dbglog.id_read]) {
         u64 tc;
-        if (!this->clock) tc = 0;
-        else tc = *this->clock;
+        if (!clock) tc = 0;
+        else tc = *clock;
 
-        struct dbglog_view *dv = this->trace.dbglog.view;
+        dbglog_view *dv = trace.dbglog.view;
 
         /*if (addr == 0) {
-            dbglog_view_add_printf(dv, this->trace.dbglog.id_read, tc, DBGLS_TRACE, "%04x     (READ WriteAdr) %02x", addr, val);
+            dbglog_view_add_printf(dv, trace.dbglog.id_read, tc, DBGLS_TRACE, "%04x     (READ WriteAdr) %02x", addr, val);
         }
         else if ((addr >= 0xF4) && (addr <= 0xF7)) {
             // addr - 0xF4
-            dbglog_view_add_printf(dv, this->trace.dbglog.id_read, tc, DBGLS_TRACE, "%04x     (read MAIL%d) %02x", addr, addr - 0xF4, val);
+            dv->add_printf(trace.dbglog.id_read, tc, DBGLS_TRACE, "%04x     (read MAIL%d) %02x", addr, addr - 0xF4, val);
         }
         else {*/
-            dbglog_view_add_printf(dv, this->trace.dbglog.id_read, tc, DBGLS_TRACE, "%04x     (read) %02x", addr, val);
+            dv->add_printf(trace.dbglog.id_read, tc, DBGLS_TRACE, "%04x     (read) %02x", addr, val);
         //}
     }
 }
 
-u8 SPC700_read8(SPC700 *this, u32 addr)
+u8 SPC700::read8(u32 addr)
 {
     u8 r;
-    if ((addr >= 0x00F1) && (addr <= 0x00FF)) r = readIO(this, addr);
-    else if ((addr >= 0xFFC0) && this->io.ROM_readable) r = SPC700_boot_rom[addr - 0xFFC0];
-    else r = this->RAM[addr & 0xFFFF];
+    if ((addr >= 0x00F1) && (addr <= 0x00FF)) r = readIO(addr);
+    else if ((addr >= 0xFFC0) && io.ROM_readable) r = SPC700_boot_rom[addr - 0xFFC0];
+    else r = RAM[addr & 0xFFFF];
 
-    log_read(this, addr, r);
+    log_read(addr, r);
 
     return r;
 }
 
-u8 SPC700_read8D(SPC700 *this, u32 addr)
+u8 SPC700::read8D(u32 addr)
 {
-    return SPC700_read8(this, (addr & 0xFF) + this->regs.P.DO);
+    return read8((addr & 0xFF) + regs.P.DO);
 }
 
-void SPC700_write8(SPC700 *this, u32 addr, u32 val)
+void SPC700::write8(u32 addr, u32 val)
 {
     if ((addr >= 0x00F1) && (addr <= 0x00FF))
-        writeIO(this, addr, val);
-    this->RAM[addr & 0xFFFF] = val;
-    log_write(this, addr, val);
+        writeIO(addr, val);
+    RAM[addr & 0xFFFF] = val;
+    log_write(addr, val);
 }
 
-void SPC700_write8D(SPC700 *this, u32 addr, u32 val)
+void SPC700::write8D(u32 addr, u32 val)
 {
-    SPC700_write8(this, (addr & 0xFF) + this->regs.P.DO, val);
+    write8((addr & 0xFF) + regs.P.DO, val);
 }
 
 static u32 read_trace(void *ptr, u32 addr)
 {
-    struct SPC700 *this = (SPC700 *)ptr;
+    auto *th = static_cast<SPC700 *>(ptr);
     u8 r;
-    if ((addr >= 0x00F1) && (addr <= 0x00FF)) r = readIO(this, addr);
-    else if ((addr >= 0xFFC0) && this->io.ROM_readable) r = SPC700_boot_rom[addr - 0xFFC0];
-    else r = this->RAM[addr & 0xFFFF];
+    if ((addr >= 0x00F1) && (addr <= 0x00FF)) r = th->readIO(addr);
+    else if ((addr >= 0xFFC0) && th->io.ROM_readable) r = SPC700_boot_rom[addr - 0xFFC0];
+    else r = th->RAM[addr & 0xFFFF];
 
     return r;
-
 }
 
-void SPC700_setup_tracing(SPC700* this, jsm_debug_read_trace *strct)
+void SPC700::setup_tracing(jsm_debug_read_trace *strct)
 {
-    this->trace.strct.ptr = this;
-    this->trace.strct.read_trace = &read_trace;
-    this->trace.ok = 1;
+    trace.strct.ptr = this;
+    trace.strct.read_trace = &read_trace;
+    trace.ok = 1;
 }

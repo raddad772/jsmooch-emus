@@ -2,10 +2,6 @@
 // Created by . on 4/19/25.
 //
 
-#include <cstdlib>
-#include <cstring>
-#include <cstdio>
-
 #include "wdc65816_disassembler.h"
 
 
@@ -72,7 +68,7 @@ static i32 do_absolute(ARGS)
     *ins_len = 3;
     u32 n = read_op_word(addr, rt);
     snprintf(buf, 50, "$%04x", n);
-    return (i32)((r->DBR << 16) | n);
+    return static_cast<i32>((r->DBR << 16) | n);
 }
 
 static i32 do_absolute_pc(ARGS)
@@ -80,7 +76,7 @@ static i32 do_absolute_pc(ARGS)
     *ins_len = 3;
     u32 n = read_op_word(addr, rt);
     snprintf(buf, 50, "$%04x", n);
-    return (i32)((addr & 0xFF0000) | n);
+    return static_cast<i32>((addr & 0xFF0000) | n);
 }
 
 static i32 do_absolute_x(ARGS)
@@ -88,7 +84,7 @@ static i32 do_absolute_x(ARGS)
     *ins_len = 3;
     u32 n = read_op_word(addr, rt);
     snprintf(buf, 50, "$%04x,x", n);
-    return (i32)((r->DBR << 16) + n + r->X);
+    return static_cast<i32>((r->DBR << 16) + n + r->X);
 }
 
 static i32 do_absolute_y(ARGS)
@@ -96,7 +92,7 @@ static i32 do_absolute_y(ARGS)
     *ins_len = 3;
     u32 n = read_op_word(addr, rt);
     snprintf(buf, 50, "$%04x,y", n);
-    return (i32)((r->DBR << 16) + n + r->Y);
+    return static_cast<i32>((r->DBR << 16) + n + r->Y);
 }
 
 static i32 do_absolute_long(ARGS)
@@ -111,28 +107,28 @@ static i32 do_absolute_long_x(ARGS) {
     *ins_len = 4;
     u32 n = read_op_long(addr, rt);
     snprintf(buf, 50, "$%06x,x", n);
-    return (i32)(n + r->X);
+    return static_cast<i32>(n + r->X);
 }
 
 static i32 do_direct(ARGS) {
     *ins_len = 2;
     u32 n = read_op_byte(addr, rt);
     snprintf(buf, 50, "$%02x", n);
-    return (i32)((r->D + n) & 0xFFFF);
+    return static_cast<i32>((r->D + n) & 0xFFFF);
 }
 
 static i32 do_direct_x(ARGS) {
     *ins_len = 2;
     u32 n = read_op_byte(addr, rt);
     snprintf(buf, 50, "$%02x,x", n);
-    return (i32)((r->D + n + r->X) & 0xFFFF);
+    return static_cast<i32>((r->D + n + r->X) & 0xFFFF);
 }
 
 static i32 do_direct_y(ARGS) {
     *ins_len = 2;
     u32 n = read_op_byte(addr, rt);
     snprintf(buf, 50, "$%02x,y", n);
-    return (i32)((r->D + n + r->Y) & 0xFFFF);
+    return static_cast<i32>((r->D + n + r->Y) & 0xFFFF);
 }
 
 static i32 do_immediate(ARGS)
@@ -153,7 +149,7 @@ static i32 do_immediate_a(ARGS) {
     else {
         *ins_len = 3;
         n = read_op_word(addr, rt);
-        snprintf(buf, 5, "#$%04x", n);
+        snprintf(buf, 50, "#$%04x", n);
     }
     return -1;
 }
@@ -168,7 +164,7 @@ static i32 do_immediate_x(ARGS) {
     else {
         *ins_len = 3;
         n = read_op_word(addr, rt);
-        snprintf(buf, 5, "#$%04x", n);
+        snprintf(buf, 50, "#$%04x", n);
     }
     return -1;
 }
@@ -182,7 +178,7 @@ static i32 do_indexed_indirect_x(ARGS) {
     *ins_len = 2;
     u32 n = read_op_byte(addr, rt);
     snprintf(buf, 50, "($%02x,x)", n);
-    return (i32)((r->DBR << 16) | read_word((r->D + n + r->X) & 0xFFFF, rt));
+    return static_cast<i32>((r->DBR << 16) | read_word((r->D + n + r->X) & 0xFFFF, rt));
 }
 
 static i32 do_indirect(ARGS) {
@@ -190,7 +186,7 @@ static i32 do_indirect(ARGS) {
     u32 n = read_op_byte(addr, rt);
 
     snprintf(buf, 50, "($%02x)", n);
-    return (i32)((r->DBR << 16) + read_word((r->D + n) & 0xFFFF, rt));
+    return static_cast<i32>((r->DBR << 16) + read_word((r->D + n) & 0xFFFF, rt));
 }
 
 static i32 do_indirect_pc(ARGS) {
@@ -198,7 +194,7 @@ static i32 do_indirect_pc(ARGS) {
     u32 n = read_op_word(addr, rt);
 
     snprintf(buf, 50, "($%04x)", n);
-    return (i32)((addr & 0xFF0000) | read_word(n, rt));
+    return static_cast<i32>((addr & 0xFF0000) | read_word(n, rt));
 }
 
 static i32 do_indirect_x(ARGS) {
@@ -207,7 +203,7 @@ static i32 do_indirect_x(ARGS) {
 
     snprintf(buf, 50, "($%04x,x)", n);
 
-    return (i32)((addr & 0xFF0000) | read_word((addr & 0xFF0000) | ((n + r->X) & 0xFFFF), rt));
+    return static_cast<i32>((addr & 0xFF0000) | read_word((addr & 0xFF0000) | ((n + r->X) & 0xFFFF), rt));
 }
 
 static i32 do_indirect_indexed_y(ARGS) {
@@ -217,7 +213,7 @@ static i32 do_indirect_indexed_y(ARGS) {
 
     snprintf(buf, 50, "($%02x),y", n);
 
-    return (i32)((r->DBR << 16) | read_word((r->D + n) & 0xFFFF, rt) + r->Y);
+    return static_cast<i32>((r->DBR << 16) | read_word((r->D + n) & 0xFFFF, rt) + r->Y);
 }
 
 static i32 do_indirect_long(ARGS) {
@@ -226,7 +222,7 @@ static i32 do_indirect_long(ARGS) {
 
     snprintf(buf, 50, "[$%02x]", n);
 
-    return (i32)(read_long((r->D + n) & 0xFFFF, rt));
+    return static_cast<i32>(read_long((r->D + n) & 0xFFFF, rt));
 }
 
 static i32 do_indirect_long_pc(ARGS) {
@@ -236,7 +232,7 @@ static i32 do_indirect_long_pc(ARGS) {
 
     snprintf(buf, 50, "[$%04x]", n);
 
-    return (i32)(read_long(n, rt));
+    return static_cast<i32>(read_long(n, rt));
 }
 
 static i32 do_indirect_long_y(ARGS) {
@@ -245,7 +241,7 @@ static i32 do_indirect_long_y(ARGS) {
     u32 n = read_op_byte(addr, rt);
 
     snprintf(buf, 50, "[$%02x],y", n);
-    return (i32)(read_long((r->D + n) & 0xFFFF, rt) + r->Y);
+    return static_cast<i32>(read_long((r->D + n) & 0xFFFF, rt) + r->Y);
 }
 
 
@@ -261,18 +257,18 @@ static i32 do_move(ARGS) {
 
 static i32 do_relative(ARGS) {
     *ins_len = 2;
-    u32 n = (addr & 0xFF0000) | ((addr + 1 + (i32)(i8)read_op_byte(addr, rt)) & 0xFFFF);
+    u32 n = (addr & 0xFF0000) | ((addr + 1 + static_cast<i32>(static_cast<i8>(read_op_byte(addr, rt)))) & 0xFFFF);
     snprintf(buf, 50, "$%04x", n & 0xFFFF);
-    return (i32)n;
+    return static_cast<i32>(n);
 }
 
 static i32 do_relative_word(ARGS) {
     *ins_len = 3;
-    u32 n = (u32)(i16)read_op_word(addr, rt);
-    n = (addr & 0xFF0000) | ((addr + 3 + (u32)(i16)n) & 0xFFFF);
+    u32 n = static_cast<u32>(static_cast<i16>(read_op_word(addr, rt)));
+    n = (addr & 0xFF0000) | ((addr + 3 + static_cast<u32>(static_cast<i16>(n))) & 0xFFFF);
 
     snprintf(buf, 50, "$%06x", n);
-    return (i32)n;
+    return static_cast<i32>(n);
 }
 
 static i32 do_stack(ARGS) {
@@ -282,7 +278,7 @@ static i32 do_stack(ARGS) {
 
     snprintf(buf, 50, "$%02x,s", n);
 
-    return (i32)((r->S + n) & 0xFFFF);
+    return static_cast<i32>((r->S + n) & 0xFFFF);
 }
 
 static i32 do_stack_indirect(ARGS) {
@@ -292,14 +288,14 @@ static i32 do_stack_indirect(ARGS) {
 
     snprintf(buf, 50, "($%02x,s),y", n);
 
-    return (i32)((r->DBR << 16) + read_word((n + r->S) & 0xFFFF, rt) + r->Y);
+    return static_cast<i32>((r->DBR << 16) + read_word((n + r->S) & 0xFFFF, rt) + r->Y);
 }
 
-u32 WDC65816_disassemble(u32 addr, WDC65816_regs *r, u32 e, u32 m, u32 x, jsm_debug_read_trace *rt, jsm_string *out, WDC65816_ctxt *ct)
+u32 WDC65816_disassemble(u32 addr, WDC65816_regs &r, u32 e, u32 m, u32 x, jsm_debug_read_trace &rt, jsm_string &out, WDC65816_ctxt *ct)
 {
     char buf[50];
-    char *mnemonic;
-    u32 opcode = read_byte(addr, rt);
+    const char *mnemonic;
+    u32 opcode = read_byte(addr, &rt);
     addr = inc_addr16of24(addr);
     u32 tct = 0;
     u32 *rptr = &tct;
@@ -308,7 +304,7 @@ u32 WDC65816_disassemble(u32 addr, WDC65816_regs *r, u32 e, u32 m, u32 x, jsm_de
     i32 effective = -1;
     u32 ins_len = 0;
 
-#define dasm(num, mnm, func) case num: mnemonic = mnm; effective = do_##func(buf, addr, e, m, x, r, rt, &ins_len, rptr); break
+#define dasm(num, mnm, func) case num: mnemonic = mnm; effective = do_##func(buf, addr, e, m, x, &r, &rt, &ins_len, rptr); break
 
     switch(opcode) {
         dasm(0x00, "brk", immediate);
@@ -573,11 +569,11 @@ u32 WDC65816_disassemble(u32 addr, WDC65816_regs *r, u32 e, u32 m, u32 x, jsm_de
     }
 
 #undef dasm
-    u32 l = jsm_string_sprintf(out, "%s %s", mnemonic, buf);
+    u32 l = out.sprintf("%s %s", mnemonic, buf);
     if (effective != -1) {
         effective &= 0xFFFFFF;
-        while (l < 14) l += jsm_string_sprintf(out, " ");
-        jsm_string_sprintf(out, "[%06x]", effective);
+        while (l < 14) l += out.sprintf(" ");
+        out.sprintf("[%06x]", effective);
     }
     
     return ins_len;
