@@ -2,8 +2,8 @@
 // Created by RadDad772 on 3/13/24.
 //
 
-#include <string.h>
-#include <stdio.h>
+#include <cstring>
+#include <cstdio>
 #include "helpers/physical_io.h"
 #include "helpers/pack.h"
 #include "controller.h"

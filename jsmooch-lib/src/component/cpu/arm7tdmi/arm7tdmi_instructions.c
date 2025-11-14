@@ -2,8 +2,8 @@
 // Created by . on 12/4/24.
 //
 
-#include <stdio.h>
-#include <stdlib.h>
+#include <cstdio>
+#include <cstdlib>
 
 #include "arm7tdmi.h"
 #include "arm7tdmi_instructions.h"

@@ -2,11 +2,12 @@
 // Created by . on 4/21/25.
 //
 
-#ifndef JSMOOCH_EMUS_SNES_PPU_H
-#define JSMOOCH_EMUS_SNES_PPU_H
+#pragma once
 
-#include <helpers/int.h>
+#include "helpers/int.h"
+#include "helpers/physical_io.h"
 #include "helpers/cvec.h"
+#include "snes_mem.h"
 
 union SNES_PPU_px {
     struct {
@@ -22,171 +23,186 @@ union SNES_PPU_px {
     u64 v;
 };
 
-struct SNES_PPU {
-    u16 *cur_output;
-    u32 cur_pixel;
-    struct cvec_ptr display_ptr;
-    struct JSM_DISPLAY *display;
+struct SNES_PPU_sprite {
+    i32 x{}, y{};
+    u32 tile_num{};
+    u32 name_select{}, name_select_add{};
+    u32 hflip{}, vflip{};
+    u32 priority{}, palette{}, pal_offset{};
+    u32 size{};
+};
 
-    u16 CGRAM[256];
-    u16 VRAM[0x8000];
+struct SNES_PPU {
+    explicit SNES_PPU(struct SNES *parent) : snes(parent) {};
+    void reset();
+    u32 read_oam(u32 addr);
+    void write( u32 addr, u32 val, SNES_memmap_block *bl);
+    struct SNES_PPU_BG;
+
+private:
+    u32 mode7_mul();
+    void write_oam(u32 addr, u32 val);
+    void draw_bg_line_mode7(u32 source, i32 y);
+    u32 get_addr_by_map();
+    void update_video_mode();
+    u32 get_tile(SNES_PPU_BG *bg, i32 hoffset, i32 voffset);
+    void draw_bg_line(u32 source, u32 y);
+    void write_VRAM(u32 addr, u32 val);
+    u32 read(u32 addr, u32 old, u32 has_effect, SNES_memmap_block *bl);
+    void do_color_math(SNES_PPU_px *main, SNES_PPU_px *sub);
+    void draw_sprite_line(i32 ppu_y);
+    void latch_counters();
+
+public:
+    void draw_line();
+    void new_scanline(u64 cur_clock);
+    void schedule_first();
+
+    SNES *snes;
+
+    u16 *cur_output{};
+    u32 cur_pixel{};
+    cvec_ptr<physical_io_device> display_ptr{};
+    JSM_DISPLAY *display{};
+
+    u16 CGRAM[256]{};
+    u16 VRAM[0x8000]{};
 
     struct SNES_PPU_WINDOW {
-        u32 left, right;
-    } window[2];
+        u32 left{}, right{};
+    } window[2]{};
 
     struct {
-        u32 first;
+        u32 first{};
         struct {
-            u32 main_enable, sub_enable, mask;
+            u32 main_enable{}, sub_enable{}, mask{};
 
-            u32 enable[2];
-            u32 invert[2];
-        } window;
-        u32 main_enable, sub_enable;
-        u32 priority[4];
-        u32 range_overflow, time_overflow;
-        union SNES_PPU_px line[256];
+            u32 enable[2]{};
+            u32 invert[2]{};
+        } window{};
+        u32 main_enable{}, sub_enable{};
+        u32 priority[4]{};
+        u32 range_overflow{}, time_overflow{};
+        SNES_PPU_px line[256]{};
 
-        struct SNES_PPU_sprite {
-            i32 x, y;
-            u32 tile_num;
-            u32 name_select, name_select_add;
-            u32 hflip, vflip;
-            u32 priority, palette, pal_offset;
-            u32 size;
-        } items[128];
-    } obj;
+        SNES_PPU_sprite items[128]{};
+    } obj{};
 
     struct {
         struct {
-            u32 mask;
-            u32 invert[2], enable[2];
-            u32 main_mask, sub_mask;
-        } window;
-        u32 direct_color, blend_mode;
+            u32 mask{};
+            u32 invert[2]{}, enable[2]{};
+            u32 main_mask{}, sub_mask{};
+        } window{};
+        u32 direct_color{}, blend_mode{};
 
-        u32 enable[7];
-        u32 halve, math_mode, fixed_color;
+        u32 enable[7]{};
+        u32 halve{}, math_mode{}, fixed_color{};
 
-    } color_math;
+    } color_math{};
 
     struct SNES_PPU_BG {
-        union SNES_PPU_px line[256];
+        SNES_PPU_px line[256]{};
 
-        u32 enabled;
-        u32 bpp;
+        u32 enabled{};
+        u32 bpp{};
 
-        u32 screen_x;
+        u32 screen_x{};
 
-        u32 cols, rows, col_mask, row_mask;
-        u32 tile_px, tile_px_mask;
-        u32 scroll_shift;
-        u32 pixels_h, pixels_v;
-        u32 pixels_h_mask, pixels_v_mask;
-        u32 tiledata_index;
+        u32 cols{}, rows{}, col_mask{}, row_mask{};
+        u32 tile_px{}, tile_px_mask{};
+        u32 scroll_shift{};
+        u32 pixels_h{}, pixels_v{};
+        u32 pixels_h_mask{}, pixels_v_mask{};
+        u32 tiledata_index{};
 
-        u32 palette_offset, palette_base, palette_shift, palette_mask;
-        u32 num_planes;
-        u32 tile_bytes, tile_row_bytes;
-
-        struct {
-            u32 enable, counter, size;
-        } mosaic;
+        u32 palette_offset{}, palette_base{}, palette_shift{}, palette_mask{};
+        u32 num_planes{};
+        u32 tile_bytes{}, tile_row_bytes{};
 
         struct {
-            u32 tile_size;
-            u32 screen_size, screen_addr;
-            u32 tiledata_addr;
-            u32 hoffset, voffset;
-        } io;
+            u32 enable{}, counter{}, size{};
+        } mosaic{};
 
         struct {
-            u32 main_enable, sub_enable;
-            u32 enable[2], invert[2];
-            u32 mask;
-        } window;
-        u32 main_enable, sub_enable;
+            u32 tile_size{};
+            u32 screen_size{}, screen_addr{};
+            u32 tiledata_addr{};
+            u32 hoffset{}, voffset{};
+        } io{};
+
+        struct {
+            u32 main_enable{}, sub_enable{};
+            u32 enable[2]{}, invert[2]{};
+            u32 mask{};
+        } window{};
+        u32 main_enable{}, sub_enable{};
 
         enum SNES_PPU_TILE_MODE {
-            SPTM_BPP2,
-            SPTM_BPP4,
-            SPTM_BPP8,
-            SPTM_inactive,
-            SPTM_mode7
-        } tile_mode;
-        u32 priority[2];
-    } bg[4];
+            BPP2,
+            BPP4,
+            BPP8,
+            inactive,
+            mode7
+        } tile_mode{};
+        u32 priority[2]{};
+    } pbg[4]{};
 
     struct {
-        u32 vram, hcounter, vcounter, counters;
+        u32 vram{}, hcounter{}, vcounter{}, counters{};
         struct {
-            u32 mdr;
-            u32 bgofs;
-        } ppu1;
+            u32 mdr{};
+            u32 bgofs{};
+        } ppu1{};
         struct {
-            u32 mdr;
-            u32 bgofs;
-        } ppu2;
-        u32 oam;
-        u32 mode7;
-        u32 cgram_addr, cgram;
-    } latch;
+            u32 mdr{};
+            u32 bgofs{};
+        } ppu2{};
+        u32 oam{};
+        u32 mode7{};
+        u32 cgram_addr{}, cgram{};
+    } latch{};
 
     struct {
-        i32 hoffset, rhoffset, voffset, rvoffset;
-        i32 a, b, c, d;
-        i32 x, rx, y, ry;
-        u32 hflip, vflip, repeat;
-    } mode7;
+        i32 hoffset{}, rhoffset{}, voffset{}, rvoffset{};
+        i32 a{}, b{}, c{}, d{};
+        i32 x{}, rx{}, y{}, ry{};
+        u32 hflip{}, vflip{}, repeat{};
+    } mode7{};
     struct {
-        u32 counter;
-    } mosaic;
+        u32 counter{};
+    } mosaic{};
 
     struct {
         struct {
-            u32 increment, addr, increment_step, increment_mode, mapping;
-        } vram;
+            u32 increment{}, addr{}, increment_step{}, increment_mode{}, mapping{};
+        } vram{};
 
-        u32 wram_addr;
+        u32 wram_addr{};
 
-        u32 hcounter, vcounter;
-        u32 cgram_addr;
+        u32 hcounter{}, vcounter{};
+        u32 cgram_addr{};
 
         struct {
-            u32 addr, priority;
+            u32 addr{}, priority{};
             //u32 base_addr;
-        } oam;
+        } oam{};
 
         struct {
-            u32 sz, name_select, tile_addr, interlace;
-        } obj;
-        u32 bg_priority, bg_mode;
-        u32 screen_brightness, force_blank;
+            u32 sz{}, name_select{}, tile_addr{}, interlace{};
+        } obj{};
+        u32 bg_priority{}, bg_mode{};
+        u32 screen_brightness{}, force_blank{};
         struct {
-            u32 size;
-        } mosaic;
-        u32 extbg, interlace, overscan, pseudo_hires;
-    } io;
+            u32 size{};
+        } mosaic{};
+        u32 extbg{}, interlace{}, overscan{}, pseudo_hires{};
+    } io{};
 
     struct {
-        u64 sched_id;
-        u32 still_sched;
-    } hirq;
+        u64 sched_id{};
+        u32 still_sched{};
+    } hirq{};
 
 };
 
-struct SNES;
-struct SNES_memmap_block;
-void SNES_PPU_init(SNES *);
-void SNES_PPU_delete(SNES *);
-void SNES_PPU_reset(SNES *);
-void SNES_PPU_write(SNES *, u32 addr, u32 val, SNES_memmap_block *bl);
-u32 SNES_PPU_read(SNES *, u32 addr, u32 old, u32 has_effect, SNES_memmap_block *bl);
-void SNES_PPU_schedule_first(SNES *);
-struct R5A22_DMA_CHANNEL;
-u32 SNES_hdma_reload_ch(SNES *snes, R5A22_DMA_CHANNEL *ch);
-
-i32 SNES_PPU_hpos(SNES *);
-
-#endif //JSMOOCH_EMUS_SNES_PPU_H

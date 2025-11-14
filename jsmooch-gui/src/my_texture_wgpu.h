@@ -6,7 +6,7 @@
 #define JSMOOCH_EMUS_my_texture_H
 
 #ifdef JSM_WEBGPU
-#include <stdio.h>
+#include <cstdio>
 #include "build.h"
 #include "helpers/int.h"
 #include "../vendor/myimgui/imgui.h"

@@ -2,9 +2,9 @@
 // Created by . on 5/2/24.
 //
 
-#include <string.h>
-#include <assert.h>
-#include <stdio.h>
+#include <cstring>
+#include <cassert>
+#include <cstdio>
 
 #include "tape_deck.h"
 #include "zxspectrum.h"

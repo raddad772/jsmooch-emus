@@ -2,9 +2,9 @@
 // Created by . on 9/8/24.
 //
 
-#include <string.h>
-#include <stdio.h>
-#include <assert.h>
+#include <cstring>
+#include <cstdio>
+#include <cassert>
 #include "nes_apu.h"
 #include "helpers/serialize/serialize.h"
 

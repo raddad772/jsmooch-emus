@@ -2,9 +2,9 @@
 // Created by . on 7/24/24.
 //
 
-#include <stdlib.h>
-#include <stdio.h>
-#include <assert.h>
+#include <cstdlib>
+#include <cstdio>
+#include <cassert>
 
 #include "mac_internal.h"
 #include "mac_display.h"

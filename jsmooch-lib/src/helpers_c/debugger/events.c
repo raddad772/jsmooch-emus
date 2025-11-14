@@ -1,9 +1,9 @@
 //
 // Created by . on 8/11/24.
 //
-#include <string.h>
-#include <stdio.h>
-#include <stdlib.h>
+#include <cstring>
+#include <cstdio>
+#include <cstdlib>
 
 #include "helpers/cvec.h"
 #include "helpers/ooc.h"

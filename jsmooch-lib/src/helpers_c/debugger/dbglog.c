@@ -2,8 +2,8 @@
 // Created by . on 3/9/25.
 //
 
-#include <string.h>
-#include <stdio.h>
+#include <cstring>
+#include <cstdio>
 #include "dbglog.h"
 
 struct dbglog_category_node *dbglog_category_get_root(dbglog_view *this)

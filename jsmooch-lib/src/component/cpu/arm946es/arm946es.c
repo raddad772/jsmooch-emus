@@ -1,9 +1,9 @@
 //
 // Created by . on 1/18/25.
 //
-#include <stdio.h>
-#include <string.h>
-#include <stdlib.h>
+#include <cstdio>
+#include <cstring>
+#include <cstdlib>
 
 #include "arm946es.h"
 #include "arm946es_decode.h"

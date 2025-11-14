@@ -5,7 +5,7 @@
 #include "stdio.h"
 #include "helpers/physical_io.h"
 #include "sms_gamepad.h"
-#include "string.h"
+#include <cstring>
 
 void SMSGG_gamepad_init(SMSGG_gamepad* this, enum jsm::systems variant, u32 num)
 {

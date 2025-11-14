@@ -2,8 +2,8 @@
 // Created by . on 7/25/24.
 //
 
-#include <stdio.h>
-#include <string.h>
+#include <cstdio>
+#include <cstring>
 
 #include "helpers/debug.h"
 #include "via6522.h"

@@ -11,7 +11,7 @@
 
 #include "assert.h"
 #include "stdio.h"
-#include "string.h"
+#include <cstring>
 #include "stdarg.h"
 #include "sh4_interpreter.h"
 #include "sh4_interpreter_opcodes.h"

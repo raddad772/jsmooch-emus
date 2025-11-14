@@ -1,9 +1,9 @@
 //
 // Created by . on 12/18/24.
 //
-#include <assert.h>
-#include <stdio.h>
-#include <stdlib.h>
+#include <cassert>
+#include <cstdio>
+#include <cstdlib>
 
 #include "arm7tdmi.h"
 #include "thumb_instructions.h"

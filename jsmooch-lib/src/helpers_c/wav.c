@@ -2,7 +2,7 @@
 // Created by . on 3/31/25.
 //
 
-#include <string.h>
+#include <cstring>
 #include "wav.h"
 
 void wav_stream_create(wav_stream *this, char *fpath, u32 sampling_rate, u32 bytes_per_sample)

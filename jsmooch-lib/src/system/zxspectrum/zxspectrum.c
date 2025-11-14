@@ -3,8 +3,8 @@
 //
 #include "assert.h"
 #include "stdlib.h"
-#include <stdio.h>
-#include <string.h>
+#include <cstdio>
+#include <cstring>
 #include "helpers/physical_io.h"
 #include "helpers/sys_interface.h"
 #include "fail"

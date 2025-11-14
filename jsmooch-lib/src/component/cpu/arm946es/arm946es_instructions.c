@@ -1,8 +1,8 @@
 //
 // Created by . on 1/18/25.
 //
-#include <stdio.h>
-#include <stdlib.h>
+#include <cstdio>
+#include <cstdlib>
 
 #include "helpers/intrinsics.h"
 

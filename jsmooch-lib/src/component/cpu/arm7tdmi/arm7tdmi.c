@@ -2,10 +2,10 @@
 // Created by . on 12/4/24.
 //
 
-#include <stdio.h>
-#include <string.h>
-#include <stdlib.h>
-#include <assert.h>
+#include <cstdio>
+#include <cstring>
+#include <cstdlib>
+#include <cassert>
 
 #include "arm7tdmi.h"
 #include "arm7tdmi_decode.h"

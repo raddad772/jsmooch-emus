@@ -2,8 +2,8 @@
 // Created by . on 3/9/25.
 //
 
-#include <string.h>
-#include <stdio.h>
+#include <cstring>
+#include <cstdio>
 #include "dbglog.h"
 #include "debugger.h"
 

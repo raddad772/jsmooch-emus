@@ -2,10 +2,10 @@
 // Created by . on 9/6/24.
 //
 
-#include <stdlib.h>
-#include <assert.h>
-#include <stdio.h>
-#include <string.h>
+#include <cstdlib>
+#include <cassert>
+#include <cstdio>
+#include <cstring>
 
 #include "gb_apu.h"
 

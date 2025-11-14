@@ -2,9 +2,9 @@
 // Created by . on 5/2/24.
 //
 
-#include <string.h>
-#include <stdio.h>
-#include <assert.h>
+#include <cstring>
+#include <cstdio>
+#include <cassert>
 #include "helpers/int.h"
 #include "helpers/physical_io.h"
 

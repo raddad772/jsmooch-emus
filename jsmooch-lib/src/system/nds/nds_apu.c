@@ -3,7 +3,7 @@
 //
 
 #include <math.h>
-#include <string.h>
+#include <cstring>
 #include "nds_bus.h"
 #include "nds_apu.h"
 #include "nds_regs.h"

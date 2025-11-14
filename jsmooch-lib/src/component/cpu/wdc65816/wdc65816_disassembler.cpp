@@ -2,9 +2,9 @@
 // Created by . on 4/19/25.
 //
 
-#include <stdlib.h>
-#include <string.h>
-#include <stdio.h>
+#include <cstdlib>
+#include <cstring>
+#include <cstdio>
 
 #include "wdc65816_disassembler.h"
 

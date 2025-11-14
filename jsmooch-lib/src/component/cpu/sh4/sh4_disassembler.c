@@ -3,7 +3,7 @@
 //
 
 #include "stdio.h"
-#include "string.h"
+#include <cstring>
 #include "sh4_disassembler.h"
 
 void dasm_support_init(dasm_support* this)

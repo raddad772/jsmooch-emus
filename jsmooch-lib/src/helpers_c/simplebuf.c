@@ -1,10 +1,10 @@
 //
 // Created by . on 8/29/24.
 //
-#include <stdio.h>
-#include <string.h>
-#include <assert.h>
-#include <stdlib.h>
+#include <cstdio>
+#include <cstring>
+#include <cassert>
+#include <cstdlib>
 
 #include "simplebuf.h"
 #include "buf.h"

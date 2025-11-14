@@ -103,7 +103,7 @@ typedef double f64;
 #define bswap_32(x) OSSwapInt32(x)
 #define bswap_64(x) OSSwapInt64(x)
 #elif defined(_MSC_VER)
-#include <stdlib.h>
+#include <cstdlib>
 #define bswap_16(x) _byteswap_ushort(x)
 #define bswap_32(x) _byteswap_ulong(x)
 #define bswap_64(x) _byteswap_uint64(x)

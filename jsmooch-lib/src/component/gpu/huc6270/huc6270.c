@@ -2,8 +2,8 @@
 // Created by . on 6/18/25.
 //
 
-#include <string.h>
-#include <stdio.h>
+#include <cstring>
+#include <cstdio>
 
 #include "helpers/color.h"
 #include "helpers/debug.h"

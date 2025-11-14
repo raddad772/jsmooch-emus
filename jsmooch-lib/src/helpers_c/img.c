@@ -2,7 +2,7 @@
 // Created by . on 11/10/24.
 //
 
-#include <string.h>
+#include <cstring>
 
 #include "img.h"
 

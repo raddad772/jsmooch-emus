@@ -48,7 +48,7 @@
 #endif
 
 #include <stddef.h>
-#include <string.h>
+#include <cstring>
 
 #if defined(_MSC_VER) || defined(__WATCOMC__)
 #define json_weak __inline

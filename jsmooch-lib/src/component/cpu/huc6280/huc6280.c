@@ -1,9 +1,9 @@
 //
 // Created by . on 6/12/25.
 //
-#include <assert.h>
-#include <string.h>
-#include <stdio.h>
+#include <cassert>
+#include <cstring>
+#include <cstdio>
 
 #include "helpers/debug.h"
 #include "fail"

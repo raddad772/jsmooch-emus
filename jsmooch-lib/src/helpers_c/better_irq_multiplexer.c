@@ -2,9 +2,9 @@
 // Created by . on 2/26/25.
 //
 
-#include <string.h>
-#include <assert.h>
-#include <stdio.h>
+#include <cstring>
+#include <cassert>
+#include <cstdio>
 #include "better_irq_multiplexer.h"
 #include "helpers/debug.h"
 

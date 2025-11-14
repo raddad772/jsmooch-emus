@@ -2,7 +2,7 @@
 // Created by . on 5/10/24.
 //
 
-#include <string.h>
+#include <cstring>
 
 #include "myrandom.h"
 

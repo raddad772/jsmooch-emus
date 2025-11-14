@@ -2,9 +2,9 @@
 // Created by . on 8/5/24.
 //
 
-#include <stdlib.h>
-#include <assert.h>
-#include <stdio.h>
+#include <cstdlib>
+#include <cassert>
+#include <cstdio>
 
 #include "mac_internal.h"
 void mac_iwm_init(mac* mac) {

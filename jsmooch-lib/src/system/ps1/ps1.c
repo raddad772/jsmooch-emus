@@ -2,10 +2,10 @@
 // Created by . on 2/11/25.
 //
 
-#include <assert.h>
-#include <stdlib.h>
-#include <stdio.h>
-#include <string.h>
+#include <cassert>
+#include <cstdlib>
+#include <cstdio>
+#include <cstring>
 #include <math.h>
 
 #include "helpers/scheduler.h"

@@ -2,10 +2,10 @@
 // Created by . on 10/20/24.
 //
 
-#include <stdlib.h>
-#include <stdio.h>
-#include <assert.h>
-#include <string.h>
+#include <cstdlib>
+#include <cstdio>
+#include <cassert>
+#include <cstring>
 
 #include "genesis_debugger.h"
 #include "genesis.h"

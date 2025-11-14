@@ -2,8 +2,8 @@
 // Created by . on 6/5/24.
 //
 
-#include <stdio.h>
-#include <assert.h>
+#include <cstdio>
+#include <cassert>
 
 #include "m68000_instructions.h"
 #include "m68000_disassembler.h"

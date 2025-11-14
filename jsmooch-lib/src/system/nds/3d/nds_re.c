@@ -2,8 +2,8 @@
 // Created by . on 3/12/25.
 //
 
-#include <string.h>
-#include <stdlib.h>
+#include <cstring>
+#include <cstdlib>
 #include <math.h>
 #include "nds_re.h"
 #include "system/nds/nds_bus.h"

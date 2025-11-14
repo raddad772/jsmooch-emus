@@ -2,7 +2,7 @@
 // Created by . on 1/19/25.
 //
 
-#include <stdio.h>
+#include <cstdio>
 #include "arm946es.h"
 
 enum CP15_regs {

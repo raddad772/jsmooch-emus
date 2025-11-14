@@ -1,6 +1,6 @@
 #include "assert.h"
 #include "stdlib.h"
-#include <stdio.h>
+#include <cstdio>
 
 #include "helpers/sys_interface.h"
 #include "helpers/physical_io.h"

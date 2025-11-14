@@ -10,7 +10,7 @@
 extern "C" {
 #endif
 
-#include <assert.h>
+#include <cassert>
 #include "helpers/int.h"
 
 struct cvec {

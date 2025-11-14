@@ -5,7 +5,7 @@
 #else
 #include <unistd.h>
 #include <pwd.h>
-#include <stdlib.h>
+#include <cstdlib>
 #endif
 
 const char* get_user_dir()

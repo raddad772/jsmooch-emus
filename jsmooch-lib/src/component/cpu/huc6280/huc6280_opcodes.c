@@ -1,5 +1,5 @@
-#include <stdio.h>
-#include <assert.h>
+#include <cstdio>
+#include <cassert>
 #include "helpers/int.h"
 #include "fail"
 #include "huc6280_opcodes.h"

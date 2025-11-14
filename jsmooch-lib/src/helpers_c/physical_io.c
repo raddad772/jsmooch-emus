@@ -2,9 +2,9 @@
 // Created by . on 4/19/24.
 //
 
-#include <stdio.h>
-#include <string.h>
-#include <stdlib.h>
+#include <cstdio>
+#include <cstring>
+#include <cstdlib>
 #include "physical_io.h"
 
 

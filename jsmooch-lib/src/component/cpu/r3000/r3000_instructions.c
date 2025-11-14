@@ -2,9 +2,9 @@
 // Created by . on 2/11/25.
 //
 
-#include <assert.h>
-#include <stdio.h>
-#include <stdlib.h>
+#include <cassert>
+#include <cstdio>
+#include <cstdlib>
 #include "helpers/intrinsics.h"
 #include "r3000.h"
 #include "r3000_instructions.h"

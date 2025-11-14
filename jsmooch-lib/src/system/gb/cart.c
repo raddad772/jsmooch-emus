@@ -1,5 +1,5 @@
-#include <assert.h>
-#include <stdio.h>
+#include <cassert>
+#include <cstdio>
 #include "stdlib.h"
 #include "helpers/int.h"
 #include "cart.h"

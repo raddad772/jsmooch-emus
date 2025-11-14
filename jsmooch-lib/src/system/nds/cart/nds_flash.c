@@ -2,7 +2,7 @@
 // Created by . on 4/5/25.
 //
 
-#include <stdlib.h>
+#include <cstdlib>
 #include "nds_flash.h"
 #include "../nds_bus.h"
 #include "helpers/multisize_memaccess.c"

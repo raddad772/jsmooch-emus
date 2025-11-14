@@ -2,7 +2,7 @@
 // Created by . on 4/14/24.
 //
 
-#include <string.h>
+#include <cstring>
 #include "stdio.h"
 
 #include "tia.h"
@@ -569,7 +569,7 @@ static u32 get_missile_pixel(atari_TIA* this, u32 msx, u32 missile_num)
 // Created by . on 4/14/24.
 //
 
-#include <string.h>
+#include <cstring>
 #include "stdio.h"
 
 #include "tia.h"

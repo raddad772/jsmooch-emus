@@ -4,11 +4,11 @@
 
 #include "huc6280_tests.h"
 
-#include <assert.h>
+#include <cassert>
 
 #include <stdlib.h>
 #include <stdio.h>
-#include <string.h>
+#include <cstring>
 
 #define ISTART 0
 

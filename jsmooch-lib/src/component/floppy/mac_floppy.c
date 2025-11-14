@@ -1,8 +1,8 @@
 //
 // Created by . on 8/5/24.
 //
-#include <string.h>
-#include <stdio.h>
+#include <cstring>
+#include <cstdio>
 
 #ifdef _MSC_VER
 #define _USE_MATH_DEFINES // for M_PI

@@ -5,7 +5,7 @@
 #ifndef JSMOOCH_EMUS_MY_TEXTURE_OGL3_H
 #define JSMOOCH_EMUS_MY_TEXTURE_OGL3_H
 
-#include <stdio.h>
+#include <cstdio>
 
 #include "build.h"
 

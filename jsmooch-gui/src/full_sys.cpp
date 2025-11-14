@@ -1,13 +1,13 @@
-#include <assert.h>
-#include <stdio.h>
+#include <cassert>
+#include <cstdio>
 //#include <SDL.h>
 #include <stdlib.h>
 #include <pwd.h>
 #include <unistd.h>
-#include <string.h>
+#include <cstring>
 #include <cmath>
 #include <stdlib.h>
-#include <stdio.h>
+#include <cstdio>
 
 #include "build.h"
 #include "my_texture.h"

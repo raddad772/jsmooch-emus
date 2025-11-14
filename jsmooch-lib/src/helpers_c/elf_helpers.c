@@ -3,7 +3,7 @@
 //
 
 #include "elf_helpers.h"
-#include <stdio.h>
+#include <cstdio>
 
 void elf_symbol_list32_init(elf_symbol_list32* this)
 {

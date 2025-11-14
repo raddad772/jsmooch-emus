@@ -1,8 +1,8 @@
 //
 // Created by . on 8/11/24.
 //
-#include <string.h>
-#include <stdio.h>
+#include <cstring>
+#include <cstdio>
 
 #include "helpers/ooc.h"
 

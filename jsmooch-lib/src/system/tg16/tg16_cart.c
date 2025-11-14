@@ -1,7 +1,7 @@
-#include <assert.h>
-#include <string.h>
-#include <stdio.h>
-#include <stdlib.h>
+#include <cassert>
+#include <cstring>
+#include <cstdio>
+#include <cstdlib>
 
 #include "helpers/debug.h"
 #include "helpers/physical_io.h"

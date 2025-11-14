@@ -2,8 +2,8 @@
 // Created by . on 6/18/25.
 //
 
-#include <stdio.h>
-#include <string.h>
+#include <cstdio>
+#include <cstring>
 #include "tg16_clock.h"
 #include "component/gpu/huc6260/huc6260.h"
 

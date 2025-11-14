@@ -2,7 +2,7 @@
 // Created by . on 11/29/24.
 //
 
-#include <stdlib.h>
+#include <cstdlib>
 #include "genesis_serialize.h"
 #include "genesis_bus.h"
 #include "helpers/sys_present.h"

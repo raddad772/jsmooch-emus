@@ -5,10 +5,10 @@
 // This is a straight port of the Ares code, to help
 //  me understand this cool beast.
 
-#include <stdio.h>
-#include <string.h>
+#include <cstdio>
+#include <cstring>
 #include <math.h>
-#include <assert.h>
+#include <cassert>
 
 #include "helpers/debug.h"
 #include "ym2612.h"

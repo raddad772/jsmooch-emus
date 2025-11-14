@@ -1,4 +1,4 @@
-#include <stdio.h>
+#include <cstdio>
 #include "generated_disasm.h"
 
 void M68k_disasm_BADINS(M68k_ins_t *ins, u32 PC, jsm_debug_read_trace *rt, jsm_string *out)

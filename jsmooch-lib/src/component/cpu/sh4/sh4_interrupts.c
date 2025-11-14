@@ -2,9 +2,9 @@
 // Created by . on 5/1/24.
 //
 
-#include <assert.h>
-#include <stdlib.h>
-#include <stdio.h>
+#include <cassert>
+#include <cstdlib>
+#include <cstdio>
 
 #include "sh4_interrupts.h"
 

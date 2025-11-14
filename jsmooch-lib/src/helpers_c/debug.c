@@ -5,10 +5,10 @@
 #include <unistd.h>
 #include <pwd.h>
 #endif
-#include <stdio.h>
-#include <string.h>
-#include <stdlib.h>
-#include <assert.h>
+#include <cstdio>
+#include <cstring>
+#include <cstdlib>
+#include <cassert>
 #include <stdarg.h>
 
 #include "debug.h"

@@ -2,7 +2,7 @@
 // Created by . on 3/25/25.
 //
 
-#include <string.h>
+#include <cstring>
 #include "nds_3dmath.h"
 
 void matrix_translate(i32 *matrix, i32 *data)

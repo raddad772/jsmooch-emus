@@ -2,16 +2,16 @@
 // Created by . on 10/25/24.
 //
 
-#include <stdlib.h>
-#include <stdio.h>
-#include <string.h>
+#include <cstdlib>
+#include <cstdio>
+#include <cstring>
 
 #ifdef _MSC_VER
 #define _USE_MATH_DEFINES // for M_PI
 #endif
 #include <math.h>
 
-#include <assert.h>
+#include <cassert>
 
 #include "helpers/debug.h"
 #include "helpers/serialize/serialize.h"

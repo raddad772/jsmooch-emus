@@ -2,8 +2,8 @@
 // Created by . on 4/16/25.
 //
 
-#include <stdio.h>
-#include <string.h>
+#include <cstdio>
+#include <cstring>
 #include "wdc65816.h"
 #include "wdc65816_disassembler.h"
 /*

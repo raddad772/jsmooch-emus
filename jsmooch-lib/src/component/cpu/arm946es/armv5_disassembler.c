@@ -2,10 +2,10 @@
 // Created by . on 12/21/24.
 //
 
-#include <string.h>
-#include <stdlib.h>
-#include <stdio.h>
-#include <assert.h>
+#include <cstring>
+#include <cstdlib>
+#include <cstdio>
+#include <cassert>
 
 #include "armv5_disassembler.h"
 

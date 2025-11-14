@@ -2,8 +2,8 @@
 // Created by . on 2/11/25.
 //
 
-#include <stdlib.h>
-#include <assert.h>
+#include <cstdlib>
+#include <cassert>
 #include "r3000_multiplier.h"
 
 void R3000_multiplier_set(R3000_multiplier *this, u32 hi, u32 lo, u32 op1, u32 op2, u32 op_kind, u32 cycles, u64 current_clock)

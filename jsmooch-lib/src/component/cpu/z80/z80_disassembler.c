@@ -2,8 +2,8 @@
 // Created by RadDad772 on 2/25/24.
 //
 
-#include <stdio.h>
-#include <string.h>
+#include <cstdio>
+#include <cstring>
 #include "helpers/debug.h"
 #include "z80_disassembler.h"
 #include "z80.h"

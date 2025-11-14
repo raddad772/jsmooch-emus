@@ -2,8 +2,8 @@
 // Created by . on 6/19/25.
 //
 
-#include <string.h>
-#include <stdio.h>
+#include <cstring>
+#include <cstdio>
 
 #include "component/gpu/huc6270/huc6270.h"
 #include "huc6260.h"

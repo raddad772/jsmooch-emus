@@ -2,7 +2,7 @@
 // Created by . on 6/18/25.
 //
 
-#include <string.h>
+#include <cstring>
 
 #include "helpers/color.h"
 

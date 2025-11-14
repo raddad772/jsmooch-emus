@@ -2,8 +2,8 @@
 // Created by Dave on 2/8/2024.
 //
 
-#include <stdio.h>
-#include <string.h>
+#include <cstdio>
+#include <cstring>
 
 #include "sn76489.h"
 

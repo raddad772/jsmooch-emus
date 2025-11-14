@@ -2,9 +2,9 @@
 // Created by . on 12/21/24.
 //
 
-#include <stdlib.h>
-#include <stdio.h>
-#include <assert.h>
+#include <cstdlib>
+#include <cstdio>
+#include <cassert>
 
 #include "armv4_disassembler.h"
 #include "thumb_disassembler.h"

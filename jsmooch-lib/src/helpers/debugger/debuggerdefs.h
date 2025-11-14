@@ -6,6 +6,7 @@
 
 #include "helpers/cvec.h"
 struct debugger_view;
+struct memory_view;
 
 #ifdef interface
 #undef interface
@@ -26,7 +27,7 @@ struct debugger_view;
 #define DBG_WAVEFORM_CHANS(x) cvec_ptr<debug_waveform> chan[x]{}; struct debug_waveform *chan_cache[x]{};
 #define DBG_WAVEFORM_END(x) } waveforms_##x{};
 
-#define DBG_MEMORY_VIEW cvec_ptr memory{};
+#define DBG_MEMORY_VIEW cvec_ptr<memory_view> memory{};
 
 #define DBG_EVENT_VIEW struct { cvec_ptr<debugger_view> view; } events{};
 #define DBG_EVENT_VIEW_START struct { cvec_ptr view{}; u32

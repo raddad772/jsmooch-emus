@@ -8,8 +8,8 @@
 
 #include <stdio.h>
 #include <stdlib.h>
-#include <string.h>
-#include <assert.h>
+#include <cstring>
+#include <cassert>
 
 #include "cpu-test-helpers.h"
 #include "m68000-tests.h"

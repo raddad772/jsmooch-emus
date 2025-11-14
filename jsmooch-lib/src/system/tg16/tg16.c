@@ -2,10 +2,10 @@
 // Created by . on 6/18/25.
 //
 
-#include <assert.h>
-#include <stdlib.h>
-#include <stdio.h>
-#include <string.h>
+#include <cassert>
+#include <cstdlib>
+#include <cstdio>
+#include <cstring>
 
 #include "fail"
 #include "helpers/physical_io.h"

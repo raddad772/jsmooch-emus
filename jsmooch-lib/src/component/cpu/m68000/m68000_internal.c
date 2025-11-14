@@ -1,9 +1,9 @@
 //
 // Created by . on 6/20/24.
 //
-#include <stdio.h>
-#include <stdlib.h>
-#include <assert.h>
+#include <cstdio>
+#include <cstdlib>
+#include <cassert>
 
 #include "helpers/cvec.h"
 #include "m68000.h"

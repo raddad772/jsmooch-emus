@@ -3,7 +3,7 @@
 //
 
 #include "bitbuffer.h"
-#include <stdio.h>
+#include <cstdio>
 
 void bitbuf_init(bitbuf *this, u32 num_bits_preallocate, u32 lsb_first)
 {

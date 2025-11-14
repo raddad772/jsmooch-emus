@@ -1,7 +1,7 @@
 //
 // Created by . on 7/19/25.
 //
-#include <stdio.h>
+#include <cstdio>
 
 #include "huc6280_psg.h"
 

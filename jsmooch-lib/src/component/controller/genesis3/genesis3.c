@@ -2,8 +2,8 @@
 // Created by . on 6/1/24.
 //
 
-#include <stdlib.h>
-#include <stdio.h>
+#include <cstdlib>
+#include <cstdio>
 
 #include "genesis3.h"
 

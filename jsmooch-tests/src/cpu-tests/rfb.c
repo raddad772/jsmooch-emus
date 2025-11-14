@@ -1,7 +1,7 @@
 //
 // Created by RadDad772 on 2/28/24.
 //
-#include <assert.h>
+#include <cassert>
 #include <stdio.h>
 #include <stdlib.h>
 #include "rfb.h"

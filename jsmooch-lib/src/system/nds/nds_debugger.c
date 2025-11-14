@@ -2,9 +2,9 @@
 // Created by . on 12/4/24.
 //
 
-#include <string.h>
-#include <assert.h>
-#include <stdlib.h>
+#include <cstring>
+#include <cassert>
+#include <cstdlib>
 
 #include "helpers/color.h"
 #include "nds.h"

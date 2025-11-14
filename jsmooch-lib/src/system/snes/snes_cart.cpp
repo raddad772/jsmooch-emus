@@ -1,8 +1,8 @@
 //
 // Created by . on 4/21/25.
 //
-#include <string.h>
-#include <stdlib.h>
+#include <cstring>
+#include <cstdlib>
 #include <math.h>
 
 #include "snes_cart.h"

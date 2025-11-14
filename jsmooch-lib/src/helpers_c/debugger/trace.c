@@ -2,7 +2,7 @@
 // Created by . on 12/28/24.
 //
 
-#include <stdio.h>
+#include <cstdio>
 #include <stdarg.h>
 
 #include "trace.h"

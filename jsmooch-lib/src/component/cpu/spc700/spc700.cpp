@@ -1,8 +1,8 @@
 //
 // Created by . on 4/16/25.
 //
-#include <stdio.h>
-#include <string.h>
+#include <cstdio>
+#include <cstring>
 #include <math.h>
 
 #include "spc700.h"

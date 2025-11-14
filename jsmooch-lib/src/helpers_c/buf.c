@@ -3,9 +3,9 @@
 //
 
 #include "assert.h"
-#include <stdio.h>
+#include <cstdio>
 #include "file_exists.h"
-#include "string.h"
+#include <cstring>
 #include "stdlib.h"
 
 #include "buf.h"

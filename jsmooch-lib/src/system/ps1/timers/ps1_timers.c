@@ -2,7 +2,7 @@
 // Created by . on 3/4/25.
 //
 
-#include <stdlib.h>
+#include <cstdlib>
 
 #include "ps1_timers.h"
 #include "../ps1_bus.h"

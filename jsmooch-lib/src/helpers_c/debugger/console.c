@@ -2,8 +2,8 @@
 // Created by . on 3/1/25.
 //
 
-#include <stdio.h>
-#include <string.h>
+#include <cstdio>
+#include <cstring>
 #include "console.h"
 
 void console_view_init(console_view *this)

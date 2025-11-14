@@ -10,8 +10,8 @@
 #include <dirent.h>
 #endif
 
-#include <string.h>
-#include <assert.h>
+#include <cstring>
+#include <cassert>
 #include <stdlib.h>
 #include <stdio.h>
 

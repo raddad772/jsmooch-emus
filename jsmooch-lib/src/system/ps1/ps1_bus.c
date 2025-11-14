@@ -2,7 +2,7 @@
 // Created by . on 2/11/25.
 //
 
-#include <stdio.h>
+#include <cstdio>
 
 #include "ps1_bus.h"
 #include "ps1_dma.h"

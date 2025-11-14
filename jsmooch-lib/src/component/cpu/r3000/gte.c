@@ -2,10 +2,10 @@
 // Created by . on 2/11/25.
 //
 
-#include <stdlib.h>
-#include <string.h>
-#include <assert.h>
-#include <stdio.h>
+#include <cstdlib>
+#include <cstring>
+#include <cassert>
+#include <cstdio>
 
 #include "helpers/intrinsics.h"
 

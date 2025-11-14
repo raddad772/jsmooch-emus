@@ -2,10 +2,10 @@
 // Created by . on 8/30/24.
 //
 
-#include <string.h>
-#include <stdlib.h>
-#include <assert.h>
-#include <stdio.h>
+#include <cstring>
+#include <cstdlib>
+#include <cassert>
+#include <cstdio>
 
 #include "iou.h"
 #include "apple2.h"

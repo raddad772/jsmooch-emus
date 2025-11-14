@@ -3,7 +3,7 @@
 //
 
 #include "math.h"
-#include "string.h"
+#include <cstring>
 #include "assert.h"
 #include "stdio.h"
 

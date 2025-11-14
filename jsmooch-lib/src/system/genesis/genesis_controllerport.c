@@ -1,7 +1,7 @@
 
-#include <stdio.h>
-#include <assert.h>
-#include <stdlib.h>
+#include <cstdio>
+#include <cassert>
+#include <cstdlib>
 
 #include "genesis_bus.h"
 #include "component/controller/genesis3/genesis3.h"

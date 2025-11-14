@@ -2,9 +2,9 @@
 // Created by Dave on 2/7/2024.
 //
 
-#include <string.h>
-#include <stdio.h>
-#include <assert.h>
+#include <cstring>
+#include <cstdio>
+#include <cassert>
 
 #include "fail"
 

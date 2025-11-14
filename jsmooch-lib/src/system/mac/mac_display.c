@@ -2,7 +2,7 @@
 // Created by . on 7/25/24.
 //
 
-#include <stdio.h>
+#include <cstdio>
 
 #include "mac_display.h"
 #include "mac_internal.h"

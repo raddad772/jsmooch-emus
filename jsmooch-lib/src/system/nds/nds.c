@@ -1,10 +1,10 @@
 //
 // Created by . on 12/4/24.
 //
-#include <assert.h>
-#include <stdlib.h>
-#include <stdio.h>
-#include <string.h>
+#include <cassert>
+#include <cstdlib>
+#include <cstdio>
+#include <cstring>
 
 #include "nds.h"
 #include "nds_bus.h"

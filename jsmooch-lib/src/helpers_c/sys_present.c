@@ -2,8 +2,8 @@
 // Created by Dave on 1/24/2024.
 //
 
-#include <string.h>
-#include <stdio.h>
+#include <cstring>
+#include <cstdio>
 
 #include "sys_present.h"
 #include "helpers/color.h"

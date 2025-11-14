@@ -2,11 +2,9 @@
 // Created by . on 2/11/25.
 //
 
-#ifndef JSMOOCH_EMUS_SNES_H
-#define JSMOOCH_EMUS_SNES_H
+#pragma once
 
-struct jsm_system;
-void SNES_new(jsm_system*);
+#include "helpers/sys_interface.h"
+
+jsm_system *SNES_new();
 void SNES_delete(jsm_system* system);
-
-#endif //JSMOOCH_EMUS_SNES_H

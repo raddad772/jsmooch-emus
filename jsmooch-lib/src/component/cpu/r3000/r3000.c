@@ -1,9 +1,9 @@
 //
 // Created by . on 2/11/25.
 //
-#include <stdlib.h>
-#include <string.h>
-#include <stdio.h> // printf
+#include <cstdlib>
+#include <cstring>
+#include <cstdio> // printf
 
 #include "r3000_instructions.h"
 #include "r3000.h"

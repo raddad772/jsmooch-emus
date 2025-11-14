@@ -5,7 +5,7 @@
 #ifndef JSMOOCH_EMUS_WAV_H
 #define JSMOOCH_EMUS_WAV_H
 
-#include <stdio.h>
+#include <cstdio>
 #include "helpers/int.h"
 #include "helpers/pack.h"
 

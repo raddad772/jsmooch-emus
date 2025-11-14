@@ -2,8 +2,8 @@
 // Created by Dave on 4/14/24.
 //
 
-#include <stdio.h>
-#include <string.h>
+#include <cstdio>
+#include <cstring>
 #include "cart.h"
 
 void atari2600_cart_init(atari2600_cart* this)

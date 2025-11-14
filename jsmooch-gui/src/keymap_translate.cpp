@@ -1,7 +1,7 @@
 //
 // Created by . on 8/4/24.
 //
-#include <stdio.h>
+#include <cstdio>
 #include <stdlib.h> // abort()
 
 #include "keymap_translate.h"

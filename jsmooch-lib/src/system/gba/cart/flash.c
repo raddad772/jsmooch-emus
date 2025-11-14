@@ -1,7 +1,7 @@
 //
 // Created by . on 1/17/25.
 //
-#include <string.h>
+#include <cstring>
 
 #include "../gba_bus.h"
 #include "flash.h"

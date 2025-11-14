@@ -4,7 +4,7 @@
 
 #include "assert.h"
 #include "stdlib.h"
-#include "string.h"
+#include <cstring>
 #include "stdio.h"
 
 #include "fail"

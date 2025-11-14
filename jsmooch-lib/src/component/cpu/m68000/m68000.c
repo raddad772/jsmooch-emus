@@ -2,9 +2,9 @@
 // Created by RadDad772 on 4/14/24.
 //
 
-#include <assert.h>
-#include <string.h>
-#include <stdio.h>
+#include <cassert>
+#include <cstring>
+#include <cstdio>
 
 #include "helpers/debug.h"
 #include "helpers/serialize/serialize.h"

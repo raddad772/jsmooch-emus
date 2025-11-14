@@ -2069,7 +2069,7 @@ function get_decodes(opc_matrix, nonestr, func_prefix) {
 
 function generate_6502_core_c(variant_list, final_variant, output_name, BCD_SUPPORT, INVALID_OP, is_C=true, func_prefix='') {
     let opc_matrix = final_m6502_opcode_matrix(variant_list);
-    let outstr = '#include <assert.h>\n' +
+    let outstr = '#include <cassert>\n' +
         '#include "helpers/int.h"\n' +
         '#include "' + func_prefix + 'm6502_opcodes.h"\n' +
         '#include "m6502.h"\n' +

@@ -1770,7 +1770,7 @@ def main():
         os.unlink(outinsfile)
     with open(outinsfile, 'w') as outfile:
         outfile.write('#include <stdio.h>\n')
-        outfile.write('#include <assert.h>\n')
+        outfile.write('#include <cassert>\n')
         outfile.write('#include "helpers/int.h"\n')
         outfile.write('#include "helpers/debugger/debugger.h"\n')
         outfile.write('#include "huc6280_opcodes.h"\n')

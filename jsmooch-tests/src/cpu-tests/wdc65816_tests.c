@@ -11,8 +11,8 @@
 #include <dirent.h>
 #endif
 #include <stdlib.h>
-#include <string.h>
-#include <assert.h>
+#include <cstring>
+#include <cassert>
 #include "../json.h"
 
 #define MAX_RAM_ENTRIES 50

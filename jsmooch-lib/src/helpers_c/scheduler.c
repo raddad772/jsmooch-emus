@@ -2,7 +2,7 @@
 // Created by RadDad772 on 2/28/24.
 //
 
-#include <string.h>
+#include <cstring>
 #include "stdio.h"
 #include "assert.h"
 #include "stdlib.h"

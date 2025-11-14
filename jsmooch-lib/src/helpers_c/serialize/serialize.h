@@ -9,7 +9,7 @@
 extern "C" {
 #endif
 
-#include <stdio.h>
+#include <cstdio>
 
 #include "helpers/int.h"
 #include "helpers/enums.h"

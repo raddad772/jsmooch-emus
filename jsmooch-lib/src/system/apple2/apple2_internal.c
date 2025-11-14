@@ -2,8 +2,8 @@
 // Created by . on 8/30/24.
 //
 
-#include <stdlib.h>
-#include <assert.h>
+#include <cstdlib>
+#include <cassert>
 
 #include "apple2.h"
 #include "apple2_internal.h"

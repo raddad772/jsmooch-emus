@@ -2,9 +2,9 @@
 // Created by . on 8/12/24.
 //
 
-#include <stdio.h>
-#include <string.h>
-#include <stdlib.h>
+#include <cstdio>
+#include <cstring>
+#include <cstdlib>
 
 #include "helpers/debugger/waveform.h"
 

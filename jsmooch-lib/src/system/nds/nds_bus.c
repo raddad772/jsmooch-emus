@@ -1,7 +1,7 @@
 //
 // Created by . on 12/4/24.
 //
-#include <string.h>
+#include <cstring>
 
 #include "nds_regs.h"
 #include "nds_bus.h"

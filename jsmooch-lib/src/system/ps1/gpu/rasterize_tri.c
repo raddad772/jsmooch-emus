@@ -3,7 +3,7 @@
 //
 
 #include <math.h>
-#include <stdio.h>
+#include <cstdio>
 
 #include "rasterize_tri.h"
 #include "pixel_helpers.h"

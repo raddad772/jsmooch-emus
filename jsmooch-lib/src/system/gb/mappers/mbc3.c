@@ -8,7 +8,7 @@
 #include "stdlib.h"
 #include "assert.h"
 #include "stdio.h"
-#include "string.h"
+#include <cstring>
 #include "time.h"
 
 #include "helpers/serialize/serialize.h"

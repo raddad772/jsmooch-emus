@@ -2,8 +2,8 @@
 // Created by . on 6/1/24.
 //
 
-#include <assert.h>
-#include <stdio.h>
+#include <cassert>
+#include <cstdio>
 
 #include "genesis_debugger.h"
 #include "genesis_bus.h"

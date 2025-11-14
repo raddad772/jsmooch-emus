@@ -1,4 +1,4 @@
-#include <assert.h>
+#include <cassert>
 #include "helpers/int.h"
 #include "nesm6502_opcodes.h"
 #include "m6502.h"

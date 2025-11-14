@@ -2,8 +2,8 @@
 // Created by . on 8/7/24.
 //
 
-#include <stdio.h>
-#include <assert.h>
+#include <cstdio>
+#include <cassert>
 
 #include "mac.h"
 #include "mac_internal.h"

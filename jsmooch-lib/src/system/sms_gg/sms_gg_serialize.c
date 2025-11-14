@@ -2,7 +2,7 @@
 // Created by . on 11/10/24.
 //
 
-#include <stdlib.h>
+#include <cstdlib>
 
 #include "sms_gg.h"
 #include "sms_gg_clock.h"

@@ -1,8 +1,8 @@
 //
 // Created by . on 12/28/24.
 //
-#include <string.h>
-#include <stdlib.h>
+#include <cstring>
+#include <cstdlib>
 
 #include "helpers/int.h"
 #include "gba_bus.h"

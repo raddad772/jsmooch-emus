@@ -1,7 +1,7 @@
 //
 // Created by . on 1/18/25.
 //
-#include <string.h>
+#include <cstring>
 
 #include "helpers/multisize_memaccess.c"
 

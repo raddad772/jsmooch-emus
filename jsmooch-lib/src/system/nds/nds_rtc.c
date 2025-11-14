@@ -2,7 +2,7 @@
 // Created by . on 1/21/25.
 //
 
-#include <string.h>
+#include <cstring>
 
 #include "nds_rtc.h"
 #include "nds_bus.h"

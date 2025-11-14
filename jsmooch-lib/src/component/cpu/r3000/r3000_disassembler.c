@@ -2,9 +2,9 @@
 // Created by . on 2/12/25.
 //
 
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
+#include <cstdio>
+#include <cstdlib>
+#include <cstring>
 
 #include "r3000_disassembler.h"
 

@@ -2,8 +2,8 @@
 // Created by . on 11/18/24.
 //
 
-#include <string.h>
-#include <stdio.h>
+#include <cstring>
+#include <cstdio>
 
 #include "genesis6.h"
 

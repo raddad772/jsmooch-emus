@@ -3,7 +3,7 @@
 //
 
 #include <stdio.h>
-#include <assert.h>
+#include <cassert>
 #include <stdlib.h>
 #if !defined(_MSC_VER)
 #include <unistd.h>

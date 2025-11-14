@@ -3,7 +3,7 @@
 //
 #include "assert.h"
 #include "stdlib.h"
-#include <stdio.h>
+#include <cstdio>
 
 #include "helpers/physical_io.h"
 #include "helpers/sys_interface.h"

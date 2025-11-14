@@ -4,10 +4,10 @@
 
 #include "snes_debugger.h"
 
-#include <stdlib.h>
-#include <stdio.h>
-#include <assert.h>
-#include <string.h>
+#include <cstdlib>
+#include <cstdio>
+#include <cassert>
+#include <cstring>
 
 #include "helpers/color.h"
 #include "snes_bus.h"

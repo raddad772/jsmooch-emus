@@ -2,7 +2,7 @@
 // Created by . on 2/26/25.
 //
 
-#include <string.h>
+#include <cstring>
 #include "ps1_sio.h"
 #include "../ps1_bus.h"
 

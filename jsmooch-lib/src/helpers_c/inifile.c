@@ -1,14 +1,14 @@
 //
 // Created by . on 8/3/24.
 //
-#include <string.h>
+#include <cstring>
 #include <ctype.h>
-#include <stdio.h>
+#include <cstdio>
 #ifndef _MSC_VER
 #include <unistd.h>
 #include <pwd.h>
 #endif
-#include <stdlib.h>
+#include <cstdlib>
 
 #include "inifile.h"
 #include "user.h"

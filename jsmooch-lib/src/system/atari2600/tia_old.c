@@ -2,7 +2,7 @@
 // Created by . on 4/14/24.
 //
 
-#include <string.h>
+#include <cstring>
 #include "stdio.h"
 
 #include "tia.h"

@@ -2,7 +2,7 @@
 // Created by . on 6/18/25.
 //
 
-#include <stdio.h>
+#include <cstdio>
 
 #include "tg16_bus.h"
 

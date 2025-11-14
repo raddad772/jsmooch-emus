@@ -2,7 +2,7 @@
 // Created by . on 6/1/24.
 //
 
-#include <stdlib.h>
+#include <cstdlib>
 #include "genesis_clock.h"
 
 void genesis_clock_ntsc(genesis_clock* this);

@@ -1,8 +1,8 @@
 //
 // Created by . on 1/19/25.
 //
-#include <stdlib.h>
-#include <string.h>
+#include <cstdlib>
+#include <cstring>
 
 #include "helpers/multisize_memaccess.c"
 #include "nds_bus.h"

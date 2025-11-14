@@ -2,7 +2,7 @@
 // Created by . on 12/7/24.
 //
 
-#include <stdlib.h>
+#include <cstdlib>
 #include "gb_serialize.h"
 #include "gb.h"
 #include "gb_bus.h"

@@ -7,9 +7,9 @@
 // Created by . on 12/21/24.
 //
 
-#include <stdlib.h>
-#include <stdio.h>
-#include <assert.h>
+#include <cstdlib>
+#include <cstdio>
+#include <cassert>
 
 #include "armv5_disassembler.h"
 #include "thumb2_disassembler.h"

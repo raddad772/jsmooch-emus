@@ -2,8 +2,7 @@
 // Created by . on 2/11/25.
 //
 
-#ifndef JSMOOCH_EMUS_SNES_BUS_H
-#define JSMOOCH_EMUS_SNES_BUS_H
+#pragma once
 
 #include "helpers/int.h"
 #include "helpers/debug.h"
@@ -32,23 +31,22 @@ typedef void (*snesched_callback)(SNES *, snesched_item *);
 // >> 2 = 1,2,3
 
 struct SNES {
-    struct R5A22 r5a22;
-    struct SNES_APU apu;
-    struct scheduler_t scheduler;
-    struct SNES_clock clock;
-    struct SNES_cart cart;
-    struct SNES_PPU ppu;
+    SNES() : r5a22(this), ppu(this), scheduler (&clock.master_cycle_count, &clock.nothing) {}
+    R5A22 r5a22;
+    SNES_APU apu;
+    scheduler_t scheduler;
+    SNES_clock clock{};
+    SNES_cart cart;
+    SNES_PPU ppu;
 
-    struct SNES_joypad controller1, controller2;
+    SNES_joypad controller1{}, controller2{};
 
-    struct SNES_mem mem;
+    SNES_mem mem{};
 
-
-    i32 block_cycles_to_run;
-
+    i32 block_cycles_to_run{};
 
     struct {
-        struct cvec* IOs;
+        std::vector<physical_io_device> *IOs;
         u32 described_inputs;
     } jsm;
 
@@ -76,30 +74,23 @@ struct SNES {
             DBG_WAVEFORM_CHANS(8)
         DBG_WAVEFORM_END1
         DBG_LOG_VIEW
-
     DBG_END
-    struct {
-        double master_cycles_per_audio_sample, master_cycles_per_min_sample, master_cycles_per_max_sample;
-        double next_sample_cycle_max, next_sample_cycle_min, next_sample_cycle;
-        double next_debug_cycle;
-        struct audiobuf *buf;
-        u64 cycles;
-    } audio;
 
-#if !defined(_MSC_VER) // error C2016: C requires that a struct or union have at least one member
     struct {
-    } opts;
-#endif
+        double master_cycles_per_audio_sample{}, master_cycles_per_min_sample{}, master_cycles_per_max_sample{};
+        double next_sample_cycle_max{}, next_sample_cycle_min{}, next_sample_cycle{};
+        double next_debug_cycle{};
+        audiobuf *buf{};
+        u64 cycles{};
+    } audio{};
 
     struct {
         struct SNES_DBG_LINE {
             struct SNES_DBG_line_bg {
-                union SNES_PPU_px px[256];
-                u32 enabled, mode, bpp8;
-            } bg[4];
-            union SNES_PPU_px sprite_px[256];
-        } line[224];
-    } dbg_info;
+                SNES_PPU_px px[256]{};
+                u32 enabled{}, mode{}, bpp8{};
+            } bg[4]{};
+            SNES_PPU_px sprite_px[256]{};
+        } line[224]{};
+    } dbg_info{};
 };
-
-#endif //JSMOOCH_EMUS_SNES_BUS_H

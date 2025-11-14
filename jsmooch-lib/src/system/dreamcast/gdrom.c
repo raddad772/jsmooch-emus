@@ -2,7 +2,7 @@
 // Created by RadDad772 on 3/2/24.
 //
 
-#include "string.h"
+#include <cstring>
 #include "assert.h"
 #include "stdio.h"
 #include "dreamcast.h"

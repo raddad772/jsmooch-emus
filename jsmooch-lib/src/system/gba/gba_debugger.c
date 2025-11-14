@@ -2,8 +2,8 @@
 // Created by . on 12/4/24.
 //
 
-#include <string.h>
-#include <assert.h>
+#include <cstring>
+#include <cassert>
 
 #include "helpers/color.h"
 #include "gba.h"

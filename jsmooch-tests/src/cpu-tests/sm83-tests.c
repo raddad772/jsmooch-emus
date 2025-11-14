@@ -12,7 +12,7 @@
 #include "stdio.h"
 #include "stdlib.h"
 #include "assert.h"
-#include "string.h"
+#include <cstring>
 
 #include "helpers/int.h"
 #include "helpers/user.h"

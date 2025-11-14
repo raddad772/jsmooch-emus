@@ -6,10 +6,10 @@
 //  others on Ares. I've tried to keep it as original as possible.
 // I plan to redo it once I fully understand it.
 
-#include <stdio.h>
-#include <string.h>
+#include <cstdio>
+#include <cstring>
 #include <math.h>
-#include <assert.h>
+#include <cassert>
 
 #include "helpers/debug.h"
 #include "ym2612.h"
