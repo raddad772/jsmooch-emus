@@ -94,6 +94,8 @@ void NES_delete(JSM)
         }
     }
     ms.clear();
+
+    delete nesj;
 }
 
 static void NESIO_load_cart(JSM, multi_file_set &mfs, physical_io_device &pio) {
@@ -185,8 +187,8 @@ void NESJ::describe_io()
     d->init(HID_DISPLAY, 1, 1, 0, 1); //5
     d->display.output[0] = malloc(256 * 224 * 2);
     d->display.output[1] = malloc(256 * 224 * 2);
-    d->display.output_debug_metadata[0] = NULL;
-    d->display.output_debug_metadata[1] = NULL;
+    d->display.output_debug_metadata[0] = nullptr;
+    d->display.output_debug_metadata[1] = nullptr;
     nes.ppu.display_ptr = cvec_ptr(IOs, IOs.size()-1);
     nes.ppu.cur_output = static_cast<u16 *>(d->display.output[0]);
     setup_crt(&d->display);
@@ -288,7 +290,7 @@ void NESJ::sample_audio()
 
 u32 NESJ::finish_frame()
 {
-    if (nes.bus.fake_PRG_RAM.ptr == NULL)
+    if (nes.bus.fake_PRG_RAM.ptr == nullptr)
         nes.bus.fake_PRG_RAM.ptr = static_cast<u8 *>(nes.bus.SRAM->data);
     u64 current_frame = nes.clock.master_frame;
     while (nes.clock.master_frame == current_frame) {

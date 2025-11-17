@@ -78,10 +78,10 @@ struct scheduler_t {
     void run_til_tag_tg16(u32 tag);
     void run_til_tag(u32 tag);
     void from_event_adjust_master_clock(i64 howmany);
+    void clear();
 
 private:
     [[nodiscard]] inline i64 current_time() const;
-    void clear();
     scheduler_event *alloc_event(i64 timecode, u64 key, scheduler_event* next, u64 id);
     static scheduled_bound_function* bind_function(scheduler_callback func, void *ptr);
 };
@@ -98,25 +98,6 @@ struct scheduler_action_return {
     scheduler_actions action;
     u64 arg;
 };
-
-void scheduler_init(scheduler_t*, u64 *clock, u64 *waitstates);
-void scheduler_delete(scheduler_t*);
-void scheduler_clear(scheduler_t*);
-
-u64 scheduler_only_add_abs(scheduler_t *, i64 timecode, u64 key, void *ptr, scheduler_callback callback, u32 *still_sched);
-scheduler_event *scheduler_add_abs(scheduler_t*, i64 timecode, u64 key, u32 do_instant);
-void scheduler_delete_if_exist(scheduler_t *, u64 id);
-u64 scheduler_add_next(scheduler_t *, u64 key, void *ptr, scheduler_callback callback, u32 *still_sched);
-
-void scheduler_run_for_cycles(scheduler_t *, u64 howmany);
-void scheduler_run_til_tag(scheduler_t *, u32 tag);
-void scheduler_run_til_tag_tg16(scheduler_t *, u32 tag);
-void scheduler_run_for_cycles_tg16(scheduler_t *, u64 howmany);
-u64 scheduler_bind_or_run(scheduler_event *e, void *ptr, scheduler_callback func, i64 timecode, u64 key, u32 *still_sched);
-
-// Combine add with bind
-u64 scheduler_add_or_run_abs(scheduler_t *, i64 timecode, u64 key, void *ptr, scheduler_callback callback, u32 *still_sched);
-u64 scheduler_only_add_abs_w_tag(scheduler_t *, i64 timecode, u64 key, void *ptr, scheduler_callback callback, u32 *still_sched, u32 tag);
 
 scheduled_bound_function* scheduler_bind_function(scheduler_callback func, void *ptr);
 

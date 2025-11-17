@@ -2,8 +2,7 @@
 // Created by . on 5/9/25.
 //
 
-#ifndef JSMOOCH_EMUS_SNES_CONTROLLER_PORT_H
-#define JSMOOCH_EMUS_SNES_CONTROLLER_PORT_H
+#pragma once
 
 #include "helpers/int.h"
 
@@ -12,16 +11,14 @@ enum SNES_controller_kinds {
     SNES_CK_standard
 };
 
-struct SNES_controller_port {
-    void *ptr;
-    enum SNES_controller_kinds kind;
-};
-
 struct SNES;
 
-void SNES_controllerport_latch(SNES *, u32 num, u32 val);
-u32 SNES_controllerport_data(SNES *, u32 num);
-void SNES_controllerport_connect(SNES_controller_port *, enum SNES_controller_kinds kind, void *ptr);
-void SNES_controllerport_delete(SNES_controller_port *);
+struct SNES_controller_port {
+    void latch(u32 val);
+    u32 data();
+    void connect(SNES_controller_kinds in_kind, void *in_ptr);;
 
-#endif //JSMOOCH_EMUS_SNES_CONTROLLER_PORT_H
+    void *ptr{};
+    SNES_controller_kinds kind = SNES_CK_none;
+
+};

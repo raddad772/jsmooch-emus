@@ -10,14 +10,16 @@
 struct SNES;
 
 struct R5A22_DMA_CHANNEL {
-    explicit R5A22_DMA_CHANNEL(SNES *in_snes) : snes(in_snes) {}
-    SNES *snes;
-    u32 hdma_is_finished();
-    u32 hdma_is_active();
-    u32 hdma_reload_ch();
-    u32 hdma_setup_ch();
-    u32 dma_run_ch();
+    SNES *snes{};
+    u32 hdma_is_finished() const;
+    u32 hdma_is_active() const;
+    u32 hdma_reload();
+    u32 hdma_setup();
+    u32 dma_run();
+    void hdma_transfer();
+    void hdma_advance();
     void dma_transfer(u32 addrA, u32 index, u32 hdma_mode);
+    void clear_values();
     u32 dma_enable{}, status{}, hdma_enable{}, direction{}, indirect{}, unused{}, reverse_transfer{}, fixed_transfer{};
     u32 transfer_mode{}, target_address{}, source_address{}, dma_pause{};
     u32 source_bank{}, transfer_size{}, indirect_bank{}, indirect_address{};
@@ -28,13 +30,32 @@ struct R5A22_DMA_CHANNEL {
 };
 
 struct R5A22 {
-    explicit R5A22(SNES *parent) : snes(parent) {}
+    explicit R5A22(SNES *parent, u64 *master_clock);
+    void reset();
+    void setup_tracing(jsm_debug_read_trace *strct);
+    void hblank(u32 which);
+    u32 reg_read(u32 addr, u32 old, u32 has_effect, SNES_memmap_block *bl);
+    void reg_write(u32 addr, u32 val, SNES_memmap_block *bl);
+    void cycle_cpu();
+    void cycle_alu();
+    u32 dma_run();
+
+private:
+    void dma_reset();
+    u32 dma_reg_read(u32 addr, u32 old, u32 has_effect);
+    void dma_reg_write(u32 addr, u32 val);
+
+public:
+    void schedule_first();
+    void dma_start();
+    [[nodiscard]] u32 hdma_is_enabled() const;
+    void update_irq();
+    void update_nmi();
+
     SNES *snes;
     WDC65816 cpu;
-    SNES_controller_port controller_port[2]{};
+    SNES_controller_port controller_port1{}, controller_port2{};
     u32 ROMspeed{};
-    u32 hdma_is_enabled();
-    void update_irq();
 
     struct {
         u32 dma_pending{}, hdma_pending{}, dma_running{}, hdma_running{}, dma_active{};
@@ -87,3 +108,4 @@ struct R5A22 {
 };
 
 
+void R5A22_cycle(void *ptr, u64 key, u64 clock, u32 jitter);

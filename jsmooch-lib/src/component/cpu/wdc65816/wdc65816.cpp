@@ -108,7 +108,7 @@ void WDC65816::trace_format()
             return;
         }
         WDC65816_ctxt ct;
-        WDC65816_disassemble(trace.ins_PC, &regs, regs.E, regs.P.M, regs.P.X, &trace.strct, &trace.str, &ct);
+        WDC65816_disassemble(trace.ins_PC, regs, regs.E, regs.P.M, regs.P.X, trace.strct, trace.str, &ct);
         pprint_context(&trace.str2);
 
         dv->add_printf(trace.dbglog.id, tc, DBGLS_TRACE, "%06x  %s", trace.ins_PC, trace.str.ptr);

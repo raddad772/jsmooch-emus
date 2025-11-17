@@ -4,56 +4,50 @@
 
 #include "snes_bus.h"
 #include "snes_mem.h"
-#include "snesdefs.h"
 #include "snes_ppu.h"
 #include "r5a22.h"
 
-static void write_bad(SNES *this, u32 addr, u32 val, SNES_memmap_block *bl)
+void SNES_mem::write_bad(u32 addr, u32 val, SNES_memmap_block *bl)
 {
     printf("\nWARN BAD WRITE %06x:%02x", addr, val);
 }
 
-static u32 read_bad(SNES *this, u32 addr, u32 old, u32 has_effect, SNES_memmap_block *bl)
+u32 SNES_mem::read_bad(u32 addr, u32 old, u32 has_effect, SNES_memmap_block *bl)
 {
     if (has_effect) {
         printf("\nWARN BAD READ %06x", addr);
         static int num = 0;
         num++;
         if (num > 0) {
-//        dbg_break("BECAUSE", this->clock.master_cycle_count);
+//        dbg_break("BECAUSE", th->clock.master_cycle_count);
         }
     }
     return old;
 }
 
-static void clear_map(SNES *this)
+void SNES_mem::clear_map()
 {
     printf("\nCLEAR MAP!");
     for (u32 i = 0; i < 0x1000; i++) {
-        this->mem.read[i] = &read_bad;
-        this->mem.write[i] = &write_bad;
-        this->mem.blockmap[i] = (SNES_memmap_block){.kind=SMB_open};
+        read[i] = &SNES_mem::read_bad;
+        write[i] = &SNES_mem::write_bad;
+        blockmap[i].clear(SNES_memmap_block::open);
     }
-}
-
-void SNES_mem_init(SNES *this)
-{
-    clear_map(this);
 }
 
 // typedef void (*SNES_memmap_write)(SNES *, u32 addr, u32 val, SNES_memmap_block *bl);
 //typedef u32 (*SNES_memmap_read)(SNES *, u32 addr, u32 old, u32 has_effect, SNES_memmap_block *bl);
-static void write_WRAM(SNES *this, u32 addr, u32 val, SNES_memmap_block *bl)
+void SNES_mem::write_WRAM(u32 addr, u32 val, SNES_memmap_block *bl)
 {
-    this->mem.WRAM[((addr & 0xFFF) + bl->offset) & 0x1FFFF] = val;
+    WRAM[((addr & 0xFFF) + bl->offset) & 0x1FFFF] = val;
 }
 
-static u32 read_WRAM(SNES *this, u32 addr, u32 old, u32 has_effect, SNES_memmap_block *bl)
+u32 SNES_mem::read_WRAM(u32 addr, u32 old, u32 has_effect, SNES_memmap_block *bl)
 {
-    return this->mem.WRAM[((addr & 0xFFF) + bl->offset) & 0x1FFFF];
+    return WRAM[((addr & 0xFFF) + bl->offset) & 0x1FFFF];
 }
 
-static void write_loROM(SNES *this, u32 addr, u32 val, SNES_memmap_block *bl)
+void SNES_mem::write_loROM(u32 addr, u32 val, SNES_memmap_block *bl)
 {
     static int a = 1;
     printf("\nWARNING writes to ROM area! %06x", addr);
@@ -63,238 +57,243 @@ static void write_loROM(SNES *this, u32 addr, u32 val, SNES_memmap_block *bl)
     }
 }
 
-static u32 read_loROM(SNES *this, u32 addr, u32 old, u32 has_effect, SNES_memmap_block *bl)
+u32 SNES_mem::read_loROM(u32 addr, u32 old, u32 has_effect, SNES_memmap_block *bl)
 {
-    u32 maddr = ((addr & 0xFFF) + bl->offset) % this->cart.ROM.size;
-    return ((u8 *)this->cart.ROM.ptr)[maddr];
+    u32 maddr = ((addr & 0xFFF) + bl->offset) % snes->cart.ROM.size;
+    return static_cast<u8 *>(snes->cart.ROM.ptr)[maddr];
 }
 
-static void write_SRAM(SNES *this, u32 addr, u32 val, SNES_memmap_block *bl)
+void SNES_mem::write_SRAM(u32 addr, u32 val, SNES_memmap_block *bl)
 {
-    ((u8 *)this->cart.SRAM->data)[((addr & 0xFFF) + bl->offset) & this->cart.header.sram_mask] = val;
-    this->cart.SRAM->dirty = 1;
+    static_cast<u8 *>(snes->cart.SRAM->data)[((addr & 0xFFF) + bl->offset) & snes->cart.header.sram_mask] = val;
+    snes->cart.SRAM->dirty = 1;
 }
 
-static u32 read_SRAM(SNES *this, u32 addr, u32 old, u32 has_effect, SNES_memmap_block *bl)
+u32 SNES_mem::read_SRAM(u32 addr, u32 old, u32 has_effect, SNES_memmap_block *bl)
 {
-    return ((u8 *)this->cart.SRAM->data)[((addr & 0xFFF) + bl->offset) & this->cart.header.sram_mask];
+    return static_cast<u8 *>(snes->cart.SRAM->data)[((addr & 0xFFF) + bl->offset) & snes->cart.header.sram_mask];
 }
 
-static void map_generic(SNES *this, u32 bank_start, u32 bank_end, u32 addr_start, u32 addr_end, u32 offset, enum SMB_kind kind, SNES_memmap_read rfunc, SNES_memmap_write wfunc) {
+void SNES_mem::map_generic(u32 bank_start, u32 bank_end, u32 addr_start, u32 addr_end, u32 offset, SNES_memmap_block::SMB_kind kind, SNES_mem::SNES_memmap_read rfunc, SNES_mem::SNES_memmap_write wfunc) {
     for (u32 c = bank_start; c <= bank_end; c++) {
         for (u32 i = addr_start; i <= addr_end; i += 0x1000) {
             u32 b = (c << 4) | (i >> 12);
-            this->mem.blockmap[b].kind = kind;
-            this->mem.blockmap[b].offset = (i - addr_start) + offset;
-            this->mem.read[b] = rfunc;
-            this->mem.write[b] = wfunc;
+            blockmap[b].kind = kind;
+            blockmap[b].offset = (i - addr_start) + offset;
+            read[b] = rfunc;
+            write[b] = wfunc;
         }
     }
 }
 
-static void map_loram(SNES *this, u32 bank_start, u32 bank_end, u32 addr_start, u32 addr_end, u32 offset)
+void SNES_mem::map_loram(u32 bank_start, u32 bank_end, u32 addr_start, u32 addr_end, u32 offset)
 {
-    map_generic(this, bank_start, bank_end, addr_start, addr_end, offset, SMB_WRAM, &read_WRAM, &write_WRAM);
+    map_generic(bank_start, bank_end, addr_start, addr_end, offset, SNES_memmap_block::WRAM, &SNES_mem::read_WRAM, &SNES_mem::write_WRAM);
 }
 
-static void map_hirom(SNES *this, u32 bank_start, u32 bank_end, u32 addr_start, u32 addr_end, u32 offset, u32 bank_mask)
+void SNES_mem::map_hirom(u32 bank_start, u32 bank_end, u32 addr_start, u32 addr_end, u32 offset, u32 bank_mask)
 {
     for (u32 c = bank_start; c <= bank_end; c++) {
         for (u32 i = addr_start; i <= addr_end; i += 0x1000) {
             u32 b = (c << 4) | (i >> 12);
             u32 mapaddr = ((c & bank_mask) << 16) | i;
             //printf("\nMAP %06X to %06X", (c << 16) | i, mapaddr);
-            mapaddr %= this->cart.header.rom_size;
-            this->mem.blockmap[b].kind = SMB_ROM;
-            this->mem.blockmap[b].offset = mapaddr;
-            this->mem.read[b] = &read_loROM;
-            this->mem.write[b] = &write_loROM;
+            mapaddr %= snes->cart.header.rom_size;
+            blockmap[b].kind = SNES_memmap_block::ROM;
+            blockmap[b].offset = mapaddr;
+            read[b] = &SNES_mem::read_loROM;
+            write[b] = &SNES_mem::write_loROM;
             //printf("\nMap %06x with offset %04x", (c << 16) | i, offset);
         }
     }
 }
 
-
-static void map_lorom(SNES *this, u32 bank_start, u32 bank_end, u32 addr_start, u32 addr_end)
+void SNES_mem::map_lorom(u32 bank_start, u32 bank_end, u32 addr_start, u32 addr_end)
 {
     u32 offset = 0;
     for (u32 c = bank_start; c <= bank_end; c++) {
         for (u32 i = addr_start; i <= addr_end; i += 0x1000) {
             u32 b = (c << 4) | (i >> 12);
-            this->mem.blockmap[b].kind = SMB_ROM;
-            this->mem.blockmap[b].offset = offset;
-            this->mem.read[b] = &read_loROM;
-            this->mem.write[b] = &write_loROM;
+            blockmap[b].kind = SNES_memmap_block::ROM;
+            blockmap[b].offset = offset;
+            read[b] = &SNES_mem::read_loROM;
+            write[b] = &SNES_mem::write_loROM;
             //printf("\nMap %06x with offset %04x", (c << 16) | i, offset);
             offset += 0x1000;
-            if (offset >= this->mem.ROMSize) offset = 0;
+            if (offset >= ROMSize) offset = 0;
         }
     }
 }
 
-static void sys_map_lo(SNES *this)
+void SNES_mem::sys_map_lo()
 {
     for (u32 bank = 0; bank < 0xFF; bank += 0x80) {
-        map_loram(this, bank+0x00, bank+0x3F, 0x0000, 0x1FFF, 0);
-        map_generic(this, bank+0x00, bank+0x3F, 0x2000, 0x3FFF, 0x2000, SMB_PPU, &SNES_PPU_read, &SNES_PPU_write);
-        map_generic(this, bank+0x00, bank+0x3F, 0x4000, 0x5FFF, 0x4000, SMB_CPU, &R5A22_reg_read, &R5A22_reg_write);
+        map_loram(bank+0x00, bank+0x3F, 0x0000, 0x1FFF, 0);
+        map_generic(bank+0x00, bank+0x3F, 0x2000, 0x3FFF, 0x2000, SNES_memmap_block::PPU, &SNES_mem::read_PPU, &SNES_mem::write_PPU);
+        map_generic(bank+0x00, bank+0x3F, 0x4000, 0x5FFF, 0x4000, SNES_memmap_block::CPU, &SNES_mem::read_R5A22, &SNES_mem::write_R5A22);
     }
 }
 
-static void sys_map_hi(SNES *this)
+void SNES_mem::sys_map_hi()
 {
     for (u32 bank = 0; bank < 0xFF; bank += 0x80) {
-        map_loram(this, bank + 0x00, bank + 0x3F, 0x0000, 0x1FFF, 0);
-        map_generic(this, bank + 0x00, bank + 0x3F, 0x2000, 0x3FFF, 0x2000, SMB_PPU, &SNES_PPU_read, &SNES_PPU_write);
-        map_generic(this, bank + 0x00, bank + 0x3F, 0x4000, 0x5FFF, 0x4000, SMB_CPU, &R5A22_reg_read, &R5A22_reg_write);
+        map_loram(bank + 0x00, bank + 0x3F, 0x0000, 0x1FFF, 0);
+        map_generic(bank + 0x00, bank + 0x3F, 0x2000, 0x3FFF, 0x2000, SNES_memmap_block::PPU, &SNES_mem::read_PPU, &SNES_mem::write_PPU);
+        map_generic(bank + 0x00, bank + 0x3F, 0x4000, 0x5FFF, 0x4000, SNES_memmap_block::CPU, &SNES_mem::read_R5A22, &SNES_mem::write_R5A22);
     }
 }
 
-static void map_sram_hi(SNES *this, u32 bank_start, u32 bank_end)
+void SNES_mem::map_sram_hi(u32 bank_start, u32 bank_end)
 {
     u32 offset = 0;
     for (u32 c = bank_start; c <= bank_end; c++) {
         for (u32 i = 0x6000; i < 0x7FFF; i += 0x1000) {
             u32 b = (c << 4) | (i >> 12);
-            this->mem.blockmap[b].kind = SMB_SRAM;
-            this->mem.blockmap[b].offset = offset;
-            this->mem.read[b] = &read_SRAM;
-            this->mem.write[b] = &write_SRAM;
+            blockmap[b].kind = SNES_memmap_block::SRAM;
+            blockmap[b].offset = offset;
+            read[b] = &SNES_mem::read_SRAM;
+            write[b] = &SNES_mem::write_SRAM;
             offset += 0x1000;
-            if (offset >= this->mem.SRAMSize) offset = 0;
+            if (offset >= SRAMSize) offset = 0;
         }
     }
 }
 
-
-static void map_sram(SNES *this, u32 bank_start, u32 bank_end, u32 addr_start, u32 addr_end)
+void SNES_mem::map_sram(u32 bank_start, u32 bank_end, u32 addr_start, u32 addr_end)
 {
     u32 offset = 0;
     for (u32 c = bank_start; c <= bank_end; c++) {
         for (u32 i = addr_start; i <= addr_end; i += 0x1000) {
             u32 b = (c << 4) | (i >> 12);
-            this->mem.blockmap[b].kind = SMB_SRAM;
-            this->mem.blockmap[b].offset = offset;
-            this->mem.read[b] = &read_SRAM;
-            this->mem.write[b] = &write_SRAM;
+            blockmap[b].kind = SNES_memmap_block::SRAM;
+            blockmap[b].offset = offset;
+            read[b] = &SNES_mem::read_SRAM;
+            write[b] = &SNES_mem::write_SRAM;
             offset += 0x1000;
-            if (offset >= this->mem.SRAMSize) offset = 0;
+            if (offset >= SRAMSize) offset = 0;
         }
     }
 }
 
-static void map_wram(SNES *this, u32 bank_start, u32 bank_end, u32 addr_start, u32 addr_end)
+void SNES_mem::map_wram(u32 bank_start, u32 bank_end, u32 addr_start, u32 addr_end)
 {
     u32 offset = 0;
     for (u32 c = bank_start; c <= bank_end; c++) {
         for (u32 i = addr_start; i <= addr_end; i += 0x1000) {
             u32 b = (c << 4) | (i >> 12);
-            this->mem.blockmap[b].kind = SMB_WRAM;
-            this->mem.blockmap[b].offset = offset;
-            this->mem.read[b] = &read_WRAM;
-            this->mem.write[b] = &write_WRAM;
+            blockmap[b].kind = SNES_memmap_block::WRAM;
+            blockmap[b].offset = offset;
+            read[b] = &SNES_mem::read_WRAM;
+            write[b] = &SNES_mem::write_WRAM;
             offset += 0x1000;
         }
     }
 }
 
-static void map_hirom_sram(SNES *this)
+void SNES_mem::map_hirom_sram()
 {
-    u32 mask = this->cart.header.sram_mask;
-    map_sram_hi(this, 0x20, 0x3F);
-    map_sram_hi(this, 0xA0, 0xBF);
+    //u32 mask = snes->cart.header.sram_mask;
+    map_sram_hi(0x20, 0x3F);
+    map_sram_hi(0xA0, 0xBF);
 }
 
-static void map_lorom_sram(SNES *this)
+void SNES_mem::map_lorom_sram()
 {
-    // TODO: fix this
+    // TODO: fix th
     u32 hi;
-    if (this->mem.ROMSizebit > 11 || this->mem.SRAMSizebit > 5)
+    if (ROMSizebit > 11 || SRAMSizebit > 5)
         hi = 0x7FFF;
     else
         hi = 0xFFFF;
 
     // HMMM...
     hi = 0x7FFF;
-    map_sram(this, 0x70, 0x7D, 0x0000, hi);
-    map_sram(this, 0xF0, 0xFF, 0x0000, hi);
+    map_sram(0x70, 0x7D, 0x0000, hi);
+    map_sram(0xF0, 0xFF, 0x0000, hi);
 }
 
-static void setup_mem_map_lorom(SNES *this)
+void SNES_mem::setup_mem_map_lorom()
 {
-    clear_map(this);
+    clear_map();
 
-    sys_map_lo(this);
-    if (this->mem.ROMSize > (2 * 1024 * 1024)) {
+    sys_map_lo();
+    if (ROMSize > (2 * 1024 * 1024)) {
         printf("\nBLROM MAPPING!");
-        map_lorom(this, 0x00, 0x7F, 0x8000, 0xFFFF);
-        map_lorom(this, 0x80, 0xFF, 0x8000, 0xFFFF);
+        map_lorom(0x00, 0x7F, 0x8000, 0xFFFF);
+        map_lorom(0x80, 0xFF, 0x8000, 0xFFFF);
     }
     else {
-        map_lorom(this, 0x00, 0x3F, 0x8000, 0xFFFF);
-        map_lorom(this, 0x40, 0x7F, 0x8000, 0xFFFF);
-        map_lorom(this, 0x80, 0xBF, 0x8000, 0xFFFF);
-        map_lorom(this, 0xC0, 0xFF, 0x8000, 0xFFFF);
+        map_lorom(0x00, 0x3F, 0x8000, 0xFFFF);
+        map_lorom(0x40, 0x7F, 0x8000, 0xFFFF);
+        map_lorom(0x80, 0xBF, 0x8000, 0xFFFF);
+        map_lorom(0xC0, 0xFF, 0x8000, 0xFFFF);
     }
 
-    map_lorom_sram(this);
-    map_loram(this, 0x00, 0x3F, 0x0000, 0x1FFF, 0);
-    map_loram(this, 0x80, 0xBF, 0x0000, 0x1FFF, 0);
-    map_wram(this, 0x7E, 0x7F, 0x0000, 0xFFFF);
+    map_lorom_sram();
+    map_loram(0x00, 0x3F, 0x0000, 0x1FFF, 0);
+    map_loram(0x80, 0xBF, 0x0000, 0x1FFF, 0);
+    map_wram(0x7E, 0x7F, 0x0000, 0xFFFF);
 }
 
-static void setup_mem_map_hirom(SNES *this)
+void SNES_mem::setup_mem_map_hirom()
 {
-    clear_map(this);
+    clear_map();
     printf("\nMEM MAPPING!");
 
 
-    sys_map_hi(this);
+    sys_map_hi();
 
-    map_hirom(this, 0x00, 0x3F, 0x8000, 0xFFFF, 0, 0x3F);
-    map_hirom(this, 0x40, 0x7D, 0x0000, 0xFFFF, 0, 0x3F);
-    map_hirom(this, 0x80, 0xBF, 0x0000, 0xFFFF, 0, 0x3F);
-    map_hirom(this, 0xC0, 0xFF, 0x0000, 0xFFFF, 0, 0x3F);
+    map_hirom(0x00, 0x3F, 0x8000, 0xFFFF, 0, 0x3F);
+    map_hirom(0x40, 0x7D, 0x0000, 0xFFFF, 0, 0x3F);
+    map_hirom(0x80, 0xBF, 0x0000, 0xFFFF, 0, 0x3F);
+    map_hirom(0xC0, 0xFF, 0x0000, 0xFFFF, 0, 0x3F);
 
-    map_loram(this, 0x00, 0x3F, 0x0000, 0x1FFF, 0);
-    map_loram(this, 0x80, 0xBF, 0x0000, 0x1FFF, 0);
-    map_hirom_sram(this);
+    map_loram(0x00, 0x3F, 0x0000, 0x1FFF, 0);
+    map_loram(0x80, 0xBF, 0x0000, 0x1FFF, 0);
+    map_hirom_sram();
 
-    map_wram(this, 0x7E, 0x7F, 0x0000, 0xFFFF);
+    map_wram(0x7E, 0x7F, 0x0000, 0xFFFF);
 }
 
-void SNES_mem_cart_inserted(SNES *this)
+void SNES_mem::cart_inserted()
 {
-    this->mem.ROMSizebit = this->cart.header.rom_sizebit;
-    this->mem.SRAMSizebit = this->cart.header.sram_sizebit;
-    this->mem.ROMSize = this->cart.ROM.size;
-    this->mem.SRAMSize = this->cart.header.sram_size;
+    ROMSizebit = snes->cart.header.rom_sizebit;
+    SRAMSizebit = snes->cart.header.sram_sizebit;
+    ROMSize = snes->cart.ROM.size;
+    SRAMSize = snes->cart.header.sram_size;
 
     /// TODO: SRAM
-    if (this->cart.header.lorom)
-        setup_mem_map_lorom(this);
+    if (snes->cart.header.lorom)
+        setup_mem_map_lorom();
     else
-        setup_mem_map_hirom(this);
+        setup_mem_map_hirom();
 }
 
-
-u32 SNES_wdc65816_read(SNES *this, u32 addr, u32 old, u32 has_effect)
+// wdc65816_read and _write replaced with read_bus_a
+u32 SNES_mem::read_bus_A(u32 addr, u32 old, u32 has_effect)
 {
-    return this->mem.read[addr >> 12](this, addr, old, has_effect, &this->mem.blockmap[addr >> 12]);
+    return (this->*read[addr >> 12])(addr, old, has_effect, &blockmap[addr >> 12]);
 }
 
-void SNES_wdc65816_write(SNES *this, u32 addr, u32 val)
+void SNES_mem::write_bus_A(u32 addr, u32 val)
 {
-    this->mem.write[addr >> 12](this, addr, val, &this->mem.blockmap[addr >> 12]);
+    (this->*write[addr >> 12])(addr, val, &blockmap[addr >> 12]);
 }
 
-u32 SNES_spc700_read(SNES *this, u32 addr, u32 old, u32 has_effect)
-{
-    return SPC700_read8(&this->apu.cpu, addr);
+u32 SNES_mem::read_R5A22(u32 addr, u32 old, u32 has_effect, SNES_memmap_block *bl) {
+    return snes->r5a22.reg_read(addr, old, has_effect, bl);
 }
 
-void SNES_spc700_write(SNES *this, u32 addr, u32 val)
-{
-    SPC700_write8(&this->apu.cpu, addr, val);
+void SNES_mem::write_R5A22(u32 addr, u32 val, SNES_memmap_block *bl) {
+    snes->r5a22.reg_write(addr, val, bl);
 }
+
+u32 SNES_mem::read_PPU(u32 addr, u32 old, u32 has_effect, SNES_memmap_block *bl) {
+    return snes->ppu.read(addr, old, has_effect, bl);
+}
+
+void SNES_mem::write_PPU(u32 addr, u32 val, SNES_memmap_block *bl) {
+    snes->ppu.write(addr, val, bl);
+}
+
 

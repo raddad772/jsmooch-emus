@@ -16,10 +16,10 @@ function replace_for_C(whatr) {
     whatr = whatr.replaceAll('let ', 'u32 '); // Inline variable declarations
     whatr = whatr.replaceAll('true', '1');
     whatr = whatr.replaceAll('false', '0');
-    whatr = whatr.replaceAll('cpu.read8(', 'SPC700_read8(cpu, ');
-    whatr = whatr.replaceAll('cpu.write8(', 'SPC700_write8(cpu, ');
-    whatr = whatr.replaceAll('cpu.read8D(', 'SPC700_read8D(cpu, ');
-    whatr = whatr.replaceAll('cpu.write8D(', 'SPC700_write8D(cpu, ');
+    whatr = whatr.replaceAll('cpu.read8(', 'cpu->read8(');
+    whatr = whatr.replaceAll('cpu.write8(', 'cpu->write8(');
+    whatr = whatr.replaceAll('cpu.read8D(', 'cpu->read8D(');
+    whatr = whatr.replaceAll('cpu.write8D(', 'cpu->write8D(');
 
     whatr = whatr.replaceAll('YARYARYAR', 'cpu->regs.') // Reference to pointer
 

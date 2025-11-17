@@ -147,7 +147,7 @@ void scheduler_t::pprint_list(char *s)
 u64 scheduler_t::add_or_run_abs(i64 timecode, u64 key, void *ptr, scheduler_callback callback, u32 *still_sched)
 {
     scheduler_event *e = add_abs(timecode, key, 1);
-    return scheduler_bind_or_run(e, ptr, callback, timecode, key, still_sched);
+    return bind_or_run(e, ptr, callback, timecode, key, still_sched);
 }
 
 u64 scheduler_t::only_add_abs_w_tag(i64 timecode, u64 key, void *ptr, scheduler_callback callback, u32 *still_sched, u32 tag)

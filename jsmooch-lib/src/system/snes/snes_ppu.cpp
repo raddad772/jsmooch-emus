@@ -269,7 +269,7 @@ void SNES_PPU::write_VRAM(u32 addr, u32 val)
 void SNES_PPU::write(u32 addr, u32 val, SNES_memmap_block *bl) {
     addr &= 0xFFFF;
     u32 addre;
-    if (addr >= 0x2140 && addr < 0x217F) { return SNES_APU_write(snes, addr, val); }
+    if (addr >= 0x2140 && addr < 0x217F) { return snes->apu.write(addr, val); }
     switch (addr) {
         case 0x2100: // INIDISP
             io.force_blank = (val >> 7) & 1;
@@ -582,7 +582,7 @@ void SNES_PPU::write(u32 addr, u32 val, SNES_memmap_block *bl) {
             return;
 
         case 0x2180: // WRAM access port
-            SNES_wdc65816_write(snes, 0x7E0000 | io.wram_addr, val);
+            snes->mem.write_bus_A(0x7E0000 | io.wram_addr, val);
             io.wram_addr = (io.wram_addr + 1) & 0x1FFFF;
             return;
         case 0x2181: // WRAM addr low
@@ -620,7 +620,7 @@ void SNES_PPU::latch_counters() {
 u32 SNES_PPU::read(u32 addr, u32 old, u32 has_effect, SNES_memmap_block *bl)
 {
     addr &= 0xFFFF;
-    if (addr >= 0x2140 && addr < 0x217F) { return SNES_APU_read(snes, addr, old, has_effect); }
+    if (addr >= 0x2140 && addr < 0x217F) { return snes->apu.read(addr, old, has_effect); }
     u32 result;
     switch(addr) {
         case 0x2134: // MPYL
@@ -686,7 +686,7 @@ u32 SNES_PPU::read(u32 addr, u32 old, u32 has_effect, SNES_memmap_block *bl)
             }
             return latch.ppu2.mdr;
         case 0x2180: {// WRAM access port
-            u32 r = SNES_wdc65816_read(snes, 0x7E0000 | io.wram_addr, 0, has_effect);
+            u32 r = snes->mem.read_bus_A(0x7E0000 | io.wram_addr, 0, has_effect);
             if (has_effect) {
                 io.wram_addr++;
                 if (io.wram_addr > 0x1FFFF) io.wram_addr = 0;
@@ -1228,7 +1228,7 @@ void hdma_setup(void *ptr, u64 key, u64 clock, u32 jitter)
     SNES *snes = static_cast<SNES *>(ptr);
     u32 cn = 8;
     for (u32 n = 0; n < 8; n++) {
-        cn += snes->r5a22.dma.channels[n].hdma_setup_ch();
+        cn += snes->r5a22.dma.channels[n].hdma_setup();
     }
     scheduler_from_event_adjust_master_clock(&snes->scheduler, cn);
 }
@@ -1260,34 +1260,34 @@ static void schedule_scanline(void *ptr, u64 key, u64 clock, u32 jitter)
     // hblank DMA setup, 12-20ish
     if (!vblank) {
         snes->clock.timing.line.hdma_setup_position = snes->clock.rev == 1 ? 12 + 8 - (snes->clock.master_cycle_count & 7) : 12 + (snes->clock.master_cycle_count & 7);
-        scheduler_only_add_abs(&snes->scheduler, cur + snes->clock.timing.line.hdma_setup_position, 0, snes, &hdma_setup, nullptr);
+        snes->scheduler.only_add_abs(cur + snes->clock.timing.line.hdma_setup_position, 0, snes, &hdma_setup, nullptr);
     }
 
     // hblank out - 108 ish
-    scheduler_only_add_abs(&snes->scheduler, cur + snes->clock.timing.line.hblank_stop, 0, snes, &hblank, nullptr);
+    snes->scheduler.only_add_abs(cur + snes->clock.timing.line.hblank_stop, 0, snes, &hblank, nullptr);
 
     // DRAM refresh - ~510 ish
-    scheduler_only_add_abs(&snes->scheduler, cur + snes->clock.timing.line.dram_refresh, 0, snes, &dram_refresh, nullptr);
+    snes->scheduler.only_add_abs(cur + snes->clock.timing.line.dram_refresh, 0, snes, &dram_refresh, nullptr);
 
 
     // HIRQ
     if (snes->r5a22.io.irq_enable) {
         if (!snes->r5a22.io.hirq_enable) assert_hirq(snes, 1, cur, 0);
         else
-            snes->ppu.hirq.sched_id = scheduler_only_add_abs(&snes->scheduler, cur + ((snes->r5a22.io.htime + 21) * 4), 1, snes, &assert_hirq, &snes->ppu.hirq.still_sched);
+            snes->ppu.hirq.sched_id = snes->scheduler.only_add_abs(cur + ((snes->r5a22.io.htime + 21) * 4), 1, snes, &assert_hirq, &snes->ppu.hirq.still_sched);
     }
     snes->r5a22.update_irq();
 
     // HDMA - 1104 ish
     if (!vblank) {
-        scheduler_only_add_abs(&snes->scheduler, cur + snes->clock.timing.line.hdma_position, 0, snes, &hdma, nullptr);
+        snes->scheduler.only_add_abs(cur + snes->clock.timing.line.hdma_position, 0, snes, &hdma, nullptr);
     }
 
     // Hblank in - 1108 ish
-    scheduler_only_add_abs(&snes->scheduler, cur + snes->clock.timing.line.hblank_start, 1, snes, &hblank, nullptr);
+    snes->scheduler.only_add_abs(cur + snes->clock.timing.line.hblank_start, 1, snes, &hblank, nullptr);
 
     // new line - 1364
-    scheduler_only_add_abs_w_tag(&snes->scheduler, cur + snes->clock.timing.line.master_cycles, 0, snes, &schedule_scanline, nullptr, 1);
+    snes->scheduler.only_add_abs_w_tag(cur + snes->clock.timing.line.master_cycles, 0, snes, &schedule_scanline, nullptr, 1);
 }
 
 void vblank(void *ptr, u64 key, u64 cur_clock, u32 jitter)
@@ -1337,8 +1337,8 @@ void new_frame(void* ptr, u64 key, u64 cur_clock, u32 jitter)
     vblank(snes, 0, cur_clock, jitter);
 
     //set_clock_divisor();
-    scheduler_only_add_abs(&snes->scheduler, cur + (snes->clock.timing.line.master_cycles * 225), 1, snes, &vblank, nullptr);
-    scheduler_only_add_abs_w_tag(&snes->scheduler, cur + snes->clock.timing.frame.master_cycles, 0, snes, &new_frame, nullptr, 2);
+    snes->scheduler.only_add_abs(cur + (snes->clock.timing.line.master_cycles * 225), 1, snes, &vblank, nullptr);
+    snes->scheduler.only_add_abs_w_tag(cur + snes->clock.timing.frame.master_cycles, 0, snes, &new_frame, nullptr, 2);
 }
 
 void SNES_PPU::schedule_first()

@@ -84,7 +84,7 @@ void SPC700::trace_format()
         trace.str.quickempty();
         trace.str2.quickempty();
         // PC, read, out, p_p
-        SPC700_disassemble(regs.PC, &trace.strct, &trace.str, regs.P.P);
+        SPC700_disassemble(regs.PC, trace.strct, trace.str, regs.P.P);
         trace.str2.sprintf("A:%02x  X:%02x  Y:%02x  SP:%04x  P:%c%c%c%c%c%c%c%c",
                            regs.A,
                            regs.X, regs.Y,
@@ -335,3 +335,4 @@ void SPC700::setup_tracing(jsm_debug_read_trace *strct)
     trace.strct.read_trace = &read_trace;
     trace.ok = 1;
 }
+

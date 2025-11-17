@@ -50,7 +50,7 @@ struct SPC700_regs {
 };
 
 struct SPC700 {
-    explicit SPC700(u64 *clock_ptr) : clock(clock_ptr);
+    explicit SPC700(u64 *clock_ptr) : clock(clock_ptr) {}
     SPC700_regs regs{};
     void reset();
     void cycle(i64 how_many);
@@ -61,15 +61,15 @@ private:
     void advance_timers(i32 cycles);
     void trace_format();
 
-    u8 read8D(u32 addr);
-    void write8(u32 addr, u32 val);
-    void write8D(u32 addr, u32 val);
     void writeIO(u32 addr, u32 val);
     void log_write(u32 addr, u32 val);
     void log_read(u32 addr, u32 val);
-    u8 read8(u32 addr);
 
 public:
+    u8 read8D(u32 addr);
+    void write8D(u32 addr, u32 val);
+    void write8(u32 addr, u32 val);
+    u8 read8(u32 addr);
     void *read_ptr{}, *write_ptr{};
     u8 (*read_dsp)(void *, u16 addr){};
     void (*write_dsp)(void *, u16 addr, u8 val){};

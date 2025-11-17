@@ -4,7 +4,7 @@
 
 
 
-static void SPC700_opcode_00(SPC700 *cpu) { // NOP
+static void SPC700_opcode_00(SPC700 *cpu) { // NOP 
     cpu->regs.opc_cycles = 2;
     // INS 44 ADDR MODE 0
 }
@@ -13,32 +13,32 @@ static void SPC700_opcode_00(SPC700 *cpu) { // NOP
 static void SPC700_opcode_01(SPC700 *cpu) { // TCALL 0
     cpu->regs.opc_cycles = 8;
     // INS 63 ADDR MODE 0
-    SPC700_write8(cpu, 0x100 + cpu->regs.SP--, (cpu->regs.PC >> 8) & 0xFF);
+    cpu->write8(0x100 + cpu->regs.SP--, (cpu->regs.PC >> 8) & 0xFF);
     cpu->regs.SP &= 0xFF;
-    SPC700_write8(cpu, 0x100 + cpu->regs.SP--, (cpu->regs.PC & 0xFF));
+    cpu->write8(0x100 + cpu->regs.SP--, (cpu->regs.PC & 0xFF));
     cpu->regs.SP &= 0xFF;
-    cpu->regs.PC = SPC700_read8(cpu, 65502);
-    cpu->regs.PC |= SPC700_read8(cpu, 65503) << 8;
+    cpu->regs.PC = cpu->read8(65502);
+    cpu->regs.PC |= cpu->read8(65503) << 8;
 }
 
 
 static void SPC700_opcode_02(SPC700 *cpu) { // SET1 dp.0
     cpu->regs.opc_cycles = 4;
-    cpu->regs.TA = SPC700_read8(cpu, cpu->regs.PC++);
+    cpu->regs.TA = cpu->read8(cpu->regs.PC++);
     cpu->regs.PC &= 0xFFFF;
     // INS 57 ADDR MODE 22
-    cpu->regs.TR = SPC700_read8D(cpu, cpu->regs.TA);
+    cpu->regs.TR = cpu->read8D(cpu->regs.TA);
     cpu->regs.TR |= 0x01;
-    SPC700_write8D(cpu, (cpu->regs.TA), cpu->regs.TR);
+    cpu->write8D((cpu->regs.TA), cpu->regs.TR);
 }
 
 
 static void SPC700_opcode_03(SPC700 *cpu) { // BBS dp.0, r
     cpu->regs.opc_cycles = 5;
-    cpu->regs.TA = SPC700_read8(cpu, cpu->regs.PC++);
+    cpu->regs.TA = cpu->read8(cpu->regs.PC++);
     cpu->regs.PC &= 0xFFFF;
-    cpu->regs.TA = SPC700_read8D(cpu, cpu->regs.TA);
-    cpu->regs.TR = SPC700_read8(cpu, cpu->regs.PC++);
+    cpu->regs.TA = cpu->read8D(cpu->regs.TA);
+    cpu->regs.TR = cpu->read8(cpu->regs.PC++);
     cpu->regs.PC &= 0xFFFF;
     if (cpu->regs.TA & 1) {
         cpu->regs.PC = (cpu->regs.PC + (u32)(i8)cpu->regs.TR) & 0xFFFF;
@@ -49,9 +49,9 @@ static void SPC700_opcode_03(SPC700 *cpu) { // BBS dp.0, r
 
 static void SPC700_opcode_04(SPC700 *cpu) { // OR A, dp
     cpu->regs.opc_cycles = 3;
-    cpu->regs.TA = SPC700_read8(cpu, cpu->regs.PC++);
+    cpu->regs.TA = cpu->read8(cpu->regs.PC++);
     cpu->regs.PC &= 0xFFFF;
-    cpu->regs.TR = SPC700_read8D(cpu, cpu->regs.TA);
+    cpu->regs.TR = cpu->read8D(cpu->regs.TA);
     // INS 47 ADDR MODE undefined
     cpu->regs.A |= cpu->regs.TR;
     cpu->regs.P.Z = +((cpu->regs.A) == 0);
@@ -61,11 +61,11 @@ static void SPC700_opcode_04(SPC700 *cpu) { // OR A, dp
 
 static void SPC700_opcode_05(SPC700 *cpu) { // OR A, !abs
     cpu->regs.opc_cycles = 4;
-    cpu->regs.TA = SPC700_read8(cpu, cpu->regs.PC++);
+    cpu->regs.TA = cpu->read8(cpu->regs.PC++);
     cpu->regs.PC &= 0xFFFF;
-    cpu->regs.TA += SPC700_read8(cpu, cpu->regs.PC++) << 8;
+    cpu->regs.TA += cpu->read8(cpu->regs.PC++) << 8;
     cpu->regs.PC &= 0xFFFF;
-    cpu->regs.TR = SPC700_read8(cpu, cpu->regs.TA);
+    cpu->regs.TR = cpu->read8(cpu->regs.TA);
     // INS 47 ADDR MODE undefined
     cpu->regs.A |= cpu->regs.TR;
     cpu->regs.P.Z = +((cpu->regs.A) == 0);
@@ -75,7 +75,7 @@ static void SPC700_opcode_05(SPC700 *cpu) { // OR A, !abs
 
 static void SPC700_opcode_06(SPC700 *cpu) { // OR A, (X)
     cpu->regs.opc_cycles = 3;
-    cpu->regs.TR = SPC700_read8D(cpu, cpu->regs.X);
+    cpu->regs.TR = cpu->read8D(cpu->regs.X);
     // INS 47 ADDR MODE undefined
     cpu->regs.A |= cpu->regs.TR;
     cpu->regs.P.Z = +((cpu->regs.A) == 0);
@@ -85,11 +85,11 @@ static void SPC700_opcode_06(SPC700 *cpu) { // OR A, (X)
 
 static void SPC700_opcode_07(SPC700 *cpu) { // OR A, [dp+X]
     cpu->regs.opc_cycles = 6;
-    cpu->regs.TA = SPC700_read8(cpu, cpu->regs.PC++);
+    cpu->regs.TA = cpu->read8(cpu->regs.PC++);
     cpu->regs.PC &= 0xFFFF;
     cpu->regs.TA += cpu->regs.X;
-    cpu->regs.TA = SPC700_read8D(cpu, (cpu->regs.TA)) + (SPC700_read8D(cpu, (cpu->regs.TA) + 1) << 8);
-    cpu->regs.TR = SPC700_read8(cpu, cpu->regs.TA);
+    cpu->regs.TA = cpu->read8D((cpu->regs.TA)) + (cpu->read8D((cpu->regs.TA) + 1) << 8);
+    cpu->regs.TR = cpu->read8(cpu->regs.TA);
     // INS 47 ADDR MODE undefined
     cpu->regs.A |= cpu->regs.TR;
     cpu->regs.P.Z = +((cpu->regs.A) == 0);
@@ -99,7 +99,7 @@ static void SPC700_opcode_07(SPC700 *cpu) { // OR A, [dp+X]
 
 static void SPC700_opcode_08(SPC700 *cpu) { // OR A, #
     cpu->regs.opc_cycles = 2;
-    cpu->regs.TR = SPC700_read8(cpu, cpu->regs.PC++);
+    cpu->regs.TR = cpu->read8(cpu->regs.PC++);
     cpu->regs.PC &= 0xFFFF;
     // INS 47 ADDR MODE undefined
     cpu->regs.A |= cpu->regs.TR;
@@ -110,28 +110,28 @@ static void SPC700_opcode_08(SPC700 *cpu) { // OR A, #
 
 static void SPC700_opcode_09(SPC700 *cpu) { // OR dp, dp
     cpu->regs.opc_cycles = 6;
-    cpu->regs.TR = SPC700_read8(cpu, cpu->regs.PC++);
+    cpu->regs.TR = cpu->read8(cpu->regs.PC++);
     cpu->regs.PC &= 0xFFFF;
-    cpu->regs.TA = SPC700_read8(cpu, cpu->regs.PC++);
+    cpu->regs.TA = cpu->read8(cpu->regs.PC++);
     cpu->regs.PC &= 0xFFFF;
-    cpu->regs.TR = SPC700_read8D(cpu, cpu->regs.TR);
-    cpu->regs.TA2 = SPC700_read8D(cpu, cpu->regs.TA);
+    cpu->regs.TR = cpu->read8D(cpu->regs.TR);
+    cpu->regs.TA2 = cpu->read8D(cpu->regs.TA);
     // INS 47 ADDR MODE undefined
     cpu->regs.TA2 |= cpu->regs.TR;
     cpu->regs.P.Z = +((cpu->regs.TA2) == 0);
     cpu->regs.P.N = ((cpu->regs.TA2) & 0x80) >> 7;
-    SPC700_write8D(cpu, (cpu->regs.TA), cpu->regs.TA2);
+    cpu->write8D((cpu->regs.TA), cpu->regs.TA2);
 }
 
 
 static void SPC700_opcode_0A(SPC700 *cpu) { // OR1 C, m.b
     cpu->regs.opc_cycles = 5;
-    cpu->regs.TA = SPC700_read8(cpu, cpu->regs.PC++);
+    cpu->regs.TA = cpu->read8(cpu->regs.PC++);
     cpu->regs.PC &= 0xFFFF;
-    cpu->regs.TA += SPC700_read8(cpu, cpu->regs.PC++) << 8;
+    cpu->regs.TA += cpu->read8(cpu->regs.PC++) << 8;
     cpu->regs.PC &= 0xFFFF;
     cpu->regs.TR = (cpu->regs.TA >> 13) & 7;
-    cpu->regs.TA = SPC700_read8(cpu, cpu->regs.TA & 0x1FFF);
+    cpu->regs.TA = cpu->read8(cpu->regs.TA & 0x1FFF);
     // INS 48 ADDR MODE 17
     u32 mask = 1 << cpu->regs.TR;
     u32 val = (cpu->regs.TA & mask) >> cpu->regs.TR;
@@ -142,76 +142,76 @@ static void SPC700_opcode_0A(SPC700 *cpu) { // OR1 C, m.b
 
 static void SPC700_opcode_0B(SPC700 *cpu) { // ASL d
     cpu->regs.opc_cycles = 4;
-    cpu->regs.TA = SPC700_read8(cpu, cpu->regs.PC++);
+    cpu->regs.TA = cpu->read8(cpu->regs.PC++);
     cpu->regs.PC &= 0xFFFF;
-    cpu->regs.TR = SPC700_read8D(cpu, cpu->regs.TA);
+    cpu->regs.TR = cpu->read8D(cpu->regs.TA);
     // INS 5 ADDR MODE undefined
     cpu->regs.P.C = ((cpu->regs.TR) & 0x80) >> 7;
     cpu->regs.TR = (cpu->regs.TR << 1) & 0xFF;
     cpu->regs.P.Z = +((cpu->regs.TR) == 0);
     cpu->regs.P.N = ((cpu->regs.TR) & 0x80) >> 7;
-    SPC700_write8D(cpu, (cpu->regs.TA), cpu->regs.TR);
+    cpu->write8D((cpu->regs.TA), cpu->regs.TR);
 }
 
 
 static void SPC700_opcode_0C(SPC700 *cpu) { // ASL !abs
     cpu->regs.opc_cycles = 5;
-    cpu->regs.TA = SPC700_read8(cpu, cpu->regs.PC++);
+    cpu->regs.TA = cpu->read8(cpu->regs.PC++);
     cpu->regs.PC &= 0xFFFF;
-    cpu->regs.TA += SPC700_read8(cpu, cpu->regs.PC++) << 8;
+    cpu->regs.TA += cpu->read8(cpu->regs.PC++) << 8;
     cpu->regs.PC &= 0xFFFF;
-    cpu->regs.TR = SPC700_read8(cpu, cpu->regs.TA);
+    cpu->regs.TR = cpu->read8(cpu->regs.TA);
     // INS 5 ADDR MODE undefined
     cpu->regs.P.C = ((cpu->regs.TR) & 0x80) >> 7;
     cpu->regs.TR = (cpu->regs.TR << 1) & 0xFF;
     cpu->regs.P.Z = +((cpu->regs.TR) == 0);
     cpu->regs.P.N = ((cpu->regs.TR) & 0x80) >> 7;
-    SPC700_write8(cpu, cpu->regs.TA, cpu->regs.TR);
+    cpu->write8(cpu->regs.TA, cpu->regs.TR);
 }
 
 
 static void SPC700_opcode_0D(SPC700 *cpu) { // PUSH P
     cpu->regs.opc_cycles = 4;
     // INS 51 ADDR MODE null
-    SPC700_write8(cpu, 0x100 + cpu->regs.SP--, (cpu->regs.P.v & 0xFF));
+    cpu->write8(0x100 + cpu->regs.SP--, (cpu->regs.P.v & 0xFF));
     cpu->regs.SP &= 0xFF;
 }
 
 
 static void SPC700_opcode_0E(SPC700 *cpu) { // TSET1 !abs
     cpu->regs.opc_cycles = 6;
-    cpu->regs.TA = SPC700_read8(cpu, cpu->regs.PC++);
+    cpu->regs.TA = cpu->read8(cpu->regs.PC++);
     cpu->regs.PC &= 0xFFFF;
-    cpu->regs.TA += SPC700_read8(cpu, cpu->regs.PC++) << 8;
+    cpu->regs.TA += cpu->read8(cpu->regs.PC++) << 8;
     cpu->regs.PC &= 0xFFFF;
-    cpu->regs.TR = SPC700_read8(cpu, cpu->regs.TA);
+    cpu->regs.TR = cpu->read8(cpu->regs.TA);
     // INS 65 ADDR MODE undefined
     cpu->regs.P.Z = +((cpu->regs.A - cpu->regs.TR) == 0);
     cpu->regs.P.N = ((cpu->regs.A - cpu->regs.TR) & 0x80) >> 7;
     cpu->regs.TR |= cpu->regs.A;
-    SPC700_write8(cpu, cpu->regs.TA, cpu->regs.TR);
+    cpu->write8(cpu->regs.TA, cpu->regs.TR);
 }
 
 
 static void SPC700_opcode_0F(SPC700 *cpu) { // BRK i
     cpu->regs.opc_cycles = 8;
     // INS 17 ADDR MODE 0
-    SPC700_write8(cpu, 0x100 + cpu->regs.SP--, (cpu->regs.PC >> 8) & 0xFF);
+    cpu->write8(0x100 + cpu->regs.SP--, (cpu->regs.PC >> 8) & 0xFF);
     cpu->regs.SP &= 0xFF;
-    SPC700_write8(cpu, 0x100 + cpu->regs.SP--, cpu->regs.PC & 0xFF);
+    cpu->write8(0x100 + cpu->regs.SP--, cpu->regs.PC & 0xFF);
     cpu->regs.SP &= 0xFF;
-    SPC700_write8(cpu, 0x100 + cpu->regs.SP--, (cpu->regs.P.v & 0xFF));
+    cpu->write8(0x100 + cpu->regs.SP--, (cpu->regs.P.v & 0xFF));
     cpu->regs.SP &= 0xFF;
     cpu->regs.P.I = 0;
     cpu->regs.P.B = 1;
-    cpu->regs.PC = SPC700_read8(cpu, (0xFFDE) & 0xFFFF) + (SPC700_read8(cpu, ((0xFFDE) + 1) & 0xFFFF) << 8);
+    cpu->regs.PC = cpu->read8((0xFFDE) & 0xFFFF) + (cpu->read8(((0xFFDE) + 1) & 0xFFFF) << 8);
 }
 
 
 static void SPC700_opcode_10(SPC700 *cpu) { // BPL r
     cpu->regs.opc_cycles = 2;
     // INS 13 ADDR MODE undefined
-    cpu->regs.TR = SPC700_read8(cpu, cpu->regs.PC++);
+    cpu->regs.TR = cpu->read8(cpu->regs.PC++);
     cpu->regs.PC &= 0xFFFF;
     if (!cpu->regs.P.N) {
         cpu->regs.PC = (cpu->regs.PC + (u32)(i8)cpu->regs.TR) & 0xFFFF;
@@ -223,32 +223,32 @@ static void SPC700_opcode_10(SPC700 *cpu) { // BPL r
 static void SPC700_opcode_11(SPC700 *cpu) { // TCALL i
     cpu->regs.opc_cycles = 8;
     // INS 63 ADDR MODE 0
-    SPC700_write8(cpu, 0x100 + cpu->regs.SP--, (cpu->regs.PC >> 8) & 0xFF);
+    cpu->write8(0x100 + cpu->regs.SP--, (cpu->regs.PC >> 8) & 0xFF);
     cpu->regs.SP &= 0xFF;
-    SPC700_write8(cpu, 0x100 + cpu->regs.SP--, (cpu->regs.PC & 0xFF));
+    cpu->write8(0x100 + cpu->regs.SP--, (cpu->regs.PC & 0xFF));
     cpu->regs.SP &= 0xFF;
-    cpu->regs.PC = SPC700_read8(cpu, 65500);
-    cpu->regs.PC |= SPC700_read8(cpu, 65501) << 8;
+    cpu->regs.PC = cpu->read8(65500);
+    cpu->regs.PC |= cpu->read8(65501) << 8;
 }
 
 
 static void SPC700_opcode_12(SPC700 *cpu) { // CLR1 dp.0
     cpu->regs.opc_cycles = 4;
-    cpu->regs.TA = SPC700_read8(cpu, cpu->regs.PC++);
+    cpu->regs.TA = cpu->read8(cpu->regs.PC++);
     cpu->regs.PC &= 0xFFFF;
     // INS 20 ADDR MODE 22
-    cpu->regs.TR = SPC700_read8D(cpu, cpu->regs.TA);
+    cpu->regs.TR = cpu->read8D(cpu->regs.TA);
     cpu->regs.TR &= 0xFE;
-    SPC700_write8D(cpu, (cpu->regs.TA), cpu->regs.TR);
+    cpu->write8D((cpu->regs.TA), cpu->regs.TR);
 }
 
 
 static void SPC700_opcode_13(SPC700 *cpu) { // BBC dp.0
     cpu->regs.opc_cycles = 5;
-    cpu->regs.TA = SPC700_read8(cpu, cpu->regs.PC++);
+    cpu->regs.TA = cpu->read8(cpu->regs.PC++);
     cpu->regs.PC &= 0xFFFF;
-    cpu->regs.TA = SPC700_read8D(cpu, cpu->regs.TA);
-    cpu->regs.TR = SPC700_read8(cpu, cpu->regs.PC++);
+    cpu->regs.TA = cpu->read8D(cpu->regs.TA);
+    cpu->regs.TR = cpu->read8(cpu->regs.PC++);
     cpu->regs.PC &= 0xFFFF;
     if ((cpu->regs.TA & 1) == 0) {
         cpu->regs.PC = (cpu->regs.PC + (u32)(i8)cpu->regs.TR) & 0xFFFF;
@@ -259,9 +259,9 @@ static void SPC700_opcode_13(SPC700 *cpu) { // BBC dp.0
 
 static void SPC700_opcode_14(SPC700 *cpu) { // OR A, dp+X
     cpu->regs.opc_cycles = 4;
-    cpu->regs.TA = SPC700_read8(cpu, cpu->regs.PC++);
+    cpu->regs.TA = cpu->read8(cpu->regs.PC++);
     cpu->regs.PC &= 0xFFFF;
-    cpu->regs.TR = SPC700_read8D(cpu, cpu->regs.TA + cpu->regs.X);
+    cpu->regs.TR = cpu->read8D(cpu->regs.TA + cpu->regs.X);
     // INS 47 ADDR MODE undefined
     cpu->regs.A |= cpu->regs.TR;
     cpu->regs.P.Z = +((cpu->regs.A) == 0);
@@ -271,12 +271,12 @@ static void SPC700_opcode_14(SPC700 *cpu) { // OR A, dp+X
 
 static void SPC700_opcode_15(SPC700 *cpu) { // OR A, !abs+X
     cpu->regs.opc_cycles = 5;
-    cpu->regs.TA = SPC700_read8(cpu, cpu->regs.PC++);
+    cpu->regs.TA = cpu->read8(cpu->regs.PC++);
     cpu->regs.PC &= 0xFFFF;
-    cpu->regs.TA += SPC700_read8(cpu, cpu->regs.PC++) << 8;
+    cpu->regs.TA += cpu->read8(cpu->regs.PC++) << 8;
     cpu->regs.PC &= 0xFFFF;
     cpu->regs.TA += cpu->regs.X;
-    cpu->regs.TR = SPC700_read8(cpu, cpu->regs.TA & 0xFFFF);
+    cpu->regs.TR = cpu->read8(cpu->regs.TA & 0xFFFF);
     // INS 47 ADDR MODE undefined
     cpu->regs.A |= cpu->regs.TR;
     cpu->regs.P.Z = +((cpu->regs.A) == 0);
@@ -286,12 +286,12 @@ static void SPC700_opcode_15(SPC700 *cpu) { // OR A, !abs+X
 
 static void SPC700_opcode_16(SPC700 *cpu) { // OR A, !abs+Y
     cpu->regs.opc_cycles = 5;
-    cpu->regs.TA = SPC700_read8(cpu, cpu->regs.PC++);
+    cpu->regs.TA = cpu->read8(cpu->regs.PC++);
     cpu->regs.PC &= 0xFFFF;
-    cpu->regs.TA += SPC700_read8(cpu, cpu->regs.PC++) << 8;
+    cpu->regs.TA += cpu->read8(cpu->regs.PC++) << 8;
     cpu->regs.PC &= 0xFFFF;
     cpu->regs.TA += cpu->regs.Y;
-    cpu->regs.TR = SPC700_read8(cpu, cpu->regs.TA & 0xFFFF);
+    cpu->regs.TR = cpu->read8(cpu->regs.TA & 0xFFFF);
     // INS 47 ADDR MODE undefined
     cpu->regs.A |= cpu->regs.TR;
     cpu->regs.P.Z = +((cpu->regs.A) == 0);
@@ -301,11 +301,11 @@ static void SPC700_opcode_16(SPC700 *cpu) { // OR A, !abs+Y
 
 static void SPC700_opcode_17(SPC700 *cpu) { // OR A, [dp]+Y
     cpu->regs.opc_cycles = 6;
-    cpu->regs.TA = SPC700_read8(cpu, cpu->regs.PC++);
+    cpu->regs.TA = cpu->read8(cpu->regs.PC++);
     cpu->regs.PC &= 0xFFFF;
-    cpu->regs.TA = SPC700_read8D(cpu, (cpu->regs.TA)) + (SPC700_read8D(cpu, (cpu->regs.TA) + 1) << 8);
+    cpu->regs.TA = cpu->read8D((cpu->regs.TA)) + (cpu->read8D((cpu->regs.TA) + 1) << 8);
     cpu->regs.TA += cpu->regs.Y;
-    cpu->regs.TR = SPC700_read8(cpu, cpu->regs.TA);
+    cpu->regs.TR = cpu->read8(cpu->regs.TA);
     // INS 47 ADDR MODE undefined
     cpu->regs.A |= cpu->regs.TR;
     cpu->regs.P.Z = +((cpu->regs.A) == 0);
@@ -315,57 +315,57 @@ static void SPC700_opcode_17(SPC700 *cpu) { // OR A, [dp]+Y
 
 static void SPC700_opcode_18(SPC700 *cpu) { // OR dp, #imm
     cpu->regs.opc_cycles = 5;
-    cpu->regs.TR = SPC700_read8(cpu, cpu->regs.PC++);
+    cpu->regs.TR = cpu->read8(cpu->regs.PC++);
     cpu->regs.PC &= 0xFFFF;
-    cpu->regs.TA = SPC700_read8(cpu, cpu->regs.PC++);
+    cpu->regs.TA = cpu->read8(cpu->regs.PC++);
     cpu->regs.PC &= 0xFFFF;
-    cpu->regs.TA2 = SPC700_read8D(cpu, cpu->regs.TA);
+    cpu->regs.TA2 = cpu->read8D(cpu->regs.TA);
     // INS 47 ADDR MODE undefined
     cpu->regs.TA2 |= cpu->regs.TR;
     cpu->regs.P.Z = +((cpu->regs.TA2) == 0);
     cpu->regs.P.N = ((cpu->regs.TA2) & 0x80) >> 7;
-    SPC700_write8D(cpu, (cpu->regs.TA), cpu->regs.TA2);
+    cpu->write8D((cpu->regs.TA), cpu->regs.TA2);
 }
 
 
 static void SPC700_opcode_19(SPC700 *cpu) { // OR (X), (Y)
     cpu->regs.opc_cycles = 5;
-    cpu->regs.TA = SPC700_read8D(cpu, cpu->regs.Y);
-    cpu->regs.TR = SPC700_read8D(cpu, cpu->regs.X);
+    cpu->regs.TA = cpu->read8D(cpu->regs.Y);
+    cpu->regs.TR = cpu->read8D(cpu->regs.X);
     // INS 47 ADDR MODE undefined
     cpu->regs.TR |= cpu->regs.TA;
     cpu->regs.P.Z = +((cpu->regs.TR) == 0);
     cpu->regs.P.N = ((cpu->regs.TR) & 0x80) >> 7;
-    SPC700_write8D(cpu, (cpu->regs.X), cpu->regs.TR);
+    cpu->write8D((cpu->regs.X), cpu->regs.TR);
 }
 
 
 static void SPC700_opcode_1A(SPC700 *cpu) { // DECW dp
     cpu->regs.opc_cycles = 6;
-    cpu->regs.TA = SPC700_read8(cpu, cpu->regs.PC++);
+    cpu->regs.TA = cpu->read8(cpu->regs.PC++);
     cpu->regs.PC &= 0xFFFF;
-    cpu->regs.TR = SPC700_read8D(cpu, (cpu->regs.TA)) + (SPC700_read8D(cpu, (cpu->regs.TA) + 1) << 8);
+    cpu->regs.TR = cpu->read8D((cpu->regs.TA)) + (cpu->read8D((cpu->regs.TA) + 1) << 8);
     // INS 30 ADDR MODE undefined
     cpu->regs.TR = (cpu->regs.TR - 1) & 0xFFFF;
     cpu->regs.P.Z = +((cpu->regs.TR) == 0);
     cpu->regs.P.N = (cpu->regs.TR & 0x8000) >> 15;
-    SPC700_write8D(cpu, (cpu->regs.TA), cpu->regs.TR & 0xFF);
-    SPC700_write8D(cpu, (cpu->regs.TA) + 1, ((cpu->regs.TR) >> 8) & 0xFF);
+    cpu->write8D((cpu->regs.TA), cpu->regs.TR & 0xFF);
+    cpu->write8D((cpu->regs.TA) + 1, ((cpu->regs.TR) >> 8) & 0xFF);
 }
 
 
 static void SPC700_opcode_1B(SPC700 *cpu) { // ASL dp+X
     cpu->regs.opc_cycles = 5;
-    cpu->regs.TA = SPC700_read8(cpu, cpu->regs.PC++);
+    cpu->regs.TA = cpu->read8(cpu->regs.PC++);
     cpu->regs.PC &= 0xFFFF;
     cpu->regs.TA += cpu->regs.X;
-    cpu->regs.TR = SPC700_read8D(cpu, cpu->regs.TA);
+    cpu->regs.TR = cpu->read8D(cpu->regs.TA);
     // INS 5 ADDR MODE undefined
     cpu->regs.P.C = ((cpu->regs.TR) & 0x80) >> 7;
     cpu->regs.TR = (cpu->regs.TR << 1) & 0xFF;
     cpu->regs.P.Z = +((cpu->regs.TR) == 0);
     cpu->regs.P.N = ((cpu->regs.TR) & 0x80) >> 7;
-    SPC700_write8D(cpu, (cpu->regs.TA), cpu->regs.TR);
+    cpu->write8D((cpu->regs.TA), cpu->regs.TR);
 }
 
 
@@ -390,11 +390,11 @@ static void SPC700_opcode_1D(SPC700 *cpu) { // DEC X
 
 static void SPC700_opcode_1E(SPC700 *cpu) { // CMP X, !abs
     cpu->regs.opc_cycles = 4;
-    cpu->regs.TA = SPC700_read8(cpu, cpu->regs.PC++);
+    cpu->regs.TA = cpu->read8(cpu->regs.PC++);
     cpu->regs.PC &= 0xFFFF;
-    cpu->regs.TA += SPC700_read8(cpu, cpu->regs.PC++) << 8;
+    cpu->regs.TA += cpu->read8(cpu->regs.PC++) << 8;
     cpu->regs.PC &= 0xFFFF;
-    cpu->regs.TR = SPC700_read8(cpu, cpu->regs.TA);
+    cpu->regs.TR = cpu->read8(cpu->regs.TA);
     // INS 24 ADDR MODE undefined
     i32 z = cpu->regs.X - cpu->regs.TR;
     cpu->regs.P.C = +(z >= 0);
@@ -405,12 +405,12 @@ static void SPC700_opcode_1E(SPC700 *cpu) { // CMP X, !abs
 
 static void SPC700_opcode_1F(SPC700 *cpu) { // JMP [!abs+X]
     cpu->regs.opc_cycles = 6;
-    cpu->regs.TA = SPC700_read8(cpu, cpu->regs.PC++);
+    cpu->regs.TA = cpu->read8(cpu->regs.PC++);
     cpu->regs.PC &= 0xFFFF;
-    cpu->regs.TA += SPC700_read8(cpu, cpu->regs.PC++) << 8;
+    cpu->regs.TA += cpu->read8(cpu->regs.PC++) << 8;
     cpu->regs.PC &= 0xFFFF;
     cpu->regs.TA = (cpu->regs.TA + cpu->regs.X) & 0xFFFF;
-    cpu->regs.TR = SPC700_read8(cpu, (cpu->regs.TA) & 0xFFFF) + (SPC700_read8(cpu, ((cpu->regs.TA) + 1) & 0xFFFF) << 8);
+    cpu->regs.TR = cpu->read8((cpu->regs.TA) & 0xFFFF) + (cpu->read8(((cpu->regs.TA) + 1) & 0xFFFF) << 8);
     // INS 38 ADDR MODE undefined
     cpu->regs.PC = cpu->regs.TR;
 }
@@ -427,32 +427,32 @@ static void SPC700_opcode_20(SPC700 *cpu) { // CLRP i
 static void SPC700_opcode_21(SPC700 *cpu) { // TCALL 2
     cpu->regs.opc_cycles = 8;
     // INS 63 ADDR MODE 0
-    SPC700_write8(cpu, 0x100 + cpu->regs.SP--, (cpu->regs.PC >> 8) & 0xFF);
+    cpu->write8(0x100 + cpu->regs.SP--, (cpu->regs.PC >> 8) & 0xFF);
     cpu->regs.SP &= 0xFF;
-    SPC700_write8(cpu, 0x100 + cpu->regs.SP--, (cpu->regs.PC & 0xFF));
+    cpu->write8(0x100 + cpu->regs.SP--, (cpu->regs.PC & 0xFF));
     cpu->regs.SP &= 0xFF;
-    cpu->regs.PC = SPC700_read8(cpu, 65498);
-    cpu->regs.PC |= SPC700_read8(cpu, 65499) << 8;
+    cpu->regs.PC = cpu->read8(65498);
+    cpu->regs.PC |= cpu->read8(65499) << 8;
 }
 
 
 static void SPC700_opcode_22(SPC700 *cpu) { // SET1 dp.1
     cpu->regs.opc_cycles = 4;
-    cpu->regs.TA = SPC700_read8(cpu, cpu->regs.PC++);
+    cpu->regs.TA = cpu->read8(cpu->regs.PC++);
     cpu->regs.PC &= 0xFFFF;
     // INS 57 ADDR MODE 22
-    cpu->regs.TR = SPC700_read8D(cpu, cpu->regs.TA);
+    cpu->regs.TR = cpu->read8D(cpu->regs.TA);
     cpu->regs.TR |= 0x02;
-    SPC700_write8D(cpu, (cpu->regs.TA), cpu->regs.TR);
+    cpu->write8D((cpu->regs.TA), cpu->regs.TR);
 }
 
 
 static void SPC700_opcode_23(SPC700 *cpu) { // BBS dp.1, r
     cpu->regs.opc_cycles = 5;
-    cpu->regs.TA = SPC700_read8(cpu, cpu->regs.PC++);
+    cpu->regs.TA = cpu->read8(cpu->regs.PC++);
     cpu->regs.PC &= 0xFFFF;
-    cpu->regs.TA = SPC700_read8D(cpu, cpu->regs.TA);
-    cpu->regs.TR = SPC700_read8(cpu, cpu->regs.PC++);
+    cpu->regs.TA = cpu->read8D(cpu->regs.TA);
+    cpu->regs.TR = cpu->read8(cpu->regs.PC++);
     cpu->regs.PC &= 0xFFFF;
     if (cpu->regs.TA & 2) {
         cpu->regs.PC = (cpu->regs.PC + (u32)(i8)cpu->regs.TR) & 0xFFFF;
@@ -463,9 +463,9 @@ static void SPC700_opcode_23(SPC700 *cpu) { // BBS dp.1, r
 
 static void SPC700_opcode_24(SPC700 *cpu) { // AND A, dp
     cpu->regs.opc_cycles = 3;
-    cpu->regs.TA = SPC700_read8(cpu, cpu->regs.PC++);
+    cpu->regs.TA = cpu->read8(cpu->regs.PC++);
     cpu->regs.PC &= 0xFFFF;
-    cpu->regs.TR = SPC700_read8D(cpu, cpu->regs.TA);
+    cpu->regs.TR = cpu->read8D(cpu->regs.TA);
     // INS 3 ADDR MODE undefined
     cpu->regs.A &= (cpu->regs.TR);
     cpu->regs.P.Z = +((cpu->regs.A) == 0);
@@ -475,11 +475,11 @@ static void SPC700_opcode_24(SPC700 *cpu) { // AND A, dp
 
 static void SPC700_opcode_25(SPC700 *cpu) { // AND A, !abs
     cpu->regs.opc_cycles = 4;
-    cpu->regs.TA = SPC700_read8(cpu, cpu->regs.PC++);
+    cpu->regs.TA = cpu->read8(cpu->regs.PC++);
     cpu->regs.PC &= 0xFFFF;
-    cpu->regs.TA += SPC700_read8(cpu, cpu->regs.PC++) << 8;
+    cpu->regs.TA += cpu->read8(cpu->regs.PC++) << 8;
     cpu->regs.PC &= 0xFFFF;
-    cpu->regs.TR = SPC700_read8(cpu, cpu->regs.TA);
+    cpu->regs.TR = cpu->read8(cpu->regs.TA);
     // INS 3 ADDR MODE undefined
     cpu->regs.A &= (cpu->regs.TR);
     cpu->regs.P.Z = +((cpu->regs.A) == 0);
@@ -489,7 +489,7 @@ static void SPC700_opcode_25(SPC700 *cpu) { // AND A, !abs
 
 static void SPC700_opcode_26(SPC700 *cpu) { // AND A, (X)
     cpu->regs.opc_cycles = 3;
-    cpu->regs.TR = SPC700_read8D(cpu, cpu->regs.X);
+    cpu->regs.TR = cpu->read8D(cpu->regs.X);
     // INS 3 ADDR MODE undefined
     cpu->regs.A &= (cpu->regs.TR);
     cpu->regs.P.Z = +((cpu->regs.A) == 0);
@@ -499,11 +499,11 @@ static void SPC700_opcode_26(SPC700 *cpu) { // AND A, (X)
 
 static void SPC700_opcode_27(SPC700 *cpu) { // AND A, [dp+X]
     cpu->regs.opc_cycles = 6;
-    cpu->regs.TA = SPC700_read8(cpu, cpu->regs.PC++);
+    cpu->regs.TA = cpu->read8(cpu->regs.PC++);
     cpu->regs.PC &= 0xFFFF;
     cpu->regs.TA += cpu->regs.X;
-    cpu->regs.TA = SPC700_read8D(cpu, (cpu->regs.TA)) + (SPC700_read8D(cpu, (cpu->regs.TA) + 1) << 8);
-    cpu->regs.TR = SPC700_read8(cpu, cpu->regs.TA);
+    cpu->regs.TA = cpu->read8D((cpu->regs.TA)) + (cpu->read8D((cpu->regs.TA) + 1) << 8);
+    cpu->regs.TR = cpu->read8(cpu->regs.TA);
     // INS 3 ADDR MODE undefined
     cpu->regs.A &= (cpu->regs.TR);
     cpu->regs.P.Z = +((cpu->regs.A) == 0);
@@ -513,7 +513,7 @@ static void SPC700_opcode_27(SPC700 *cpu) { // AND A, [dp+X]
 
 static void SPC700_opcode_28(SPC700 *cpu) { // AND A, #imm
     cpu->regs.opc_cycles = 2;
-    cpu->regs.TR = SPC700_read8(cpu, cpu->regs.PC++);
+    cpu->regs.TR = cpu->read8(cpu->regs.PC++);
     cpu->regs.PC &= 0xFFFF;
     // INS 3 ADDR MODE undefined
     cpu->regs.A &= (cpu->regs.TR);
@@ -524,28 +524,28 @@ static void SPC700_opcode_28(SPC700 *cpu) { // AND A, #imm
 
 static void SPC700_opcode_29(SPC700 *cpu) { // AND dp, dp
     cpu->regs.opc_cycles = 6;
-    cpu->regs.TR = SPC700_read8(cpu, cpu->regs.PC++);
+    cpu->regs.TR = cpu->read8(cpu->regs.PC++);
     cpu->regs.PC &= 0xFFFF;
-    cpu->regs.TA = SPC700_read8(cpu, cpu->regs.PC++);
+    cpu->regs.TA = cpu->read8(cpu->regs.PC++);
     cpu->regs.PC &= 0xFFFF;
-    cpu->regs.TR = SPC700_read8D(cpu, cpu->regs.TR);
-    cpu->regs.TA2 = SPC700_read8D(cpu, cpu->regs.TA);
+    cpu->regs.TR = cpu->read8D(cpu->regs.TR);
+    cpu->regs.TA2 = cpu->read8D(cpu->regs.TA);
     // INS 3 ADDR MODE undefined
     cpu->regs.TA2 &= (cpu->regs.TR);
     cpu->regs.P.Z = +((cpu->regs.TA2) == 0);
     cpu->regs.P.N = ((cpu->regs.TA2) & 0x80) >> 7;
-    SPC700_write8D(cpu, (cpu->regs.TA), cpu->regs.TA2);
+    cpu->write8D((cpu->regs.TA), cpu->regs.TA2);
 }
 
 
 static void SPC700_opcode_2A(SPC700 *cpu) { // OR1 C, /m.b
     cpu->regs.opc_cycles = 5;
-    cpu->regs.TA = SPC700_read8(cpu, cpu->regs.PC++);
+    cpu->regs.TA = cpu->read8(cpu->regs.PC++);
     cpu->regs.PC &= 0xFFFF;
-    cpu->regs.TA += SPC700_read8(cpu, cpu->regs.PC++) << 8;
+    cpu->regs.TA += cpu->read8(cpu->regs.PC++) << 8;
     cpu->regs.PC &= 0xFFFF;
     cpu->regs.TR = (cpu->regs.TA >> 13) & 7;
-    cpu->regs.TA = SPC700_read8(cpu, cpu->regs.TA & 0x1FFF);
+    cpu->regs.TA = cpu->read8(cpu->regs.TA & 0x1FFF);
     // INS 4801 ADDR MODE 17
     u32 mask = 1 << cpu->regs.TR;
     u32 val = (cpu->regs.TA & mask) >> cpu->regs.TR;
@@ -556,51 +556,51 @@ static void SPC700_opcode_2A(SPC700 *cpu) { // OR1 C, /m.b
 
 static void SPC700_opcode_2B(SPC700 *cpu) { // ROL dp
     cpu->regs.opc_cycles = 4;
-    cpu->regs.TA = SPC700_read8(cpu, cpu->regs.PC++);
+    cpu->regs.TA = cpu->read8(cpu->regs.PC++);
     cpu->regs.PC &= 0xFFFF;
-    cpu->regs.TR = SPC700_read8D(cpu, cpu->regs.TA);
+    cpu->regs.TR = cpu->read8D(cpu->regs.TA);
     // INS 54 ADDR MODE undefined
     u32 carry = cpu->regs.P.C;
     cpu->regs.P.C = (cpu->regs.TR & 0x80) >> 7;
     cpu->regs.TR = ((cpu->regs.TR << 1) | carry) & 0xFF;
     cpu->regs.P.Z = +((cpu->regs.TR) == 0);
     cpu->regs.P.N = ((cpu->regs.TR) & 0x80) >> 7;
-    SPC700_write8D(cpu, (cpu->regs.TA), cpu->regs.TR);
+    cpu->write8D((cpu->regs.TA), cpu->regs.TR);
 }
 
 
 static void SPC700_opcode_2C(SPC700 *cpu) { // ROL !abs
     cpu->regs.opc_cycles = 5;
-    cpu->regs.TA = SPC700_read8(cpu, cpu->regs.PC++);
+    cpu->regs.TA = cpu->read8(cpu->regs.PC++);
     cpu->regs.PC &= 0xFFFF;
-    cpu->regs.TA += SPC700_read8(cpu, cpu->regs.PC++) << 8;
+    cpu->regs.TA += cpu->read8(cpu->regs.PC++) << 8;
     cpu->regs.PC &= 0xFFFF;
-    cpu->regs.TR = SPC700_read8(cpu, cpu->regs.TA);
+    cpu->regs.TR = cpu->read8(cpu->regs.TA);
     // INS 54 ADDR MODE undefined
     u32 carry = cpu->regs.P.C;
     cpu->regs.P.C = (cpu->regs.TR & 0x80) >> 7;
     cpu->regs.TR = ((cpu->regs.TR << 1) | carry) & 0xFF;
     cpu->regs.P.Z = +((cpu->regs.TR) == 0);
     cpu->regs.P.N = ((cpu->regs.TR) & 0x80) >> 7;
-    SPC700_write8(cpu, cpu->regs.TA, cpu->regs.TR);
+    cpu->write8(cpu->regs.TA, cpu->regs.TR);
 }
 
 
 static void SPC700_opcode_2D(SPC700 *cpu) { // PUSH A
     cpu->regs.opc_cycles = 4;
     // INS 51 ADDR MODE null
-    SPC700_write8(cpu, 0x100 + cpu->regs.SP--, cpu->regs.A);
+    cpu->write8(0x100 + cpu->regs.SP--, cpu->regs.A);
     cpu->regs.SP &= 0xFF;
 }
 
 
 static void SPC700_opcode_2E(SPC700 *cpu) { // CBNE dp, r
     cpu->regs.opc_cycles = 5;
-    cpu->regs.TA = SPC700_read8(cpu, cpu->regs.PC++);
+    cpu->regs.TA = cpu->read8(cpu->regs.PC++);
     cpu->regs.PC &= 0xFFFF;
-    cpu->regs.TR = SPC700_read8(cpu, cpu->regs.PC++);
+    cpu->regs.TR = cpu->read8(cpu->regs.PC++);
     cpu->regs.PC &= 0xFFFF;
-    cpu->regs.TA = SPC700_read8D(cpu, cpu->regs.TA);
+    cpu->regs.TA = cpu->read8D(cpu->regs.TA);
     // INS 19 ADDR MODE undefined
     if (cpu->regs.A != cpu->regs.TA) {
         cpu->regs.PC = (cpu->regs.PC + (u32)(i8)cpu->regs.TR) & 0xFFFF;
@@ -612,7 +612,7 @@ static void SPC700_opcode_2E(SPC700 *cpu) { // CBNE dp, r
 static void SPC700_opcode_2F(SPC700 *cpu) { // BRA r
     cpu->regs.opc_cycles = 2;
     // INS 16 ADDR MODE undefined
-    cpu->regs.TR = SPC700_read8(cpu, cpu->regs.PC++);
+    cpu->regs.TR = cpu->read8(cpu->regs.PC++);
     cpu->regs.PC &= 0xFFFF;
     cpu->regs.PC = (cpu->regs.PC + (u32)(i8)cpu->regs.TR) & 0xFFFF;
     cpu->regs.opc_cycles += 2;
@@ -622,7 +622,7 @@ static void SPC700_opcode_2F(SPC700 *cpu) { // BRA r
 static void SPC700_opcode_30(SPC700 *cpu) { // BMI r
     cpu->regs.opc_cycles = 2;
     // INS 11 ADDR MODE undefined
-    cpu->regs.TR = SPC700_read8(cpu, cpu->regs.PC++);
+    cpu->regs.TR = cpu->read8(cpu->regs.PC++);
     cpu->regs.PC &= 0xFFFF;
     if (cpu->regs.P.N) {
         cpu->regs.PC = (cpu->regs.PC + (u32)(i8)cpu->regs.TR) & 0xFFFF;
@@ -634,32 +634,32 @@ static void SPC700_opcode_30(SPC700 *cpu) { // BMI r
 static void SPC700_opcode_31(SPC700 *cpu) { // TCALL 3
     cpu->regs.opc_cycles = 8;
     // INS 63 ADDR MODE 0
-    SPC700_write8(cpu, 0x100 + cpu->regs.SP--, (cpu->regs.PC >> 8) & 0xFF);
+    cpu->write8(0x100 + cpu->regs.SP--, (cpu->regs.PC >> 8) & 0xFF);
     cpu->regs.SP &= 0xFF;
-    SPC700_write8(cpu, 0x100 + cpu->regs.SP--, (cpu->regs.PC & 0xFF));
+    cpu->write8(0x100 + cpu->regs.SP--, (cpu->regs.PC & 0xFF));
     cpu->regs.SP &= 0xFF;
-    cpu->regs.PC = SPC700_read8(cpu, 65496);
-    cpu->regs.PC |= SPC700_read8(cpu, 65497) << 8;
+    cpu->regs.PC = cpu->read8(65496);
+    cpu->regs.PC |= cpu->read8(65497) << 8;
 }
 
 
 static void SPC700_opcode_32(SPC700 *cpu) { // CLR1 dp.1
     cpu->regs.opc_cycles = 4;
-    cpu->regs.TA = SPC700_read8(cpu, cpu->regs.PC++);
+    cpu->regs.TA = cpu->read8(cpu->regs.PC++);
     cpu->regs.PC &= 0xFFFF;
     // INS 20 ADDR MODE 22
-    cpu->regs.TR = SPC700_read8D(cpu, cpu->regs.TA);
+    cpu->regs.TR = cpu->read8D(cpu->regs.TA);
     cpu->regs.TR &= 0xFD;
-    SPC700_write8D(cpu, (cpu->regs.TA), cpu->regs.TR);
+    cpu->write8D((cpu->regs.TA), cpu->regs.TR);
 }
 
 
 static void SPC700_opcode_33(SPC700 *cpu) { // BBC dp.1
     cpu->regs.opc_cycles = 5;
-    cpu->regs.TA = SPC700_read8(cpu, cpu->regs.PC++);
+    cpu->regs.TA = cpu->read8(cpu->regs.PC++);
     cpu->regs.PC &= 0xFFFF;
-    cpu->regs.TA = SPC700_read8D(cpu, cpu->regs.TA);
-    cpu->regs.TR = SPC700_read8(cpu, cpu->regs.PC++);
+    cpu->regs.TA = cpu->read8D(cpu->regs.TA);
+    cpu->regs.TR = cpu->read8(cpu->regs.PC++);
     cpu->regs.PC &= 0xFFFF;
     if ((cpu->regs.TA & 2) == 0) {
         cpu->regs.PC = (cpu->regs.PC + (u32)(i8)cpu->regs.TR) & 0xFFFF;
@@ -670,9 +670,9 @@ static void SPC700_opcode_33(SPC700 *cpu) { // BBC dp.1
 
 static void SPC700_opcode_34(SPC700 *cpu) { // AND A, dp+X
     cpu->regs.opc_cycles = 4;
-    cpu->regs.TA = SPC700_read8(cpu, cpu->regs.PC++);
+    cpu->regs.TA = cpu->read8(cpu->regs.PC++);
     cpu->regs.PC &= 0xFFFF;
-    cpu->regs.TR = SPC700_read8D(cpu, cpu->regs.TA + cpu->regs.X);
+    cpu->regs.TR = cpu->read8D(cpu->regs.TA + cpu->regs.X);
     // INS 3 ADDR MODE undefined
     cpu->regs.A &= (cpu->regs.TR);
     cpu->regs.P.Z = +((cpu->regs.A) == 0);
@@ -682,12 +682,12 @@ static void SPC700_opcode_34(SPC700 *cpu) { // AND A, dp+X
 
 static void SPC700_opcode_35(SPC700 *cpu) { // AND A, !abs+X
     cpu->regs.opc_cycles = 5;
-    cpu->regs.TA = SPC700_read8(cpu, cpu->regs.PC++);
+    cpu->regs.TA = cpu->read8(cpu->regs.PC++);
     cpu->regs.PC &= 0xFFFF;
-    cpu->regs.TA += SPC700_read8(cpu, cpu->regs.PC++) << 8;
+    cpu->regs.TA += cpu->read8(cpu->regs.PC++) << 8;
     cpu->regs.PC &= 0xFFFF;
     cpu->regs.TA += cpu->regs.X;
-    cpu->regs.TR = SPC700_read8(cpu, cpu->regs.TA & 0xFFFF);
+    cpu->regs.TR = cpu->read8(cpu->regs.TA & 0xFFFF);
     // INS 3 ADDR MODE undefined
     cpu->regs.A &= (cpu->regs.TR);
     cpu->regs.P.Z = +((cpu->regs.A) == 0);
@@ -697,12 +697,12 @@ static void SPC700_opcode_35(SPC700 *cpu) { // AND A, !abs+X
 
 static void SPC700_opcode_36(SPC700 *cpu) { // AND A, !abs+Y
     cpu->regs.opc_cycles = 5;
-    cpu->regs.TA = SPC700_read8(cpu, cpu->regs.PC++);
+    cpu->regs.TA = cpu->read8(cpu->regs.PC++);
     cpu->regs.PC &= 0xFFFF;
-    cpu->regs.TA += SPC700_read8(cpu, cpu->regs.PC++) << 8;
+    cpu->regs.TA += cpu->read8(cpu->regs.PC++) << 8;
     cpu->regs.PC &= 0xFFFF;
     cpu->regs.TA += cpu->regs.Y;
-    cpu->regs.TR = SPC700_read8(cpu, cpu->regs.TA & 0xFFFF);
+    cpu->regs.TR = cpu->read8(cpu->regs.TA & 0xFFFF);
     // INS 3 ADDR MODE undefined
     cpu->regs.A &= (cpu->regs.TR);
     cpu->regs.P.Z = +((cpu->regs.A) == 0);
@@ -712,11 +712,11 @@ static void SPC700_opcode_36(SPC700 *cpu) { // AND A, !abs+Y
 
 static void SPC700_opcode_37(SPC700 *cpu) { // AND A, [dp]+Y
     cpu->regs.opc_cycles = 6;
-    cpu->regs.TA = SPC700_read8(cpu, cpu->regs.PC++);
+    cpu->regs.TA = cpu->read8(cpu->regs.PC++);
     cpu->regs.PC &= 0xFFFF;
-    cpu->regs.TA = SPC700_read8D(cpu, (cpu->regs.TA)) + (SPC700_read8D(cpu, (cpu->regs.TA) + 1) << 8);
+    cpu->regs.TA = cpu->read8D((cpu->regs.TA)) + (cpu->read8D((cpu->regs.TA) + 1) << 8);
     cpu->regs.TA += cpu->regs.Y;
-    cpu->regs.TR = SPC700_read8(cpu, cpu->regs.TA);
+    cpu->regs.TR = cpu->read8(cpu->regs.TA);
     // INS 3 ADDR MODE undefined
     cpu->regs.A &= (cpu->regs.TR);
     cpu->regs.P.Z = +((cpu->regs.A) == 0);
@@ -726,58 +726,58 @@ static void SPC700_opcode_37(SPC700 *cpu) { // AND A, [dp]+Y
 
 static void SPC700_opcode_38(SPC700 *cpu) { // AND dp, #imm
     cpu->regs.opc_cycles = 5;
-    cpu->regs.TR = SPC700_read8(cpu, cpu->regs.PC++);
+    cpu->regs.TR = cpu->read8(cpu->regs.PC++);
     cpu->regs.PC &= 0xFFFF;
-    cpu->regs.TA = SPC700_read8(cpu, cpu->regs.PC++);
+    cpu->regs.TA = cpu->read8(cpu->regs.PC++);
     cpu->regs.PC &= 0xFFFF;
-    cpu->regs.TA2 = SPC700_read8D(cpu, cpu->regs.TA);
+    cpu->regs.TA2 = cpu->read8D(cpu->regs.TA);
     // INS 3 ADDR MODE undefined
     cpu->regs.TA2 &= (cpu->regs.TR);
     cpu->regs.P.Z = +((cpu->regs.TA2) == 0);
     cpu->regs.P.N = ((cpu->regs.TA2) & 0x80) >> 7;
-    SPC700_write8D(cpu, (cpu->regs.TA), cpu->regs.TA2);
+    cpu->write8D((cpu->regs.TA), cpu->regs.TA2);
 }
 
 
 static void SPC700_opcode_39(SPC700 *cpu) { // AND (X), (Y)
     cpu->regs.opc_cycles = 5;
-    cpu->regs.TA = SPC700_read8D(cpu, cpu->regs.Y);
-    cpu->regs.TR = SPC700_read8D(cpu, cpu->regs.X);
+    cpu->regs.TA = cpu->read8D(cpu->regs.Y);
+    cpu->regs.TR = cpu->read8D(cpu->regs.X);
     // INS 3 ADDR MODE undefined
     cpu->regs.TR &= (cpu->regs.TA);
     cpu->regs.P.Z = +((cpu->regs.TR) == 0);
     cpu->regs.P.N = ((cpu->regs.TR) & 0x80) >> 7;
-    SPC700_write8D(cpu, (cpu->regs.X), cpu->regs.TR);
+    cpu->write8D((cpu->regs.X), cpu->regs.TR);
 }
 
 
 static void SPC700_opcode_3A(SPC700 *cpu) { // INCW dp
     cpu->regs.opc_cycles = 6;
-    cpu->regs.TA = SPC700_read8(cpu, cpu->regs.PC++);
+    cpu->regs.TA = cpu->read8(cpu->regs.PC++);
     cpu->regs.PC &= 0xFFFF;
-    cpu->regs.TR = SPC700_read8D(cpu, (cpu->regs.TA)) + (SPC700_read8D(cpu, (cpu->regs.TA) + 1) << 8);
+    cpu->regs.TR = cpu->read8D((cpu->regs.TA)) + (cpu->read8D((cpu->regs.TA) + 1) << 8);
     // INS 37 ADDR MODE undefined
     cpu->regs.TR = (cpu->regs.TR + 1) & 0xFFFF;
     cpu->regs.P.Z = +((cpu->regs.TR) == 0);
     cpu->regs.P.N = (cpu->regs.TR & 0x8000) >> 15;
-    SPC700_write8D(cpu, (cpu->regs.TA), cpu->regs.TR & 0xFF);
-    SPC700_write8D(cpu, (cpu->regs.TA) + 1, ((cpu->regs.TR) >> 8) & 0xFF);
+    cpu->write8D((cpu->regs.TA), cpu->regs.TR & 0xFF);
+    cpu->write8D((cpu->regs.TA) + 1, ((cpu->regs.TR) >> 8) & 0xFF);
 }
 
 
 static void SPC700_opcode_3B(SPC700 *cpu) { // ROL dp+X
     cpu->regs.opc_cycles = 5;
-    cpu->regs.TA = SPC700_read8(cpu, cpu->regs.PC++);
+    cpu->regs.TA = cpu->read8(cpu->regs.PC++);
     cpu->regs.PC &= 0xFFFF;
     cpu->regs.TA += cpu->regs.X;
-    cpu->regs.TR = SPC700_read8D(cpu, cpu->regs.TA);
+    cpu->regs.TR = cpu->read8D(cpu->regs.TA);
     // INS 54 ADDR MODE undefined
     u32 carry = cpu->regs.P.C;
     cpu->regs.P.C = (cpu->regs.TR & 0x80) >> 7;
     cpu->regs.TR = ((cpu->regs.TR << 1) | carry) & 0xFF;
     cpu->regs.P.Z = +((cpu->regs.TR) == 0);
     cpu->regs.P.N = ((cpu->regs.TR) & 0x80) >> 7;
-    SPC700_write8D(cpu, (cpu->regs.TA), cpu->regs.TR);
+    cpu->write8D((cpu->regs.TA), cpu->regs.TR);
 }
 
 
@@ -803,9 +803,9 @@ static void SPC700_opcode_3D(SPC700 *cpu) { // INC X
 
 static void SPC700_opcode_3E(SPC700 *cpu) { // CMP X, dp
     cpu->regs.opc_cycles = 3;
-    cpu->regs.TA = SPC700_read8(cpu, cpu->regs.PC++);
+    cpu->regs.TA = cpu->read8(cpu->regs.PC++);
     cpu->regs.PC &= 0xFFFF;
-    cpu->regs.TR = SPC700_read8D(cpu, cpu->regs.TA);
+    cpu->regs.TR = cpu->read8D(cpu->regs.TA);
     // INS 24 ADDR MODE undefined
     i32 z = cpu->regs.X - cpu->regs.TR;
     cpu->regs.P.C = +(z >= 0);
@@ -816,14 +816,14 @@ static void SPC700_opcode_3E(SPC700 *cpu) { // CMP X, dp
 
 static void SPC700_opcode_3F(SPC700 *cpu) { // CALL !abs
     cpu->regs.opc_cycles = 8;
-    cpu->regs.TA = SPC700_read8(cpu, cpu->regs.PC++);
+    cpu->regs.TA = cpu->read8(cpu->regs.PC++);
     cpu->regs.PC &= 0xFFFF;
-    cpu->regs.TA += SPC700_read8(cpu, cpu->regs.PC++) << 8;
+    cpu->regs.TA += cpu->read8(cpu->regs.PC++) << 8;
     cpu->regs.PC &= 0xFFFF;
     // INS 18 ADDR MODE undefined
-    SPC700_write8(cpu, 0x100 + cpu->regs.SP--, (cpu->regs.PC >> 8) & 0xFF);
+    cpu->write8(0x100 + cpu->regs.SP--, (cpu->regs.PC >> 8) & 0xFF);
     cpu->regs.SP &= 0xFF;
-    SPC700_write8(cpu, 0x100 + cpu->regs.SP--, (cpu->regs.PC & 0xFF));
+    cpu->write8(0x100 + cpu->regs.SP--, (cpu->regs.PC & 0xFF));
     cpu->regs.SP &= 0xFF;
     cpu->regs.PC = cpu->regs.TA;
 }
@@ -840,32 +840,32 @@ static void SPC700_opcode_40(SPC700 *cpu) { // SETP i
 static void SPC700_opcode_41(SPC700 *cpu) { // TCALL 4
     cpu->regs.opc_cycles = 8;
     // INS 63 ADDR MODE 0
-    SPC700_write8(cpu, 0x100 + cpu->regs.SP--, (cpu->regs.PC >> 8) & 0xFF);
+    cpu->write8(0x100 + cpu->regs.SP--, (cpu->regs.PC >> 8) & 0xFF);
     cpu->regs.SP &= 0xFF;
-    SPC700_write8(cpu, 0x100 + cpu->regs.SP--, (cpu->regs.PC & 0xFF));
+    cpu->write8(0x100 + cpu->regs.SP--, (cpu->regs.PC & 0xFF));
     cpu->regs.SP &= 0xFF;
-    cpu->regs.PC = SPC700_read8(cpu, 65494);
-    cpu->regs.PC |= SPC700_read8(cpu, 65495) << 8;
+    cpu->regs.PC = cpu->read8(65494);
+    cpu->regs.PC |= cpu->read8(65495) << 8;
 }
 
 
 static void SPC700_opcode_42(SPC700 *cpu) { // SET1 dp.2
     cpu->regs.opc_cycles = 4;
-    cpu->regs.TA = SPC700_read8(cpu, cpu->regs.PC++);
+    cpu->regs.TA = cpu->read8(cpu->regs.PC++);
     cpu->regs.PC &= 0xFFFF;
     // INS 57 ADDR MODE 22
-    cpu->regs.TR = SPC700_read8D(cpu, cpu->regs.TA);
+    cpu->regs.TR = cpu->read8D(cpu->regs.TA);
     cpu->regs.TR |= 0x04;
-    SPC700_write8D(cpu, (cpu->regs.TA), cpu->regs.TR);
+    cpu->write8D((cpu->regs.TA), cpu->regs.TR);
 }
 
 
 static void SPC700_opcode_43(SPC700 *cpu) { // BBS dp.2, r
     cpu->regs.opc_cycles = 5;
-    cpu->regs.TA = SPC700_read8(cpu, cpu->regs.PC++);
+    cpu->regs.TA = cpu->read8(cpu->regs.PC++);
     cpu->regs.PC &= 0xFFFF;
-    cpu->regs.TA = SPC700_read8D(cpu, cpu->regs.TA);
-    cpu->regs.TR = SPC700_read8(cpu, cpu->regs.PC++);
+    cpu->regs.TA = cpu->read8D(cpu->regs.TA);
+    cpu->regs.TR = cpu->read8(cpu->regs.PC++);
     cpu->regs.PC &= 0xFFFF;
     if (cpu->regs.TA & 4) {
         cpu->regs.PC = (cpu->regs.PC + (u32)(i8)cpu->regs.TR) & 0xFFFF;
@@ -876,9 +876,9 @@ static void SPC700_opcode_43(SPC700 *cpu) { // BBS dp.2, r
 
 static void SPC700_opcode_44(SPC700 *cpu) { // EOR A, dp
     cpu->regs.opc_cycles = 3;
-    cpu->regs.TA = SPC700_read8(cpu, cpu->regs.PC++);
+    cpu->regs.TA = cpu->read8(cpu->regs.PC++);
     cpu->regs.PC &= 0xFFFF;
-    cpu->regs.TR = SPC700_read8D(cpu, cpu->regs.TA);
+    cpu->regs.TR = cpu->read8D(cpu->regs.TA);
     // INS 34 ADDR MODE undefined
     cpu->regs.A ^= cpu->regs.TR;
     cpu->regs.P.Z = +((cpu->regs.A) == 0);
@@ -888,11 +888,11 @@ static void SPC700_opcode_44(SPC700 *cpu) { // EOR A, dp
 
 static void SPC700_opcode_45(SPC700 *cpu) { // EOR A, !abs
     cpu->regs.opc_cycles = 4;
-    cpu->regs.TA = SPC700_read8(cpu, cpu->regs.PC++);
+    cpu->regs.TA = cpu->read8(cpu->regs.PC++);
     cpu->regs.PC &= 0xFFFF;
-    cpu->regs.TA += SPC700_read8(cpu, cpu->regs.PC++) << 8;
+    cpu->regs.TA += cpu->read8(cpu->regs.PC++) << 8;
     cpu->regs.PC &= 0xFFFF;
-    cpu->regs.TR = SPC700_read8(cpu, cpu->regs.TA);
+    cpu->regs.TR = cpu->read8(cpu->regs.TA);
     // INS 34 ADDR MODE undefined
     cpu->regs.A ^= cpu->regs.TR;
     cpu->regs.P.Z = +((cpu->regs.A) == 0);
@@ -902,7 +902,7 @@ static void SPC700_opcode_45(SPC700 *cpu) { // EOR A, !abs
 
 static void SPC700_opcode_46(SPC700 *cpu) { // EOR A, (X)
     cpu->regs.opc_cycles = 3;
-    cpu->regs.TR = SPC700_read8D(cpu, cpu->regs.X);
+    cpu->regs.TR = cpu->read8D(cpu->regs.X);
     // INS 34 ADDR MODE undefined
     cpu->regs.A ^= cpu->regs.TR;
     cpu->regs.P.Z = +((cpu->regs.A) == 0);
@@ -912,11 +912,11 @@ static void SPC700_opcode_46(SPC700 *cpu) { // EOR A, (X)
 
 static void SPC700_opcode_47(SPC700 *cpu) { // EOR A, [dp+X]
     cpu->regs.opc_cycles = 6;
-    cpu->regs.TA = SPC700_read8(cpu, cpu->regs.PC++);
+    cpu->regs.TA = cpu->read8(cpu->regs.PC++);
     cpu->regs.PC &= 0xFFFF;
     cpu->regs.TA += cpu->regs.X;
-    cpu->regs.TA = SPC700_read8D(cpu, (cpu->regs.TA)) + (SPC700_read8D(cpu, (cpu->regs.TA) + 1) << 8);
-    cpu->regs.TR = SPC700_read8(cpu, cpu->regs.TA);
+    cpu->regs.TA = cpu->read8D((cpu->regs.TA)) + (cpu->read8D((cpu->regs.TA) + 1) << 8);
+    cpu->regs.TR = cpu->read8(cpu->regs.TA);
     // INS 34 ADDR MODE undefined
     cpu->regs.A ^= cpu->regs.TR;
     cpu->regs.P.Z = +((cpu->regs.A) == 0);
@@ -926,7 +926,7 @@ static void SPC700_opcode_47(SPC700 *cpu) { // EOR A, [dp+X]
 
 static void SPC700_opcode_48(SPC700 *cpu) { // EOR A, #imm
     cpu->regs.opc_cycles = 2;
-    cpu->regs.TR = SPC700_read8(cpu, cpu->regs.PC++);
+    cpu->regs.TR = cpu->read8(cpu->regs.PC++);
     cpu->regs.PC &= 0xFFFF;
     // INS 34 ADDR MODE undefined
     cpu->regs.A ^= cpu->regs.TR;
@@ -937,28 +937,28 @@ static void SPC700_opcode_48(SPC700 *cpu) { // EOR A, #imm
 
 static void SPC700_opcode_49(SPC700 *cpu) { // EOR dp, dp
     cpu->regs.opc_cycles = 6;
-    cpu->regs.TR = SPC700_read8(cpu, cpu->regs.PC++);
+    cpu->regs.TR = cpu->read8(cpu->regs.PC++);
     cpu->regs.PC &= 0xFFFF;
-    cpu->regs.TA = SPC700_read8(cpu, cpu->regs.PC++);
+    cpu->regs.TA = cpu->read8(cpu->regs.PC++);
     cpu->regs.PC &= 0xFFFF;
-    cpu->regs.TR = SPC700_read8D(cpu, cpu->regs.TR);
-    cpu->regs.TA2 = SPC700_read8D(cpu, cpu->regs.TA);
+    cpu->regs.TR = cpu->read8D(cpu->regs.TR);
+    cpu->regs.TA2 = cpu->read8D(cpu->regs.TA);
     // INS 34 ADDR MODE undefined
     cpu->regs.TA2 ^= cpu->regs.TR;
     cpu->regs.P.Z = +((cpu->regs.TA2) == 0);
     cpu->regs.P.N = ((cpu->regs.TA2) & 0x80) >> 7;
-    SPC700_write8D(cpu, (cpu->regs.TA), cpu->regs.TA2);
+    cpu->write8D((cpu->regs.TA), cpu->regs.TA2);
 }
 
 
 static void SPC700_opcode_4A(SPC700 *cpu) { // AND1 m.b
     cpu->regs.opc_cycles = 4;
-    cpu->regs.TA = SPC700_read8(cpu, cpu->regs.PC++);
+    cpu->regs.TA = cpu->read8(cpu->regs.PC++);
     cpu->regs.PC &= 0xFFFF;
-    cpu->regs.TA += SPC700_read8(cpu, cpu->regs.PC++) << 8;
+    cpu->regs.TA += cpu->read8(cpu->regs.PC++) << 8;
     cpu->regs.PC &= 0xFFFF;
     cpu->regs.TR = (cpu->regs.TA >> 13) & 7;
-    cpu->regs.TA = SPC700_read8(cpu, cpu->regs.TA & 0x1FFF);
+    cpu->regs.TA = cpu->read8(cpu->regs.TA & 0x1FFF);
     // INS 4 ADDR MODE 17
     u32 mask = 1 << cpu->regs.TR;
     u32 val = (cpu->regs.TA & mask) >> cpu->regs.TR;
@@ -969,65 +969,65 @@ static void SPC700_opcode_4A(SPC700 *cpu) { // AND1 m.b
 
 static void SPC700_opcode_4B(SPC700 *cpu) { // LSR dp
     cpu->regs.opc_cycles = 4;
-    cpu->regs.TA = SPC700_read8(cpu, cpu->regs.PC++);
+    cpu->regs.TA = cpu->read8(cpu->regs.PC++);
     cpu->regs.PC &= 0xFFFF;
-    cpu->regs.TR = SPC700_read8D(cpu, cpu->regs.TA);
+    cpu->regs.TR = cpu->read8D(cpu->regs.TA);
     // INS 39 ADDR MODE undefined
     cpu->regs.P.C = (cpu->regs.TR) & 0x01;
     cpu->regs.TR >>= 1;
     cpu->regs.P.Z = +((cpu->regs.TR) == 0);
     cpu->regs.P.N = ((cpu->regs.TR) & 0x80) >> 7;
-    SPC700_write8D(cpu, (cpu->regs.TA), cpu->regs.TR);
+    cpu->write8D((cpu->regs.TA), cpu->regs.TR);
 }
 
 
 static void SPC700_opcode_4C(SPC700 *cpu) { // LSR !abs
     cpu->regs.opc_cycles = 5;
-    cpu->regs.TA = SPC700_read8(cpu, cpu->regs.PC++);
+    cpu->regs.TA = cpu->read8(cpu->regs.PC++);
     cpu->regs.PC &= 0xFFFF;
-    cpu->regs.TA += SPC700_read8(cpu, cpu->regs.PC++) << 8;
+    cpu->regs.TA += cpu->read8(cpu->regs.PC++) << 8;
     cpu->regs.PC &= 0xFFFF;
-    cpu->regs.TR = SPC700_read8(cpu, cpu->regs.TA);
+    cpu->regs.TR = cpu->read8(cpu->regs.TA);
     // INS 39 ADDR MODE undefined
     cpu->regs.P.C = (cpu->regs.TR) & 0x01;
     cpu->regs.TR >>= 1;
     cpu->regs.P.Z = +((cpu->regs.TR) == 0);
     cpu->regs.P.N = ((cpu->regs.TR) & 0x80) >> 7;
-    SPC700_write8(cpu, cpu->regs.TA, cpu->regs.TR);
+    cpu->write8(cpu->regs.TA, cpu->regs.TR);
 }
 
 
 static void SPC700_opcode_4D(SPC700 *cpu) { // PUSH X
     cpu->regs.opc_cycles = 4;
     // INS 51 ADDR MODE null
-    SPC700_write8(cpu, 0x100 + cpu->regs.SP--, cpu->regs.X);
+    cpu->write8(0x100 + cpu->regs.SP--, cpu->regs.X);
     cpu->regs.SP &= 0xFF;
 }
 
 
 static void SPC700_opcode_4E(SPC700 *cpu) { // TCLR1 !abs
     cpu->regs.opc_cycles = 6;
-    cpu->regs.TA = SPC700_read8(cpu, cpu->regs.PC++);
+    cpu->regs.TA = cpu->read8(cpu->regs.PC++);
     cpu->regs.PC &= 0xFFFF;
-    cpu->regs.TA += SPC700_read8(cpu, cpu->regs.PC++) << 8;
+    cpu->regs.TA += cpu->read8(cpu->regs.PC++) << 8;
     cpu->regs.PC &= 0xFFFF;
-    cpu->regs.TR = SPC700_read8(cpu, cpu->regs.TA);
+    cpu->regs.TR = cpu->read8(cpu->regs.TA);
     // INS 64 ADDR MODE undefined
     cpu->regs.P.Z = +((cpu->regs.A - cpu->regs.TR) == 0);
     cpu->regs.P.N = ((cpu->regs.A - cpu->regs.TR) & 0x80) >> 7;
     cpu->regs.TR &= (~cpu->regs.A) & 0xFF;
-    SPC700_write8(cpu, cpu->regs.TA, cpu->regs.TR);
+    cpu->write8(cpu->regs.TA, cpu->regs.TR);
 }
 
 
 static void SPC700_opcode_4F(SPC700 *cpu) { // PCALL #imm
     cpu->regs.opc_cycles = 6;
-    cpu->regs.TR = SPC700_read8(cpu, cpu->regs.PC++);
+    cpu->regs.TR = cpu->read8(cpu->regs.PC++);
     cpu->regs.PC &= 0xFFFF;
     // INS 49 ADDR MODE undefined
-    SPC700_write8(cpu, 0x100 + cpu->regs.SP--, (cpu->regs.PC >> 8) & 0xFF);
+    cpu->write8(0x100 + cpu->regs.SP--, (cpu->regs.PC >> 8) & 0xFF);
     cpu->regs.SP &= 0xFF;
-    SPC700_write8(cpu, 0x100 + cpu->regs.SP--, (cpu->regs.PC & 0xFF));
+    cpu->write8(0x100 + cpu->regs.SP--, (cpu->regs.PC & 0xFF));
     cpu->regs.SP &= 0xFF;
     cpu->regs.PC = cpu->regs.TR + 0xFF00;
 }
@@ -1036,7 +1036,7 @@ static void SPC700_opcode_4F(SPC700 *cpu) { // PCALL #imm
 static void SPC700_opcode_50(SPC700 *cpu) { // BVC r
     cpu->regs.opc_cycles = 2;
     // INS 14 ADDR MODE undefined
-    cpu->regs.TR = SPC700_read8(cpu, cpu->regs.PC++);
+    cpu->regs.TR = cpu->read8(cpu->regs.PC++);
     cpu->regs.PC &= 0xFFFF;
     if (!cpu->regs.P.V) {
         cpu->regs.PC = (cpu->regs.PC + (u32)(i8)cpu->regs.TR) & 0xFFFF;
@@ -1048,32 +1048,32 @@ static void SPC700_opcode_50(SPC700 *cpu) { // BVC r
 static void SPC700_opcode_51(SPC700 *cpu) { // TCALL 5
     cpu->regs.opc_cycles = 8;
     // INS 63 ADDR MODE 0
-    SPC700_write8(cpu, 0x100 + cpu->regs.SP--, (cpu->regs.PC >> 8) & 0xFF);
+    cpu->write8(0x100 + cpu->regs.SP--, (cpu->regs.PC >> 8) & 0xFF);
     cpu->regs.SP &= 0xFF;
-    SPC700_write8(cpu, 0x100 + cpu->regs.SP--, (cpu->regs.PC & 0xFF));
+    cpu->write8(0x100 + cpu->regs.SP--, (cpu->regs.PC & 0xFF));
     cpu->regs.SP &= 0xFF;
-    cpu->regs.PC = SPC700_read8(cpu, 65492);
-    cpu->regs.PC |= SPC700_read8(cpu, 65493) << 8;
+    cpu->regs.PC = cpu->read8(65492);
+    cpu->regs.PC |= cpu->read8(65493) << 8;
 }
 
 
 static void SPC700_opcode_52(SPC700 *cpu) { // CLR1 dp.2
     cpu->regs.opc_cycles = 4;
-    cpu->regs.TA = SPC700_read8(cpu, cpu->regs.PC++);
+    cpu->regs.TA = cpu->read8(cpu->regs.PC++);
     cpu->regs.PC &= 0xFFFF;
     // INS 20 ADDR MODE 22
-    cpu->regs.TR = SPC700_read8D(cpu, cpu->regs.TA);
+    cpu->regs.TR = cpu->read8D(cpu->regs.TA);
     cpu->regs.TR &= 0xFB;
-    SPC700_write8D(cpu, (cpu->regs.TA), cpu->regs.TR);
+    cpu->write8D((cpu->regs.TA), cpu->regs.TR);
 }
 
 
 static void SPC700_opcode_53(SPC700 *cpu) { // BBC dp.2
     cpu->regs.opc_cycles = 5;
-    cpu->regs.TA = SPC700_read8(cpu, cpu->regs.PC++);
+    cpu->regs.TA = cpu->read8(cpu->regs.PC++);
     cpu->regs.PC &= 0xFFFF;
-    cpu->regs.TA = SPC700_read8D(cpu, cpu->regs.TA);
-    cpu->regs.TR = SPC700_read8(cpu, cpu->regs.PC++);
+    cpu->regs.TA = cpu->read8D(cpu->regs.TA);
+    cpu->regs.TR = cpu->read8(cpu->regs.PC++);
     cpu->regs.PC &= 0xFFFF;
     if ((cpu->regs.TA & 0x04) == 0) {
         cpu->regs.PC = (cpu->regs.PC + (u32)(i8)cpu->regs.TR) & 0xFFFF;
@@ -1084,9 +1084,9 @@ static void SPC700_opcode_53(SPC700 *cpu) { // BBC dp.2
 
 static void SPC700_opcode_54(SPC700 *cpu) { // EOR A, dp+X
     cpu->regs.opc_cycles = 4;
-    cpu->regs.TA = SPC700_read8(cpu, cpu->regs.PC++);
+    cpu->regs.TA = cpu->read8(cpu->regs.PC++);
     cpu->regs.PC &= 0xFFFF;
-    cpu->regs.TR = SPC700_read8D(cpu, cpu->regs.TA + cpu->regs.X);
+    cpu->regs.TR = cpu->read8D(cpu->regs.TA + cpu->regs.X);
     // INS 34 ADDR MODE undefined
     cpu->regs.A ^= cpu->regs.TR;
     cpu->regs.P.Z = +((cpu->regs.A) == 0);
@@ -1096,12 +1096,12 @@ static void SPC700_opcode_54(SPC700 *cpu) { // EOR A, dp+X
 
 static void SPC700_opcode_55(SPC700 *cpu) { // EOR A, !abs+X
     cpu->regs.opc_cycles = 5;
-    cpu->regs.TA = SPC700_read8(cpu, cpu->regs.PC++);
+    cpu->regs.TA = cpu->read8(cpu->regs.PC++);
     cpu->regs.PC &= 0xFFFF;
-    cpu->regs.TA += SPC700_read8(cpu, cpu->regs.PC++) << 8;
+    cpu->regs.TA += cpu->read8(cpu->regs.PC++) << 8;
     cpu->regs.PC &= 0xFFFF;
     cpu->regs.TA += cpu->regs.X;
-    cpu->regs.TR = SPC700_read8(cpu, cpu->regs.TA & 0xFFFF);
+    cpu->regs.TR = cpu->read8(cpu->regs.TA & 0xFFFF);
     // INS 34 ADDR MODE undefined
     cpu->regs.A ^= cpu->regs.TR;
     cpu->regs.P.Z = +((cpu->regs.A) == 0);
@@ -1111,12 +1111,12 @@ static void SPC700_opcode_55(SPC700 *cpu) { // EOR A, !abs+X
 
 static void SPC700_opcode_56(SPC700 *cpu) { // EOR A, !abs+Y
     cpu->regs.opc_cycles = 5;
-    cpu->regs.TA = SPC700_read8(cpu, cpu->regs.PC++);
+    cpu->regs.TA = cpu->read8(cpu->regs.PC++);
     cpu->regs.PC &= 0xFFFF;
-    cpu->regs.TA += SPC700_read8(cpu, cpu->regs.PC++) << 8;
+    cpu->regs.TA += cpu->read8(cpu->regs.PC++) << 8;
     cpu->regs.PC &= 0xFFFF;
     cpu->regs.TA += cpu->regs.Y;
-    cpu->regs.TR = SPC700_read8(cpu, cpu->regs.TA & 0xFFFF);
+    cpu->regs.TR = cpu->read8(cpu->regs.TA & 0xFFFF);
     // INS 34 ADDR MODE undefined
     cpu->regs.A ^= cpu->regs.TR;
     cpu->regs.P.Z = +((cpu->regs.A) == 0);
@@ -1126,11 +1126,11 @@ static void SPC700_opcode_56(SPC700 *cpu) { // EOR A, !abs+Y
 
 static void SPC700_opcode_57(SPC700 *cpu) { // EOR A, [dp]+Y
     cpu->regs.opc_cycles = 6;
-    cpu->regs.TA = SPC700_read8(cpu, cpu->regs.PC++);
+    cpu->regs.TA = cpu->read8(cpu->regs.PC++);
     cpu->regs.PC &= 0xFFFF;
-    cpu->regs.TA = SPC700_read8D(cpu, (cpu->regs.TA)) + (SPC700_read8D(cpu, (cpu->regs.TA) + 1) << 8);
+    cpu->regs.TA = cpu->read8D((cpu->regs.TA)) + (cpu->read8D((cpu->regs.TA) + 1) << 8);
     cpu->regs.TA += cpu->regs.Y;
-    cpu->regs.TR = SPC700_read8(cpu, cpu->regs.TA);
+    cpu->regs.TR = cpu->read8(cpu->regs.TA);
     // INS 34 ADDR MODE undefined
     cpu->regs.A ^= cpu->regs.TR;
     cpu->regs.P.Z = +((cpu->regs.A) == 0);
@@ -1140,37 +1140,37 @@ static void SPC700_opcode_57(SPC700 *cpu) { // EOR A, [dp]+Y
 
 static void SPC700_opcode_58(SPC700 *cpu) { // EOR dp, #imm
     cpu->regs.opc_cycles = 5;
-    cpu->regs.TR = SPC700_read8(cpu, cpu->regs.PC++);
+    cpu->regs.TR = cpu->read8(cpu->regs.PC++);
     cpu->regs.PC &= 0xFFFF;
-    cpu->regs.TA = SPC700_read8(cpu, cpu->regs.PC++);
+    cpu->regs.TA = cpu->read8(cpu->regs.PC++);
     cpu->regs.PC &= 0xFFFF;
-    cpu->regs.TA2 = SPC700_read8D(cpu, cpu->regs.TA);
+    cpu->regs.TA2 = cpu->read8D(cpu->regs.TA);
     // INS 34 ADDR MODE undefined
     cpu->regs.TA2 ^= cpu->regs.TR;
     cpu->regs.P.Z = +((cpu->regs.TA2) == 0);
     cpu->regs.P.N = ((cpu->regs.TA2) & 0x80) >> 7;
-    SPC700_write8D(cpu, (cpu->regs.TA), cpu->regs.TA2);
+    cpu->write8D((cpu->regs.TA), cpu->regs.TA2);
 }
 
 
 static void SPC700_opcode_59(SPC700 *cpu) { // EOR (X), (Y)
     cpu->regs.opc_cycles = 5;
-    cpu->regs.TA = SPC700_read8D(cpu, cpu->regs.Y);
-    cpu->regs.TR = SPC700_read8D(cpu, cpu->regs.X);
+    cpu->regs.TA = cpu->read8D(cpu->regs.Y);
+    cpu->regs.TR = cpu->read8D(cpu->regs.X);
     // INS 34 ADDR MODE undefined
     cpu->regs.TR ^= cpu->regs.TA;
     cpu->regs.P.Z = +((cpu->regs.TR) == 0);
     cpu->regs.P.N = ((cpu->regs.TR) & 0x80) >> 7;
-    SPC700_write8D(cpu, (cpu->regs.X), cpu->regs.TR);
+    cpu->write8D((cpu->regs.X), cpu->regs.TR);
 }
 
 
-static void SPC700_opcode_5A(SPC700 *cpu) { // CMPW
+static void SPC700_opcode_5A(SPC700 *cpu) { // CMPW 
     cpu->regs.opc_cycles = 4;
-    cpu->regs.TA = SPC700_read8(cpu, cpu->regs.PC++);
+    cpu->regs.TA = cpu->read8(cpu->regs.PC++);
     cpu->regs.PC &= 0xFFFF;
-    cpu->regs.TR = SPC700_read8D(cpu, cpu->regs.TA);
-    cpu->regs.TA = SPC700_read8D(cpu, cpu->regs.TA+1);
+    cpu->regs.TR = cpu->read8D(cpu->regs.TA);
+    cpu->regs.TA = cpu->read8D(cpu->regs.TA+1);
     cpu->regs.TR += (cpu->regs.TA << 8);
     // INS 25 ADDR MODE undefined
     i32 z = ((cpu->regs.Y << 8) + cpu->regs.A) - cpu->regs.TR;
@@ -1182,16 +1182,16 @@ static void SPC700_opcode_5A(SPC700 *cpu) { // CMPW
 
 static void SPC700_opcode_5B(SPC700 *cpu) { // LSR dp+X
     cpu->regs.opc_cycles = 5;
-    cpu->regs.TA = SPC700_read8(cpu, cpu->regs.PC++);
+    cpu->regs.TA = cpu->read8(cpu->regs.PC++);
     cpu->regs.PC &= 0xFFFF;
     cpu->regs.TA += cpu->regs.X;
-    cpu->regs.TR = SPC700_read8D(cpu, cpu->regs.TA);
+    cpu->regs.TR = cpu->read8D(cpu->regs.TA);
     // INS 39 ADDR MODE undefined
     cpu->regs.P.C = (cpu->regs.TR) & 0x01;
     cpu->regs.TR >>= 1;
     cpu->regs.P.Z = +((cpu->regs.TR) == 0);
     cpu->regs.P.N = ((cpu->regs.TR) & 0x80) >> 7;
-    SPC700_write8D(cpu, (cpu->regs.TA), cpu->regs.TR);
+    cpu->write8D((cpu->regs.TA), cpu->regs.TR);
 }
 
 
@@ -1215,11 +1215,11 @@ static void SPC700_opcode_5D(SPC700 *cpu) { // MOV X, A
 
 static void SPC700_opcode_5E(SPC700 *cpu) { // CMP Y, !abs
     cpu->regs.opc_cycles = 4;
-    cpu->regs.TA = SPC700_read8(cpu, cpu->regs.PC++);
+    cpu->regs.TA = cpu->read8(cpu->regs.PC++);
     cpu->regs.PC &= 0xFFFF;
-    cpu->regs.TA += SPC700_read8(cpu, cpu->regs.PC++) << 8;
+    cpu->regs.TA += cpu->read8(cpu->regs.PC++) << 8;
     cpu->regs.PC &= 0xFFFF;
-    cpu->regs.TR = SPC700_read8(cpu, cpu->regs.TA);
+    cpu->regs.TR = cpu->read8(cpu->regs.TA);
     // INS 24 ADDR MODE undefined
     i32 z = cpu->regs.Y - cpu->regs.TR;
     cpu->regs.P.C = +(z >= 0);
@@ -1230,9 +1230,9 @@ static void SPC700_opcode_5E(SPC700 *cpu) { // CMP Y, !abs
 
 static void SPC700_opcode_5F(SPC700 *cpu) { // JMP !abs
     cpu->regs.opc_cycles = 3;
-    cpu->regs.TA = SPC700_read8(cpu, cpu->regs.PC++);
+    cpu->regs.TA = cpu->read8(cpu->regs.PC++);
     cpu->regs.PC &= 0xFFFF;
-    cpu->regs.TA += SPC700_read8(cpu, cpu->regs.PC++) << 8;
+    cpu->regs.TA += cpu->read8(cpu->regs.PC++) << 8;
     cpu->regs.PC &= 0xFFFF;
     cpu->regs.PC = cpu->regs.TA;
 }
@@ -1248,32 +1248,32 @@ static void SPC700_opcode_60(SPC700 *cpu) { // CLRC i
 static void SPC700_opcode_61(SPC700 *cpu) { // TCALL 6
     cpu->regs.opc_cycles = 8;
     // INS 63 ADDR MODE 0
-    SPC700_write8(cpu, 0x100 + cpu->regs.SP--, (cpu->regs.PC >> 8) & 0xFF);
+    cpu->write8(0x100 + cpu->regs.SP--, (cpu->regs.PC >> 8) & 0xFF);
     cpu->regs.SP &= 0xFF;
-    SPC700_write8(cpu, 0x100 + cpu->regs.SP--, (cpu->regs.PC & 0xFF));
+    cpu->write8(0x100 + cpu->regs.SP--, (cpu->regs.PC & 0xFF));
     cpu->regs.SP &= 0xFF;
-    cpu->regs.PC = SPC700_read8(cpu, 65490);
-    cpu->regs.PC |= SPC700_read8(cpu, 65491) << 8;
+    cpu->regs.PC = cpu->read8(65490);
+    cpu->regs.PC |= cpu->read8(65491) << 8;
 }
 
 
 static void SPC700_opcode_62(SPC700 *cpu) { // SET1 dp.3
     cpu->regs.opc_cycles = 4;
-    cpu->regs.TA = SPC700_read8(cpu, cpu->regs.PC++);
+    cpu->regs.TA = cpu->read8(cpu->regs.PC++);
     cpu->regs.PC &= 0xFFFF;
     // INS 57 ADDR MODE 22
-    cpu->regs.TR = SPC700_read8D(cpu, cpu->regs.TA);
+    cpu->regs.TR = cpu->read8D(cpu->regs.TA);
     cpu->regs.TR |= 0x08;
-    SPC700_write8D(cpu, (cpu->regs.TA), cpu->regs.TR);
+    cpu->write8D((cpu->regs.TA), cpu->regs.TR);
 }
 
 
 static void SPC700_opcode_63(SPC700 *cpu) { // BBS dp.3, r
     cpu->regs.opc_cycles = 5;
-    cpu->regs.TA = SPC700_read8(cpu, cpu->regs.PC++);
+    cpu->regs.TA = cpu->read8(cpu->regs.PC++);
     cpu->regs.PC &= 0xFFFF;
-    cpu->regs.TA = SPC700_read8D(cpu, cpu->regs.TA);
-    cpu->regs.TR = SPC700_read8(cpu, cpu->regs.PC++);
+    cpu->regs.TA = cpu->read8D(cpu->regs.TA);
+    cpu->regs.TR = cpu->read8(cpu->regs.PC++);
     cpu->regs.PC &= 0xFFFF;
     if (cpu->regs.TA & 8) {
         cpu->regs.PC = (cpu->regs.PC + (u32)(i8)cpu->regs.TR) & 0xFFFF;
@@ -1284,9 +1284,9 @@ static void SPC700_opcode_63(SPC700 *cpu) { // BBS dp.3, r
 
 static void SPC700_opcode_64(SPC700 *cpu) { // CMP A, dp
     cpu->regs.opc_cycles = 3;
-    cpu->regs.TA = SPC700_read8(cpu, cpu->regs.PC++);
+    cpu->regs.TA = cpu->read8(cpu->regs.PC++);
     cpu->regs.PC &= 0xFFFF;
-    cpu->regs.TR = SPC700_read8D(cpu, cpu->regs.TA);
+    cpu->regs.TR = cpu->read8D(cpu->regs.TA);
     // INS 24 ADDR MODE undefined
     i32 z = cpu->regs.A - cpu->regs.TR;
     cpu->regs.P.C = +(z >= 0);
@@ -1297,11 +1297,11 @@ static void SPC700_opcode_64(SPC700 *cpu) { // CMP A, dp
 
 static void SPC700_opcode_65(SPC700 *cpu) { // CMP A, !abs
     cpu->regs.opc_cycles = 4;
-    cpu->regs.TA = SPC700_read8(cpu, cpu->regs.PC++);
+    cpu->regs.TA = cpu->read8(cpu->regs.PC++);
     cpu->regs.PC &= 0xFFFF;
-    cpu->regs.TA += SPC700_read8(cpu, cpu->regs.PC++) << 8;
+    cpu->regs.TA += cpu->read8(cpu->regs.PC++) << 8;
     cpu->regs.PC &= 0xFFFF;
-    cpu->regs.TR = SPC700_read8(cpu, cpu->regs.TA);
+    cpu->regs.TR = cpu->read8(cpu->regs.TA);
     // INS 24 ADDR MODE undefined
     i32 z = cpu->regs.A - cpu->regs.TR;
     cpu->regs.P.C = +(z >= 0);
@@ -1312,7 +1312,7 @@ static void SPC700_opcode_65(SPC700 *cpu) { // CMP A, !abs
 
 static void SPC700_opcode_66(SPC700 *cpu) { // CMP A, (X)
     cpu->regs.opc_cycles = 3;
-    cpu->regs.TR = SPC700_read8D(cpu, cpu->regs.X);
+    cpu->regs.TR = cpu->read8D(cpu->regs.X);
     // INS 24 ADDR MODE undefined
     i32 z = cpu->regs.A - cpu->regs.TR;
     cpu->regs.P.C = +(z >= 0);
@@ -1323,11 +1323,11 @@ static void SPC700_opcode_66(SPC700 *cpu) { // CMP A, (X)
 
 static void SPC700_opcode_67(SPC700 *cpu) { // CMP A, [dp+X]
     cpu->regs.opc_cycles = 6;
-    cpu->regs.TA = SPC700_read8(cpu, cpu->regs.PC++);
+    cpu->regs.TA = cpu->read8(cpu->regs.PC++);
     cpu->regs.PC &= 0xFFFF;
     cpu->regs.TA += cpu->regs.X;
-    cpu->regs.TA = SPC700_read8D(cpu, (cpu->regs.TA)) + (SPC700_read8D(cpu, (cpu->regs.TA) + 1) << 8);
-    cpu->regs.TR = SPC700_read8(cpu, cpu->regs.TA);
+    cpu->regs.TA = cpu->read8D((cpu->regs.TA)) + (cpu->read8D((cpu->regs.TA) + 1) << 8);
+    cpu->regs.TR = cpu->read8(cpu->regs.TA);
     // INS 24 ADDR MODE undefined
     i32 z = cpu->regs.A - cpu->regs.TR;
     cpu->regs.P.C = +(z >= 0);
@@ -1338,7 +1338,7 @@ static void SPC700_opcode_67(SPC700 *cpu) { // CMP A, [dp+X]
 
 static void SPC700_opcode_68(SPC700 *cpu) { // CMP A, #i
     cpu->regs.opc_cycles = 2;
-    cpu->regs.TR = SPC700_read8(cpu, cpu->regs.PC++);
+    cpu->regs.TR = cpu->read8(cpu->regs.PC++);
     cpu->regs.PC &= 0xFFFF;
     // INS 24 ADDR MODE undefined
     i32 z = cpu->regs.A - cpu->regs.TR;
@@ -1350,12 +1350,12 @@ static void SPC700_opcode_68(SPC700 *cpu) { // CMP A, #i
 
 static void SPC700_opcode_69(SPC700 *cpu) { // CMP dp, dp
     cpu->regs.opc_cycles = 6;
-    cpu->regs.TR = SPC700_read8(cpu, cpu->regs.PC++);
+    cpu->regs.TR = cpu->read8(cpu->regs.PC++);
     cpu->regs.PC &= 0xFFFF;
-    cpu->regs.TA = SPC700_read8(cpu, cpu->regs.PC++);
+    cpu->regs.TA = cpu->read8(cpu->regs.PC++);
     cpu->regs.PC &= 0xFFFF;
-    cpu->regs.TR = SPC700_read8D(cpu, cpu->regs.TR);
-    cpu->regs.TA2 = SPC700_read8D(cpu, cpu->regs.TA);
+    cpu->regs.TR = cpu->read8D(cpu->regs.TR);
+    cpu->regs.TA2 = cpu->read8D(cpu->regs.TA);
     // INS 24 ADDR MODE undefined
     i32 z = cpu->regs.TA2 - cpu->regs.TR;
     cpu->regs.P.C = +(z >= 0);
@@ -1366,12 +1366,12 @@ static void SPC700_opcode_69(SPC700 *cpu) { // CMP dp, dp
 
 static void SPC700_opcode_6A(SPC700 *cpu) { // AND1 C, /m.b
     cpu->regs.opc_cycles = 4;
-    cpu->regs.TA = SPC700_read8(cpu, cpu->regs.PC++);
+    cpu->regs.TA = cpu->read8(cpu->regs.PC++);
     cpu->regs.PC &= 0xFFFF;
-    cpu->regs.TA += SPC700_read8(cpu, cpu->regs.PC++) << 8;
+    cpu->regs.TA += cpu->read8(cpu->regs.PC++) << 8;
     cpu->regs.PC &= 0xFFFF;
     cpu->regs.TR = (cpu->regs.TA >> 13) & 7;
-    cpu->regs.TA = SPC700_read8(cpu, cpu->regs.TA & 0x1FFF);
+    cpu->regs.TA = cpu->read8(cpu->regs.TA & 0x1FFF);
     // INS 401 ADDR MODE 17
     u32 mask = 1 << cpu->regs.TR;
     u32 val = (cpu->regs.TA & mask) >> cpu->regs.TR;
@@ -1382,58 +1382,58 @@ static void SPC700_opcode_6A(SPC700 *cpu) { // AND1 C, /m.b
 
 static void SPC700_opcode_6B(SPC700 *cpu) { // ROR dp
     cpu->regs.opc_cycles = 4;
-    cpu->regs.TA = SPC700_read8(cpu, cpu->regs.PC++);
+    cpu->regs.TA = cpu->read8(cpu->regs.PC++);
     cpu->regs.PC &= 0xFFFF;
-    cpu->regs.TR = SPC700_read8D(cpu, cpu->regs.TA);
+    cpu->regs.TR = cpu->read8D(cpu->regs.TA);
     // INS 55 ADDR MODE undefined
     u32 carry = cpu->regs.P.C;
     cpu->regs.P.C = cpu->regs.TR& 1;
     cpu->regs.TR = (carry << 7) | (cpu->regs.TR >> 1);
     cpu->regs.P.Z = +((cpu->regs.TR) == 0);
     cpu->regs.P.N = ((cpu->regs.TR) & 0x80) >> 7;
-    SPC700_write8D(cpu, (cpu->regs.TA), cpu->regs.TR);
+    cpu->write8D((cpu->regs.TA), cpu->regs.TR);
 }
 
 
 static void SPC700_opcode_6C(SPC700 *cpu) { // ROR !abs
     cpu->regs.opc_cycles = 5;
-    cpu->regs.TA = SPC700_read8(cpu, cpu->regs.PC++);
+    cpu->regs.TA = cpu->read8(cpu->regs.PC++);
     cpu->regs.PC &= 0xFFFF;
-    cpu->regs.TA += SPC700_read8(cpu, cpu->regs.PC++) << 8;
+    cpu->regs.TA += cpu->read8(cpu->regs.PC++) << 8;
     cpu->regs.PC &= 0xFFFF;
-    cpu->regs.TR = SPC700_read8(cpu, cpu->regs.TA);
+    cpu->regs.TR = cpu->read8(cpu->regs.TA);
     // INS 55 ADDR MODE undefined
     u32 carry = cpu->regs.P.C;
     cpu->regs.P.C = cpu->regs.TR& 1;
     cpu->regs.TR = (carry << 7) | (cpu->regs.TR >> 1);
     cpu->regs.P.Z = +((cpu->regs.TR) == 0);
     cpu->regs.P.N = ((cpu->regs.TR) & 0x80) >> 7;
-    SPC700_write8(cpu, cpu->regs.TA, cpu->regs.TR);
+    cpu->write8(cpu->regs.TA, cpu->regs.TR);
 }
 
 
 static void SPC700_opcode_6D(SPC700 *cpu) { // PUSH Y
     cpu->regs.opc_cycles = 4;
     // INS 51 ADDR MODE null
-    SPC700_write8(cpu, 0x100 + cpu->regs.SP--, cpu->regs.Y);
+    cpu->write8(0x100 + cpu->regs.SP--, cpu->regs.Y);
     cpu->regs.SP &= 0xFF;
 }
 
 
 static void SPC700_opcode_6E(SPC700 *cpu) { // DBNZ dp, r
     cpu->regs.opc_cycles = 5;
-    cpu->regs.TA = SPC700_read8(cpu, cpu->regs.PC++);
+    cpu->regs.TA = cpu->read8(cpu->regs.PC++);
     cpu->regs.PC &= 0xFFFF;
-    cpu->regs.TR = SPC700_read8(cpu, cpu->regs.PC++);
+    cpu->regs.TR = cpu->read8(cpu->regs.PC++);
     cpu->regs.PC &= 0xFFFF;
-    cpu->regs.TA2 = SPC700_read8D(cpu, cpu->regs.TA);
+    cpu->regs.TA2 = cpu->read8D(cpu->regs.TA);
     // INS 28 ADDR MODE undefined
     cpu->regs.TA2 = (cpu->regs.TA2 - 1) & 0xFF;
     if (cpu->regs.TA2 != 0) {
         cpu->regs.PC = (cpu->regs.PC + (u32)(i8)cpu->regs.TR) & 0xFFFF;
         cpu->regs.opc_cycles += 2;
     }
-    SPC700_write8D(cpu, (cpu->regs.TA), cpu->regs.TA2);
+    cpu->write8D((cpu->regs.TA), cpu->regs.TA2);
 }
 
 
@@ -1441,16 +1441,16 @@ static void SPC700_opcode_6F(SPC700 *cpu) { // RET i
     cpu->regs.opc_cycles = 5;
     // INS 52 ADDR MODE 0
     cpu->regs.SP = (cpu->regs.SP + 1) & 0xFF;
-    cpu->regs.PC = SPC700_read8(cpu, 0x100 + cpu->regs.SP);
+    cpu->regs.PC = cpu->read8(0x100 + cpu->regs.SP);
     cpu->regs.SP = (cpu->regs.SP + 1) & 0xFF;
-    cpu->regs.PC += SPC700_read8(cpu, 0x100 + cpu->regs.SP) << 8;
+    cpu->regs.PC += cpu->read8(0x100 + cpu->regs.SP) << 8;
 }
 
 
 static void SPC700_opcode_70(SPC700 *cpu) { // BVS r
     cpu->regs.opc_cycles = 2;
     // INS 15 ADDR MODE undefined
-    cpu->regs.TR = SPC700_read8(cpu, cpu->regs.PC++);
+    cpu->regs.TR = cpu->read8(cpu->regs.PC++);
     cpu->regs.PC &= 0xFFFF;
     if (cpu->regs.P.V) {
         cpu->regs.PC = (cpu->regs.PC + (u32)(i8)cpu->regs.TR) & 0xFFFF;
@@ -1462,32 +1462,32 @@ static void SPC700_opcode_70(SPC700 *cpu) { // BVS r
 static void SPC700_opcode_71(SPC700 *cpu) { // TCALL 7
     cpu->regs.opc_cycles = 8;
     // INS 63 ADDR MODE 0
-    SPC700_write8(cpu, 0x100 + cpu->regs.SP--, (cpu->regs.PC >> 8) & 0xFF);
+    cpu->write8(0x100 + cpu->regs.SP--, (cpu->regs.PC >> 8) & 0xFF);
     cpu->regs.SP &= 0xFF;
-    SPC700_write8(cpu, 0x100 + cpu->regs.SP--, (cpu->regs.PC & 0xFF));
+    cpu->write8(0x100 + cpu->regs.SP--, (cpu->regs.PC & 0xFF));
     cpu->regs.SP &= 0xFF;
-    cpu->regs.PC = SPC700_read8(cpu, 65488);
-    cpu->regs.PC |= SPC700_read8(cpu, 65489) << 8;
+    cpu->regs.PC = cpu->read8(65488);
+    cpu->regs.PC |= cpu->read8(65489) << 8;
 }
 
 
 static void SPC700_opcode_72(SPC700 *cpu) { // CLR1 dp.3
     cpu->regs.opc_cycles = 4;
-    cpu->regs.TA = SPC700_read8(cpu, cpu->regs.PC++);
+    cpu->regs.TA = cpu->read8(cpu->regs.PC++);
     cpu->regs.PC &= 0xFFFF;
     // INS 20 ADDR MODE 22
-    cpu->regs.TR = SPC700_read8D(cpu, cpu->regs.TA);
+    cpu->regs.TR = cpu->read8D(cpu->regs.TA);
     cpu->regs.TR &= 0xF7;
-    SPC700_write8D(cpu, (cpu->regs.TA), cpu->regs.TR);
+    cpu->write8D((cpu->regs.TA), cpu->regs.TR);
 }
 
 
 static void SPC700_opcode_73(SPC700 *cpu) { // BBC dp.3
     cpu->regs.opc_cycles = 5;
-    cpu->regs.TA = SPC700_read8(cpu, cpu->regs.PC++);
+    cpu->regs.TA = cpu->read8(cpu->regs.PC++);
     cpu->regs.PC &= 0xFFFF;
-    cpu->regs.TA = SPC700_read8D(cpu, cpu->regs.TA);
-    cpu->regs.TR = SPC700_read8(cpu, cpu->regs.PC++);
+    cpu->regs.TA = cpu->read8D(cpu->regs.TA);
+    cpu->regs.TR = cpu->read8(cpu->regs.PC++);
     cpu->regs.PC &= 0xFFFF;
     if ((cpu->regs.TA & 0x08) == 0) {
         cpu->regs.PC = (cpu->regs.PC + (u32)(i8)cpu->regs.TR) & 0xFFFF;
@@ -1498,9 +1498,9 @@ static void SPC700_opcode_73(SPC700 *cpu) { // BBC dp.3
 
 static void SPC700_opcode_74(SPC700 *cpu) { // CMP A, dp+X
     cpu->regs.opc_cycles = 4;
-    cpu->regs.TA = SPC700_read8(cpu, cpu->regs.PC++);
+    cpu->regs.TA = cpu->read8(cpu->regs.PC++);
     cpu->regs.PC &= 0xFFFF;
-    cpu->regs.TR = SPC700_read8D(cpu, cpu->regs.TA + cpu->regs.X);
+    cpu->regs.TR = cpu->read8D(cpu->regs.TA + cpu->regs.X);
     // INS 24 ADDR MODE undefined
     i32 z = cpu->regs.A - cpu->regs.TR;
     cpu->regs.P.C = +(z >= 0);
@@ -1511,12 +1511,12 @@ static void SPC700_opcode_74(SPC700 *cpu) { // CMP A, dp+X
 
 static void SPC700_opcode_75(SPC700 *cpu) { // CMP A, !abs+X
     cpu->regs.opc_cycles = 5;
-    cpu->regs.TA = SPC700_read8(cpu, cpu->regs.PC++);
+    cpu->regs.TA = cpu->read8(cpu->regs.PC++);
     cpu->regs.PC &= 0xFFFF;
-    cpu->regs.TA += SPC700_read8(cpu, cpu->regs.PC++) << 8;
+    cpu->regs.TA += cpu->read8(cpu->regs.PC++) << 8;
     cpu->regs.PC &= 0xFFFF;
     cpu->regs.TA += cpu->regs.X;
-    cpu->regs.TR = SPC700_read8(cpu, cpu->regs.TA & 0xFFFF);
+    cpu->regs.TR = cpu->read8(cpu->regs.TA & 0xFFFF);
     // INS 24 ADDR MODE undefined
     i32 z = cpu->regs.A - cpu->regs.TR;
     cpu->regs.P.C = +(z >= 0);
@@ -1527,12 +1527,12 @@ static void SPC700_opcode_75(SPC700 *cpu) { // CMP A, !abs+X
 
 static void SPC700_opcode_76(SPC700 *cpu) { // CMP A, !abs+Y
     cpu->regs.opc_cycles = 5;
-    cpu->regs.TA = SPC700_read8(cpu, cpu->regs.PC++);
+    cpu->regs.TA = cpu->read8(cpu->regs.PC++);
     cpu->regs.PC &= 0xFFFF;
-    cpu->regs.TA += SPC700_read8(cpu, cpu->regs.PC++) << 8;
+    cpu->regs.TA += cpu->read8(cpu->regs.PC++) << 8;
     cpu->regs.PC &= 0xFFFF;
     cpu->regs.TA += cpu->regs.Y;
-    cpu->regs.TR = SPC700_read8(cpu, cpu->regs.TA & 0xFFFF);
+    cpu->regs.TR = cpu->read8(cpu->regs.TA & 0xFFFF);
     // INS 24 ADDR MODE undefined
     i32 z = cpu->regs.A - cpu->regs.TR;
     cpu->regs.P.C = +(z >= 0);
@@ -1543,11 +1543,11 @@ static void SPC700_opcode_76(SPC700 *cpu) { // CMP A, !abs+Y
 
 static void SPC700_opcode_77(SPC700 *cpu) { // CMP A, [dp]+Y
     cpu->regs.opc_cycles = 6;
-    cpu->regs.TA = SPC700_read8(cpu, cpu->regs.PC++);
+    cpu->regs.TA = cpu->read8(cpu->regs.PC++);
     cpu->regs.PC &= 0xFFFF;
-    cpu->regs.TA = SPC700_read8D(cpu, (cpu->regs.TA)) + (SPC700_read8D(cpu, (cpu->regs.TA) + 1) << 8);
+    cpu->regs.TA = cpu->read8D((cpu->regs.TA)) + (cpu->read8D((cpu->regs.TA) + 1) << 8);
     cpu->regs.TA += cpu->regs.Y;
-    cpu->regs.TR = SPC700_read8(cpu, cpu->regs.TA);
+    cpu->regs.TR = cpu->read8(cpu->regs.TA);
     // INS 24 ADDR MODE undefined
     i32 z = cpu->regs.A - cpu->regs.TR;
     cpu->regs.P.C = +(z >= 0);
@@ -1558,11 +1558,11 @@ static void SPC700_opcode_77(SPC700 *cpu) { // CMP A, [dp]+Y
 
 static void SPC700_opcode_78(SPC700 *cpu) { // CMP dp, #imm
     cpu->regs.opc_cycles = 5;
-    cpu->regs.TR = SPC700_read8(cpu, cpu->regs.PC++);
+    cpu->regs.TR = cpu->read8(cpu->regs.PC++);
     cpu->regs.PC &= 0xFFFF;
-    cpu->regs.TA = SPC700_read8(cpu, cpu->regs.PC++);
+    cpu->regs.TA = cpu->read8(cpu->regs.PC++);
     cpu->regs.PC &= 0xFFFF;
-    cpu->regs.TA2 = SPC700_read8D(cpu, cpu->regs.TA);
+    cpu->regs.TA2 = cpu->read8D(cpu->regs.TA);
     // INS 24 ADDR MODE undefined
     i32 z = cpu->regs.TA2 - cpu->regs.TR;
     cpu->regs.P.C = +(z >= 0);
@@ -1573,8 +1573,8 @@ static void SPC700_opcode_78(SPC700 *cpu) { // CMP dp, #imm
 
 static void SPC700_opcode_79(SPC700 *cpu) { // CMP (X), (Y)
     cpu->regs.opc_cycles = 5;
-    cpu->regs.TA = SPC700_read8D(cpu, cpu->regs.Y);
-    cpu->regs.TR = SPC700_read8D(cpu, cpu->regs.X);
+    cpu->regs.TA = cpu->read8D(cpu->regs.Y);
+    cpu->regs.TR = cpu->read8D(cpu->regs.X);
     // INS 24 ADDR MODE undefined
     i32 z = cpu->regs.TR - cpu->regs.TA;
     cpu->regs.P.C = +(z >= 0);
@@ -1585,10 +1585,10 @@ static void SPC700_opcode_79(SPC700 *cpu) { // CMP (X), (Y)
 
 static void SPC700_opcode_7A(SPC700 *cpu) { // ADDW YA, dp
     cpu->regs.opc_cycles = 5;
-    cpu->regs.TA = SPC700_read8(cpu, cpu->regs.PC++);
+    cpu->regs.TA = cpu->read8(cpu->regs.PC++);
     cpu->regs.PC &= 0xFFFF;
-    cpu->regs.TR = SPC700_read8D(cpu, cpu->regs.TA);
-    cpu->regs.TA = SPC700_read8D(cpu, cpu->regs.TA+1);
+    cpu->regs.TR = cpu->read8D(cpu->regs.TA);
+    cpu->regs.TA = cpu->read8D(cpu->regs.TA+1);
     cpu->regs.TR += (cpu->regs.TA << 8);
     // INS 2 ADDR MODE undefined
     u32 z;
@@ -1610,17 +1610,17 @@ static void SPC700_opcode_7A(SPC700 *cpu) { // ADDW YA, dp
 
 static void SPC700_opcode_7B(SPC700 *cpu) { // ROR dp+X
     cpu->regs.opc_cycles = 5;
-    cpu->regs.TA = SPC700_read8(cpu, cpu->regs.PC++);
+    cpu->regs.TA = cpu->read8(cpu->regs.PC++);
     cpu->regs.PC &= 0xFFFF;
     cpu->regs.TA += cpu->regs.X;
-    cpu->regs.TR = SPC700_read8D(cpu, cpu->regs.TA);
+    cpu->regs.TR = cpu->read8D(cpu->regs.TA);
     // INS 55 ADDR MODE undefined
     u32 carry = cpu->regs.P.C;
     cpu->regs.P.C = cpu->regs.TR& 1;
     cpu->regs.TR = (carry << 7) | (cpu->regs.TR >> 1);
     cpu->regs.P.Z = +((cpu->regs.TR) == 0);
     cpu->regs.P.N = ((cpu->regs.TR) & 0x80) >> 7;
-    SPC700_write8D(cpu, (cpu->regs.TA), cpu->regs.TR);
+    cpu->write8D((cpu->regs.TA), cpu->regs.TR);
 }
 
 
@@ -1645,9 +1645,9 @@ static void SPC700_opcode_7D(SPC700 *cpu) { // MOV A, X
 
 static void SPC700_opcode_7E(SPC700 *cpu) { // CMP Y, dp
     cpu->regs.opc_cycles = 3;
-    cpu->regs.TA = SPC700_read8(cpu, cpu->regs.PC++);
+    cpu->regs.TA = cpu->read8(cpu->regs.PC++);
     cpu->regs.PC &= 0xFFFF;
-    cpu->regs.TR = SPC700_read8D(cpu, cpu->regs.TA);
+    cpu->regs.TR = cpu->read8D(cpu->regs.TA);
     // INS 24 ADDR MODE undefined
     i32 z = cpu->regs.Y - cpu->regs.TR;
     cpu->regs.P.C = +(z >= 0);
@@ -1660,12 +1660,12 @@ static void SPC700_opcode_7F(SPC700 *cpu) { // RET1 i
     cpu->regs.opc_cycles = 6;
     // INS 53 ADDR MODE 0
     cpu->regs.SP = (cpu->regs.SP + 1) & 0xFF;
-    cpu->regs.TR = SPC700_read8(cpu, 0x100 + cpu->regs.SP);
+    cpu->regs.TR = cpu->read8(0x100 + cpu->regs.SP);
     SPC700_P_setbyte(&cpu->regs.P, cpu->regs.TR);
     cpu->regs.SP = (cpu->regs.SP + 1) & 0xFF;
-    cpu->regs.PC = SPC700_read8(cpu, 0x100 + cpu->regs.SP);
+    cpu->regs.PC = cpu->read8(0x100 + cpu->regs.SP);
     cpu->regs.SP = (cpu->regs.SP + 1) & 0xFF;
-    cpu->regs.PC += SPC700_read8(cpu, 0x100 + cpu->regs.SP) << 8;
+    cpu->regs.PC += cpu->read8(0x100 + cpu->regs.SP) << 8;
 }
 
 
@@ -1679,32 +1679,32 @@ static void SPC700_opcode_80(SPC700 *cpu) { // SETC i
 static void SPC700_opcode_81(SPC700 *cpu) { // TCALL 8
     cpu->regs.opc_cycles = 8;
     // INS 63 ADDR MODE 0
-    SPC700_write8(cpu, 0x100 + cpu->regs.SP--, (cpu->regs.PC >> 8) & 0xFF);
+    cpu->write8(0x100 + cpu->regs.SP--, (cpu->regs.PC >> 8) & 0xFF);
     cpu->regs.SP &= 0xFF;
-    SPC700_write8(cpu, 0x100 + cpu->regs.SP--, (cpu->regs.PC & 0xFF));
+    cpu->write8(0x100 + cpu->regs.SP--, (cpu->regs.PC & 0xFF));
     cpu->regs.SP &= 0xFF;
-    cpu->regs.PC = SPC700_read8(cpu, 65486);
-    cpu->regs.PC |= SPC700_read8(cpu, 65487) << 8;
+    cpu->regs.PC = cpu->read8(65486);
+    cpu->regs.PC |= cpu->read8(65487) << 8;
 }
 
 
 static void SPC700_opcode_82(SPC700 *cpu) { // SET1 dp.4
     cpu->regs.opc_cycles = 4;
-    cpu->regs.TA = SPC700_read8(cpu, cpu->regs.PC++);
+    cpu->regs.TA = cpu->read8(cpu->regs.PC++);
     cpu->regs.PC &= 0xFFFF;
     // INS 57 ADDR MODE 22
-    cpu->regs.TR = SPC700_read8D(cpu, cpu->regs.TA);
+    cpu->regs.TR = cpu->read8D(cpu->regs.TA);
     cpu->regs.TR |= 0x10;
-    SPC700_write8D(cpu, (cpu->regs.TA), cpu->regs.TR);
+    cpu->write8D((cpu->regs.TA), cpu->regs.TR);
 }
 
 
 static void SPC700_opcode_83(SPC700 *cpu) { // BBS dp.4, r
     cpu->regs.opc_cycles = 5;
-    cpu->regs.TA = SPC700_read8(cpu, cpu->regs.PC++);
+    cpu->regs.TA = cpu->read8(cpu->regs.PC++);
     cpu->regs.PC &= 0xFFFF;
-    cpu->regs.TA = SPC700_read8D(cpu, cpu->regs.TA);
-    cpu->regs.TR = SPC700_read8(cpu, cpu->regs.PC++);
+    cpu->regs.TA = cpu->read8D(cpu->regs.TA);
+    cpu->regs.TR = cpu->read8(cpu->regs.PC++);
     cpu->regs.PC &= 0xFFFF;
     if (cpu->regs.TA & 0x10) {
         cpu->regs.PC = (cpu->regs.PC + (u32)(i8)cpu->regs.TR) & 0xFFFF;
@@ -1715,9 +1715,9 @@ static void SPC700_opcode_83(SPC700 *cpu) { // BBS dp.4, r
 
 static void SPC700_opcode_84(SPC700 *cpu) { // ADC A, dp
     cpu->regs.opc_cycles = 3;
-    cpu->regs.TA = SPC700_read8(cpu, cpu->regs.PC++);
+    cpu->regs.TA = cpu->read8(cpu->regs.PC++);
     cpu->regs.PC &= 0xFFFF;
-    cpu->regs.TR = SPC700_read8D(cpu, cpu->regs.TA);
+    cpu->regs.TR = cpu->read8D(cpu->regs.TA);
     // INS 1 ADDR MODE undefined
     u32 z = (cpu->regs.A) + (cpu->regs.TR) + cpu->regs.P.C;
     cpu->regs.P.C = +(z > 0xFF);
@@ -1731,11 +1731,11 @@ static void SPC700_opcode_84(SPC700 *cpu) { // ADC A, dp
 
 static void SPC700_opcode_85(SPC700 *cpu) { // ADC !abs
     cpu->regs.opc_cycles = 4;
-    cpu->regs.TA = SPC700_read8(cpu, cpu->regs.PC++);
+    cpu->regs.TA = cpu->read8(cpu->regs.PC++);
     cpu->regs.PC &= 0xFFFF;
-    cpu->regs.TA += SPC700_read8(cpu, cpu->regs.PC++) << 8;
+    cpu->regs.TA += cpu->read8(cpu->regs.PC++) << 8;
     cpu->regs.PC &= 0xFFFF;
-    cpu->regs.TR = SPC700_read8(cpu, cpu->regs.TA);
+    cpu->regs.TR = cpu->read8(cpu->regs.TA);
     // INS 1 ADDR MODE undefined
     u32 z = (cpu->regs.A) + (cpu->regs.TR) + cpu->regs.P.C;
     cpu->regs.P.C = +(z > 0xFF);
@@ -1749,7 +1749,7 @@ static void SPC700_opcode_85(SPC700 *cpu) { // ADC !abs
 
 static void SPC700_opcode_86(SPC700 *cpu) { // ADC A, (X)
     cpu->regs.opc_cycles = 3;
-    cpu->regs.TR = SPC700_read8D(cpu, cpu->regs.X);
+    cpu->regs.TR = cpu->read8D(cpu->regs.X);
     // INS 1 ADDR MODE undefined
     u32 z = (cpu->regs.A) + (cpu->regs.TR) + cpu->regs.P.C;
     cpu->regs.P.C = +(z > 0xFF);
@@ -1763,11 +1763,11 @@ static void SPC700_opcode_86(SPC700 *cpu) { // ADC A, (X)
 
 static void SPC700_opcode_87(SPC700 *cpu) { // ADC A, [dp+X]
     cpu->regs.opc_cycles = 6;
-    cpu->regs.TA = SPC700_read8(cpu, cpu->regs.PC++);
+    cpu->regs.TA = cpu->read8(cpu->regs.PC++);
     cpu->regs.PC &= 0xFFFF;
     cpu->regs.TA += cpu->regs.X;
-    cpu->regs.TA = SPC700_read8D(cpu, (cpu->regs.TA)) + (SPC700_read8D(cpu, (cpu->regs.TA) + 1) << 8);
-    cpu->regs.TR = SPC700_read8(cpu, cpu->regs.TA);
+    cpu->regs.TA = cpu->read8D((cpu->regs.TA)) + (cpu->read8D((cpu->regs.TA) + 1) << 8);
+    cpu->regs.TR = cpu->read8(cpu->regs.TA);
     // INS 1 ADDR MODE undefined
     u32 z = (cpu->regs.A) + (cpu->regs.TR) + cpu->regs.P.C;
     cpu->regs.P.C = +(z > 0xFF);
@@ -1781,7 +1781,7 @@ static void SPC700_opcode_87(SPC700 *cpu) { // ADC A, [dp+X]
 
 static void SPC700_opcode_88(SPC700 *cpu) { // ADC A, #imm
     cpu->regs.opc_cycles = 2;
-    cpu->regs.TR = SPC700_read8(cpu, cpu->regs.PC++);
+    cpu->regs.TR = cpu->read8(cpu->regs.PC++);
     cpu->regs.PC &= 0xFFFF;
     // INS 1 ADDR MODE undefined
     u32 z = (cpu->regs.A) + (cpu->regs.TR) + cpu->regs.P.C;
@@ -1796,12 +1796,12 @@ static void SPC700_opcode_88(SPC700 *cpu) { // ADC A, #imm
 
 static void SPC700_opcode_89(SPC700 *cpu) { // ADC dp, dp
     cpu->regs.opc_cycles = 6;
-    cpu->regs.TR = SPC700_read8(cpu, cpu->regs.PC++);
+    cpu->regs.TR = cpu->read8(cpu->regs.PC++);
     cpu->regs.PC &= 0xFFFF;
-    cpu->regs.TA = SPC700_read8(cpu, cpu->regs.PC++);
+    cpu->regs.TA = cpu->read8(cpu->regs.PC++);
     cpu->regs.PC &= 0xFFFF;
-    cpu->regs.TR = SPC700_read8D(cpu, cpu->regs.TR);
-    cpu->regs.TA2 = SPC700_read8D(cpu, cpu->regs.TA);
+    cpu->regs.TR = cpu->read8D(cpu->regs.TR);
+    cpu->regs.TA2 = cpu->read8D(cpu->regs.TA);
     // INS 1 ADDR MODE undefined
     u32 z = (cpu->regs.TA2) + (cpu->regs.TR) + cpu->regs.P.C;
     cpu->regs.P.C = +(z > 0xFF);
@@ -1810,18 +1810,18 @@ static void SPC700_opcode_89(SPC700 *cpu) { // ADC dp, dp
     cpu->regs.P.N = (z & 0x80) >> 7;
     cpu->regs.TA2 = z & 0xFF;
     cpu->regs.P.Z = +((cpu->regs.TA2) == 0);
-    SPC700_write8D(cpu, (cpu->regs.TA), cpu->regs.TA2);
+    cpu->write8D((cpu->regs.TA), cpu->regs.TA2);
 }
 
 
 static void SPC700_opcode_8A(SPC700 *cpu) { // EOR1 C, m.b
     cpu->regs.opc_cycles = 5;
-    cpu->regs.TA = SPC700_read8(cpu, cpu->regs.PC++);
+    cpu->regs.TA = cpu->read8(cpu->regs.PC++);
     cpu->regs.PC &= 0xFFFF;
-    cpu->regs.TA += SPC700_read8(cpu, cpu->regs.PC++) << 8;
+    cpu->regs.TA += cpu->read8(cpu->regs.PC++) << 8;
     cpu->regs.PC &= 0xFFFF;
     cpu->regs.TR = (cpu->regs.TA >> 13) & 7;
-    cpu->regs.TA = SPC700_read8(cpu, cpu->regs.TA & 0x1FFF);
+    cpu->regs.TA = cpu->read8(cpu->regs.TA & 0x1FFF);
     // INS 35 ADDR MODE 17
     u32 mask = 1 << cpu->regs.TR;
     u32 val = (cpu->regs.TA & mask) >> cpu->regs.TR;
@@ -1832,35 +1832,35 @@ static void SPC700_opcode_8A(SPC700 *cpu) { // EOR1 C, m.b
 
 static void SPC700_opcode_8B(SPC700 *cpu) { // DEC dp
     cpu->regs.opc_cycles = 4;
-    cpu->regs.TA = SPC700_read8(cpu, cpu->regs.PC++);
+    cpu->regs.TA = cpu->read8(cpu->regs.PC++);
     cpu->regs.PC &= 0xFFFF;
-    cpu->regs.TR = SPC700_read8D(cpu, cpu->regs.TA);
+    cpu->regs.TR = cpu->read8D(cpu->regs.TA);
     // INS 29 ADDR MODE undefined
     cpu->regs.TR = (cpu->regs.TR - 1) & 0xFF;
     cpu->regs.P.Z = +((cpu->regs.TR) == 0);
     cpu->regs.P.N = ((cpu->regs.TR) & 0x80) >> 7;
-    SPC700_write8D(cpu, (cpu->regs.TA), cpu->regs.TR);
+    cpu->write8D((cpu->regs.TA), cpu->regs.TR);
 }
 
 
 static void SPC700_opcode_8C(SPC700 *cpu) { // DEC !abs
     cpu->regs.opc_cycles = 5;
-    cpu->regs.TA = SPC700_read8(cpu, cpu->regs.PC++);
+    cpu->regs.TA = cpu->read8(cpu->regs.PC++);
     cpu->regs.PC &= 0xFFFF;
-    cpu->regs.TA += SPC700_read8(cpu, cpu->regs.PC++) << 8;
+    cpu->regs.TA += cpu->read8(cpu->regs.PC++) << 8;
     cpu->regs.PC &= 0xFFFF;
-    cpu->regs.TR = SPC700_read8(cpu, cpu->regs.TA);
+    cpu->regs.TR = cpu->read8(cpu->regs.TA);
     // INS 29 ADDR MODE undefined
     cpu->regs.TR = (cpu->regs.TR - 1) & 0xFF;
     cpu->regs.P.Z = +((cpu->regs.TR) == 0);
     cpu->regs.P.N = ((cpu->regs.TR) & 0x80) >> 7;
-    SPC700_write8(cpu, cpu->regs.TA, cpu->regs.TR);
+    cpu->write8(cpu->regs.TA, cpu->regs.TR);
 }
 
 
 static void SPC700_opcode_8D(SPC700 *cpu) { // MOV Y, #imm
     cpu->regs.opc_cycles = 2;
-    cpu->regs.TR = SPC700_read8(cpu, cpu->regs.PC++);
+    cpu->regs.TR = cpu->read8(cpu->regs.PC++);
     cpu->regs.PC &= 0xFFFF;
     cpu->regs.Y = cpu->regs.TR;
     cpu->regs.P.Z = +((cpu->regs.Y) == 0);
@@ -1872,25 +1872,25 @@ static void SPC700_opcode_8E(SPC700 *cpu) { // POP P
     cpu->regs.opc_cycles = 4;
     // INS 50 ADDR MODE null
     cpu->regs.SP = (cpu->regs.SP + 1) & 0xFF;
-    cpu->regs.TR = SPC700_read8(cpu, 0x100 + cpu->regs.SP);
+    cpu->regs.TR = cpu->read8(0x100 + cpu->regs.SP);
     SPC700_P_setbyte(&cpu->regs.P, cpu->regs.TR);
 }
 
 
 static void SPC700_opcode_8F(SPC700 *cpu) { // MOV d, #imm
     cpu->regs.opc_cycles = 5;
-    cpu->regs.TR = SPC700_read8(cpu, cpu->regs.PC++);
+    cpu->regs.TR = cpu->read8(cpu->regs.PC++);
     cpu->regs.PC &= 0xFFFF;
-    cpu->regs.TA = SPC700_read8(cpu, cpu->regs.PC++);
+    cpu->regs.TA = cpu->read8(cpu->regs.PC++);
     cpu->regs.PC &= 0xFFFF;
-    SPC700_write8D(cpu, (cpu->regs.TA), cpu->regs.TR);
+    cpu->write8D((cpu->regs.TA), cpu->regs.TR);
 }
 
 
 static void SPC700_opcode_90(SPC700 *cpu) { // BCC r
     cpu->regs.opc_cycles = 2;
     // INS 8 ADDR MODE undefined
-    cpu->regs.TR = SPC700_read8(cpu, cpu->regs.PC++);
+    cpu->regs.TR = cpu->read8(cpu->regs.PC++);
     cpu->regs.PC &= 0xFFFF;
     if (!cpu->regs.P.C) {
         cpu->regs.PC = (cpu->regs.PC + (u32)(i8)cpu->regs.TR) & 0xFFFF;
@@ -1902,32 +1902,32 @@ static void SPC700_opcode_90(SPC700 *cpu) { // BCC r
 static void SPC700_opcode_91(SPC700 *cpu) { // TCALL 9
     cpu->regs.opc_cycles = 8;
     // INS 63 ADDR MODE 0
-    SPC700_write8(cpu, 0x100 + cpu->regs.SP--, (cpu->regs.PC >> 8) & 0xFF);
+    cpu->write8(0x100 + cpu->regs.SP--, (cpu->regs.PC >> 8) & 0xFF);
     cpu->regs.SP &= 0xFF;
-    SPC700_write8(cpu, 0x100 + cpu->regs.SP--, (cpu->regs.PC & 0xFF));
+    cpu->write8(0x100 + cpu->regs.SP--, (cpu->regs.PC & 0xFF));
     cpu->regs.SP &= 0xFF;
-    cpu->regs.PC = SPC700_read8(cpu, 65484);
-    cpu->regs.PC |= SPC700_read8(cpu, 65485) << 8;
+    cpu->regs.PC = cpu->read8(65484);
+    cpu->regs.PC |= cpu->read8(65485) << 8;
 }
 
 
 static void SPC700_opcode_92(SPC700 *cpu) { // CLR1 dp.4
     cpu->regs.opc_cycles = 4;
-    cpu->regs.TA = SPC700_read8(cpu, cpu->regs.PC++);
+    cpu->regs.TA = cpu->read8(cpu->regs.PC++);
     cpu->regs.PC &= 0xFFFF;
     // INS 20 ADDR MODE 22
-    cpu->regs.TR = SPC700_read8D(cpu, cpu->regs.TA);
+    cpu->regs.TR = cpu->read8D(cpu->regs.TA);
     cpu->regs.TR &= 0xEF;
-    SPC700_write8D(cpu, (cpu->regs.TA), cpu->regs.TR);
+    cpu->write8D((cpu->regs.TA), cpu->regs.TR);
 }
 
 
 static void SPC700_opcode_93(SPC700 *cpu) { // BBC dp.4
     cpu->regs.opc_cycles = 5;
-    cpu->regs.TA = SPC700_read8(cpu, cpu->regs.PC++);
+    cpu->regs.TA = cpu->read8(cpu->regs.PC++);
     cpu->regs.PC &= 0xFFFF;
-    cpu->regs.TA = SPC700_read8D(cpu, cpu->regs.TA);
-    cpu->regs.TR = SPC700_read8(cpu, cpu->regs.PC++);
+    cpu->regs.TA = cpu->read8D(cpu->regs.TA);
+    cpu->regs.TR = cpu->read8(cpu->regs.PC++);
     cpu->regs.PC &= 0xFFFF;
     if ((cpu->regs.TA & 0x10) == 0) {
         cpu->regs.PC = (cpu->regs.PC + (u32)(i8)cpu->regs.TR) & 0xFFFF;
@@ -1938,9 +1938,9 @@ static void SPC700_opcode_93(SPC700 *cpu) { // BBC dp.4
 
 static void SPC700_opcode_94(SPC700 *cpu) { // ADC A, dp+X
     cpu->regs.opc_cycles = 4;
-    cpu->regs.TA = SPC700_read8(cpu, cpu->regs.PC++);
+    cpu->regs.TA = cpu->read8(cpu->regs.PC++);
     cpu->regs.PC &= 0xFFFF;
-    cpu->regs.TR = SPC700_read8D(cpu, cpu->regs.TA + cpu->regs.X);
+    cpu->regs.TR = cpu->read8D(cpu->regs.TA + cpu->regs.X);
     // INS 1 ADDR MODE undefined
     u32 z = (cpu->regs.A) + (cpu->regs.TR) + cpu->regs.P.C;
     cpu->regs.P.C = +(z > 0xFF);
@@ -1954,12 +1954,12 @@ static void SPC700_opcode_94(SPC700 *cpu) { // ADC A, dp+X
 
 static void SPC700_opcode_95(SPC700 *cpu) { // ADC A, !abs+X
     cpu->regs.opc_cycles = 5;
-    cpu->regs.TA = SPC700_read8(cpu, cpu->regs.PC++);
+    cpu->regs.TA = cpu->read8(cpu->regs.PC++);
     cpu->regs.PC &= 0xFFFF;
-    cpu->regs.TA += SPC700_read8(cpu, cpu->regs.PC++) << 8;
+    cpu->regs.TA += cpu->read8(cpu->regs.PC++) << 8;
     cpu->regs.PC &= 0xFFFF;
     cpu->regs.TA += cpu->regs.X;
-    cpu->regs.TR = SPC700_read8(cpu, cpu->regs.TA & 0xFFFF);
+    cpu->regs.TR = cpu->read8(cpu->regs.TA & 0xFFFF);
     // INS 1 ADDR MODE undefined
     u32 z = (cpu->regs.A) + (cpu->regs.TR) + cpu->regs.P.C;
     cpu->regs.P.C = +(z > 0xFF);
@@ -1973,12 +1973,12 @@ static void SPC700_opcode_95(SPC700 *cpu) { // ADC A, !abs+X
 
 static void SPC700_opcode_96(SPC700 *cpu) { // ADC A, !abs+Y
     cpu->regs.opc_cycles = 5;
-    cpu->regs.TA = SPC700_read8(cpu, cpu->regs.PC++);
+    cpu->regs.TA = cpu->read8(cpu->regs.PC++);
     cpu->regs.PC &= 0xFFFF;
-    cpu->regs.TA += SPC700_read8(cpu, cpu->regs.PC++) << 8;
+    cpu->regs.TA += cpu->read8(cpu->regs.PC++) << 8;
     cpu->regs.PC &= 0xFFFF;
     cpu->regs.TA += cpu->regs.Y;
-    cpu->regs.TR = SPC700_read8(cpu, cpu->regs.TA & 0xFFFF);
+    cpu->regs.TR = cpu->read8(cpu->regs.TA & 0xFFFF);
     // INS 1 ADDR MODE undefined
     u32 z = (cpu->regs.A) + (cpu->regs.TR) + cpu->regs.P.C;
     cpu->regs.P.C = +(z > 0xFF);
@@ -1992,11 +1992,11 @@ static void SPC700_opcode_96(SPC700 *cpu) { // ADC A, !abs+Y
 
 static void SPC700_opcode_97(SPC700 *cpu) { // ADC A, [dp]+Y
     cpu->regs.opc_cycles = 6;
-    cpu->regs.TA = SPC700_read8(cpu, cpu->regs.PC++);
+    cpu->regs.TA = cpu->read8(cpu->regs.PC++);
     cpu->regs.PC &= 0xFFFF;
-    cpu->regs.TA = SPC700_read8D(cpu, (cpu->regs.TA)) + (SPC700_read8D(cpu, (cpu->regs.TA) + 1) << 8);
+    cpu->regs.TA = cpu->read8D((cpu->regs.TA)) + (cpu->read8D((cpu->regs.TA) + 1) << 8);
     cpu->regs.TA += cpu->regs.Y;
-    cpu->regs.TR = SPC700_read8(cpu, cpu->regs.TA);
+    cpu->regs.TR = cpu->read8(cpu->regs.TA);
     // INS 1 ADDR MODE undefined
     u32 z = (cpu->regs.A) + (cpu->regs.TR) + cpu->regs.P.C;
     cpu->regs.P.C = +(z > 0xFF);
@@ -2010,11 +2010,11 @@ static void SPC700_opcode_97(SPC700 *cpu) { // ADC A, [dp]+Y
 
 static void SPC700_opcode_98(SPC700 *cpu) { // ADC dp, #imm
     cpu->regs.opc_cycles = 5;
-    cpu->regs.TR = SPC700_read8(cpu, cpu->regs.PC++);
+    cpu->regs.TR = cpu->read8(cpu->regs.PC++);
     cpu->regs.PC &= 0xFFFF;
-    cpu->regs.TA = SPC700_read8(cpu, cpu->regs.PC++);
+    cpu->regs.TA = cpu->read8(cpu->regs.PC++);
     cpu->regs.PC &= 0xFFFF;
-    cpu->regs.TA2 = SPC700_read8D(cpu, cpu->regs.TA);
+    cpu->regs.TA2 = cpu->read8D(cpu->regs.TA);
     // INS 1 ADDR MODE undefined
     u32 z = (cpu->regs.TA2) + (cpu->regs.TR) + cpu->regs.P.C;
     cpu->regs.P.C = +(z > 0xFF);
@@ -2023,14 +2023,14 @@ static void SPC700_opcode_98(SPC700 *cpu) { // ADC dp, #imm
     cpu->regs.P.N = (z & 0x80) >> 7;
     cpu->regs.TA2 = z & 0xFF;
     cpu->regs.P.Z = +((cpu->regs.TA2) == 0);
-    SPC700_write8D(cpu, (cpu->regs.TA), cpu->regs.TA2);
+    cpu->write8D((cpu->regs.TA), cpu->regs.TA2);
 }
 
 
 static void SPC700_opcode_99(SPC700 *cpu) { // ADC (X), (Y)
     cpu->regs.opc_cycles = 5;
-    cpu->regs.TA = SPC700_read8D(cpu, cpu->regs.Y);
-    cpu->regs.TR = SPC700_read8D(cpu, cpu->regs.X);
+    cpu->regs.TA = cpu->read8D(cpu->regs.Y);
+    cpu->regs.TR = cpu->read8D(cpu->regs.X);
     // INS 1 ADDR MODE undefined
     u32 z = (cpu->regs.TR) + (cpu->regs.TA) + cpu->regs.P.C;
     cpu->regs.P.C = +(z > 0xFF);
@@ -2039,16 +2039,16 @@ static void SPC700_opcode_99(SPC700 *cpu) { // ADC (X), (Y)
     cpu->regs.P.N = (z & 0x80) >> 7;
     cpu->regs.TR = z & 0xFF;
     cpu->regs.P.Z = +((cpu->regs.TR) == 0);
-    SPC700_write8D(cpu, (cpu->regs.X), cpu->regs.TR);
+    cpu->write8D((cpu->regs.X), cpu->regs.TR);
 }
 
 
 static void SPC700_opcode_9A(SPC700 *cpu) { // SUBW YA, dp
     cpu->regs.opc_cycles = 5;
-    cpu->regs.TA = SPC700_read8(cpu, cpu->regs.PC++);
+    cpu->regs.TA = cpu->read8(cpu->regs.PC++);
     cpu->regs.PC &= 0xFFFF;
-    cpu->regs.TR = SPC700_read8D(cpu, cpu->regs.TA);
-    cpu->regs.TA = SPC700_read8D(cpu, cpu->regs.TA+1);
+    cpu->regs.TR = cpu->read8D(cpu->regs.TA);
+    cpu->regs.TA = cpu->read8D(cpu->regs.TA+1);
     cpu->regs.TR += (cpu->regs.TA << 8);
     // INS 62 ADDR MODE undefined
     cpu->regs.P.C = 1;
@@ -2072,15 +2072,15 @@ static void SPC700_opcode_9A(SPC700 *cpu) { // SUBW YA, dp
 
 static void SPC700_opcode_9B(SPC700 *cpu) { // DEC dp+X
     cpu->regs.opc_cycles = 5;
-    cpu->regs.TA = SPC700_read8(cpu, cpu->regs.PC++);
+    cpu->regs.TA = cpu->read8(cpu->regs.PC++);
     cpu->regs.PC &= 0xFFFF;
     cpu->regs.TA += cpu->regs.X;
-    cpu->regs.TR = SPC700_read8D(cpu, cpu->regs.TA);
+    cpu->regs.TR = cpu->read8D(cpu->regs.TA);
     // INS 29 ADDR MODE undefined
     cpu->regs.TR = (cpu->regs.TR - 1) & 0xFF;
     cpu->regs.P.Z = +((cpu->regs.TR) == 0);
     cpu->regs.P.N = ((cpu->regs.TR) & 0x80) >> 7;
-    SPC700_write8D(cpu, (cpu->regs.TA), cpu->regs.TR);
+    cpu->write8D((cpu->regs.TA), cpu->regs.TR);
 }
 
 
@@ -2137,32 +2137,32 @@ static void SPC700_opcode_A0(SPC700 *cpu) { // EI i
 static void SPC700_opcode_A1(SPC700 *cpu) { // TCALL 10
     cpu->regs.opc_cycles = 8;
     // INS 63 ADDR MODE 0
-    SPC700_write8(cpu, 0x100 + cpu->regs.SP--, (cpu->regs.PC >> 8) & 0xFF);
+    cpu->write8(0x100 + cpu->regs.SP--, (cpu->regs.PC >> 8) & 0xFF);
     cpu->regs.SP &= 0xFF;
-    SPC700_write8(cpu, 0x100 + cpu->regs.SP--, (cpu->regs.PC & 0xFF));
+    cpu->write8(0x100 + cpu->regs.SP--, (cpu->regs.PC & 0xFF));
     cpu->regs.SP &= 0xFF;
-    cpu->regs.PC = SPC700_read8(cpu, 65482);
-    cpu->regs.PC |= SPC700_read8(cpu, 65483) << 8;
+    cpu->regs.PC = cpu->read8(65482);
+    cpu->regs.PC |= cpu->read8(65483) << 8;
 }
 
 
 static void SPC700_opcode_A2(SPC700 *cpu) { // SET1 dp.5
     cpu->regs.opc_cycles = 4;
-    cpu->regs.TA = SPC700_read8(cpu, cpu->regs.PC++);
+    cpu->regs.TA = cpu->read8(cpu->regs.PC++);
     cpu->regs.PC &= 0xFFFF;
     // INS 57 ADDR MODE 22
-    cpu->regs.TR = SPC700_read8D(cpu, cpu->regs.TA);
+    cpu->regs.TR = cpu->read8D(cpu->regs.TA);
     cpu->regs.TR |= 0x20;
-    SPC700_write8D(cpu, (cpu->regs.TA), cpu->regs.TR);
+    cpu->write8D((cpu->regs.TA), cpu->regs.TR);
 }
 
 
 static void SPC700_opcode_A3(SPC700 *cpu) { // BBS dp.5, r
     cpu->regs.opc_cycles = 5;
-    cpu->regs.TA = SPC700_read8(cpu, cpu->regs.PC++);
+    cpu->regs.TA = cpu->read8(cpu->regs.PC++);
     cpu->regs.PC &= 0xFFFF;
-    cpu->regs.TA = SPC700_read8D(cpu, cpu->regs.TA);
-    cpu->regs.TR = SPC700_read8(cpu, cpu->regs.PC++);
+    cpu->regs.TA = cpu->read8D(cpu->regs.TA);
+    cpu->regs.TR = cpu->read8(cpu->regs.PC++);
     cpu->regs.PC &= 0xFFFF;
     if (cpu->regs.TA & 0x20) {
         cpu->regs.PC = (cpu->regs.PC + (u32)(i8)cpu->regs.TR) & 0xFFFF;
@@ -2173,9 +2173,9 @@ static void SPC700_opcode_A3(SPC700 *cpu) { // BBS dp.5, r
 
 static void SPC700_opcode_A4(SPC700 *cpu) { // SBC A, dp
     cpu->regs.opc_cycles = 3;
-    cpu->regs.TA = SPC700_read8(cpu, cpu->regs.PC++);
+    cpu->regs.TA = cpu->read8(cpu->regs.PC++);
     cpu->regs.PC &= 0xFFFF;
-    cpu->regs.TR = SPC700_read8D(cpu, cpu->regs.TA);
+    cpu->regs.TR = cpu->read8D(cpu->regs.TA);
     // INS 56 ADDR MODE undefined
     i32 y = (~cpu->regs.TR) & 0xFF;
     i32 z = (cpu->regs.A) + y + cpu->regs.P.C;
@@ -2190,11 +2190,11 @@ static void SPC700_opcode_A4(SPC700 *cpu) { // SBC A, dp
 
 static void SPC700_opcode_A5(SPC700 *cpu) { // SBC A, !abs
     cpu->regs.opc_cycles = 4;
-    cpu->regs.TA = SPC700_read8(cpu, cpu->regs.PC++);
+    cpu->regs.TA = cpu->read8(cpu->regs.PC++);
     cpu->regs.PC &= 0xFFFF;
-    cpu->regs.TA += SPC700_read8(cpu, cpu->regs.PC++) << 8;
+    cpu->regs.TA += cpu->read8(cpu->regs.PC++) << 8;
     cpu->regs.PC &= 0xFFFF;
-    cpu->regs.TR = SPC700_read8(cpu, cpu->regs.TA);
+    cpu->regs.TR = cpu->read8(cpu->regs.TA);
     // INS 56 ADDR MODE undefined
     i32 y = (~cpu->regs.TR) & 0xFF;
     i32 z = (cpu->regs.A) + y + cpu->regs.P.C;
@@ -2209,7 +2209,7 @@ static void SPC700_opcode_A5(SPC700 *cpu) { // SBC A, !abs
 
 static void SPC700_opcode_A6(SPC700 *cpu) { // SBC A, (X)
     cpu->regs.opc_cycles = 3;
-    cpu->regs.TR = SPC700_read8D(cpu, cpu->regs.X);
+    cpu->regs.TR = cpu->read8D(cpu->regs.X);
     // INS 56 ADDR MODE undefined
     i32 y = (~cpu->regs.TR) & 0xFF;
     i32 z = (cpu->regs.A) + y + cpu->regs.P.C;
@@ -2224,11 +2224,11 @@ static void SPC700_opcode_A6(SPC700 *cpu) { // SBC A, (X)
 
 static void SPC700_opcode_A7(SPC700 *cpu) { // SBC A, [dp+X]
     cpu->regs.opc_cycles = 6;
-    cpu->regs.TA = SPC700_read8(cpu, cpu->regs.PC++);
+    cpu->regs.TA = cpu->read8(cpu->regs.PC++);
     cpu->regs.PC &= 0xFFFF;
     cpu->regs.TA += cpu->regs.X;
-    cpu->regs.TA = SPC700_read8D(cpu, (cpu->regs.TA)) + (SPC700_read8D(cpu, (cpu->regs.TA) + 1) << 8);
-    cpu->regs.TR = SPC700_read8(cpu, cpu->regs.TA);
+    cpu->regs.TA = cpu->read8D((cpu->regs.TA)) + (cpu->read8D((cpu->regs.TA) + 1) << 8);
+    cpu->regs.TR = cpu->read8(cpu->regs.TA);
     // INS 56 ADDR MODE undefined
     i32 y = (~cpu->regs.TR) & 0xFF;
     i32 z = (cpu->regs.A) + y + cpu->regs.P.C;
@@ -2243,7 +2243,7 @@ static void SPC700_opcode_A7(SPC700 *cpu) { // SBC A, [dp+X]
 
 static void SPC700_opcode_A8(SPC700 *cpu) { // SBC A, #imm
     cpu->regs.opc_cycles = 2;
-    cpu->regs.TR = SPC700_read8(cpu, cpu->regs.PC++);
+    cpu->regs.TR = cpu->read8(cpu->regs.PC++);
     cpu->regs.PC &= 0xFFFF;
     // INS 56 ADDR MODE undefined
     i32 y = (~cpu->regs.TR) & 0xFF;
@@ -2259,12 +2259,12 @@ static void SPC700_opcode_A8(SPC700 *cpu) { // SBC A, #imm
 
 static void SPC700_opcode_A9(SPC700 *cpu) { // SBC dp, dp
     cpu->regs.opc_cycles = 6;
-    cpu->regs.TR = SPC700_read8(cpu, cpu->regs.PC++);
+    cpu->regs.TR = cpu->read8(cpu->regs.PC++);
     cpu->regs.PC &= 0xFFFF;
-    cpu->regs.TA = SPC700_read8(cpu, cpu->regs.PC++);
+    cpu->regs.TA = cpu->read8(cpu->regs.PC++);
     cpu->regs.PC &= 0xFFFF;
-    cpu->regs.TR = SPC700_read8D(cpu, cpu->regs.TR);
-    cpu->regs.TA2 = SPC700_read8D(cpu, cpu->regs.TA);
+    cpu->regs.TR = cpu->read8D(cpu->regs.TR);
+    cpu->regs.TA2 = cpu->read8D(cpu->regs.TA);
     // INS 56 ADDR MODE undefined
     i32 y = (~cpu->regs.TR) & 0xFF;
     i32 z = (cpu->regs.TA2) + y + cpu->regs.P.C;
@@ -2274,18 +2274,18 @@ static void SPC700_opcode_A9(SPC700 *cpu) { // SBC dp, dp
     cpu->regs.P.N = (z & 0x80) >> 7;
     cpu->regs.TA2 = z & 0xFF;
     cpu->regs.P.Z = +((cpu->regs.TA2) == 0);
-    SPC700_write8D(cpu, (cpu->regs.TA), cpu->regs.TA2);
+    cpu->write8D((cpu->regs.TA), cpu->regs.TA2);
 }
 
 
 static void SPC700_opcode_AA(SPC700 *cpu) { // MOV1 C, m.b
     cpu->regs.opc_cycles = 4;
-    cpu->regs.TA = SPC700_read8(cpu, cpu->regs.PC++);
+    cpu->regs.TA = cpu->read8(cpu->regs.PC++);
     cpu->regs.PC &= 0xFFFF;
-    cpu->regs.TA += SPC700_read8(cpu, cpu->regs.PC++) << 8;
+    cpu->regs.TA += cpu->read8(cpu->regs.PC++) << 8;
     cpu->regs.PC &= 0xFFFF;
     cpu->regs.TR = (cpu->regs.TA >> 13) & 7;
-    cpu->regs.TA = SPC700_read8(cpu, cpu->regs.TA & 0x1FFF);
+    cpu->regs.TA = cpu->read8(cpu->regs.TA & 0x1FFF);
     // INS 41 ADDR MODE 17
     cpu->regs.P.C = ((cpu->regs.TA) >> (cpu->regs.TR)) & 1;
 }
@@ -2293,35 +2293,35 @@ static void SPC700_opcode_AA(SPC700 *cpu) { // MOV1 C, m.b
 
 static void SPC700_opcode_AB(SPC700 *cpu) { // INC dp
     cpu->regs.opc_cycles = 4;
-    cpu->regs.TA = SPC700_read8(cpu, cpu->regs.PC++);
+    cpu->regs.TA = cpu->read8(cpu->regs.PC++);
     cpu->regs.PC &= 0xFFFF;
-    cpu->regs.TR = SPC700_read8D(cpu, cpu->regs.TA);
+    cpu->regs.TR = cpu->read8D(cpu->regs.TA);
     // INS 36 ADDR MODE undefined
     cpu->regs.TR = (cpu->regs.TR + 1) & 0xFF;
     cpu->regs.P.Z = +((cpu->regs.TR) == 0);
     cpu->regs.P.N = ((cpu->regs.TR) & 0x80) >> 7;
-    SPC700_write8D(cpu, (cpu->regs.TA), cpu->regs.TR);
+    cpu->write8D((cpu->regs.TA), cpu->regs.TR);
 }
 
 
 static void SPC700_opcode_AC(SPC700 *cpu) { // INC !abs
     cpu->regs.opc_cycles = 5;
-    cpu->regs.TA = SPC700_read8(cpu, cpu->regs.PC++);
+    cpu->regs.TA = cpu->read8(cpu->regs.PC++);
     cpu->regs.PC &= 0xFFFF;
-    cpu->regs.TA += SPC700_read8(cpu, cpu->regs.PC++) << 8;
+    cpu->regs.TA += cpu->read8(cpu->regs.PC++) << 8;
     cpu->regs.PC &= 0xFFFF;
-    cpu->regs.TR = SPC700_read8(cpu, cpu->regs.TA);
+    cpu->regs.TR = cpu->read8(cpu->regs.TA);
     // INS 36 ADDR MODE undefined
     cpu->regs.TR = (cpu->regs.TR + 1) & 0xFF;
     cpu->regs.P.Z = +((cpu->regs.TR) == 0);
     cpu->regs.P.N = ((cpu->regs.TR) & 0x80) >> 7;
-    SPC700_write8(cpu, cpu->regs.TA, cpu->regs.TR);
+    cpu->write8(cpu->regs.TA, cpu->regs.TR);
 }
 
 
 static void SPC700_opcode_AD(SPC700 *cpu) { // CMP Y, #imm
     cpu->regs.opc_cycles = 2;
-    cpu->regs.TR = SPC700_read8(cpu, cpu->regs.PC++);
+    cpu->regs.TR = cpu->read8(cpu->regs.PC++);
     cpu->regs.PC &= 0xFFFF;
     // INS 24 ADDR MODE undefined
     i32 z = cpu->regs.Y - cpu->regs.TR;
@@ -2335,13 +2335,13 @@ static void SPC700_opcode_AE(SPC700 *cpu) { // POP A
     cpu->regs.opc_cycles = 4;
     // INS 50 ADDR MODE null
     cpu->regs.SP = (cpu->regs.SP + 1) & 0xFF;
-    cpu->regs.A = SPC700_read8(cpu, 0x100 + cpu->regs.SP);
+    cpu->regs.A = cpu->read8(0x100 + cpu->regs.SP);
 }
 
 
 static void SPC700_opcode_AF(SPC700 *cpu) { // MOV (X)+, A
     cpu->regs.opc_cycles = 4;
-    SPC700_write8D(cpu, (cpu->regs.X), cpu->regs.A);
+    cpu->write8D((cpu->regs.X), cpu->regs.A);
     cpu->regs.X = (cpu->regs.X + 1) & 0xFF;
 }
 
@@ -2349,7 +2349,7 @@ static void SPC700_opcode_AF(SPC700 *cpu) { // MOV (X)+, A
 static void SPC700_opcode_B0(SPC700 *cpu) { // BCS r
     cpu->regs.opc_cycles = 2;
     // INS 9 ADDR MODE undefined
-    cpu->regs.TR = SPC700_read8(cpu, cpu->regs.PC++);
+    cpu->regs.TR = cpu->read8(cpu->regs.PC++);
     cpu->regs.PC &= 0xFFFF;
     if (cpu->regs.P.C) {
         cpu->regs.PC = (cpu->regs.PC + (u32)(i8)cpu->regs.TR) & 0xFFFF;
@@ -2361,32 +2361,32 @@ static void SPC700_opcode_B0(SPC700 *cpu) { // BCS r
 static void SPC700_opcode_B1(SPC700 *cpu) { // TCALL 11
     cpu->regs.opc_cycles = 8;
     // INS 63 ADDR MODE 0
-    SPC700_write8(cpu, 0x100 + cpu->regs.SP--, (cpu->regs.PC >> 8) & 0xFF);
+    cpu->write8(0x100 + cpu->regs.SP--, (cpu->regs.PC >> 8) & 0xFF);
     cpu->regs.SP &= 0xFF;
-    SPC700_write8(cpu, 0x100 + cpu->regs.SP--, (cpu->regs.PC & 0xFF));
+    cpu->write8(0x100 + cpu->regs.SP--, (cpu->regs.PC & 0xFF));
     cpu->regs.SP &= 0xFF;
-    cpu->regs.PC = SPC700_read8(cpu, 65480);
-    cpu->regs.PC |= SPC700_read8(cpu, 65481) << 8;
+    cpu->regs.PC = cpu->read8(65480);
+    cpu->regs.PC |= cpu->read8(65481) << 8;
 }
 
 
 static void SPC700_opcode_B2(SPC700 *cpu) { // CLR1 dp.5
     cpu->regs.opc_cycles = 4;
-    cpu->regs.TA = SPC700_read8(cpu, cpu->regs.PC++);
+    cpu->regs.TA = cpu->read8(cpu->regs.PC++);
     cpu->regs.PC &= 0xFFFF;
     // INS 20 ADDR MODE 22
-    cpu->regs.TR = SPC700_read8D(cpu, cpu->regs.TA);
+    cpu->regs.TR = cpu->read8D(cpu->regs.TA);
     cpu->regs.TR &= 0xDF;
-    SPC700_write8D(cpu, (cpu->regs.TA), cpu->regs.TR);
+    cpu->write8D((cpu->regs.TA), cpu->regs.TR);
 }
 
 
 static void SPC700_opcode_B3(SPC700 *cpu) { // BBC dp.5
     cpu->regs.opc_cycles = 5;
-    cpu->regs.TA = SPC700_read8(cpu, cpu->regs.PC++);
+    cpu->regs.TA = cpu->read8(cpu->regs.PC++);
     cpu->regs.PC &= 0xFFFF;
-    cpu->regs.TA = SPC700_read8D(cpu, cpu->regs.TA);
-    cpu->regs.TR = SPC700_read8(cpu, cpu->regs.PC++);
+    cpu->regs.TA = cpu->read8D(cpu->regs.TA);
+    cpu->regs.TR = cpu->read8(cpu->regs.PC++);
     cpu->regs.PC &= 0xFFFF;
     if ((cpu->regs.TA & 0x20) == 0) {
         cpu->regs.PC = (cpu->regs.PC + (u32)(i8)cpu->regs.TR) & 0xFFFF;
@@ -2397,9 +2397,9 @@ static void SPC700_opcode_B3(SPC700 *cpu) { // BBC dp.5
 
 static void SPC700_opcode_B4(SPC700 *cpu) { // SBC A, dp+X
     cpu->regs.opc_cycles = 4;
-    cpu->regs.TA = SPC700_read8(cpu, cpu->regs.PC++);
+    cpu->regs.TA = cpu->read8(cpu->regs.PC++);
     cpu->regs.PC &= 0xFFFF;
-    cpu->regs.TR = SPC700_read8D(cpu, cpu->regs.TA + cpu->regs.X);
+    cpu->regs.TR = cpu->read8D(cpu->regs.TA + cpu->regs.X);
     // INS 56 ADDR MODE undefined
     i32 y = (~cpu->regs.TR) & 0xFF;
     i32 z = (cpu->regs.A) + y + cpu->regs.P.C;
@@ -2414,12 +2414,12 @@ static void SPC700_opcode_B4(SPC700 *cpu) { // SBC A, dp+X
 
 static void SPC700_opcode_B5(SPC700 *cpu) { // SBC A, !abs+X
     cpu->regs.opc_cycles = 5;
-    cpu->regs.TA = SPC700_read8(cpu, cpu->regs.PC++);
+    cpu->regs.TA = cpu->read8(cpu->regs.PC++);
     cpu->regs.PC &= 0xFFFF;
-    cpu->regs.TA += SPC700_read8(cpu, cpu->regs.PC++) << 8;
+    cpu->regs.TA += cpu->read8(cpu->regs.PC++) << 8;
     cpu->regs.PC &= 0xFFFF;
     cpu->regs.TA += cpu->regs.X;
-    cpu->regs.TR = SPC700_read8(cpu, cpu->regs.TA & 0xFFFF);
+    cpu->regs.TR = cpu->read8(cpu->regs.TA & 0xFFFF);
     // INS 56 ADDR MODE undefined
     i32 y = (~cpu->regs.TR) & 0xFF;
     i32 z = (cpu->regs.A) + y + cpu->regs.P.C;
@@ -2434,12 +2434,12 @@ static void SPC700_opcode_B5(SPC700 *cpu) { // SBC A, !abs+X
 
 static void SPC700_opcode_B6(SPC700 *cpu) { // SBC A, !abs+Y
     cpu->regs.opc_cycles = 5;
-    cpu->regs.TA = SPC700_read8(cpu, cpu->regs.PC++);
+    cpu->regs.TA = cpu->read8(cpu->regs.PC++);
     cpu->regs.PC &= 0xFFFF;
-    cpu->regs.TA += SPC700_read8(cpu, cpu->regs.PC++) << 8;
+    cpu->regs.TA += cpu->read8(cpu->regs.PC++) << 8;
     cpu->regs.PC &= 0xFFFF;
     cpu->regs.TA += cpu->regs.Y;
-    cpu->regs.TR = SPC700_read8(cpu, cpu->regs.TA & 0xFFFF);
+    cpu->regs.TR = cpu->read8(cpu->regs.TA & 0xFFFF);
     // INS 56 ADDR MODE undefined
     i32 y = (~cpu->regs.TR) & 0xFF;
     i32 z = (cpu->regs.A) + y + cpu->regs.P.C;
@@ -2454,11 +2454,11 @@ static void SPC700_opcode_B6(SPC700 *cpu) { // SBC A, !abs+Y
 
 static void SPC700_opcode_B7(SPC700 *cpu) { // SBC A, [dp]+Y
     cpu->regs.opc_cycles = 6;
-    cpu->regs.TA = SPC700_read8(cpu, cpu->regs.PC++);
+    cpu->regs.TA = cpu->read8(cpu->regs.PC++);
     cpu->regs.PC &= 0xFFFF;
-    cpu->regs.TA = SPC700_read8D(cpu, (cpu->regs.TA)) + (SPC700_read8D(cpu, (cpu->regs.TA) + 1) << 8);
+    cpu->regs.TA = cpu->read8D((cpu->regs.TA)) + (cpu->read8D((cpu->regs.TA) + 1) << 8);
     cpu->regs.TA += cpu->regs.Y;
-    cpu->regs.TR = SPC700_read8(cpu, cpu->regs.TA);
+    cpu->regs.TR = cpu->read8(cpu->regs.TA);
     // INS 56 ADDR MODE undefined
     i32 y = (~cpu->regs.TR) & 0xFF;
     i32 z = (cpu->regs.A) + y + cpu->regs.P.C;
@@ -2473,11 +2473,11 @@ static void SPC700_opcode_B7(SPC700 *cpu) { // SBC A, [dp]+Y
 
 static void SPC700_opcode_B8(SPC700 *cpu) { // SBC dp, #imm
     cpu->regs.opc_cycles = 5;
-    cpu->regs.TR = SPC700_read8(cpu, cpu->regs.PC++);
+    cpu->regs.TR = cpu->read8(cpu->regs.PC++);
     cpu->regs.PC &= 0xFFFF;
-    cpu->regs.TA = SPC700_read8(cpu, cpu->regs.PC++);
+    cpu->regs.TA = cpu->read8(cpu->regs.PC++);
     cpu->regs.PC &= 0xFFFF;
-    cpu->regs.TA2 = SPC700_read8D(cpu, cpu->regs.TA);
+    cpu->regs.TA2 = cpu->read8D(cpu->regs.TA);
     // INS 56 ADDR MODE undefined
     i32 y = (~cpu->regs.TR) & 0xFF;
     i32 z = (cpu->regs.TA2) + y + cpu->regs.P.C;
@@ -2487,14 +2487,14 @@ static void SPC700_opcode_B8(SPC700 *cpu) { // SBC dp, #imm
     cpu->regs.P.N = (z & 0x80) >> 7;
     cpu->regs.TA2 = z & 0xFF;
     cpu->regs.P.Z = +((cpu->regs.TA2) == 0);
-    SPC700_write8D(cpu, (cpu->regs.TA), cpu->regs.TA2);
+    cpu->write8D((cpu->regs.TA), cpu->regs.TA2);
 }
 
 
 static void SPC700_opcode_B9(SPC700 *cpu) { // SBC (X), (Y)
     cpu->regs.opc_cycles = 5;
-    cpu->regs.TA = SPC700_read8D(cpu, cpu->regs.Y);
-    cpu->regs.TR = SPC700_read8D(cpu, cpu->regs.X);
+    cpu->regs.TA = cpu->read8D(cpu->regs.Y);
+    cpu->regs.TR = cpu->read8D(cpu->regs.X);
     // INS 56 ADDR MODE undefined
     i32 y = (~cpu->regs.TA) & 0xFF;
     i32 z = (cpu->regs.TR) + y + cpu->regs.P.C;
@@ -2504,16 +2504,16 @@ static void SPC700_opcode_B9(SPC700 *cpu) { // SBC (X), (Y)
     cpu->regs.P.N = (z & 0x80) >> 7;
     cpu->regs.TR = z & 0xFF;
     cpu->regs.P.Z = +((cpu->regs.TR) == 0);
-    SPC700_write8D(cpu, (cpu->regs.X), cpu->regs.TR);
+    cpu->write8D((cpu->regs.X), cpu->regs.TR);
 }
 
 
 static void SPC700_opcode_BA(SPC700 *cpu) { // MOVW YA, dp
     cpu->regs.opc_cycles = 5;
-    cpu->regs.TA = SPC700_read8(cpu, cpu->regs.PC++);
+    cpu->regs.TA = cpu->read8(cpu->regs.PC++);
     cpu->regs.PC &= 0xFFFF;
-    cpu->regs.A = SPC700_read8D(cpu, cpu->regs.TA);
-    cpu->regs.Y = SPC700_read8D(cpu, cpu->regs.TA + 1);
+    cpu->regs.A = cpu->read8D(cpu->regs.TA);
+    cpu->regs.Y = cpu->read8D(cpu->regs.TA + 1);
     cpu->regs.P.N = (cpu->regs.Y & 0x80) >> 7;
     cpu->regs.P.Z = (!cpu->regs.A && !cpu->regs.Y);
 }
@@ -2521,15 +2521,15 @@ static void SPC700_opcode_BA(SPC700 *cpu) { // MOVW YA, dp
 
 static void SPC700_opcode_BB(SPC700 *cpu) { // INC dp+X
     cpu->regs.opc_cycles = 5;
-    cpu->regs.TA = SPC700_read8(cpu, cpu->regs.PC++);
+    cpu->regs.TA = cpu->read8(cpu->regs.PC++);
     cpu->regs.PC &= 0xFFFF;
     cpu->regs.TA += cpu->regs.X;
-    cpu->regs.TR = SPC700_read8D(cpu, cpu->regs.TA);
+    cpu->regs.TR = cpu->read8D(cpu->regs.TA);
     // INS 36 ADDR MODE undefined
     cpu->regs.TR = (cpu->regs.TR + 1) & 0xFF;
     cpu->regs.P.Z = +((cpu->regs.TR) == 0);
     cpu->regs.P.N = ((cpu->regs.TR) & 0x80) >> 7;
-    SPC700_write8D(cpu, (cpu->regs.TA), cpu->regs.TR);
+    cpu->write8D((cpu->regs.TA), cpu->regs.TR);
 }
 
 
@@ -2566,14 +2566,14 @@ static void SPC700_opcode_BE(SPC700 *cpu) { // DAS A
 
 static void SPC700_opcode_BF(SPC700 *cpu) { // MOV A, (X)+
     cpu->regs.opc_cycles = 4;
-    cpu->regs.A = SPC700_read8D(cpu, cpu->regs.X);
+    cpu->regs.A = cpu->read8D(cpu->regs.X);
     cpu->regs.X = (cpu->regs.X + 1) & 0xFF;
     cpu->regs.P.Z = +((cpu->regs.A) == 0);
     cpu->regs.P.N = ((cpu->regs.A) & 0x80) >> 7;
 }
 
 
-static void SPC700_opcode_C0(SPC700 *cpu) { // DI
+static void SPC700_opcode_C0(SPC700 *cpu) { // DI 
     cpu->regs.opc_cycles = 3;
     // INS 31 ADDR MODE 0
     cpu->regs.P.I = 0;
@@ -2583,32 +2583,32 @@ static void SPC700_opcode_C0(SPC700 *cpu) { // DI
 static void SPC700_opcode_C1(SPC700 *cpu) { // TCALL 12
     cpu->regs.opc_cycles = 8;
     // INS 63 ADDR MODE 0
-    SPC700_write8(cpu, 0x100 + cpu->regs.SP--, (cpu->regs.PC >> 8) & 0xFF);
+    cpu->write8(0x100 + cpu->regs.SP--, (cpu->regs.PC >> 8) & 0xFF);
     cpu->regs.SP &= 0xFF;
-    SPC700_write8(cpu, 0x100 + cpu->regs.SP--, (cpu->regs.PC & 0xFF));
+    cpu->write8(0x100 + cpu->regs.SP--, (cpu->regs.PC & 0xFF));
     cpu->regs.SP &= 0xFF;
-    cpu->regs.PC = SPC700_read8(cpu, 65478);
-    cpu->regs.PC |= SPC700_read8(cpu, 65479) << 8;
+    cpu->regs.PC = cpu->read8(65478);
+    cpu->regs.PC |= cpu->read8(65479) << 8;
 }
 
 
 static void SPC700_opcode_C2(SPC700 *cpu) { // SET1 dp.6
     cpu->regs.opc_cycles = 4;
-    cpu->regs.TA = SPC700_read8(cpu, cpu->regs.PC++);
+    cpu->regs.TA = cpu->read8(cpu->regs.PC++);
     cpu->regs.PC &= 0xFFFF;
     // INS 57 ADDR MODE 22
-    cpu->regs.TR = SPC700_read8D(cpu, cpu->regs.TA);
+    cpu->regs.TR = cpu->read8D(cpu->regs.TA);
     cpu->regs.TR |= 0x40;
-    SPC700_write8D(cpu, (cpu->regs.TA), cpu->regs.TR);
+    cpu->write8D((cpu->regs.TA), cpu->regs.TR);
 }
 
 
 static void SPC700_opcode_C3(SPC700 *cpu) { // BBS dp.6, r
     cpu->regs.opc_cycles = 5;
-    cpu->regs.TA = SPC700_read8(cpu, cpu->regs.PC++);
+    cpu->regs.TA = cpu->read8(cpu->regs.PC++);
     cpu->regs.PC &= 0xFFFF;
-    cpu->regs.TA = SPC700_read8D(cpu, cpu->regs.TA);
-    cpu->regs.TR = SPC700_read8(cpu, cpu->regs.PC++);
+    cpu->regs.TA = cpu->read8D(cpu->regs.TA);
+    cpu->regs.TR = cpu->read8(cpu->regs.PC++);
     cpu->regs.PC &= 0xFFFF;
     if (cpu->regs.TA & 0x40) {
         cpu->regs.PC = (cpu->regs.PC + (u32)(i8)cpu->regs.TR) & 0xFFFF;
@@ -2619,41 +2619,41 @@ static void SPC700_opcode_C3(SPC700 *cpu) { // BBS dp.6, r
 
 static void SPC700_opcode_C4(SPC700 *cpu) { // MOV d, A
     cpu->regs.opc_cycles = 4;
-    cpu->regs.TA = SPC700_read8(cpu, cpu->regs.PC++);
+    cpu->regs.TA = cpu->read8(cpu->regs.PC++);
     cpu->regs.PC &= 0xFFFF;
-    SPC700_write8D(cpu, (cpu->regs.TA), cpu->regs.A);
+    cpu->write8D((cpu->regs.TA), cpu->regs.A);
 }
 
 
 static void SPC700_opcode_C5(SPC700 *cpu) { // MOV !abs, A
     cpu->regs.opc_cycles = 5;
-    cpu->regs.TA = SPC700_read8(cpu, cpu->regs.PC++);
+    cpu->regs.TA = cpu->read8(cpu->regs.PC++);
     cpu->regs.PC &= 0xFFFF;
-    cpu->regs.TA += SPC700_read8(cpu, cpu->regs.PC++) << 8;
+    cpu->regs.TA += cpu->read8(cpu->regs.PC++) << 8;
     cpu->regs.PC &= 0xFFFF;
-    SPC700_write8(cpu, cpu->regs.TA, cpu->regs.A);
+    cpu->write8(cpu->regs.TA, cpu->regs.A);
 }
 
 
 static void SPC700_opcode_C6(SPC700 *cpu) { // MOV (X), A
     cpu->regs.opc_cycles = 4;
-    SPC700_write8D(cpu, (cpu->regs.X), cpu->regs.A);
+    cpu->write8D((cpu->regs.X), cpu->regs.A);
 }
 
 
 static void SPC700_opcode_C7(SPC700 *cpu) { // MOV [dp+X], A
     cpu->regs.opc_cycles = 7;
-    cpu->regs.TA = SPC700_read8(cpu, cpu->regs.PC++);
+    cpu->regs.TA = cpu->read8(cpu->regs.PC++);
     cpu->regs.PC &= 0xFFFF;
     cpu->regs.TA += cpu->regs.X;
-    cpu->regs.TA = SPC700_read8D(cpu, (cpu->regs.TA)) + (SPC700_read8D(cpu, (cpu->regs.TA) + 1) << 8);
-    SPC700_write8(cpu, cpu->regs.TA, cpu->regs.A);
+    cpu->regs.TA = cpu->read8D((cpu->regs.TA)) + (cpu->read8D((cpu->regs.TA) + 1) << 8);
+    cpu->write8(cpu->regs.TA, cpu->regs.A);
 }
 
 
 static void SPC700_opcode_C8(SPC700 *cpu) { // CMP X, #i
     cpu->regs.opc_cycles = 2;
-    cpu->regs.TR = SPC700_read8(cpu, cpu->regs.PC++);
+    cpu->regs.TR = cpu->read8(cpu->regs.PC++);
     cpu->regs.PC &= 0xFFFF;
     // INS 24 ADDR MODE undefined
     i32 z = cpu->regs.X - cpu->regs.TR;
@@ -2665,50 +2665,50 @@ static void SPC700_opcode_C8(SPC700 *cpu) { // CMP X, #i
 
 static void SPC700_opcode_C9(SPC700 *cpu) { // MOV !abs, X
     cpu->regs.opc_cycles = 5;
-    cpu->regs.TA = SPC700_read8(cpu, cpu->regs.PC++);
+    cpu->regs.TA = cpu->read8(cpu->regs.PC++);
     cpu->regs.PC &= 0xFFFF;
-    cpu->regs.TA += SPC700_read8(cpu, cpu->regs.PC++) << 8;
+    cpu->regs.TA += cpu->read8(cpu->regs.PC++) << 8;
     cpu->regs.PC &= 0xFFFF;
-    SPC700_write8(cpu, cpu->regs.TA, cpu->regs.X);
+    cpu->write8(cpu->regs.TA, cpu->regs.X);
 }
 
 
 static void SPC700_opcode_CA(SPC700 *cpu) { // MOV1 m.b, C
     cpu->regs.opc_cycles = 6;
-    cpu->regs.TA = SPC700_read8(cpu, cpu->regs.PC++);
+    cpu->regs.TA = cpu->read8(cpu->regs.PC++);
     cpu->regs.PC &= 0xFFFF;
-    cpu->regs.TA += SPC700_read8(cpu, cpu->regs.PC++) << 8;
+    cpu->regs.TA += cpu->read8(cpu->regs.PC++) << 8;
     cpu->regs.PC &= 0xFFFF;
     cpu->regs.TR = (cpu->regs.TA >> 13) & 7;
     cpu->regs.TA &= 0x1FFF;
-    cpu->regs.TA2 = SPC700_read8(cpu, cpu->regs.TA);
+    cpu->regs.TA2 = cpu->read8(cpu->regs.TA);
     // INS 41 ADDR MODE 1
     cpu->regs.TA2 = cpu->regs.P.C ? cpu->regs.TA2 | (cpu->regs.P.C << cpu->regs.TR) : cpu->regs.TA2 & ((~(1 << cpu->regs.TR)) & 0xFF);
-    SPC700_write8(cpu, cpu->regs.TA, cpu->regs.TA2);
+    cpu->write8(cpu->regs.TA, cpu->regs.TA2);
 }
 
 
 static void SPC700_opcode_CB(SPC700 *cpu) { // MOV d, Y
     cpu->regs.opc_cycles = 4;
-    cpu->regs.TA = SPC700_read8(cpu, cpu->regs.PC++);
+    cpu->regs.TA = cpu->read8(cpu->regs.PC++);
     cpu->regs.PC &= 0xFFFF;
-    SPC700_write8D(cpu, (cpu->regs.TA), cpu->regs.Y);
+    cpu->write8D((cpu->regs.TA), cpu->regs.Y);
 }
 
 
 static void SPC700_opcode_CC(SPC700 *cpu) { // MOV !a, Y
     cpu->regs.opc_cycles = 5;
-    cpu->regs.TA = SPC700_read8(cpu, cpu->regs.PC++);
+    cpu->regs.TA = cpu->read8(cpu->regs.PC++);
     cpu->regs.PC &= 0xFFFF;
-    cpu->regs.TA += SPC700_read8(cpu, cpu->regs.PC++) << 8;
+    cpu->regs.TA += cpu->read8(cpu->regs.PC++) << 8;
     cpu->regs.PC &= 0xFFFF;
-    SPC700_write8(cpu, cpu->regs.TA, cpu->regs.Y);
+    cpu->write8(cpu->regs.TA, cpu->regs.Y);
 }
 
 
 static void SPC700_opcode_CD(SPC700 *cpu) { // MOV X, #imm
     cpu->regs.opc_cycles = 2;
-    cpu->regs.TR = SPC700_read8(cpu, cpu->regs.PC++);
+    cpu->regs.TR = cpu->read8(cpu->regs.PC++);
     cpu->regs.PC &= 0xFFFF;
     cpu->regs.X = cpu->regs.TR;
     cpu->regs.P.Z = +((cpu->regs.X) == 0);
@@ -2720,7 +2720,7 @@ static void SPC700_opcode_CE(SPC700 *cpu) { // POP X
     cpu->regs.opc_cycles = 4;
     // INS 50 ADDR MODE null
     cpu->regs.SP = (cpu->regs.SP + 1) & 0xFF;
-    cpu->regs.X = SPC700_read8(cpu, 0x100 + cpu->regs.SP);
+    cpu->regs.X = cpu->read8(0x100 + cpu->regs.SP);
 }
 
 
@@ -2737,7 +2737,7 @@ static void SPC700_opcode_CF(SPC700 *cpu) { // MUL YA
 static void SPC700_opcode_D0(SPC700 *cpu) { // BNE r
     cpu->regs.opc_cycles = 2;
     // INS 12 ADDR MODE undefined
-    cpu->regs.TR = SPC700_read8(cpu, cpu->regs.PC++);
+    cpu->regs.TR = cpu->read8(cpu->regs.PC++);
     cpu->regs.PC &= 0xFFFF;
     if (!cpu->regs.P.Z) {
         cpu->regs.PC = (cpu->regs.PC + (u32)(i8)cpu->regs.TR) & 0xFFFF;
@@ -2749,32 +2749,32 @@ static void SPC700_opcode_D0(SPC700 *cpu) { // BNE r
 static void SPC700_opcode_D1(SPC700 *cpu) { // TCALL 13
     cpu->regs.opc_cycles = 8;
     // INS 63 ADDR MODE 0
-    SPC700_write8(cpu, 0x100 + cpu->regs.SP--, (cpu->regs.PC >> 8) & 0xFF);
+    cpu->write8(0x100 + cpu->regs.SP--, (cpu->regs.PC >> 8) & 0xFF);
     cpu->regs.SP &= 0xFF;
-    SPC700_write8(cpu, 0x100 + cpu->regs.SP--, (cpu->regs.PC & 0xFF));
+    cpu->write8(0x100 + cpu->regs.SP--, (cpu->regs.PC & 0xFF));
     cpu->regs.SP &= 0xFF;
-    cpu->regs.PC = SPC700_read8(cpu, 65476);
-    cpu->regs.PC |= SPC700_read8(cpu, 65477) << 8;
+    cpu->regs.PC = cpu->read8(65476);
+    cpu->regs.PC |= cpu->read8(65477) << 8;
 }
 
 
 static void SPC700_opcode_D2(SPC700 *cpu) { // CLR1 dp.6
     cpu->regs.opc_cycles = 4;
-    cpu->regs.TA = SPC700_read8(cpu, cpu->regs.PC++);
+    cpu->regs.TA = cpu->read8(cpu->regs.PC++);
     cpu->regs.PC &= 0xFFFF;
     // INS 20 ADDR MODE 22
-    cpu->regs.TR = SPC700_read8D(cpu, cpu->regs.TA);
+    cpu->regs.TR = cpu->read8D(cpu->regs.TA);
     cpu->regs.TR &= 0xBF;
-    SPC700_write8D(cpu, (cpu->regs.TA), cpu->regs.TR);
+    cpu->write8D((cpu->regs.TA), cpu->regs.TR);
 }
 
 
 static void SPC700_opcode_D3(SPC700 *cpu) { // BBC dp.6
     cpu->regs.opc_cycles = 5;
-    cpu->regs.TA = SPC700_read8(cpu, cpu->regs.PC++);
+    cpu->regs.TA = cpu->read8(cpu->regs.PC++);
     cpu->regs.PC &= 0xFFFF;
-    cpu->regs.TA = SPC700_read8D(cpu, cpu->regs.TA);
-    cpu->regs.TR = SPC700_read8(cpu, cpu->regs.PC++);
+    cpu->regs.TA = cpu->read8D(cpu->regs.TA);
+    cpu->regs.TR = cpu->read8(cpu->regs.PC++);
     cpu->regs.PC &= 0xFFFF;
     if ((cpu->regs.TA & 0x40) == 0) {
         cpu->regs.PC = (cpu->regs.PC + (u32)(i8)cpu->regs.TR) & 0xFFFF;
@@ -2785,74 +2785,74 @@ static void SPC700_opcode_D3(SPC700 *cpu) { // BBC dp.6
 
 static void SPC700_opcode_D4(SPC700 *cpu) { // MOV dp+X, A
     cpu->regs.opc_cycles = 5;
-    cpu->regs.TA = SPC700_read8(cpu, cpu->regs.PC++);
+    cpu->regs.TA = cpu->read8(cpu->regs.PC++);
     cpu->regs.PC &= 0xFFFF;
-    SPC700_write8D(cpu, (cpu->regs.TA + cpu->regs.X), cpu->regs.A);
+    cpu->write8D((cpu->regs.TA + cpu->regs.X), cpu->regs.A);
 }
 
 
 static void SPC700_opcode_D5(SPC700 *cpu) { // MOV !abs+X, A
     cpu->regs.opc_cycles = 6;
-    cpu->regs.TA = SPC700_read8(cpu, cpu->regs.PC++);
+    cpu->regs.TA = cpu->read8(cpu->regs.PC++);
     cpu->regs.PC &= 0xFFFF;
-    cpu->regs.TA += SPC700_read8(cpu, cpu->regs.PC++) << 8;
+    cpu->regs.TA += cpu->read8(cpu->regs.PC++) << 8;
     cpu->regs.PC &= 0xFFFF;
     cpu->regs.TA += cpu->regs.X;
-    SPC700_write8(cpu, cpu->regs.TA, cpu->regs.A);
+    cpu->write8(cpu->regs.TA, cpu->regs.A);
 }
 
 
 static void SPC700_opcode_D6(SPC700 *cpu) { // MOV !abs+Y, A
     cpu->regs.opc_cycles = 6;
-    cpu->regs.TA = SPC700_read8(cpu, cpu->regs.PC++);
+    cpu->regs.TA = cpu->read8(cpu->regs.PC++);
     cpu->regs.PC &= 0xFFFF;
-    cpu->regs.TA += SPC700_read8(cpu, cpu->regs.PC++) << 8;
+    cpu->regs.TA += cpu->read8(cpu->regs.PC++) << 8;
     cpu->regs.PC &= 0xFFFF;
     cpu->regs.TA += cpu->regs.Y;
-    SPC700_write8(cpu, cpu->regs.TA, cpu->regs.A);
+    cpu->write8(cpu->regs.TA, cpu->regs.A);
 }
 
 
 static void SPC700_opcode_D7(SPC700 *cpu) { // MOV [dp]+Y, A
     cpu->regs.opc_cycles = 7;
-    cpu->regs.TR = SPC700_read8(cpu, cpu->regs.PC++);
+    cpu->regs.TR = cpu->read8(cpu->regs.PC++);
     cpu->regs.PC &= 0xFFFF;
-    cpu->regs.TA = SPC700_read8D(cpu, (cpu->regs.TR)) + (SPC700_read8D(cpu, (cpu->regs.TR) + 1) << 8);
+    cpu->regs.TA = cpu->read8D((cpu->regs.TR)) + (cpu->read8D((cpu->regs.TR) + 1) << 8);
     cpu->regs.TA = (cpu->regs.TA + cpu->regs.Y) & 0xFFFF;
-    SPC700_write8(cpu, cpu->regs.TA, cpu->regs.A);
+    cpu->write8(cpu->regs.TA, cpu->regs.A);
 }
 
 
 static void SPC700_opcode_D8(SPC700 *cpu) { // MOV dp, X
     cpu->regs.opc_cycles = 4;
-    cpu->regs.TA = SPC700_read8(cpu, cpu->regs.PC++);
+    cpu->regs.TA = cpu->read8(cpu->regs.PC++);
     cpu->regs.PC &= 0xFFFF;
-    SPC700_write8D(cpu, (cpu->regs.TA), cpu->regs.X);
+    cpu->write8D((cpu->regs.TA), cpu->regs.X);
 }
 
 
 static void SPC700_opcode_D9(SPC700 *cpu) { // MOV dp+Y, X
     cpu->regs.opc_cycles = 5;
-    cpu->regs.TA = SPC700_read8(cpu, cpu->regs.PC++);
+    cpu->regs.TA = cpu->read8(cpu->regs.PC++);
     cpu->regs.PC &= 0xFFFF;
-    SPC700_write8D(cpu, (cpu->regs.TA + cpu->regs.Y), cpu->regs.X);
+    cpu->write8D((cpu->regs.TA + cpu->regs.Y), cpu->regs.X);
 }
 
 
 static void SPC700_opcode_DA(SPC700 *cpu) { // MOVW d, YA
     cpu->regs.opc_cycles = 5;
-    cpu->regs.TA = SPC700_read8(cpu, cpu->regs.PC++);
+    cpu->regs.TA = cpu->read8(cpu->regs.PC++);
     cpu->regs.PC &= 0xFFFF;
-    SPC700_write8D(cpu, (cpu->regs.TA), cpu->regs.A);
-    SPC700_write8D(cpu, (cpu->regs.TA + 1), cpu->regs.Y);
+    cpu->write8D((cpu->regs.TA), cpu->regs.A);
+    cpu->write8D((cpu->regs.TA + 1), cpu->regs.Y);
 }
 
 
 static void SPC700_opcode_DB(SPC700 *cpu) { // MOV dp+X, Y
     cpu->regs.opc_cycles = 5;
-    cpu->regs.TA = SPC700_read8(cpu, cpu->regs.PC++);
+    cpu->regs.TA = cpu->read8(cpu->regs.PC++);
     cpu->regs.PC &= 0xFFFF;
-    SPC700_write8D(cpu, (cpu->regs.TA + cpu->regs.X), cpu->regs.Y);
+    cpu->write8D((cpu->regs.TA + cpu->regs.X), cpu->regs.Y);
 }
 
 
@@ -2875,11 +2875,11 @@ static void SPC700_opcode_DD(SPC700 *cpu) { // MOV A, Y
 
 static void SPC700_opcode_DE(SPC700 *cpu) { // CBNE dp+X, r
     cpu->regs.opc_cycles = 6;
-    cpu->regs.TA = SPC700_read8(cpu, cpu->regs.PC++);
+    cpu->regs.TA = cpu->read8(cpu->regs.PC++);
     cpu->regs.PC &= 0xFFFF;
-    cpu->regs.TR = SPC700_read8(cpu, cpu->regs.PC++);
+    cpu->regs.TR = cpu->read8(cpu->regs.PC++);
     cpu->regs.PC &= 0xFFFF;
-    cpu->regs.TA = SPC700_read8D(cpu, cpu->regs.TA + cpu->regs.X);
+    cpu->regs.TA = cpu->read8D(cpu->regs.TA + cpu->regs.X);
     // INS 19 ADDR MODE undefined
     if (cpu->regs.A != cpu->regs.TA) {
         cpu->regs.PC = (cpu->regs.PC + (u32)(i8)cpu->regs.TR) & 0xFFFF;
@@ -2914,32 +2914,32 @@ static void SPC700_opcode_E0(SPC700 *cpu) { // CLRV i
 static void SPC700_opcode_E1(SPC700 *cpu) { // TCALL 14
     cpu->regs.opc_cycles = 8;
     // INS 63 ADDR MODE 0
-    SPC700_write8(cpu, 0x100 + cpu->regs.SP--, (cpu->regs.PC >> 8) & 0xFF);
+    cpu->write8(0x100 + cpu->regs.SP--, (cpu->regs.PC >> 8) & 0xFF);
     cpu->regs.SP &= 0xFF;
-    SPC700_write8(cpu, 0x100 + cpu->regs.SP--, (cpu->regs.PC & 0xFF));
+    cpu->write8(0x100 + cpu->regs.SP--, (cpu->regs.PC & 0xFF));
     cpu->regs.SP &= 0xFF;
-    cpu->regs.PC = SPC700_read8(cpu, 65474);
-    cpu->regs.PC |= SPC700_read8(cpu, 65475) << 8;
+    cpu->regs.PC = cpu->read8(65474);
+    cpu->regs.PC |= cpu->read8(65475) << 8;
 }
 
 
 static void SPC700_opcode_E2(SPC700 *cpu) { // SET1 dp.7
     cpu->regs.opc_cycles = 4;
-    cpu->regs.TA = SPC700_read8(cpu, cpu->regs.PC++);
+    cpu->regs.TA = cpu->read8(cpu->regs.PC++);
     cpu->regs.PC &= 0xFFFF;
     // INS 57 ADDR MODE 22
-    cpu->regs.TR = SPC700_read8D(cpu, cpu->regs.TA);
+    cpu->regs.TR = cpu->read8D(cpu->regs.TA);
     cpu->regs.TR |= 0x80;
-    SPC700_write8D(cpu, (cpu->regs.TA), cpu->regs.TR);
+    cpu->write8D((cpu->regs.TA), cpu->regs.TR);
 }
 
 
 static void SPC700_opcode_E3(SPC700 *cpu) { // BBS dp.7, r
     cpu->regs.opc_cycles = 5;
-    cpu->regs.TA = SPC700_read8(cpu, cpu->regs.PC++);
+    cpu->regs.TA = cpu->read8(cpu->regs.PC++);
     cpu->regs.PC &= 0xFFFF;
-    cpu->regs.TA = SPC700_read8D(cpu, cpu->regs.TA);
-    cpu->regs.TR = SPC700_read8(cpu, cpu->regs.PC++);
+    cpu->regs.TA = cpu->read8D(cpu->regs.TA);
+    cpu->regs.TR = cpu->read8(cpu->regs.PC++);
     cpu->regs.PC &= 0xFFFF;
     if (cpu->regs.TA & 0x80) {
         cpu->regs.PC = (cpu->regs.PC + (u32)(i8)cpu->regs.TR) & 0xFFFF;
@@ -2950,9 +2950,9 @@ static void SPC700_opcode_E3(SPC700 *cpu) { // BBS dp.7, r
 
 static void SPC700_opcode_E4(SPC700 *cpu) { // MOV A, dp
     cpu->regs.opc_cycles = 3;
-    cpu->regs.TA = SPC700_read8(cpu, cpu->regs.PC++);
+    cpu->regs.TA = cpu->read8(cpu->regs.PC++);
     cpu->regs.PC &= 0xFFFF;
-    cpu->regs.A = SPC700_read8D(cpu, cpu->regs.TA);
+    cpu->regs.A = cpu->read8D(cpu->regs.TA);
     cpu->regs.P.Z = +((cpu->regs.A) == 0);
     cpu->regs.P.N = ((cpu->regs.A) & 0x80) >> 7;
 }
@@ -2960,11 +2960,11 @@ static void SPC700_opcode_E4(SPC700 *cpu) { // MOV A, dp
 
 static void SPC700_opcode_E5(SPC700 *cpu) { // MOV A, !abs
     cpu->regs.opc_cycles = 4;
-    cpu->regs.TA = SPC700_read8(cpu, cpu->regs.PC++);
+    cpu->regs.TA = cpu->read8(cpu->regs.PC++);
     cpu->regs.PC &= 0xFFFF;
-    cpu->regs.TA += SPC700_read8(cpu, cpu->regs.PC++) << 8;
+    cpu->regs.TA += cpu->read8(cpu->regs.PC++) << 8;
     cpu->regs.PC &= 0xFFFF;
-    cpu->regs.A = SPC700_read8(cpu, cpu->regs.TA);
+    cpu->regs.A = cpu->read8(cpu->regs.TA);
     cpu->regs.P.Z = +((cpu->regs.A) == 0);
     cpu->regs.P.N = ((cpu->regs.A) & 0x80) >> 7;
 }
@@ -2972,7 +2972,7 @@ static void SPC700_opcode_E5(SPC700 *cpu) { // MOV A, !abs
 
 static void SPC700_opcode_E6(SPC700 *cpu) { // MOV A, (X)
     cpu->regs.opc_cycles = 3;
-    cpu->regs.A = SPC700_read8D(cpu, cpu->regs.X);
+    cpu->regs.A = cpu->read8D(cpu->regs.X);
     cpu->regs.P.Z = +((cpu->regs.A) == 0);
     cpu->regs.P.N = ((cpu->regs.A) & 0x80) >> 7;
 }
@@ -2980,10 +2980,10 @@ static void SPC700_opcode_E6(SPC700 *cpu) { // MOV A, (X)
 
 static void SPC700_opcode_E7(SPC700 *cpu) { // MOV A, [dp+X]
     cpu->regs.opc_cycles = 6;
-    cpu->regs.TA = SPC700_read8(cpu, cpu->regs.PC++);
+    cpu->regs.TA = cpu->read8(cpu->regs.PC++);
     cpu->regs.PC &= 0xFFFF;
-    cpu->regs.TA2 = SPC700_read8D(cpu, (cpu->regs.TA + cpu->regs.X)) + (SPC700_read8D(cpu, (cpu->regs.TA + cpu->regs.X) + 1) << 8);
-    cpu->regs.A = SPC700_read8(cpu, cpu->regs.TA2);
+    cpu->regs.TA2 = cpu->read8D((cpu->regs.TA + cpu->regs.X)) + (cpu->read8D((cpu->regs.TA + cpu->regs.X) + 1) << 8);
+    cpu->regs.A = cpu->read8(cpu->regs.TA2);
     cpu->regs.P.Z = +((cpu->regs.A) == 0);
     cpu->regs.P.N = ((cpu->regs.A) & 0x80) >> 7;
 }
@@ -2991,7 +2991,7 @@ static void SPC700_opcode_E7(SPC700 *cpu) { // MOV A, [dp+X]
 
 static void SPC700_opcode_E8(SPC700 *cpu) { // MOV A, #imm
     cpu->regs.opc_cycles = 2;
-    cpu->regs.A = SPC700_read8(cpu, cpu->regs.PC++);
+    cpu->regs.A = cpu->read8(cpu->regs.PC++);
     cpu->regs.PC &= 0xFFFF;
     cpu->regs.P.Z = +((cpu->regs.A) == 0);
     cpu->regs.P.N = ((cpu->regs.A) & 0x80) >> 7;
@@ -3000,11 +3000,11 @@ static void SPC700_opcode_E8(SPC700 *cpu) { // MOV A, #imm
 
 static void SPC700_opcode_E9(SPC700 *cpu) { // MOV X, !abs
     cpu->regs.opc_cycles = 4;
-    cpu->regs.TA = SPC700_read8(cpu, cpu->regs.PC++);
+    cpu->regs.TA = cpu->read8(cpu->regs.PC++);
     cpu->regs.PC &= 0xFFFF;
-    cpu->regs.TA += SPC700_read8(cpu, cpu->regs.PC++) << 8;
+    cpu->regs.TA += cpu->read8(cpu->regs.PC++) << 8;
     cpu->regs.PC &= 0xFFFF;
-    cpu->regs.X = SPC700_read8(cpu, cpu->regs.TA);
+    cpu->regs.X = cpu->read8(cpu->regs.TA);
     cpu->regs.P.Z = +((cpu->regs.X) == 0);
     cpu->regs.P.N = ((cpu->regs.X) & 0x80) >> 7;
 }
@@ -3012,28 +3012,28 @@ static void SPC700_opcode_E9(SPC700 *cpu) { // MOV X, !abs
 
 static void SPC700_opcode_EA(SPC700 *cpu) { // NOT1 m.b
     cpu->regs.opc_cycles = 5;
-    cpu->regs.TA = SPC700_read8(cpu, cpu->regs.PC++);
+    cpu->regs.TA = cpu->read8(cpu->regs.PC++);
     cpu->regs.PC &= 0xFFFF;
-    cpu->regs.TA += SPC700_read8(cpu, cpu->regs.PC++) << 8;
+    cpu->regs.TA += cpu->read8(cpu->regs.PC++) << 8;
     cpu->regs.PC &= 0xFFFF;
     cpu->regs.TR = (cpu->regs.TA >> 13) & 7;
     cpu->regs.TA &= 0x1FFF;
-    cpu->regs.TA2 = SPC700_read8(cpu, cpu->regs.TA);
+    cpu->regs.TA2 = cpu->read8(cpu->regs.TA);
     // INS 45 ADDR MODE 1
     u32 mask = 1 << cpu->regs.TR;
     if (mask & cpu->regs.TA2)
         cpu->regs.TA2 &= ((~mask) & 0xFF);
     else
         cpu->regs.TA2 |= mask;
-    SPC700_write8(cpu, cpu->regs.TA, cpu->regs.TA2);
+    cpu->write8(cpu->regs.TA, cpu->regs.TA2);
 }
 
 
 static void SPC700_opcode_EB(SPC700 *cpu) { // MOV Y, dp
     cpu->regs.opc_cycles = 3;
-    cpu->regs.TA = SPC700_read8(cpu, cpu->regs.PC++);
+    cpu->regs.TA = cpu->read8(cpu->regs.PC++);
     cpu->regs.PC &= 0xFFFF;
-    cpu->regs.Y = SPC700_read8D(cpu, cpu->regs.TA);
+    cpu->regs.Y = cpu->read8D(cpu->regs.TA);
     cpu->regs.P.Z = +((cpu->regs.Y) == 0);
     cpu->regs.P.N = ((cpu->regs.Y) & 0x80) >> 7;
 }
@@ -3041,11 +3041,11 @@ static void SPC700_opcode_EB(SPC700 *cpu) { // MOV Y, dp
 
 static void SPC700_opcode_EC(SPC700 *cpu) { // MOV Y, !abs
     cpu->regs.opc_cycles = 4;
-    cpu->regs.TA = SPC700_read8(cpu, cpu->regs.PC++);
+    cpu->regs.TA = cpu->read8(cpu->regs.PC++);
     cpu->regs.PC &= 0xFFFF;
-    cpu->regs.TA += SPC700_read8(cpu, cpu->regs.PC++) << 8;
+    cpu->regs.TA += cpu->read8(cpu->regs.PC++) << 8;
     cpu->regs.PC &= 0xFFFF;
-    cpu->regs.Y = SPC700_read8(cpu, cpu->regs.TA);
+    cpu->regs.Y = cpu->read8(cpu->regs.TA);
     cpu->regs.P.Z = +((cpu->regs.Y) == 0);
     cpu->regs.P.N = ((cpu->regs.Y) & 0x80) >> 7;
 }
@@ -3062,11 +3062,11 @@ static void SPC700_opcode_EE(SPC700 *cpu) { // POP Y
     cpu->regs.opc_cycles = 4;
     // INS 50 ADDR MODE null
     cpu->regs.SP = (cpu->regs.SP + 1) & 0xFF;
-    cpu->regs.Y = SPC700_read8(cpu, 0x100 + cpu->regs.SP);
+    cpu->regs.Y = cpu->read8(0x100 + cpu->regs.SP);
 }
 
 
-static void SPC700_opcode_EF(SPC700 *cpu) { // SLEEP
+static void SPC700_opcode_EF(SPC700 *cpu) { // SLEEP 
     cpu->regs.opc_cycles = 3;
     // INS 60 ADDR MODE 0
     cpu->WAI = 1;
@@ -3076,7 +3076,7 @@ static void SPC700_opcode_EF(SPC700 *cpu) { // SLEEP
 static void SPC700_opcode_F0(SPC700 *cpu) { // BEQ r
     cpu->regs.opc_cycles = 2;
     // INS 10 ADDR MODE undefined
-    cpu->regs.TR = SPC700_read8(cpu, cpu->regs.PC++);
+    cpu->regs.TR = cpu->read8(cpu->regs.PC++);
     cpu->regs.PC &= 0xFFFF;
     if (cpu->regs.P.Z) {
         cpu->regs.PC = (cpu->regs.PC + (u32)(i8)cpu->regs.TR) & 0xFFFF;
@@ -3088,32 +3088,32 @@ static void SPC700_opcode_F0(SPC700 *cpu) { // BEQ r
 static void SPC700_opcode_F1(SPC700 *cpu) { // TCALL 15
     cpu->regs.opc_cycles = 8;
     // INS 63 ADDR MODE 0
-    SPC700_write8(cpu, 0x100 + cpu->regs.SP--, (cpu->regs.PC >> 8) & 0xFF);
+    cpu->write8(0x100 + cpu->regs.SP--, (cpu->regs.PC >> 8) & 0xFF);
     cpu->regs.SP &= 0xFF;
-    SPC700_write8(cpu, 0x100 + cpu->regs.SP--, (cpu->regs.PC & 0xFF));
+    cpu->write8(0x100 + cpu->regs.SP--, (cpu->regs.PC & 0xFF));
     cpu->regs.SP &= 0xFF;
-    cpu->regs.PC = SPC700_read8(cpu, 65472);
-    cpu->regs.PC |= SPC700_read8(cpu, 65473) << 8;
+    cpu->regs.PC = cpu->read8(65472);
+    cpu->regs.PC |= cpu->read8(65473) << 8;
 }
 
 
 static void SPC700_opcode_F2(SPC700 *cpu) { // CLR1 dp.7
     cpu->regs.opc_cycles = 4;
-    cpu->regs.TA = SPC700_read8(cpu, cpu->regs.PC++);
+    cpu->regs.TA = cpu->read8(cpu->regs.PC++);
     cpu->regs.PC &= 0xFFFF;
     // INS 20 ADDR MODE 22
-    cpu->regs.TR = SPC700_read8D(cpu, cpu->regs.TA);
+    cpu->regs.TR = cpu->read8D(cpu->regs.TA);
     cpu->regs.TR &= 0x7F;
-    SPC700_write8D(cpu, (cpu->regs.TA), cpu->regs.TR);
+    cpu->write8D((cpu->regs.TA), cpu->regs.TR);
 }
 
 
 static void SPC700_opcode_F3(SPC700 *cpu) { // BBC dp.n, r
     cpu->regs.opc_cycles = 5;
-    cpu->regs.TA = SPC700_read8(cpu, cpu->regs.PC++);
+    cpu->regs.TA = cpu->read8(cpu->regs.PC++);
     cpu->regs.PC &= 0xFFFF;
-    cpu->regs.TA = SPC700_read8D(cpu, cpu->regs.TA);
-    cpu->regs.TR = SPC700_read8(cpu, cpu->regs.PC++);
+    cpu->regs.TA = cpu->read8D(cpu->regs.TA);
+    cpu->regs.TR = cpu->read8(cpu->regs.PC++);
     cpu->regs.PC &= 0xFFFF;
     if ((cpu->regs.TA & 0x80) == 0) {
         cpu->regs.PC = (cpu->regs.PC + (u32)(i8)cpu->regs.TR) & 0xFFFF;
@@ -3124,9 +3124,9 @@ static void SPC700_opcode_F3(SPC700 *cpu) { // BBC dp.n, r
 
 static void SPC700_opcode_F4(SPC700 *cpu) { // MOV A, dp+X
     cpu->regs.opc_cycles = 4;
-    cpu->regs.TA = SPC700_read8(cpu, cpu->regs.PC++);
+    cpu->regs.TA = cpu->read8(cpu->regs.PC++);
     cpu->regs.PC &= 0xFFFF;
-    cpu->regs.A = SPC700_read8D(cpu, cpu->regs.TA + cpu->regs.X);
+    cpu->regs.A = cpu->read8D(cpu->regs.TA + cpu->regs.X);
     cpu->regs.P.Z = +((cpu->regs.A) == 0);
     cpu->regs.P.N = ((cpu->regs.A) & 0x80) >> 7;
 }
@@ -3134,11 +3134,11 @@ static void SPC700_opcode_F4(SPC700 *cpu) { // MOV A, dp+X
 
 static void SPC700_opcode_F5(SPC700 *cpu) { // MOV !a+X
     cpu->regs.opc_cycles = 5;
-    cpu->regs.TA = SPC700_read8(cpu, cpu->regs.PC++);
+    cpu->regs.TA = cpu->read8(cpu->regs.PC++);
     cpu->regs.PC &= 0xFFFF;
-    cpu->regs.TA += SPC700_read8(cpu, cpu->regs.PC++) << 8;
+    cpu->regs.TA += cpu->read8(cpu->regs.PC++) << 8;
     cpu->regs.PC &= 0xFFFF;
-    cpu->regs.A = SPC700_read8(cpu, (cpu->regs.TA + cpu->regs.X) & 0xFFFF);
+    cpu->regs.A = cpu->read8((cpu->regs.TA + cpu->regs.X) & 0xFFFF);
     cpu->regs.P.Z = +((cpu->regs.A) == 0);
     cpu->regs.P.N = ((cpu->regs.A) & 0x80) >> 7;
 }
@@ -3146,11 +3146,11 @@ static void SPC700_opcode_F5(SPC700 *cpu) { // MOV !a+X
 
 static void SPC700_opcode_F6(SPC700 *cpu) { // MOV !a+Y
     cpu->regs.opc_cycles = 5;
-    cpu->regs.TA = SPC700_read8(cpu, cpu->regs.PC++);
+    cpu->regs.TA = cpu->read8(cpu->regs.PC++);
     cpu->regs.PC &= 0xFFFF;
-    cpu->regs.TA += SPC700_read8(cpu, cpu->regs.PC++) << 8;
+    cpu->regs.TA += cpu->read8(cpu->regs.PC++) << 8;
     cpu->regs.PC &= 0xFFFF;
-    cpu->regs.A = SPC700_read8(cpu, (cpu->regs.TA + cpu->regs.Y) & 0xFFFF);
+    cpu->regs.A = cpu->read8((cpu->regs.TA + cpu->regs.Y) & 0xFFFF);
     cpu->regs.P.Z = +((cpu->regs.A) == 0);
     cpu->regs.P.N = ((cpu->regs.A) & 0x80) >> 7;
 }
@@ -3158,11 +3158,11 @@ static void SPC700_opcode_F6(SPC700 *cpu) { // MOV !a+Y
 
 static void SPC700_opcode_F7(SPC700 *cpu) { // MOV A, [dp]+Y
     cpu->regs.opc_cycles = 6;
-    cpu->regs.TR = SPC700_read8(cpu, cpu->regs.PC++);
+    cpu->regs.TR = cpu->read8(cpu->regs.PC++);
     cpu->regs.PC &= 0xFFFF;
-    cpu->regs.TA = SPC700_read8D(cpu, (cpu->regs.TR)) + (SPC700_read8D(cpu, (cpu->regs.TR) + 1) << 8);
+    cpu->regs.TA = cpu->read8D((cpu->regs.TR)) + (cpu->read8D((cpu->regs.TR) + 1) << 8);
     cpu->regs.TA = (cpu->regs.TA + cpu->regs.Y) & 0xFFFF;
-    cpu->regs.A = SPC700_read8(cpu, cpu->regs.TA);
+    cpu->regs.A = cpu->read8(cpu->regs.TA);
     cpu->regs.P.Z = +((cpu->regs.A) == 0);
     cpu->regs.P.N = ((cpu->regs.A) & 0x80) >> 7;
 }
@@ -3170,9 +3170,9 @@ static void SPC700_opcode_F7(SPC700 *cpu) { // MOV A, [dp]+Y
 
 static void SPC700_opcode_F8(SPC700 *cpu) { // MOV X, dp
     cpu->regs.opc_cycles = 3;
-    cpu->regs.TR = SPC700_read8(cpu, cpu->regs.PC++);
+    cpu->regs.TR = cpu->read8(cpu->regs.PC++);
     cpu->regs.PC &= 0xFFFF;
-    cpu->regs.X = SPC700_read8D(cpu, cpu->regs.TR);
+    cpu->regs.X = cpu->read8D(cpu->regs.TR);
     cpu->regs.P.Z = +((cpu->regs.X) == 0);
     cpu->regs.P.N = ((cpu->regs.X) & 0x80) >> 7;
 }
@@ -3180,9 +3180,9 @@ static void SPC700_opcode_F8(SPC700 *cpu) { // MOV X, dp
 
 static void SPC700_opcode_F9(SPC700 *cpu) { // MOV X, dp+Y
     cpu->regs.opc_cycles = 4;
-    cpu->regs.TA = SPC700_read8(cpu, cpu->regs.PC++);
+    cpu->regs.TA = cpu->read8(cpu->regs.PC++);
     cpu->regs.PC &= 0xFFFF;
-    cpu->regs.X = SPC700_read8D(cpu, cpu->regs.TA + cpu->regs.Y);
+    cpu->regs.X = cpu->read8D(cpu->regs.TA + cpu->regs.Y);
     cpu->regs.P.Z = +((cpu->regs.X) == 0);
     cpu->regs.P.N = ((cpu->regs.X) & 0x80) >> 7;
 }
@@ -3190,20 +3190,20 @@ static void SPC700_opcode_F9(SPC700 *cpu) { // MOV X, dp+Y
 
 static void SPC700_opcode_FA(SPC700 *cpu) { // MOV dp, dp
     cpu->regs.opc_cycles = 5;
-    cpu->regs.TR = SPC700_read8(cpu, cpu->regs.PC++);
+    cpu->regs.TR = cpu->read8(cpu->regs.PC++);
     cpu->regs.PC &= 0xFFFF;
-    cpu->regs.TA = SPC700_read8(cpu, cpu->regs.PC++);
+    cpu->regs.TA = cpu->read8(cpu->regs.PC++);
     cpu->regs.PC &= 0xFFFF;
-    cpu->regs.TR = SPC700_read8D(cpu, cpu->regs.TR);
-    SPC700_write8D(cpu, (cpu->regs.TA), cpu->regs.TR);
+    cpu->regs.TR = cpu->read8D(cpu->regs.TR);
+    cpu->write8D((cpu->regs.TA), cpu->regs.TR);
 }
 
 
 static void SPC700_opcode_FB(SPC700 *cpu) { // MOV Y, dp+X
     cpu->regs.opc_cycles = 4;
-    cpu->regs.TA = SPC700_read8(cpu, cpu->regs.PC++);
+    cpu->regs.TA = cpu->read8(cpu->regs.PC++);
     cpu->regs.PC &= 0xFFFF;
-    cpu->regs.Y = SPC700_read8D(cpu, cpu->regs.TA + cpu->regs.X);
+    cpu->regs.Y = cpu->read8D(cpu->regs.TA + cpu->regs.X);
     cpu->regs.P.Z = +((cpu->regs.Y) == 0);
     cpu->regs.P.N = ((cpu->regs.Y) & 0x80) >> 7;
 }
@@ -3228,7 +3228,7 @@ static void SPC700_opcode_FD(SPC700 *cpu) { // MOV Y, A
 
 static void SPC700_opcode_FE(SPC700 *cpu) { // DBNZ Y, r
     cpu->regs.opc_cycles = 4;
-    cpu->regs.TR = SPC700_read8(cpu, cpu->regs.PC++);
+    cpu->regs.TR = cpu->read8(cpu->regs.PC++);
     cpu->regs.PC &= 0xFFFF;
     // INS 28 ADDR MODE undefined
     cpu->regs.Y = (cpu->regs.Y - 1) & 0xFF;
@@ -3239,7 +3239,7 @@ static void SPC700_opcode_FE(SPC700 *cpu) { // DBNZ Y, r
 }
 
 
-static void SPC700_opcode_FF(SPC700 *cpu) { // STOP
+static void SPC700_opcode_FF(SPC700 *cpu) { // STOP 
     cpu->regs.opc_cycles = 2;
     // INS 61 ADDR MODE 0
     cpu->STP = 1;

@@ -196,7 +196,7 @@ debugger_widget::~debugger_widget()
     destroy_active();
 }
 
-void debugger_widgets_add_textbox(std::vector<debugger_widget> &widgets, char *text, u32 same_line)
+void debugger_widgets_add_textbox(std::vector<debugger_widget> &widgets, const char *text, u32 same_line)
 {
     debugger_widget &w = widgets.emplace_back();
     w.same_line = same_line;
@@ -205,16 +205,16 @@ void debugger_widgets_add_textbox(std::vector<debugger_widget> &widgets, char *t
     w.visible = 1;
 }
 
-void debugger_widgets_textbox_clear(debugger_widget_textbox *tb)
+void debugger_widget_textbox::clear()
 {
-    tb->contents.quickempty();
+    contents.quickempty();
 }
 
-int debugger_widgets_textbox_sprintf(debugger_widget_textbox *tb, const char *format, ...)
+int debugger_widget_textbox::sprintf(const char *format, ...)
 {
     va_list va;
     va_start(va, format);
-    int num = tb->contents.vsprintf(format, va);
+    int num = contents.vsprintf(format, va);
     va_end(va);
     return num;
 }
@@ -270,14 +270,14 @@ void debugger_widget_colorkey::add_item(const char *str, u32 color)
 }
 
 
-void debugger_widget_radiogroup_add_button(debugger_widget *radiogroup, const char *text, u32 value, u32 same_line)
+void debugger_widget_radiogroup::add_button(const char *text, u32 invalue, u32 same_line)
 {
-    debugger_widget &w = radiogroup->radiogroup.buttons.emplace_back();
+    debugger_widget &w = buttons.emplace_back();
     w.make(JSMD_checkbox);
     w.same_line = same_line;
     w.enabled = 1;
     snprintf(w.checkbox.text, sizeof(w.checkbox.text), "%s", text);
-    w.checkbox.value = value;
+    w.checkbox.value = invalue;
     w.visible = 1;
 }
 

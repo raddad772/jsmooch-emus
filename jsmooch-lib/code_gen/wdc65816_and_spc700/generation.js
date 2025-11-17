@@ -126,13 +126,13 @@ function generate_sm83_c() {
 
 function generate_spc700_c() {
     set_gentarget('c');
-    save_js('spc700_generated_opcodes.c', SPC_decode_opcodes_c());
+    save_js('spc700_generated_opcodes.cpp', SPC_decode_opcodes_c());
 }
 
 
 function generate_wdc65816_c() {
     set_gentarget('c');
-    save_js('wdc65816_generated_opcodes.c', decode_opcodes_c());
+    save_js('wdc65816_generated_opcodes.cpp', decode_opcodes_c());
 }
 
 

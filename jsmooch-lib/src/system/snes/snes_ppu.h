@@ -36,7 +36,6 @@ struct SNES_PPU {
     explicit SNES_PPU(struct SNES *parent) : snes(parent) {};
     void reset();
     u32 read_oam(u32 addr);
-    void write( u32 addr, u32 val, SNES_memmap_block *bl);
     struct SNES_PPU_BG;
 
 private:
@@ -48,12 +47,13 @@ private:
     u32 get_tile(SNES_PPU_BG *bg, i32 hoffset, i32 voffset);
     void draw_bg_line(u32 source, u32 y);
     void write_VRAM(u32 addr, u32 val);
-    u32 read(u32 addr, u32 old, u32 has_effect, SNES_memmap_block *bl);
     void do_color_math(SNES_PPU_px *main, SNES_PPU_px *sub);
     void draw_sprite_line(i32 ppu_y);
-    void latch_counters();
 
 public:
+    void write( u32 addr, u32 val, SNES_memmap_block *bl);
+    u32 read(u32 addr, u32 old, u32 has_effect, SNES_memmap_block *bl);
+    void latch_counters();
     void draw_line();
     void new_scanline(u64 cur_clock);
     void schedule_first();

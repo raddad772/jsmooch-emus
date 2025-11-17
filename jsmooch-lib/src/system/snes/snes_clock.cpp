@@ -33,5 +33,5 @@ void SNES_clock::fill_timing_ntsc()
 SNES_clock::SNES_clock()
 {
 
-    fill_timing_ntsc(this);
+    fill_timing_ntsc();
 }

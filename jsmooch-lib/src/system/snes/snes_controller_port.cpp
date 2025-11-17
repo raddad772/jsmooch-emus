@@ -6,47 +6,36 @@
 #include "snes_bus.h"
 #include "component/controller/snes/snes_joypad.h"
 
-void SNES_controllerport_latch(SNES *snes, u32 num, u32 val)
+void SNES_controller_port::latch(u32 val)
 {
-    struct SNES_controller_port *p = &snes->r5a22.controller_port[num];
-    if (p->ptr) {
-        switch(p->kind) {
-            case SNES_CK_none:
-                return;
-            case SNES_CK_standard:
-                return SNES_joypad_latch(p->ptr, val);
-            default:
-                printf("\nUNKNOWN CONTROLLER KIND! DEATH!");
-                return;
+    switch(kind) {
+        case SNES_CK_none:
+            return;
+        case SNES_CK_standard: {
+            SNES_joypad *jp = static_cast<SNES_joypad *>(ptr);
+            return jp->latch(val); }
+        default:
+            printf("\nUNKNOWN CONTROLLER KIND! DEATH!");
+            return;
         }
+}
+
+u32 SNES_controller_port::data()
+{
+    switch(kind) {
+        case SNES_CK_none:
+            return 0;
+        case SNES_CK_standard: {
+            SNES_joypad *jp = static_cast<SNES_joypad *>(ptr);
+            return jp->data(); }
+        default:
+            printf("\nUNKNOWN CONTROLLER KINd2!");
+            return 0;
     }
 }
 
-u32 SNES_controllerport_data(SNES *snes, u32 num)
+void SNES_controller_port::connect(SNES_controller_kinds in_kind, void *in_ptr)
 {
-    struct SNES_controller_port *p = &snes->r5a22.controller_port[num];
-    if (p->ptr) {
-        switch(p->kind) {
-            case SNES_CK_none:
-                return 0;
-            case SNES_CK_standard:
-                return SNES_joypad_data(p->ptr);
-            default:
-                printf("\nUNKNOWN CONTROLLER KINd2!");
-                return 0;
-        }
-    }
-    return 0;
-}
-
-void SNES_controllerport_connect(SNES_controller_port *this, enum SNES_controller_kinds kind, void *ptr)
-{
-    this->kind = kind;
-    this->ptr = ptr;
-}
-
-void SNES_controllerport_delete(SNES_controller_port *this)
-{
-    this->kind = SNES_CK_none;
-    this->ptr = NULL;
+    kind = in_kind;
+    ptr = in_ptr;
 }

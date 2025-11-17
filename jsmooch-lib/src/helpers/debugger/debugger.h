@@ -116,7 +116,7 @@ struct memory_view {
     memory_view() {
         modules.reserve(50);
     }
-    ~memory_view() {};
+    ~memory_view() {}
     memory_view_module *get_module(u32 id);
     u32 num_modules();
     void add_module(const char *name, u32 inid, u32 addr_digits, u32 range_start, u32 range_end, void *readptr, void (*readmem16func)(void *ptr, u32 addr, void *dest));
@@ -451,6 +451,7 @@ struct debugger_widget_checkbox
 
 struct debugger_widget;
 struct debugger_widget_radiogroup {
+    void add_button(const char *text, u32 value, u32 same_line);
     char title[100]{};
     u32 value{};
     std::vector<debugger_widget> buttons{}; // debugger_widget_checkbox
@@ -471,6 +472,8 @@ struct debugger_widget_colorkey {
 };
 
 struct debugger_widget_textbox {
+    int sprintf(const char *format, ...);
+    void clear();
     jsm_string contents{4000};
 };
 
@@ -568,7 +571,10 @@ void debugger_report_event(cvec_ptr<debugger_view> &viewptr, i32 event_id);
 void debugger_report_frame(debugger_interface *dbgr);
 void debugger_report_line(debugger_interface *dbgr, i32 line_num);
 void debugger_interface_dirty_mem(debugger_interface *dbgr, u32 mem_bus, u32 addr_start, u32 addr_end);
+debugger_widget &debugger_widgets_add_radiogroup(std::vector<debugger_widget> &widgets, const char *text, u32 enabled, u32 default_value, u32 same_line);
 void memory_view_get_line(memory_view_module *mm, u32 addr, char *out);
+void debugger_widgets_add_textbox(std::vector<debugger_widget> &widgets, const char *text, u32 same_line);
+debugger_widget &debugger_widgets_add_color_key(std::vector<debugger_widget> &widgets, const char *default_text, u32 default_visible);
 
 #define DEBUG_REGISTER_EVENT_CATEGORY(name, id) ev.add_category(name, 0, id)
 #define DEBUG_REGISTER_EVENT(name, color, category, id, default_enable) ev.add_event(category, name, color, dek_pix_square, default_enable, 0, NULL, id)

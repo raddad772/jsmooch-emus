@@ -93,6 +93,8 @@ set(SOURCE_LIST
         "src/helpers/inifile.h"
         "src/helpers/irq_multiplexer.cpp"
         "src/helpers/irq_multiplexer.h"
+        "src/helpers/debugger/debugger.cpp"
+        "src/helpers/debugger/debugger.h"
         "src/helpers/audiobuf.cpp"
         "src/helpers/audiobuf.h"
         "src/helpers/inifile.cpp"
