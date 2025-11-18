@@ -101,6 +101,4 @@ struct scheduler_action_return {
 
 scheduled_bound_function* scheduler_bind_function(scheduler_callback func, void *ptr);
 
-void scheduler_from_event_adjust_master_clock(scheduler_t *, i64 howmany);
-
 #endif //JSMOOCH_EMUS_SCHEDULER_H

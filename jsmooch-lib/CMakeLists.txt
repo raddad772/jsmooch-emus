@@ -149,6 +149,8 @@ set(SOURCE_LIST
         "src/helpers/cvec.h"
         src/system/nes/nes_bus.cpp
         src/system/nes/nes_bus.h
+        src/system/snes/snes_serialize.cpp
+        src/system/snes/snes_serialize.h
 )
 
 # TODO: Fix elf-parser repo for windows

@@ -20,7 +20,7 @@ struct memory_view;
 #define DBG_CPU_REG_START(x) struct { struct cpu_reg_context
 #define DBG_CPU_REG_END(x) ; } dasm_##x{};
 
-#define DBG_WAVEFORM_START1 struct { cvec_ptr<debugger_view> view;
+#define DBG_WAVEFORM_START1 struct { cvec_ptr<debugger_view> view{};
 #define DBG_WAVEFORM_END1 } waveforms{};
 #define DBG_WAVEFORM_START(x) struct { cvec_ptr<debugger_view> view{};
 #define DBG_WAVEFORM_MAIN cvec_ptr<debug_waveform> main{}; struct debug_waveform *main_cache{};
@@ -29,7 +29,7 @@ struct memory_view;
 
 #define DBG_MEMORY_VIEW cvec_ptr<debugger_view> memory{};
 
-#define DBG_EVENT_VIEW struct { cvec_ptr<debugger_view> view; } events{};
+#define DBG_EVENT_VIEW struct { cvec_ptr<debugger_view> view{}; } events{};
 #define DBG_EVENT_VIEW_START struct { cvec_ptr<debugger_view> view{}; u32
 #define DBG_EVENT_VIEW_END ;} events{};
 

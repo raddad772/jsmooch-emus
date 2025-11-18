@@ -33,7 +33,7 @@ struct SNES_PPU_sprite {
 };
 
 struct SNES_PPU {
-    explicit SNES_PPU(struct SNES *parent) : snes(parent) {};
+    explicit SNES_PPU(SNES *parent) : snes(parent) {};
     void reset();
     u32 read_oam(u32 addr);
     struct SNES_PPU_BG;

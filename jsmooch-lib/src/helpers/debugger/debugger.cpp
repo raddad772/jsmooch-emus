@@ -43,7 +43,7 @@ void debugger_report_line(debugger_interface *dbgr, i32 line_num)
     }
 }
 
-cvec_ptr<debugger_view> debugger_interface::make_view(enum debugger_view_kinds kind)
+cvec_ptr<debugger_view> debugger_interface::make_view(debugger_view_kinds kind)
 {
     views.emplace_back(kind);
     return cvec_ptr(views, views.size() - 1);
@@ -112,7 +112,7 @@ debugger_view::debugger_view(debugger_view_kinds kind) : kind(kind), memory{}
             new (&events) events_view();
             break;
         case dview_waveforms:
-            new (&waveform) waveform_view;
+            new (&waveform) waveform_view();
             break;
         case dview_trace:
             new (&trace) trace_view();
@@ -199,6 +199,7 @@ debugger_widget::~debugger_widget()
 void debugger_widgets_add_textbox(std::vector<debugger_widget> &widgets, const char *text, u32 same_line)
 {
     debugger_widget &w = widgets.emplace_back();
+    w.make(JSMD_textbox);
     w.same_line = same_line;
     w.textbox.contents.sprintf("%s", text);
     w.enabled = 1;

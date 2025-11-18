@@ -94,7 +94,7 @@ u32 R5A22_DMA_CHANNEL::dma_run()
     }
 
     if (nc) {
-        scheduler_from_event_adjust_master_clock(&snes->scheduler, nc);
+        snes->scheduler.from_event_adjust_master_clock(nc);
     }
     return 0;
 }
@@ -589,12 +589,12 @@ static inline u32 validA(const u32 addr)
 }
 
 static inline u32 dma_readA(SNES *snes, u32 addr) {
-    //scheduler_from_event_adjust_master_clock(&snes->scheduler, 8);
+    //snes->scheduler.from_event_adjust_master_clock(8);
     return validA(addr) ? snes->mem.read_bus_A(addr, 0, 1) : 0;
 }
 
 static inline u32 dma_readB(SNES *snes, u32 addr, u32 valid) {
-    //scheduler_from_event_adjust_master_clock(&snes->scheduler, 8);
+    //snes->scheduler.from_event_adjust_master_clock(8);
     return valid ? snes->mem.read_bus_A(0x2100 | addr, 0, 1) : 0;
 }
 

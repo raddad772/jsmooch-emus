@@ -354,7 +354,7 @@ enum debug_waveform_kinds {
 
 struct debug_waveform {
     char name[50]{};
-    u32 ch_output_enabled=1;
+    u32 ch_output_enabled{1};
     u32 default_clock_divider{};
     u32 clock_divider{};
     u32 samples_requested{};
@@ -364,10 +364,10 @@ struct debug_waveform {
     debug_waveform_kinds kind{};
 
     struct {
-        double next_sample_cycle;
-        double cycle_stride;
-        u32 buf_pos;
-    } user;
+        double next_sample_cycle{};
+        double cycle_stride{};
+        u32 buf_pos{};
+    } user{};
 };
 
 #define MAX_TRACE_COLS 20

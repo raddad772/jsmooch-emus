@@ -287,10 +287,10 @@ static void render_image_view_palette(debugger_interface *dbgr, debugger_view *d
 }
 
 
-static void setup_image_view_palettes(SNES* th, debugger_interface *dbgr)
+static void setup_image_view_palettes(SNES& th, debugger_interface &dbgr)
 {
-    th->dbg.image_views.palettes = dbgr->make_view(dview_image);
-    debugger_view *dview = &th->dbg.image_views.palettes.get();
+    th.dbg.image_views.palettes = dbgr.make_view(dview_image);
+    debugger_view *dview = &th.dbg.image_views.palettes.get();
     image_view *iv = &dview->image;
 
     iv->width = 16 * PAL_BOX_SIZE_W_BORDER;
@@ -301,17 +301,17 @@ static void setup_image_view_palettes(SNES* th, debugger_interface *dbgr)
     iv->viewport.p[0] = (ivec2){ 0, 0 };
     iv->viewport.p[1] = ivec2(static_cast<i32>(iv->width), static_cast<i32>(iv->height));
 
-    iv->update_func.ptr = th;
+    iv->update_func.ptr = &th;
     iv->update_func.func = &render_image_view_palette;
     snprintf(iv->label, sizeof(iv->label), "Palettes Viewer");
 }
 
-static void setup_dbglog(SNES *th, debugger_interface *dbgr)
+static void setup_dbglog(SNES &th, debugger_interface &dbgr)
 {
-    cvec_ptr p = dbgr->make_view(dview_dbglog);
+    cvec_ptr p = dbgr.make_view(dview_dbglog);
     debugger_view *dview = &p.get();
     dbglog_view &dv = dview->dbglog;
-    th->dbg.dvptr = &dv;
+    th.dbg.dvptr = &dv;
     snprintf(dv.name, sizeof(dv.name), "Trace");
     dv.has_extra = 1;
 
@@ -323,8 +323,8 @@ static void setup_dbglog(SNES *th, debugger_interface *dbgr)
     dbglog_category_node &root = dv.get_category_root();
     dbglog_category_node &wdc = root.add_node(dv, "R5A22", nullptr, 0, 0);
     wdc.add_node(dv, "Instruction Trace", "WDC65816", SNES_CAT_WDC_INSTRUCTION, wdc_color);
-    th->r5a22.cpu.trace.dbglog.view = &dv;
-    th->r5a22.cpu.trace.dbglog.id = SNES_CAT_WDC_INSTRUCTION;
+    th.r5a22.cpu.trace.dbglog.view = &dv;
+    th.r5a22.cpu.trace.dbglog.id = SNES_CAT_WDC_INSTRUCTION;
     wdc.add_node(dv, "Reads", "wdc_read", SNES_CAT_WDC_READ, wdc_color);
     wdc.add_node(dv, "Writes", "wdc_write", SNES_CAT_WDC_WRITE, wdc_color);
     wdc.add_node(dv, "DMA Starts", "DMA", SNES_CAT_DMA_START, dma_color);
@@ -333,20 +333,20 @@ static void setup_dbglog(SNES *th, debugger_interface *dbgr)
 
     dbglog_category_node &spc = root.add_node(dv, "SPC700", nullptr, 0, 0);
     spc.add_node(dv, "Instruction Trace", "SPC700", SNES_CAT_SPC_INSTRUCTION, spc_color);
-    th->apu.cpu.trace.dbglog.view = &dv;
-    th->apu.cpu.trace.dbglog.id = SNES_CAT_SPC_INSTRUCTION;
+    th.apu.cpu.trace.dbglog.view = &dv;
+    th.apu.cpu.trace.dbglog.id = SNES_CAT_SPC_INSTRUCTION;
     spc.add_node(dv, "Reads", "spc_read", SNES_CAT_SPC_READ, spc_color);
-    th->apu.cpu.trace.dbglog.id_read = SNES_CAT_SPC_READ;
+    th.apu.cpu.trace.dbglog.id_read = SNES_CAT_SPC_READ;
     spc.add_node(dv, "Writes", "spc_write", SNES_CAT_SPC_WRITE, spc_color);
-    th->apu.cpu.trace.dbglog.id_write = SNES_CAT_SPC_WRITE;
+    th.apu.cpu.trace.dbglog.id_write = SNES_CAT_SPC_WRITE;
 
     dbglog_category_node &ppu = root.add_node(dv, "PPU", nullptr, 0, 0);
     ppu.add_node(dv, "VRAM Write", "PPU", SNES_CAT_PPU_VRAM_WRITE, ppu_color);
 }
 
-static void setup_image_view_ppu_obj_tiles(SNES *th, debugger_interface *dbgr) {
-    th->dbg.image_views.ppu_layers = dbgr->make_view(dview_image);
-    debugger_view *dview = &th->dbg.image_views.ppu_layers.get();
+static void setup_image_view_ppu_obj_tiles(SNES &th, debugger_interface &dbgr) {
+    th.dbg.image_views.ppu_layers = dbgr.make_view(dview_image);
+    debugger_view *dview = &th.dbg.image_views.ppu_layers.get();
     image_view *iv = &dview->image;
 
     iv->width = 542;
@@ -356,7 +356,7 @@ static void setup_image_view_ppu_obj_tiles(SNES *th, debugger_interface *dbgr) {
     iv->viewport.p[0] = (ivec2) {0, 0};
     iv->viewport.p[1] = (ivec2) {542, 256};
 
-    iv->update_func.ptr = th;
+    iv->update_func.ptr = &th;
     iv->update_func.func = &render_image_view_obj_tiles;
     snprintf(iv->label, sizeof(iv->label), "PPU OBJ Tiles");
 
@@ -374,10 +374,10 @@ static void setup_image_view_ppu_obj_tiles(SNES *th, debugger_interface *dbgr) {
 
 }
 
-static void setup_image_view_ppu_tilemaps(SNES *th, debugger_interface *dbgr)
+static void setup_image_view_ppu_tilemaps(SNES&th, debugger_interface &dbgr)
 {
-    th->dbg.image_views.ppu_layers = dbgr->make_view(dview_image);
-    debugger_view *dview = &th->dbg.image_views.ppu_layers.get();
+    th.dbg.image_views.ppu_layers = dbgr.make_view(dview_image);
+    debugger_view *dview = &th.dbg.image_views.ppu_layers.get();
     image_view *iv = &dview->image;
 
     iv->width = 1024;
@@ -387,7 +387,7 @@ static void setup_image_view_ppu_tilemaps(SNES *th, debugger_interface *dbgr)
     iv->viewport.p[0] = (ivec2) {0, 0};
     iv->viewport.p[1] = (ivec2) {1024, 1024};
 
-    iv->update_func.ptr = th;
+    iv->update_func.ptr = &th;
     iv->update_func.func = &render_image_view_tilemaps;
     snprintf(iv->label, sizeof(iv->label), "PPU Tilemaps");
 
@@ -398,10 +398,10 @@ static void setup_image_view_ppu_tilemaps(SNES *th, debugger_interface *dbgr)
     rg.add_button("BG4", 3, 1);
 }
 
-static void setup_image_view_ppu_layers(SNES *th, debugger_interface *dbgr)
+static void setup_image_view_ppu_layers(SNES &th, debugger_interface &dbgr)
 {
-    th->dbg.image_views.ppu_layers = dbgr->make_view(dview_image);
-    debugger_view *dview = &th->dbg.image_views.ppu_layers.get();
+    th.dbg.image_views.ppu_layers = dbgr.make_view(dview_image);
+    debugger_view *dview = &th.dbg.image_views.ppu_layers.get();
     image_view *iv = &dview->image;
 
     iv->width = 256;
@@ -411,7 +411,7 @@ static void setup_image_view_ppu_layers(SNES *th, debugger_interface *dbgr)
     iv->viewport.p[0] = (ivec2){ 0, 0 };
     iv->viewport.p[1] = (ivec2){ 256, 224 };
 
-    iv->update_func.ptr = th;
+    iv->update_func.ptr = &th;
     iv->update_func.func = &render_image_view_ppu_layers;
     snprintf(iv->label, sizeof(iv->label), "PPU Layer View");
 
@@ -433,64 +433,65 @@ static void setup_image_view_ppu_layers(SNES *th, debugger_interface *dbgr)
 }
 
 
-static void setup_waveforms(SNES* th, debugger_interface *dbgr)
+static void setup_waveforms(SNES& th, debugger_interface *dbgr)
 {
-    th->dbg.waveforms.view = dbgr->make_view(dview_waveforms);
-    debugger_view *dview = &th->dbg.waveforms.view.get();
-    waveform_view *wv = &dview->waveform;
-    snprintf(wv->name, sizeof(wv->name), "S-APU");
+    th.dbg.waveforms.view = dbgr->make_view(dview_waveforms);
+    debugger_view &dview = th.dbg.waveforms.view.get();
+    waveform_view &wv = dview.waveform;
+    snprintf(wv.name, sizeof(wv.name), "S-APU");
 
-    debug_waveform *dw = &wv->waveforms.emplace_back();;
-    th->dbg.waveforms.main.make(wv->waveforms, wv->waveforms.size()-1);
+    debug_waveform *dw = &wv.waveforms.emplace_back();
+    th.dbg.waveforms.main.make(wv.waveforms, wv.waveforms.size()-1);
     snprintf(dw->name, sizeof(dw->name), "Output");
     dw->kind = dwk_main;
     dw->samples_requested = 400;
+
     dw->default_clock_divider = 1008;
 
-    dw = &wv->waveforms.emplace_back();
-    th->dbg.waveforms.chan[0].make(wv->waveforms, wv->waveforms.size()-1);
+    dw = &wv.waveforms.emplace_back();
+    th.dbg.waveforms.chan[0].make(wv.waveforms, wv.waveforms.size()-1);
     snprintf(dw->name, sizeof(dw->name), "Voice 1");
     dw->kind = dwk_channel;
     dw->samples_requested = 200;
 
-    dw = &wv->waveforms.emplace_back();
-    th->dbg.waveforms.chan[1].make(wv->waveforms, wv->waveforms.size()-1);
+    dw = &wv.waveforms.emplace_back();
+    th.dbg.waveforms.chan[1].make(wv.waveforms, wv.waveforms.size()-1);
     snprintf(dw->name, sizeof(dw->name), "Voice 2");
     dw->kind = dwk_channel;
     dw->samples_requested = 200;
 
-    dw = &wv->waveforms.emplace_back();
-    th->dbg.waveforms.chan[2].make(wv->waveforms, wv->waveforms.size()-1);
+    dw = &wv.waveforms.emplace_back();
+    th.dbg.waveforms.chan[2].make(wv.waveforms, wv.waveforms.size()-1);
     snprintf(dw->name, sizeof(dw->name), "Voice 3");
     dw->kind = dwk_channel;
     dw->samples_requested = 200;
 
-    dw = &wv->waveforms.emplace_back();
-    th->dbg.waveforms.chan[3].make(wv->waveforms, wv->waveforms.size()-1);
+    dw = &wv.waveforms.emplace_back();
+    th.dbg.waveforms.chan[3].make(wv.waveforms, wv.waveforms.size()-1);
     snprintf(dw->name, sizeof(dw->name), "Voice 4");
     dw->kind = dwk_channel;
     dw->samples_requested = 200;
 
-    dw = &wv->waveforms.emplace_back();
-    th->dbg.waveforms.chan[4].make(wv->waveforms, wv->waveforms.size()-1);
+    dw = &wv.waveforms.emplace_back();
+    th.dbg.waveforms.chan[4].make(wv.waveforms, wv.waveforms.size()-1);
     snprintf(dw->name, sizeof(dw->name), "Voice 5");
     dw->kind = dwk_channel;
     dw->samples_requested = 200;
 
-    dw = &wv->waveforms.emplace_back();
-    th->dbg.waveforms.chan[5].make(wv->waveforms, wv->waveforms.size()-1);
+    dw = &wv.waveforms.emplace_back();
+    th.dbg.waveforms.chan[5].make(wv.waveforms, wv.waveforms.size()-1);
     snprintf(dw->name, sizeof(dw->name), "Voice 6");
     dw->kind = dwk_channel;
     dw->samples_requested = 200;
 
-    dw = &wv->waveforms.emplace_back();
-    th->dbg.waveforms.chan[6].make(wv->waveforms, wv->waveforms.size()-1);
+    dw = &wv.waveforms.emplace_back();
+    th.dbg.waveforms.chan[6].make(wv.waveforms, wv.waveforms.size()-1);
     snprintf(dw->name, sizeof(dw->name), "Voice 7");
     dw->kind = dwk_channel;
     dw->samples_requested = 200;
 
-    dw = &wv->waveforms.emplace_back();
-    th->dbg.waveforms.chan[7].make(wv->waveforms, wv->waveforms.size()-1);
+    dw = &wv.waveforms.emplace_back();
+    th.dbg.waveforms.chan[7].make(wv.waveforms, wv.waveforms.size()-1);
     snprintf(dw->name, sizeof(dw->name), "Voice 8");
     dw->kind = dwk_channel;
     dw->samples_requested = 200;
@@ -524,17 +525,17 @@ static void readvram(void *ptr, u32 addr, void *dest)
     }
 }
 
-static void setup_memory_view(SNES* th, debugger_interface *dbgr) {
-    th->dbg.memory = dbgr->make_view(dview_memory);
-    debugger_view *dview = &th->dbg.memory.get();
+static void setup_memory_view(SNES& th, debugger_interface &dbgr) {
+    th.dbg.memory = dbgr.make_view(dview_memory);
+    debugger_view *dview = &th.dbg.memory.get();
     memory_view *mv = &dview->memory;
-    mv->add_module("CPU Memory", 0, 6, 0, 0xFFFFFF, th, &readcpumem);
-    mv->add_module("VRAM", 1, 4, 0, 0xFFFF, &th->ppu.VRAM, &readvram);
+    mv->add_module("CPU Memory", 0, 6, 0, 0xFFFFFF, &th, &readcpumem);
+    mv->add_module("VRAM", 1, 4, 0, 0xFFFF, &th.ppu.VRAM, &readvram);
 }
 
-static void setup_events_view(SNES& th, debugger_interface *dbgr) {
+static void setup_events_view(SNES& th, debugger_interface &dbgr) {
     // Setup events view
-    th.dbg.events.view = dbgr->make_view(dview_events);
+    th.dbg.events.view = dbgr.make_view(dview_events);
     debugger_view *dview = &th.dbg.events.view.get();
     events_view &ev = dview->events;
 
@@ -575,17 +576,18 @@ static void setup_events_view(SNES& th, debugger_interface *dbgr) {
 
 void SNES::setup_debugger_interface(debugger_interface &intf) {
     dbg.interface = &intf;
-    auto *dbgr = &intf;
+    auto *dbgr = dbg.interface;
 
     dbgr->supported_by_core = 1;
     dbgr->smallest_step = 4;
+    dbgr->views.reserve(15);
 
-    setup_dbglog(this, dbgr);
-    setup_events_view(*this, dbgr);
-    setup_memory_view(this, dbgr);
-    setup_waveforms(this, dbgr);
-    setup_image_view_palettes(this, dbgr);
-    setup_image_view_ppu_layers(this, dbgr);
-    setup_image_view_ppu_tilemaps(this, dbgr);
-    setup_image_view_ppu_obj_tiles(this, dbgr);
+    setup_dbglog(*this, *dbgr);
+    setup_events_view(*this, *dbgr);
+    setup_memory_view(*this, *dbgr);
+    setup_image_view_palettes(*this, *dbgr);
+    setup_image_view_ppu_layers(*this, *dbgr);
+    setup_image_view_ppu_tilemaps(*this, *dbgr);
+    setup_image_view_ppu_obj_tiles(*this, *dbgr);
+    setup_waveforms(*this, dbgr);
 }

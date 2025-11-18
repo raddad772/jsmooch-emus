@@ -895,7 +895,7 @@ void full_system::load_default_ROM()
 
             break;
         case jsm::systems::SNES:
-            //worked = grab_ROM(&ROMs, which, "smw.sfc", nullptr); // works!
+            worked = grab_ROM(&ROMs, which, "smw.sfc", nullptr); // works!
             //worked = grab_ROM(&ROMs, which, "link_to_the_past.sfc", nullptr); // works! sprite issues
             //worked = grab_ROM(&ROMs, which, "super_metroid.sfc", nullptr); // gfx issues
             //worked = grab_ROM(&ROMs, which, "megamanx.sfc", nullptr); // some sound then notjing

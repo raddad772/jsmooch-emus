@@ -722,7 +722,7 @@ void SNES_PPU::new_scanline(u64 cur_clock)
 void dram_refresh(void *ptr, u64 key, u64 clock, u32 jitter)
 {
     SNES *snes = static_cast<SNES *>(ptr);
-    scheduler_from_event_adjust_master_clock(&snes->scheduler, 40);
+    snes->scheduler.from_event_adjust_master_clock(40);
 }
 
 struct slice {
@@ -1230,7 +1230,7 @@ void hdma_setup(void *ptr, u64 key, u64 clock, u32 jitter)
     for (u32 n = 0; n < 8; n++) {
         cn += snes->r5a22.dma.channels[n].hdma_setup();
     }
-    scheduler_from_event_adjust_master_clock(&snes->scheduler, cn);
+    snes->scheduler.from_event_adjust_master_clock(cn);
 }
 
 void hdma(void *ptr, u64 key, u64 clock, u32 jitter)
@@ -1343,6 +1343,6 @@ void new_frame(void* ptr, u64 key, u64 cur_clock, u32 jitter)
 
 void SNES_PPU::schedule_first()
 {
-    schedule_scanline(this, 0, 0, 0);
-    snes->scheduler.only_add_abs_w_tag(snes->clock.timing.frame.master_cycles, 0, this, &new_frame, nullptr, 2);
+    schedule_scanline(snes, 0, 0, 0);
+    snes->scheduler.only_add_abs_w_tag(snes->clock.timing.frame.master_cycles, 0, snes, &new_frame, nullptr, 2);
 }

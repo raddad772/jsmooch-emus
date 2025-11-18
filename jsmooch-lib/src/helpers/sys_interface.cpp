@@ -6,7 +6,7 @@
 //#include "system/gb/gb.h"
 #include "system/nes/nes.h"
 //#include "system/nds/nds.h"
-//#include "system/snes/snes.h"
+#include "system/snes/snes.h"
 //#include "system/sms_gg/sms_gg.h"
 //#include "system/dreamcast/dreamcast.h"
 //#include "system/ps1/ps1.h"
@@ -30,11 +30,11 @@ jsm_system* new_system(jsm::systems which)
             break;
         case jsm::systems::NDS:
             NDS_new(out);
-            break;
+            break;*/
         case jsm::systems::SNES:
-            SNES_new(out);
+            out = SNES_new();
             break;
-        case jsm::systems::TURBOGRAFX16:
+        /*case jsm::systems::TURBOGRAFX16:
             TG16_new(out, which);
             break;
         case jsm::systems::GENESIS_JAP:

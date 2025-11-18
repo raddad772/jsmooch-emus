@@ -181,8 +181,6 @@ void WDC65816::reset()
 
 void WDC65816::setup_tracing(jsm_debug_read_trace *strct)
 {
-    trace.strct.read_trace_m68k = strct->read_trace_m68k;
-    trace.strct.ptr = strct->ptr;
-    trace.strct.read_trace = strct->read_trace;
+    jsm_copy_read_trace(&trace.strct, strct);;
     trace.ok = 1;
 }

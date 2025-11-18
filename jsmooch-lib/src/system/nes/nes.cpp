@@ -32,7 +32,7 @@ static void setup_debug_waveform(debug_waveform &dw)
 {
     if (dw.samples_requested == 0) return;
     dw.samples_rendered = dw.samples_requested;
-    dw.user.cycle_stride = ((float)APU_CYCLES_PER_FRAME / (float)dw.samples_requested);
+    dw.user.cycle_stride = (static_cast<float>(APU_CYCLES_PER_FRAME) / static_cast<float>(dw.samples_requested));
     dw.user.buf_pos = 0;
 }
 
@@ -40,7 +40,7 @@ void NESJ::set_audiobuf(audiobuf *ab)
 {
     nes.audio.buf = ab;
     if (nes.audio.master_cycles_per_audio_sample == 0) {
-        nes.audio.master_cycles_per_audio_sample = ((float)APU_CYCLES_PER_FRAME / (float)ab->samples_len);
+        nes.audio.master_cycles_per_audio_sample = (static_cast<float>(APU_CYCLES_PER_FRAME) / static_cast<float>(ab->samples_len));
         printf("\nCYCLES PER FRAME:%d PER SAMPLE:%f", APU_CYCLES_PER_FRAME, nes.audio.master_cycles_per_audio_sample);
         nes.audio.next_sample_cycle = 0;
         debug_waveform &wf = nes.dbg.waveforms.main.get();
@@ -254,9 +254,9 @@ void NESJ::killall()
 void NESJ::sample_audio()
 {
     nes.clock.apu_master_clock++;
-    if (nes.audio.buf && (nes.clock.apu_master_clock >= (u64)nes.audio.next_sample_cycle)) {
+    if (nes.audio.buf && (nes.clock.apu_master_clock >= static_cast<u64>(nes.audio.next_sample_cycle))) {
         nes.audio.next_sample_cycle += nes.audio.master_cycles_per_audio_sample;
-        float *sptr = ((float *)nes.audio.buf->ptr) + (nes.audio.buf->upos);
+        float *sptr = static_cast<float *>(nes.audio.buf->ptr) + (nes.audio.buf->upos);
         if (nes.audio.buf->upos <= nes.audio.buf->samples_len) {
             *sptr = nes.apu.mix_sample(0);
         }

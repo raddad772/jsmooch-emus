@@ -29,12 +29,12 @@ u32 read_trace_wdc65816(void *ptr, u32 addr) {
     return static_cast<SNES *>(ptr)->mem.read_bus_A(addr, 0, 0);
 }
 
-static void setup_debug_waveform(const SNES *snes, debug_waveform *dw)
+static void setup_debug_waveform(const SNES *snes, debug_waveform &dw)
 {
-    if (dw->samples_requested == 0) return;
-    dw->samples_rendered = dw->samples_requested;
-    dw->user.cycle_stride = (static_cast<float>(snes->clock.timing.frame.master_cycles) / static_cast<float>(dw->samples_requested));
-    dw->user.buf_pos = 0;
+    if (dw.samples_requested == 0) return;
+    dw.samples_rendered = dw.samples_requested;
+    dw.user.cycle_stride = (static_cast<float>(snes->clock.timing.frame.master_cycles) / static_cast<float>(dw.samples_requested));
+    dw.user.buf_pos = 0;
 }
 
 void SNES::set_audiobuf(audiobuf *ab)
@@ -51,11 +51,11 @@ void SNES::set_audiobuf(audiobuf *ab)
     }
 
     debug_waveform *wf = &dbg.waveforms.main.get();
-    setup_debug_waveform(this, wf);
+    setup_debug_waveform(this, *wf);
     apu.dsp.ext_enable = wf->ch_output_enabled;
     for (u32 i = 0; i < 8; i++) {
         wf = &dbg.waveforms.chan[i].get();
-        setup_debug_waveform(this, wf);
+        setup_debug_waveform(this, *wf);
         apu.dsp.channel[i].ext_enable = wf->ch_output_enabled;
     }
 
