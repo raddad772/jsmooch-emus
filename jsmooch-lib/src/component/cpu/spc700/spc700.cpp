@@ -260,7 +260,7 @@ void SPC700::log_write(u32 addr, u32 val)
 
         }
         else {*/
-            //dbglog_view_add_printf(dv, trace.dbglog.id_write, tc, DBGLS_TRACE, "%04x     (write) %02x", addr, val);
+            dv->add_printf(trace.dbglog.id_write, tc, DBGLS_TRACE, "%04x     (write) %02x", addr, val);
         //}
     }
 }
@@ -291,11 +291,16 @@ void SPC700::log_read(u32 addr, u32 val)
 u8 SPC700::read8(u32 addr)
 {
     u8 r;
-    if ((addr >= 0x00F1) && (addr <= 0x00FF)) r = readIO(addr);
-    else if ((addr >= 0xFFC0) && io.ROM_readable) r = SPC700_boot_rom[addr - 0xFFC0];
-    else r = RAM[addr & 0xFFFF];
+    if constexpr (SPC700_TEST) {
+        r = RAM[addr & 0xFFFF];
+    }
+    else {
+        if ((addr >= 0x00F1) && (addr <= 0x00FF)) r = readIO(addr);
+        else if ((addr >= 0xFFC0) && io.ROM_readable) r = SPC700_boot_rom[addr - 0xFFC0];
+        else r = RAM[addr & 0xFFFF];
 
-    log_read(addr, r);
+        log_read(addr, r);
+    }
 
     return r;
 }
@@ -307,10 +312,15 @@ u8 SPC700::read8D(u32 addr)
 
 void SPC700::write8(u32 addr, u32 val)
 {
-    if ((addr >= 0x00F1) && (addr <= 0x00FF))
-        writeIO(addr, val);
-    RAM[addr & 0xFFFF] = val;
-    log_write(addr, val);
+    if constexpr (SPC700_TEST) {
+        RAM[addr & 0xFFFF] = val;
+    }
+    else {
+        if ((addr >= 0x00F1) && (addr <= 0x00FF))
+            writeIO(addr, val);
+        RAM[addr & 0xFFFF] = val;
+        log_write(addr, val);
+    }
 }
 
 void SPC700::write8D(u32 addr, u32 val)

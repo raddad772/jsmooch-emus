@@ -5,22 +5,22 @@
 #include <stdio.h>
 #include <cstring>
 
-#include "z80_drag_race.h"
+//#include "z80_drag_race.h"
 #include "jsmooch-tests.h"
-#include "cpu-tests/huc6280_tests.h"
+#include "cpu-tests/spc700_tests.h"
+/*#include "cpu-tests/huc6280_tests.h"
 #include "cpu-tests/sm83-tests.h"
 #include "cpu-tests/z80-tests.h"
 #include "cpu-test-generators/sh4_test_generator.h"
 #include "cpu-tests/sh4-tests.h"
 #include "cpu-tests/m6502_tests.h"
-#include "cpu-tests/spc700_tests.h"
 #include "cpu-tests/m68000-tests.h"
 #include "helper-tests/dasm-range-tests.h"
 #include "cpu-tests/wdc65816_tests.h"
 #include "helper-tests/scheduler-tests.h"
-#include "cpu-tests/arm7tdmi_tests.h"
+#include "cpu-tests/arm7tdmi_tests.h"*/
 #include "helpers/debug.h"
-#include "helpers/bitbuffer.h"
+//#include "helpers/bitbuffer.h"
 
 #if 0 // unresolved external symbol bitbuf_read_bits referenced in function test_bitbuf
 void test_bitbuf()
@@ -90,7 +90,7 @@ int main()
 {
     dbg_init();
     dbg.trace_on = 0;
-    //test_spc700();
+    test_spc700();
     //test_wdc65816();
     //test_huc6280();
     //z80_drag_race();
@@ -104,5 +104,5 @@ int main()
     //test_bitbuf();
     //test_dasm_ranges();
     //test_nesm6502();
-    test_arm7tdmi();
+    //test_arm7tdmi();
 }

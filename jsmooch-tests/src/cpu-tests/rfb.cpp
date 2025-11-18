@@ -2,8 +2,8 @@
 // Created by RadDad772 on 2/28/24.
 //
 #include <cassert>
-#include <stdio.h>
-#include <stdlib.h>
+#include <cstdio>
+#include <cstdlib>
 #include "rfb.h"
 
 int open_and_read(char *fname, read_file_buf *rfb)

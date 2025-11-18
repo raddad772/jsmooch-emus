@@ -16,7 +16,7 @@ u32 SPC700_disassemble(u32 PC, jsm_debug_read_trace &rt, jsm_string &out, u32 p_
     u32 opcode = rt.read_trace(rt.ptr, PC);
 #define direct_page(n)  rt.read_trace(rt.ptr, (PC+1+(n)+mdo) & 0xFFFF)
 #define relative(r, n) ((PC + (r) + (i8)rt.read_trace(rt.ptr, PC + 1 + (n))) & 0xFFFF)
-#define r16() (((rt.read_trace(rt.ptr, (PC + 1) & 0xFFFF)) | (rt.read_trace(rt.ptr, (PC + 2) & 0xFFFF))) << 8)
+#define r16() (((rt.read_trace(rt.ptr, (PC + 2) & 0xFFFF)) | (rt.read_trace(rt.ptr, (PC + 1) & 0xFFFF))) << 8)
 #define r8(n) rt.read_trace(rt.ptr, (PC + 1 + (n)))
     out.quickempty();
 #define asm_out(...) out.sprintf(__VA_ARGS__)

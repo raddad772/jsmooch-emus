@@ -10,6 +10,7 @@
 #include "helpers/debugger/debugger.h"
 #include "helpers/debug.h"
 
+constexpr bool SPC700_TEST{false};
 
 union SPC700_regs_P {
     struct {
@@ -50,7 +51,7 @@ struct SPC700_regs {
 };
 
 struct SPC700 {
-    explicit SPC700(u64 *clock_ptr) : clock(clock_ptr) {}
+    explicit SPC700(u64 *clock_ptr) : clock(clock_ptr) { }
     SPC700_regs regs{};
     void reset();
     void cycle(i64 how_many);

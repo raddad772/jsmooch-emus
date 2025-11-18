@@ -2,15 +2,12 @@
 // Created by . on 4/19/25.
 //
 
-#include <stdio.h>
 #if defined(_MSC_VER)
 #else
 #include <unistd.h>
 #include <pwd.h>
 #include <dirent.h>
 #endif
-#include <stdlib.h>
-#include <cstring>
 #include <cassert>
 #include "../json.h"
 
@@ -18,7 +15,6 @@
 
 #include "helpers/int.h"
 #include "helpers/user.h"
-#include "cpu-test-helpers.h"
 #include "spc700_tests.h"
 #include "component/cpu/spc700/spc700.h"
 
@@ -34,9 +30,9 @@ struct ram_entry {
 };
 
 struct test_state {
-    struct test_cpu_regs regs;
+    test_cpu_regs regs;
     u32 num_ram_entry;
-    struct ram_entry ram[MAX_RAM_ENTRIES];
+    ram_entry ram[MAX_RAM_ENTRIES];
 };
 struct test_cycle {
     u32 rw;
@@ -45,12 +41,12 @@ struct test_cycle {
 
 struct jsontest {
     char name[50];
-    struct test_state initial;
-    struct test_state final;
-    struct test_cycle cycles[500];
+    test_state initial;
+    test_state final;
+    test_cycle cycles[500];
 
     u32 num_ram_entry;
-    struct ram_entry ram[MAX_RAM_ENTRIES];
+    ram_entry ram[MAX_RAM_ENTRIES];
     u32 num_cycles;
 };
 
@@ -58,49 +54,48 @@ struct spc700_test_result
 {
     u32 passed;
     u32 mycycles;
-    struct test_cycle cycles[500];
+    test_cycle cycles[500];
     char msg[5000];
     u32 addr_io_mismatches;
     u32 length_mismatches;
-    struct jsontest *failed_test_struct;
+    jsontest *failed_test_struct;
 };
 
 
-static void construct_path(char *out, u32 ins)
+static void construct_path(char *out, u32 ins, size_t sz)
 {
-    char test_path[500];
-    memset(test_path, 0, sizeof(test_path));
+    char test_path[500] = {};
     const char* homeDir = get_user_dir();
     char *tp = out;
-    tp += sprintf(tp, "%s", homeDir);
-    tp += sprintf(tp, "/dev/spc700/v1");
+    tp += snprintf(tp, sz - (tp - out), "%s", homeDir);
+    tp += snprintf(tp, sz - (tp - out), "/dev/spc700/v1");
 
-    tp += sprintf(tp, "%s/", test_path);
-    tp += sprintf(tp, "%02x.json", ins);
+    tp += snprintf(tp, sz - (tp - out), "%s/", test_path);
+    tp += snprintf(tp, sz - (tp - out), "%02x.json", ins);
 }
 
-static struct jsontest tests[10000];
+static jsontest tests[10000];
 
 
 #define SKIPTESTLEN 2
 // STP and WAI
-static const int skip_tests[SKIPTESTLEN] = {0xEF, 0xFF};
+static constexpr int skip_tests[SKIPTESTLEN] = {0xEF, 0xFF};
 
 static int skip_test(int n)
 {
-    for (u32 i = 0; i < SKIPTESTLEN; i++) {
-        if (n == skip_tests[i]) return 1;
+    for (int skip_test : skip_tests) {
+        if (n == skip_test) return 1;
     }
     return 0;
 }
 
-static void parse_state(struct json_object_s *object, test_state *state)
+static void parse_state(json_object_s *object, test_state *state)
 {
-    struct json_object_element_s *el = object->start;
+    json_object_element_s *el = object->start;
     state->num_ram_entry = 0;
     for (u32 i = 0; i < object->length; i++) {
-        struct json_string_s *str = (struct json_string_s *)el->value->payload;
-        u32 *dest = 0;
+        auto *str = static_cast<json_string_s *>(el->value->payload);
+        u32 *dest = nullptr;
         if (strcmp(el->name->string, "pc") == 0) {
             dest = &state->regs.PC;
         }
@@ -120,20 +115,20 @@ static void parse_state(struct json_object_s *object, test_state *state)
             dest = &state->regs.P;
         }
         if (strcmp(el->name->string, "ram") == 0) {
-            struct json_array_s *arr1 = (struct json_array_s *)el->value->payload;
-            state->num_ram_entry = (u32)arr1->length;
-            struct json_array_element_s *arr_el = arr1->start;
+            auto *arr1 = static_cast<json_array_s *>(el->value->payload);
+            state->num_ram_entry = static_cast<u32>(arr1->length);
+            json_array_element_s *arr_el = arr1->start;
             for (u32 arr1_i = 0; arr1_i < arr1->length; arr1_i++) {
                 assert(arr_el->value->type == json_type_array);
-                struct json_array_s *arr2 = (struct json_array_s*) arr_el->value->payload;
+                auto *arr2 = static_cast<json_array_s *>(arr_el->value->payload);
                 assert(arr2->length == 2);
-                struct json_array_element_s *arr2_el = arr2->start;
+                json_array_element_s *arr2_el = arr2->start;
                 // Address
-                struct json_number_s* nr = (struct json_number_s*)arr2_el->value->payload;
+                auto* nr = static_cast<json_number_s *>(arr2_el->value->payload);
                 state->ram[arr1_i].addr = atoi(nr->number);
                 // Data
                 arr2_el = arr2_el->next;
-                nr = (struct json_number_s*)arr2_el->value->payload;
+                nr = static_cast<json_number_s *>(arr2_el->value->payload);
                 state->ram[arr1_i].val = atoi(nr->number);
 
                 arr_el = arr_el->next;
@@ -142,11 +137,11 @@ static void parse_state(struct json_object_s *object, test_state *state)
         else {
             // Grab number
             assert(el->value->type == json_type_number);
-            struct json_number_s *num = (struct json_number_s *) el->value->payload;
+            auto *num = static_cast<json_number_s *>(el->value->payload);
             char *yo;
             u32 a = strtol(num->number, &yo, 10);
             assert(yo != num->number);
-            if (dest == NULL) {
+            if (dest == nullptr) {
                 printf("\nUHOH! %s \n", el->name->string);
             }
             else {
@@ -158,63 +153,63 @@ static void parse_state(struct json_object_s *object, test_state *state)
 }
 
 
-static void parse_and_fill_out(struct read_file_buf *infile)
+static void parse_and_fill_out(read_file_buf *infile)
 {
-    struct json_value_s *root = json_parse(infile->buf.ptr, infile->buf.size);
+    json_value_s *root = json_parse(infile->buf.ptr, infile->buf.size);
     assert(root->type == json_type_array);
 
-    struct json_array_s* arr = (struct json_array_s*)root->payload;
-    struct json_array_element_s r;
+    auto* arr = static_cast<json_array_s *>(root->payload);
+    json_array_element_s r{};
     assert(arr->length == 1000);
-    struct json_array_element_s* cur_node = arr->start;
+    json_array_element_s* cur_node = arr->start;
     for (u32 i = 0; i < arr->length; i++) {
-        struct jsontest *test = tests + i;
+        jsontest *test = tests + i;
         test->num_cycles = 0;
-        sprintf(test->name, "unk");
+        snprintf(test->name, sizeof(test->name), "unk");
         assert(cur_node->value->type == json_type_object);
-        struct json_object_s *tst = (struct json_object_s *)cur_node->value->payload;
-        struct json_object_element_s *s = (struct json_object_element_s *)tst->start;
+        auto *tst = static_cast<json_object_s *>(cur_node->value->payload);
+        auto *s = tst->start;
         for (u32 j = 0; j < tst->length; j++) {
             if (strcmp(s->name->string, "name") == 0) {
                 assert(s->value->type == json_type_string);
-                struct json_string_s *str = (struct json_string_s *)s->value->payload;
-                sprintf(test->name,"%s", str->string);
+                auto *str = static_cast<json_string_s *>(s->value->payload);
+                snprintf(test->name, sizeof(test->name), "%s", str->string);
             }
             else if (strcmp(s->name->string, "initial") == 0) {
                 assert(s->value->type == json_type_object);
-                struct json_object_s* state = (struct json_object_s *)s->value->payload;
+                auto *state = static_cast<json_object_s *>(s->value->payload);
                 parse_state(state, &test->initial);
             }
             else if (strcmp(s->name->string, "final") == 0) {
                 assert(s->value->type == json_type_object);
-                struct json_object_s* state = (struct json_object_s*)s->value->payload;
+                auto *state = static_cast<json_object_s *>(s->value->payload);
                 parse_state(state, &test->final);
             }
             else if (strcmp(s->name->string, "cycles") == 0) {
                 assert(s->value->type == json_type_array);
-                struct json_array_s* arr1 = (struct json_array_s*)s->value->payload;
-                test->num_cycles = (u32)arr1->length;
-                struct json_array_element_s* arr1_el = arr1->start;
+                auto *arr1 = static_cast<json_array_s *>(s->value->payload);
+                test->num_cycles = static_cast<u32>(arr1->length);
+                json_array_element_s* arr1_el = arr1->start;
                 for (u32 h = 0; h < arr1->length; h++) {
-                    assert(arr1_el != NULL);
+                    assert(arr1_el != nullptr);
                     assert(arr1->length < 500);
-                    struct json_array_s* arr2 = (struct json_array_s*)arr1_el->value->payload;
-                    struct json_array_element_s* arr2_el = (struct json_array_element_s*)arr2->start;
+                    auto* arr2 = static_cast<json_array_s *>(arr1_el->value->payload);
+                    auto* arr2_el = arr2->start;
 
                     // number, number, string
-                    struct json_number_s *num = (struct json_number_s *)arr2_el->value->payload;
+                    auto *num = static_cast<json_number_s *>(arr2_el->value->payload);
 
-                    if (num == NULL) test->cycles[h].addr = -1;
+                    if (num == nullptr) test->cycles[h].addr = -1;
                     else test->cycles[h].addr = atoi(num->number);
 
                     arr2_el = arr2_el->next;
-                    num = (struct json_number_s *)arr2_el->value->payload;
+                    num = static_cast<json_number_s *>(arr2_el->value->payload);
 
-                    if (num == NULL) test->cycles[h].data = -1;
+                    if (num == nullptr) test->cycles[h].data = -1;
                     else test->cycles[h].data = atoi(num->number);
                     arr2_el = arr2_el->next;
 
-                    struct json_string_s* st = (struct json_string_s *)arr2_el->value->payload;
+                    auto* st = static_cast<json_string_s *>(arr2_el->value->payload);
                     assert(st->string_size >= 4);
                     test->cycles[h].rw = st->string[0] == 'w';
 
@@ -234,7 +229,7 @@ static void parse_and_fill_out(struct read_file_buf *infile)
     free(root);
 }
 
-static void copy_state_to_cpu(struct test_state *state, SPC700 *cpu)
+static void copy_state_to_cpu(test_state *state, SPC700 *cpu)
 {
     // u32 A, X, Y, P, SP, PC
     cpu->regs.A = state->regs.A;
@@ -246,7 +241,7 @@ static void copy_state_to_cpu(struct test_state *state, SPC700 *cpu)
 
 }
 
-static void pprint_regs(struct SPC700_regs *cpu_regs, test_cpu_regs *test_regs, u32 last_pc, u32 only_print_diff) {
+static void pprint_regs(SPC700_regs *cpu_regs, test_cpu_regs *test_regs, u32 last_pc, u32 only_print_diff) {
     printf("\nREG  CPU    TEST");
     printf("\n----------------");
 #define TREG4(cpuname, testname, strname) if ((only_print_diff && (cpu_regs->cpuname != test_regs->testname)) || (!only_print_diff))\
@@ -264,7 +259,7 @@ static void pprint_regs(struct SPC700_regs *cpu_regs, test_cpu_regs *test_regs, 
 #undef TREG4
 }
 
-static u32 testregs(struct SPC700 *cpu, test_state *final, u32 last_pc) {
+static u32 testregs(SPC700 *cpu, test_state *final, u32 last_pc) {
     u32 passed = 1;
     // u32 A X Y P SP PC
     passed &= ((cpu->regs.PC & 0xFFFF) == final->regs.PC) || (last_pc == final->regs.PC);
@@ -299,22 +294,22 @@ static void pprint_P(u32 r) {
 #pragma warning(disable: 4700) // warning C4700: uninitialized local variable 'last_pc' used
 #endif
 
-static int test_spc700_automated(struct spc700_test_result *out, SPC700 *cpu, u32 opc) {
+static int test_spc700_automated(spc700_test_result *out, SPC700 *cpu, u32 opc) {
     out->passed = 0;
     out->mycycles = 0;
-    sprintf(out->msg, "");
+    snprintf(out->msg, sizeof(out->msg), "");
     char *msgptr = out->msg;
     out->addr_io_mismatches = 0;
     out->length_mismatches = 0;
-    out->failed_test_struct = NULL;
-    u32 last_pc;
+    out->failed_test_struct = nullptr;
+    u32 last_pc=0;
     for (u32 i = 0; i < 1000; i++) {
         u32 passed = 1;
         printf("\n\nTest #%d/10000", i);
         out->failed_test_struct = &tests[i];
-        struct jsontest *test = &tests[i];
-        struct test_state *initial = &tests[i].initial;
-        struct test_state *final = &tests[i].final;
+        jsontest *test = &tests[i];
+        test_state *initial = &tests[i].initial;
+        test_state *final = &tests[i].final;
 
         copy_state_to_cpu(initial, cpu);
         u32 test_pc = initial->regs.PC;
@@ -329,7 +324,7 @@ static int test_spc700_automated(struct spc700_test_result *out, SPC700 *cpu, u3
         cpu->regs.opc_cycles = 0;
         cpu->regs.IR = opc;
         cycle_ptr = 0;
-        SPC700_cycle(cpu, 1);
+        cpu->cycle(1);
         if (cycle_ptr != test->num_cycles) {
             printf("\nCYCLE MISMATCH! ME:%lld  TEST:%d", cycle_ptr, test->num_cycles);
         }
@@ -351,7 +346,7 @@ static int test_spc700_automated(struct spc700_test_result *out, SPC700 *cpu, u3
             printf("\nMY      P:%02x ", cpu->regs.P.v & 0xFF);
             pprint_P(cpu->regs.P.v);
             cpu->cycles = 0;
-            SPC700_cycle(cpu, 1);
+            cpu->cycle(1);
             out->passed = 0;
             return 0;
         }
@@ -366,23 +361,21 @@ static int test_spc700_automated(struct spc700_test_result *out, SPC700 *cpu, u3
 #pragma warning(pop)
 #endif
 
-static u32 test_spc700_ins(struct SPC700 *cpu, u32 ins)
+static u32 test_spc700_ins(SPC700 *cpu, u32 ins)
 {
     printf("\n\nTesting instruction %02x", ins);
     char path[500];
-    construct_path(path, ins);
-    struct read_file_buf infile;
-    rfb_init(&infile);
-    rfb_read(NULL, path, &infile);
+    construct_path(path, ins, 500);
+    read_file_buf infile{};
+    infile.read(nullptr, path);
     if (infile.buf.size < 10) {
         printf("\nBAD TEST! %s", path);
         return 0;
     }
 
     parse_and_fill_out(&infile);
-    rfb_delete(&infile);
 
-    struct spc700_test_result result;
+    spc700_test_result result{};
 
     test_spc700_automated(&result, cpu, ins);
     if (!result.passed) {
@@ -395,10 +388,10 @@ static u32 test_spc700_ins(struct SPC700 *cpu, u32 ins)
 
 void test_spc700()
 {
-    struct SPC700 cpu;
-    SPC700_init(&cpu, &cycle_ptr);
+    SPC700 cpu(&cycle_ptr);
+
     u32 total_fail = 0;
-    u32 start_test = 0xba;
+    u32 start_test = 0;
     for (u32 i = start_test; i < 0x100; i++) {
         if (skip_test(i)) continue;
         u32 result = test_spc700_ins(&cpu, i);

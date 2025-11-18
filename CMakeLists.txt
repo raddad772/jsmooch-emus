@@ -14,4 +14,4 @@ if(APPLE)
     add_subdirectory(jsmooch-gui)
 endif()
 
-#add_subdirectory(jsmooch-tests)
+add_subdirectory(jsmooch-tests)
