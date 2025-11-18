@@ -21,6 +21,7 @@ dbglog_category_node &dbglog_category_node::add_node(dbglog_view &dv, const char
     d.category_id = id;
     dv.id_to_category[id] = &d;
     dv.id_to_color[id] = color;
+    printf("\nAdd %s (%s) with cat_id:%d", d.name, d.short_name, d.category_id);
     return d;
 }
 

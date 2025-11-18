@@ -426,12 +426,18 @@ static void write_DSP(void *ptr, u16 addr, u8 val)
         case 0x3C:
             th->io.EVOLR = val;
             return;
-        case 0x4C:
+        case 0x4C: {
+            printf("\nKON ch_num %d addr %04x", ch_num, addr);
+            static int a = 4;
+            a++;
+            if (a == 8)
+                dbg_break("KON", 10);
             th->io.KON = val;
             for (u32 i = 0; i < 8; i++) {
                 if ((val >> i) & 1) ch.keyon();
             }
             return;
+        }
         case 0x5C:
             th->io.KOFF = val;
             for (u32 i = 0; i < 8; i++) {
