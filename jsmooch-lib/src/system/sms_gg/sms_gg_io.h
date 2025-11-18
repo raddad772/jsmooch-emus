@@ -9,7 +9,7 @@
 #include "helpers/sys_interface.h"
 
 struct SMSGG_controller_port {
-    enum jsm::systems variant;
+    enum jsm_systems variant;
     u32 which;
 
     u32 TR_level;
@@ -20,15 +20,15 @@ struct SMSGG_controller_port {
     void* attached_device;
 };
 
-void SMSGG_controller_port_init(SMSGG_controller_port*, enum jsm::systems variant, u32 which);
-u32 SMSGG_controller_port_read(SMSGG_controller_port*);
-void SMSGG_controller_port_reset(SMSGG_controller_port*);
+void SMSGG_controller_port_init(struct SMSGG_controller_port*, enum jsm_systems variant, u32 which);
+u32 SMSGG_controller_port_read(struct SMSGG_controller_port*);
+void SMSGG_controller_port_reset(struct SMSGG_controller_port*);
 
 struct SMSGG;
 
-u32 SMSGG_bus_cpu_in_sms1(SMSGG* bus, u32 addr, u32 val, u32 has_effect);
-void SMSGG_bus_cpu_out_sms1(SMSGG*, u32 addr, u32 val);
-u32 SMSGG_bus_cpu_in_gg(SMSGG* bus, u32 addr, u32 val, u32 has_effect);
-void SMSGG_io_init(SMSGG *);
+u32 SMSGG_bus_cpu_in_sms1(struct SMSGG* bus, u32 addr, u32 val, u32 has_effect);
+void SMSGG_bus_cpu_out_sms1(struct SMSGG*, u32 addr, u32 val);
+u32 SMSGG_bus_cpu_in_gg(struct SMSGG* bus, u32 addr, u32 val, u32 has_effect);
+void SMSGG_io_init(struct SMSGG *);
 
 #endif //JSMOOCH_EMUS_SMS_GG_IO_H

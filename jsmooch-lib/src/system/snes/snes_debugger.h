@@ -47,8 +47,8 @@ enum SNES_DBLOG_CATEGORIES {
 #define DBG_SNES_EVENT_MAX 7
 
 
-#define dbgloglog(wth, r_cat, r_severity, r_format, ...) if (wth->dbg.dvptr->ids_enabled[r_cat]) { wth->dbg.dvptr->add_printf(r_cat, wth->clock.master_cycle_count, r_severity, r_format, __VA_ARGS__); wth->dbg.dvptr->extra_printf(""); }
+#define dbgloglog(wth, r_cat, r_severity, r_format, ...) if (wth->dbg.dvptr->ids_enabled[r_cat]) { dbglog_view_add_printf(wth->dbg.dvptr, r_cat, wth->clock.master_cycle_count, r_severity, r_format, __VA_ARGS__); dbglog_view_extra_printf(wth->dbg.dvptr, ""); }
 
-void SNESJ_setup_debugger_interface(jsm_system *, debugger_interface *dbgr);
+void SNESJ_setup_debugger_interface(struct jsm_system *, struct debugger_interface *dbgr);
 
 #endif //JSMOOCH_EMUS_SNES_DEBUGGER_H

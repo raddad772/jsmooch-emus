@@ -4,18 +4,18 @@
 
 #include "tg16b2.h"
 
-void TG16_2button_init(TG16_2button *this)
+void TG16_2button_init(struct TG16_2button *this)
 {
     this->pio = NULL;
 
 }
 
-void TG16_2button_delete(TG16_2button *this)
+void TG16_2button_delete(struct TG16_2button *this)
 {
     this->pio = NULL;
 }
 
-void TG16_2button_setup_pio(physical_io_device *d, u32 num, const char*name, u32 connected)
+void TG16_2button_setup_pio(struct physical_io_device *d, u32 num, const char*name, u32 connected)
 {
     physical_io_device_init(d, HID_CONTROLLER, 0, 0, 1, 1);
 
@@ -38,7 +38,7 @@ void TG16_2button_setup_pio(physical_io_device *d, u32 num, const char*name, u32
     pio_new_button(cnt, "run", DBCID_co_start);
 }
 
-u8 TG16_2button_read_data(TG16_2button *this)
+u8 TG16_2button_read_data(struct TG16_2button *this)
 {
     struct cvec* bl = &this->pio->controller.digital_buttons;
     struct HID_digital_button *b;
@@ -63,7 +63,7 @@ u8 TG16_2button_read_data(TG16_2button *this)
     return data;
 }
 
-void TG16_2button_write_data(TG16_2button *this, u8 val)
+void TG16_2button_write_data(struct TG16_2button *this, u8 val)
 {
     this->sel = val & 1;
     this->clr = (val >> 1) & 1;

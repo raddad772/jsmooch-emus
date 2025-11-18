@@ -13,14 +13,14 @@ extern "C" {
 
 struct mac;
 
-void mac_iwm_init(mac *);
-void mac_iwm_delete(mac *);
-void mac_iwm_reset(mac *);
+void mac_iwm_init(struct mac *);
+void mac_iwm_delete(struct mac *);
+void mac_iwm_reset(struct mac *);
 
-u16 mac_iwm_read(mac *, u8 addr);
-void mac_iwm_write(mac *, u8 addr, u8 val);
-void mac_iwm_clock(mac*);
-u16 mac_iwm_control(mac*, u8 addr, u8 val, u32 is_write);
+u16 mac_iwm_read(struct mac *, u8 addr);
+void mac_iwm_write(struct mac *, u8 addr, u8 val);
+void mac_iwm_clock(struct mac*);
+u16 mac_iwm_control(struct mac*, u8 addr, u8 val, u32 is_write);
 
 
 #ifdef __cplusplus

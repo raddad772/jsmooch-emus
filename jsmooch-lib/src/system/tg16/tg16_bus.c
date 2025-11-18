@@ -2,11 +2,11 @@
 // Created by . on 6/18/25.
 //
 
-#include <cstdio>
+#include <stdio.h>
 
 #include "tg16_bus.h"
 
-u32 TG16_bus_read(TG16 *this, u32 addr, u32 old, u32 has_effect)
+u32 TG16_bus_read(struct TG16 *this, u32 addr, u32 old, u32 has_effect)
 {
     if (addr >= 0x1FE000) {
         if (addr < 0x1FE400) {
@@ -33,7 +33,7 @@ u32 TG16_bus_read(TG16 *this, u32 addr, u32 old, u32 has_effect)
     return 0;
 }
 
-void TG16_bus_write(TG16 *this, u32 addr, u32 val)
+void TG16_bus_write(struct TG16 *this, u32 addr, u32 val)
 {
     if (this->clock.master_cycles > 172000) {
         int a =4;
@@ -79,12 +79,12 @@ void TG16_huc_write_mem(void *ptr, u32 addr, u32 val)
 
 u32 TG16_huc_read_io(void *ptr)
 {
-    struct TG16 *this = (TG16 *)ptr;
+    struct TG16 *this = (struct TG16 *)ptr;
     return TG16_controllerport_read_data(&this->controller_port) & 0x0F;
 }
 
 void TG16_huc_write_io(void *ptr, u32 val)
 {
-    struct TG16 *this = (TG16 *)ptr;
+    struct TG16 *this = (struct TG16 *)ptr;
     TG16_controllerport_write_data(&this->controller_port, val & 3);
 }

@@ -4,12 +4,12 @@
 
 
 #include "stdio.h"
-#include <cstring>
+#include "string.h"
 
 #include "sms_gg_mapper_sega.h"
 #include "sms_gg.h"
 
-static void map(SMSGG_mapper_sega *this, u16 sms_start_addr, u16 sms_end_addr, enum SMSGG_mem_kinds kind, u32 offset)
+static void map(struct SMSGG_mapper_sega *this, u16 sms_start_addr, u16 sms_end_addr, enum SMSGG_mem_kinds kind, u32 offset)
 {
     u32 start_page = sms_start_addr >> 8;
     u32 end_page = sms_end_addr >> 8;
@@ -57,14 +57,14 @@ static void map(SMSGG_mapper_sega *this, u16 sms_start_addr, u16 sms_end_addr, e
     }
 }
 
-static void refresh_nomapper(SMSGG_mapper_sega *this)
+static void refresh_nomapper(struct SMSGG_mapper_sega *this)
 {
     map(this, 0, 0x3FFF, SMSGGMK_cart_rom, 0);
     map(this, 0x4000, 0x7FFF, SMSGGMK_cart_rom, 0x4000);
     map(this, 0x8000, 0xBFFF, SMSGGMK_cart_rom, 0x8000);
 }
 
-static void refresh_sega_mapper(SMSGG_mapper_sega *this)
+static void refresh_sega_mapper(struct SMSGG_mapper_sega *this)
 {
     // slot0 0-3FF is fixed on ROM
     map(this, 0x0000, 0x03FF,  SMSGGMK_cart_rom, 0);
@@ -87,7 +87,7 @@ static void refresh_sega_mapper(SMSGG_mapper_sega *this)
     // C000-FFFF stays mapped to RAM
 }
 
-void SMSGG_mapper_refresh_mapping(SMSGG_mapper_sega *this)
+void SMSGG_mapper_refresh_mapping(struct SMSGG_mapper_sega *this)
 {
     if (!this->sega_mapper_enabled) // Just generic SMS mapping
         refresh_nomapper(this);
@@ -95,27 +95,27 @@ void SMSGG_mapper_refresh_mapping(SMSGG_mapper_sega *this)
         refresh_sega_mapper(this);
 }
 
-void SMSGG_mapper_sega_init(SMSGG_mapper_sega* this, enum jsm::systems variant)
+void SMSGG_mapper_sega_init(struct SMSGG_mapper_sega* this, enum jsm_systems variant)
 {
-    memset(this, 0, sizeof(SMSGG_mapper_sega));
+    memset(this, 0, sizeof(struct SMSGG_mapper_sega));
     simplebuf8_init(&this->RAM);
     simplebuf8_init(&this->ROM);
     simplebuf8_init(&this->BIOS);
     simplebuf8_init(&this->cart_RAM);
 
-    u32 is_sms = (variant == jsm::systems::SMS1) || (variant == jsm::systems::SMS2);
-    u32 is_gg = (variant == jsm::systems::SG1000);
+    u32 is_sms = (variant == SYS_SMS1) || (variant == SYS_SMS2);
+    u32 is_gg = (variant == SYS_SG1000);
     switch(variant) {
-        case jsm::systems::SMS1:
-        case jsm::systems::SMS2:
-        case jsm::systems::GG:
+        case SYS_SMS1:
+        case SYS_SMS2:
+        case SYS_GG:
             simplebuf8_allocate(&this->RAM, 8 * 1024);
             simplebuf8_allocate(&this->cart_RAM, 32 * 1024);
             simplebuf8_clear(&this->RAM);
             simplebuf8_clear(&this->cart_RAM);
             this->sega_mapper_enabled = 1;
             break;
-        case jsm::systems::SG1000:
+        case SYS_SG1000:
             simplebuf8_allocate(&this->RAM, 2 * 1024);
             simplebuf8_clear(&this->RAM);
             this->sega_mapper_enabled = 0;
@@ -131,7 +131,7 @@ void SMSGG_mapper_sega_init(SMSGG_mapper_sega* this, enum jsm::systems variant)
     this->io.frame_control_register[2] = 2;
 }
 
-void SMSGG_mapper_sega_delete(SMSGG_mapper_sega* this)
+void SMSGG_mapper_sega_delete(struct SMSGG_mapper_sega* this)
 {
     simplebuf8_delete(&this->ROM);
     simplebuf8_delete(&this->BIOS);
@@ -139,13 +139,13 @@ void SMSGG_mapper_sega_delete(SMSGG_mapper_sega* this)
     simplebuf8_delete(&this->cart_RAM);
 }
 
-void SMSGG_mapper_sega_reset(SMSGG_mapper_sega* this)
+void SMSGG_mapper_sega_reset(struct SMSGG_mapper_sega* this)
 {
     this->io.bios_enabled = this->has_bios;
     SMSGG_mapper_refresh_mapping(this);
 }
 
-void SMSGG_mapper_sega_set_BIOS(SMSGG_mapper_sega* this, u32 to)
+void SMSGG_mapper_sega_set_BIOS(struct SMSGG_mapper_sega* this, u32 to)
 {
     // BIOS currently not supported
     return;
@@ -155,7 +155,7 @@ void SMSGG_mapper_sega_set_BIOS(SMSGG_mapper_sega* this, u32 to)
     }
 }
 
-static void write_registers(SMSGG_mapper_sega* this, u16 addr, u8 val)
+static void write_registers(struct SMSGG_mapper_sega* this, u16 addr, u8 val)
 {
     if (this->sega_mapper_enabled) {
         u32 mapping_changed = 0;
@@ -197,7 +197,7 @@ static void write_registers(SMSGG_mapper_sega* this, u16 addr, u8 val)
 }
 
 
-u8 SMSGG_bus_read(SMSGG* bus, u16 addr, u32 has_effect)
+u8 SMSGG_bus_read(struct SMSGG* bus, u16 addr, u32 has_effect)
 {
     struct SMSGG_mem_region *region = &bus->mapper.regions[addr >> 8];
     if (region->empty) return 0xFF;
@@ -209,7 +209,7 @@ u8 SMSGG_bus_read(SMSGG* bus, u16 addr, u32 has_effect)
     return region->buf->ptr[baddr];
 }
 
-void SMSGG_bus_write(SMSGG* bus, u16 addr, u8 val)
+void SMSGG_bus_write(struct SMSGG* bus, u16 addr, u8 val)
 {
     write_registers(&bus->mapper, addr, val);
 
@@ -224,14 +224,14 @@ void SMSGG_bus_write(SMSGG* bus, u16 addr, u8 val)
     region->buf->ptr[baddr] = val;
 }
 
-void SMSGG_mapper_load_BIOS_from_RAM(SMSGG_mapper_sega* this, buf *BIOS)
+void SMSGG_mapper_load_BIOS_from_RAM(struct SMSGG_mapper_sega* this, struct buf *BIOS)
 {
     simplebuf8_allocate(&this->BIOS, BIOS->size);
     memcpy(this->BIOS.ptr, BIOS->ptr, BIOS->size);
     this->has_bios = 1;
 }
 
-void SMSGG_mapper_load_ROM_from_RAM(SMSGG_mapper_sega* this, buf* inbuf)
+void SMSGG_mapper_load_ROM_from_RAM(struct SMSGG_mapper_sega* this, struct buf* inbuf)
 {
     u64 sz = inbuf->size;
     u64 offset = 0;

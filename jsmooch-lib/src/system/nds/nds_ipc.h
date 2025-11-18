@@ -17,12 +17,12 @@ struct NDS_CPU_FIFO {
 };
 
 struct NDS;
-u32 NDS_IPC_fifo_is_empty(NDS_CPU_FIFO *);
-u32 NDS_IPC_fifo_is_full(NDS_CPU_FIFO *);
-u32 NDS_IPC_fifo_is_not_empty(NDS_CPU_FIFO *);
-void NDS_IPC_empty_fifo(NDS *this, NDS_CPU_FIFO *f);
-u32 NDS_IPC_fifo_push(NDS_CPU_FIFO *, u32 val);
-u32 NDS_IPC_fifo_peek_last(NDS_CPU_FIFO *);
-u32 NDS_IPC_fifo_pop(NDS_CPU_FIFO *);
+u32 NDS_IPC_fifo_is_empty(struct NDS_CPU_FIFO *);
+u32 NDS_IPC_fifo_is_full(struct NDS_CPU_FIFO *);
+u32 NDS_IPC_fifo_is_not_empty(struct NDS_CPU_FIFO *);
+void NDS_IPC_empty_fifo(struct NDS *this, struct NDS_CPU_FIFO *f);
+u32 NDS_IPC_fifo_push(struct NDS_CPU_FIFO *, u32 val);
+u32 NDS_IPC_fifo_peek_last(struct NDS_CPU_FIFO *);
+u32 NDS_IPC_fifo_pop(struct NDS_CPU_FIFO *);
 
 #endif //JSMOOCH_EMUS_NDS_IPC_H

@@ -9,7 +9,7 @@
 #include "helpers/sys_interface.h"
 
 struct SMSGG_clock {
-    enum jsm::systems variant;
+    enum jsm_systems variant;
     enum jsm_regions region;
     u64 master_cycles;
     u64 cpu_master_clock;
@@ -44,6 +44,6 @@ struct SMSGG_clock {
     } timing;
 };
 
-void SMSGG_clock_init(SMSGG_clock*, enum jsm::systems variant, enum jsm_regions region);
+void SMSGG_clock_init(struct SMSGG_clock*, enum jsm_systems variant, enum jsm_regions region);
 
 #endif //JSMOOCH_EMUS_SMS_GG_CLOCK_H

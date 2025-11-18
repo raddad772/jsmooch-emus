@@ -2,24 +2,24 @@
 // Created by . on 8/7/24.
 //
 
-#include <cstdio>
-#include <cassert>
+#include <stdio.h>
+#include <assert.h>
 
 #include "mac.h"
 #include "mac_internal.h"
 #include "mac_debugger.h"
 
-#define JTHIS struct mac* this = (mac*)jsm->ptr
+#define JTHIS struct mac* this = (struct mac*)jsm->ptr
 #define JSM struct jsm_system* jsm
 
 #define THIS struct mac* this
 
-static int render_imask(cpu_reg_context*ctx, void *outbuf, size_t outbuf_sz)
+static int render_imask(struct cpu_reg_context*ctx, void *outbuf, size_t outbuf_sz)
 {
     return snprintf(outbuf, outbuf_sz, "%d", ctx->int32_data);
 }
 
-static int render_csr(cpu_reg_context*ctx, void *outbuf, size_t outbuf_sz)
+static int render_csr(struct cpu_reg_context*ctx, void *outbuf, size_t outbuf_sz)
 {
     return snprintf(outbuf, outbuf_sz, "%c%c%c%c%c",
                     ctx->int32_data & 0x10 ? 'X' : 'x',
@@ -30,7 +30,7 @@ static int render_csr(cpu_reg_context*ctx, void *outbuf, size_t outbuf_sz)
                     );
 }
 
-static void create_and_bind_registers(mac* this, disassembly_view *dv)
+static void create_and_bind_registers(struct mac* this, struct disassembly_view *dv)
 {
     u32 tkindex = 0;
     for (u32 i = 0; i < 8; i++) {
@@ -119,9 +119,9 @@ static void create_and_bind_registers(mac* this, disassembly_view *dv)
 #undef BIND
 }
 
-static void fill_disassembly_view(void *macptr, debugger_interface *dbgr, disassembly_view *dview)
+static void fill_disassembly_view(void *macptr, struct debugger_interface *dbgr, struct disassembly_view *dview)
 {
-    struct mac* this = (mac*)macptr;
+    struct mac* this = (struct mac*)macptr;
     for (u32 i = 0; i < 8; i++) {
         this->dbg.D[i]->int32_data = this->cpu.regs.D[i];
         if (i < 7) this->dbg.A[i]->int32_data = this->cpu.regs.A[i];
@@ -144,22 +144,22 @@ static void fill_disassembly_view(void *macptr, debugger_interface *dbgr, disass
     this->dbg.IRC->int32_data = this->cpu.regs.IRC;
 }
 
-static struct disassembly_vars get_disassembly_vars(void *macptr, debugger_interface *dbgr, disassembly_view *dv)
+static struct disassembly_vars get_disassembly_vars(void *macptr, struct debugger_interface *dbgr, struct disassembly_view *dv)
 {
-    struct mac* this = (mac*)macptr;
+    struct mac* this = (struct mac*)macptr;
     struct disassembly_vars dvar;
     dvar.address_of_executing_instruction = this->cpu.debug.ins_PC;
     dvar.current_clock_cycle = this->clock.master_cycles;
     return dvar;
 }
 
-static void get_dissasembly(void *macptr, debugger_interface *dbgr, disassembly_view *dview, disassembly_entry *entry)
+static void get_dissasembly(void *macptr, struct debugger_interface *dbgr, struct disassembly_view *dview, struct disassembly_entry *entry)
 {
-    struct mac* this = (mac*)macptr;
+    struct mac* this = (struct mac*)macptr;
     M68k_disassemble_entry(&this->cpu, entry);
 }
 
-void macJ_setup_debugger_interface(JSM, debugger_interface *dbgr)
+void macJ_setup_debugger_interface(JSM, struct debugger_interface *dbgr)
 {
     JTHIS;
     this->dbgr = dbgr;

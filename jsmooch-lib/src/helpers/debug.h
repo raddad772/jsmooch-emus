@@ -2,7 +2,13 @@
 // Created by Dave on 1/24/2024.
 //
 
-#pragma once
+#ifndef JSMOOCH_EMUS_DEBUG_H
+#define JSMOOCH_EMUS_DEBUG_H
+
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 
 #if !defined(NDEBUG)
 #define JSDEBUG
@@ -70,99 +76,97 @@
 
 struct DC;
 struct last_traces_t {
-    char entries[LAST_TRACES_LEN][LAST_TRACES_MSG_LEN]{};
-    u32 head{};
-    u32 len{};
+    char entries[LAST_TRACES_LEN][LAST_TRACES_MSG_LEN];
+    u32 head;
+    u32 len;
 
-    char *curptr{};
+    char *curptr;
 };
 
 struct cpu_trace_struct {
-    u32 irq{};
-    u32 instruction{};
-    u32 mem{};
-    u32 ifetch{};
-    u32 io{};
+    u32 irq;
+    u32 instruction;
+    u32 mem;
+    u32 ifetch;
+    u32 io;
 };
 
 struct cpu_break_struct {
-    u32 PC{};
-    u32 irq{};
+    u32 PC;
+    u32 irq;
 };
 
 #define MAX_DEBUG_MSG 2000000
 struct jsm_debug_struct {
-    u32 do_break{};
-    u32 did_breakpoint{};
-    u32 brk_on_NMIRQ{};
+    u32 do_break;
+    u32 did_breakpoint;
+    u32 brk_on_NMIRQ;
 
-    u32 first_flush{};
+    u32 first_flush;
 
-    u32 trace_on{};
+    u32 trace_on;
     struct {
-        cpu_trace_struct z80{};
-        cpu_trace_struct m68000{};
-        cpu_trace_struct arm7tdmi{}, arm946es{};
-        cpu_trace_struct huc6280{};
-        cpu_trace_struct r3000{};
+        struct cpu_trace_struct z80;
+        struct cpu_trace_struct m68000;
+        struct cpu_trace_struct arm7tdmi, arm946es;
+        struct cpu_trace_struct huc6280;
+        struct cpu_trace_struct r3000;
 
         struct DBG_TRACE_PS1_STRUCT {
             struct {
-                u32 irq{};
-                u32 ack{};
-                u32 rw{};
-            } sio0{};
+                u32 irq;
+                u32 ack;
+                u32 rw;
+            } sio0;
 
-            u32 pad{};
-        } ps1{};
+            u32 pad;
+        } ps1;
 
         struct {
             struct {
-                u32 display_modes{};
-            } ppu{};
-        } nds{};
+                u32 display_modes;
+            } ppu;
+        } nds;
 
-        u32 better_irq_multiplexer{};
+        u32 better_irq_multiplexer;
 
-        u32 dma{};
-        u32 ram{};
-        u32 vram{};
-        u32 fifo{};
-        u32 vdp{};
-        u32 vdp3{}; // DFT(stuff)
-        u32 vdp2{}; // printf(stuff)
-        u32 vdp4{}; // just VRAM writes
-        u32 cpu2{}; // DFT(PC-4)
-        u32 cpu3{}; // RD/WR spam
-    } traces{};
+        u32 dma;
+        u32 ram;
+        u32 vram;
+        u32 fifo;
+        u32 vdp;
+        u32 vdp3; // DFT(stuff)
+        u32 vdp2; // printf(stuff)
+        u32 vdp4; // just VRAM writes
+        u32 cpu2; // DFT(PC-4)
+        u32 cpu3; // RD/WR spam
+    } traces;
 
     struct {
-        cpu_break_struct z80{};
-        cpu_break_struct m68000{};
-    } breaks{};
+        struct cpu_break_struct z80;
+        struct cpu_break_struct m68000;
+    } breaks;
 
-    u32 watch{};
-    jsm_string msg{5*1024*1024};
-    char *msg_last_newline{};
+    u32 watch;
+    struct jsm_string msg;
+    char *msg_last_newline;
 
-    last_traces_t last_traces{};
-    u32 var{};
-    DC *dcptr{};
+    struct last_traces_t last_traces;
+    u32 var;
+    struct DC *dcptr;
 };
 
 struct jsm_debug_read_trace {
-    void *ptr{};
+    void *ptr;
 
-    u32 (*read_trace)(void *, u32){};
+    u32 (*read_trace)(void *, u32);
 
-    u32 (*read_trace_arm)(void*, u32, u32){};
+    u32 (*read_trace_arm)(void*, u32, u32);
 
-    u32 (*read_trace_m68k)(void *, u32, u32, u32){};
+    u32 (*read_trace_m68k)(void *, u32, u32, u32);
 };
 
-#ifndef DEBUG_IMPL
-extern jsm_debug_struct dbg;
-#endif
+extern struct jsm_debug_struct dbg;
 
 int dbg_printf(char *format, ...);
 void dbg_seek_in_line(u32 pos);
@@ -185,21 +189,20 @@ enum debug_sources {
 void dbg_enable_cpu_trace(enum debug_sources source);
 void dbg_disable_cpu_trace(enum debug_sources source);
 
+void dbg_init();
 void dbg_add_msg(char *what);
 char *dbg_get_msg();
 void dbg_delete();
 void dbg_break(const char *reason, u64 cycles);
 void dbg_unbreak();
 
-void LT_init(last_traces_t *);
-void LT_printf(last_traces_t *, char *format, ...);
-void LT_endline(last_traces_t *);
-void LT_seek_in_line(last_traces_t *, u32 where);
-void LT_dump_to_dbg(last_traces_t *);
+void LT_init(struct last_traces_t *);
+void LT_printf(struct last_traces_t *, char *format, ...);
+void LT_endline(struct last_traces_t *);
+void LT_seek_in_line(struct last_traces_t *, u32 where);
+void LT_dump_to_dbg(struct last_traces_t *);
 
 void DFT(char *format, ...);
-
-void dbg_init();
 
 #ifdef DO_LAST_TRACES
 #define dbg_LT_printf(...) LT_printf(&dbg.last_traces, __VA_ARGS__)
@@ -214,7 +217,7 @@ void dbg_init();
 #define dbg_LT_dump() (void)0
 #define dbg_LT_clear() (void)0
 #endif
-void jsm_copy_read_trace(jsm_debug_read_trace *dst, jsm_debug_read_trace *src);
+void jsm_copy_read_trace(struct jsm_debug_read_trace *dst, struct jsm_debug_read_trace *src);
 
 
 #ifdef TRACE_COLORS
@@ -256,3 +259,9 @@ void jsm_copy_read_trace(jsm_debug_read_trace *dst, jsm_debug_read_trace *src);
 #pragma clang diagnostic push
 #pragma clang diagnostic ignored "-Wswitch"
 #endif
+
+#ifdef __cplusplus
+}
+#endif
+
+#endif //JSMOOCH_EMUS_DEBUG_H

@@ -100,7 +100,7 @@ struct ARM7TDMI_regs {
 
 struct ARM7TDMI;
 struct ARM7_ins {
-    void (*exec)(ARM7TDMI*, u32 opcode);
+    void (*exec)(struct ARM7TDMI*, u32 opcode);
 };
 
 struct ARM7TDMI {
@@ -155,23 +155,23 @@ struct ARM7TDMI {
 };
 
 
-void ARM7TDMI_init(ARM7TDMI *, u64 *master_clock, u64 *waitstates, scheduler_t *scheduler);
-void ARM7TDMI_delete(ARM7TDMI *);
+void ARM7TDMI_init(struct ARM7TDMI *, u64 *master_clock, u64 *waitstates, struct scheduler_t *scheduler);
+void ARM7TDMI_delete(struct ARM7TDMI *);
 
-void ARM7TDMI_reset(ARM7TDMI *);
-void ARM7TDMI_disassemble_entry(ARM7TDMI*, disassembly_entry* entry);
-void ARM7TDMI_setup_tracing(ARM7TDMI*, jsm_debug_read_trace *strct, u64 *trace_cycle_pointer, i32 source_id);
-void ARM7TDMI_run_noIRQcheck(ARM7TDMI *);
-void ARM7TDMI_IRQcheck(ARM7TDMI *, u32 do_sched);
-void ARM7TDMI_flush_pipeline(ARM7TDMI *);
-void ARM7TDMI_fill_regmap(ARM7TDMI *);
-void ARM7TDMI_reload_pipeline(ARM7TDMI *);
-void ARM7TDMI_idle(ARM7TDMI*this, u32 num);
+void ARM7TDMI_reset(struct ARM7TDMI *);
+void ARM7TDMI_disassemble_entry(struct ARM7TDMI*, struct disassembly_entry* entry);
+void ARM7TDMI_setup_tracing(struct ARM7TDMI*, struct jsm_debug_read_trace *strct, u64 *trace_cycle_pointer, i32 source_id);
+void ARM7TDMI_run_noIRQcheck(struct ARM7TDMI *);
+void ARM7TDMI_IRQcheck(struct ARM7TDMI *, u32 do_sched);
+void ARM7TDMI_flush_pipeline(struct ARM7TDMI *);
+void ARM7TDMI_fill_regmap(struct ARM7TDMI *);
+void ARM7TDMI_reload_pipeline(struct ARM7TDMI *);
+void ARM7TDMI_idle(struct ARM7TDMI*this, u32 num);
 
 
-u32 ARM7TDMI_fetch_ins(ARM7TDMI *, u32 addr, u32 sz, u32 access);
-u32 ARM7TDMI_read(ARM7TDMI *, u32 addr, u32 sz, u32 access, u32 has_effect);
-void ARM7TDMI_write(ARM7TDMI *, u32 addr, u32 sz, u32 access, u32 val);
-void ARM7TDMI_schedule_IRQ_check(ARM7TDMI *);
+u32 ARM7TDMI_fetch_ins(struct ARM7TDMI *, u32 addr, u32 sz, u32 access);
+u32 ARM7TDMI_read(struct ARM7TDMI *, u32 addr, u32 sz, u32 access, u32 has_effect);
+void ARM7TDMI_write(struct ARM7TDMI *, u32 addr, u32 sz, u32 access, u32 val);
+void ARM7TDMI_schedule_IRQ_check(struct ARM7TDMI *);
 
 #endif //JSMOOCH_EMUS_ARM7TDMI_H

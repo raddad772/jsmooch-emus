@@ -5,24 +5,24 @@
 #include "stdio.h"
 #include "helpers/physical_io.h"
 #include "sms_gamepad.h"
-#include <cstring>
+#include "string.h"
 
-void SMSGG_gamepad_init(SMSGG_gamepad* this, enum jsm::systems variant, u32 num)
+void SMSGG_gamepad_init(struct SMSGG_gamepad* this, enum jsm_systems variant, u32 num)
 {
-    *this = (SMSGG_gamepad) {
+    *this = (struct SMSGG_gamepad) {
             .variant = variant,
             .num = num,
-            .pins = (SMSGG_gamepad_pins) { 1, 1, 1, 1, 1, 1, 1}
+            .pins = (struct SMSGG_gamepad_pins) { 1, 1, 1, 1, 1, 1, 1}
     };
 }
 
-u32 SMSGG_gamepad_read(SMSGG_gamepad* this)
+u32 SMSGG_gamepad_read(struct SMSGG_gamepad* this)
 {
     SMSGG_gamepad_latch(this);
     return (this->pins.up) | (this->pins.down << 1) | (this->pins.left << 2) | (this->pins.right << 3) | (this->pins.tl << 4) | (this->pins.tr << 5) | 0x40;
 }
 
-void SMSGG_gamepad_setup_pio(physical_io_device *d, u32 num, const char*name, u32 connected, u32 pause_button)
+void SMSGG_gamepad_setup_pio(struct physical_io_device *d, u32 num, const char*name, u32 connected, u32 pause_button)
 {
     physical_io_device_init(d, HID_CONTROLLER, 0, 0, 1, 1);
 
@@ -46,7 +46,7 @@ void SMSGG_gamepad_setup_pio(physical_io_device *d, u32 num, const char*name, u3
 }
 
 
-void SMSGG_gamepad_latch(SMSGG_gamepad* this)
+void SMSGG_gamepad_latch(struct SMSGG_gamepad* this)
 {
     struct physical_io_device* p = cpg(this->device_ptr);
     if (p->connected) {
@@ -59,7 +59,7 @@ void SMSGG_gamepad_latch(SMSGG_gamepad* this)
         B_GET(right, 3);
         B_GET(tr, 4);
         B_GET(tl, 5);
-        if (this->variant == jsm::systems::GG) {
+        if (this->variant == SYS_GG) {
             B_GET(start, 6);
         }
 #undef B_GET

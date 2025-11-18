@@ -7,17 +7,12 @@
 // - Getting Started      https://dearimgui.com/getting-started
 // - Documentation        https://dearimgui.com/docs (same as your local docs/ folder).
 // - Introduction, links and more at the top of imgui.cpp
-
-// GetContentRegionAvail().x
-
 #include <cstdio>
 #include "build.h"
 #include "application.h"
 
 #include "imgui_internal.h"
 #include <SDL3/SDL.h>
-
-#include "helpers/cvec.h"
 #define FRAME_MULTI 10
 
 #ifdef JSM_OPENGL
@@ -75,22 +70,24 @@ static void CreateSwapChain(int width, int height);
 #include "../libs/emscripten/emscripten_mainloop_stub.h"
 #endif
 
-static void load_inifile(inifile& ini)
+// Forward declarations
+static void load_inifile(struct inifile* ini)
 {
-    ini.clear();
+    inifile_init(ini);
     char OUTPATH[500] = {};
     construct_path_with_home(OUTPATH, sizeof(OUTPATH), "dev/jsmooch.ini");
 
-    ini.load(OUTPATH);
+    inifile_load(ini, OUTPATH);
+
 }
 
-static void update_input(full_system* fsys, u32 *hotkeys, ImGuiIO& io) {
+static void update_input(struct full_system* fsys, u32 *hotkeys, ImGuiIO& io) {
     //if (io.WantCaptureKeyboard) {
         // Handle KB
         if (fsys->io.keyboard.vec) {
-            auto &pio = fsys->io.keyboard.get();
-            if (pio.connected && pio.enabled) {
-                JSM_KEYBOARD *kbd = &pio.keyboard;
+            auto *pio = (struct physical_io_device *)cpg(fsys->io.keyboard);
+            if (pio->connected && pio->enabled) {
+                struct JSM_KEYBOARD *kbd = &pio->keyboard;
                 for (u32 i = 0; i < kbd->num_keys; i++) {
                     kbd->key_states[i] = ImGui::IsKeyDown(jk_to_imgui(kbd->key_defs[i]));
                 }
@@ -100,13 +97,14 @@ static void update_input(full_system* fsys, u32 *hotkeys, ImGuiIO& io) {
         hotkeys[1] = ImGui::IsKeyPressed(ImGuiKey_L, false); // load
         // Handle controller 1
         if (fsys->io.controller1.vec) {
-            auto &pio = fsys->io.controller1.get();
-            if (pio.connected && pio.enabled) {
-                JSM_CONTROLLER *ctr = &pio.controller;
-                for (auto &db : ctr->digital_buttons) {
-                    db.state = 0;
-                    db.state |= ImGui::IsKeyDown(jk_to_imgui(db.common_id));
-                    db.state |= ImGui::IsKeyDown(jk_to_imgui_gp(db.common_id));
+            auto *pio = (struct physical_io_device *)cpg(fsys->io.controller1);
+            if (pio->connected && pio->enabled) {
+                struct JSM_CONTROLLER *ctr = &pio->controller;
+                for (u32 i = 0; i < cvec_len(&ctr->digital_buttons); i++) {
+                    struct HID_digital_button *db = (struct HID_digital_button *)cvec_get(&ctr->digital_buttons, i);
+                    db->state = 0;
+                    db->state |= ImGui::IsKeyDown(jk_to_imgui(db->common_id));
+                    db->state |= ImGui::IsKeyDown(jk_to_imgui_gp(db->common_id));
                 }
             }
         }
@@ -119,16 +117,16 @@ struct mouse_emu_struct {
     u32 button_down;
 };
 
-static void get_mouse_coords(ImGuiIO& io, mouse_emu_struct &a)
+static void get_mouse_coords(ImGuiIO& io, struct mouse_emu_struct &a)
 {
     ImGuiContext& g = *GImGui;
     ImGuiWindow* window = g.CurrentWindow;
-    a.x = static_cast<i32>(io.MousePos.x - window->Pos.x) - 8;
-    a.y = static_cast<i32>(io.MousePos.y - window->Pos.y) - 52;
+    a.x = (i32)(io.MousePos.x - window->Pos.x) - 8;
+    a.y = (i32)(io.MousePos.y - window->Pos.y) - 52;
     a.button_down = ImGui::IsMouseDown(0);
 }
 
-static void render_emu_window(full_system &fsys, ImGuiIO& io, u32 frame_multi)
+static void render_emu_window(struct full_system &fsys, ImGuiIO& io, u32 frame_multi)
 {
     //ImVec2 window_origin = ImGui::GetCursorPos();
     if (ImGui::Begin(fsys.sys->label)) {
@@ -144,7 +142,7 @@ static void render_emu_window(full_system &fsys, ImGuiIO& io, u32 frame_multi)
         ImGui::ImageButton("RENDER GAME", fsys.output.backbuffer_texture.for_image(), fsys.output_size(), fsys.output_uv0(), fsys.output_uv1());
         ImGui::PopStyleVar();
 
-        mouse_emu_struct a{};
+        struct mouse_emu_struct a;
         get_mouse_coords(io, a);
         fsys.update_touch(a.x, a.y, a.button_down);
         ImGui::Text("FPS: %.1f", io.Framerate * frame_multi);
@@ -173,17 +171,17 @@ int hexfilter(ImGuiInputTextCallbackData *data)
 
 void imgui_jsmooch_app::render_memory_view() {
     if (fsys.memory.view && fsys.debugger_setup) {
-        managed_window *mw = register_managed_window(0x30000, mwk_debug_memory, "Memory Viewer",
+        struct managed_window *mw = register_managed_window(0x30000, mwk_debug_memory, "Memory Viewer",
                                                             MEMORY_VIEW_DEFAULT_ENABLE);
-        memory_view *mv = fsys.memory.view;
-        u32 num_modules = mv->num_modules();
+        struct memory_view *mv = fsys.memory.view;
+        u32 num_modules = memory_view_num_modules(mv);
         if (mw->enabled && num_modules > 0) {
             if (ImGui::Begin("Memory Viewer")) {
                 // Dropdown, numeric input, table
                 static ImGuiComboFlags flags = 0;
                 char *module_names[50];
                 for (u32 i = 0; i < num_modules; i++) {
-                    memory_view_module *mm = mv->get_module(i);
+                    struct memory_view_module *mm = memory_view_get_module(mv, i);
                     assert(mm);
                     module_names[i] = mm->name;
                 }
@@ -202,7 +200,7 @@ void imgui_jsmooch_app::render_memory_view() {
                 }
                 u32 old_selected = mv->current_id;
                 mv->current_id = item_selected;
-                memory_view_module *mm = mv->get_module(mv->current_id);
+                struct memory_view_module *mm = memory_view_get_module(mv, mv->current_id);
                 if (old_selected != item_selected) {
                     mv->display_start_addr &= (1 << (4 * mm->addr_digits)) - 1;
                 }
@@ -219,11 +217,12 @@ void imgui_jsmooch_app::render_memory_view() {
 
                 ImGui::InputText("Addr", addr_str, 18, ImGuiInputTextFlags_CallbackCharFilter, &hexfilter, mm);
                 addr_str[mm->addr_digits] = 0;
-                u32 newly_entered_address = strtol(addr_str, nullptr, 16) & 0xFFFFFFF0;
+                u32 newly_entered_address = strtol(addr_str, NULL, 16) & 0xFFFFFFF0;
                 mv->display_start_addr = newly_entered_address;
                 u32 entered_address_changed = mv->display_start_addr != old_entered_address;
 
                 u32 old_top_displayed_line = mv->display_start_addr << 4;
+                u32 top_displayed_line = 0xFFFFFFFF;
 
                 // OK start clipper
                 static ImGuiTableFlags itflags =
@@ -231,7 +230,6 @@ void imgui_jsmooch_app::render_memory_view() {
                         ImGuiTableFlags_BordersV | ImGuiTableFlags_SizingStretchProp;
 
                 if (ImGui::BeginTable("mem_view_table", 3, itflags)) {
-                    u32 top_displayed_line = 0xFFFFFFFF;
                     ImGui::TableSetupScrollFreeze(0, 1); // Make top row always visible
                     ImGui::TableSetupColumn("Addr", ImGuiTableColumnFlags_None, mm->addr_digits);
                     ImGui::TableSetupColumn("Data", ImGuiTableColumnFlags_None, 32 + 16);
@@ -240,6 +238,7 @@ void imgui_jsmooch_app::render_memory_view() {
                     ImGuiListClipper clipper;
                     u32 num_lines = ((mm->addr_end - mm->addr_start) + 1) >> 4;
                     clipper.Begin(num_lines);
+                    u8 data_buf[16];
                     char hex_buf[50];
                     char ascii_buf[18];
                     u32 old_end = 0;
@@ -252,9 +251,8 @@ void imgui_jsmooch_app::render_memory_view() {
 
                         old_end = clipper.DisplayEnd;
                         for (int row = clipper.DisplayStart; row < clipper.DisplayEnd; row++) {
-                            u8 data_buf[16];
                             u32 addr = (row << 4) - mm->addr_start;
-                            memory_view_get_line(mm, addr, reinterpret_cast<char *>(data_buf));
+                            memory_view_get_line(mm, addr, (char *)data_buf);
                             hex_buf[0] = 0;
                             ascii_buf[0] = 0;
                             char *hp = hex_buf;
@@ -296,7 +294,8 @@ void imgui_jsmooch_app::render_memory_view() {
                     if (entered_address_changed) {
                         mv->display_start_addr = newly_entered_address;
                     }
-                    float scrl = clipper.ItemsHeight * static_cast<float>(mv->display_start_addr >> 4);
+                    float scrl;
+                    scrl = clipper.ItemsHeight * (float)(mv->display_start_addr >> 4);
                     float cur_scroll = ImGui::GetScrollY();
                     if (cur_scroll != scrl) {
                         ImGui::SetScrollY(scrl);
@@ -313,7 +312,7 @@ void imgui_jsmooch_app::render_memory_view() {
 
 void imgui_jsmooch_app::render_event_view()
 {
-    managed_window *mw = register_managed_window(100, mwk_debug_events, "Event Viewer", EVENT_VIEWER_DEFAULT_ENABLE);
+    struct managed_window *mw = register_managed_window(100, mwk_debug_events, "Event Viewer", EVENT_VIEWER_DEFAULT_ENABLE);
     if (mw->enabled && fsys.events.view && fsys.has_played_once) {
         if (ImGui::Begin("Event Viewer")) {
             static bool ozoom = false;
@@ -325,24 +324,23 @@ void imgui_jsmooch_app::render_event_view()
             static bool things_open[50];
             static float color_edits[50 * 10][3];
             u32 idx = 0;
-            for (auto &cat:fsys.events.view->categories) {
+            for (u32 cati = 0; cati < cvec_len(&fsys.events.view->categories); cati++) {
+                auto *cat = (struct event_category *) cvec_get(&fsys.events.view->categories, cati);
                 ImGuiTreeNodeFlags flags = ImGuiTreeNodeFlags_DefaultOpen;
-                if (ImGui::TreeNodeEx(cat.name, flags)) {
-                    for (u32 evi = 0; evi < fsys.events.view->events.size(); evi++) {
-                        auto &event = fsys.events.view->events.at(evi);
-                        if (event.category_id == cat.id) {
-                            color_edits[idx][0] = (float) (event.color & 0xFF) / 255.0;
-                            color_edits[idx][1] = (float) ((event.color >> 8) & 0xFF) / 255.0;
-                            color_edits[idx][2] = (float) ((event.color >> 16) & 0xFF) / 255.0;
-                            bool mval = event.display_enabled;
-                            ImGui::PushID(evi*2);
+                if (ImGui::TreeNodeEx(cat->name, flags)) {
+                    for (u32 evi = 0; evi < cvec_len(&fsys.events.view->events); evi++) {
+                        auto *event = (struct debugger_event *) cvec_get(&fsys.events.view->events, evi);
+                        if (event->category_id == cat->id) {
+                            color_edits[idx][0] = (float) (event->color & 0xFF) / 255.0;
+                            color_edits[idx][1] = (float) ((event->color >> 8) & 0xFF) / 255.0;
+                            color_edits[idx][2] = (float) ((event->color >> 16) & 0xFF) / 255.0;
+                            bool mval = event->display_enabled;
+                            ImGui::PushID(evi);
                             ImGui::Checkbox("", &mval);
-                            event.display_enabled = mval;
+                            event->display_enabled = mval;
                             ImGui::PopID();
                             ImGui::SameLine();
-                            ImGui::PushID((evi*2)+1);
-                            ImGui::ColorEdit3(event.name, color_edits[idx], ImGuiColorEditFlags_NoInputs);
-                            ImGui::PopID();
+                            ImGui::ColorEdit3(event->name, color_edits[idx], ImGuiColorEditFlags_NoInputs);
                             idx++;
                         }
                     }
@@ -356,22 +354,23 @@ void imgui_jsmooch_app::render_event_view()
 
 static bool rn_checkboxes[MAX_DBGLOG_IDS*4];
 
-static void render_node(dbglog_view &view, dbglog_category_node &node, u32 *id_ptr) {
+static void render_node(struct dbglog_view *view, struct dbglog_category_node *node, u32 *id_ptr) {
     // If we're a leaf...
     u32 id = (*id_ptr)++;
 
-    if (!node.children.empty() == 0) {
+    if (cvec_len(&node->children) == 0) {
         // We are a leaf
-        rn_checkboxes[id] = node.enabled;
-        ImGui::Checkbox(node.name, &rn_checkboxes[id]);
-        node.enabled = rn_checkboxes[id];
-        view.ids_enabled[node.category_id] = rn_checkboxes[id];
+        rn_checkboxes[id] = node->enabled;
+        ImGui::Checkbox(node->name, &rn_checkboxes[id]);
+        node->enabled = rn_checkboxes[id];
+        view->ids_enabled[node->category_id] = rn_checkboxes[id];
     } else {
         // We are a further branch
         ImGui::SetNextItemOpen(true);
         ImGui::PushID(id);
-        if (ImGui::TreeNodeEx(node.name)) {
-            for (auto &e : node.children) {
+        if (ImGui::TreeNodeEx(node->name)) {
+            for (u32 i = 0; i < cvec_len(&node->children); i++) {
+                struct dbglog_category_node *e = (struct dbglog_category_node *) cvec_get(&node->children, i);
                 render_node(view, e, id_ptr);
             }
             ImGui::TreePop();
@@ -382,28 +381,30 @@ static void render_node(dbglog_view &view, dbglog_category_node &node, u32 *id_p
 
 static ImVec4 get_iv4(u32 color)
 {
-    return {static_cast<float>((color >> 16) & 0xFF) / 255.0f,
-                  static_cast<float>((color >> 8) & 0xFF) / 255.0f,
-                  static_cast<float>((color) & 0xFF) / 255.0f,
+    return {float((color >> 16) & 0xFF) / 255.0f,
+                  float((color >> 8) & 0xFF) / 255.0f,
+                  float((color) & 0xFF) / 255.0f,
                   1.0f};
 }
 
-void imgui_jsmooch_app::render_dbglog_view(DLVIEW &dview, bool update_dasm_scroll) {
+void imgui_jsmooch_app::render_dbglog_view(struct DLVIEW &dview, bool update_dasm_scroll) {
     // 2 views
     char wname[100];
-    dbglog_view &dlv = dview.view->dbglog;
-    snprintf(wname, sizeof(wname), "%s (visibility tree)", dlv.name);
+    struct debugger_view *mydv = dview.view;
+    struct dbglog_view *dlv = &mydv->dbglog;
+    snprintf(wname, sizeof(wname), "%s (visibility tree)", dlv->name);
     if (ImGui::Begin(wname)) {
         // Now do a tree of checkboxes!!!
         u32 bid = 0;
-        dbglog_category_node &root = dlv.get_category_root();
-        for (auto &c : root.children) {
+        struct dbglog_category_node *root = dbglog_category_get_root(dlv);
+        for (u32 i = 0; i < cvec_len(&root->children); i++) {
+            struct dbglog_category_node *c = (struct dbglog_category_node *) cvec_get(&root->children, i);
             render_node(dlv, c, &bid);
         }
     }
     ImGui::End();
 
-    snprintf(wname, sizeof(wname), "%s", dlv.name);
+    snprintf(wname, sizeof(wname), "%s", dlv->name);
     static char text[8 * 1024 * 1024];
     static int first = 1;
     if (first) {
@@ -414,21 +415,21 @@ void imgui_jsmooch_app::render_dbglog_view(DLVIEW &dview, bool update_dasm_scrol
         static ImGuiTableFlags flags =
                 ImGuiTableFlags_ScrollY | ImGuiTableFlags_RowBg | ImGuiTableFlags_BordersOuter |
                 ImGuiTableFlags_BordersV | ImGuiTableFlags_SizingStretchProp;
-        if (ImGui::BeginTable("tabley_table", dlv.has_extra ? 4 : 3, flags)) {
+        if (ImGui::BeginTable("tabley_table", dlv->has_extra ? 4 : 3, flags)) {
             ImGui::TableSetupScrollFreeze(0, 1); // Make top row always visible
             ImGui::TableSetupColumn("Kind", ImGuiTableColumnFlags_None, 1);
             ImGui::TableSetupColumn("Timecode", ImGuiTableColumnFlags_None, 1);
             ImGui::TableSetupColumn("Entry", ImGuiTableColumnFlags_None, 5);
-            if (dlv.has_extra)
+            if (dlv->has_extra)
                 ImGui::TableSetupColumn("Extra", ImGuiTableColumnFlags_None, 5);
 
             ImGui::TableHeadersRow();
 
             ImGuiListClipper clipper;
-            u32 num_items = dlv.count_visible_lines();
+            u32 num_items = dbglog_count_visible_lines(dlv);
 
-            /*if (dlv.updated) {
-                dlv.updated = 0;
+            /*if (dlv->updated) {
+                dlv->updated = 0;
                 float scrl = clipper.ItemsHeight * num_items;
                 float cur_scroll = ImGui::GetScrollY();
                 printf("\nUPDATED! cur_scroll:%f scrl:%f IH:%f", cur_scroll, scrl, clipper.ItemsHeight * 8);
@@ -438,29 +439,29 @@ void imgui_jsmooch_app::render_dbglog_view(DLVIEW &dview, bool update_dasm_scrol
 
             clipper.Begin(num_items);
             while (clipper.Step()) {
-                u32 idx = dlv.get_nth_visible(clipper.DisplayStart);
+                u32 idx = dbglog_get_nth_visible(dlv, clipper.DisplayStart);
                 for (int row = clipper.DisplayStart; row < clipper.DisplayEnd; row++) {
                     ImGui::TableNextRow();
 
                     ImGui::TableSetColumnIndex(0);
-                    dbglog_entry *e = &dlv.items.data[idx];
+                    struct dbglog_entry *e = &dlv->items.data[idx];
 
-                    ImGui::TextColored(get_iv4(dlv.id_to_color[e->category_id]), "%s", dlv.id_to_category[e->category_id]->short_name);
+                    ImGui::TextColored(get_iv4(dlv->id_to_color[e->category_id]), "%s", dlv->id_to_category[e->category_id]->short_name);
 
                     ImGui::TableSetColumnIndex(1);
                     ImGui::Text("%lld", e->timecode);
 
                     ImGui::TableSetColumnIndex(2);
-                    ImGui::TextColored(get_iv4(dlv.id_to_color[e->category_id]), "%s", e->text.ptr);
+                    ImGui::TextColored(get_iv4(dlv->id_to_color[e->category_id]), "%s", e->text.ptr);
 
-                    if (dlv.has_extra) {
+                    if (dlv->has_extra) {
                         ImGui::TableSetColumnIndex(3);
-                        ImGui::TextColored(get_iv4(dlv.id_to_color[e->category_id]), "%s", e->extra.ptr);
+                        ImGui::TextColored(get_iv4(dlv->id_to_color[e->category_id]), "%s", e->extra.ptr);
                     }
-                    idx = dlv.get_next_visible(idx);
+                    idx = dbglog_get_next_visible(dlv, idx);
                 }
-                if (dlv.updated) {
-                    dlv.updated--;
+                if (dlv->updated) {
+                    dlv->updated--;
                     ImGuiContext& g = *GImGui;
                     ImGuiWindow* window = g.CurrentWindow;
                     ImGui::SetScrollY(window, window->ScrollMax.y);
@@ -474,13 +475,13 @@ void imgui_jsmooch_app::render_dbglog_view(DLVIEW &dview, bool update_dasm_scrol
 }
 
 
-void imgui_jsmooch_app::render_disassembly_view(DVIEW &dview, bool update_dasm_scroll, u32 num)
+void imgui_jsmooch_app::render_disassembly_view(struct DVIEW &dview, bool update_dasm_scroll, u32 num)
 {
-    disassembly_view *dasm = &dview.view->disassembly;
-    std::vector<disassembly_entry_strings> &dasm_rows = dview.dasm_rows;
+    struct disassembly_view *dasm = &dview.view->disassembly;
+    struct cvec *dasm_rows = &dview.dasm_rows;
     char wname[100];
     snprintf(wname, sizeof(wname), "%s Disassembly View", dasm->processor_name.ptr);
-    managed_window *mw = register_managed_window(0x400 + num, mwk_debug_disassembly, wname, DISASM_VIEW_DEFAULT_ENABLE);
+    struct managed_window *mw = register_managed_window(0x400 + num, mwk_debug_disassembly, wname, DISASM_VIEW_DEFAULT_ENABLE);
     if (mw->enabled && fsys.enable_debugger) {
         if (ImGui::Begin(wname)) {
             static ImGuiTableFlags flags =
@@ -491,8 +492,10 @@ void imgui_jsmooch_app::render_disassembly_view(DVIEW &dview, bool update_dasm_s
             static const float TEXT_BASE_WIDTH = ImGui::CalcTextSize("A").x;
             static const float TEXT_BASE_HEIGHT = ImGui::GetTextLineHeightWithSpacing();
 
-            disassembly_vars dv = dasm->get_disassembly_vars.func(dasm->get_disassembly_vars.ptr, *dasm);
-            u32 cur_line_num = dasm->get_rows(dv.address_of_executing_instruction,
+            struct disassembly_vars dv = dasm->get_disassembly_vars.func(dasm->get_disassembly_vars.ptr,
+                                                                              &fsys.dbgr, dasm);
+            cvec_clear(dasm_rows);
+            u32 cur_line_num = disassembly_view_get_rows(&fsys.dbgr, dasm, dv.address_of_executing_instruction,
                                                          20,
                                                          100, dasm_rows);
             u32 numcols = (dasm ? dasm->has_context ? 3 : 2 : 2);
@@ -517,26 +520,26 @@ void imgui_jsmooch_app::render_disassembly_view(DVIEW &dview, bool update_dasm_s
                 while (clipper.Step()) {
                     for (int row = clipper.DisplayStart; row < clipper.DisplayEnd; row++) {
                         ImGui::TableNextRow();
-                        auto &strs = dasm_rows.at(row);
-                        //if (!strs) continue;
+                        auto *strs = (struct disassembly_entry_strings *) cvec_get(dasm_rows, row);
+                        if (!strs) continue;
 
                         ImGui::TableSetColumnIndex(0);
-                        ImGui::Selectable(strs.addr, row == cur_line_num,
+                        ImGui::Selectable(strs->addr, row == cur_line_num,
                                           ImGuiSelectableFlags_SpanAllColumns | ImGuiSelectableFlags_Disabled);
-                        //ImGui::Text("%s", strs.addr);
+                        //ImGui::Text("%s", strs->addr);
 
                         ImGui::TableSetColumnIndex(1);
-                        ImGui::Text("%s", strs.dasm);
-                        //ImGui::Selectable(strs.dasm, row == cur_line_num, ImGuiSelectableFlags_SpanAllColumns | ImGuiSelectableFlags_Disabled);
+                        ImGui::Text("%s", strs->dasm);
+                        //ImGui::Selectable(strs->dasm, row == cur_line_num, ImGuiSelectableFlags_SpanAllColumns | ImGuiSelectableFlags_Disabled);
 
                         if (numcols == 3) {
                             ImGui::TableSetColumnIndex(2);
-                            ImGui::Text("%s", strs.context);
+                            ImGui::Text("%s", strs->context);
                         }
                     }
                 }
                 ImGui::EndTable();
-                dasm->fill_view.func(dasm->fill_view.ptr, *dasm);
+                dasm->fill_view.func(dasm->fill_view.ptr, &fsys.dbgr, dasm);
 
                 ImGui::SameLine();
                 outer_size = ImVec2(TEXT_BASE_WIDTH * 30, TEXT_BASE_HEIGHT * 20);
@@ -547,18 +550,18 @@ void imgui_jsmooch_app::render_disassembly_view(DVIEW &dview, bool update_dasm_s
                     ImGui::TableHeadersRow();
 
                     ImGuiListClipper clipper;
-                    clipper.Begin(dasm->cpu.regs.size());
+                    clipper.Begin((int) cvec_len(&dasm->cpu.regs));
                     while (clipper.Step()) {
                         for (int row = clipper.DisplayStart; row < clipper.DisplayEnd; row++) {
                             ImGui::TableNextRow();
-                            auto &ctx = dasm->cpu.regs.at(row);
+                            auto *ctx = (struct cpu_reg_context *) cvec_get(&dasm->cpu.regs, row);
 
                             ImGui::TableSetColumnIndex(0);
-                            ImGui::Text("%s", ctx.name);
+                            ImGui::Text("%s", ctx->name);
 
                             ImGui::TableSetColumnIndex(1);
                             char rndr[50];
-                            ctx.render(rndr, sizeof(rndr));
+                            cpu_reg_context_render(ctx, rndr, sizeof(rndr));
                             ImGui::Text("%s", rndr);
                         }
                     }
@@ -580,9 +583,9 @@ void imgui_jsmooch_app::render_disassembly_views(bool update_dasm_scroll) {
     }
 }
 
-void imgui_jsmooch_app::render_waveform_view(WVIEW &wview, u32 num)
+void imgui_jsmooch_app::render_waveform_view(struct WVIEW &wview, u32 num)
 {
-    managed_window *mw = register_managed_window(0x600 + num, mwk_debug_sound, wview.view->name, SOUND_VIEW_DEFAULT_ENABLE);
+    struct managed_window *mw = register_managed_window(0x600 + num, mwk_debug_sound, wview.view->name, SOUND_VIEW_DEFAULT_ENABLE);
     if (mw->enabled) {
         fsys.waveform_view_present(wview);
         if (ImGui::Begin(wview.view->name)) {
@@ -625,8 +628,11 @@ void imgui_jsmooch_app::render_waveform_view(WVIEW &wview, u32 num)
                 switch (on_line) {
                     case 1:
                         break;
-                        case 2:
-                        case 3:
+                    case 3:
+                        make_new_line = true;
+                        break;
+                    case 2:
+                        //if (old_on_line == 0) break;
                         make_new_line = true;
                         break;
                     default:
@@ -651,9 +657,9 @@ void imgui_jsmooch_app::render_waveform_view(WVIEW &wview, u32 num)
     }
 }
 
-static void render_radiogroup(debugger_widget &widget)
+static void render_radiogroup(struct debugger_widget *widget)
 {
-    if (widget.same_line) ImGui::SameLine();
+    if (widget->same_line) ImGui::SameLine();
 
     ImGuiWindowFlags window_flags = ImGuiChildFlags_Border | ImGuiChildFlags_AutoResizeY | ImGuiChildFlags_AutoResizeX;
     ImGui::PushStyleVar(ImGuiStyleVar_ChildRounding, 5.0f);
@@ -661,41 +667,42 @@ static void render_radiogroup(debugger_widget &widget)
     static int max_height_in_lines = 4;
 
     ImGui::SetNextWindowSizeConstraints(ImVec2(0.0f, ImGui::GetTextLineHeightWithSpacing() * 2), ImVec2(270, ImGui::GetTextLineHeightWithSpacing() * max_height_in_lines));
-    ImGui::BeginChild(widget.radiogroup.title, ImVec2(-FLT_MIN, 0.0f), window_flags);
+    ImGui::BeginChild(widget->radiogroup.title, ImVec2(-FLT_MIN, 0.0f), window_flags);
     /*if (ImGui::BeginMenuBar())
     {
-        if (ImGui::BeginMenu(widget.radiogroup.title))
+        if (ImGui::BeginMenu(widget->radiogroup.title))
         {
             ImGui::EndMenu();
         }
         ImGui::EndMenuBar();
     }*/
-    int ch = static_cast<int>(widget.radiogroup.value);
+    int ch = int(widget->radiogroup.value);
     //         ImGui::RadioButton("radio a", &e, 0); ImGui::SameLine();
     //        ImGui::RadioButton("radio b", &e, 1); ImGui::SameLine();
     //        ImGui::RadioButton("radio c", &e, 2);
-    for (auto &cb : widget.radiogroup.buttons) {
-        if (cb.same_line) ImGui::SameLine();
-        ImGui::RadioButton(cb.checkbox.text, &ch, static_cast<int>(cb.checkbox.value));
+    for (u32 i = 0; i < cvec_len(&widget->radiogroup.buttons); i++) {
+        struct debugger_widget *cb = (struct debugger_widget *)cvec_get(&widget->radiogroup.buttons, i);
+        if (cb->same_line) ImGui::SameLine();
+        ImGui::RadioButton(cb->checkbox.text, &ch, (int)cb->checkbox.value);
     }
-    widget.radiogroup.value = static_cast<u32>(ch);
+    widget->radiogroup.value = u32(ch);
 
     ImGui::EndChild();
     ImGui::PopStyleVar();
 }
 
-static void render_textbox(debugger_widget &widget)
+static void render_textbox(struct debugger_widget *widget)
 {
-    if (widget.same_line) ImGui::SameLine();
-    ImGui::Text("%s", widget.textbox.contents.ptr);
+    if (widget->same_line) ImGui::SameLine();
+    ImGui::Text("%s", widget->textbox.contents.ptr);
 }
 
-static void render_colorkey(debugger_widget &widget)
+static void render_colorkey(struct debugger_widget *widget)
 {
-    debugger_widget_colorkey *ck = &widget.colorkey;
+    struct debugger_widget_colorkey *ck = &widget->colorkey;
     ImGui::Text("%s", ck->title);
     for (u32 i = 0; i < ck->num_items; i++) {
-        debugger_widget_colorkey_item *item = &ck->items[i];
+        struct debugger_widget_colorkey_item *item = &ck->items[i];
         ImGui::PushID(i);
         ImGui::BeginDisabled();
         u32 r = item->color & 0xFF;
@@ -714,21 +721,21 @@ static void render_colorkey(debugger_widget &widget)
     }
 }
 
-static void render_checkbox(debugger_widget &widget)
+static void render_checkbox(struct debugger_widget *widget)
 {
-    bool mval = widget.checkbox.value ? true : false;
-    bool disabled = widget.enabled ? false : true;
-    if (widget.same_line) ImGui::SameLine();
+    bool mval = widget->checkbox.value ? true : false;
+    bool disabled = widget->enabled ? false : true;
+    if (widget->same_line) ImGui::SameLine();
     ImGui::BeginDisabled(disabled);
-    ImGui::Checkbox(widget.checkbox.text, &mval);
+    ImGui::Checkbox(widget->checkbox.text, &mval);
     ImGui::EndDisabled();
-    widget.checkbox.value = mval ? 1 : 0;
+    widget->checkbox.value = mval ? 1 : 0;
 }
 
 
-static void render_debugger_post_widget(debugger_widget &widget)
+static void render_debugger_post_widget(struct debugger_widget *widget)
 {
-    switch(widget.kind) {
+    switch(widget->kind) {
         case JSMD_colorkey:
             render_colorkey(widget);
             break;
@@ -737,13 +744,13 @@ static void render_debugger_post_widget(debugger_widget &widget)
         case JSMD_textbox:
             break;
         default:
-            printf("\nWHAN O POST BA %d", widget.kind);
+            printf("\nWHAN O POST BA %d", widget->kind);
     }
 }
 
-static void render_debugger_widget(debugger_widget &widget)
+static void render_debugger_widget(struct debugger_widget *widget)
 {
-    switch(widget.kind) {
+    switch(widget->kind) {
         case JSMD_checkbox: {
             render_checkbox(widget);
             break; }
@@ -756,43 +763,45 @@ static void render_debugger_widget(debugger_widget &widget)
         case JSMD_colorkey:
             break;
         default:
-            printf("\nWHAT KIND BAD %d", widget.kind);
+            printf("\nWHAT KIND BAD %d", widget->kind);
             break;
     }
 }
 
-static void render_debugger_post_widgets(std::vector<debugger_widget> &options)
+static void render_debugger_post_widgets(struct cvec *options)
 {
-    for (auto& widget : options) {
+    for (u32 i = 0; i < cvec_len(options); i++) {
+        struct debugger_widget *widget = (struct debugger_widget *) cvec_get(options, i);
         render_debugger_post_widget(widget);
     }
 };
 
-static void render_debugger_widgets(std::vector<debugger_widget> &options)
+static void render_debugger_widgets(struct cvec *options)
 {
-    for (auto &widget : options) {
+    for (u32 i = 0; i < cvec_len(options); i++) {
+        struct debugger_widget *widget = (struct debugger_widget *)cvec_get(options, i);
         render_debugger_widget(widget);
     }
 }
 
 void imgui_jsmooch_app::render_console_view(bool update_dasm_scroll)
 {
-    u32 wi=0;
+    u32 wi;
     static char text[3 * 1024 * 1024];
     for (auto &myv: fsys.console_views) {
-        managed_window *mw = register_managed_window(0xC00 + (wi++), mwk_debug_console, myv.view->console.name, CONSOLE_VIEW_DEFAULT_ENABLE);
-        console_view *tv = &myv.view->console;
+        struct managed_window *mw = register_managed_window(0xC00 + (wi++), mwk_debug_console, myv.view->console.name, CONSOLE_VIEW_DEFAULT_ENABLE);
+        struct console_view *tv = &myv.view->console;
         if (mw->enabled) {
             if (ImGui::Begin(myv.view->console.name)) {
-                tv->render_to_buffer(text, sizeof(text));
+                console_view_render_to_buffer(tv, text, sizeof(text));
                 static ImGuiInputTextFlags flags = ImGuiInputTextFlags_ReadOnly;
                 ImGui::InputTextMultiline("##source", text, IM_ARRAYSIZE(text), ImVec2(-FLT_MIN, -FLT_MIN), flags);
 
                 if (tv->updated) {
                     tv->updated = 0;
                     ImGuiContext& g = *GImGui;
-                    const char* child_window_name = nullptr;
-                    ImFormatStringToTempBuffer(&child_window_name, nullptr, "%s/%s_%08X", g.CurrentWindow->Name, "##source", ImGui::GetID("##source"));
+                    const char* child_window_name = NULL;
+                    ImFormatStringToTempBuffer(&child_window_name, NULL, "%s/%s_%08X", g.CurrentWindow->Name, "##source", ImGui::GetID("##source"));
                     ImGuiWindow* child_window = ImGui::FindWindowByName(child_window_name);
                     ImGui::SetScrollY(child_window, child_window->ScrollMax.y);
                 }
@@ -808,8 +817,8 @@ void imgui_jsmooch_app::render_trace_view(bool update_dasm_scroll)
     static const float TEXT_BASE_WIDTH = ImGui::CalcTextSize("A").x;
     static const float TEXT_BASE_HEIGHT = ImGui::GetTextLineHeightWithSpacing();
     for (auto &myv: fsys.trace_views) {
-        managed_window *mw = register_managed_window(0x800 + (wi++), mwk_debug_trace, myv.view->trace.name, TRACE_VIEW_DEFAULT_ENABLE);
-        trace_view *tv = &myv.view->trace;
+        struct managed_window *mw = register_managed_window(0x800 + (wi++), mwk_debug_trace, myv.view->trace.name, TRACE_VIEW_DEFAULT_ENABLE);
+        struct trace_view *tv = &myv.view->trace;
         if (mw->enabled) {
             if (ImGui::Begin(myv.view->trace.name)) {
                 static ImGuiTableFlags flags =
@@ -818,26 +827,26 @@ void imgui_jsmooch_app::render_trace_view(bool update_dasm_scroll)
                 u32 total_sz = 0;
                 float widths[MAX_TRACE_COLS];
                 char mf[500];
-                u32 numcols = tv->columns.size();
-                trace_view_col *col_ptrs[MAX_TRACE_COLS] = {};
+                u32 numcols = cvec_len(&tv->columns);
+                struct trace_view_col *col_ptrs[MAX_TRACE_COLS] = {};
                 for (u32 i = 0; i < numcols; i++) {
-                    trace_view_col &c = tv->columns.at(i);
+                    struct trace_view_col *c = (struct trace_view_col *)cvec_get(&tv->columns, i);
                     u32 sz = 0;
-                    if (c.default_size <= 0)
+                    if (c->default_size <= 0)
                         sz = 10;
                     else
-                        sz = c.default_size + 1;
+                        sz = c->default_size + 1;
                     total_sz += sz;
 
-                    widths[i] = static_cast<float>(sz) * TEXT_BASE_WIDTH;
-                    col_ptrs[i] = &c;
+                    widths[i] = (float)sz * TEXT_BASE_WIDTH;
+                    col_ptrs[i] = c;
                 }
-                ImVec2 outer_size = ImVec2(TEXT_BASE_WIDTH * static_cast<float>(total_sz + 5), TEXT_BASE_HEIGHT * 20);
-                if (ImGui::BeginTable("tabley_table", static_cast<int>(numcols), flags, outer_size)) {
+                ImVec2 outer_size = ImVec2(TEXT_BASE_WIDTH * (float)(total_sz + 5), TEXT_BASE_HEIGHT * 20);
+                if (ImGui::BeginTable("tabley_table", (int)numcols, flags, outer_size)) {
                     ImGui::TableSetupScrollFreeze(0, 1); // Make top row always visible
                     for (u32 c = 0; c < numcols; c++) {
-                        auto &[name, default_size] = tv->columns.at(c);
-                        ImGui::TableSetupColumn(name, ImGuiTableColumnFlags_None, widths[c]);
+                        struct trace_view_col *mc = (struct trace_view_col *)cvec_get(&tv->columns, c);
+                        ImGui::TableSetupColumn(mc->name, ImGuiTableColumnFlags_None, widths[c]);
                     }
                     ImGui::TableHeadersRow();
                     ImGuiListClipper clipper;
@@ -855,12 +864,12 @@ void imgui_jsmooch_app::render_trace_view(bool update_dasm_scroll)
                     while (clipper.Step()) {
                         for (int row = clipper.DisplayStart; row < clipper.DisplayEnd; row++) {
                             ImGui::TableNextRow();
-                            auto *ln = tv->get_line(row);
+                            auto *ln = trace_view_get_line(tv, row);
                             for (int col_num = 0; col_num < numcols; col_num++) {
-                                //trace_view_col *my_col = col_ptrs[col_num];
+                                struct trace_view_col *my_col = col_ptrs[col_num];
                                 ImGui::TableSetColumnIndex(col_num);
 
-                                jsm_string *mstr = &ln->cols[col_num];
+                                struct jsm_string *mstr = &ln->cols[col_num];
                                 ImGui::TableSetColumnIndex(col_num);
                                 ImGui::Text("%s", mstr->ptr);
                             }
@@ -878,7 +887,7 @@ void imgui_jsmooch_app::render_dbglog_views(bool update_dasm_scroll)
 {
     u32 i = 0;
     for (auto &myv : fsys.dlviews) {
-        managed_window *mw = register_managed_window(0x2500 + (i++), mwk_debug_dbglog, myv.view->dbglog.name, DBGLOG_VIEW_DEFAULT_ENABLE);
+        struct managed_window *mw = register_managed_window(0x2500 + (i++), mwk_debug_dbglog, myv.view->dbglog.name, DBGLOG_VIEW_DEFAULT_ENABLE);
         if (mw->enabled) {
             render_dbglog_view(myv, update_dasm_scroll);
         }
@@ -889,25 +898,26 @@ void imgui_jsmooch_app::render_image_views()
 {
     u32 i=0;
     for (auto &myv: fsys.images) {
-        managed_window *mw = register_managed_window(0x500 + (i++), mwk_debug_image, myv.view->image.label, IMAGE_VIEW_DEFAULT_ENABLE);
+        struct managed_window *mw = register_managed_window(0x500 + (i++), mwk_debug_image, myv.view->image.label, IMAGE_VIEW_DEFAULT_ENABLE);
         if (mw->enabled) {
             if (ImGui::Begin(myv.view->image.label)) {
-                render_debugger_widgets(myv.view->options);
-                fsys.image_view_present(*myv.view, myv.texture);
+                render_debugger_widgets(&myv.view->options);
+                fsys.image_view_present(myv.view, myv.texture);
                 ImGui::Image(myv.texture.for_image(), myv.texture.sz_for_display, myv.texture.uv0, myv.texture.uv1);
-                render_debugger_post_widgets(myv.view->options);
+                render_debugger_post_widgets(&myv.view->options);
             }
             ImGui::End();
         }
     }
 }
 
-static void render_opt_view(full_system &fsys)
+static void render_opt_view(struct full_system &fsys)
 {
-    std::vector<debugger_widget> &opts = fsys.sys->opts;
-    if (opts.size() > 0) {
+    struct cvec *opts = &fsys.sys->opts;
+    if (cvec_len(opts) > 0) {
         if (ImGui::Begin("Core Options")) {
-            for (auto &w : opts) {
+            for (u32 i = 0; i < cvec_len(opts); i++) {
+                struct debugger_widget *w = (struct debugger_widget *)cvec_get(opts, i);
                 render_debugger_widget(w);
             }
         }
@@ -937,7 +947,7 @@ void imgui_jsmooch_app::render_window_manager()
     enum managed_window_kind old_mwk = mwk_debug_events;
     if (ImGui::Begin("Window Manager")) {
         for (u32 i = 0; i < windows.num; i++) {
-            managed_window *mw = &windows.items[i];
+            struct managed_window *mw = &windows.items[i];
             if (mw->kind != old_mwk) {
                 old_mwk = mw->kind;
                 ImGui::Separator();
@@ -952,17 +962,17 @@ void imgui_jsmooch_app::render_window_manager()
 
 void imgui_jsmooch_app::do_setup_onstart()
 {
-    load_inifile(ini);
+    load_inifile(&ini);
 
     debugger_cols[0] = (char *)malloc(debugger_col_sizes[0]);
     debugger_cols[1] = (char *)malloc(debugger_col_sizes[1]);
     debugger_cols[2] = (char *)malloc(debugger_col_sizes[2]);
 
-    kv_pair *kvp = ini.get_or_make_key("general", "bios_base_path");
+    struct kv_pair *kvp = inifile_get_or_make_key(&ini, "general", "bios_base_path");
     assert(kvp);
     snprintf(BIOS_BASE_PATH, sizeof(BIOS_BASE_PATH), "%s", kvp->str_value);
 
-    kvp = ini.get_or_make_key("general", "rom_base_path");
+    kvp = inifile_get_or_make_key(&ini, "general", "rom_base_path");
     assert(kvp);
     snprintf(BIOS_BASE_PATH, sizeof(ROM_BASE_PATH), "%s", kvp->str_value);
 }
@@ -1000,28 +1010,28 @@ void imgui_jsmooch_app::setup_wgpu()
 int imgui_jsmooch_app::do_setup_before_mainloop()
 {
 #ifdef DO_DREAMCAST
-    which = jsm::systems::DREAMCAST;
+    which = SYS_DREAMCAST;
 #else
-    //which = jsm::systems::ATARI2600;
-    //which = jsm::systems::GBC;
-    //which = jsm::systems::APPLEIIe;
-    //which = jsm::systems::DMG;
-    //which = jsm::systems::PS1;
-    //which = jsm::systems::SMS2;
-    //which = jsm::systems::GG;
-    //which = jsm::systems::ZX_SPECTRUM_48K;
-    //which = jsm::systems::ZX_SPECTRUM_128K;
-    //which = jsm::systems::SG1000;
-    //which = jsm::systems::MAC512K;
-    //which = jsm::systems::DREAMCAST;
-    //which = jsm::systems::GBA;
-    which = jsm::systems::SNES;
-    //which = jsm::systems::GENESIS_USA;
-    //which = jsm::systems::MEGADRIVE_PAL;
-    //which = jsm::systems::NDS;
-    //which = jsm::systems::TURBOGRAFX16;
-    //which = jsm::systems::NES;
-    //which = jsm::systems::GALAKSIJA;
+    //which = SYS_ATARI2600;
+    //which = SYS_GBC;
+    //which = SYS_APPLEIIe;
+    //which = SYS_DMG;
+    //which = SYS_PS1;
+    //which = SYS_SMS2;
+    //which = SYS_GG;
+    //which = SYS_ZX_SPECTRUM_48K;
+    //which = SYS_ZX_SPECTRUM_128K;
+    //which = SYS_SG1000;
+    //which = SYS_MAC512K;
+    //which = SYS_DREAMCAST;
+    //which = SYS_GBA;
+    //which = SYS_SNES;
+    //which = SYS_GENESIS_USA;
+    //which = SYS_MEGADRIVE_PAL;
+    which = SYS_NDS;
+    //which = SYS_TURBOGRAFX16;
+    //which = SYS_NES;
+    //which = SYS_GALAKSIJA;
     //dbg_enable_trace();
 #endif
 
@@ -1030,7 +1040,7 @@ int imgui_jsmooch_app::do_setup_before_mainloop()
         printf("\nCould not initialize system! %d", fsys.worked);
         return -1;
     }
-    fsys.run_state = FSS_pause;
+    fsys.state = FSS_pause;
     fsys.has_played_once = false;
 #ifdef JSM_WEBGPU
     setup_wgpu();
@@ -1041,17 +1051,17 @@ int imgui_jsmooch_app::do_setup_before_mainloop()
     return 0;
 }
 
-managed_window *imgui_jsmooch_app::register_managed_window(u32 id, enum managed_window_kind kind, const char *name, u32 default_enabled)
+struct managed_window *imgui_jsmooch_app::register_managed_window(u32 id, enum managed_window_kind kind, const char *name, u32 default_enabled)
 {
     if (windows.num > 0) {
         for (u32 i = 0; i < windows.num; i++) {
-            managed_window *mw = &windows.items[i];
+            struct managed_window *mw = &windows.items[i];
             if (mw->id == id) {
                 return mw;
             }
         }
     }
-    managed_window *out = &windows.items[windows.num];
+    struct managed_window *out = &windows.items[windows.num];
     windows.num++;
     out->id = id;
     out->kind = kind;
@@ -1067,8 +1077,8 @@ void imgui_jsmooch_app::mainloop(ImGuiIO& io) {
 
     // Update the system
     if (dbg.do_break) {
-        if (fsys.run_state == FSS_play)
-            fsys.run_state = FSS_pause;
+        if (fsys.state == FSS_play)
+            fsys.state = FSS_pause;
     }
 
     static u32 hotkeys[2];
@@ -1081,7 +1091,7 @@ void imgui_jsmooch_app::mainloop(ImGuiIO& io) {
     }
     static u32 key_was_down = 0;
     u32 frame_multi = ImGui::IsKeyDown(ImGuiKey_GraveAccent) ? FRAME_MULTI : 1;
-    if (fsys.run_state == FSS_play) {
+    if (fsys.state == FSS_play) {
         if (key_was_down && (frame_multi == 1)) {
             // Discard audio buffers!
             fsys.discard_audio_buffers();
@@ -1150,15 +1160,15 @@ void imgui_jsmooch_app::mainloop(ImGuiIO& io) {
         ImGui::EndChild(); // end sub-window
         ImGui::PopStyleVar();
         if (play_pause) {
-            switch(fsys.run_state) {
+            switch(fsys.state) {
                 case FSS_pause:
-                    fsys.run_state = FSS_play;
+                    fsys.state = FSS_play;
                     dbg_unbreak();
                     fsys.audio.pause();
                     break;
                 case FSS_play:
                     fsys.audio.play();
-                    fsys.run_state = FSS_pause;
+                    fsys.state = FSS_pause;
                     break;
             }
         }
@@ -1210,6 +1220,8 @@ void imgui_jsmooch_app::mainloop(ImGuiIO& io) {
 void imgui_jsmooch_app::at_end()
 {
     fsys.destroy_system();
+
+    inifile_delete(&ini);
 }
 
 #ifdef JSM_OPENGL

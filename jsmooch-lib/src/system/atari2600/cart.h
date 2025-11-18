@@ -14,10 +14,10 @@ struct atari2600_cart {
 
 };
 
-void atari2600_cart_init(atari2600_cart*);
-void atari2600_cart_delete(atari2600_cart*);
-void atari2600_cart_bus_cycle(atari2600_cart*, u32 addr, u32 *data, u32 rw);
-void atari2600_cart_load_ROM_from_RAM(atari2600_cart*, char *fil, u64 file_sz, char* file_name);
-void atari2600_cart_reset(atari2600_cart*);
+void atari2600_cart_init(struct atari2600_cart*);
+void atari2600_cart_delete(struct atari2600_cart*);
+void atari2600_cart_bus_cycle(struct atari2600_cart*, u32 addr, u32 *data, u32 rw);
+void atari2600_cart_load_ROM_from_RAM(struct atari2600_cart*, char *fil, u64 file_sz, char* file_name);
+void atari2600_cart_reset(struct atari2600_cart*);
 
 #endif //JSMOOCH_EMUS_CART_H

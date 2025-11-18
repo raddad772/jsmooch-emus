@@ -221,22 +221,22 @@ struct NDS_PPU {
 };
 
 struct NDS;
-void NDS_PPU_init(NDS *);
-void NDS_PPU_delete(NDS *);
-void NDS_PPU_reset(NDS *);
+void NDS_PPU_init(struct NDS *);
+void NDS_PPU_delete(struct NDS *);
+void NDS_PPU_reset(struct NDS *);
 void NDS_PPU_start_scanline(void *ptr, u64 key, u64 clock, u32 jitter);
 void NDS_PPU_hblank(void *ptr, u64 key, u64 clock, u32 jitter);
 void NDS_PPU_vblank(void *ptr, u64 key, u64 clock, u32 jitter);
 void NDS_PPU_finish_scanline(void *ptr, u64 key, u64 clock, u32 jitter);
 
-u32 NDS_PPU_read_2d_bg_palette(NDS*, u32 eng_num, u32 addr, u32 sz);
-u32 NDS_PPU_read_2d_obj_palette(NDS*, u32 eng_num, u32 addr, u32 sz);
+u32 NDS_PPU_read_2d_bg_palette(struct NDS*, u32 eng_num, u32 addr, u32 sz);
+u32 NDS_PPU_read_2d_obj_palette(struct NDS*, u32 eng_num, u32 addr, u32 sz);
 
-void NDS_PPU_write_2d_bg_palette(NDS*, u32 eng_num, u32 addr, u32 sz, u32 val);
-void NDS_PPU_write_2d_obj_palette(NDS*, u32 eng_num, u32 addr, u32 sz, u32 val);
+void NDS_PPU_write_2d_bg_palette(struct NDS*, u32 eng_num, u32 addr, u32 sz, u32 val);
+void NDS_PPU_write_2d_obj_palette(struct NDS*, u32 eng_num, u32 addr, u32 sz, u32 val);
 
-void NDS_PPU_write9_io(NDS *, u32 addr, u32 sz, u32 access, u32 val);
-u32 NDS_PPU_read9_io(NDS *, u32 addr, u32 sz, u32 access, u32 has_effect);
-void NDS_PPU_write7_io(NDS *, u32 addr, u32 sz, u32 access, u32 val);
-u32 NDS_PPU_read7_io(NDS *, u32 addr, u32 sz, u32 access, u32 has_effect);
+void NDS_PPU_write9_io(struct NDS *, u32 addr, u32 sz, u32 access, u32 val);
+u32 NDS_PPU_read9_io(struct NDS *, u32 addr, u32 sz, u32 access, u32 has_effect);
+void NDS_PPU_write7_io(struct NDS *, u32 addr, u32 sz, u32 access, u32 val);
+u32 NDS_PPU_read7_io(struct NDS *, u32 addr, u32 sz, u32 access, u32 has_effect);
 #endif //JSMOOCH_EMUS_NDS_PPU_H

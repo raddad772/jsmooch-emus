@@ -2,23 +2,23 @@
 // Created by . on 11/18/24.
 //
 
-#include <cstring>
-#include <cstdio>
+#include <string.h>
+#include <stdio.h>
 
 #include "genesis6.h"
 
-void genesis_controller_6button_init(genesis_controller_6button* this, u64 *master_clock)
+void genesis_controller_6button_init(struct genesis_controller_6button* this, u64 *master_clock)
 {
     memset(this, 0, sizeof(*this));
     this->master_clock = master_clock;
 }
 
-void genesis_controller_6button_delete(genesis_controller_6button* this)
+void genesis_controller_6button_delete(struct genesis_controller_6button* this)
 {
     this->pio = NULL;
 }
 
-void genesis6_setup_pio(physical_io_device *d, u32 num, const char*name, u32 connected)
+void genesis6_setup_pio(struct physical_io_device *d, u32 num, const char*name, u32 connected)
 {
     physical_io_device_init(d, HID_CONTROLLER, 0, 0, 1, 1);
 
@@ -45,7 +45,7 @@ void genesis6_setup_pio(physical_io_device *d, u32 num, const char*name, u32 con
     pio_new_button(cnt, "mode", DBCID_co_select);
 }
 
-void genesis_controller_6button_latch(genesis_controller_6button* this)
+void genesis_controller_6button_latch(struct genesis_controller_6button* this)
 {
     struct cvec* bl = &this->pio->controller.digital_buttons;
     struct HID_digital_button *b;
@@ -65,7 +65,7 @@ void genesis_controller_6button_latch(genesis_controller_6button* this)
 #undef B_GET
 }
 
-u8 genesis6_read_data(genesis_controller_6button *this) {
+u8 genesis6_read_data(struct genesis_controller_6button *this) {
     if ((*this->master_clock) >= this->timeout_at) this->counter = 0;
     u8 out = 0;
 #define B_GET(name, shift) out |= this->input_buffer. name << shift
@@ -113,7 +113,7 @@ u8 genesis6_read_data(genesis_controller_6button *this) {
 
 #define MCLOCK_1_6ms 86019
 
-void genesis6_write_data(genesis_controller_6button *this, u8 val)
+void genesis6_write_data(struct genesis_controller_6button *this, u8 val)
 {
     if ((*this->master_clock) >= this->timeout_at) this->counter = 0;
 

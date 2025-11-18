@@ -1,7 +1,7 @@
-#include <cassert>
-#include <cstdio>
+#include <assert.h>
+#include <stdio.h>
 
-#include "fail"
+#include "helpers/debugger/debugger.h"
 
 #include "gb_cpu.h"
 #include "component/cpu/sm83/sm83.h"
@@ -13,13 +13,13 @@
 
 #define GB_INSTANT_OAM false
 
-void GB_CPU_raise_TIMA(GB_CPU *this) {
+void GB_CPU_raise_TIMA(struct GB_CPU *this) {
     this->cpu.regs.IF |= 4;
 }
 
-void GB_timer_SYSCLK_change(GB_timer* this, u32 new_value);
+void GB_timer_SYSCLK_change(struct GB_timer* this, u32 new_value);
 
-void GB_timer_init(GB_timer* this, void (*raise_IRQ)(GB_CPU *), GB_CPU *cpu) {
+void GB_timer_init(struct GB_timer* this, void (*raise_IRQ)(struct GB_CPU *), struct GB_CPU *cpu) {
     this->SYSCLK = 0;
     this->cycles_til_TIMA_IRQ = 0;
     this->raise_IRQ = raise_IRQ;
@@ -32,7 +32,7 @@ void GB_timer_init(GB_timer* this, void (*raise_IRQ)(GB_CPU *), GB_CPU *cpu) {
 }
 
 // Increment 1 state
-void GB_timer_inc(GB_timer* this) {
+void GB_timer_inc(struct GB_timer* this) {
     this->TIMA_reload_cycle = FALSE;
     if (this->cycles_til_TIMA_IRQ > 0) {
         this->cycles_til_TIMA_IRQ--;
@@ -46,7 +46,7 @@ void GB_timer_inc(GB_timer* this) {
     GB_timer_SYSCLK_change(this, (this->SYSCLK + 1) & 0xFFFF);
 }
 
-void GB_timer_detect_edge(GB_timer *this, u32 before, u32 after)
+void GB_timer_detect_edge(struct GB_timer *this, u32 before, u32 after)
 {
     if ((before == 1) && (after == 0)) {
         this->TIMA = (this->TIMA + 1) & 0xFF; // Increment TIMA
@@ -57,7 +57,7 @@ void GB_timer_detect_edge(GB_timer *this, u32 before, u32 after)
     }
 }
 
-void GB_timer_SYSCLK_change(GB_timer *this, u32 new_value) {
+void GB_timer_SYSCLK_change(struct GB_timer *this, u32 new_value) {
     // 00 = bit 9, lowest speed, /1024  4096 hz   & 0x200
     // 01 = bit 3,               /16  262144 hz   & 0x08
     // 10 = bit 5,               /64  65536 hz    & 0x20
@@ -85,7 +85,7 @@ void GB_timer_SYSCLK_change(GB_timer *this, u32 new_value) {
     this->last_bit = this_bit;
 }
 
-void GB_timer_write_IO(GB_timer *this, u32 addr, u32 val) {
+void GB_timer_write_IO(struct GB_timer *this, u32 addr, u32 val) {
     u32 last_bit;
     switch (addr) {
     case 0xFF04: // DIV, kind is upper 8 bits of SYSCLK
@@ -111,7 +111,7 @@ void GB_timer_write_IO(GB_timer *this, u32 addr, u32 val) {
     }
 }
 
-u32 GB_timer_read_IO(GB_timer *this, u32 addr) {
+u32 GB_timer_read_IO(struct GB_timer *this, u32 addr) {
     switch (addr) {
         case 0xFF04: // DIV, upper 8 bits of SYSCLK
             return (this->SYSCLK >> 6) & 0xFF;
@@ -126,7 +126,7 @@ u32 GB_timer_read_IO(GB_timer *this, u32 addr) {
 }
 
 
-void GB_CPU_init(GB_CPU* this, enum GB_variants variant, GB_clock* clock, GB_bus* bus)
+void GB_CPU_init(struct GB_CPU* this, enum GB_variants variant, struct GB_clock* clock, struct GB_bus* bus)
 {
     this->variant = variant;
     this->clock = clock;
@@ -156,7 +156,7 @@ void GB_CPU_init(GB_CPU* this, enum GB_variants variant, GB_clock* clock, GB_bus
     this->dma.cycles_til = this->dma.high = this->dma.index = this->dma.last_write = this->dma.new_high = this->dma.running = 0;
 }
 
-void GB_CPU_reset(GB_CPU* this) {
+void GB_CPU_reset(struct GB_CPU* this) {
     SM83_reset(&this->cpu);
     this->clock->cpu_frame_cycle = 0;
     this->clock->bootROM_enabled = TRUE;
@@ -165,10 +165,10 @@ void GB_CPU_reset(GB_CPU* this) {
 
 u32 GB_CPU_read_trace(void *tr, u32 addr)
 {
-    return GB_bus_CPU_read(((GB_CPU *)tr)->bus, addr, 0, 0);
+    return GB_bus_CPU_read(((struct GB_CPU *)tr)->bus, addr, 0, 0);
 }
 
-void GB_CPU_enable_tracing(GB_CPU* this) {
+void GB_CPU_enable_tracing(struct GB_CPU* this) {
     if (this->tracing) return;
     struct jsm_debug_read_trace a;
     a.ptr = (void *)this;
@@ -177,14 +177,14 @@ void GB_CPU_enable_tracing(GB_CPU* this) {
     this->tracing = TRUE;
 }
 
-void GB_CPU_disable_tracing(GB_CPU* this) {
+void GB_CPU_disable_tracing(struct GB_CPU* this) {
     if (!this->tracing) return;
     SM83_disable_tracing(&this->cpu);
     this->tracing = FALSE;
 }
 
 // Color GameBoy DMA
-void GB_CPU_dma_eval(GB_CPU* this) {
+void GB_CPU_dma_eval(struct GB_CPU* this) {
     if (this->dma.cycles_til) {
         this->dma.cycles_til--;
         if (this->dma.cycles_til == 0) {
@@ -208,7 +208,7 @@ void GB_CPU_dma_eval(GB_CPU* this) {
     this->dma.index++;
 }
 
-u32 GB_CPU_hdma_run(GB_CPU *this) {
+u32 GB_CPU_hdma_run(struct GB_CPU *this) {
     // If we're enabled and in the right lines
     if (((this->clock->ppu_mode == HBLANK) && (this->clock->ly < 144)) || (!this->bus->ppu->enabled)) {
         // If we're in the middle of a 16-byte block, or we have been notified of HBLANK
@@ -244,7 +244,7 @@ u32 GB_CPU_hdma_run(GB_CPU *this) {
     return false;
 }
 
-static void GB_CPU_ghdma_run(GB_CPU* this)
+static void GB_CPU_ghdma_run(struct GB_CPU* this)
 {
     this->hdma.til_next_byte--;
     if (this->hdma.til_next_byte < 1) {
@@ -266,7 +266,7 @@ static void GB_CPU_ghdma_run(GB_CPU* this)
     }
 }
 
-static u32 GB_CPU_hdma_eval(GB_CPU *this)
+static u32 GB_CPU_hdma_eval(struct GB_CPU *this)
 {
     if ((this->clock->cgb_enable) && (this->hdma.enabled)) {
         if (this->hdma.mode == 0) {
@@ -279,7 +279,7 @@ static u32 GB_CPU_hdma_eval(GB_CPU *this)
     return false;
 }
 
-void GB_CPU_switch_speed(GB_CPU* this)
+void GB_CPU_switch_speed(struct GB_CPU* this)
 {
     if (!this->clock->cgb_enable) return;
     if (this->clock->timing.cpu_divisor == 4) {
@@ -292,7 +292,7 @@ void GB_CPU_switch_speed(GB_CPU* this)
     }
 }
 
-void GB_CPU_cycle(GB_CPU* this)
+void GB_CPU_cycle(struct GB_CPU* this)
 {
     this->clock->trace_cycles++;
 
@@ -344,7 +344,7 @@ void GB_CPU_cycle(GB_CPU* this)
     this->clock->SYSCLK = this->timer.SYSCLK;
 }
 
-void GB_CPU_quick_boot(GB_CPU* this)
+void GB_CPU_quick_boot(struct GB_CPU* this)
 {
     switch (this->variant) {
     case DMG:
@@ -415,8 +415,8 @@ void GB_CPU_quick_boot(GB_CPU* this)
     }
 }
 
-static void update_inputs(GB_CPU* this) {
-    struct cvec* bl = &((physical_io_device *)cpg(this->device_ptr))->controller.digital_buttons;
+static void update_inputs(struct GB_CPU* this) {
+    struct cvec* bl = &((struct physical_io_device *)cpg(this->device_ptr))->controller.digital_buttons;
     struct HID_digital_button* b;
 #define B_GET(button, num) { b = cvec_get(bl, num); this->input_buffer. button = b->state; }
     B_GET(up, 0);
@@ -430,7 +430,7 @@ static void update_inputs(GB_CPU* this) {
 #undef B_GET
 }
 
-static u32 GB_CPU_get_input(GB_CPU* this) {
+static u32 GB_CPU_get_input(struct GB_CPU* this) {
     u32 out1;
     u32 out3 = 0x0F;
     update_inputs(this);
@@ -449,7 +449,7 @@ static u32 GB_CPU_get_input(GB_CPU* this) {
 }
 
 
-u32 GB_CPU_bus_read_IO(GB_bus *bus, u32 addr, u32 val)
+u32 GB_CPU_bus_read_IO(struct GB_bus *bus, u32 addr, u32 val)
 {
     struct GB_CPU* this = bus->cpu;
     if ((addr >= 0xFF10) && (addr < 0xFF40)) {
@@ -510,7 +510,7 @@ u32 GB_CPU_bus_read_IO(GB_bus *bus, u32 addr, u32 val)
     //return this->bus->APU_read_IO(addr, val);
 }
 
-void GB_CPU_bus_write_IO(GB_bus* bus, u32 addr, u32 val)
+void GB_CPU_bus_write_IO(struct GB_bus* bus, u32 addr, u32 val)
 {
     struct GB_CPU* this = bus->cpu;
     if ((addr >= 0xFF10) && (addr < 0xFF40)) {

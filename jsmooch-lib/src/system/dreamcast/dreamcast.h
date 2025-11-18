@@ -56,8 +56,8 @@ enum HOLLY_PCW_paratype {
 };
 
 
-void DC_new(jsm_system* system);
-void DC_delete(jsm_system* system);
+void DC_new(struct jsm_system* system);
+void DC_delete(struct jsm_system* system);
 
 #define HOLLY_VRAM_SIZE 8*1024*1024
 
@@ -298,6 +298,6 @@ enum holly_interrupt_masks {
     hirq_gdrom_cmd = holly_ext | 0
 };
 
-void DC_mem_init(DC*);
+void DC_mem_init(struct DC*);
 
 #endif //JSMOOCH_EMUS_DREAMCAST_H

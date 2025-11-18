@@ -16,7 +16,7 @@ enum genesis_controller_kinds {
     genesis_controller_6button
 };
 
-void genesis_new(jsm_system*, enum jsm::systems kind);
-void genesis_delete(jsm_system* system);
+void genesis_new(struct jsm_system*, enum jsm_systems kind);
+void genesis_delete(struct jsm_system* system);
 
 #endif //JSMOOCH_EMUS_GENESIS_H

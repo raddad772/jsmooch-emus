@@ -3,7 +3,7 @@
 //
 
 #include <stdio.h>
-#include <cassert>
+#include <assert.h>
 #include <stdlib.h>
 #if !defined(_MSC_VER)
 #include <unistd.h>
@@ -253,7 +253,7 @@ static void construct_path(char *out, u32 iclass, u32 ins)
 }
  */
 
-static void parse_state(struct json_object_s *object, test_state *state)
+static void parse_state(struct json_object_s *object, struct test_state *state)
 {
     struct json_object_element_s *el = object->start;
     state->num_ram_entry = 0;
@@ -374,7 +374,7 @@ static void parse_state(struct json_object_s *object, test_state *state)
 }
 
 
-static void parse_and_fill_out(struct jsontest tests[1000], read_file_buf *infile)
+static void parse_and_fill_out(struct jsontest tests[1000], struct read_file_buf *infile)
 {
     struct json_value_s *root = json_parse(infile->buf.ptr, infile->buf.size);
     assert(root->type == json_type_array);
@@ -487,7 +487,7 @@ static void parse_and_fill_out(struct jsontest tests[1000], read_file_buf *infil
     free(root);
 }
 
-static void pprint_regs(struct Z80_regs *cpu_regs, test_cpu_regs *test_regs, u32 last_pc, u32 only_print_diff)
+static void pprint_regs(struct Z80_regs *cpu_regs, struct test_cpu_regs *test_regs, u32 last_pc, u32 only_print_diff)
 {
     printf("\nREG CPU       TEST");
     printf("\n------------------");
@@ -537,7 +537,7 @@ static void pprint_regs(struct Z80_regs *cpu_regs, test_cpu_regs *test_regs, u32
         printf("\nIM  %02x        %02x", cpu_regs->IM, test_regs->im);
 }
 
-static void pprint_test(struct jsontest *test, test_cycle *cpucycles) {
+static void pprint_test(struct jsontest *test, struct test_cycle *cpucycles) {
     printf("\nCycles");
     for (u32 i = 0; i < test->num_cycles; i++) {
         printf("\n\nTEST cycle:%d  addr:%04x  data:%02x  rwmi:%d%d%d%d", i, test->cycles[i].addr, test->cycles[i].data, test->cycles[i].r, test->cycles[i].w, test->cycles[i].m, test->cycles[i].i);
@@ -548,7 +548,7 @@ static void pprint_test(struct jsontest *test, test_cycle *cpucycles) {
 //#define PP(a, b) passed &= cpu->regs.a == final->regs.b; printf("\n%s %04x %04x %d", #a, cpu->regs.a, final->regs.b, passed)
 #define PP(a, b) passed &= cpu->regs.a == final->regs.b
 
-static u32 testregs(struct Z80* cpu, test_state* final, u32 last_pc, u32 is_call, u32 tn)
+static u32 testregs(struct Z80* cpu, struct test_state* final, u32 last_pc, u32 is_call, u32 tn)
 {
     u32 passed = 1;
     u32 rpc = last_pc == final->regs.pc;
@@ -588,7 +588,7 @@ static u32 testregs(struct Z80* cpu, test_state* final, u32 last_pc, u32 is_call
 
 }
 
-static void test_z80_automated(struct z80_test_result *out, Z80* cpu, jsontest tests[1000], u32 is_call)
+static void test_z80_automated(struct z80_test_result *out, struct Z80* cpu, struct jsontest tests[1000], u32 is_call)
 {
     out->passed = 0;
     sprintf(out->msg, "");

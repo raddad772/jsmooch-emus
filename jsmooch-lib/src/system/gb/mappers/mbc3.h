@@ -33,12 +33,12 @@ struct GB_mapper_MBC3 {
     u32 num_RAM_banks;
 };
 
-void GB_mapper_MBC3_new(GB_mapper *parent, GB_clock *clock, GB_bus *bus);
-void GB_mapper_MBC3_delete(GB_mapper *parent);
-void GBMBC3_reset(GB_mapper* parent);
-void GBMBC3_set_cart(GB_mapper* parent, GB_cart* cart);
+void GB_mapper_MBC3_new(struct GB_mapper *parent, struct GB_clock *clock, struct GB_bus *bus);
+void GB_mapper_MBC3_delete(struct GB_mapper *parent);
+void GBMBC3_reset(struct GB_mapper* parent);
+void GBMBC3_set_cart(struct GB_mapper* parent, struct GB_cart* cart);
 
-u32 GBMBC3_CPU_read(GB_mapper* parent, u32 addr, u32 val, u32 has_effect);
-void GBMBC3_CPU_write(GB_mapper* parent, u32 addr, u32 val);
+u32 GBMBC3_CPU_read(struct GB_mapper* parent, u32 addr, u32 val, u32 has_effect);
+void GBMBC3_CPU_write(struct GB_mapper* parent, u32 addr, u32 val);
 
 #endif //JSMOOCH_EMUS_MBC3_H

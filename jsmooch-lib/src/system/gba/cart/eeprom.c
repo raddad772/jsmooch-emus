@@ -1,7 +1,7 @@
 //
 // Created by . on 1/17/25.
 //
-#include <cstring>
+#include <string.h>
 
 #include "../gba_bus.h"
 #include "eeprom.h"
@@ -14,7 +14,7 @@
 #define STATE_CONSUME_BIT 32 // consume 1 bit and don't act on it
 
 
-static inline u32 eeprom_get_bit(persistent_store *store, u32 bit_num)
+static inline u32 eeprom_get_bit(struct persistent_store *store, u32 bit_num)
 {
     u32 byte_num = bit_num >> 3;
     u32 shift = 7 - (bit_num & 7);
@@ -23,14 +23,14 @@ static inline u32 eeprom_get_bit(persistent_store *store, u32 bit_num)
     return v;
 }
 
-static inline void eeprom_put_bit(persistent_store *store, u32 bit_num, u32 bit)
+static inline void eeprom_put_bit(struct persistent_store *store, u32 bit_num, u32 bit)
 {
     u32 byte_num = bit_num >> 3;
     u32 shift = 7 - (bit_num & 7);
     ((u8 *)store->data)[byte_num] |= (bit << shift);
 }
 
-void GBA_cart_init_eeprom(GBA_cart *this)
+void GBA_cart_init_eeprom(struct GBA_cart *this)
 {
     this->RAM.eeprom.ready_at = 0;
     this->RAM.eeprom.size_was_detected = 1;
@@ -68,20 +68,20 @@ n bits eeprom address (MSB first, 6 or 14 bits, depending on EEPROM)
  0 1 1 0 1 0 0 1
  */
 
-static void serial_clear(GBA_CART_EEPROM *e)
+static void serial_clear(struct GBA_CART_EEPROM *e)
 {
     e->serial.data = 0;
     e->serial.sz = 0;
 }
 
-static void serial_add(GBA_CART_EEPROM *e, u32 v)
+static void serial_add(struct GBA_CART_EEPROM *e, u32 v)
 {
     e->serial.data <<= 1;
     e->serial.data |= v;
     e->serial.sz++;
 }
 
-static void pprint_RAM_hw_bit0(GBA *this, u32 addr, u32 numbits, u32 was_read)
+static void pprint_RAM_hw_bit0(struct GBA *this, u32 addr, u32 numbits, u32 was_read)
 {
     // 8 per line!
     u32 num = 0;
@@ -99,7 +99,7 @@ static void pprint_RAM_hw_bit0(GBA *this, u32 addr, u32 numbits, u32 was_read)
 }
 
 
-void GBA_cart_write_eeprom(GBA*this, u32 addr, u32 sz, u32 access, u32 val)
+void GBA_cart_write_eeprom(struct GBA*this, u32 addr, u32 sz, u32 access, u32 val)
 {
     struct GBA_CART_EEPROM *e = &this->cart.RAM.eeprom;
     this->waitstates.current_transaction += this->waitstates.sram;
@@ -176,7 +176,7 @@ void GBA_cart_write_eeprom(GBA*this, u32 addr, u32 sz, u32 access, u32 val)
     }
 }
 
-u32 GBA_cart_read_eeprom(GBA*this, u32 addr, u32 sz, u32 access, u32 has_effect)
+u32 GBA_cart_read_eeprom(struct GBA*this, u32 addr, u32 sz, u32 access, u32 has_effect)
 {
     struct GBA_CART_EEPROM *e = &this->cart.RAM.eeprom;
     this->waitstates.current_transaction += this->waitstates.sram;

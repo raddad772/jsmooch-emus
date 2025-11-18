@@ -204,7 +204,7 @@ STBIWDEF void stbi_flip_vertically_on_write(int flip_boolean);
 
 #include <stdarg.h>
 #include <stdlib.h>
-#include <cstring>
+#include <string.h>
 #include <math.h>
 
 #if defined(STBIW_MALLOC) && defined(STBIW_FREE) && (defined(STBIW_REALLOC) || defined(STBIW_REALLOC_SIZED))
@@ -232,7 +232,7 @@ STBIWDEF void stbi_flip_vertically_on_write(int flip_boolean);
 
 
 #ifndef STBIW_ASSERT
-#include <cassert>
+#include <assert.h>
 #define STBIW_ASSERT(x) assert(x)
 #endif
 

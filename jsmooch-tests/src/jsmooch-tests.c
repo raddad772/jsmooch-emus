@@ -3,7 +3,7 @@
 //
 
 #include <stdio.h>
-#include <cstring>
+#include <string.h>
 
 #include "z80_drag_race.h"
 #include "jsmooch-tests.h"

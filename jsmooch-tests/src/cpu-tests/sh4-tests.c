@@ -2,7 +2,7 @@
 // Created by . on 5/22/24.
 //
 
-#include <cassert>
+#include <assert.h>
 #include <stdlib.h>
 #if defined(_MSC_VER)
 #include <windows.h>
@@ -12,7 +12,7 @@
 #include <dirent.h>
 #endif
 #include <stdio.h>
-#include <cstring>
+#include <string.h>
 
 #include <sys/types.h>
 
@@ -118,7 +118,7 @@ static char *construct_path(char* w, const char* who)
 #define TB_CYCLES 3
 #define TB_OPCODES 4
 
-static u32 read_state(u8 *ptr, SH4_test_state *state, int expected_magic_val)
+static u32 read_state(u8 *ptr, struct SH4_test_state *state, int expected_magic_val)
 {
 #define R32(val)   state-> val = cR[M32](ptr, 0); ptr += 4
     u32 out_size = cR[M32](ptr, 0);
@@ -156,7 +156,7 @@ static u32 read_state(u8 *ptr, SH4_test_state *state, int expected_magic_val)
     return out_size;
 }
 
-static u32 read_opcodes(u8* ptr, sh4test *test)
+static u32 read_opcodes(u8* ptr, struct sh4test *test)
 {
 #define R32(val)   val = cR[M32](ptr, 0); ptr += 4
     u32 out_size, magic_number;
@@ -174,7 +174,7 @@ static u32 read_opcodes(u8* ptr, sh4test *test)
 #undef R32
 }
 
-static u32 read_cycles(u8 *ptr, test_cycle *cycles)
+static u32 read_cycles(u8 *ptr, struct test_cycle *cycles)
 {
 #define R32(val)   val = cR[M32](ptr, 0); ptr += 4
 #define R64(val)   val = cR[M64](ptr, 0); ptr += 8
@@ -206,7 +206,7 @@ static u32 read_cycles(u8 *ptr, test_cycle *cycles)
 }
 
 
-static u32 parse_test(u8 *ptr, sh4test *t)
+static u32 parse_test(u8 *ptr, struct sh4test *t)
 {
     u32 out_size = cR[M32](ptr, 0);
     assert(out_size < FILE_BUF_SIZE);
@@ -265,7 +265,7 @@ static void pprint_SR(struct SH4_regs *regs) {
 }
 
 #define tassert(rn) if (sh4->regs. rn != s-> rn) { dbg_LT_dump(); assert(sh4->regs. rn == s-> rn); }
-static u32 compare_state_to_cpu(struct SH4* sh4, SH4_test_state *s, SH4_test_state *initial)
+static u32 compare_state_to_cpu(struct SH4* sh4, struct SH4_test_state *s, struct SH4_test_state *initial)
 {
 #define CP(rn, rname) all_passed &= cval(sh4->regs. rn, s-> rn, initial-> rn, "%08llx", rname)
 #define CPf(bank, rn, rname) all_passed &= cval_f(sh4->regs.fb[bank].FP32[(rn) ^ 1], s->fb[bank].FP32[rn], "%f", rname)
@@ -357,7 +357,7 @@ static u32 compare_state_to_cpu(struct SH4* sh4, SH4_test_state *s, SH4_test_sta
     return all_passed;
 }
 
-static void copy_state_to_cpu(struct SH4* sh4, SH4_test_state *s)
+static void copy_state_to_cpu(struct SH4* sh4, struct SH4_test_state *s)
 {
 #define CP(rn) sh4->regs. rn = s-> rn
     SH4_SR_set(sh4, s->SR & 0x700083F3);

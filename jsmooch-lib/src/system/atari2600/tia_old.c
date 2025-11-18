@@ -2,7 +2,7 @@
 // Created by . on 4/14/24.
 //
 
-#include <cstring>
+#include <string.h>
 #include "stdio.h"
 
 #include "tia.h"
@@ -10,14 +10,14 @@
 
 #define dprintf(...) (void)(0)
 
-void TIA_init(atari_TIA* this)
+void TIA_init(struct atari_TIA* this)
 {
-    memset(this, 0, sizeof(atari_TIA));
+    memset(this, 0, sizeof(struct atari_TIA));
 
     TIA_reset(this);
 }
 
-void TIA_reset(atari_TIA* this)
+void TIA_reset(struct atari_TIA* this)
 {
     this->hcounter = 0;
     dprintf("\nTIA RESET HC0");
@@ -35,7 +35,7 @@ void TIA_reset(atari_TIA* this)
 #define IN_VBLANK_OUT (this->sy >= this->timing.vblank_out_start)
 #define OUT_OF_FRAME (this->vcounter > (this->timing.vblank_out_lines + this->timing.vblank_out_start))
 
-static void flip_buffer(atari_TIA* this)
+static void flip_buffer(struct atari_TIA* this)
 {
     // Update meta state, so emulator knows we have completed a frame
     this->master_frame++;
@@ -47,7 +47,7 @@ static void flip_buffer(atari_TIA* this)
 
 }
 
-static void TIA_WQ_add(atari_TIA* this, u32 num, u32 val, u32 delay)
+static void TIA_WQ_add(struct atari_TIA* this, u32 num, u32 val, u32 delay)
 {
     for (u32 i = 0; i < TIA_WQ_MAX; i++) {
         if (this->write_queue[i].active == 0) {
@@ -64,18 +64,18 @@ static void TIA_WQ_add(atari_TIA* this, u32 num, u32 val, u32 delay)
 
 // leaned heavy on Ares for this p_width, p_start and p_step logic, and m_ and ball_ versions.
 // it's so different from docs... didn't get it til I implemented it
-static u32 m_width(atari_TIA* this, u32 num)
+static u32 m_width(struct atari_TIA* this, u32 num)
 {
     return 1 << this->m[num].size;
 }
 
-static void m_start(atari_TIA* this, u32 num)
+static void m_start(struct atari_TIA* this, u32 num)
 {
     this->m[num].start_counter = 4;
     this->m[num].starting = 1;
 }
 
-static void m_step(atari_TIA* this, u32 num, u32 clocks)
+static void m_step(struct atari_TIA* this, u32 num, u32 clocks)
 {
     while (clocks--) {
         this->m[num].counter++;
@@ -100,7 +100,7 @@ static void m_step(atari_TIA* this, u32 num, u32 clocks)
     }
 }
 
-static u32 p_width(atari_TIA* this, u32 num)
+static u32 p_width(struct atari_TIA* this, u32 num)
 {
     switch(this->p[num].size) {
         case 5:
@@ -112,7 +112,7 @@ static u32 p_width(atari_TIA* this, u32 num)
     }
 }
 
-static void p_start(atari_TIA* this, u32 num, u32 copy)
+static void p_start(struct atari_TIA* this, u32 num, u32 copy)
 {
     this->p[num].copy = copy;
     this->p[num].start_counter = 5;
@@ -120,7 +120,7 @@ static void p_start(atari_TIA* this, u32 num, u32 copy)
 }
 
 
-static void p_step(atari_TIA* this, u32 num, u32 clocks)
+static void p_step(struct atari_TIA* this, u32 num, u32 clocks)
 {
     u32 size = this->p[num].size;
     if (!clocks) return;
@@ -158,7 +158,7 @@ static void p_step(atari_TIA* this, u32 num, u32 clocks)
     }
 }
 
-static void ball_step(atari_TIA* this, u32 clocks)
+static void ball_step(struct atari_TIA* this, u32 clocks)
 {
     if (!clocks) return;
     while (clocks--) {
@@ -168,7 +168,7 @@ static void ball_step(atari_TIA* this, u32 clocks)
     }
 }
 
-static void TIA_WQ_finish(atari_TIA* this, atari_TIA_WQ_item* item)
+static void TIA_WQ_finish(struct atari_TIA* this, struct atari_TIA_WQ_item* item)
 {
     item->active = 0;
     u32 val = item->data;
@@ -255,7 +255,7 @@ static void TIA_WQ_finish(atari_TIA* this, atari_TIA_WQ_item* item)
 }
 
 
-static void TIA_WQ_cycle(atari_TIA* this) {
+static void TIA_WQ_cycle(struct atari_TIA* this) {
     for (u32 i = 0; i < TIA_WQ_MAX; i++) {
         if (this->write_queue[i].active) {
             struct atari_TIA_WQ_item* item = &this->write_queue[i];
@@ -266,7 +266,7 @@ static void TIA_WQ_cycle(atari_TIA* this) {
     }
 }
 
-static u32 TIA_read(atari_TIA* this, u32 addr, u32 *data)
+static u32 TIA_read(struct atari_TIA* this, u32 addr, u32 *data)
 {
     switch((addr & 0x0F) | 0x30) {
         case 0x30: // CXM0P read collision data for M0-P1, M0-P0
@@ -305,7 +305,7 @@ static u32 TIA_read(atari_TIA* this, u32 addr, u32 *data)
 
 
 static const i32 centering_offsets[8] = { 3, 3, 3, 3, 3, 6, 3, 10};
-static void update_RESMPn(atari_TIA* this, u32 num)
+static void update_RESMPn(struct atari_TIA* this, u32 num)
 {
     // If RESMP behavior is enabled...
     // "As long as Bit 1 is set, the missile is hidden and its horizontal position is
@@ -317,15 +317,15 @@ static void update_RESMPn(atari_TIA* this, u32 num)
     // TODO: do real centering logic here, or is this good!??!
 }
 
-static void update_RESMP(atari_TIA* this)
+static void update_RESMP(struct atari_TIA* this)
 {
     update_RESMPn(this, 0);
     update_RESMPn(this, 1);
 }
 
-static void TIA_new_frame(atari_TIA* this);
+static void TIA_new_frame(struct atari_TIA* this);
 
-static void TIA_vsync(atari_TIA* this, u32 val)
+static void TIA_vsync(struct atari_TIA* this, u32 val)
 {
     // 0...1
     dprintf("\nTIA_vsync! %d %d", val, this->io.vsync);
@@ -335,7 +335,7 @@ static void TIA_vsync(atari_TIA* this, u32 val)
     this->io.vsync = val;
 }
 
-static void TIA_write(atari_TIA* this, u32 addr, u32 *data)
+static void TIA_write(struct atari_TIA* this, u32 addr, u32 *data)
 {
     // b-f, 1b-24
     u32 val = *data;
@@ -437,7 +437,7 @@ static void TIA_write(atari_TIA* this, u32 addr, u32 *data)
             this->m[1].locked_to_player = val & 1;
             return;
         case 0x2C: // CXCLR clear collision latches <strobe>
-            memset(&this->col, 0, sizeof(atari_TIA_col));
+            memset(&this->col, 0, sizeof(struct atari_TIA_col));
             return;
         default:
             dprintf("\nUnknow TIA write to %02x", addr & 0x3F);
@@ -446,13 +446,13 @@ static void TIA_write(atari_TIA* this, u32 addr, u32 *data)
 #undef DELAY
 }
 
-void TIA_bus_cycle(atari_TIA* this, u32 addr, u32 *data, u32 rw)
+void TIA_bus_cycle(struct atari_TIA* this, u32 addr, u32 *data, u32 rw)
 {
     if (rw == 0) *data = TIA_read(this, addr, data);
     else TIA_write(this, addr, data);
 }
 
-static void TIA_new_frame(atari_TIA* this)
+static void TIA_new_frame(struct atari_TIA* this)
 {
     // Update internal state
     this->vcounter = 0;
@@ -520,7 +520,7 @@ static const u32 DIFF_SHIFTS[8] = {
         0, 0, 0, 0, 0, 1, 0, 2
 };
 
-static u32 get_player_pixel(atari_TIA* this, u32 msx, u32 player_num)
+static u32 get_player_pixel(struct atari_TIA* this, u32 msx, u32 player_num)
 {
     // No player pixels off left side of screen
     if (this->hcounter < 68) return 0;
@@ -547,7 +547,7 @@ static u32 get_player_pixel(atari_TIA* this, u32 msx, u32 player_num)
 
 static const u32 BALL_SIZES[4] = {1, 2, 4, 8};
 
-static u32 get_ball_pixel(atari_TIA* this, u32 msx)
+static u32 get_ball_pixel(struct atari_TIA* this, u32 msx)
 {
     if (this->ball.enable[0] == 0) return 0; // Ball is not enabled
     if (msx < this->ball.counter) return 0; // We aren't at left edge of ball yet
@@ -557,7 +557,7 @@ static u32 get_ball_pixel(atari_TIA* this, u32 msx)
 }
 
 // Get m0 pixel
-static u32 get_missile_pixel(atari_TIA* this, u32 msx, u32 missile_num)
+static u32 get_missile_pixel(struct atari_TIA* this, u32 msx, u32 missile_num)
 {
     if (this->m[missile_num].enable == 0) return 0; // Missile not enabled
     if (this->m[missile_num].locked_to_player) return 0; // Missile is hidden and centering
@@ -567,7 +567,7 @@ static u32 get_missile_pixel(atari_TIA* this, u32 msx, u32 missile_num)
     return msx < (this->m[missile_num].counter + missile_size);
 }
 
-void TIA_new_line(atari_TIA* this)
+void TIA_new_line(struct atari_TIA* this)
 {
     this->cpu_RDY = 0;
     this->vcounter++;
@@ -583,7 +583,7 @@ void TIA_new_line(atari_TIA* this)
     }
 }
 
-void TIA_run_cycle(atari_TIA* this)
+void TIA_run_cycle(struct atari_TIA* this)
 {
     // A frame is...
     // 40 lines vsync

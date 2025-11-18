@@ -7,13 +7,13 @@
 
 #include "helpers/int.h"
 struct NDS;
-void NDS_update_IFs(NDS*, u32 bitnum);
-void NDS_update_IFs_card(NDS*, u32 bitnum);
-void NDS_update_IF9(NDS*, u32 bitnum);
-void NDS_update_IF7(NDS*, u32 bitnum);
-void NDS_eval_irqs(NDS*);
-void NDS_eval_irqs_9(NDS*);
-void NDS_eval_irqs_7(NDS*);
+void NDS_update_IFs(struct NDS*, u32 bitnum);
+void NDS_update_IFs_card(struct NDS*, u32 bitnum);
+void NDS_update_IF9(struct NDS*, u32 bitnum);
+void NDS_update_IF7(struct NDS*, u32 bitnum);
+void NDS_eval_irqs(struct NDS*);
+void NDS_eval_irqs_9(struct NDS*);
+void NDS_eval_irqs_7(struct NDS*);
 
 enum NDS_IRQs {
     NDS_IRQ_VBLANK = 0,

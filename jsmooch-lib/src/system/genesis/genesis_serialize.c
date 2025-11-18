@@ -2,14 +2,14 @@
 // Created by . on 11/29/24.
 //
 
-#include <cstdlib>
+#include <stdlib.h>
 #include "genesis_serialize.h"
 #include "genesis_bus.h"
 #include "helpers/sys_present.h"
 #include "helpers/debug.h"
 #include "helpers/serialize/serialize.h"
 
-static void serialize_console(genesis *this, serialized_state *state)
+static void serialize_console(struct genesis *this, struct serialized_state *state)
 {
     serialized_state_new_section(state, "console", genesisSS_console, 1);
 #define S(x) Sadd(state, &(this-> x), sizeof(this-> x))
@@ -36,24 +36,24 @@ static void serialize_console(genesis *this, serialized_state *state)
 #undef S
 }
 
-static void serialize_z80(genesis *this, serialized_state *state)
+static void serialize_z80(struct genesis *this, struct serialized_state *state)
 {
     serialized_state_new_section(state, "z80", genesisSS_z80, 1);
     Z80_serialize(&this->z80, state);
 }
 
-static void serialize_m68k(genesis *this, serialized_state *state)
+static void serialize_m68k(struct genesis *this, struct serialized_state *state)
 {
     serialized_state_new_section(state, "m68k", genesisSS_m68k, 1);
     M68k_serialize(&this->m68k, state);
 }
 
-static void serialize_debug(genesis *this, serialized_state *state)
+static void serialize_debug(struct genesis *this, struct serialized_state *state)
 {
     serialized_state_new_section(state, "debug", genesisSS_debug, 1);
 }
 
-static void serialize_clock(genesis *this, serialized_state *state) {
+static void serialize_clock(struct genesis *this, struct serialized_state *state) {
     serialized_state_new_section(state, "clock", genesisSS_clock, 1);
 #define S(x) Sadd(state, &this->clock. x, sizeof(this->clock. x))
     S(master_cycle_count);
@@ -79,7 +79,7 @@ static void serialize_clock(genesis *this, serialized_state *state) {
 #undef S
 }
 
-static void serialize_vdp(genesis *this, serialized_state *state) {
+static void serialize_vdp(struct genesis *this, struct serialized_state *state) {
     serialized_state_new_section(state, "vdp", genesisSS_vdp, 1);
 #define S(x) Sadd(state, &this->vdp. x, sizeof(this->vdp. x))
     S(sprite_line_buf);
@@ -112,7 +112,7 @@ static void serialize_vdp(genesis *this, serialized_state *state) {
 #undef S
 }
 
-static void serialize_cartridge(genesis *this, serialized_state *state) {
+static void serialize_cartridge(struct genesis *this, struct serialized_state *state) {
     serialized_state_new_section(state, "cartridge", genesisSS_cartridge, 1);
 #define S(x) Sadd(state, &this->cart. x, sizeof(this->cart. x))
     //S(ROM.size);
@@ -131,22 +131,22 @@ static void serialize_cartridge(genesis *this, serialized_state *state) {
 #undef S
 }
 
-static void serialize_ym2612(genesis *this, serialized_state *state)
+static void serialize_ym2612(struct genesis *this, struct serialized_state *state)
 {
     serialized_state_new_section(state, "ym2612", genesisSS_ym2612, 1);
     ym2612_serialize(&this->ym2612, state);
 }
 
-static void serialize_sn76489(genesis *this, serialized_state *state)
+static void serialize_sn76489(struct genesis *this, struct serialized_state *state)
 {
     serialized_state_new_section(state, "sn76489", genesisSS_sn76489, 1);
     SN76489_serialize(&this->psg, state);
 }
 
 
-void genesisJ_save_state(jsm_system *jsm, serialized_state *state)
+void genesisJ_save_state(struct jsm_system *jsm, struct serialized_state *state)
 {
-    struct genesis* this = (genesis*)jsm->ptr;
+    struct genesis* this = (struct genesis*)jsm->ptr;
     // Basic info
     state->version = 1;
     state->opt.len = 0;
@@ -168,27 +168,27 @@ void genesisJ_save_state(jsm_system *jsm, serialized_state *state)
     serialize_ym2612(this, state);
 }
 
-static void deserialize_z80(genesis* this, serialized_state *state)
+static void deserialize_z80(struct genesis* this, struct serialized_state *state)
 {
     Z80_deserialize(&this->z80, state);
 }
 
-static void deserialize_m68k(genesis* this, serialized_state *state)
+static void deserialize_m68k(struct genesis* this, struct serialized_state *state)
 {
     M68k_deserialize(&this->m68k, state);
 }
 
-static void deserialize_ym2612(genesis* this, serialized_state *state)
+static void deserialize_ym2612(struct genesis* this, struct serialized_state *state)
 {
     ym2612_deserialize(&this->ym2612, state);
 }
 
-static void deserialize_sn76489(genesis* this, serialized_state *state)
+static void deserialize_sn76489(struct genesis* this, struct serialized_state *state)
 {
     SN76489_deserialize(&this->psg, state);
 }
 
-static void deserialize_console(genesis* this, serialized_state *state) {
+static void deserialize_console(struct genesis* this, struct serialized_state *state) {
 #define L(x) Sload(state, &this-> x, sizeof(this-> x))
     L(RAM);
     L(ARAM);
@@ -213,12 +213,12 @@ static void deserialize_console(genesis* this, serialized_state *state) {
 #undef L
 }
 
-static void deserialize_debug(genesis* this, serialized_state *state) {
+static void deserialize_debug(struct genesis* this, struct serialized_state *state) {
 #define L(x) Sload(state, &this->cart. x, sizeof(this->cart. x))
 #undef L
 }
 
-static void deserialize_cartridge(genesis* this, serialized_state *state) {
+static void deserialize_cartridge(struct genesis* this, struct serialized_state *state) {
 #define L(x) Sload(state, &this->cart. x, sizeof(this->cart. x))
     //u64 sz;
     //Sload(state, &sz, sizeof(sz));
@@ -239,7 +239,7 @@ static void deserialize_cartridge(genesis* this, serialized_state *state) {
 #undef L
 }
 
-static void deserialize_vdp(genesis* this, serialized_state *state) {
+static void deserialize_vdp(struct genesis* this, struct serialized_state *state) {
 #define L(x) Sload(state, &this->vdp. x, sizeof(this->vdp. x))
     L(sprite_line_buf);
     L(cur_pixel);
@@ -273,7 +273,7 @@ static void deserialize_vdp(genesis* this, serialized_state *state) {
 #undef L
 }
 
-static void deserialize_clock(genesis* this, serialized_state *state) {
+static void deserialize_clock(struct genesis* this, struct serialized_state *state) {
 #define L(x) Sload(state, &this->clock. x, sizeof(this->clock. x))
     L(master_cycle_count);
     L(master_frame);
@@ -298,11 +298,11 @@ static void deserialize_clock(genesis* this, serialized_state *state) {
 #undef L
 }
 
-void genesisJ_load_state(jsm_system *jsm, serialized_state *state, deserialize_ret *ret) {
+void genesisJ_load_state(struct jsm_system *jsm, struct serialized_state *state, struct deserialize_ret *ret) {
     state->iter.offset = 0;
     assert(state->version == 1);
 
-    struct genesis *this = (genesis *) jsm->ptr;
+    struct genesis *this = (struct genesis *) jsm->ptr;
 
     for (u32 i = 0; i < cvec_len(&state->sections); i++) {
         struct serialized_state_section *sec = cvec_get(&state->sections, i);

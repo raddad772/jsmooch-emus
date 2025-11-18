@@ -1,9 +1,9 @@
 //
 // Created by . on 2/11/25.
 //
-#include <cstdlib>
-#include <cstring>
-#include <cstdio> // printf
+#include <stdlib.h>
+#include <string.h>
+#include <stdio.h> // printf
 
 #include "r3000_instructions.h"
 #include "r3000.h"
@@ -21,7 +21,7 @@ static const char reg_alias_arr[33][12] = {
         "unknown reg"
 };
 
-static struct R3000_pipeline_item *pipe_push(R3000_pipeline *this)
+static struct R3000_pipeline_item *pipe_push(struct R3000_pipeline *this)
 {
     if (this->num_items == 2) return &this->empty_item;
     this->num_items++;
@@ -36,14 +36,14 @@ static struct R3000_pipeline_item *pipe_push(R3000_pipeline *this)
     }
 }
 
-static void pipe_item_clear(R3000_pipeline_item *this)
+static void pipe_item_clear(struct R3000_pipeline_item *this)
 {
     this->target = -1;
     this->value = 0;
     this->new_PC = 0xFFFFFFFF;
 }
 
-static void pipe_clear(R3000_pipeline *this)
+static void pipe_clear(struct R3000_pipeline *this)
 {
     pipe_item_clear(&this->item0);
     pipe_item_clear(&this->item1);
@@ -51,7 +51,7 @@ static void pipe_clear(R3000_pipeline *this)
     this->num_items = 0;
 }
 
-struct R3000_pipeline_item *R3000_pipe_move_forward(R3000_pipeline *this)
+struct R3000_pipeline_item *R3000_pipe_move_forward(struct R3000_pipeline *this)
 {
     if (this->num_items == 0) return &this->empty_item;
     this->current = this->item0;
@@ -63,7 +63,7 @@ struct R3000_pipeline_item *R3000_pipe_move_forward(R3000_pipeline *this)
     return &this->current;
 }
 
-static void do_decode_table(R3000 *this) {
+static void do_decode_table(struct R3000 *this) {
     for (u32 op1 = 0; op1 < 0x3F; op1++) {
         struct R3000_opcode *mo = &this->decode_table[op1];
         R3000_ins o = &R3000_fNA;
@@ -339,7 +339,7 @@ static void do_decode_table(R3000 *this) {
     }
 }
 
-void R3000_init(R3000 *this, u64 *master_clock, u64 *waitstates, scheduler_t *scheduler, IRQ_multiplexer_b *IRQ_multiplexer)
+void R3000_init(struct R3000 *this, u64 *master_clock, u64 *waitstates, struct scheduler_t *scheduler, struct IRQ_multiplexer_b *IRQ_multiplexer)
 {
     memset(this, 0, sizeof(*this));
     this->clock = master_clock;
@@ -357,13 +357,13 @@ void R3000_init(R3000 *this, u64 *master_clock, u64 *waitstates, scheduler_t *sc
     GTE_init(&this->gte);
 }
 
-void R3000_delete(R3000 *this)
+void R3000_delete(struct R3000 *this)
 {
     jsm_string_delete(&this->console);
     jsm_string_delete(&this->trace.str);
 }
 
-void R3000_setup_tracing(R3000 *this, jsm_debug_read_trace *strct, u64 *trace_cycle_pointer, i32 source_id)
+void R3000_setup_tracing(struct R3000 *this, struct jsm_debug_read_trace *strct, u64 *trace_cycle_pointer, i32 source_id)
 {
     this->trace.strct.read_trace_m68k = strct->read_trace_m68k;
     this->trace.strct.ptr = strct->ptr;
@@ -372,13 +372,13 @@ void R3000_setup_tracing(R3000 *this, jsm_debug_read_trace *strct, u64 *trace_cy
     this->trace.source_id = source_id;
 }
 
-void R3000_reset(R3000 *this)
+void R3000_reset(struct R3000 *this)
 {
     pipe_clear(&this->pipe);
     this->regs.PC = 0xBFC00000;
 }
 
-static void add_to_console(R3000 *this, u32 ch)
+static void add_to_console(struct R3000 *this, u32 ch)
 {
     if (this->dbg.console) {
         console_view_add_char(this->dbg.console, ch);
@@ -390,7 +390,7 @@ static void add_to_console(R3000 *this, u32 ch)
         jsm_string_sprintf(&this->console, "%c", ch);*/
 }
 
-static void delay_slots(R3000 *this, R3000_pipeline_item *which)
+static void delay_slots(struct R3000 *this, struct R3000_pipeline_item *which)
 {
     // Load delay slot from instruction before this one
     if (which->target > 0) {// R0 stays 0
@@ -412,7 +412,7 @@ static void delay_slots(R3000 *this, R3000_pipeline_item *which)
 
 }
 
-void R3000_flush_pipe(R3000 *this)
+void R3000_flush_pipe(struct R3000 *this)
 {
     delay_slots(this, &this->pipe.current);
     delay_slots(this, &this->pipe.item0);
@@ -421,7 +421,7 @@ void R3000_flush_pipe(R3000 *this)
     R3000_pipe_move_forward(&this->pipe);
 }
 
-void R3000_exception(R3000 *this, u32 code, u32 branch_delay, u32 cop0)
+void R3000_exception(struct R3000 *this, u32 code, u32 branch_delay, u32 cop0)
 {
     code <<= 2;
     u32 vector = 0x80000080;
@@ -448,7 +448,7 @@ void R3000_exception(R3000 *this, u32 code, u32 branch_delay, u32 cop0)
     this->regs.COP0[RCR_SR] = (lstat & 0xFFFFFFC0) | ((lstat & 0x0F) << 2);
 }
 
-static inline void decode(R3000 *this, u32 IR, R3000_pipeline_item *current)
+static inline void decode(struct R3000 *this, u32 IR, struct R3000_pipeline_item *current)
 {
     u32 p1 = (IR & 0xFC000000) >> 26;
 
@@ -460,7 +460,7 @@ static inline void decode(R3000 *this, u32 IR, R3000_pipeline_item *current)
     }
 }
 
-static void fetch_and_decode(R3000 *this)
+static void fetch_and_decode(struct R3000 *this)
 {
     if (this->regs.PC & 3) {
         R3000_exception(this, 4, 0, 0);
@@ -478,7 +478,7 @@ static void fetch_and_decode(R3000 *this)
 #pragma warning(disable: 4334) // warning C4334: '<<': result of 32-bit shift implicitly converted to 64 bits (was 64-bit shift intended?)
 #endif
 
-static void R3000_print_context(R3000 *this, R3000ctxt *ct, jsm_string *out)
+static void R3000_print_context(struct R3000 *this, struct R3000ctxt *ct, struct jsm_string *out)
 {
     jsm_string_quickempty(out);
     u32 needs_commaspace = 0;
@@ -497,7 +497,7 @@ static void R3000_print_context(R3000 *this, R3000ctxt *ct, jsm_string *out)
 #pragma warning(pop)
 #endif
 
-static void lycoder_trace_format(R3000 *this, jsm_string *out)
+static void lycoder_trace_format(struct R3000 *this, struct jsm_string *out)
 {
     struct R3000ctxt ct;
     ct.cop = 0;
@@ -513,7 +513,7 @@ static void lycoder_trace_format(R3000 *this, jsm_string *out)
     }
 }
 
-void R3000_trace_format(R3000 *this, jsm_string *out)
+void R3000_trace_format(struct R3000 *this, struct jsm_string *out)
 {
     struct R3000ctxt ct;
     ct.cop = 0;
@@ -529,7 +529,7 @@ void R3000_trace_format(R3000 *this, jsm_string *out)
     }
 }
 
-void R3000_check_IRQ(R3000 *this)
+void R3000_check_IRQ(struct R3000 *this)
 {
     if (this->pins.IRQ && (this->regs.COP0[12] & 0x400) && (this->regs.COP0[12] & 1)) {
         //printf("\nDO IRQ!");
@@ -539,7 +539,7 @@ void R3000_check_IRQ(R3000 *this)
     }
 }
 
-void R3000_cycle(R3000 *this, i32 howmany)
+void R3000_cycle(struct R3000 *this, i32 howmany)
 {
     i64 cycles_left = howmany;
     assert(this->regs.R[0] == 0);
@@ -573,12 +573,12 @@ void R3000_cycle(R3000 *this, i32 howmany)
     }
 }
 
-void R3000_update_I_STAT(R3000 *this)
+void R3000_update_I_STAT(struct R3000 *this)
 {
     this->pins.IRQ = (this->io.I_STAT->IF & this->io.I_MASK) != 0;
 }
 
-void R3000_write_reg(R3000 *this, u32 addr, u32 sz, u32 val)
+void R3000_write_reg(struct R3000 *this, u32 addr, u32 sz, u32 val)
 {
     switch(addr) {
         case 0x1F801070: // I_STAT write
@@ -596,7 +596,7 @@ void R3000_write_reg(R3000 *this, u32 addr, u32 sz, u32 val)
     printf("\nUnhandled CPU write %08x (%d): %08x", addr, sz, val);
 }
 
-u32 R3000_read_reg(R3000 *this, u32 addr, u32 sz)
+u32 R3000_read_reg(struct R3000 *this, u32 addr, u32 sz)
 {
     switch(addr) {
         case 0x1F801070: // I_STAT read
@@ -609,7 +609,7 @@ u32 R3000_read_reg(R3000 *this, u32 addr, u32 sz)
     return mask[sz];
 }
 
-void R3000_idle(R3000 *this, u32 howlong)
+void R3000_idle(struct R3000 *this, u32 howlong)
 {
     (*this->waitstates) += howlong;
 }

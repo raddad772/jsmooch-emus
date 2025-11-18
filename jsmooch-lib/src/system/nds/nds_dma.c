@@ -2,7 +2,7 @@
 // Created by . on 1/20/25.
 //
 
-#include "fail"
+#include "helpers/debugger/debugger.h"
 #include "nds_dma.h"
 #include "nds_bus.h"
 #include "nds_irq.h"
@@ -15,7 +15,7 @@
 // 5. add interrupt registers
 // 6. add timers/registers
 
-void NDS_DMA_init(NDS *this)
+void NDS_DMA_init(struct NDS *this)
 {
     for (u32 i = 0; i < 4; i++) {
         struct NDS_DMA_ch *ch = &this->dma7[i];
@@ -27,11 +27,11 @@ void NDS_DMA_init(NDS *this)
 
 static void dma7_irq(void *ptr, u64 key, u64 cur_time, u32 jitter)
 {
-    struct NDS *this = (NDS *)ptr;
+    struct NDS *this = (struct NDS *)ptr;
     NDS_update_IF7(this, NDS_IRQ_DMA0 + key);
 }
 
-static void dma7_go_ch(NDS *this, NDS_DMA_ch *ch) {
+static void dma7_go_ch(struct NDS *this, struct NDS_DMA_ch *ch) {
     u32 num_transfer = 0;
     u32 ct = this->waitstates.current_transaction;
     ch->active = 1;
@@ -116,7 +116,7 @@ static void dma7_go_ch(NDS *this, NDS_DMA_ch *ch) {
     ch->active = 0;
 }
 
-void NDS_dma7_start(NDS *this, NDS_DMA_ch *ch, u32 i)
+void NDS_dma7_start(struct NDS *this, struct NDS_DMA_ch *ch, u32 i)
 {
     if (ch->active) return;
     dbgloglog(NDS_CAT_DMA_START, DBGLS_INFO, "DMA7 %d start", i);
@@ -142,12 +142,12 @@ void NDS_dma7_start(NDS *this, NDS_DMA_ch *ch, u32 i)
 // -------------################
 static void dma9_irq(void *ptr, u64 key, u64 cur_time, u32 jitter)
 {
-    struct NDS *this = (NDS *)ptr;
+    struct NDS *this = (struct NDS *)ptr;
     NDS_update_IF9(this, NDS_IRQ_DMA0 + key);
 }
 
 
-static void dma9_go_ch(NDS *this, NDS_DMA_ch *ch) {
+static void dma9_go_ch(struct NDS *this, struct NDS_DMA_ch *ch) {
     ch->active = 1;
     u32 num_transfer = 0;
     u32 ct = this->waitstates.current_transaction;
@@ -231,7 +231,7 @@ static void dma9_go_ch(NDS *this, NDS_DMA_ch *ch) {
     ch->active = 0;
 }
 
-void NDS_dma9_start(NDS *this, NDS_DMA_ch *ch, u32 i)
+void NDS_dma9_start(struct NDS *this, struct NDS_DMA_ch *ch, u32 i)
 {
     if (ch->active) return;
     dbgloglog(NDS_CAT_DMA_START, DBGLS_INFO, "DMA9 %d start", i);
@@ -284,7 +284,7 @@ void NDS_dma9_start(NDS *this, NDS_DMA_ch *ch, u32 i)
 
 // #############################
 
-void NDS_check_dma7_at_vblank(NDS *this)
+void NDS_check_dma7_at_vblank(struct NDS *this)
 {
     // Check if any DMA channels are at enabled=1, started=0, time=hblank
     for (u32 i = 0; i < 4; i++) {
@@ -295,7 +295,7 @@ void NDS_check_dma7_at_vblank(NDS *this)
     }
 }
 
-void NDS_check_dma9_at_vblank(NDS *this)
+void NDS_check_dma9_at_vblank(struct NDS *this)
 {
     // Check if any DMA channels are at enabled=1, started=0, time=hblank
     for (u32 i = 0; i < 4; i++) {
@@ -306,7 +306,7 @@ void NDS_check_dma9_at_vblank(NDS *this)
     }
 }
 
-void NDS_check_dma9_at_hblank(NDS *this)
+void NDS_check_dma9_at_hblank(struct NDS *this)
 {
     if (this->clock.ppu.y >= 192) return;
     for (u32 i = 0; i < 4; i++) {
@@ -317,7 +317,7 @@ void NDS_check_dma9_at_hblank(NDS *this)
     }
 }
 
-void NDS_trigger_dma7_if(NDS *this, u32 start_timing)
+void NDS_trigger_dma7_if(struct NDS *this, u32 start_timing)
 {
     struct NDS_DMA_ch *ch;
     assert(start_timing <= 3);
@@ -336,7 +336,7 @@ void NDS_trigger_dma7_if(NDS *this, u32 start_timing)
     }
 }
 
-void NDS_trigger_dma9_if(NDS *this, u32 start_timing)
+void NDS_trigger_dma9_if(struct NDS *this, u32 start_timing)
 {
     struct NDS_DMA_ch *ch;
     for (u32 i = 0; i < 4; i++) {

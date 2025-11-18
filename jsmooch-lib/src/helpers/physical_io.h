@@ -2,15 +2,17 @@
 // Created by . on 4/19/24.
 //
 
-#pragma once
+#ifndef JSMOOCH_EMUS_PHYSICAL_IO_H
+#define JSMOOCH_EMUS_PHYSICAL_IO_H
 
-#include <vector>
+#ifdef __cplusplus
+extern "C" {
+#endif
 
 #include "helpers/sram.h"
 #include "helpers/int.h"
-#include "helpers/buf.h"
-#include "helpers/physical_io.h"
 #include "helpers/cvec.h"
+#include "helpers/buf.h"
 
 struct physical_io_device;
 
@@ -163,35 +165,32 @@ enum DIGITAL_BUTTON_KIND {
 };
 
 struct HID_digital_button {
-    HID_digital_button() = default;
-    char name[40]{};
-    DIGITAL_BUTTON_KIND kind{};
-    u32 state{};
+    char name[40];
+    enum DIGITAL_BUTTON_KIND kind;
+    u32 state;
 
-    u32 id{};
+    u32 id;
 
-    JKEYS common_id{};
-
+    enum JKEYS common_id;
 };
 
 struct HID_analog_axis {
-    HID_analog_axis() = default;
-    char name[40]{};
-    u32 value{};
-    u32 min{}, max{};
-    u32 id{};
+    char name[40];
+    u32 value;
+    u32 min, max;
+    u32 id;
 };
 
 struct jsm_system;
 
 struct JSM_CONTROLLER {
-    char name[50]{};
-    std::vector<HID_analog_axis> analog_axes{};
-    std::vector<HID_digital_button> digital_buttons{};
+    char name[50];
+    struct cvec analog_axes;
+    struct cvec digital_buttons;
 };
 
 struct JSM_KEYBOARD {
-    JKEYS key_defs[100];
+    enum JKEYS key_defs[100];
     u32 key_states[100];
     u32 num_keys;
 };
@@ -208,165 +207,144 @@ enum JSM_DISPLAY_STANDARDS {
 
 struct JSM_DISPLAY_PIXELOMETRY {
     struct {
-        u32 left_hblank{}, right_hblank{};
-        u32 visible{};
+        u32 left_hblank, right_hblank;
+        u32 visible;
 
-        u32 max_visible{};
-    } cols{};
+        u32 max_visible;
+    } cols;
 
     struct {
-        u32 top_vblank{}, bottom_vblank{};
-        u32 visible{};
+        u32 top_vblank, bottom_vblank;
+        u32 visible;
 
-        u32 max_visible{};
-    } rows{};
+        u32 max_visible;
+    } rows;
 
     struct { // Visible area not seen
-        u32 left{}, right{}, top{}, bottom{};
-        u32 force{}; // for things like gamegear that draw a whole frame and crop it onto an LCD
-    } overscan{};
+        u32 left, right, top, bottom;
+        u32 force; // for things like gamegear that draw a whole frame and crop it onto an LCD
+    } overscan;
 
     struct { // Defines how our output is from the top-left of the frame, as defined starting before left_hblank and above top_vblank
-        i32 x{}, y{};
-    } offset{};
+        i32 x, y;
+    } offset;
 
     struct {
-        u32 width{}, height{};
-    } outbuf_info{};
+        u32 width, height;
+    } outbuf_info;
 };
 
 struct JSM_DISPLAY_GEOMETRY {
     struct {
-        u32 width{}, height{};
-    } physical_aspect_ratio{};
+        u32 width, height;
+    } physical_aspect_ratio;
 };
 
 
 struct JSM_DISPLAY {
-    JSM_DISPLAY_STANDARDS standard{};
-    u32 enabled{};
-    double fps{};
-    u32 fps_override_hint{}; // Is it OK to go to a close value near this
+    enum JSM_DISPLAY_STANDARDS standard;
+    u32 enabled;
+    double fps;
+    u32 fps_override_hint; // Is it OK to go to a close value near this
 
-    void *output[2]{};
-    void *output_debug_metadata[2]{};
-    u32 last_written{};
+    void *output[2];
+    void *output_debug_metadata[2];
+    u32 last_written;
     //u32 last_displayed;
-    u16 *cur_output{};
+    u16 *cur_output;
 
     // geometry, used mostly for event viewer really
-    JSM_DISPLAY_PIXELOMETRY pixelometry{};
-    JSM_DISPLAY_GEOMETRY geometry{};
+    struct JSM_DISPLAY_PIXELOMETRY pixelometry;
+    struct JSM_DISPLAY_GEOMETRY geometry;
 
-    u32 scan_x{}, scan_y{}; // Current electron gun X and Y, as defined inside the geometry above.
-    ~JSM_DISPLAY() {
-        if (output[0] != nullptr) { free(output[0]); output[0] = nullptr; }
-        if (output[1] != nullptr) { free(output[1]); output[1] = nullptr; }
-        if (output_debug_metadata[0] != nullptr) { free(output_debug_metadata[0]); output_debug_metadata[0] = nullptr; }
-        if (output_debug_metadata[1] != nullptr) { free(output_debug_metadata[1]); output_debug_metadata[1] = nullptr; }
-    }
-
-    cvec_ptr<physical_io_device> pio{};
-
+    u32 scan_x, scan_y; // Current electron gun X and Y, as defined inside the geometry above.
 };
 
 struct JSM_MOUSE {
-    HID_digital_button *left_button{};
-    HID_digital_button *right_button{};
-    i32 new_x{}, new_y{};
-    cvec_ptr<physical_io_device> pio{};
+    struct HID_digital_button *left_button;
+    struct HID_digital_button *right_button;
+    i32 new_x, new_y;
 };
 
 struct JSM_CHASSIS {
-    //struct cvec indicators;
-    std::vector<HID_digital_button> digital_buttons{};
-    cvec_ptr<physical_io_device> pio{};
+    struct cvec indicators;
+    struct cvec digital_buttons;
 };
 
 struct JSM_AUDIO_CHANNEL {
-    u32 sample_rate{};
-    u32 left{}, right{};
-    u32 num{};
-    u32 low_pass_filter{};
-    void *samples[2]{};
-    u32 last_written{};
+    u32 sample_rate;
+    u32 left, right;
+    u32 num;
+    u32 low_pass_filter;
+    void *samples[2];
+    u32 last_written;
 };
 
 struct JSM_TOUCHSCREEN {
     struct {
-        i32 x{}, y{}, down{};
+        i32 x, y, down;
     } touch;
     struct {
-        i32 width{}, height{};
-        i32 x_offset{}, y_offset{};
-    } params{};
+        i32 width, height;
+        i32 x_offset, y_offset;
+    } params;
 };
 
 struct JSM_CARTRIDGE_PORT {
-    void (*load_cart)(jsm_system *ptr, multi_file_set& mfs, physical_io_device &whichpio){};
-    void (*unload_cart)(jsm_system *ptr){};
-    persistent_store SRAM{};
+    void (*load_cart)(struct jsm_system *ptr, struct multi_file_set* mfs, struct physical_io_device *whichpio);
+    void (*unload_cart)(struct jsm_system *ptr);
+    struct persistent_store SRAM;
 };
 
+struct physical_io_device;
+
 struct JSM_DISC_DRIVE {
-    void (*insert_disc)(jsm_system *ptr, physical_io_device &pio, multi_file_set& mfs){};
-    void (*remove_disc)(jsm_system *ptr){};
-    void (*close_drive)(jsm_system *ptr){};
-    void (*open_drive)(jsm_system *ptr){};
+    void (*insert_disc)(struct jsm_system *ptr, struct physical_io_device *pio, struct multi_file_set* mfs);
+    void (*remove_disc)(struct jsm_system *ptr);
+    void (*close_drive)(struct jsm_system *ptr);
+    void (*open_drive)(struct jsm_system *ptr);
 };
 
 struct JSM_AUDIO_CASSETTE {
-    void (*insert_tape)(jsm_system *ptr, physical_io_device &pio, multi_file_set& mfs, buf* sram){};
-    void (*remove_tape)(jsm_system *ptr){};
-    void (*rewind)(jsm_system *ptr){};
-    void (*play)(jsm_system *ptr){};
-    void (*stop)(jsm_system *ptr){};
+    void (*insert_tape)(struct jsm_system *ptr, struct physical_io_device *pio, struct multi_file_set* mfs, struct buf* sram);
+    void (*remove_tape)(struct jsm_system *ptr);
+    void (*rewind)(struct jsm_system *ptr);
+    void (*play)(struct jsm_system *ptr);
+    void (*stop)(struct jsm_system *ptr);
 };
 
-#include <utility>
 struct physical_io_device {
-    physical_io_device() {};
-    ~physical_io_device();
-    // Move constructor
-    physical_io_device(physical_io_device&& other) noexcept {
-        move_from(std::move(other));
-    }
+    enum IO_CLASSES kind;
 
-    // Move assignment
-    physical_io_device& operator=(physical_io_device&& other) noexcept {
-        if (this != &other) {
-            destroy_active_member();
-            move_from(std::move(other));
-        }
-        return *this;
-    }
-    IO_CLASSES kind{};
+    u32 connected;
+    u32 enabled;
+    void *sys_ptr;
+    u32 id;
 
-    u32 connected{};
-    u32 enabled{};
-    void *sys_ptr{};
-    u32 id{};
-    void init(IO_CLASSES kind, u32 enabled, u32 connected, u32 input, u32 output);
-
-    u32 input{};
-    u32 output{};
+    u32 input;
+    u32 output;
 
     union {
-        JSM_CONTROLLER controller{};
-        JSM_KEYBOARD keyboard;
-        JSM_DISPLAY display;
-        JSM_MOUSE mouse;
-        JSM_CHASSIS chassis;
-        JSM_AUDIO_CHANNEL audio_channel;
-        JSM_CARTRIDGE_PORT cartridge_port;
-        JSM_DISC_DRIVE disc_drive;
-        JSM_AUDIO_CASSETTE audio_cassette;
-        JSM_TOUCHSCREEN touchscreen;
+        struct JSM_CONTROLLER controller;
+        struct JSM_KEYBOARD keyboard;
+        struct JSM_DISPLAY display;
+        struct JSM_MOUSE mouse;
+        struct JSM_CHASSIS chassis;
+        struct JSM_AUDIO_CHANNEL audio_channel;
+        struct JSM_CARTRIDGE_PORT cartridge_port;
+        struct JSM_DISC_DRIVE disc_drive;
+        struct JSM_AUDIO_CASSETTE audio_cassette;
+        struct JSM_TOUCHSCREEN touchscreen;
     };
-
-private:
-    void destroy_active_member() noexcept;
-    void move_from(physical_io_device&& other) noexcept;
 };
 
-void pio_new_button(JSM_CONTROLLER* cnt, const char* name, enum JKEYS common_id);
+void physical_io_device_init(struct physical_io_device*, enum IO_CLASSES kind, u32 enabled, u32 connected, u32 input, u32 output);
+void physical_io_device_delete(struct physical_io_device*);
+void pio_new_button(struct JSM_CONTROLLER* cnt, const char* name, enum JKEYS common_id);
+
+#ifdef __cplusplus
+}
+#endif
+
+
+#endif //JSMOOCH_EMUS_PHYSICAL_IO_H

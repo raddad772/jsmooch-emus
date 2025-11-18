@@ -2,7 +2,8 @@
 // Created by . on 2/11/25.
 //
 
-#pragma once
+#ifndef JSMOOCH_EMUS_SNES_BUS_H
+#define JSMOOCH_EMUS_SNES_BUS_H
 
 #include "helpers/int.h"
 #include "helpers/debug.h"
@@ -24,33 +25,32 @@
 
 struct snesched_item;
 struct SNES;
-typedef void (*snesched_callback)(SNES *, snesched_item *);
+typedef void (*snesched_callback)(struct SNES *, struct snesched_item *);
 
 #define NUM_SNESCHED 12
 
 // >> 2 = 1,2,3
 
-struct SNES : jsm_system {
-    SNES();
-    SNES_clock clock{};
-    R5A22 r5a22;
-    SNES_APU apu;
-    scheduler_t scheduler;
-    SNES_cart cart;
-    SNES_PPU ppu;
+struct SNES {
+    struct R5A22 r5a22;
+    struct SNES_APU apu;
+    struct scheduler_t scheduler;
+    struct SNES_clock clock;
+    struct SNES_cart cart;
+    struct SNES_PPU ppu;
 
-private:
-    void schedule_first();
-public:
-    SNES_joypad controller1{}, controller2{};
+    struct SNES_joypad controller1, controller2;
 
-    SNES_mem mem;
+    struct SNES_mem mem;
 
-    i32 block_cycles_to_run{};
+
+    i32 block_cycles_to_run;
+
 
     struct {
-        u32 described_inputs{};
-    } jsm{};
+        struct cvec* IOs;
+        u32 described_inputs;
+    } jsm;
 
     DBG_START
         DBG_CPU_REG_START(wdc65816)
@@ -76,42 +76,30 @@ public:
             DBG_WAVEFORM_CHANS(8)
         DBG_WAVEFORM_END1
         DBG_LOG_VIEW
-    DBG_END
 
+    DBG_END
     struct {
-        double master_cycles_per_audio_sample{}, master_cycles_per_min_sample{}, master_cycles_per_max_sample{};
-        double next_sample_cycle_max{}, next_sample_cycle_min{}, next_sample_cycle{};
-        double next_debug_cycle{};
-        audiobuf *buf{};
-        u64 cycles{};
-    } audio{};
+        double master_cycles_per_audio_sample, master_cycles_per_min_sample, master_cycles_per_max_sample;
+        double next_sample_cycle_max, next_sample_cycle_min, next_sample_cycle;
+        double next_debug_cycle;
+        struct audiobuf *buf;
+        u64 cycles;
+    } audio;
+
+#if !defined(_MSC_VER) // error C2016: C requires that a struct or union have at least one member
+    struct {
+    } opts;
+#endif
 
     struct {
         struct SNES_DBG_LINE {
             struct SNES_DBG_line_bg {
-                SNES_PPU_px px[256]{};
-                u32 enabled{}, mode{}, bpp8{};
-            } bg[4]{};
-            SNES_PPU_px sprite_px[256]{};
-        } line[224]{};
-    } dbg_info{};
-
-    void play() override;
-    void pause() override;
-    void stop() override;
-    void get_framevars(framevars& out) override;
-    void reset() override;
-    void killall();
-    u32 finish_frame() override;
-    u32 finish_scanline() override;
-    u32 step_master(u32 howmany) override;
-    //void load_BIOS(multi_file_set& mfs) override;
-    void enable_tracing();
-    void disable_tracing();
-    void describe_io() override;
-    void save_state(serialized_state &state) override;
-    void load_state(serialized_state &state, deserialize_ret &ret) override;
-    void set_audiobuf(audiobuf *ab) override;
-    void setup_debugger_interface(debugger_interface &intf) override;
-
+                union SNES_PPU_px px[256];
+                u32 enabled, mode, bpp8;
+            } bg[4];
+            union SNES_PPU_px sprite_px[256];
+        } line[224];
+    } dbg_info;
 };
+
+#endif //JSMOOCH_EMUS_SNES_BUS_H

@@ -18,8 +18,8 @@ enum GBSS_kinds {
 struct jsm_system;
 struct serialized_state;
 struct deserialize_ret;
-void GBJ_save_state(jsm_system *, serialized_state *state);
-void GBJ_load_state(jsm_system *, serialized_state *state, deserialize_ret *ret);
+void GBJ_save_state(struct jsm_system *, struct serialized_state *state);
+void GBJ_load_state(struct jsm_system *, struct serialized_state *state, struct deserialize_ret *ret);
 
 
 #endif //JSMOOCH_EMUS_GB_SERIALIZE_H

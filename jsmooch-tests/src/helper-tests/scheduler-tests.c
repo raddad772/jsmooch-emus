@@ -2,7 +2,7 @@
 // Created by . on 4/25/24.
 //
 
-#include <cstring>
+#include <string.h>
 #include "stdio.h"
 
 #include "scheduler-tests.h"

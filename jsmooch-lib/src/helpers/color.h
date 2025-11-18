@@ -2,8 +2,10 @@
 // Created by . on 1/2/25.
 //
 
-#pragma once
+#ifndef JSMOOCH_EMUS_COLOR_H
+#define JSMOOCH_EMUS_COLOR_H
 
+#include <stdio.h>
 #include "helpers/int.h"
 
 static inline u32 ps1_to_screen(u32 color)
@@ -188,3 +190,5 @@ static inline u64 tg16_decode_line(u32 chr01, u32 chr23)
     return out;
 }
 
+
+#endif //JSMOOCH_EMUS_COLOR_H

@@ -8,16 +8,16 @@
 #include "stdlib.h"
 #include "assert.h"
 #include "stdio.h"
-#include <cstring>
+#include "string.h"
 #include "time.h"
 
 #include "helpers/serialize/serialize.h"
 
 #include "mbc3.h"
 
-#define THIS struct GB_mapper_MBC3* this = (GB_mapper_MBC3*)parent->ptr
+#define THIS struct GB_mapper_MBC3* this = (struct GB_mapper_MBC3*)parent->ptr
 
-static void serialize(GB_mapper *parent, serialized_state *state)
+static void serialize(struct GB_mapper *parent, struct serialized_state *state)
 {
     THIS;
 #define S(x) Sadd(state, &(this-> x), sizeof(this-> x))
@@ -37,7 +37,7 @@ static void serialize(GB_mapper *parent, serialized_state *state)
 #undef S
 }
 
-static void deserialize(GB_mapper *parent, serialized_state *state)
+static void deserialize(struct GB_mapper *parent, struct serialized_state *state)
 {
     THIS;
 #define L(x) Sload(state, &(this-> x), sizeof(this-> x))
@@ -58,9 +58,9 @@ static void deserialize(GB_mapper *parent, serialized_state *state)
 }
 
 
-void GB_mapper_MBC3_new(GB_mapper *parent, GB_clock *clock, GB_bus *bus)
+void GB_mapper_MBC3_new(struct GB_mapper *parent, struct GB_clock *clock, struct GB_bus *bus)
 {
-    struct GB_mapper_MBC3 *this = (GB_mapper_MBC3 *)malloc(sizeof(GB_mapper_MBC3));
+    struct GB_mapper_MBC3 *this = (struct GB_mapper_MBC3 *)malloc(sizeof(struct GB_mapper_MBC3));
     parent->ptr = (void *)this;
 
     this->ROM = NULL;
@@ -89,7 +89,7 @@ void GB_mapper_MBC3_new(GB_mapper *parent, GB_clock *clock, GB_bus *bus)
     this->RAM_bank_offset = 0;
 }
 
-void GB_mapper_MBC3_delete(GB_mapper *parent)
+void GB_mapper_MBC3_delete(struct GB_mapper *parent)
 {
     if (parent->ptr == NULL) return;
     THIS;
@@ -102,7 +102,7 @@ void GB_mapper_MBC3_delete(GB_mapper *parent)
     free(parent->ptr);
 }
 
-void GBMBC3_reset(GB_mapper* parent)
+void GBMBC3_reset(struct GB_mapper* parent)
 {
     THIS;
     this->ROM_bank_offset_hi = 16384;
@@ -115,7 +115,7 @@ void GBMBC3_reset(GB_mapper* parent)
     this->regs.last_RTC_latch_write = 0xFF;
 }
 
-static void GBMBC3_remap(GB_mapper_MBC3 *this)
+static void GBMBC3_remap(struct GB_mapper_MBC3 *this)
 {
     this->regs.ROM_bank_hi %= this->num_ROM_banks;
 
@@ -137,7 +137,7 @@ static void GBMBC3_remap(GB_mapper_MBC3 *this)
     }
 }
 
-u32 GBMBC3_CPU_read(GB_mapper* parent, u32 addr, u32 val, u32 has_effect)
+u32 GBMBC3_CPU_read(struct GB_mapper* parent, u32 addr, u32 val, u32 has_effect)
 {
     THIS;
     if (addr < 0x4000) // ROM lo bank
@@ -158,12 +158,12 @@ u32 GBMBC3_CPU_read(GB_mapper* parent, u32 addr, u32 val, u32 has_effect)
     return 0xFF;
 }
 
-void GBMBC3_RTC_latch(GB_mapper_MBC3 *this)
+void GBMBC3_RTC_latch(struct GB_mapper_MBC3 *this)
 {
     printf("\nNO MBC3 LATCH YET");
 }
 
-void GBMBC3_CPU_write(GB_mapper* parent, u32 addr, u32 val)
+void GBMBC3_CPU_write(struct GB_mapper* parent, u32 addr, u32 val)
 {
     THIS;
     if (addr < 0x2000) { // RAM and timer enable, write-only
@@ -199,7 +199,7 @@ void GBMBC3_CPU_write(GB_mapper* parent, u32 addr, u32 val)
     }
 }
 
-void GBMBC3_set_cart(GB_mapper* parent, GB_cart* cart)
+void GBMBC3_set_cart(struct GB_mapper* parent, struct GB_cart* cart)
 {
     THIS;
     printf("Loading MBC3...");

@@ -2,9 +2,9 @@
 // Created by . on 8/12/24.
 //
 
-#include <cstdio>
-#include <cstring>
-#include <cstdlib>
+#include <stdio.h>
+#include <string.h>
+#include <stdlib.h>
 
 #include "helpers/debugger/waveform.h"
 
@@ -14,18 +14,18 @@
 
 #include "smsgg_debugger.h"
 
-#define JTHIS struct SMSGG* this = (SMSGG*)jsm->ptr
+#define JTHIS struct SMSGG* this = (struct SMSGG*)jsm->ptr
 #define JSM struct jsm_system* jsm
 
-static void get_dissasembly(void *smsggptr, debugger_interface *dbgr, disassembly_view *dview, disassembly_entry *entry)
+static void get_dissasembly(void *smsggptr, struct debugger_interface *dbgr, struct disassembly_view *dview, struct disassembly_entry *entry)
 {
-    struct SMSGG* this = (SMSGG*)smsggptr;
+    struct SMSGG* this = (struct SMSGG*)smsggptr;
     Z80_disassemble_entry(&this->cpu, entry);
 }
 
-static struct disassembly_vars get_disassembly_vars(void *smsggptr, debugger_interface *dbgr, disassembly_view *dv)
+static struct disassembly_vars get_disassembly_vars(void *smsggptr, struct debugger_interface *dbgr, struct disassembly_view *dv)
 {
-    struct SMSGG* this = (SMSGG*)smsggptr;
+    struct SMSGG* this = (struct SMSGG*)smsggptr;
     struct disassembly_vars dvar;
     dvar.address_of_executing_instruction = this->cpu.PCO;
     dvar.current_clock_cycle = this->clock.trace_cycles;
@@ -33,7 +33,7 @@ static struct disassembly_vars get_disassembly_vars(void *smsggptr, debugger_int
 }
 
 
-static int render_f(cpu_reg_context*ctx, void *outbuf, size_t outbuf_sz)
+static int render_f(struct cpu_reg_context*ctx, void *outbuf, size_t outbuf_sz)
 {
     return snprintf(outbuf, outbuf_sz, "%c%c%c%c%c%c%c%c",
                     ctx->int32_data & 0x80 ? 'S' : 's',
@@ -47,9 +47,9 @@ static int render_f(cpu_reg_context*ctx, void *outbuf, size_t outbuf_sz)
     );
 }
 
-static void fill_disassembly_view(void *smsggptr, debugger_interface *dbgr, disassembly_view *dview)
+static void fill_disassembly_view(void *smsggptr, struct debugger_interface *dbgr, struct disassembly_view *dview)
 {
-    struct SMSGG* this = (SMSGG*)smsggptr;
+    struct SMSGG* this = (struct SMSGG*)smsggptr;
 
     this->dbg.dasm.A->int8_data = this->cpu.regs.A;
     this->dbg.dasm.B->int8_data = this->cpu.regs.B;
@@ -71,7 +71,7 @@ static void fill_disassembly_view(void *smsggptr, debugger_interface *dbgr, disa
 
 }
 
-static void create_and_bind_registers(SMSGG* this, disassembly_view *dv)
+static void create_and_bind_registers(struct SMSGG* this, struct disassembly_view *dv)
 {
     u32 tkindex = 0;
     struct cpu_reg_context *rg = cvec_push_back(&dv->cpu.regs);
@@ -204,7 +204,7 @@ static void create_and_bind_registers(SMSGG* this, disassembly_view *dv)
 #undef BIND
 }
 
-static u32 get_gfx1(SMSGG* this, u32 hpos, u32 vpos, u32 nt_base, u32 pt_base, u32 ct_base, u32 num_lines)
+static u32 get_gfx1(struct SMSGG* this, u32 hpos, u32 vpos, u32 nt_base, u32 pt_base, u32 ct_base, u32 num_lines)
 {
     u32 nta = ((hpos >> 3) & 0x1F) | ((vpos  << 2) & 0x3E0) | (nt_base << 10);
     u32 pattern = this->vdp.VRAM[nta];
@@ -218,7 +218,7 @@ static u32 get_gfx1(SMSGG* this, u32 hpos, u32 vpos, u32 nt_base, u32 pt_base, u
         return 7;
 }
 
-static u32 get_gfx2(SMSGG* this, u32 hpos, u32 vpos, u32 nt_base, u32 pt_base, u32 ct_base, u32 num_lines)
+static u32 get_gfx2(struct SMSGG* this, u32 hpos, u32 vpos, u32 nt_base, u32 pt_base, u32 ct_base, u32 num_lines)
 {
     u32 nta = ((hpos >> 3) & 0x1F) | ((vpos  << 2) & 0x3E0) | (nt_base << 10);
     u32 pattern = this->vdp.VRAM[nta];
@@ -240,7 +240,7 @@ static u32 get_gfx2(SMSGG* this, u32 hpos, u32 vpos, u32 nt_base, u32 pt_base, u
         return 0;
 }
 
-static u32 get_gfx3(SMSGG* this, u32 hpos, u32 vpos, u32 nt_base, u32 pt_base, u32 ct_base, u32 num_lines)
+static u32 get_gfx3(struct SMSGG* this, u32 hpos, u32 vpos, u32 nt_base, u32 pt_base, u32 ct_base, u32 num_lines)
 {
     hpos &= 0xFF;
     vpos &= 0x1FF;
@@ -251,7 +251,7 @@ static u32 get_gfx3(SMSGG* this, u32 hpos, u32 vpos, u32 nt_base, u32 pt_base, u
         nta = (nt_base & 0x0E) << 10;
         nta += (vpos & 0xF8) << 3;
         nta += ((hpos & 0xF8) >> 3) << 1;
-        if (this->variant == jsm::systems::SMS1) {
+        if (this->variant == SYS_SMS1) {
             // NTA bit 10 (0x400) & with io nta bit 0
             nta &= (0x3BFF | ((nt_base & 1) << 10));
         }
@@ -282,10 +282,10 @@ static u32 get_gfx3(SMSGG* this, u32 hpos, u32 vpos, u32 nt_base, u32 pt_base, u
     return color;
 }
 
-static void render_image_view_nametables(debugger_interface *dbgr, debugger_view *dview, void *ptr, u32 out_width)
+static void render_image_view_nametables(struct debugger_interface *dbgr, struct debugger_view *dview, void *ptr, u32 out_width)
 {
-    struct SMSGG* this = (SMSGG*)ptr;
-    u32 (*get_pcolor)(SMSGG*, u32, u32, u32, u32, u32, u32);
+    struct SMSGG* this = (struct SMSGG*)ptr;
+    u32 (*get_pcolor)(struct SMSGG*, u32, u32, u32, u32, u32, u32);
     switch(this->vdp.bg_gfx_mode) {
         case 1:
             get_pcolor = &get_gfx1;
@@ -353,7 +353,7 @@ static void render_image_view_nametables(debugger_interface *dbgr, debugger_view
     }
 }
 
-static void setup_debugger_view_nametables(SMSGG* this, debugger_interface *dbgr)
+static void setup_debugger_view_nametables(struct SMSGG* this, struct debugger_interface *dbgr)
 {
     this->dbg.image_views.nametables = debugger_view_new(dbgr, dview_image);
     struct debugger_view *dview = cpg(this->dbg.image_views.nametables);
@@ -364,8 +364,8 @@ static void setup_debugger_view_nametables(SMSGG* this, debugger_interface *dbgr
     iv->height = 240;
     iv->viewport.exists = 1;
     iv->viewport.enabled = 1;
-    iv->viewport.p[0] = (ivec2){ 0, 0 };
-    iv->viewport.p[1] = (ivec2){ 255, 239 };
+    iv->viewport.p[0] = (struct ivec2){ 0, 0 };
+    iv->viewport.p[1] = (struct ivec2){ 255, 239 };
 
     iv->update_func.ptr = this;
     iv->update_func.func = &render_image_view_nametables;
@@ -373,7 +373,7 @@ static void setup_debugger_view_nametables(SMSGG* this, debugger_interface *dbgr
     snprintf(iv->label, sizeof(iv->label), "Tilemap Viewer");
 }
 
-static void setup_disassembly_view(SMSGG* this, debugger_interface *dbgr)
+static void setup_disassembly_view(struct SMSGG* this, struct debugger_interface *dbgr)
 {
     struct cvec_ptr p = debugger_view_new(dbgr, dview_disassembly);
     struct debugger_view *dview = cpg(p);
@@ -395,7 +395,7 @@ static void setup_disassembly_view(SMSGG* this, debugger_interface *dbgr)
 }
 
 
-static void setup_events_view(SMSGG* this, debugger_interface *dbgr)
+static void setup_events_view(struct SMSGG* this, struct debugger_interface *dbgr)
 {
     // Setup event view
     this->dbg.events.view = debugger_view_new(dbgr, dview_events);
@@ -414,7 +414,7 @@ static void setup_events_view(SMSGG* this, debugger_interface *dbgr)
     DEBUG_REGISTER_EVENT_CATEGORY("VDP events", DBG_SMSGG_CATEGORY_VDP);
 
     cvec_grow_by(&ev->events, DBG_SMSGG_EVENT_MAX);
-    ///void events_view_add_event(debugger_interface *dbgr, events_view *ev, u32 category_id, const char *name, u32 color, enum debugger_event_kind display_kind, u32 default_enable, u32 order, const char* context, u32 id);
+    ///void events_view_add_event(struct debugger_interface *dbgr, struct events_view *ev, u32 category_id, const char *name, u32 color, enum debugger_event_kind display_kind, u32 default_enable, u32 order, const char* context, u32 id);
     DEBUG_REGISTER_EVENT("IRQ", 0xFF0000, DBG_SMSGG_CATEGORY_CPU, DBG_SMSGG_EVENT_IRQ, 1);
     DEBUG_REGISTER_EVENT("NMI", 0x808000, DBG_SMSGG_CATEGORY_CPU, DBG_SMSGG_EVENT_NMI, 1);
     DEBUG_REGISTER_EVENT("Write H scroll", 0x00FF00, DBG_SMSGG_CATEGORY_VDP, DBG_SMSGG_EVENT_WRITE_HSCROLL, 1);
@@ -429,11 +429,11 @@ static void setup_events_view(SMSGG* this, debugger_interface *dbgr)
     debugger_report_frame(this->dbg.interface);
 }
 
-static void setup_waveforms(SMSGG* this, debugger_interface *dbgr)
+static void setup_waveforms(struct SMSGG* this, struct debugger_interface *dbgr)
 {
     this->dbg.waveforms.view = debugger_view_new(dbgr, dview_waveforms);
     struct debugger_view *dview = cpg(this->dbg.waveforms.view);
-    struct waveform_view *wv = (waveform_view *)&dview->waveform;
+    struct waveform_view *wv = (struct waveform_view *)&dview->waveform;
     snprintf(wv->name, sizeof(wv->name), "SN76489");
 
     struct debug_waveform *dw = cvec_push_back(&wv->waveforms);
@@ -473,7 +473,7 @@ static void setup_waveforms(SMSGG* this, debugger_interface *dbgr)
     dw->samples_requested = 200;
 }
 
-void SMSGGJ_setup_debugger_interface(JSM, debugger_interface *dbgr)
+void SMSGGJ_setup_debugger_interface(JSM, struct debugger_interface *dbgr)
 {
     JTHIS;
     this->dbg.interface = dbgr;

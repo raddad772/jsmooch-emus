@@ -23,7 +23,7 @@ struct SMSGG_object {
 struct SMSGG;
 
 struct SMSGG_VDP {
-    enum jsm::systems variant;
+    enum jsm_systems variant;
     struct SMSGG* bus;
     u8 VRAM[16384];
     u16 CRAM[32];
@@ -85,25 +85,25 @@ struct SMSGG_VDP {
 
     u32 bg_gfx_vlines;
     u32 bg_gfx_mode;
-    void (*bg_gfx)(SMSGG_VDP*);
-    void (*sprite_gfx)(SMSGG_VDP*);
+    void (*bg_gfx)(struct SMSGG_VDP*);
+    void (*sprite_gfx)(struct SMSGG_VDP*);
     u32 doi;
 
-    void (*scanline_cycle)(SMSGG_VDP*);
+    void (*scanline_cycle)(struct SMSGG_VDP*);
 
     DBG_EVENT_VIEW_ONLY;
 };
 
-void SMSGG_VDP_init(SMSGG_VDP*, SMSGG* bus, enum jsm::systems variant);
-void SMSGG_VDP_cycle(SMSGG_VDP*);
-void SMSGG_VDP_reset(SMSGG_VDP*);
-void SMSGG_VDP_write_control(SMSGG_VDP*, u32 val);
-u32 SMSGG_VDP_read_status(SMSGG_VDP*);
-u32 SMSGG_VDP_read_vcounter(SMSGG_VDP*);
-void SMSGG_VDP_write_data(SMSGG_VDP*, u32 val);
-u32 SMSGG_VDP_read_data(SMSGG_VDP*);
-u32 SMSGG_VDP_read_hcounter(SMSGG_VDP*);
-void SMSGG_VDP_update_videomode(SMSGG_VDP* this);
-void SMSGG_VDP_set_scanline_kind(SMSGG_VDP* this, u32 vpos);
+void SMSGG_VDP_init(struct SMSGG_VDP*, struct SMSGG* bus, enum jsm_systems variant);
+void SMSGG_VDP_cycle(struct SMSGG_VDP*);
+void SMSGG_VDP_reset(struct SMSGG_VDP*);
+void SMSGG_VDP_write_control(struct SMSGG_VDP*, u32 val);
+u32 SMSGG_VDP_read_status(struct SMSGG_VDP*);
+u32 SMSGG_VDP_read_vcounter(struct SMSGG_VDP*);
+void SMSGG_VDP_write_data(struct SMSGG_VDP*, u32 val);
+u32 SMSGG_VDP_read_data(struct SMSGG_VDP*);
+u32 SMSGG_VDP_read_hcounter(struct SMSGG_VDP*);
+void SMSGG_VDP_update_videomode(struct SMSGG_VDP* this);
+void SMSGG_VDP_set_scanline_kind(struct SMSGG_VDP* this, u32 vpos);
 
 #endif //JSMOOCH_EMUS_SMS_GG_VDP_H

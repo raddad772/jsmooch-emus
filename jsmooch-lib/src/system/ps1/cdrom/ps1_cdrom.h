@@ -7,6 +7,6 @@
 
 struct PS1;
 
-void PS1_CDROM_init(PS1 *);
+void PS1_CDROM_init(struct PS1 *);
 
 #endif //JSMOOCH_EMUS_PS1_CDROM_H

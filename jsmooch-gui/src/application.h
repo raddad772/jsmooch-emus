@@ -72,7 +72,7 @@ struct imgui_jsmooch_app {
     bool playing = true;
     bool done = false;
     full_system fsys;
-    enum jsm::systems which;
+    enum jsm_systems which;
     struct inifile ini;
 
     char BIOS_BASE_PATH[500];

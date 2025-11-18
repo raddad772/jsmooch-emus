@@ -1,32 +1,32 @@
 //
 // Created by . on 12/4/24.
 //
-#include <cassert>
-#include <cstdlib>
-#include <cstdio>
-#include <cstring>
+#include <assert.h>
+#include <stdlib.h>
+#include <stdio.h>
+#include <string.h>
 
 #include "galaksija.h"
 #include "galaksija_bus.h"
 #include "galaksija_debugger.h"
 
-#include "fail"
+#include "helpers/debugger/debugger.h"
 #include "helpers/physical_io.h"
 #include "helpers/multisize_memaccess.c"
 
-#define JTHIS struct galaksija* this = (galaksija*)jsm->ptr
+#define JTHIS struct galaksija* this = (struct galaksija*)jsm->ptr
 #define JSM struct jsm_system* jsm
 
 static void galaksijaJ_play(JSM);
 static void galaksijaJ_pause(JSM);
 static void galaksijaJ_stop(JSM);
-static void galaksijaJ_get_framevars(JSM, framevars* out);
+static void galaksijaJ_get_framevars(JSM, struct framevars* out);
 static void galaksijaJ_reset(JSM);
 static u32 galaksijaJ_finish_frame(JSM);
 static u32 galaksijaJ_finish_scanline(JSM);
 static u32 galaksijaJ_step_master(JSM, u32 howmany);
-static void galaksijaJ_load_BIOS(JSM, multi_file_set* mfs);
-static void galaksijaJ_describe_io(JSM, cvec* IOs);
+static void galaksijaJ_load_BIOS(JSM, struct multi_file_set* mfs);
+static void galaksijaJ_describe_io(JSM, struct cvec* IOs);
 
 // 192x320 incl. hblank
 // 128x208 not inc;.
@@ -42,7 +42,7 @@ static u32 timer_reload_ticks(u32 reload)
     return 0x10000 - reload;
 }
 
-static void setup_debug_waveform(debug_waveform *dw)
+static void setup_debug_waveform(struct debug_waveform *dw)
 {
     if (dw->samples_requested == 0) return;
     dw->samples_rendered = dw->samples_requested;
@@ -50,21 +50,21 @@ static void setup_debug_waveform(debug_waveform *dw)
     dw->user.buf_pos = 0;
 }
 
-void galaksijaJ_set_audiobuf(jsm_system* jsm, audiobuf *ab)
+void galaksijaJ_set_audiobuf(struct jsm_system* jsm, struct audiobuf *ab)
 {
     JTHIS;
     this->audio.buf = ab;
     if (this->audio.master_cycles_per_audio_sample == 0) {
         this->audio.master_cycles_per_audio_sample = ((float)(MASTER_CYCLES_PER_FRAME / (float)ab->samples_len));
         this->audio.next_sample_cycle = 0;
-        struct debug_waveform *wf = (debug_waveform *)cvec_get(this->dbg.waveforms.main.vec, this->dbg.waveforms.main.index);
+        struct debug_waveform *wf = (struct debug_waveform *)cvec_get(this->dbg.waveforms.main.vec, this->dbg.waveforms.main.index);
     }
 
     // PSG
     /*setup_debug_waveform(cvec_get(this->dbg.waveforms.main.vec, this->dbg.waveforms.main.index));
     for (u32 i = 0; i < 6; i++) {
         setup_debug_waveform(cvec_get(this->dbg.waveforms.chan[i].vec, this->dbg.waveforms.chan[i].index));
-        struct debug_waveform *wf = (debug_waveform *)cvec_get(this->dbg.waveforms.chan[i].vec, this->dbg.waveforms.chan[i].index);
+        struct debug_waveform *wf = (struct debug_waveform *)cvec_get(this->dbg.waveforms.chan[i].vec, this->dbg.waveforms.chan[i].index);
         if (i < 4)
             this->apu.channels[i].ext_enable = wf->ch_output_enabled;
         else
@@ -74,13 +74,13 @@ void galaksijaJ_set_audiobuf(jsm_system* jsm, audiobuf *ab)
 }
 
 static u32 read_trace_cpu(void *ptr, u32 addr) {
-    struct galaksija* this = (galaksija*)ptr;
+    struct galaksija* this = (struct galaksija*)ptr;
     return galaksija_mainbus_read(this, addr, this->io.open_bus, 0);
 }
 
-void galaksija_new(jsm_system *jsm)
+void galaksija_new(struct jsm_system *jsm)
 {
-    struct galaksija* this = (galaksija*)malloc(sizeof(galaksija));
+    struct galaksija* this = (struct galaksija*)malloc(sizeof(struct galaksija));
     memset(this, 0, sizeof(*this));
     Z80_init(&this->z80, 0);
     galaksija_bus_init(this);
@@ -114,7 +114,7 @@ void galaksija_new(jsm_system *jsm)
 
 }
 
-void galaksija_delete(jsm_system *jsm)
+void galaksija_delete(struct jsm_system *jsm)
 {
     JTHIS;
 
@@ -156,7 +156,7 @@ void galaksijaJ_stop(JSM)
 {
 }
 
-void galaksijaJ_get_framevars(JSM, framevars* out)
+void galaksijaJ_get_framevars(JSM, struct framevars* out)
 {
     JTHIS;
     out->master_frame = this->clock.master_frame;
@@ -175,7 +175,7 @@ void galaksijaJ_reset(JSM)
     printf("\ngalaksija reset!");
 }
 
-static void sample_audio(galaksija* this, u32 num_cycles)
+static void sample_audio(struct galaksija* this, u32 num_cycles)
 {
     return;
     /*for (u64 i = 0; i < num_cycles; i++) {
@@ -233,7 +233,7 @@ static u32 galaksijaJ_step_master(JSM, u32 howmany)
     return 0;
 }
 
-static void galaksijaJ_load_BIOS(JSM, multi_file_set* mfs)
+static void galaksijaJ_load_BIOS(JSM, struct multi_file_set* mfs)
 {
     JTHIS;
     // File 0, chargen
@@ -245,7 +245,7 @@ static void galaksijaJ_load_BIOS(JSM, multi_file_set* mfs)
     if (mfs->num_files > 2) memcpy(this->ROMB, mfs->files[2].buf.ptr, 4096);
 }
 
-static void setup_crt(JSM_DISPLAY *d)
+static void setup_crt(struct JSM_DISPLAY *d)
 {
     d->standard = JSS_CRT;
     d->enabled = 1;
@@ -273,7 +273,7 @@ static void setup_crt(JSM_DISPLAY *d)
     d->pixelometry.overscan.top = d->pixelometry.overscan.bottom = 0;
 }
 
-static void setup_audio(cvec* IOs)
+static void setup_audio(struct cvec* IOs)
 {
     struct physical_io_device *pio = cvec_push_back(IOs);
     pio->kind = HID_AUDIO_CHANNEL;
@@ -303,7 +303,7 @@ static const u32 galaksija_keyboard_keymap[NUMKEYS] = {
         JK_ESC // 52
 };
 
-static void setup_keyboard(galaksija* this)
+static void setup_keyboard(struct galaksija* this)
 {
     struct physical_io_device *d = cvec_push_back(this->jsm.IOs);
     physical_io_device_init(d, HID_KEYBOARD, 0, 0, 1, 1);
@@ -314,7 +314,7 @@ static void setup_keyboard(galaksija* this)
     d->enabled = 1;
 
     struct JSM_KEYBOARD* kbd = &d->keyboard;
-    memset(kbd, 0, sizeof(JSM_KEYBOARD));
+    memset(kbd, 0, sizeof(struct JSM_KEYBOARD));
     kbd->num_keys = NUMKEYS;
 
     for (u32 i = 0; i < NUMKEYS; i++) {
@@ -323,7 +323,7 @@ static void setup_keyboard(galaksija* this)
 }
 
 
-static void galaksijaJ_describe_io(JSM, cvec* IOs)
+static void galaksijaJ_describe_io(JSM, struct cvec* IOs)
 {
     cvec_lock_reallocs(IOs);
     JTHIS;
@@ -365,5 +365,5 @@ static void galaksijaJ_describe_io(JSM, cvec* IOs)
 
     setup_audio(IOs);
 
-    this->crt.display = &((physical_io_device *)cpg(this->crt.display_ptr))->display;
+    this->crt.display = &((struct physical_io_device *)cpg(this->crt.display_ptr))->display;
 }

@@ -2,10 +2,10 @@
 // Created by Dave on 2/6/2024.
 //
 
-#pragma once
+#ifndef JSMOOCH_EMUS_A12_WATCHER_H
+#define JSMOOCH_EMUS_A12_WATCHER_H
 
 #include "helpers/int.h"
-#include "../../nes_clock.h"
 
 enum a12_r {
     A12_NOTHING,
@@ -15,14 +15,15 @@ enum a12_r {
 
 struct NES_clock;
 struct NES_a12_watcher {
-    explicit NES_a12_watcher(NES_clock *clock) : clock(clock)
-    { delay = clock->timing.ppu_divisor * 3; }
+    i64 cycles_down;
+    i64 last_cycle;
+    u32 delay;
 
-    i64 cycles_down{};
-    i64 last_cycle{};
-    u32 delay{};
-
-    NES_clock* clock{};
-    NES_a12_watcher() {};
-    a12_r update(u32 addr);
+    struct NES_clock* clock;
 };
+
+void a12_watcher_init(struct NES_a12_watcher*, struct NES_clock* clock);
+enum a12_r a12_watcher_update(struct NES_a12_watcher*, u32 addr);
+
+
+#endif //JSMOOCH_EMUS_A12_WATCHER_H

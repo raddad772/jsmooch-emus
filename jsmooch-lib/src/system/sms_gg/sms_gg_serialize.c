@@ -2,7 +2,7 @@
 // Created by . on 11/10/24.
 //
 
-#include <cstdlib>
+#include <stdlib.h>
 
 #include "sms_gg.h"
 #include "sms_gg_clock.h"
@@ -14,7 +14,7 @@
 #include "helpers/sys_present.h"
 
 
-static void serialize_console(SMSGG *this, serialized_state *state)
+static void serialize_console(struct SMSGG *this, struct serialized_state *state)
 {
     // Serialize parts now
     serialized_state_new_section(state, "console", SMSGGSS_console, 1);
@@ -26,7 +26,7 @@ static void serialize_console(SMSGG *this, serialized_state *state)
 #undef S
 }
 
-static void serialize_debug(SMSGG *this, serialized_state *state)
+static void serialize_debug(struct SMSGG *this, struct serialized_state *state)
 {
     serialized_state_new_section(state, "debug", SMSGGSS_debug, 1);
 
@@ -46,7 +46,7 @@ static void serialize_debug(SMSGG *this, serialized_state *state)
     }
 }
 
-static void serialize_clock(SMSGG *this, serialized_state *state)
+static void serialize_clock(struct SMSGG *this, struct serialized_state *state)
 {
     serialized_state_new_section(state, "clock", SMSGGSS_clock, 1);
 #define S(x) Sadd(state, &this->clock. x, sizeof(this->clock. x))
@@ -77,13 +77,13 @@ static void serialize_clock(SMSGG *this, serialized_state *state)
 }
 
 
-static void serialize_z80(SMSGG *this, serialized_state *state)
+static void serialize_z80(struct SMSGG *this, struct serialized_state *state)
 {
     serialized_state_new_section(state, "z80", SMSGGSS_z80, 1);
     Z80_serialize(&this->cpu, state);
 }
 
-static void serialize_mapper(SMSGG *this, serialized_state *state)
+static void serialize_mapper(struct SMSGG *this, struct serialized_state *state)
 {
     serialized_state_new_section(state, "mapper", SMSGGSS_mapper, 1);
 #define S(x) Sadd(state, &this->mapper. x, sizeof(this->mapper. x))
@@ -105,7 +105,7 @@ static void serialize_mapper(SMSGG *this, serialized_state *state)
 #undef S
 }
 
-static void serialize_vdp(SMSGG *this, serialized_state *state)
+static void serialize_vdp(struct SMSGG *this, struct serialized_state *state)
 {
     serialized_state_new_section(state, "vdp", SMSGGSS_vdp, 1);
 #define S(x) Sadd(state, &this->vdp. x, sizeof(this->vdp. x))
@@ -171,16 +171,16 @@ static void serialize_vdp(SMSGG *this, serialized_state *state)
 #undef S
 }
 
-static void serialize_sn76489(SMSGG *this, serialized_state *state)
+static void serialize_sn76489(struct SMSGG *this, struct serialized_state *state)
 {
     serialized_state_new_section(state, "sn76489", SMSGGSS_sn76489, 1);
     SN76489_serialize(&this->sn76489, state);
 }
 
 
-void SMSGGJ_save_state(jsm_system* jsm, serialized_state *state)
+void SMSGGJ_save_state(struct jsm_system* jsm, struct serialized_state *state)
 {
-    struct SMSGG* this = (SMSGG*)jsm->ptr;
+    struct SMSGG* this = (struct SMSGG*)jsm->ptr;
 
     // Basic info
     state->version = 1;
@@ -191,7 +191,7 @@ void SMSGGJ_save_state(jsm_system* jsm, serialized_state *state)
     jsimg_allocate(&state->screenshot, 256, 240);
     jsimg_clear(&state->screenshot);
     switch(this->variant) {
-        case jsm::systems::GG:
+        case SYS_GG:
             GG_present(cpg(this->vdp.display_ptr), state->screenshot.data.ptr, 0, 0, 256, 240);
             break;
         default:
@@ -207,7 +207,7 @@ void SMSGGJ_save_state(jsm_system* jsm, serialized_state *state)
     serialize_sn76489(this, state);
 }
 
-static void deserialize_console(SMSGG* this, serialized_state *state)
+static void deserialize_console(struct SMSGG* this, struct serialized_state *state)
 {
 #define L(x) Sload(state, &(this-> x), sizeof(this-> x))
     L(io.disable);
@@ -217,7 +217,7 @@ static void deserialize_console(SMSGG* this, serialized_state *state)
 #undef L
 }
 
-static void deserialize_debug(SMSGG* this, serialized_state *state)
+static void deserialize_debug(struct SMSGG* this, struct serialized_state *state)
 {
 #define L(x) Sload(state, &(this->dbg_data.rows[i].io. x), sizeof(this->dbg_data.rows[i].io. x))
     for (u32 i = 0; i < 240; i++) {
@@ -235,7 +235,7 @@ static void deserialize_debug(SMSGG* this, serialized_state *state)
 #undef L
 }
 
-static void deserialize_vdp(SMSGG* this, serialized_state *state)
+static void deserialize_vdp(struct SMSGG* this, struct serialized_state *state)
 {
 #define L(x) Sload(state, &(this->vdp. x), sizeof(this->vdp. x))
     L(VRAM);
@@ -302,17 +302,17 @@ static void deserialize_vdp(SMSGG* this, serialized_state *state)
 #undef L
 }
 
-static void deserialize_sn76489(SMSGG* this, serialized_state *state)
+static void deserialize_sn76489(struct SMSGG* this, struct serialized_state *state)
 {
     SN76489_deserialize(&this->sn76489, state);
 }
 
-static void deserialize_z80(SMSGG* this, serialized_state *state)
+static void deserialize_z80(struct SMSGG* this, struct serialized_state *state)
 {
     Z80_deserialize(&this->cpu, state);
 }
 
-static void deserialize_clock(SMSGG* this, serialized_state *state)
+static void deserialize_clock(struct SMSGG* this, struct serialized_state *state)
 {
 #define L(x) Sload(state, &this->clock. x, sizeof(this->clock. x))
     L(variant);
@@ -341,7 +341,7 @@ static void deserialize_clock(SMSGG* this, serialized_state *state)
 #undef L
 }
 
-static void deserialize_mapper(SMSGG* this, serialized_state *state)
+static void deserialize_mapper(struct SMSGG* this, struct serialized_state *state)
 {
 #define L(x) Sload(state, &this->mapper. x, sizeof(this->mapper. x))
     L(sega_mapper_enabled);
@@ -364,7 +364,7 @@ static void deserialize_mapper(SMSGG* this, serialized_state *state)
     SMSGG_mapper_refresh_mapping(&this->mapper);
 }
 
-void SMSGGJ_load_state(jsm_system *jsm, serialized_state *state, deserialize_ret *ret)
+void SMSGGJ_load_state(struct jsm_system *jsm, struct serialized_state *state, struct deserialize_ret *ret)
 {
     state->iter.offset = 0;
     assert(state->version == 1);
@@ -373,7 +373,7 @@ void SMSGGJ_load_state(jsm_system *jsm, serialized_state *state, deserialize_ret
     u32 vdp_done = 0;
     u32 set_done = 0;
 
-    struct SMSGG* this = (SMSGG*)jsm->ptr;
+    struct SMSGG* this = (struct SMSGG*)jsm->ptr;
     u32 num_loaded = 0;
     for (u32 i = 0; i < cvec_len(&state->sections); i++) {
         struct serialized_state_section *sec = cvec_get(&state->sections, i);

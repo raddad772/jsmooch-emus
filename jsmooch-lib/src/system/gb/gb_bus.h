@@ -35,22 +35,22 @@ struct GB_bus {
     u32 WRAM_bank;
 
 	// Provided by mapper
-	//u32 (*CPU_read)(GB_bus*, u32, u32);
-	//void (*CPU_write)(GB_bus*, u32, u32);
-	//u32 (*PPU_read)(GB_bus*, u32);
+	//u32 (*CPU_read)(struct GB_bus*, u32, u32);
+	//void (*CPU_write)(struct GB_bus*, u32, u32);
+	//u32 (*PPU_read)(struct GB_bus*, u32);
 
 	// Provided by gb_cpu
-	u32 (*read_IO)(GB_bus*, u32, u32);
-	void (*write_IO)(GB_bus*, u32, u32);
+	u32 (*read_IO)(struct GB_bus*, u32, u32);
+	void (*write_IO)(struct GB_bus*, u32, u32);
 
 	// Provided by gb_ppu
-	u32 (*read_OAM)(GB_bus*, u32);
-	void (*write_OAM)(GB_bus*, u32, u32);
+	u32 (*read_OAM)(struct GB_bus*, u32);
+	void (*write_OAM)(struct GB_bus*, u32, u32);
 
 	// Provided by gb.c?
-	u32 (*DMA_read)(GB_bus*, u32);
-	void (*IRQ_vblank_up)(GB_bus*);
-	void (*IRQ_vblank_down)(GB_bus*);
+	u32 (*DMA_read)(struct GB_bus*, u32);
+	void (*IRQ_vblank_up)(struct GB_bus*);
+	void (*IRQ_vblank_down)(struct GB_bus*);
 
     DBG_EVENT_VIEW_ONLY;
 
@@ -58,12 +58,12 @@ struct GB_bus {
 	u8* BIOS;
 };
 
-void GB_bus_init(GB_bus*, GB_clock *clock);
-void GB_bus_delete(GB_bus *);
-void GB_bus_reset(GB_bus *);
-u32 GB_bus_PPU_read(GB_bus*, u32 addr);
-u32 GB_bus_CPU_read(GB_bus*, u32 addr, u32 val, u32 has_effect);
-void GB_bus_CPU_write(GB_bus*, u32 addr, u32 val);
-void GB_bus_set_cart(GB_bus*, GB_cart* cart);
+void GB_bus_init(struct GB_bus*, struct GB_clock *clock);
+void GB_bus_delete(struct GB_bus *);
+void GB_bus_reset(struct GB_bus *);
+u32 GB_bus_PPU_read(struct GB_bus*, u32 addr);
+u32 GB_bus_CPU_read(struct GB_bus*, u32 addr, u32 val, u32 has_effect);
+void GB_bus_CPU_write(struct GB_bus*, u32 addr, u32 val);
+void GB_bus_set_cart(struct GB_bus*, struct GB_cart* cart);
 
 #endif

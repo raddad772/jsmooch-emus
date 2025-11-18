@@ -35,9 +35,9 @@ struct GB_cart {
 
 
 
-void GB_cart_init(GB_cart* cart, enum GB_variants variant, GB_clock* clock, GB_bus* bus);
-void GB_cart_delete(GB_cart*);
-void GB_cart_load_ROM_from_RAM(GB_cart*, void* ibuf, u64 size, physical_io_device *pio);
+void GB_cart_init(struct GB_cart* cart, enum GB_variants variant, struct GB_clock* clock, struct GB_bus* bus);
+void GB_cart_delete(struct GB_cart*);
+void GB_cart_load_ROM_from_RAM(struct GB_cart*, void* ibuf, u64 size, struct physical_io_device *pio);
 
 
 #endif

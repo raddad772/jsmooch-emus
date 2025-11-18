@@ -2,24 +2,24 @@
 // Created by . on 6/1/24.
 //
 
-#include <cstdlib>
+#include <stdlib.h>
 #include "genesis_clock.h"
 
-void genesis_clock_ntsc(genesis_clock* this);
-void genesis_clock_pal(genesis_clock* this);
+void genesis_clock_ntsc(struct genesis_clock* this);
+void genesis_clock_pal(struct genesis_clock* this);
 
-void genesis_clock_init(genesis_clock* this, enum jsm::systems kind)
+void genesis_clock_init(struct genesis_clock* this, enum jsm_systems kind)
 {
-    *this = (genesis_clock) {};
+    *this = (struct genesis_clock) {};
     this->master_cycle_count = 0;
     genesis_clock_reset(this);
     this->kind = kind;
     switch(kind) {
-        case jsm::systems::GENESIS_USA:
-        case jsm::systems::GENESIS_JAP:
+        case SYS_GENESIS_USA:
+        case SYS_GENESIS_JAP:
             genesis_clock_ntsc(this);
             break;
-        case jsm::systems::MEGADRIVE_PAL:
+        case SYS_MEGADRIVE_PAL:
             genesis_clock_pal(this);
             break;
         default:
@@ -30,7 +30,7 @@ void genesis_clock_init(genesis_clock* this, enum jsm::systems kind)
 
 }
 
-void genesis_clock_reset(genesis_clock* this)
+void genesis_clock_reset(struct genesis_clock* this)
 {
     this->master_frame = 0;
     this->vdp.hcount = this->vdp.vcount = 0;
@@ -41,7 +41,7 @@ void genesis_clock_reset(genesis_clock* this)
 System master clock rate: 53.693175 MHz (NTSC), 53.203424 MHz (PAL)[1]
 Master clock cycles per frame: 896,040 (NTSC), 1,067,040 (PAL)
 Master clock cycles per scanline: 3420[2] */
-void genesis_clock_ntsc(genesis_clock* this)
+void genesis_clock_ntsc(struct genesis_clock* this)
 {
     this->timing.scanline.cycles_per = 3420;
     this->timing.frame.scanlines_per = 262;
@@ -56,7 +56,7 @@ void genesis_clock_ntsc(genesis_clock* this)
     this->ym2612.clock_divisor = 1008;
 }
 
-void genesis_clock_pal(genesis_clock* this)
+void genesis_clock_pal(struct genesis_clock* this)
 {
     this->timing.scanline.cycles_per = 3420;
     this->timing.frame.scanlines_per = 312;

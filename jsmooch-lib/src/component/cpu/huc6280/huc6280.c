@@ -1,19 +1,19 @@
 //
 // Created by . on 6/12/25.
 //
-#include <cassert>
-#include <cstring>
-#include <cstdio>
+#include <assert.h>
+#include <string.h>
+#include <stdio.h>
 
 #include "helpers/debug.h"
-#include "fail"
+#include "helpers/debugger/debugger.h"
 #include "huc6280.h"
 #include "huc6280_disassembler.h"
 
-static void timer_schedule(HUC6280 *this, u64 cur);
+static void timer_schedule(struct HUC6280 *this, u64 cur);
 
 
-void HUC6280_init(HUC6280 *this, scheduler_t *scheduler, u64 clocks_per_second)
+void HUC6280_init(struct HUC6280 *this, struct scheduler_t *scheduler, u64 clocks_per_second)
 {
     memset(this, 0, sizeof(*this));
     this->scheduler = scheduler;
@@ -30,7 +30,7 @@ void HUC6280_init(HUC6280 *this, scheduler_t *scheduler, u64 clocks_per_second)
     DBG_TRACE_VIEW_INIT;
 }
 
-void HUC6280_delete(HUC6280 *this)
+void HUC6280_delete(struct HUC6280 *this)
 {
 
     jsm_string_delete(&this->trace.str);
@@ -40,7 +40,7 @@ void HUC6280_delete(HUC6280 *this)
 
 // IRQD IS INVERTED!
 
-void HUC6280_reset(HUC6280 *this)
+void HUC6280_reset(struct HUC6280 *this)
 {
     this->regs.MPR[7] = 0;
     this->regs.clock_div = 12;
@@ -52,7 +52,7 @@ void HUC6280_reset(HUC6280 *this)
     HUC6280_PSG_reset(&this->psg);
 }
 
-void HUC6280_setup_tracing(HUC6280* this, jsm_debug_read_trace *strct, u64 *trace_cycle_ptr, i32 source_id)
+void HUC6280_setup_tracing(struct HUC6280* this, struct jsm_debug_read_trace *strct, u64 *trace_cycle_ptr, i32 source_id)
 {
     this->trace.strct.ptr = this;
     this->trace.strct.read_trace = strct->read_trace;
@@ -62,7 +62,7 @@ void HUC6280_setup_tracing(HUC6280* this, jsm_debug_read_trace *strct, u64 *trac
 }
 // Poll during second-to-last cycle
 
-void HUC6280_poll_IRQs(HUC6280_regs *regs, HUC6280_pins *pins)
+void HUC6280_poll_IRQs(struct HUC6280_regs *regs, struct HUC6280_pins *pins)
 {
     regs->do_IRQ = (regs->IRQD.u & regs->IRQR.u) && !regs->P.I;
     regs->IRQR_polled.u = regs->IRQR.u;
@@ -71,7 +71,7 @@ void HUC6280_poll_IRQs(HUC6280_regs *regs, HUC6280_pins *pins)
 
 void timer_tick(void *ptr, u64 key, u64 clock, u32 jitter)
 {
-    struct HUC6280 *this = (HUC6280 *)ptr;
+    struct HUC6280 *this = (struct HUC6280 *)ptr;
     u64 cur = clock - jitter;
     timer_schedule(this, cur);
     if (!this->regs.timer_startstop) return;
@@ -82,7 +82,7 @@ void timer_tick(void *ptr, u64 key, u64 clock, u32 jitter)
     else this->timer.counter = (this->timer.counter - 1) & 0x7F;
 }
 
-static void timer_schedule(HUC6280 *this, u64 cur)
+static void timer_schedule(struct HUC6280 *this, u64 cur)
 {
     if (this->timer.still_sch) {
         scheduler_delete_if_exist(this->scheduler, this->timer.sch_id);
@@ -90,13 +90,13 @@ static void timer_schedule(HUC6280 *this, u64 cur)
     this->timer.sch_id = scheduler_only_add_abs(this->scheduler, cur + this->timer.sch_interval, 0, this, &timer_tick, &this->timer.still_sch);
 }
 
-static u32 longpc(HUC6280 *this)
+static u32 longpc(struct HUC6280 *this)
 {
     u32 mpc = (this->regs.PC - 1) & 0xFFFF;
     return this->regs.MPR[mpc >> 13] | (mpc & 0x1FFF);
 }
 
-static void trace_format(HUC6280 *this, u32 opcode)
+static void trace_format(struct HUC6280 *this, u32 opcode)
 {
     u32 do_dbglog = 0;
 
@@ -163,7 +163,7 @@ static void trace_format(HUC6280 *this, u32 opcode)
     }
 }
 
-void HUC6280_cycle(HUC6280 *this)
+void HUC6280_cycle(struct HUC6280 *this)
 {
     this->regs.TCU++;
     //printf("\nEXEC TCU %d PC %04x", this->regs.TCU, this->regs.PC);
@@ -226,7 +226,7 @@ void HUC6280_cycle(HUC6280 *this)
     this->trace.my_cycles++;
 }
 
-static u32 internal_read(HUC6280 *this, u32 addr, u32 has_effect)
+static u32 internal_read(struct HUC6280 *this, u32 addr, u32 has_effect)
 {
     u32 k = addr & 0x1C00;
     u32 val = 0xFF;
@@ -279,7 +279,7 @@ static u32 internal_read(HUC6280 *this, u32 addr, u32 has_effect)
     return val;
 }
 
-static void internal_write(HUC6280 *this, u32 addr, u32 val)
+static void internal_write(struct HUC6280 *this, u32 addr, u32 val)
 {
 #ifdef TG16_LYCODER2
     dbg_printf("CPU write %06X: %02X\n", addr, val);
@@ -333,7 +333,7 @@ static void internal_write(HUC6280 *this, u32 addr, u32 val)
     printf("\nUNHANDLED INTERNAL WRITE! %06x - %02x", addr, val);
 }
 
-static void trace_write(HUC6280 *this) {
+static void trace_write(struct HUC6280 *this) {
     u32 do_dbglog = 0;
     if (this->dbg.dvptr) {
         do_dbglog = this->dbg.dvptr->ids_enabled[this->trace.dbglog.id_write];
@@ -349,7 +349,7 @@ static void trace_write(HUC6280 *this) {
     }
 }
 
-static void trace_read(HUC6280 *this)
+static void trace_read(struct HUC6280 *this)
 {
     u32 do_dbglog = 0;
     if (this->dbg.dvptr) {
@@ -368,7 +368,7 @@ static void trace_read(HUC6280 *this)
 }
 
 void HUC6280_internal_cycle(void *ptr, u64 key, u64 clock, u32 jitter) {
-    struct HUC6280* this = (HUC6280 *)ptr;
+    struct HUC6280* this = (struct HUC6280 *)ptr;
     u64 cur = clock - jitter;
     this->extra_cycles = 0;
     if (this->pins.RD) {
@@ -408,7 +408,7 @@ void HUC6280_internal_cycle(void *ptr, u64 key, u64 clock, u32 jitter) {
 }
 
 
-void HUC6280_schedule_first(HUC6280 *this, u64 clock)
+void HUC6280_schedule_first(struct HUC6280 *this, u64 clock)
 {
     scheduler_only_add_abs(this->scheduler, clock + this->regs.clock_div, 0, this, &HUC6280_internal_cycle, NULL);
     timer_schedule(this, clock);

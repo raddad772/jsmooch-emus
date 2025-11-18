@@ -48,7 +48,7 @@
 #endif
 
 #include <stddef.h>
-#include <cstring>
+#include <string.h>
 
 #if defined(_MSC_VER) || defined(__WATCOMC__)
 #define json_weak __inline
@@ -2050,7 +2050,7 @@ void json_parse_value(struct json_parse_state_s *state, int is_global_object,
 struct json_value_s *
 json_parse_ex(const void *src, size_t src_size, size_t flags_bitset,
               void *(*alloc_func_ptr)(void *user_data, size_t size),
-              void *user_data, json_parse_result_s *result) {
+              void *user_data, struct json_parse_result_s *result) {
   struct json_parse_state_s state;
   void *allocation;
   struct json_value_s *value;

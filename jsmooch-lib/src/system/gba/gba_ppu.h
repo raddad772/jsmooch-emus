@@ -110,19 +110,19 @@ struct GBA_PPU {
 #define GBA_WINOUTSIDE 3
 
 struct GBA;
-void GBA_PPU_init(GBA*);
-void GBA_PPU_delete(GBA*);
-void GBA_PPU_reset(GBA*);
+void GBA_PPU_init(struct GBA*);
+void GBA_PPU_delete(struct GBA*);
+void GBA_PPU_reset(struct GBA*);
 
-u32 GBA_PPU_mainbus_read_palette(GBA*, u32 addr, u32 sz, u32 access, u32 has_effect);
-u32 GBA_PPU_mainbus_read_VRAM(GBA*, u32 addr, u32 sz, u32 access, u32 has_effect);
-u32 GBA_PPU_mainbus_read_OAM(GBA*, u32 addr, u32 sz, u32 access, u32 has_effect);
-u32 GBA_PPU_mainbus_read_IO(GBA*, u32 addr, u32 sz, u32 access, u32 has_effect);
-void GBA_PPU_mainbus_write_palette(GBA*, u32 addr, u32 sz, u32 access, u32 val);
-void GBA_PPU_mainbus_write_VRAM(GBA*, u32 addr, u32 sz, u32 access, u32 val);
-void GBA_PPU_mainbus_write_OAM(GBA*, u32 addr, u32 sz, u32 access, u32 val);
-void GBA_PPU_mainbus_write_IO(GBA*, u32 addr, u32 sz, u32 access, u32 val);
+u32 GBA_PPU_mainbus_read_palette(struct GBA*, u32 addr, u32 sz, u32 access, u32 has_effect);
+u32 GBA_PPU_mainbus_read_VRAM(struct GBA*, u32 addr, u32 sz, u32 access, u32 has_effect);
+u32 GBA_PPU_mainbus_read_OAM(struct GBA*, u32 addr, u32 sz, u32 access, u32 has_effect);
+u32 GBA_PPU_mainbus_read_IO(struct GBA*, u32 addr, u32 sz, u32 access, u32 has_effect);
+void GBA_PPU_mainbus_write_palette(struct GBA*, u32 addr, u32 sz, u32 access, u32 val);
+void GBA_PPU_mainbus_write_VRAM(struct GBA*, u32 addr, u32 sz, u32 access, u32 val);
+void GBA_PPU_mainbus_write_OAM(struct GBA*, u32 addr, u32 sz, u32 access, u32 val);
+void GBA_PPU_mainbus_write_IO(struct GBA*, u32 addr, u32 sz, u32 access, u32 val);
 void GBA_PPU_new_frame(void *ptr, u64 key, u64 clock, u32 jitter);
-void GBA_PPU_new_scanline(GBA *);
+void GBA_PPU_new_scanline(struct GBA *);
 void GBA_PPU_schedule_frame(void *ptr, u64 key, u64 clock, u32 jitter);
 #endif //JSMOOCH_EMUS_GBA_PPU_H

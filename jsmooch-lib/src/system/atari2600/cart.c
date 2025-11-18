@@ -2,22 +2,22 @@
 // Created by Dave on 4/14/24.
 //
 
-#include <cstdio>
-#include <cstring>
+#include <stdio.h>
+#include <string.h>
 #include "cart.h"
 
-void atari2600_cart_init(atari2600_cart* this)
+void atari2600_cart_init(struct atari2600_cart* this)
 {
     // TODO
     buf_init(&this->ROM);
 }
 
-void atari2600_cart_delete(atari2600_cart* this)
+void atari2600_cart_delete(struct atari2600_cart* this)
 {
     buf_delete(&this->ROM);
 }
 
-void atari2600_cart_bus_cycle(atari2600_cart* this, u32 addr, u32 *data, u32 rw)
+void atari2600_cart_bus_cycle(struct atari2600_cart* this, u32 addr, u32 *data, u32 rw)
 {
     addr &= this->addr_mask;
     if (rw == 0) {
@@ -29,7 +29,7 @@ void atari2600_cart_bus_cycle(atari2600_cart* this, u32 addr, u32 *data, u32 rw)
     }
 }
 
-void atari2600_cart_load_ROM_from_RAM(atari2600_cart* this, char *fil, u64 file_sz, char* file_name)
+void atari2600_cart_load_ROM_from_RAM(struct atari2600_cart* this, char *fil, u64 file_sz, char* file_name)
 {
     printf("\nAllocate cart %lld", file_sz);
     buf_allocate(&this->ROM, file_sz);
@@ -47,7 +47,7 @@ void atari2600_cart_load_ROM_from_RAM(atari2600_cart* this, char *fil, u64 file_
     }
 }
 
-void atari2600_cart_reset(atari2600_cart* this)
+void atari2600_cart_reset(struct atari2600_cart* this)
 {
 
 }

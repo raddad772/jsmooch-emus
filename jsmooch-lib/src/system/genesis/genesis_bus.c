@@ -2,8 +2,8 @@
 // Created by . on 6/1/24.
 //
 
-#include <cassert>
-#include <cstdio>
+#include <assert.h>
+#include <stdio.h>
 
 #include "genesis_debugger.h"
 #include "genesis_bus.h"
@@ -18,10 +18,10 @@
 static u32 UDS_mask[4] = { 0, 0xFF, 0xFF00, 0xFFFF };
 #define UDSMASK UDS_mask[((UDS) << 1) | (LDS)]
 
-static void genesis_z80_bus_write(genesis* this, u16 addr, u8 val, u32 is_m68k);
+static void genesis_z80_bus_write(struct genesis* this, u16 addr, u8 val, u32 is_m68k);
 
 
-void gen_test_dbg_break(genesis* this, const char *where)
+void gen_test_dbg_break(struct genesis* this, const char *where)
 {
     this->clock.mem_break++;
     if (this->clock.mem_break > 5) {
@@ -30,7 +30,7 @@ void gen_test_dbg_break(genesis* this, const char *where)
     }
 }
 
-void genesis_z80_reset_line(genesis* this, u32 enabled)
+void genesis_z80_reset_line(struct genesis* this, u32 enabled)
 {
     if ((!this->io.z80.reset_line) && enabled) {
         // 0->1 transition means count restart
@@ -46,7 +46,7 @@ void genesis_z80_reset_line(genesis* this, u32 enabled)
     //if (!this->io.z80.reset_line) dbg_break();
 }
 
-static u16 read_version_register(genesis* this, u32 mask)
+static u16 read_version_register(struct genesis* this, u32 mask)
 {
     // bit 7 0 = japanese, 1 = other
     // bit 6 0 = NTSC, 1 = PAL
@@ -60,7 +60,7 @@ static u16 read_version_register(genesis* this, u32 mask)
 
 //      A11200
 // Read A10000-A1FFFF
-void genesis_mainbus_write_a1k(genesis* this, u32 addr, u16 val, u16 mask)
+void genesis_mainbus_write_a1k(struct genesis* this, u32 addr, u16 val, u16 mask)
 {
     switch(addr) {
         case 0xA10002:
@@ -102,7 +102,7 @@ void genesis_mainbus_write_a1k(genesis* this, u32 addr, u16 val, u16 mask)
 }
 
 // Write A10000-A1FFFF
-u16 genesis_mainbus_read_a1k(genesis* this, u32 addr, u16 old, u16 mask, u32 has_effect)
+u16 genesis_mainbus_read_a1k(struct genesis* this, u32 addr, u16 old, u16 mask, u32 has_effect)
 {
     switch(addr) {
         case 0xA10000: // Version register
@@ -137,7 +137,7 @@ u16 genesis_mainbus_read_a1k(genesis* this, u32 addr, u16 old, u16 mask, u32 has
     return old;
 }
 
-u16 genesis_mainbus_read(genesis* this, u32 addr, u32 UDS, u32 LDS, u16 old, u32 has_effect)
+u16 genesis_mainbus_read(struct genesis* this, u32 addr, u32 UDS, u32 LDS, u16 old, u32 has_effect)
 {
     u32 mask = UDSMASK;
     u16 v = 0;
@@ -167,7 +167,7 @@ u16 genesis_mainbus_read(genesis* this, u32 addr, u32 UDS, u32 LDS, u16 old, u32
     return old;
 }
 
-void genesis_mainbus_write(genesis* this, u32 addr, u32 UDS, u32 LDS, u16 val) {
+void genesis_mainbus_write(struct genesis* this, u32 addr, u32 UDS, u32 LDS, u16 val) {
     u32 mask = UDSMASK;
     if (addr < 0x400000) {
         genesis_cart_write(&this->cart, addr, mask, val, this->io.SRAM_enabled);
@@ -235,12 +235,12 @@ void genesis_mainbus_write(genesis* this, u32 addr, u32 UDS, u32 LDS, u16 val) {
     gen_test_dbg_break(this, "mainbus_write");
 }
 
-static void genesis_z80_mainbus_write(genesis* this, u32 addr, u8 val)
+static void genesis_z80_mainbus_write(struct genesis* this, u32 addr, u8 val)
 {
     printf("\nZ80 attempted write to mainbus at %06x on cycle %lld BAR:%08x", addr, this->clock.master_cycle_count, this->io.z80.bank_address_register);
 }
 
-static u8 genesis_z80_mainbus_read(genesis* this, u32 addr, u8 old, u32 has_effect)
+static u8 genesis_z80_mainbus_read(struct genesis* this, u32 addr, u8 old, u32 has_effect)
 {
     addr = (addr & 0x7FFF) | (this->io.z80.bank_address_register << 15);
     u8 data = 0xFF;
@@ -254,11 +254,11 @@ static u8 genesis_z80_mainbus_read(genesis* this, u32 addr, u8 old, u32 has_effe
     return data;
 }
 
-static u8 genesis_z80_ym2612_read(genesis* this, u32 addr, u8 old, u32 has_effect) {
+static u8 genesis_z80_ym2612_read(struct genesis* this, u32 addr, u8 old, u32 has_effect) {
     return ym2612_read(&this->ym2612, addr & 3, old, has_effect);
 }
 
-u8 genesis_z80_bus_read(genesis* this, u16 addr, u8 old, u32 has_effect)
+u8 genesis_z80_bus_read(struct genesis* this, u16 addr, u8 old, u32 has_effect)
 {
     if (addr < 0x2000)
         return this->ARAM[addr];
@@ -275,7 +275,7 @@ u8 genesis_z80_bus_read(genesis* this, u16 addr, u8 old, u32 has_effect)
 }
 
 
-static void write_z80_bank_address_register(genesis* this, u32 val)
+static void write_z80_bank_address_register(struct genesis* this, u32 val)
 {
     //state.bank = data.bit(0) << 8 | state.bank >> 1
     this->io.z80.bank_address_register = this->io.z80.bank_address_register >> 1 | ((val & 1) << 8);
@@ -283,7 +283,7 @@ static void write_z80_bank_address_register(genesis* this, u32 val)
     //this->io.z80.bank_address_register = v | ((val & 1) << 23);
 }
 
-static void genesis_z80_bus_write(genesis* this, u16 addr, u8 val, u32 is_m68k)
+static void genesis_z80_bus_write(struct genesis* this, u16 addr, u8 val, u32 is_m68k)
 {
     if (addr < 0x2000) {
         this->ARAM[addr] = val;
@@ -309,7 +309,7 @@ static void genesis_z80_bus_write(genesis* this, u16 addr, u8 val, u32 is_m68k)
 
 }
 
-static struct SYMDO *get_at_addr(genesis* this, u32 addr)
+static struct SYMDO *get_at_addr(struct genesis* this, u32 addr)
 {
     for (u32 i = 0; i < this->debugging.num_symbols; i++) {
         if (this->debugging.symbols[i].addr == addr) return &this->debugging.symbols[i];
@@ -317,7 +317,7 @@ static struct SYMDO *get_at_addr(genesis* this, u32 addr)
     return NULL;
 }
 
-void genesis_cycle_m68k(genesis* this)
+void genesis_cycle_m68k(struct genesis* this)
 {
     static u32 PCO = 0;
     this->timing.m68k_cycles++;
@@ -362,7 +362,7 @@ void genesis_cycle_m68k(genesis* this)
     assert(this->io.m68k.stuck == 0);
 }
 
-void genesis_bus_update_irqs(genesis* this)
+void genesis_bus_update_irqs(struct genesis* this)
 {
     u32 old_IPL = this->m68k.pins.IPL;
 
@@ -380,7 +380,7 @@ void genesis_bus_update_irqs(genesis* this)
     }
 }
 
-void genesis_z80_interrupt(genesis* this, u32 level)
+void genesis_z80_interrupt(struct genesis* this, u32 level)
 {
     //if ((this->z80.pins.IRQ == 0) && level) printf("\nZ80 IRQ PIN SET!");
     /*if (this->z80.IRQ_pending != level) {
@@ -390,7 +390,7 @@ void genesis_z80_interrupt(genesis* this, u32 level)
     Z80_notify_IRQ(&this->z80, level);
 }
 
-void genesis_cycle_z80(genesis* this)
+void genesis_cycle_z80(struct genesis* this)
 {
     this->timing.z80_cycles++;
     if (this->io.z80.reset_line) {

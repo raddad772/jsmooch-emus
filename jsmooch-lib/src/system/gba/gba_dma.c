@@ -5,7 +5,7 @@
 #include "gba_dma.h"
 #include "gba_bus.h"
 
-static void eval_bit_masks(GBA *this)
+static void eval_bit_masks(struct GBA *this)
 {
     // TODO: this
     this->dma.bit_mask.vblank = this->dma.bit_mask.hblank = this->dma.bit_mask.normal = 0;
@@ -22,7 +22,7 @@ static void eval_bit_masks(GBA *this)
     else this->scheduler.run.func = &GBA_block_step_cpu;
 }
 
-void GBA_DMA_init(GBA *this)
+void GBA_DMA_init(struct GBA *this)
 {
     for (u32 i = 0; i < 4; i++) {
         this->dma.channel[i].num = i;
@@ -30,13 +30,13 @@ void GBA_DMA_init(GBA *this)
     }
 }
 
-static void raise_irq_for_dma(GBA *this, u32 num)
+static void raise_irq_for_dma(struct GBA *this, u32 num)
 {
     this->io.IF |= 1 << (8 + num);
     GBA_eval_irqs(this);
 }
 
-static u32 dma_go_ch(GBA *this, u32 num) {
+static u32 dma_go_ch(struct GBA *this, u32 num) {
     struct GBA_DMA_ch *ch = &this->dma.channel[num];
     if ((ch->io.enable) && (ch->latch.started)) {
         if (!ch->io.transfer_size) {
@@ -118,19 +118,19 @@ static const u32 hipri[16] = {
 
 void GBA_block_step_dma(void *ptr, u64 key, u64 clock, u32 jitter)
 {
-    struct GBA *this = (GBA *)ptr;
+    struct GBA *this = (struct GBA *)ptr;
     u32 chn = hipri[this->dma.bit_mask.normal];
     dma_go_ch(this, chn);
 }
 
-void GBA_DMA_start(GBA *gba, GBA_DMA_ch *ch)
+void GBA_DMA_start(struct GBA *gba, struct GBA_DMA_ch *ch)
 {
     ch->latch.started = 1;
     GBA_DMA_on_modify_write(ch);
     eval_bit_masks(gba);
 }
 
-void GBA_DMA_cnt_written(GBA *this, GBA_DMA_ch *ch, u32 old_enable)
+void GBA_DMA_cnt_written(struct GBA *this, struct GBA_DMA_ch *ch, u32 old_enable)
 {
     if (ch->io.enable) {
         if (!old_enable) { // 0->1
@@ -160,7 +160,7 @@ void GBA_DMA_cnt_written(GBA *this, GBA_DMA_ch *ch, u32 old_enable)
     }
 }
 
-void GBA_DMA_on_modify_write(GBA_DMA_ch *ch)
+void GBA_DMA_on_modify_write(struct GBA_DMA_ch *ch)
 {
     static const i32 src[2][4] = { { 2, -2, 0, 0}, {4, -4, 0, 0} };
     static const i32 dst[2][4] = { { 2, -2, 0, 2}, {4, -4, 0, 4} };

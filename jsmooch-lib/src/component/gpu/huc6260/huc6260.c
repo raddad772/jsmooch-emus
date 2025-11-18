@@ -2,21 +2,21 @@
 // Created by . on 6/19/25.
 //
 
-#include <cstring>
-#include <cstdio>
+#include <string.h>
+#include <stdio.h>
 
 #include "component/gpu/huc6270/huc6270.h"
 #include "huc6260.h"
 #include "helpers/physical_io.h"
 #include "helpers/debug.h"
-#include "fail"
+#include "helpers/debugger/debugger.h"
 
 /* HUC6260 creates an NTSC-ish frame.
  * It drives VDC to get pixel info
  * VDC responds to some signals like HSYNC etc.
  */
 
-void HUC6260_init(HUC6260 *this, scheduler_t *scheduler, HUC6270 *vdc0, HUC6270 *vdc1) {
+void HUC6260_init(struct HUC6260 *this, struct scheduler_t *scheduler, struct HUC6270 *vdc0, struct HUC6270 *vdc1) {
     memset(this, 0, sizeof(*this));
     this->regs.clock_div = 4;
     //this->scheduler = scheduler;
@@ -28,12 +28,12 @@ void HUC6260_init(HUC6260 *this, scheduler_t *scheduler, HUC6270 *vdc0, HUC6270 
     this->regs.cycles_per_frame = HUC6260_CYCLE_PER_LINE * this->regs.frame_height;
 }
 
-void HUC6260_delete(HUC6260 *this)
+void HUC6260_delete(struct HUC6260 *this)
 {
 
 }
 
-void HUC6260_reset(HUC6260 *this)
+void HUC6260_reset(struct HUC6260 *this)
 {
     this->vdc0->regs.divisor = this->regs.clock_div;
 
@@ -42,7 +42,7 @@ void HUC6260_reset(HUC6260 *this)
 
 static void hsync(void *ptr, u64 key, u64 clock, u32 jitter)
 {
-    struct HUC6260 *this = (HUC6260 *)ptr;
+    struct HUC6260 *this = (struct HUC6260 *)ptr;
 
     if (key) {
         DBG_EVENT(this->dbg.events.HSYNC_UP);
@@ -53,7 +53,7 @@ static void hsync(void *ptr, u64 key, u64 clock, u32 jitter)
 
 static void vsync(void *ptr, u64 key, u64 clock, u32 jitter)
 {
-    struct HUC6260 *this = (HUC6260 *)ptr;
+    struct HUC6260 *this = (struct HUC6260 *)ptr;
     if (key) {
         DBG_EVENT(this->dbg.events.VSYNC_UP);
     }
@@ -64,7 +64,7 @@ static void vsync(void *ptr, u64 key, u64 clock, u32 jitter)
     HUC6270_vsync(this->vdc0, key);
 }
 
-static void new_frame(HUC6260 *this)
+static void new_frame(struct HUC6260 *this)
 {
     //printf("\n6260 NEW FRAME!");
     debugger_report_frame(this->dbg.interface);
@@ -83,7 +83,7 @@ static void frame_end(void *ptr, u64 key, u64 clock, u32 jitter)
 
 static void schedule_scanline(void *ptr, u64 key, u64 cclock, u32 jitter)
 {
-    struct HUC6260 *this = (HUC6260 *)ptr;
+    struct HUC6260 *this = (struct HUC6260 *)ptr;
     //printf("\nNEW LINE %lld", key);
     this->regs.y = key;
     u64 clock = cclock - jitter;
@@ -116,13 +116,13 @@ static void schedule_scanline(void *ptr, u64 key, u64 cclock, u32 jitter)
     this->cur_line = this->cur_output + (this->regs.y * HUC6260_CYCLE_PER_LINE);
 }
 
-void HUC6260_schedule_first(HUC6260 *this)
+void HUC6260_schedule_first(struct HUC6260 *this)
 {
     schedule_scanline(this, 0, 0, 0);
     scheduler_only_add_abs(this->scheduler, this->regs.clock_div, 0, this, &HUC6260_pixel_clock, NULL);
 }
 
-void HUC6260_write(HUC6260 *this, u32 maddr, u32 val)
+void HUC6260_write(struct HUC6260 *this, u32 maddr, u32 val)
 {
     u32 addr = maddr & 7;
 #ifdef TG16_LYCODER2
@@ -168,7 +168,7 @@ void HUC6260_write(HUC6260 *this, u32 maddr, u32 val)
     }
 }
 
-u32 HUC6260_read(HUC6260 *this, u32 maddr, u32 old)
+u32 HUC6260_read(struct HUC6260 *this, u32 maddr, u32 old)
 {
     u32 addr = maddr & 7;u32 lo = (maddr & 1) ^ 1;
 
@@ -186,7 +186,7 @@ u32 HUC6260_read(HUC6260 *this, u32 maddr, u32 old)
     return 0xFF;
 }
 
-static void schedule_next_pixel_clock(HUC6260 *this, u64 cur)
+static void schedule_next_pixel_clock(struct HUC6260 *this, u64 cur)
 {
     // If /4 or /2 and we are at start of line inside hsync,
     // And we are on an uneven cycle,
@@ -203,7 +203,7 @@ static void schedule_next_pixel_clock(HUC6260 *this, u64 cur)
 
 void HUC6260_pixel_clock(void *ptr, u64 key, u64 clock, u32 jitter)
 {
-    struct HUC6260 *this = (HUC6260 *)ptr;
+    struct HUC6260 *this = (struct HUC6260 *)ptr;
     HUC6270_cycle(this->vdc0);
 
     u64 cur = clock - jitter;

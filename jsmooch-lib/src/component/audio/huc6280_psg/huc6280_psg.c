@@ -1,11 +1,11 @@
 //
 // Created by . on 7/19/25.
 //
-#include <cstdio>
+#include <stdio.h>
 
 #include "huc6280_psg.h"
 
-void HUC6280_PSG_init(HUC6280_PSG *this)
+void HUC6280_PSG_init(struct HUC6280_PSG *this)
 {
     for (u32 i = 0; i < 6; i++) {
         this->ch[i].num = i;
@@ -15,19 +15,19 @@ void HUC6280_PSG_init(HUC6280_PSG *this)
     this->ext_enable = 1;
 }
 
-void HUC6280_PSG_delete(HUC6280_PSG *this)
+void HUC6280_PSG_delete(struct HUC6280_PSG *this)
 {
 
 }
 
-void HUC6280_PSG_reset(HUC6280_PSG *this)
+void HUC6280_PSG_reset(struct HUC6280_PSG *this)
 {
     for (u32 i = 4; i < 6; i++) {
         this->ch[i].NOISE.state = 1;
     }
 }
 
-static void update_ch_output(HUC6280_PSG *this, HUC6280_PSG_ch *ch)
+static void update_ch_output(struct HUC6280_PSG *this, struct HUC6280_PSG_ch *ch)
 {
     const u8 volume_reduce[30] = { 255,214,180,151,127,107,90,76,64,53,45,38,32,27,22,19,16,13,11,9,8,6,5,4,4,3,2,2,2,1 };
     uint8_t reduction_l = (0xF - this->LMAL) * 2 + (0x1F - ch->AL) + (0xF - ch->LAL) * 2;
@@ -46,14 +46,14 @@ static void update_ch_output(HUC6280_PSG *this, HUC6280_PSG_ch *ch)
     }
 }
 
-static void update_DDA(HUC6280_PSG *this, HUC6280_PSG_ch *ch)
+static void update_DDA(struct HUC6280_PSG *this, struct HUC6280_PSG_ch *ch)
 {
     this->updates = 1;
     ch->output = ch->WAVEDATA[ch->wavectr];
     update_ch_output(this, ch);
 }
 
-void HUC6280_PSG_write(HUC6280_PSG *this, u32 addr, u8 val)
+void HUC6280_PSG_write(struct HUC6280_PSG *this, u32 addr, u8 val)
 {
     addr &= 15;
     struct HUC6280_PSG_ch *ch = &this->ch[this->SEL];
@@ -123,7 +123,7 @@ void HUC6280_PSG_write(HUC6280_PSG *this, u32 addr, u8 val)
 }
 
 
-static void clock_noise(HUC6280_PSG_ch *ch)
+static void clock_noise(struct HUC6280_PSG_ch *ch)
 {
     ch->NOISE.COUNTER--;
     if (ch->NOISE.COUNTER < 0) {
@@ -136,7 +136,7 @@ static void clock_noise(HUC6280_PSG_ch *ch)
     }
 }
 
-static void tick_ch(HUC6280_PSG *this, HUC6280_PSG_ch *ch)
+static void tick_ch(struct HUC6280_PSG *this, struct HUC6280_PSG_ch *ch)
 {
     if (ch->num > 4) clock_noise(ch);
     ch->counter--;
@@ -166,7 +166,7 @@ static void tick_ch(HUC6280_PSG *this, HUC6280_PSG_ch *ch)
     }
 }
 
-static void mix_sample(HUC6280_PSG *this)
+static void mix_sample(struct HUC6280_PSG *this)
 {
     this->out.l = 0;
     this->out.r = 0;
@@ -180,7 +180,7 @@ static void mix_sample(HUC6280_PSG *this)
     this->updates = 0;
 }
 
-void HUC6280_PSG_cycle(HUC6280_PSG *this)
+void HUC6280_PSG_cycle(struct HUC6280_PSG *this)
 {
     for (u32 i = 0; i < 6; i++) {
         struct HUC6280_PSG_ch *ch = &this->ch[i];
@@ -190,7 +190,7 @@ void HUC6280_PSG_cycle(HUC6280_PSG *this)
     // TODO: LFO
 }
 
-u16 HUC6280_PSG_debug_ch_sample(HUC6280_PSG *this, u32 num)
+u16 HUC6280_PSG_debug_ch_sample(struct HUC6280_PSG *this, u32 num)
 {
     struct HUC6280_PSG_ch *ch = &this->ch[num];
     u16 r = (ch->output_l + ch->output_r) + 0x100;

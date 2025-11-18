@@ -1,7 +1,7 @@
 //
 // Created by . on 12/4/24.
 //
-#include <cstring>
+#include <string.h>
 
 #include "nds_regs.h"
 #include "nds_bus.h"
@@ -32,7 +32,7 @@ static u32 timer_reload_ticks(u32 reload)
 }
 
 
-static u32 busrd7_invalid(NDS *this, u32 addr, u32 sz, u32 access, u32 has_effect) {
+static u32 busrd7_invalid(struct NDS *this, u32 addr, u32 sz, u32 access, u32 has_effect) {
     printf("\nREAD7 UNKNOWN ADDR:%08x sz:%d", addr, sz);
     this->waitstates.current_transaction++;
     //dbg.var++;
@@ -40,7 +40,7 @@ static u32 busrd7_invalid(NDS *this, u32 addr, u32 sz, u32 access, u32 has_effec
     return 0;
 }
 
-static u32 busrd9_invalid(NDS *this, u32 addr, u32 sz, u32 access, u32 has_effect) {
+static u32 busrd9_invalid(struct NDS *this, u32 addr, u32 sz, u32 access, u32 has_effect) {
     printf("\nREAD9 UNKNOWN ADDR:%08x sz:%d", addr, sz);
     this->waitstates.current_transaction++;
     //dbg.var++;
@@ -48,14 +48,14 @@ static u32 busrd9_invalid(NDS *this, u32 addr, u32 sz, u32 access, u32 has_effec
     return 0;
 }
 
-static void buswr7_invalid(NDS *this, u32 addr, u32 sz, u32 access, u32 val) {
+static void buswr7_invalid(struct NDS *this, u32 addr, u32 sz, u32 access, u32 val) {
     printf("\nWRITE7 UNKNOWN ADDR:%08x sz:%d DATA:%08x", addr, sz, val);
     this->waitstates.current_transaction++;
     dbg.var++;
     //if (dbg.var > 15) dbg_break("too many bad writes", this->clock.master_cycle_count);
 }
 
-static void buswr9_invalid(NDS *this, u32 addr, u32 sz, u32 access, u32 val) {
+static void buswr9_invalid(struct NDS *this, u32 addr, u32 sz, u32 access, u32 val) {
     this->waitstates.current_transaction++;
     static int pokemon_didit = 0;
     if ((addr == 0) && !pokemon_didit) {
@@ -70,21 +70,21 @@ static void buswr9_invalid(NDS *this, u32 addr, u32 sz, u32 access, u32 val) {
     //dbg_break("unknown addr write9", this->clock.master_cycle_count7);
 }
 
-static void buswr7_shared(NDS *this, u32 addr, u32 sz, u32 access, u32 val)
+static void buswr7_shared(struct NDS *this, u32 addr, u32 sz, u32 access, u32 val)
 {
     if (addr >= 0x03800000) return cW[sz](this->mem.WRAM_arm7, addr & 0xFFFF, val);
     if (!this->mem.io.RAM7.disabled) cW[sz](this->mem.WRAM_share, (addr & this->mem.io.RAM7.mask) + this->mem.io.RAM7.base, val);
     else cW[sz](this->mem.WRAM_arm7, addr & 0xFFFF, val);
 }
 
-static u32 busrd7_shared(NDS *this, u32 addr, u32 sz, u32 access, u32 has_effect)
+static u32 busrd7_shared(struct NDS *this, u32 addr, u32 sz, u32 access, u32 has_effect)
 {
     if (addr >= 0x03800000) return cR[sz](this->mem.WRAM_arm7, addr & 0xFFFF);
     if (this->mem.io.RAM7.disabled) return cR[sz](this->mem.WRAM_arm7, addr & 0xFFFF);
     return cR[sz](this->mem.WRAM_share, (addr & this->mem.io.RAM7.mask) + this->mem.io.RAM7.base);
 }
 
-static void buswr7_vram(NDS *this, u32 addr, u32 sz, u32 access, u32 val)
+static void buswr7_vram(struct NDS *this, u32 addr, u32 sz, u32 access, u32 val)
 {
     u32 bank = (addr >> 17) & 1;
     if (this->mem.vram.map.arm7[bank]) return cW[sz](this->mem.vram.map.arm7[bank], addr & 0x1FFFF, val);
@@ -92,7 +92,7 @@ static void buswr7_vram(NDS *this, u32 addr, u32 sz, u32 access, u32 val)
     //printf("\nWarning write7 to unmapped VRAM:%08x sz:%d data:%08x", addr, sz, val);
 }
 
-static u32 busrd7_vram(NDS *this, u32 addr, u32 sz, u32 access, u32 has_effect)
+static u32 busrd7_vram(struct NDS *this, u32 addr, u32 sz, u32 access, u32 has_effect)
 {
     u32 bank = (addr >> 17) & 1;
     if (this->mem.vram.map.arm7[bank]) return cR[sz](this->mem.vram.map.arm7[bank], addr & 0x1FFFF);
@@ -100,73 +100,73 @@ static u32 busrd7_vram(NDS *this, u32 addr, u32 sz, u32 access, u32 has_effect)
     return busrd7_invalid(this, addr, sz, access, has_effect);
 }
 
-static void buswr7_gba_cart(NDS *this, u32 addr, u32 sz, u32 access, u32 val)
+static void buswr7_gba_cart(struct NDS *this, u32 addr, u32 sz, u32 access, u32 val)
 {
     return;
 }
 
-static u32 busrd7_gba_cart(NDS *this, u32 addr, u32 sz, u32 access, u32 has_effect)
+static u32 busrd7_gba_cart(struct NDS *this, u32 addr, u32 sz, u32 access, u32 has_effect)
 {
     if (!this->io.rights.gba_slot) return (addr & 0x1FFFF) >> 1;
     return 0;
 }
 
-static void buswr7_gba_sram(NDS *this, u32 addr, u32 sz, u32 access, u32 val)
+static void buswr7_gba_sram(struct NDS *this, u32 addr, u32 sz, u32 access, u32 val)
 {
     return;
 }
 
-static u32 busrd7_gba_sram(NDS *this, u32 addr, u32 sz, u32 access, u32 has_effect)
+static u32 busrd7_gba_sram(struct NDS *this, u32 addr, u32 sz, u32 access, u32 has_effect)
 {
     if (!this->io.rights.gba_slot) return masksz[sz];
     return 0;
 }
 
-static u32 busrd9_main(NDS *this, u32 addr, u32 sz, u32 access, u32 has_effect)
+static u32 busrd9_main(struct NDS *this, u32 addr, u32 sz, u32 access, u32 has_effect)
 {
     return cR[sz](this->mem.RAM, addr & 0x3FFFFF);
 }
 
-static void buswr9_main(NDS *this, u32 addr, u32 sz, u32 access, u32 val)
+static void buswr9_main(struct NDS *this, u32 addr, u32 sz, u32 access, u32 val)
 {
     cW[sz](this->mem.RAM, addr & 0x3FFFFF, val);
 }
 
 
-static void buswr9_gba_cart(NDS *this, u32 addr, u32 sz, u32 access, u32 val)
+static void buswr9_gba_cart(struct NDS *this, u32 addr, u32 sz, u32 access, u32 val)
 {
     return;
 }
 
-static u32 busrd9_gba_cart(NDS *this, u32 addr, u32 sz, u32 access, u32 has_effect)
+static u32 busrd9_gba_cart(struct NDS *this, u32 addr, u32 sz, u32 access, u32 has_effect)
 {
     if (this->io.rights.gba_slot) return (addr & 0x1FFFF) >> 1;
     return 0;
 }
 
-static void buswr9_gba_sram(NDS *this, u32 addr, u32 sz, u32 access, u32 val)
+static void buswr9_gba_sram(struct NDS *this, u32 addr, u32 sz, u32 access, u32 val)
 {
     return;
 }
 
-static u32 busrd9_gba_sram(NDS *this, u32 addr, u32 sz, u32 access, u32 has_effect)
+static u32 busrd9_gba_sram(struct NDS *this, u32 addr, u32 sz, u32 access, u32 has_effect)
 {
     if (this->io.rights.gba_slot) return masksz[sz];
     return 0;
 }
 
-static void buswr9_shared(NDS *this, u32 addr, u32 sz, u32 access, u32 val)
+static void buswr9_shared(struct NDS *this, u32 addr, u32 sz, u32 access, u32 val)
 {
     if (!this->mem.io.RAM9.disabled) cW[sz](this->mem.WRAM_share, (addr & this->mem.io.RAM9.mask) + this->mem.io.RAM9.base, val);
 }
 
-static u32 busrd9_shared(NDS *this, u32 addr, u32 sz, u32 access, u32 has_effect)
+static u32 busrd9_shared(struct NDS *this, u32 addr, u32 sz, u32 access, u32 has_effect)
 {
     if (this->mem.io.RAM9.disabled) return 0; // undefined
     return cR[sz](this->mem.WRAM_share, (addr & this->mem.io.RAM9.mask) + this->mem.io.RAM9.base);
 }
 
-static void buswr9_obj_and_palette(NDS *this, u32 addr, u32 sz, u32 access, u32 val)
+static void buswr9_obj_and_palette(struct NDS *this, u32 addr, u32 sz, u32 access, u32 val)
 {
     if (addr < 0x05000000) return;
     addr &= 0x7FF;
@@ -182,7 +182,7 @@ static void buswr9_obj_and_palette(NDS *this, u32 addr, u32 sz, u32 access, u32 
     buswr9_invalid(this, addr, sz, access, val);
 }
 
-static u32 busrd9_obj_and_palette(NDS *this, u32 addr, u32 sz, u32 access, u32 has_effect)
+static u32 busrd9_obj_and_palette(struct NDS *this, u32 addr, u32 sz, u32 access, u32 has_effect)
 {
     if (addr < 0x05000000) return busrd9_invalid(this, addr, sz, access, has_effect);
     addr &= 0x7FF;
@@ -197,7 +197,7 @@ static u32 busrd9_obj_and_palette(NDS *this, u32 addr, u32 sz, u32 access, u32 h
     return busrd9_invalid(this, addr, sz, access, has_effect);
 }
 
-static void buswr9_vram(NDS *this, u32 addr, u32 sz, u32 access, u32 val)
+static void buswr9_vram(struct NDS *this, u32 addr, u32 sz, u32 access, u32 val)
 {
     if (sz == 1) {
         static int a = 1;
@@ -220,7 +220,7 @@ static void buswr9_vram(NDS *this, u32 addr, u32 sz, u32 access, u32 val)
     //dbg_break("Unmapped VRAM9 write", this->clock.master_cycle_count7);
 }
 
-static u32 busrd9_vram(NDS *this, u32 addr, u32 sz, u32 access, u32 has_effect)
+static u32 busrd9_vram(struct NDS *this, u32 addr, u32 sz, u32 access, u32 has_effect)
 {
     u8 *ptr = this->mem.vram.map.arm9[NDSVRAMSHIFT(addr) & NDSVRAMMASK];
     if (ptr) return cR[sz](ptr, addr & 0x3FFF);
@@ -230,7 +230,7 @@ static u32 busrd9_vram(NDS *this, u32 addr, u32 sz, u32 access, u32 has_effect)
     return 0;
 }
 
-static void buswr9_oam(NDS *this, u32 addr, u32 sz, u32 access, u32 val)
+static void buswr9_oam(struct NDS *this, u32 addr, u32 sz, u32 access, u32 val)
 {
     addr &= 0x7FF;
     if (addr < 0x400) return cW[sz](this->ppu.eng2d[0].mem.oam, addr & 0x3FF, val);
@@ -238,28 +238,28 @@ static void buswr9_oam(NDS *this, u32 addr, u32 sz, u32 access, u32 val)
     //buswr9_invalid(this, addr, sz, access, val);
 }
 
-static u32 busrd9_oam(NDS *this, u32 addr, u32 sz, u32 access, u32 has_effect)
+static u32 busrd9_oam(struct NDS *this, u32 addr, u32 sz, u32 access, u32 has_effect)
 {
     addr &= 0x7FF;
     if (addr < 0x400) return cR[sz](this->ppu.eng2d[0].mem.oam, addr & 0x3FF);
     else return cR[sz](this->ppu.eng2d[1].mem.oam, addr & 0x3FF);
 }
 
-static u32 busrd7_bios7(NDS *this, u32 addr, u32 sz, u32 access, u32 has_effect)
+static u32 busrd7_bios7(struct NDS *this, u32 addr, u32 sz, u32 access, u32 has_effect)
 {
     return cR[sz](this->mem.bios7, addr & 0x3FFF);
 }
 
-static void buswr7_bios7(NDS *this, u32 addr, u32 sz, u32 access, u32 val)
+static void buswr7_bios7(struct NDS *this, u32 addr, u32 sz, u32 access, u32 val)
 {
 }
 
-static u32 busrd7_main(NDS *this, u32 addr, u32 sz, u32 access, u32 has_effect)
+static u32 busrd7_main(struct NDS *this, u32 addr, u32 sz, u32 access, u32 has_effect)
 {
     return cR[sz](this->mem.RAM, addr & 0x3FFFFF);
 }
 
-static void buswr7_main(NDS *this, u32 addr, u32 sz, u32 access, u32 val)
+static void buswr7_main(struct NDS *this, u32 addr, u32 sz, u32 access, u32 val)
 {
     cW[sz](this->mem.RAM, addr & 0x3FFFFF, val);
 }
@@ -273,7 +273,7 @@ static u32 DMA_CH_NUM(u32 addr)
     return 3;
 }
 
-static u32 busrd7_io8(NDS *this, u32 addr, u32 sz, u32 access, u32 has_effect)
+static u32 busrd7_io8(struct NDS *this, u32 addr, u32 sz, u32 access, u32 has_effect)
 {
     u32 v;
     switch(addr) {
@@ -473,11 +473,11 @@ static u32 busrd7_io8(NDS *this, u32 addr, u32 sz, u32 access, u32 has_effect)
         case 0x04004701:
             return 0;
     }
-    //printf("\nUnhandled BUSRD7IO8 addr:%08x", addr);
+    printf("\nUnhandled BUSRD7IO8 addr:%08x", addr);
     return 0;
 }
 
-static void start_div(NDS *this)
+static void start_div(struct NDS *this)
 {
     // Set time and needs calculation
     this->io.div.needs_calc = 1;
@@ -492,7 +492,7 @@ static void start_div(NDS *this)
     this->io.div.busy_until = NDS_clock_current9(this) + num_clks;
 }
 
-static void start_sqrt(NDS *this)
+static void start_sqrt(struct NDS *this)
 {
     this->io.sqrt.needs_calc = 1;
     this->io.div.busy_until = NDS_clock_current9(this) + 13;
@@ -503,7 +503,7 @@ static void start_sqrt(NDS *this)
 #pragma warning(disable: 4146) // unary minus operator applied to unsigned type, result still unsigned
 #endif
 
-static void div_calc(NDS *this)
+static void div_calc(struct NDS *this)
 {
     this->io.div.needs_calc = 0;
 
@@ -568,7 +568,7 @@ static void div_calc(NDS *this)
 #pragma warning(pop)
 #endif
 
-static void sqrt_calc(NDS *this)
+static void sqrt_calc(struct NDS *this)
 {
     this->io.sqrt.needs_calc = 0;
     u64 val;
@@ -607,7 +607,7 @@ static void sqrt_calc(NDS *this)
     this->io.sqrt.result.u = res;
 }
 
-static void buswr7_io8(NDS *this, u32 addr, u32 sz, u32 access, u32 val)
+static void buswr7_io8(struct NDS *this, u32 addr, u32 sz, u32 access, u32 val)
 {
     switch(addr) {
         case R_RCNT+0:
@@ -723,8 +723,6 @@ static void buswr7_io8(NDS *this, u32 addr, u32 sz, u32 access, u32 val)
             this->io.ipc.arm9sync.dinput = this->io.ipc.arm7sync.doutput = val & 15;
 
             u32 send_irq = (val >> 5) & 1;
-            if (send_irq) printf("\nIPC IRQ REQUEST!");
-
             if (send_irq && this->io.ipc.arm9sync.enable_irq_from_remote) {
                 NDS_update_IF9(this, NDS_IRQ_IPC_SYNC);
             }
@@ -877,7 +875,7 @@ static void buswr7_io8(NDS *this, u32 addr, u32 sz, u32 access, u32 val)
 }
 
 // --------------
-static u32 busrd9_io8(NDS *this, u32 addr, u32 sz, u32 access, u32 has_effect)
+static u32 busrd9_io8(struct NDS *this, u32 addr, u32 sz, u32 access, u32 has_effect)
 {
     if (((addr >= 0x04000000) && (addr < 0x04000070)) || ((addr >= 0x04001000) && (addr < 0x04001070))) {
         return NDS_PPU_read9_io(this, addr, sz, access, has_effect);
@@ -914,13 +912,11 @@ static u32 busrd9_io8(NDS *this, u32 addr, u32 sz, u32 access, u32 has_effect)
             // send fifo from 9 is to_7
             v = NDS_IPC_fifo_is_empty(&this->io.ipc.to_arm7);
             v |= NDS_IPC_fifo_is_full(&this->io.ipc.to_arm7) << 1;
-            printf("\nFIFO7 EMPTY:%d FULL:%d?", v & 1, (v >> 1));
             v |= this->io.ipc.arm9.irq_on_send_fifo_empty << 2;
             return v;
         case R_IPCFIFOCNT+1:
             v = NDS_IPC_fifo_is_empty(&this->io.ipc.to_arm9);
             v |= NDS_IPC_fifo_is_full(&this->io.ipc.to_arm9) << 1;
-            printf("\nFIFO9 EMPTY:%d FULL:%d", v & 1, (v >> 1));
             v |= this->io.ipc.arm9.irq_on_recv_fifo_not_empty << 2;
             v |= this->io.ipc.arm9.error << 6;
             v |= this->io.ipc.arm9.fifo_enable << 7;
@@ -1180,7 +1176,7 @@ static u32 busrd9_io8(NDS *this, u32 addr, u32 sz, u32 access, u32 has_effect)
     return 0;
 }
 
-static void buswr9_io8(NDS *this, u32 addr, u32 sz, u32 access, u32 val)
+static void buswr9_io8(struct NDS *this, u32 addr, u32 sz, u32 access, u32 val)
 {
     switch(addr) {
         case R_ROMCMD+0:
@@ -1552,7 +1548,7 @@ static void buswr9_io8(NDS *this, u32 addr, u32 sz, u32 access, u32 val)
 
 // -----
 
-static u32 busrd9_apu(NDS *this, u32 addr, u32 sz, u32 access, u32 has_effect){
+static u32 busrd9_apu(struct NDS *this, u32 addr, u32 sz, u32 access, u32 has_effect){
     static int already_did = 0;
     if (!already_did) {
         already_did = 1;
@@ -1561,7 +1557,7 @@ static u32 busrd9_apu(NDS *this, u32 addr, u32 sz, u32 access, u32 has_effect){
     return 0;
 }
 
-static u32 busrd9_io(NDS *this, u32 addr, u32 sz, u32 access, u32 has_effect)
+static u32 busrd9_io(struct NDS *this, u32 addr, u32 sz, u32 access, u32 has_effect)
 {
     u32 v;
     if (((addr >= 0x04000000) && (addr < 0x04000070)) || ((addr >= 0x04001000) && (addr < 0x04001070))) {
@@ -1577,9 +1573,9 @@ static u32 busrd9_io(NDS *this, u32 addr, u32 sz, u32 access, u32 has_effect)
             return NDS_cart_read_romctrl(this);
 
         case R_ROMDATA+0: // 4100010
-        case R_ROMDATA+1: // 4100011
-        case R_ROMDATA+2: // 4100012
-        case R_ROMDATA+3: // 4100013
+        case R_ROMDATA+1: // 4100010
+        case R_ROMDATA+2: // 4100010
+        case R_ROMDATA+3: // 4100010
             assert(sz==4);
             if (this->io.rights.nds_slot_is7) return 0;
             return NDS_cart_read_rom(this, addr, sz);
@@ -1622,7 +1618,7 @@ static u32 busrd9_io(NDS *this, u32 addr, u32 sz, u32 access, u32 has_effect)
     return v;
 }
 
-static void buswr9_apu(NDS *this, u32 addr, u32 sz, u32 access, u32 val) {
+static void buswr9_apu(struct NDS *this, u32 addr, u32 sz, u32 access, u32 val) {
     static int already_did = 0;
     if (!already_did) {
         already_did = 1;
@@ -1631,7 +1627,7 @@ static void buswr9_apu(NDS *this, u32 addr, u32 sz, u32 access, u32 val) {
 }
 
 
-static void buswr9_io(NDS *this, u32 addr, u32 sz, u32 access, u32 val)
+static void buswr9_io(struct NDS *this, u32 addr, u32 sz, u32 access, u32 val)
 {
     if (((addr >= 0x04000000) && (addr < 0x04000070)) || ((addr >= 0x04001000) && (addr < 0x04001070))) {
         NDS_PPU_write9_io(this, addr, sz, access, val);
@@ -1676,7 +1672,6 @@ static void buswr9_io(NDS *this, u32 addr, u32 sz, u32 access, u32 val)
         case R_IPCFIFOSEND+2:
         case R_IPCFIFOSEND+3:
             // All writes are only 32 bits here
-            printf("\nIPCIFOSEND!");
             if (this->io.ipc.arm9.fifo_enable) {
                 if (sz == 2) {
                     val &= 0xFFFF;
@@ -1690,7 +1685,7 @@ static void buswr9_io(NDS *this, u32 addr, u32 sz, u32 access, u32 val)
                 u32 old_bits = NDS_IPC_fifo_is_not_empty(&this->io.ipc.to_arm7) & this->io.ipc.arm7.irq_on_recv_fifo_not_empty;
                 if (this->io.ipc.arm9.fifo_enable) {
                     this->io.ipc.arm9.error |= NDS_IPC_fifo_push(&this->io.ipc.to_arm7, val);
-                    NDS_cart_detect_kind(this, 9, val);
+                    if (!this->cart.backup.detect.done) NDS_cart_detect_kind(this, 9, val);
                 }
 
                 u32 new_bits = NDS_IPC_fifo_is_not_empty(&this->io.ipc.to_arm7) & this->io.ipc.arm7.irq_on_recv_fifo_not_empty;
@@ -1709,9 +1704,8 @@ static void buswr9_io(NDS *this, u32 addr, u32 sz, u32 access, u32 val)
     }
 }
 
-static u32 busrd7_wifi(NDS *this, u32 addr, u32 sz, u32 access, u32 has_effect) {
-    // 0x04804000 and 0x480C000 are the two 8KB RAM sections, oops!
-    if (addr < 0x04810000) return cR[sz](this->mem.wifi, addr & 0x1FFF);
+static u32 busrd7_wifi(struct NDS *this, u32 addr, u32 sz, u32 access, u32 has_effect) {
+    if (addr < 0x04808000) return cR[sz](this->mem.wifi, addr & 0x1FFF);
     static int a = 1;
     if (a) {
         a = 0;
@@ -1720,9 +1714,9 @@ static u32 busrd7_wifi(NDS *this, u32 addr, u32 sz, u32 access, u32 has_effect) 
     return 0;
 }
 
-static void buswr7_wifi(NDS *this, u32 addr, u32 sz, u32 access, u32 val)
+static void buswr7_wifi(struct NDS *this, u32 addr, u32 sz, u32 access, u32 val)
 {
-    if (addr < 0x04810000) return cW[sz](this->mem.wifi, addr & 0x1FFF, val);
+    if (addr < 0x04808000) return cW[sz](this->mem.wifi, addr & 0x1FFF, val);
 
     static int a = 1;
     if (a) {
@@ -1733,7 +1727,7 @@ static void buswr7_wifi(NDS *this, u32 addr, u32 sz, u32 access, u32 val)
 }
 
 
-static u32 busrd7_io(NDS *this, u32 addr, u32 sz, u32 access, u32 has_effect)
+static u32 busrd7_io(struct NDS *this, u32 addr, u32 sz, u32 access, u32 has_effect)
 {
     if (((addr >= 0x04000000) && (addr < 0x04000070)) || ((addr >= 0x04001000) && (addr < 0x04001070))) {
         return NDS_PPU_read7_io(this, addr, sz, access, has_effect);
@@ -1798,7 +1792,7 @@ static u32 busrd7_io(NDS *this, u32 addr, u32 sz, u32 access, u32 has_effect)
     return v;
 }
 
-static void buswr7_io(NDS *this, u32 addr, u32 sz, u32 access, u32 val)
+static void buswr7_io(struct NDS *this, u32 addr, u32 sz, u32 access, u32 val)
 {
     if (((addr >= 0x04000000) && (addr < 0x04000070)) || ((addr >= 0x04001000) && (addr < 0x04001070))) {
         NDS_PPU_write7_io(this, addr, sz, access, val);
@@ -1860,7 +1854,7 @@ static void buswr7_io(NDS *this, u32 addr, u32 sz, u32 access, u32 val)
                 u32 old_bits = NDS_IPC_fifo_is_not_empty(&this->io.ipc.to_arm9) & this->io.ipc.arm9.irq_on_recv_fifo_not_empty;
                 if (this->io.ipc.arm7.fifo_enable) {
                     this->io.ipc.arm7.error |= NDS_IPC_fifo_push(&this->io.ipc.to_arm9, val);
-                    //if (!this->cart.backup.detect.done) NDS_cart_detect_kind(this, 7, val);
+                    if (!this->cart.backup.detect.done) NDS_cart_detect_kind(this, 7, val);
                 }
                 u32 new_bits = NDS_IPC_fifo_is_not_empty(&this->io.ipc.to_arm9) & this->io.ipc.arm9.irq_on_recv_fifo_not_empty;
                 if (!old_bits && new_bits) {
@@ -1880,7 +1874,7 @@ static void buswr7_io(NDS *this, u32 addr, u32 sz, u32 access, u32 val)
     }
 }
 
-void NDS_bus_reset(NDS *this) {
+void NDS_bus_reset(struct NDS *this) {
     NDS_RTC_reset(this);
     this->spi.irq_id = 0;
 
@@ -1894,7 +1888,7 @@ void NDS_bus_reset(NDS *this) {
     }
 }
 
-void NDS_bus_init(NDS *this)
+void NDS_bus_init(struct NDS *this)
 {
     for (u32 i = 0; i < 4; i++) {
         struct NDS_TIMER *t = &this->timer7[i];
@@ -1937,7 +1931,7 @@ void NDS_bus_init(NDS *this)
     NDS_RTC_init(this);
 }
 
-/*static void trace_read(NDS *this, u32 addr, u32 sz, u32 val)
+/*static void trace_read(struct NDS *this, u32 addr, u32 sz, u32 val)
 {
     struct trace_view *tv = this->cpu.dbg.tvptr;
     if (!tv) return;
@@ -1949,7 +1943,7 @@ void NDS_bus_init(NDS *this)
     trace_view_endline(tv);
 }
 
-static void trace_write(NDS *this, u32 addr, u32 sz, u32 val)
+static void trace_write(struct NDS *this, u32 addr, u32 sz, u32 val)
 {
     struct trace_view *tv = this->cpu.dbg.tvptr;
     if (!tv) return;
@@ -1965,7 +1959,7 @@ static void trace_write(NDS *this, u32 addr, u32 sz, u32 val)
 u32 NDS_mainbus_read7(void *ptr, u32 addr, u32 sz, u32 access, u32 has_effect)
 {
     addr &= maskalign[sz];
-    struct NDS *this = (NDS *)ptr;
+    struct NDS *this = (struct NDS *)ptr;
     if (has_effect) this->waitstates.current_transaction++;
     u32 v;
 
@@ -1978,14 +1972,14 @@ u32 NDS_mainbus_read7(void *ptr, u32 addr, u32 sz, u32 access, u32 has_effect)
     return v;
 }
 
-static u32 rd9_bios(NDS *this, u32 addr, u32 sz)
+static u32 rd9_bios(struct NDS *this, u32 addr, u32 sz)
 {
     return cR[sz](this->mem.bios9, addr & 0xFFF);
 }
 
 u32 NDS_mainbus_read9(void *ptr, u32 addr, u32 sz, u32 access, u32 has_effect)
 {
-    struct NDS *this = (NDS *)ptr;
+    struct NDS *this = (struct NDS *)ptr;
     this->waitstates.current_transaction++;
     u32 v;
 
@@ -2001,7 +1995,7 @@ u32 NDS_mainbus_read9(void *ptr, u32 addr, u32 sz, u32 access, u32 has_effect)
 
 u32 NDS_mainbus_fetchins9(void *ptr, u32 addr, u32 sz, u32 access)
 {
-    struct NDS *this = (NDS*)ptr;
+    struct NDS *this = (struct NDS*)ptr;
     u32 v = NDS_mainbus_read9(ptr, addr, sz, access, 1);
     switch(sz) {
         case 4:
@@ -2017,7 +2011,7 @@ u32 NDS_mainbus_fetchins9(void *ptr, u32 addr, u32 sz, u32 access)
 
 u32 NDS_mainbus_fetchins7(void *ptr, u32 addr, u32 sz, u32 access)
 {
-    struct NDS *this = (NDS*)ptr;
+    struct NDS *this = (struct NDS*)ptr;
     u32 v = NDS_mainbus_read7(ptr, addr, sz, access, 1);
     switch(sz) {
         case 4:
@@ -2033,7 +2027,7 @@ u32 NDS_mainbus_fetchins7(void *ptr, u32 addr, u32 sz, u32 access)
 void NDS_mainbus_write7(void *ptr, u32 addr, u32 sz, u32 access, u32 val)
 {
     addr &= maskalign[sz];
-    struct NDS *this = (NDS *)ptr;
+    struct NDS *this = (struct NDS *)ptr;
     this->waitstates.current_transaction++;
 #ifdef TRACE
     printf("\n wr7:%08x sz:%d val:%08x", addr, sz, val);
@@ -2049,7 +2043,7 @@ void NDS_mainbus_write7(void *ptr, u32 addr, u32 sz, u32 access, u32 val)
 
 void NDS_mainbus_write9(void *ptr, u32 addr, u32 sz, u32 access, u32 val)
 {
-    struct NDS *this = (NDS *)ptr;
+    struct NDS *this = (struct NDS *)ptr;
     this->waitstates.current_transaction++;
     //if (dbg.trace_on) trace_write(this, addr, sz, val);
 #ifdef TRACE
@@ -2067,12 +2061,12 @@ void NDS_mainbus_write9(void *ptr, u32 addr, u32 sz, u32 access, u32 val)
     buswr9_invalid(this, addr, sz, access, val);
 }
 
-u64 NDS_clock_current7(NDS *this)
+u64 NDS_clock_current7(struct NDS *this)
 {
     return this->clock.master_cycle_count7 + this->waitstates.current_transaction;
 }
 
-u64 NDS_clock_current9(NDS *this)
+u64 NDS_clock_current9(struct NDS *this)
 {
     return this->clock.master_cycle_count9 + this->waitstates.current_transaction;
 }

@@ -11,6 +11,6 @@
 
 struct ARM7TDMI;
 struct ARMctxt;
-void ARM7TDMI_thumb_disassemble(u16 opc, jsm_string *out, i64 ins_addr, ARMctxt *ct);
+void ARM7TDMI_thumb_disassemble(u16 opc, struct jsm_string *out, i64 ins_addr, struct ARMctxt *ct);
 
 #endif //JSMOOCH_EMUS_THUMB_DISASSEMBLER_H

@@ -2,16 +2,16 @@
 // Created by . on 10/25/24.
 //
 
-#include <cstdlib>
-#include <cstdio>
-#include <cstring>
+#include <stdlib.h>
+#include <stdio.h>
+#include <string.h>
 
 #ifdef _MSC_VER
 #define _USE_MATH_DEFINES // for M_PI
 #endif
 #include <math.h>
 
-#include <cassert>
+#include <assert.h>
 
 #include "helpers/debug.h"
 #include "helpers/serialize/serialize.h"
@@ -86,7 +86,7 @@ void do_math()
     }
 }
 
-void ym2612_init(ym2612 *this, enum OPN2_variant variant, u64 *master_cycle_count, u64 master_wait_cycles)
+void ym2612_init(struct ym2612 *this, enum OPN2_variant variant, u64 *master_cycle_count, u64 master_wait_cycles)
 {
     memset(this, 0, sizeof(*this));
     DBG_EVENT_VIEW_INIT;
@@ -112,12 +112,12 @@ void ym2612_init(ym2612 *this, enum OPN2_variant variant, u64 *master_cycle_coun
     this->dac.sample = 0;
 }
 
-void ym2612_delete(ym2612*this)
+void ym2612_delete(struct ym2612*this)
 {
 
 }
 
-static inline void op_key_on(ym2612 *this, YM2612_CHANNEL *ch, u32 opn, u32 val) {
+static inline void op_key_on(struct ym2612 *this, struct YM2612_CHANNEL *ch, u32 opn, u32 val) {
     struct YM2612_OPERATOR *op = &ch->operator[opn];
     if (val) {
         //if (op->envelope.state == EP_release) {
@@ -147,24 +147,24 @@ static inline void op_key_on(ym2612 *this, YM2612_CHANNEL *ch, u32 opn, u32 val)
     }
 }
 
-void ym2612_reset(ym2612*this)
+void ym2612_reset(struct ym2612*this)
 {
 
 }
 
-static void lfo_enable(ym2612*this, u32 enabled)
+static void lfo_enable(struct ym2612*this, u32 enabled)
 {
     this->lfo.enabled = enabled;
     if (!enabled) this->lfo.counter = 0;
 }
 
-static void lfo_freq(ym2612* this, u8 val)
+static void lfo_freq(struct ym2612* this, u8 val)
 {
     static const int dividers[8] = { 108, 77, 71, 67, 62, 44, 8, 5 };
     this->lfo.period = dividers[val];
 }
 
-static void run_lfo(ym2612* this)
+static void run_lfo(struct ym2612* this)
 {
     this->lfo.divider++;
     if (this->lfo.divider >= this->lfo.period) {
@@ -220,7 +220,7 @@ u16 lfo_am(u8 lfo_counter, u8 ams)
     return 0;
 }
 
-static void mix_sample(ym2612*this)
+static void mix_sample(struct ym2612*this)
 {
     i64 left = 0, right = 0;
     for (u32 i = 0; i < 6; i++) {
@@ -259,7 +259,7 @@ static inline u8 scale_key_code(u16 f_num, u8 block)
            | ((f11 && (f10 || f9 || f8)) || (!f11 && f10 && f9 && f8));
 }
 
-static i32 phase_compute_increment(ym2612 *this, YM2612_CHANNEL *ch, YM2612_OPERATOR *op)
+static i32 phase_compute_increment(struct ym2612 *this, struct YM2612_CHANNEL *ch, struct YM2612_OPERATOR *op)
 {
     u32 mfn = lfo_fm(this->lfo.counter, ch->pms, op->phase.f_num);
     u32 shifted = (mfn << op->phase.block) >> 2;
@@ -274,14 +274,14 @@ static i32 phase_compute_increment(ym2612 *this, YM2612_CHANNEL *ch, YM2612_OPER
     return detuned_f;
 }
 
-static void run_op_phase(ym2612 *this, YM2612_CHANNEL *ch, YM2612_OPERATOR *op)
+static void run_op_phase(struct ym2612 *this, struct YM2612_CHANNEL *ch, struct YM2612_OPERATOR *op)
 {
     i32 inc = phase_compute_increment(this, ch, op);
     op->phase.counter = (op->phase.counter + inc) & 0xFFFFF;
     op->phase.output = op->phase.counter >> 10;
 }
 
-static void run_op_env_ssg(ym2612 *this, YM2612_CHANNEL *ch, YM2612_OPERATOR *op)
+static void run_op_env_ssg(struct ym2612 *this, struct YM2612_CHANNEL *ch, struct YM2612_OPERATOR *op)
 {
     if (op->envelope.attenuation < 0x200) return;
 
@@ -311,7 +311,7 @@ static void run_op_env_ssg(ym2612 *this, YM2612_CHANNEL *ch, YM2612_OPERATOR *op
     }
 }
 
-static void run_op_env(ym2612 *this, YM2612_CHANNEL *ch, YM2612_OPERATOR *op)
+static void run_op_env(struct ym2612 *this, struct YM2612_CHANNEL *ch, struct YM2612_OPERATOR *op)
 {
     if (op->envelope.ssg.enabled) {
         run_op_env_ssg(this, ch, op);
@@ -391,7 +391,7 @@ static u16 attenuation_to_amplitude(u16 attenuation)
     return (fp2 << 2) >> int_part;
 }
 
-static u16 op_attenuation(YM2612_OPERATOR *op)
+static u16 op_attenuation(struct YM2612_OPERATOR *op)
 {
     u16 attenuation;
     if (op->envelope.ssg.enabled && (op->envelope.state != EP_release) && (op->envelope.ssg.invert_output != op->envelope.ssg.attack)) {
@@ -405,7 +405,7 @@ static u16 op_attenuation(YM2612_OPERATOR *op)
     return MIN(0x3FF, attenuation);
 }
 
-static i16 run_op_output(YM2612_CHANNEL *ch, u32 opn, i32 mod_input)
+static i16 run_op_output(struct YM2612_CHANNEL *ch, u32 opn, i32 mod_input)
 {
     struct YM2612_OPERATOR *op = &ch->operator[opn];
     u16 phase = (op->phase.output + ((mod_input & 0xFFFFFFFE) >> 1)) & 0x3FF;
@@ -429,7 +429,7 @@ static i16 run_op_output(YM2612_CHANNEL *ch, u32 opn, i32 mod_input)
     return op->output;
 }
 
-static void run_ch(ym2612 *this, u32 chn)
+static void run_ch(struct ym2612 *this, u32 chn)
 {
     struct YM2612_CHANNEL *ch = &this->channel[chn];
     for (u32 opn = 0; opn < 4; opn++) {
@@ -530,7 +530,7 @@ static const i32 env_inc_table[64][8] = {
 {8,8,8,8,8,8,8,8}, {8,8,8,8,8,8,8,8}, {8,8,8,8,8,8,8,8}, {8,8,8,8,8,8,8,8},  // 60-63
 };
 
-static u32 cycle_timers(ym2612* this)
+static u32 cycle_timers(struct ym2612* this)
 {
     u32 retval = 0;
     if (this->timer_a.enable) {
@@ -555,7 +555,7 @@ static u32 cycle_timers(ym2612* this)
     return retval;
 }
 
-void ym2612_cycle(ym2612*this)
+void ym2612_cycle(struct ym2612*this)
 {
     run_lfo(this);
     u32 a_overflowed = cycle_timers(this);
@@ -584,36 +584,36 @@ void ym2612_cycle(ym2612*this)
 
 }
 
-i16 ym2612_sample_channel(ym2612*this, u32 chn)
+i16 ym2612_sample_channel(struct ym2612*this, u32 chn)
 {
     // Return an i16
     struct YM2612_CHANNEL *ch = &this->channel[chn];
     return ch->output;
 }
 
-void ym2612_serialize(ym2612*this, serialized_state *state)
+void ym2612_serialize(struct ym2612*this, struct serialized_state *state)
 {
 
 }
 
-void ym2612_deserialize(ym2612*this, serialized_state *state)
+void ym2612_deserialize(struct ym2612*this, struct serialized_state *state)
 {
 
 }
 
-static void env_update_key_scale_rate(ym2612* this, YM2612_CHANNEL *ch, YM2612_OPERATOR *op, u16 f_num, u16 block)
+static void env_update_key_scale_rate(struct ym2612* this, struct YM2612_CHANNEL *ch, struct YM2612_OPERATOR *op, u16 f_num, u16 block)
 {
     op->envelope.key_scale_rate = scale_key_code(f_num, block) >> (3 - op->envelope.key_scale);
 }
 
-static void op_update_freq(ym2612 *this, YM2612_CHANNEL *ch, YM2612_OPERATOR *op, u16 f_num, u16 block)
+static void op_update_freq(struct ym2612 *this, struct YM2612_CHANNEL *ch, struct YM2612_OPERATOR *op, u16 f_num, u16 block)
 {
     op->phase.f_num = f_num;
     op->phase.block = block;
     env_update_key_scale_rate(this, ch, op, f_num, block);
 }
 
-static void ch_update_phase_generators(ym2612 *this, YM2612_CHANNEL *ch)
+static void ch_update_phase_generators(struct ym2612 *this, struct YM2612_CHANNEL *ch)
 {
     if ((ch->num == 2) && (ch->mode ==  YFM_multiple)) {
         for (u32 opn = 0; opn < 3; opn++) {
@@ -629,14 +629,14 @@ static void ch_update_phase_generators(ym2612 *this, YM2612_CHANNEL *ch)
     }
 }
 
-static void op_update_key_scale(ym2612 *this, YM2612_CHANNEL *ch, YM2612_OPERATOR *op, u8 val)
+static void op_update_key_scale(struct ym2612 *this, struct YM2612_CHANNEL *ch, struct YM2612_OPERATOR *op, u8 val)
 {
     op->envelope.key_scale = val;
     env_update_key_scale_rate(this, ch, op, op->phase.f_num, op->phase.block);
     //if (ch->num==1) printf("\n%d.%d KS:%d KSR:%d", ch->num, op->num, val, op->envelope.key_scale_rate);
 }
 
-static void write_ch_reg(ym2612 *this, u8 val, u32 bch)
+static void write_ch_reg(struct ym2612 *this, u8 val, u32 bch)
 {
     u32 chn = bch + (this->io.addr & 3);
     struct YM2612_CHANNEL *ch = &this->channel[chn];
@@ -719,7 +719,7 @@ static void write_ch_reg(ym2612 *this, u8 val, u32 bch)
     }
 }
 
-static void write_op_reg(ym2612 *this, u8 val, u32 bch)
+static void write_op_reg(struct ym2612 *this, u8 val, u32 bch)
 {
     u32 offset = this->io.addr & 3;
     if (offset == 3) return;
@@ -760,7 +760,7 @@ static void write_op_reg(ym2612 *this, u8 val, u32 bch)
     }
 }
 
-static void write_group1(ym2612* this, u8 val)
+static void write_group1(struct ym2612* this, u8 val)
 {
     this->status.busy_until = (*this->master_cycle_count) + this->master_wait_cycles;
     switch(this->io.addr) {
@@ -829,7 +829,7 @@ static void write_group1(ym2612* this, u8 val)
     printf("\nWRITE UNKNOWN YM2612 REG grp:0 addr:%d val:%02x", this->io.addr, val);
 }
 
-static void write_group2(ym2612* this, u8 val)
+static void write_group2(struct ym2612* this, u8 val)
 {
     this->status.busy_until = (*this->master_cycle_count) + this->master_wait_cycles;
 
@@ -845,7 +845,7 @@ static void write_group2(ym2612* this, u8 val)
     printf("\nWRITE UNKNOWN YM2612 REG grp:1 addr:%d val:%02x", this->io.addr, val);
 }
 
-void ym2612_write(ym2612*this, u32 addr, u8 val)
+void ym2612_write(struct ym2612*this, u32 addr, u8 val)
 {
     /*$4000: Address port + Set group 1 flag
     $4002: Address port + Set group 2 flag
@@ -867,7 +867,7 @@ void ym2612_write(ym2612*this, u32 addr, u8 val)
     }
 }
 
-u8 ym2612_read(ym2612*this, u32 addr, u32 old, u32 has_effect)
+u8 ym2612_read(struct ym2612*this, u32 addr, u32 old, u32 has_effect)
 {
     addr &= 3;
     u32 v = 0;

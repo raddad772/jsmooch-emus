@@ -1,14 +1,14 @@
-#include <cstdio>
-#include <cstdlib>
-#include <cstring>
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
 #include "gb_bus.h"
 #include "gb_clock.h"
 #include "gb_cpu.h"
 #include "gb_debugger.h"
 #include "mappers/mapper.h"
-#include "fail"
+#include "helpers/debugger/debugger.h"
 
-void GB_bus_init(GB_bus* this, GB_clock* clock) {
+void GB_bus_init(struct GB_bus* this, struct GB_clock* clock) {
 	this->cart = NULL;
 	this->mapper = NULL;
 	this->ppu = NULL;
@@ -36,7 +36,7 @@ void GB_bus_init(GB_bus* this, GB_clock* clock) {
     this->generic_mapper.BIOS_big = 0;
 }
 
-void GB_bus_delete(GB_bus *this)
+void GB_bus_delete(struct GB_bus *this)
 {
     if (this->BIOS != NULL) {
         free(this->BIOS);
@@ -44,18 +44,18 @@ void GB_bus_delete(GB_bus *this)
     }
 }
 
-void GB_generic_mapper_reset(GB_bus *this)
+void GB_generic_mapper_reset(struct GB_bus *this)
 {
     this->generic_mapper.VRAM_bank_offset = 0;
     this->generic_mapper.WRAM_bank_offset = 0x1000;
 }
 
-void GB_bus_reset(GB_bus *this)
+void GB_bus_reset(struct GB_bus *this)
 {
     GB_generic_mapper_reset(this);
 }
 
-inline u32 GB_bus_PPU_read(GB_bus* this, u32 addr)
+inline u32 GB_bus_PPU_read(struct GB_bus* this, u32 addr)
 {
     if ((addr < 0x8000) || (addr >= 0xC000)) {
         printf("WAIT WHAT BAD READ? %d", addr);
@@ -64,7 +64,7 @@ inline u32 GB_bus_PPU_read(GB_bus* this, u32 addr)
     return this->generic_mapper.VRAM[(addr - 0x8000) & 0x3FFF];
 }
 
-inline void GB_bus_CPU_write(GB_bus* this, u32 addr, u32 val) {
+inline void GB_bus_CPU_write(struct GB_bus* this, u32 addr, u32 val) {
     if ((addr >= 0xE000) && (addr < 0xFE00)) addr -= 0x2000;  // Mirror WRAM
 
     if ((addr >= 0x8000) && (addr < 0xA000)) { // VRAM
@@ -100,7 +100,7 @@ inline void GB_bus_CPU_write(GB_bus* this, u32 addr, u32 val) {
     this->mapper->CPU_write(this->mapper, addr, val);
 }
 
-inline u32 GB_bus_CPU_read(GB_bus *this, u32 addr, u32 val, u32 has_effect) {
+inline u32 GB_bus_CPU_read(struct GB_bus *this, u32 addr, u32 val, u32 has_effect) {
     if ((addr >= 0xE000) && (addr < 0xFE00)) addr -= 0x2000; // Mirror WRAM
     if (this->clock->bootROM_enabled) {
         if (addr < 0x100) {
@@ -132,12 +132,12 @@ inline u32 GB_bus_CPU_read(GB_bus *this, u32 addr, u32 val, u32 has_effect) {
     return this->mapper->CPU_read(this->mapper, addr, val, has_effect);
 }
 
-void GB_bus_set_cart(GB_bus* this, GB_cart* cart)
+void GB_bus_set_cart(struct GB_bus* this, struct GB_cart* cart)
 {
     this->cart = cart;
 }
 
-void GB_bus_set_BIOS(GB_bus* this, u8 *BIOS, u32 sz)
+void GB_bus_set_BIOS(struct GB_bus* this, u8 *BIOS, u32 sz)
 {
     if (this->BIOS != NULL) {
         free(this->BIOS);

@@ -14,8 +14,8 @@
 #include "gb_cpu.h"
 #include "cart.h"
 
-void GB_new(jsm_system* system, enum GB_variants variant);
-void GB_delete(jsm_system* system);
+void GB_new(struct jsm_system* system, enum GB_variants variant);
+void GB_delete(struct jsm_system* system);
 
 struct GB_inputs {
     u32 a;

@@ -23,6 +23,6 @@
 #define DBG_GEN_EVENT_MAX 8
 
 
-void genesisJ_setup_debugger_interface(jsm_system *, debugger_interface *dbgr);
+void genesisJ_setup_debugger_interface(struct jsm_system *, struct debugger_interface *dbgr);
 
 #endif //JSMOOCH_EMUS_GENESIS_DEBUGGER_H

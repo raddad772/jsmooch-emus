@@ -5,7 +5,7 @@
 #include "nds_bus.h"
 #include "nds_controller.h"
 
-u32 NDS_get_controller_state(NDS *this, u32 byte)
+u32 NDS_get_controller_state(struct NDS *this, u32 byte)
 {
 
     struct JSM_CONTROLLER *cnt = &this->controller.pio->controller;
@@ -43,7 +43,7 @@ u32 NDS_get_controller_state(NDS *this, u32 byte)
 }
 
 
-void NDS_controller_setup_pio(physical_io_device *d)
+void NDS_controller_setup_pio(struct physical_io_device *d)
 {
     physical_io_device_init(d, HID_CONTROLLER, 0, 0, 1, 1);
 

@@ -13,8 +13,8 @@ enum mac_variants {
     macplus_1mb = 2
 };
 
-void mac_new(jsm_system* jsm, enum mac_variants variant);
-void mac_delete(jsm_system* system);
+void mac_new(struct jsm_system* jsm, enum mac_variants variant);
+void mac_delete(struct jsm_system* system);
 
 
 #endif //JSMOOCH_EMUS_MAC_H

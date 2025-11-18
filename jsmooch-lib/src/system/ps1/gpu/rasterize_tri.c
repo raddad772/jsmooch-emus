@@ -3,14 +3,14 @@
 //
 
 #include <math.h>
-#include <cstdio>
+#include <stdio.h>
 
 #include "rasterize_tri.h"
 #include "pixel_helpers.h"
 #include "ps1_gpu.h"
 #include "helpers/multisize_memaccess.c"
 
-float edge_function (RT_POINT2D *a, RT_POINT2D *b, RT_POINT2D *c)  {
+float edge_function (struct RT_POINT2D *a, struct RT_POINT2D *b, struct RT_POINT2D *c)  {
     return (b->x - a->x) * (c->y - a->y) - (b->y - a->y) * (c->x - a->x);
 };
 
@@ -35,7 +35,7 @@ static inline i32 MAX3(i32 a, i32 b, i32 c)
     return MAX(mab, c);
 }
 
-void RT_draw_flat_triangle(PS1_GPU *this, RT_POINT2D *v0, RT_POINT2D *v1, RT_POINT2D *v2, u32 color) {
+void RT_draw_flat_triangle(struct PS1_GPU *this, struct RT_POINT2D *v0, struct RT_POINT2D *v1, struct RT_POINT2D *v2, u32 color) {
     struct RT_POINT2D *sa;
 
     // Calculate the edge function for the whole triangle (ABC)
@@ -93,7 +93,7 @@ void RT_draw_flat_triangle(PS1_GPU *this, RT_POINT2D *v0, RT_POINT2D *v1, RT_POI
     }
 }
 
-void RT_draw_flat_tex_triangle_modulated(PS1_GPU *this, RT_POINT2D *v0, RT_POINT2D *v1, RT_POINT2D *v2, u32 color, PS1_GPU_TEXTURE_SAMPLER *ts)
+void RT_draw_flat_tex_triangle_modulated(struct PS1_GPU *this, struct RT_POINT2D *v0, struct RT_POINT2D *v1, struct RT_POINT2D *v2, u32 color, struct PS1_GPU_TEXTURE_SAMPLER *ts)
 {
     struct RT_POINT2D *sa;
 
@@ -186,7 +186,7 @@ void RT_draw_flat_tex_triangle_modulated(PS1_GPU *this, RT_POINT2D *v0, RT_POINT
     }
 }
 
-void RT_draw_flat_tex_triangle_modulated_semi(PS1_GPU *this, RT_POINT2D *v0, RT_POINT2D *v1, RT_POINT2D *v2, u32 color, PS1_GPU_TEXTURE_SAMPLER *ts) {
+void RT_draw_flat_tex_triangle_modulated_semi(struct PS1_GPU *this, struct RT_POINT2D *v0, struct RT_POINT2D *v1, struct RT_POINT2D *v2, u32 color, struct PS1_GPU_TEXTURE_SAMPLER *ts) {
     struct RT_POINT2D *sa;
 
     // Calculate the edge function for the whole triangle (ABC)
@@ -277,7 +277,7 @@ void RT_draw_flat_tex_triangle_modulated_semi(PS1_GPU *this, RT_POINT2D *v0, RT_
     }
 }
 
-void RT_draw_shaded_tex_triangle_modulated_semi(PS1_GPU *this, RT_POINT2D *v0, RT_POINT2D *v1, RT_POINT2D *v2, PS1_GPU_TEXTURE_SAMPLER *ts)
+void RT_draw_shaded_tex_triangle_modulated_semi(struct PS1_GPU *this, struct RT_POINT2D *v0, struct RT_POINT2D *v1, struct RT_POINT2D *v2, struct PS1_GPU_TEXTURE_SAMPLER *ts)
 {
     struct RT_POINT2D *sa;
 
@@ -382,7 +382,7 @@ void RT_draw_shaded_tex_triangle_modulated_semi(PS1_GPU *this, RT_POINT2D *v0, R
     }
 }
 
-void RT_draw_shaded_tex_triangle_modulated(PS1_GPU *this, RT_POINT2D *v0, RT_POINT2D *v1, RT_POINT2D *v2, PS1_GPU_TEXTURE_SAMPLER *ts)
+void RT_draw_shaded_tex_triangle_modulated(struct PS1_GPU *this, struct RT_POINT2D *v0, struct RT_POINT2D *v1, struct RT_POINT2D *v2, struct PS1_GPU_TEXTURE_SAMPLER *ts)
 {
     struct RT_POINT2D *sa;
 
@@ -487,7 +487,7 @@ void RT_draw_shaded_tex_triangle_modulated(PS1_GPU *this, RT_POINT2D *v0, RT_POI
     }
 }
 
-void RT_draw_flat_tex_triangle(PS1_GPU *this, RT_POINT2D *v0, RT_POINT2D *v1, RT_POINT2D *v2, PS1_GPU_TEXTURE_SAMPLER *ts)
+void RT_draw_flat_tex_triangle(struct PS1_GPU *this, struct RT_POINT2D *v0, struct RT_POINT2D *v1, struct RT_POINT2D *v2, struct PS1_GPU_TEXTURE_SAMPLER *ts)
 {
     struct RT_POINT2D *sa;
 
@@ -570,7 +570,7 @@ void RT_draw_flat_tex_triangle(PS1_GPU *this, RT_POINT2D *v0, RT_POINT2D *v1, RT
 }
 
 
-void RT_draw_flat_tex_triangle_semi(PS1_GPU *this, RT_POINT2D *v0, RT_POINT2D *v1, RT_POINT2D *v2, PS1_GPU_TEXTURE_SAMPLER *ts)
+void RT_draw_flat_tex_triangle_semi(struct PS1_GPU *this, struct RT_POINT2D *v0, struct RT_POINT2D *v1, struct RT_POINT2D *v2, struct PS1_GPU_TEXTURE_SAMPLER *ts)
 {
     struct RT_POINT2D *sa;
 
@@ -651,7 +651,7 @@ void RT_draw_flat_tex_triangle_semi(PS1_GPU *this, RT_POINT2D *v0, RT_POINT2D *v
     }
 }
 
-void RT_draw_flat_triangle_semi(PS1_GPU *this, RT_POINT2D *v0, RT_POINT2D *v1, RT_POINT2D *v2, u32 r, u32 g, u32 b) {
+void RT_draw_flat_triangle_semi(struct PS1_GPU *this, struct RT_POINT2D *v0, struct RT_POINT2D *v1, struct RT_POINT2D *v2, u32 r, u32 g, u32 b) {
     struct RT_POINT2D *sa;
 
     // Calculate the edge function for the whole triangle (ABC)
@@ -710,7 +710,7 @@ void RT_draw_flat_triangle_semi(PS1_GPU *this, RT_POINT2D *v0, RT_POINT2D *v1, R
 }
 
 
-void RT_draw_shaded_triangle(PS1_GPU *this, RT_POINT2D *v0, RT_POINT2D *v1, RT_POINT2D *v2) {
+void RT_draw_shaded_triangle(struct PS1_GPU *this, struct RT_POINT2D *v0, struct RT_POINT2D *v1, struct RT_POINT2D *v2) {
     struct RT_POINT2D *sa;
 
     // Calculate the edge function for the whole triangle (ABC)
@@ -792,7 +792,7 @@ void RT_draw_shaded_triangle(PS1_GPU *this, RT_POINT2D *v0, RT_POINT2D *v1, RT_P
     }
 }
 
-void RT_draw_shaded_triangle_semi(PS1_GPU *this, RT_POINT2D *v0, RT_POINT2D *v1, RT_POINT2D *v2) {
+void RT_draw_shaded_triangle_semi(struct PS1_GPU *this, struct RT_POINT2D *v0, struct RT_POINT2D *v1, struct RT_POINT2D *v2) {
     struct RT_POINT2D *sa;
 
     // Calculate the edge function for the whole triangle (ABC)

@@ -1,29 +1,29 @@
 //
 // Created by Dave on 2/4/2024.
 //
-#include <cstdio>
+#include <stdio.h>
 #include "huc6280.h"
 #include "huc6280_disassembler.h"
 
-static u16 dbg_read(jsm_debug_read_trace *trace, u32 *PC)
+static u16 dbg_read(struct jsm_debug_read_trace *trace, u32 *PC)
 {
     u16 v = trace->read_trace(trace->ptr, *PC);
     (*PC)++;
     return v;
 }
 
-static u16 dbg_read16(jsm_debug_read_trace *trace, u32 *PC)
+static u16 dbg_read16(struct jsm_debug_read_trace *trace, u32 *PC)
 {
     u16 v = dbg_read(trace,PC);
     v |= dbg_read(trace,PC) << 8;
     return v;
 }
 
-#define SARG const char *ins, jsm_debug_read_trace *trace, u32 *PC, jsm_string *outstr, HUC6280 *cpu
-#define SARG2x const char *ins, const char *s2, jsm_debug_read_trace *trace, u32 *PC, jsm_string *outstr, HUC6280 *cpu
-#define SARGBIT const char *ins, u32 bitnum, jsm_debug_read_trace *trace, u32 *PC, jsm_string *outstr, HUC6280 *cpu
+#define SARG const char *ins, struct jsm_debug_read_trace *trace, u32 *PC, struct jsm_string *outstr, struct HUC6280 *cpu
+#define SARG2x const char *ins, const char *s2, struct jsm_debug_read_trace *trace, u32 *PC, struct jsm_string *outstr, struct HUC6280 *cpu
+#define SARGBIT const char *ins, u32 bitnum, struct jsm_debug_read_trace *trace, u32 *PC, struct jsm_string *outstr, struct HUC6280 *cpu
 
-static u32 longaddr(HUC6280 *cpu, u32 addr)
+static u32 longaddr(struct HUC6280 *cpu, u32 addr)
 {
     return cpu->regs.MPR[(addr & 0xE000) >> 13] | (addr & 0x1FFF);
 }
@@ -173,14 +173,14 @@ static void zero_page_y(SARG)
 #undef zpa
 #undef la
 
-void HUC6280_disassemble(HUC6280 *cpu, u32 *PC, jsm_debug_read_trace *trace, jsm_string *outstr)
+void HUC6280_disassemble(struct HUC6280 *cpu, u32 *PC, struct jsm_debug_read_trace *trace, struct jsm_string *outstr)
 {
 #define SPCS "   "
 #define dasm(id, prefix, mode) case id: mode(prefix SPCS, trace, PC, outstr, cpu); break;
 #define dasm2s(id, prefix, str) case id: str2x(prefix SPCS, str, trace, PC, outstr, cpu); break;
 #define dasmbit(id, prefix, mode, bitnum) case id: mode(prefix SPCS, bitnum, trace, PC, outstr, cpu); break;
     u32 opcode = dbg_read(trace, PC);
-    // const char *ins, jsm_debug_read_trace *trace, u32 *PC, jsm_string *outstr
+    // const char *ins, struct jsm_debug_read_trace *trace, u32 *PC, struct jsm_string *outstr
     switch(opcode) {
         dasm(0x00, "brk", implied)
         dasm(0x01, "ora", indirect_x)
@@ -444,7 +444,7 @@ void HUC6280_disassemble(HUC6280 *cpu, u32 *PC, jsm_debug_read_trace *trace, jsm
 #undef op
 }
 
-void HUC6280_disassemble_entry(HUC6280 *this, disassembly_entry* entry)
+void HUC6280_disassemble_entry(struct HUC6280 *this, struct disassembly_entry* entry)
 {
     jsm_string_quickempty(&entry->dasm);
     jsm_string_quickempty(&entry->context);

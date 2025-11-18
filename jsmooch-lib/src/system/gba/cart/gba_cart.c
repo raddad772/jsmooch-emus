@@ -2,10 +2,10 @@
 // Created by . on 12/4/24.
 //
 
-#include <cassert>
-#include <cstring>
-#include <cstdio>
-#include <cstdlib>
+#include <assert.h>
+#include <string.h>
+#include <stdio.h>
+#include <stdlib.h>
 
 #include "helpers/debug.h"
 #include "helpers/physical_io.h"
@@ -18,22 +18,22 @@
 
 static const u32 maskalign[5] = {0, 0xFFFFFFFF, 0xFFFFFFFE, 0, 0xFFFFFFFC};
 
-void GBA_cart_init(GBA_cart* this)
+void GBA_cart_init(struct GBA_cart* this)
 {
-    *this = (GBA_cart) {}; // Set all fields to 0
+    *this = (struct GBA_cart) {}; // Set all fields to 0
 
     this->prefetch.enable = 1;
     buf_init(&this->ROM);
 }
 
-void GBA_cart_delete(GBA_cart *this)
+void GBA_cart_delete(struct GBA_cart *this)
 {
     buf_delete(&this->ROM);
 }
 
 static const u32 masksz[5] = { 0, 0xFF, 0xFFFF, 0, 0xFFFFFFFF };
 
-static u32 prefetch_stop(GBA *this)
+static u32 prefetch_stop(struct GBA *this)
 {
     // So we need to cover a few cases here...
     // "If ROM data/SRAM/FLASH is accessed in a cycle, where the prefetch unit
@@ -51,7 +51,7 @@ static u32 prefetch_stop(GBA *this)
     return 0;
 }
 
-u32 GBA_cart_read(GBA *this, u32 addr, u32 sz, u32 access, u32 has_effect, u32 ws) {
+u32 GBA_cart_read(struct GBA *this, u32 addr, u32 sz, u32 access, u32 has_effect, u32 ws) {
     if ((this->cart.RAM.is_eeprom) && (addr >= 0x0d000000) && (addr < 0x0e000000)) {
         u32 v =  GBA_cart_read_eeprom(this, addr, sz, access, has_effect);
         //printf("\nRead EEPROM addr:%08x  sz:%d  val:%02x", addr, sz, v);
@@ -165,19 +165,19 @@ u32 GBA_cart_read(GBA *this, u32 addr, u32 sz, u32 access, u32 has_effect, u32 w
     return cR[sz](this->cart.ROM.ptr, addr);
 }
 
-u32 GBA_cart_read_wait0(GBA *this, u32 addr, u32 sz, u32 access, u32 has_effect)
+u32 GBA_cart_read_wait0(struct GBA *this, u32 addr, u32 sz, u32 access, u32 has_effect)
 {
     addr &= maskalign[sz];
     return GBA_cart_read(this, addr, sz, access, has_effect, 0);
 }
 
-u32 GBA_cart_read_wait1(GBA *this, u32 addr, u32 sz, u32 access, u32 has_effect)
+u32 GBA_cart_read_wait1(struct GBA *this, u32 addr, u32 sz, u32 access, u32 has_effect)
 {
     addr &= maskalign[sz];
     return GBA_cart_read(this, addr, sz, access, has_effect, 1);
 }
 
-u32 GBA_cart_read_wait2(GBA *this, u32 addr, u32 sz, u32 access, u32 has_effect)
+u32 GBA_cart_read_wait2(struct GBA *this, u32 addr, u32 sz, u32 access, u32 has_effect)
 {
     addr &= maskalign[sz];
     return GBA_cart_read(this, addr, sz, access, has_effect, 2);
@@ -185,7 +185,7 @@ u32 GBA_cart_read_wait2(GBA *this, u32 addr, u32 sz, u32 access, u32 has_effect)
 
 
 
-u32 GBA_cart_read_sram(GBA *this, u32 addr, u32 sz, u32 access, u32 has_effect)
+u32 GBA_cart_read_sram(struct GBA *this, u32 addr, u32 sz, u32 access, u32 has_effect)
 {
     if (this->cart.RAM.is_flash) return GBA_cart_read_flash(this, addr, sz, access, has_effect);
 
@@ -204,13 +204,13 @@ u32 GBA_cart_read_sram(GBA *this, u32 addr, u32 sz, u32 access, u32 has_effect)
     return v;
 }
 
-static void write_RTC(GBA *this, u32 addr, u32 sz, u32 access, u32 val)
+static void write_RTC(struct GBA *this, u32 addr, u32 sz, u32 access, u32 val)
 {
     // Ignore byte writes...weirdly?
     if (sz == 1) return;
 }
 
-void GBA_cart_write(GBA *this, u32 addr, u32 sz, u32 access, u32 val)
+void GBA_cart_write(struct GBA *this, u32 addr, u32 sz, u32 access, u32 val)
 {
     addr &= maskalign[sz];
     if (this->cart.RTC.present && (addr >= 0x080000C4) && (addr < 0x080000CA)) {
@@ -229,7 +229,7 @@ void GBA_cart_write(GBA *this, u32 addr, u32 sz, u32 access, u32 val)
 
 
 
-void GBA_cart_write_sram(GBA *this, u32 addr, u32 sz, u32 access, u32 val)
+void GBA_cart_write_sram(struct GBA *this, u32 addr, u32 sz, u32 access, u32 val)
 {
     if (this->cart.RAM.is_flash) return GBA_cart_write_flash(this, addr, sz, access, val);
 
@@ -263,7 +263,7 @@ static u32 firstmatch[3] =  {
         0x53414C46 // SALF or FLAS
 };
 
-static int cmpstr(buf *f, u32 addr, const char *cmp)
+static int cmpstr(struct buf *f, u32 addr, const char *cmp)
 {
     char *ptr1 = ((char *)f->ptr) + addr;
     const char *ptr2 = cmp;
@@ -278,7 +278,7 @@ static int cmpstr(buf *f, u32 addr, const char *cmp)
 }
 
 
-static enum save_kinds search_strings(buf *f)
+static enum save_kinds search_strings(struct buf *f)
 {
     /* First, find a first blush. */
     i64 found_addr = -1;
@@ -300,7 +300,7 @@ static enum save_kinds search_strings(buf *f)
     return SK_none;
 }
 
-static void detect_RTC(GBA_cart *this, buf *ROM)
+static void detect_RTC(struct GBA_cart *this, struct buf *ROM)
 {
     // offset 00000C4 at least 6 bytes filled with 0
     u8 *ptr = ((u8 *)ROM->ptr) + 0xC4;
@@ -312,7 +312,7 @@ static void detect_RTC(GBA_cart *this, buf *ROM)
     if (detect) printf("\nRTC DETECTED!");
 }
 
-u32 GBA_cart_load_ROM_from_RAM(GBA_cart* this, char* fil, u64 fil_sz, physical_io_device *pio, u32 *SRAM_enable) {
+u32 GBA_cart_load_ROM_from_RAM(struct GBA_cart* this, char* fil, u64 fil_sz, struct physical_io_device *pio, u32 *SRAM_enable) {
     buf_allocate(&this->ROM, fil_sz);
     memcpy(this->ROM.ptr, fil, fil_sz);
     if (SRAM_enable) *SRAM_enable = 1;

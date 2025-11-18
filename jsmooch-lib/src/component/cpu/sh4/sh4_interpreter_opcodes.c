@@ -3,7 +3,7 @@
 //
 
 #include "math.h"
-#include <cstring>
+#include "string.h"
 #include "assert.h"
 #include "stdio.h"
 
@@ -11,7 +11,7 @@
 #include "sh4_interpreter.h"
 #include "sh4_interpreter_opcodes.h"
 
-#define SH4args  struct SH4* this, SH4_ins_t *ins
+#define SH4args  struct SH4* this, struct SH4_ins_t *ins
 #define PCinc rPC += 2
 #define rPC this->regs.PC
 
@@ -1792,9 +1792,9 @@ struct SH4_ins_t SH4_decoded[4][65536];
 char SH4_disassembled[4][65536][30];
 char SH4_mnemonic[4][65536][30];
 
-void process_SH4_instruct(sh4_str_ret *r, const char* stri)
+void process_SH4_instruct(struct sh4_str_ret *r, const char* stri)
 {
-    memset(r, 0, sizeof(sh4_str_ret));
+    memset(r, 0, sizeof(struct sh4_str_ret));
 
     enum ddd{
         nothing,
@@ -1916,12 +1916,12 @@ static void emplace_mnemonic(u32 opcode, const char *mnemonic, u32 n, u32 m, u32
 }
 
 static void cpSH4(u32 dest, u32 src) {
-    memcpy(&SH4_decoded[dest], &SH4_decoded[src], 65536*sizeof(SH4_ins_t));
+    memcpy(&SH4_decoded[dest], &SH4_decoded[src], 65536*sizeof(struct SH4_ins_t));
     memcpy(&SH4_disassembled[dest][0], &SH4_disassembled[src][0], 65536*30);
     memcpy(&SH4_mnemonic[dest][0], &SH4_mnemonic[src][0], 65535*30);
 }
 
-static void iterate_opcodes(sh4_str_ret* r, SH4_ins_func ins, const char* mnemonic, u32 override, u32 szpr)
+static void iterate_opcodes(struct sh4_str_ret* r, SH4_ins_func ins, const char* mnemonic, u32 override, u32 szpr)
 {
     u32 d_times = 1;
     // Go at least once through each of n, m, d, and i
@@ -1957,7 +1957,7 @@ static void iterate_opcodes(sh4_str_ret* r, SH4_ins_func ins, const char* mnemon
 
                     if (szpr > 0) {
                         // copy to szpr=3
-                        memcpy(&SH4_decoded[3][opcode], &SH4_decoded[szpr][opcode], sizeof(SH4_ins_t));
+                        memcpy(&SH4_decoded[3][opcode], &SH4_decoded[szpr][opcode], sizeof(struct SH4_ins_t));
                         memcpy(&SH4_disassembled[3][opcode][0], &SH4_disassembled[szpr][opcode][0], 30);
                         memcpy(&SH4_mnemonic[3][opcode][0], &SH4_mnemonic[szpr][opcode][0], 30);
                     }
@@ -1989,7 +1989,7 @@ void do_sh4_decode() {
     decode_done = 1;
     for (u32 szpr = 0; szpr < 4; szpr++) {
         for (u32 i = 0; i < 65536; i++) {
-            SH4_decoded[szpr][i] = (SH4_ins_t) {
+            SH4_decoded[szpr][i] = (struct SH4_ins_t) {
                     .opcode = i,
                     .Rn = -1,
                     .Rm = -1,

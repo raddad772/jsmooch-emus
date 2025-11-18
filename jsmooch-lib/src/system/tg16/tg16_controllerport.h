@@ -20,7 +20,7 @@ struct TG16_controllerport {
 
 #endif //JSMOOCH_EMUS_TG16_CONTROLLERPORT_H
 
-void TG16_controllerport_connect(TG16_controllerport *, enum TG16_controller_kinds kind, void *ptr);
-void TG16_controllerport_delete(TG16_controllerport *);
-u8 TG16_controllerport_read_data(TG16_controllerport*);
-void TG16_controllerport_write_data(TG16_controllerport*, u8 val);
+void TG16_controllerport_connect(struct TG16_controllerport *, enum TG16_controller_kinds kind, void *ptr);
+void TG16_controllerport_delete(struct TG16_controllerport *);
+u8 TG16_controllerport_read_data(struct TG16_controllerport*);
+void TG16_controllerport_write_data(struct TG16_controllerport*, u8 val);

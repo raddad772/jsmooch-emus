@@ -3,7 +3,7 @@
 //
 
 #include <time.h>
-#include <cstring>
+#include <string.h>
 #include <stdlib.h>
 #include "z80_drag_race.h"
 

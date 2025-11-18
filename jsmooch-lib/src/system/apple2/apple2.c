@@ -2,10 +2,10 @@
 // Created by . on 8/29/24.
 //
 
-#include <cstdio>
-#include <cassert>
-#include <cstring>
-#include <cstdlib>
+#include <stdio.h>
+#include <assert.h>
+#include <string.h>
+#include <stdlib.h>
 
 #include "helpers/int.h"
 #include "helpers/sys_interface.h"
@@ -17,7 +17,7 @@
 #include "apple2_internal.h"
 #include "iou.h"
 
-#define JTHIS struct apple2* this = (apple2*)jsm->ptr
+#define JTHIS struct apple2* this = (struct apple2*)jsm->ptr
 #define JSM struct jsm_system* jsm
 
 #define THIS struct apple2* this
@@ -25,20 +25,20 @@
 static void apple2J_play(JSM);
 static void apple2J_pause(JSM);
 static void apple2J_stop(JSM);
-static void apple2J_get_framevars(JSM, framevars* out);
+static void apple2J_get_framevars(JSM, struct framevars* out);
 static void apple2J_reset(JSM);
 static void apple2J_killall(JSM);
 static u32 apple2J_finish_frame(JSM);
 static u32 apple2J_finish_scanline(JSM);
 static u32 apple2J_step_master(JSM, u32 howmany);
-static void apple2J_load_BIOS(JSM, multi_file_set* mfs);
+static void apple2J_load_BIOS(JSM, struct multi_file_set* mfs);
 static void apple2J_enable_tracing(JSM);
 static void apple2J_disable_tracing(JSM);
-static void apple2J_describe_io(JSM, cvec* IOs);
+static void apple2J_describe_io(JSM, struct cvec* IOs);
 
 u32 apple2_CPU_read_trace(void *ptr, u32 addr);
 
-static void apple2J_setup_debugger_interface(JSM, debugger_interface *intf);
+static void apple2J_setup_debugger_interface(JSM, struct debugger_interface *intf);
 
 /*
 $D000 - $DFFF (53248 - 57343): Bank-Switched RAM (2 Banks RAM, 1 Bank ROM)
@@ -46,7 +46,7 @@ $E000 - $FFFF (57344 - 65535): Bank-Switched RAM (1 Bank RAM, 1 Bank ROM)
  */
 void apple2_new(JSM)
 {
-    struct apple2* this = (apple2*)malloc(sizeof(apple2));
+    struct apple2* this = (struct apple2*)malloc(sizeof(struct apple2));
     this->described_inputs = 0;
 
     simplebuf8_init(&this->mmu.RAM);
@@ -102,13 +102,13 @@ void apple2_delete(JSM)
     jsm_clearfuncs(jsm);
 }
 
-static void apple2J_setup_debugger_interface(JSM, debugger_interface *intf)
+static void apple2J_setup_debugger_interface(JSM, struct debugger_interface *intf)
 {
     intf->supported_by_core = 0;
     printf("\nWARNING: debugger interface not supported on core: apple2");
 }
 
-static void new_button(JSM_CONTROLLER* cnt, const char* name, enum JKEYS common_id)
+static void new_button(struct JSM_CONTROLLER* cnt, const char* name, enum JKEYS common_id)
 {
     struct HID_digital_button *b = cvec_push_back(&cnt->digital_buttons);
     snprintf(b->name, sizeof(b->name), "%s", name);
@@ -122,7 +122,7 @@ static void new_button(JSM_CONTROLLER* cnt, const char* name, enum JKEYS common_
 #define MAX_WIDTH 560
 #define MAX_HEIGHT 192
 
-static void setup_crt(JSM_DISPLAY *d)
+static void setup_crt(struct JSM_DISPLAY *d)
 {
     d->standard = JSS_NTSC;
     d->enabled = 1;
@@ -148,7 +148,7 @@ static void setup_crt(JSM_DISPLAY *d)
     d->pixelometry.overscan.left = d->pixelometry.overscan.right = d->pixelometry.overscan.top = d->pixelometry.overscan.bottom = 0;
 }
 
-void apple2J_describe_io(JSM, cvec *IOs)
+void apple2J_describe_io(JSM, struct cvec *IOs)
 {
     JTHIS;
     if (this->described_inputs) return;
@@ -184,7 +184,7 @@ void apple2J_describe_io(JSM, cvec *IOs)
     //d->display.last_displayed = 1;
     setup_crt(&d->display);
 
-    this->iou.display = &((physical_io_device *)cpg(this->iou.display_ptr))->display;
+    this->iou.display = &((struct physical_io_device *)cpg(this->iou.display_ptr))->display;
 }
 
 void apple2J_enable_tracing(JSM)
@@ -211,7 +211,7 @@ void apple2J_stop(JSM)
 {
 }
 
-void apple2J_get_framevars(JSM, framevars* out)
+void apple2J_get_framevars(JSM, struct framevars* out)
 {
     JTHIS;
     out->master_frame = this->clock.frames_since_restart;
@@ -268,7 +268,7 @@ u32 apple2J_step_master(JSM, u32 howmany)
     return 0;
 }
 
-void apple2J_load_BIOS(JSM, multi_file_set* mfs)
+void apple2J_load_BIOS(JSM, struct multi_file_set* mfs)
 {
     JTHIS;
     struct buf* b = &mfs->files[0].buf;

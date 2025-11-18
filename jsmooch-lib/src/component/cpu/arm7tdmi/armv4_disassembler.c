@@ -2,10 +2,10 @@
 // Created by . on 12/21/24.
 //
 
-#include <cstring>
-#include <cstdlib>
-#include <cstdio>
-#include <cassert>
+#include <string.h>
+#include <stdlib.h>
+#include <stdio.h>
+#include <assert.h>
 
 #include "armv4_disassembler.h"
 
@@ -20,12 +20,12 @@ static u16 doBITS(u16 val, u16 hi, u16 lo)
 #define BITS(hi,lo) (doBITS(opcode, hi, lo))
 #define ostr(...) jsm_string_sprintf(out, __VA_ARGS__)
 
-static void add_context(ARMctxt *t, u32 rnum)
+static void add_context(struct ARMctxt *t, u32 rnum)
 {
     if (t) t->regs |= (1 << rnum);
 }
 
-static void outreg(jsm_string *out, u32 num, u32 add_comma) {
+static void outreg(struct jsm_string *out, u32 num, u32 add_comma) {
     if (num == 13) ostr("sp");
     else if (num == 14) ostr("lr");
     else if (num == 15) ostr("pc");
@@ -33,20 +33,20 @@ static void outreg(jsm_string *out, u32 num, u32 add_comma) {
     if (add_comma) ostr(",");
 }
 
-static void outhex(jsm_string *out, u32 num, u32 num_size, u32 add_comma) {
+static void outhex(struct jsm_string *out, u32 num, u32 num_size, u32 add_comma) {
     char fstr[50];
     snprintf(fstr, sizeof(fstr), "%%0%dx", num_size);
     jsm_string_sprintf(out, fstr, num);
     if (add_comma) ostr(",");
 }
 
-static void outdec(jsm_string *out, u32 num, u32 add_comma)
+static void outdec(struct jsm_string *out, u32 num, u32 add_comma)
 {
     ostr("%d", num);
     if (add_comma) ostr(",");
 }
 
-static int out_cond(jsm_string *out, u32 opc, int num_space)
+static int out_cond(struct jsm_string *out, u32 opc, int num_space)
 {
     u32 cond = opc >> 28;
     switch(cond) {
@@ -77,7 +77,7 @@ static int out_cond(jsm_string *out, u32 opc, int num_space)
 
 
 
-static void annoying(jsm_string *out, u32 opcode, char *name, int num_spaces, char *suffix)
+static void annoying(struct jsm_string *out, u32 opcode, char *name, int num_spaces, char *suffix)
 {
     u32 cnd = opcode >> 28;
     ostr(name);
@@ -131,7 +131,7 @@ static void annoying(jsm_string *out, u32 opcode, char *name, int num_spaces, ch
 #define mn(x,y) { ostr(x); cond(y); }
 #define mnp(x,y,z) { annoying(out, opcode, x, y, z); }
 
-static void out_shifted_imm(jsm_string *out, u32 shift_type, u32 Is) {
+static void out_shifted_imm(struct jsm_string *out, u32 shift_type, u32 Is) {
     if ((shift_type != 0) || (Is != 0)) {
         ostr(", ");
         switch (shift_type) {
@@ -163,7 +163,7 @@ static void out_shifted_imm(jsm_string *out, u32 shift_type, u32 Is) {
 }
 
 
-static void dasm_MUL_MLA(u32 opcode, jsm_string *out, i64 instruction_addr, ARMctxt *ct)
+static void dasm_MUL_MLA(u32 opcode, struct jsm_string *out, i64 instruction_addr, struct ARMctxt *ct)
 {
     u32 accumulate = OBIT(21);
     u32 S = OBIT(20);
@@ -185,7 +185,7 @@ static void dasm_MUL_MLA(u32 opcode, jsm_string *out, i64 instruction_addr, ARMc
     }
 }
 
-static void dasm_MULL_MLAL(u32 opcode, jsm_string *out, i64 instruction_addr, ARMctxt *ct)
+static void dasm_MULL_MLAL(u32 opcode, struct jsm_string *out, i64 instruction_addr, struct ARMctxt *ct)
 {
     u32 S = OBIT(20);
     u32 Rdd = (opcode >> 16) & 15;
@@ -210,7 +210,7 @@ static void dasm_MULL_MLAL(u32 opcode, jsm_string *out, i64 instruction_addr, AR
     }
 }
 
-static void dasm_SWP(u32 opcode, jsm_string *out, i64 instruction_addr, ARMctxt *ct)
+static void dasm_SWP(u32 opcode, struct jsm_string *out, i64 instruction_addr, struct ARMctxt *ct)
 {
     u32 B = OBIT(22);
     u32 Rnd = (opcode >> 16) & 15;
@@ -226,7 +226,7 @@ static void dasm_SWP(u32 opcode, jsm_string *out, i64 instruction_addr, ARMctxt 
     add_context(ct, Rnd);
 }
 
-static void dasm_LDRH_STRH(u32 opcode, jsm_string *out, i64 instruction_addr, ARMctxt *ct)
+static void dasm_LDRH_STRH(u32 opcode, struct jsm_string *out, i64 instruction_addr, struct ARMctxt *ct)
 {
     u32 P = OBIT(24); // pre or post. 0=post
     u32 U = OBIT(23); // up/down, 0=down
@@ -259,7 +259,7 @@ static void dasm_LDRH_STRH(u32 opcode, jsm_string *out, i64 instruction_addr, AR
     ostr("]");
 }
 
-static void dasm_LDRSB_LDRSH(u32 opcode, jsm_string *out, i64 instruction_addr, ARMctxt *ct)
+static void dasm_LDRSB_LDRSH(u32 opcode, struct jsm_string *out, i64 instruction_addr, struct ARMctxt *ct)
 {
     u32 P = OBIT(24); // pre or post. 0=post
     u32 U = OBIT(23); // up/down, 0=down
@@ -287,7 +287,7 @@ static void dasm_LDRSB_LDRSH(u32 opcode, jsm_string *out, i64 instruction_addr, 
     else oreg(Rmd);
 }
 
-static void dasm_MRS(u32 opcode, jsm_string *out, i64 instruction_addr, ARMctxt *ct)
+static void dasm_MRS(u32 opcode, struct jsm_string *out, i64 instruction_addr, struct ARMctxt *ct)
 {
     u32 Rdd = (opcode >> 12) & 15;
     mn("mrs", 3);
@@ -296,7 +296,7 @@ static void dasm_MRS(u32 opcode, jsm_string *out, i64 instruction_addr, ARMctxt 
     ostr("cpsr");
 }
 
-static void dasm_MSR_reg(u32 opcode, jsm_string *out, i64 instruction_addr, ARMctxt *ct)
+static void dasm_MSR_reg(u32 opcode, struct jsm_string *out, i64 instruction_addr, struct ARMctxt *ct)
 {
     u32 PSR = OBIT(22); // 0 = CPSR, 1 = SPSR(current)
     u32 f = OBIT(19);
@@ -323,7 +323,7 @@ static void dasm_MSR_reg(u32 opcode, jsm_string *out, i64 instruction_addr, ARMc
     add_context(ct, Rmd);
 }
 
-static void dasm_MSR_imm(u32 opcode, jsm_string *out, i64 instruction_addr, ARMctxt *ct)
+static void dasm_MSR_imm(u32 opcode, struct jsm_string *out, i64 instruction_addr, struct ARMctxt *ct)
 {
     u32 PSR = OBIT(22); // 0 = CPSR, 1 = SPSR(current)
     u32 f = OBIT(19);
@@ -352,7 +352,7 @@ static void dasm_MSR_imm(u32 opcode, jsm_string *out, i64 instruction_addr, ARMc
     ohex(imm, 8);
 }
 
-static void dasm_BX(u32 opcode, jsm_string *out, i64 instruction_addr, ARMctxt *ct)
+static void dasm_BX(u32 opcode, struct jsm_string *out, i64 instruction_addr, struct ARMctxt *ct)
 {
     u32 Rnd = opcode & 15;
     mn("bx", 4);
@@ -360,7 +360,7 @@ static void dasm_BX(u32 opcode, jsm_string *out, i64 instruction_addr, ARMctxt *
     add_context(ct, Rnd);
 }
 
-static void dasm_data_proc_immediate_shift(u32 opcode, jsm_string *out, i64 instruction_addr, ARMctxt *ct)
+static void dasm_data_proc_immediate_shift(u32 opcode, struct jsm_string *out, i64 instruction_addr, struct ARMctxt *ct)
 {
     u32 alu_opcode = (opcode >> 21) & 15;
     u32 S = (opcode >> 20) & 1; // set condition codes. 0=no, 1=yes. must be 1 for 8-B
@@ -403,7 +403,7 @@ static void dasm_data_proc_immediate_shift(u32 opcode, jsm_string *out, i64 inst
     out_shifted_imm(out, shift_type, Is);
 }
 
-static void dasm_data_proc_register_shift(u32 opcode, jsm_string *out, i64 instruction_addr, ARMctxt *ct)
+static void dasm_data_proc_register_shift(u32 opcode, struct jsm_string *out, i64 instruction_addr, struct ARMctxt *ct)
 {
     u32 alu_opcode = (opcode >> 21) & 15;
     u32 S = (opcode >> 20) & 1; // set condition codes. 0=no, 1=yes. must be 1 for 8-B
@@ -461,12 +461,12 @@ static void dasm_data_proc_register_shift(u32 opcode, jsm_string *out, i64 instr
     add_context(ct, Isd);
 }
 
-static void dasm_undefined_instruction(u32 opcode, jsm_string *out, i64 instruction_addr, ARMctxt *ct)
+static void dasm_undefined_instruction(u32 opcode, struct jsm_string *out, i64 instruction_addr, struct ARMctxt *ct)
 {
     ostr("undefined alu");
 }
 
-static void dasm_data_proc_immediate(u32 opcode, jsm_string *out, i64 instruction_addr, ARMctxt *ct)
+static void dasm_data_proc_immediate(u32 opcode, struct jsm_string *out, i64 instruction_addr, struct ARMctxt *ct)
 {
     u32 alu_opcode = (opcode >> 21) & 15;
     u32 S = (opcode >> 20) & 1; // set condition codes. 0=no, 1=yes. must be 1 for 8-B
@@ -509,7 +509,7 @@ static void dasm_data_proc_immediate(u32 opcode, jsm_string *out, i64 instructio
     ohex(Rm, 8);
 }
 
-static void dasm_LDR_STR_immediate_offset(u32 opcode, jsm_string *out, i64 instruction_addr, ARMctxt *ct)
+static void dasm_LDR_STR_immediate_offset(u32 opcode, struct jsm_string *out, i64 instruction_addr, struct ARMctxt *ct)
 {
     u32 P = OBIT(24); // Pre/post. 0 = after-transfer, post
     u32 U = OBIT(23); // 0 = down, 1 = up
@@ -560,7 +560,7 @@ static void dasm_LDR_STR_immediate_offset(u32 opcode, jsm_string *out, i64 instr
     if (W) ostr("!");
 }
 
-static void dasm_LDR_STR_register_offset(u32 opcode, jsm_string *out, i64 instruction_addr, ARMctxt *ct)
+static void dasm_LDR_STR_register_offset(u32 opcode, struct jsm_string *out, i64 instruction_addr, struct ARMctxt *ct)
 {
     u32 P = OBIT(24);
     u32 U = OBIT(23);
@@ -606,7 +606,7 @@ static void dasm_LDR_STR_register_offset(u32 opcode, jsm_string *out, i64 instru
     if (W) ostr("!");
 }
 
-static void dasm_LDM_STM(u32 opcode, jsm_string *out, i64 instruction_addr, ARMctxt *ct)
+static void dasm_LDM_STM(u32 opcode, struct jsm_string *out, i64 instruction_addr, struct ARMctxt *ct)
 {
     u32 P = OBIT(24); // P=0 add offset after. P=1 add offset first
     u32 U = OBIT(23); // 0=subtract offset, 1 =add
@@ -642,7 +642,7 @@ static void dasm_LDM_STM(u32 opcode, jsm_string *out, i64 instruction_addr, ARMc
     else ostr(">");
 }
 
-static void dasm_B_BL(u32 opcode, jsm_string *out, i64 instruction_addr, ARMctxt *ct)
+static void dasm_B_BL(u32 opcode, struct jsm_string *out, i64 instruction_addr, struct ARMctxt *ct)
 {
     u32 link = OBIT(24);
     i32 offset = SIGNe24to32(opcode & 0xFFFFFF);
@@ -657,35 +657,35 @@ static void dasm_B_BL(u32 opcode, jsm_string *out, i64 instruction_addr, ARMctxt
     }
 }
 
-static void dasm_STC_LDC(u32 opcode, jsm_string *out, i64 instruction_addr, ARMctxt *ct)
+static void dasm_STC_LDC(u32 opcode, struct jsm_string *out, i64 instruction_addr, struct ARMctxt *ct)
 {
     ostr("std/ldc unsupported");
 }
 
-static void dasm_CDP(u32 opcode, jsm_string *out, i64 instruction_addr, ARMctxt *ct)
+static void dasm_CDP(u32 opcode, struct jsm_string *out, i64 instruction_addr, struct ARMctxt *ct)
 {
     ostr("cdp unsupported");
 }
 
-static void dasm_MCR_MRC(u32 opcode, jsm_string *out, i64 instruction_addr, ARMctxt *ct)
+static void dasm_MCR_MRC(u32 opcode, struct jsm_string *out, i64 instruction_addr, struct ARMctxt *ct)
 {
     ostr("mcr/mrc unsupported");
 }
 
-static void dasm_SWI(u32 opcode, jsm_string *out, i64 instruction_addr, ARMctxt *ct)
+static void dasm_SWI(u32 opcode, struct jsm_string *out, i64 instruction_addr, struct ARMctxt *ct)
 {
     ostr("swi #");
     ohex(opcode & 0xFF, 2);
 }
 
-static void dasm_INVALID(u32 opcode, jsm_string *out, i64 instruction_addr, ARMctxt *ct)
+static void dasm_INVALID(u32 opcode, struct jsm_string *out, i64 instruction_addr, struct ARMctxt *ct)
 {
     ostr("unknown opcode %08x", opcode);
 }
 
-void ARMv4_disassemble(u32 opcode, jsm_string *out, i64 ins_addr, ARMctxt *ct)
+void ARMv4_disassemble(u32 opcode, struct jsm_string *out, i64 ins_addr, struct ARMctxt *ct)
 {
-    // i64 instruction_addr, ARMctxt *ctxt
+    // i64 instruction_addr, struct ARMctxt *ctxt
     jsm_string_quickempty(out);
     u32 opc = ((opcode >> 4) & 15) | ((opcode >> 16) & 0xFF0);
     if ((opc & 0b111111001111) == 0b000000001001) // 000'000.. 1001  MUL, MLA

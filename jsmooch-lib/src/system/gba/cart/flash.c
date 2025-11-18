@@ -1,7 +1,7 @@
 //
 // Created by . on 1/17/25.
 //
-#include <cstring>
+#include <string.h>
 
 #include "../gba_bus.h"
 #include "flash.h"
@@ -13,13 +13,13 @@
 #define idstr_sanyo128k 0x1362
 #define idstr_macronix128k 0x09c2
 
-static void erase_flash(GBA *this)
+static void erase_flash(struct GBA *this)
 {
     memset(this->cart.RAM.store->data, 0xFF, this->cart.RAM.store->actual_size);
     this->cart.RAM.store->dirty = 1;
 }
 
-static void write_flash_cmd(GBA *this, u32 addr, u32 cmd)
+static void write_flash_cmd(struct GBA *this, u32 addr, u32 cmd)
 {
     this->cart.RAM.flash.cmd_loc = 0;
     u32 last_cmd = this->cart.RAM.flash.last_cmd;
@@ -90,7 +90,7 @@ static u32 flash_bank_mask(enum GBA_flash_kinds kind)
 }
 
 
-u32 GBA_cart_read_flash(GBA *this, u32 addr, u32 sz, u32 access, u32 has_effect)
+u32 GBA_cart_read_flash(struct GBA *this, u32 addr, u32 sz, u32 access, u32 has_effect)
 {
     addr &= 0x00FFFF;
     addr |= 0x0E000000;
@@ -136,7 +136,7 @@ u32 GBA_cart_read_flash(GBA *this, u32 addr, u32 sz, u32 access, u32 has_effect)
     return v;
 }
 
-static void finish_flash_cmd(GBA *this, u32 addr, u32 sz, u32 val) {
+static void finish_flash_cmd(struct GBA *this, u32 addr, u32 sz, u32 val) {
     this->cart.RAM.flash.cmd_loc = 0;
     if (this->cart.RAM.flash.state == GBAFS_await_bank) {
         val &= flash_bank_mask(this->cart.RAM.flash.kind);
@@ -160,7 +160,7 @@ static void finish_flash_cmd(GBA *this, u32 addr, u32 sz, u32 val) {
     }
 }
 
-void GBA_cart_write_flash(GBA *this, u32 addr, u32 sz, u32 access, u32 val)
+void GBA_cart_write_flash(struct GBA *this, u32 addr, u32 sz, u32 access, u32 val)
 {
     this->waitstates.current_transaction += this->waitstates.sram;
     addr &= 0x00FFFF;

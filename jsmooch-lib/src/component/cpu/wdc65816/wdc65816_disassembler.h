@@ -11,6 +11,6 @@
 
 #include "wdc65816.h"
 
-u32 WDC65816_disassemble(u32 addr, WDC65816_regs &r, u32 e, u32 m, u32 x, jsm_debug_read_trace &rt, jsm_string &out, WDC65816_ctxt *ct);
+u32 WDC65816_disassemble(u32 addr, struct WDC65816_regs *r, u32 e, u32 m, u32 x, struct jsm_debug_read_trace *rt, struct jsm_string *out, struct WDC65816_ctxt *ct);
 
 #endif //JSMOOCH_EMUS_WDC65816_DISASSEMBLER_H

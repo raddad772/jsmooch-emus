@@ -53,8 +53,8 @@ struct SH4_regs_FPSCR {
     u32 data;  // other bits
 };
 
-void SH4_regs_SR_reset(SH4_regs_SR*);
-u32 SH4_regs_SR_get(SH4_regs_SR*);
+void SH4_regs_SR_reset(struct SH4_regs_SR*);
+u32 SH4_regs_SR_get(struct SH4_regs_SR*);
 
 struct SH4_regs {
     u32 R[16]; // registers
@@ -95,10 +95,10 @@ struct SH4_regs {
 #include "generated/regs_decls.h"
 };
 
-void SH4_regs_FPSCR_update(SH4_regs_FPSCR*, u32 old_RM, u32 old_DN);
-u32 SH4_regs_FPSCR_get(SH4_regs_FPSCR*);
-void SH4_regs_FPSCR_set(SH4_regs*, u32 val);
-void SH4_regs_FPSCR_bankswitch(SH4_regs*);
+void SH4_regs_FPSCR_update(struct SH4_regs_FPSCR*, u32 old_RM, u32 old_DN);
+u32 SH4_regs_FPSCR_get(struct SH4_regs_FPSCR*);
+void SH4_regs_FPSCR_set(struct SH4_regs*, u32 val);
+void SH4_regs_FPSCR_bankswitch(struct SH4_regs*);
 
 // Number of SH4 interrupt sources
 #define SH4I_NUM 27
@@ -193,13 +193,13 @@ struct SH4 {
     struct scheduler_t* scheduler;
 };
 
-void SH4_init(SH4*, scheduler_t* scheduler);
-void SH4_delete(SH4*);
-void SH4_reset(SH4*);
-void SH4_run_cycles(SH4*, u32 howmany);
-void SH4_fetch_and_exec(SH4*, u32 is_delay_slot);
-void SH4_SR_set(SH4*, u32 val);
-void SH4_give_memaccess(SH4*, SH4_memaccess_t* to);
-void SH4_setup_tracing(SH4*, jsm_debug_read_trace *rt, u64 *trace_cycles);
+void SH4_init(struct SH4*, struct scheduler_t* scheduler);
+void SH4_delete(struct SH4*);
+void SH4_reset(struct SH4*);
+void SH4_run_cycles(struct SH4*, u32 howmany);
+void SH4_fetch_and_exec(struct SH4*, u32 is_delay_slot);
+void SH4_SR_set(struct SH4*, u32 val);
+void SH4_give_memaccess(struct SH4*, struct SH4_memaccess_t* to);
+void SH4_setup_tracing(struct SH4*, struct jsm_debug_read_trace *rt, u64 *trace_cycles);
 
 #endif //JSMOOCH_EMUS_SH4_INTERPRETER_H

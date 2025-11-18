@@ -2,7 +2,7 @@
 // Created by RadDad772 on 3/2/24.
 //
 
-#include <cstring>
+#include "string.h"
 #include "assert.h"
 #include "stdio.h"
 #include "dreamcast.h"
@@ -12,12 +12,12 @@
 
 #define gd_printf(...)   (void)0
 
-static void GDROM_setstate(DC* this, enum gd_states state);
-static void GDROM_ATA_command(DC* this);
+static void GDROM_setstate(struct DC* this, enum gd_states state);
+static void GDROM_ATA_command(struct DC* this);
 
 // LOTS of help/code from Reicast. I honestly just don't like this
 
-static void gdrom_clear_interrupt(DC* this)
+static void gdrom_clear_interrupt(struct DC* this)
 {
     holly_lower_interrupt(this, hirq_gdrom_cmd);
 }
@@ -36,7 +36,7 @@ enum GDstatus {
 };
 
 // next_state default gds_pio_end
-static void GDROM_spi_pio_end(DC* this, u8* buffer, u32 len, enum gd_states next_state)
+static void GDROM_spi_pio_end(struct DC* this, u8* buffer, u32 len, enum gd_states next_state)
 {
     assert(len < 0xFFFF);
     this->gdrom.pio_buff.index = 0;
@@ -54,13 +54,13 @@ static void GDROM_spi_pio_end(DC* this, u8* buffer, u32 len, enum gd_states next
         GDROM_setstate(this, gds_pio_send_data);
 }
 
-void GDROM_init(DC* this) {
+void GDROM_init(struct DC* this) {
     this->gdrom.interrupt_reason.u = 0;
     this->gdrom.byte_count.u = 0;
     this->gdrom.sns_asc = this->gdrom.sns_ascq = this->gdrom.sns_key = 0;
 
-    this->gdrom.packet_cmd = (SPI_packet_cmd) {};
-    this->gdrom.pio_buff = (GDROM_PIOBUF) {.next_state=gds_waitcmd, .index=0, .size=0};
+    this->gdrom.packet_cmd = (struct SPI_packet_cmd) {};
+    this->gdrom.pio_buff = (struct GDROM_PIOBUF) {.next_state=gds_waitcmd, .index=0, .size=0};
     memset(&this->gdrom.pio_buff.data[0], 0, 65536);
     this->gdrom.state = gds_waitcmd;
     this->gdrom.error.u = 0;
@@ -72,7 +72,7 @@ void GDROM_init(DC* this) {
     this->gdrom.device_status.u = 0;
 }
 
-static void GDROM_setdisc(DC* this) {
+static void GDROM_setdisc(struct DC* this) {
     this->gdrom.cdda.playing = 0;
     this->gdrom.sns_asc = 0x28;
     this->gdrom.sns_ascq = 0;
@@ -85,7 +85,7 @@ static void GDROM_setdisc(DC* this) {
 
 }
 
-static void GDROM_process_spi_cmd(DC* this) {
+static void GDROM_process_spi_cmd(struct DC* this) {
     gd_printf("\nPROCESS SPI PACKET! %llu ", this->sh4.clock.trace_cycles);
     gd_printf("Sense: %02x %02x %02x \n", this->gdrom.sns_asc, this->gdrom.sns_ascq, this->gdrom.sns_key);
 
@@ -163,7 +163,7 @@ static void GDROM_process_spi_cmd(DC* this) {
     }
 }
 
-static void GDROM_setstate(DC* this, enum gd_states state)
+static void GDROM_setstate(struct DC* this, enum gd_states state)
 {
     enum gd_states prev_state = this->gdrom.state;
     this->gdrom.state = state;
@@ -242,7 +242,7 @@ static void GDROM_setstate(DC* this, enum gd_states state)
     }
 }
 
-void GDROM_reset(DC* this) {
+void GDROM_reset(struct DC* this) {
     GDROM_setdisc(this);
     GDROM_setstate(this, gds_waitcmd);
 
@@ -256,7 +256,7 @@ void GDROM_reset(DC* this) {
     this->gdrom.device_status.CHECK = 0;
 }
 
-static void GDROM_ATA_command(DC* this)
+static void GDROM_ATA_command(struct DC* this)
 {
     this->gdrom.error.ABORT = 0;
 
@@ -297,7 +297,7 @@ static void GDROM_ATA_command(DC* this)
     printf("\nUNKNOWN GDROM COMMAND %02x", this->gdrom.ata_cmd);
 }
 
-void GDROM_write(DC* this, u32 addr, u64 val, u32 sz, u32* success)
+void GDROM_write(struct DC* this, u32 addr, u64 val, u32 sz, u32* success)
 {
     //printf("\nGDROM WRITE! %llu", this->sh4.clock.trace_cycles);
     addr &= 0x1FFFFFFF;
@@ -357,7 +357,7 @@ void GDROM_write(DC* this, u32 addr, u64 val, u32 sz, u32* success)
     printf("\nUnhandled GDR reg write %02x val %04llx", addr, val);
 }
 
-u64 GDROM_read(DC* this, u32 addr, u32 bits, u32* success)
+u64 GDROM_read(struct DC* this, u32 addr, u32 bits, u32* success)
 {
     addr &= 0x1FFFFFFF;
     switch(addr) {

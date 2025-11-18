@@ -6,7 +6,7 @@
 #include "ps1_gpu.h"
 #include "helpers/multisize_memaccess.c"
 
-void setpix(PS1_GPU *this, i32 y, i32 x, u32 color, u32 is_tex, u32 tex_mask)
+void setpix(struct PS1_GPU *this, i32 y, i32 x, u32 color, u32 is_tex, u32 tex_mask)
 {
     // VRAM is 512 1024-wide 16-bit words. so 2048 bytes per line
     i32 ry = (y & 511) + this->draw_y_offset;
@@ -27,7 +27,7 @@ void setpix(PS1_GPU *this, i32 y, i32 x, u32 color, u32 is_tex, u32 tex_mask)
     //cW16(this->VRAM, addr, color);
 }
 
-void setpix_split(PS1_GPU *this, i32 y, i32 x, u32 r, u32 g, u32 b, u32 is_tex, u32 tex_mask)
+void setpix_split(struct PS1_GPU *this, i32 y, i32 x, u32 r, u32 g, u32 b, u32 is_tex, u32 tex_mask)
 {
     // VRAM is 512 1024-wide 16-bit words. so 2048 bytes per line
     i32 ry = (y & 511) + this->draw_y_offset;
@@ -156,7 +156,7 @@ static u32 blend_semi15_split(u32 mode, u32 b, u32 f_r, u32 f_g, u32 f_b)
 
 
 
-void semipix(PS1_GPU *this, i32 y, i32 x, u32 color, u32 is_tex, u32 tex_mask)
+void semipix(struct PS1_GPU *this, i32 y, i32 x, u32 color, u32 is_tex, u32 tex_mask)
 {
     // VRAM is 512 1024-wide 16-bit words. so 2048 bytes per line
     i32 ry = (y & 511) + this->draw_y_offset;
@@ -186,7 +186,7 @@ void semipix(PS1_GPU *this, i32 y, i32 x, u32 color, u32 is_tex, u32 tex_mask)
     cW16(this->VRAM, addr, color | mask_bit);
 }
 
-void semipixm(PS1_GPU *this, i32 y, i32 x, u32 color, u32 mode, u32 is_tex, u32 tex_mask)
+void semipixm(struct PS1_GPU *this, i32 y, i32 x, u32 color, u32 mode, u32 is_tex, u32 tex_mask)
 {
     // VRAM is 512 1024-wide 16-bit words. so 2048 bytes per line
     i32 ry = (y & 511) + this->draw_y_offset;
@@ -216,7 +216,7 @@ void semipixm(PS1_GPU *this, i32 y, i32 x, u32 color, u32 mode, u32 is_tex, u32 
     cW16(this->VRAM, addr, color | mask_bit);
 }
 
-void semipix_split(PS1_GPU *this, i32 y, i32 x, u32 r, u32 g, u32 b, u32 is_tex, u32 tex_mask)
+void semipix_split(struct PS1_GPU *this, i32 y, i32 x, u32 r, u32 g, u32 b, u32 is_tex, u32 tex_mask)
 {
     // VRAM is 512 1024-wide 16-bit words. so 2048 bytes per line
     i32 ry = (y & 511) + this->draw_y_offset;

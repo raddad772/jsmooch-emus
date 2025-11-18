@@ -109,9 +109,9 @@ struct PS1_SIO0 {
 
 };
 
-void PS1_SIO0_init(PS1 *this);
-void PS1_SIO0_update_ACKs(PS1 *this, enum PS1_SIO0_port port, u32 level);
-void PS1_SIO0_write(PS1 *this, u32 addr, u32 sz, u32 val);
-u32 PS1_SIO0_read(PS1 *this, u32 addr, u32 sz);
+void PS1_SIO0_init(struct PS1 *this);
+void PS1_SIO0_update_ACKs(struct PS1 *this, enum PS1_SIO0_port port, u32 level);
+void PS1_SIO0_write(struct PS1 *this, u32 addr, u32 sz, u32 val);
+u32 PS1_SIO0_read(struct PS1 *this, u32 addr, u32 sz);
 
 #endif //JSMOOCH_EMUS_PS1_SIO_H

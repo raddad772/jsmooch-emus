@@ -2,8 +2,8 @@
 // Created by . on 12/4/24.
 //
 
-#include <cstring>
-#include <cassert>
+#include <string.h>
+#include <assert.h>
 
 #include "helpers/color.h"
 #include "gba.h"
@@ -11,7 +11,7 @@
 #include "gba_debugger.h"
 #include "gba_timers.h"
 
-#define JTHIS struct GBA* this = (GBA*)jsm->ptr
+#define JTHIS struct GBA* this = (struct GBA*)jsm->ptr
 #define JSM struct jsm_system* jsm
 
 #define THIS struct GBA* this
@@ -24,7 +24,7 @@
 #define SCANLINE_HBLANK 1006
 
 
-static void create_and_bind_registers_ARM7TDMI(GBA* this, disassembly_view *dv)
+static void create_and_bind_registers_ARM7TDMI(struct GBA* this, struct disassembly_view *dv)
 {
     u32 tkindex = 0;
     /*struct cpu_reg_context *rg = cvec_push_back(&dv->cpu.regs);
@@ -157,9 +157,9 @@ static void create_and_bind_registers_ARM7TDMI(GBA* this, disassembly_view *dv)
 #undef BIND*/
 }
 
-static void fill_disassembly_view(void *macptr, debugger_interface *dbgr, disassembly_view *dview)
+static void fill_disassembly_view(void *macptr, struct debugger_interface *dbgr, struct disassembly_view *dview)
 {
-    struct GBA* this = (GBA*)macptr;
+    struct GBA* this = (struct GBA*)macptr;
     /*for (u32 i = 0; i < 8; i++) {
         this->dbg.dasm_m68k.D[i]->int32_data = this->m68k.regs.D[i];
         if (i < 7) this->dbg.dasm_m68k.A[i]->int32_data = this->m68k.regs.A[i];
@@ -205,10 +205,10 @@ static void get_obj_tile_size(u32 sz, u32 shape, u32 *htiles, u32 *vtiles)
 #undef T
 }
 
-static void render_image_view_sys_info(debugger_interface *dbgr, debugger_view *dview, void *ptr, u32 out_width) {
-    struct GBA *this = (GBA *) ptr;
+static void render_image_view_sys_info(struct debugger_interface *dbgr, struct debugger_view *dview, void *ptr, u32 out_width) {
+    struct GBA *this = (struct GBA *) ptr;
     //memset(ptr, 0, out_width * 4 * 10);
-    struct debugger_widget_textbox *tb = &((debugger_widget *) cvec_get(&dview->options, 0))->textbox;
+    struct debugger_widget_textbox *tb = &((struct debugger_widget *) cvec_get(&dview->options, 0))->textbox;
     debugger_widgets_textbox_clear(tb);
 #define spf(...) debugger_widgets_textbox_sprintf(tb, __VA_ARGS__)
     for (u32 i = 0; i < 4; i++) {
@@ -227,8 +227,8 @@ static void render_image_view_sys_info(debugger_interface *dbgr, debugger_view *
 #undef spf
 }
 
-static void render_image_view_sprites(debugger_interface *dbgr, debugger_view *dview, void *my_ptr, u32 out_width) {
-    struct GBA *this = (GBA *) my_ptr;
+static void render_image_view_sprites(struct debugger_interface *dbgr, struct debugger_view *dview, void *my_ptr, u32 out_width) {
+    struct GBA *this = (struct GBA *) my_ptr;
     if (this->clock.master_frame == 0) return;
     struct image_view *iv = &dview->image;
     iv->draw_which_buf ^= 1;
@@ -236,21 +236,21 @@ static void render_image_view_sprites(debugger_interface *dbgr, debugger_view *d
     memset(outbuf, 0, out_width * 4 * 160);
 
     // Draw sprites!!!
-    struct debugger_widget_checkbox *cb_draw_transparency = &((debugger_widget *)cvec_get(&dview->options, 0))->checkbox;
-    struct debugger_widget_checkbox *cb_draw_4bpp = &((debugger_widget *)cvec_get(&dview->options, 1))->checkbox;
-    struct debugger_widget_checkbox *cb_draw_8bpp = &((debugger_widget *)cvec_get(&dview->options, 2))->checkbox;
-    struct debugger_widget_checkbox *cb_draw_normal = &((debugger_widget *)cvec_get(&dview->options, 3))->checkbox;
-    struct debugger_widget_checkbox *cb_draw_affine = &((debugger_widget *)cvec_get(&dview->options, 4))->checkbox;
-    struct debugger_widget_checkbox *cb_highlight_4bpp = &((debugger_widget *)cvec_get(&dview->options, 5))->checkbox;
-    struct debugger_widget_checkbox *cb_highlight_8bpp = &((debugger_widget *)cvec_get(&dview->options, 6))->checkbox;
-    struct debugger_widget_checkbox *cb_highlight_normal = &((debugger_widget *)cvec_get(&dview->options, 7))->checkbox;
-    struct debugger_widget_checkbox *cb_highlight_affine = &((debugger_widget *)cvec_get(&dview->options, 8))->checkbox;
-    struct debugger_widget_checkbox *cb_highlight_window = &((debugger_widget *)cvec_get(&dview->options, 9))->checkbox;
-    struct debugger_widget_checkbox *cb_wb_4bpp = &((debugger_widget *)cvec_get(&dview->options, 10))->checkbox;
-    struct debugger_widget_checkbox *cb_wb_8bpp = &((debugger_widget *)cvec_get(&dview->options, 11))->checkbox;
-    struct debugger_widget_checkbox *cb_wb_normal = &((debugger_widget *)cvec_get(&dview->options, 12))->checkbox;
-    struct debugger_widget_checkbox *cb_wb_affine = &((debugger_widget *)cvec_get(&dview->options, 13))->checkbox;
-    struct debugger_widget_checkbox *cb_wb_window = &((debugger_widget *)cvec_get(&dview->options, 14))->checkbox;
+    struct debugger_widget_checkbox *cb_draw_transparency = &((struct debugger_widget *)cvec_get(&dview->options, 0))->checkbox;
+    struct debugger_widget_checkbox *cb_draw_4bpp = &((struct debugger_widget *)cvec_get(&dview->options, 1))->checkbox;
+    struct debugger_widget_checkbox *cb_draw_8bpp = &((struct debugger_widget *)cvec_get(&dview->options, 2))->checkbox;
+    struct debugger_widget_checkbox *cb_draw_normal = &((struct debugger_widget *)cvec_get(&dview->options, 3))->checkbox;
+    struct debugger_widget_checkbox *cb_draw_affine = &((struct debugger_widget *)cvec_get(&dview->options, 4))->checkbox;
+    struct debugger_widget_checkbox *cb_highlight_4bpp = &((struct debugger_widget *)cvec_get(&dview->options, 5))->checkbox;
+    struct debugger_widget_checkbox *cb_highlight_8bpp = &((struct debugger_widget *)cvec_get(&dview->options, 6))->checkbox;
+    struct debugger_widget_checkbox *cb_highlight_normal = &((struct debugger_widget *)cvec_get(&dview->options, 7))->checkbox;
+    struct debugger_widget_checkbox *cb_highlight_affine = &((struct debugger_widget *)cvec_get(&dview->options, 8))->checkbox;
+    struct debugger_widget_checkbox *cb_highlight_window = &((struct debugger_widget *)cvec_get(&dview->options, 9))->checkbox;
+    struct debugger_widget_checkbox *cb_wb_4bpp = &((struct debugger_widget *)cvec_get(&dview->options, 10))->checkbox;
+    struct debugger_widget_checkbox *cb_wb_8bpp = &((struct debugger_widget *)cvec_get(&dview->options, 11))->checkbox;
+    struct debugger_widget_checkbox *cb_wb_normal = &((struct debugger_widget *)cvec_get(&dview->options, 12))->checkbox;
+    struct debugger_widget_checkbox *cb_wb_affine = &((struct debugger_widget *)cvec_get(&dview->options, 13))->checkbox;
+    struct debugger_widget_checkbox *cb_wb_window = &((struct debugger_widget *)cvec_get(&dview->options, 14))->checkbox;
     u32 draw_transparency = cb_draw_transparency->value;
     u32 draw_4bpp = cb_draw_4bpp->value;
     u32 draw_8bpp = cb_draw_8bpp->value;
@@ -454,8 +454,8 @@ static void render_image_view_sprites(debugger_interface *dbgr, debugger_view *d
     }
 }
 
-static void render_image_view_tiles(debugger_interface *dbgr, debugger_view *dview, void *ptr, u32 out_width) {
-    struct GBA *this = (GBA *) ptr;
+static void render_image_view_tiles(struct debugger_interface *dbgr, struct debugger_view *dview, void *ptr, u32 out_width) {
+    struct GBA *this = (struct GBA *) ptr;
     if (this->clock.master_frame == 0) return;
 
     struct image_view *iv = &dview->image;
@@ -526,8 +526,8 @@ static inline u32 shade_boundary_func(u32 kind, u32 incolor)
     return 0;
 }
 
-static void render_image_view_bgmap(debugger_interface *dbgr, debugger_view *dview, void *ptr, u32 out_width, int bg_num) {
-    struct GBA *this = (GBA *) ptr;
+static void render_image_view_bgmap(struct debugger_interface *dbgr, struct debugger_view *dview, void *ptr, u32 out_width, int bg_num) {
+    struct GBA *this = (struct GBA *) ptr;
     if (this->clock.master_frame == 0) return;
     struct GBA_PPU_bg *bg = &this->ppu.bg[bg_num];
 
@@ -584,7 +584,7 @@ static void render_image_view_bgmap(debugger_interface *dbgr, debugger_view *dvi
     iv->viewport.p[1].x = (i32)max_hsize;
     iv->viewport.p[1].y = (i32)max_vsize;
 
-    struct debugger_widget_textbox *tb = &((debugger_widget *)cvec_get(&dview->options, 0))->textbox;
+    struct debugger_widget_textbox *tb = &((struct debugger_widget *)cvec_get(&dview->options, 0))->textbox;
     debugger_widgets_textbox_clear(tb);
     debugger_widgets_textbox_sprintf(tb, "hsize:%d vsize:%d", max_hsize, max_vsize);
 
@@ -646,19 +646,19 @@ static void render_image_view_bgmap(debugger_interface *dbgr, debugger_view *dvi
     }
 }
 
-static void render_image_view_bg(debugger_interface *dbgr, debugger_view *dview, void *ptr, u32 out_width, int bg_num)
+static void render_image_view_bg(struct debugger_interface *dbgr, struct debugger_view *dview, void *ptr, u32 out_width, int bg_num)
 {
-    struct GBA *this = (GBA *) ptr;
+    struct GBA *this = (struct GBA *) ptr;
     if (this->clock.master_frame == 0) return;
 
     struct image_view *iv = &dview->image;
     u32 *outbuf = iv->img_buf[iv->draw_which_buf].ptr;
     memset(outbuf, 0, out_width * 4 * 160);
 
-    struct debugger_widget_textbox *tb = &((debugger_widget *)cvec_get(&dview->options, 0))->textbox;
-    struct debugger_widget_checkbox *cb_highlight_transparent = &((debugger_widget *)cvec_get(&dview->options, 1))->checkbox;
-    struct debugger_widget_checkbox *cb_highlight_window_shaded = &((debugger_widget *)cvec_get(&dview->options, 2))->checkbox;
-    struct debugger_widget_checkbox *cb_highlight_window_occluded = &((debugger_widget *)cvec_get(&dview->options, 3))->checkbox;
+    struct debugger_widget_textbox *tb = &((struct debugger_widget *)cvec_get(&dview->options, 0))->textbox;
+    struct debugger_widget_checkbox *cb_highlight_transparent = &((struct debugger_widget *)cvec_get(&dview->options, 1))->checkbox;
+    struct debugger_widget_checkbox *cb_highlight_window_shaded = &((struct debugger_widget *)cvec_get(&dview->options, 2))->checkbox;
+    struct debugger_widget_checkbox *cb_highlight_window_occluded = &((struct debugger_widget *)cvec_get(&dview->options, 3))->checkbox;
     u32 highlight_transparent = cb_highlight_transparent->value;
     u32 highlight_window_shaded = cb_highlight_window_shaded->value;
     u32 highlight_window_occluded = cb_highlight_window_occluded->value;
@@ -797,8 +797,8 @@ static void render_image_view_bg(debugger_interface *dbgr, debugger_view *dview,
     }
 }
 
-static void render_image_view_window(debugger_interface *dbgr, debugger_view *dview, void *ptr, u32 out_width, int win_num) {
-    struct GBA *this = (GBA *) ptr;
+static void render_image_view_window(struct debugger_interface *dbgr, struct debugger_view *dview, void *ptr, u32 out_width, int win_num) {
+    struct GBA *this = (struct GBA *) ptr;
     if (this->clock.master_frame == 0) return;
 
     struct image_view *iv = &dview->image;
@@ -806,7 +806,7 @@ static void render_image_view_window(debugger_interface *dbgr, debugger_view *dv
     memset(outbuf, 0, out_width * 4 * 160);
     u8 bit = 1 << win_num;
 
-    struct debugger_widget_textbox *tb = &((debugger_widget *)cvec_get(&dview->options, 0))->textbox;
+    struct debugger_widget_textbox *tb = &((struct debugger_widget *)cvec_get(&dview->options, 0))->textbox;
     struct GBA_PPU_window *w = &this->ppu.window[win_num];
     debugger_widgets_textbox_clear(tb);
     debugger_widgets_textbox_sprintf(tb, "enable:%d  color_effect:%d\nbg0:%d  bg1:%d  bg2:%d  bg3:%d  obj:%d", w->enable, w->active[5], w->active[1], w->active[2], w->active[3], w->active[4], w->active[0]);
@@ -821,62 +821,62 @@ static void render_image_view_window(debugger_interface *dbgr, debugger_view *dv
     }
 }
 
-static void render_image_view_window0(debugger_interface *dbgr, debugger_view *dview, void *ptr, u32 out_width)
+static void render_image_view_window0(struct debugger_interface *dbgr, struct debugger_view *dview, void *ptr, u32 out_width)
 {
     render_image_view_window(dbgr, dview, ptr, out_width, 0);
 }
 
-static void render_image_view_window1(debugger_interface *dbgr, debugger_view *dview, void *ptr, u32 out_width)
+static void render_image_view_window1(struct debugger_interface *dbgr, struct debugger_view *dview, void *ptr, u32 out_width)
 {
     render_image_view_window(dbgr, dview, ptr, out_width, 1);
 }
 
-static void render_image_view_window2(debugger_interface *dbgr, debugger_view *dview, void *ptr, u32 out_width)
+static void render_image_view_window2(struct debugger_interface *dbgr, struct debugger_view *dview, void *ptr, u32 out_width)
 {
     render_image_view_window(dbgr, dview, ptr, out_width, 2);
 }
 
-static void render_image_view_window3(debugger_interface *dbgr, debugger_view *dview, void *ptr, u32 out_width)
+static void render_image_view_window3(struct debugger_interface *dbgr, struct debugger_view *dview, void *ptr, u32 out_width)
 {
     render_image_view_window(dbgr, dview, ptr, out_width, 3);
 }
 
-static void render_image_view_bg0(debugger_interface *dbgr, debugger_view *dview, void *ptr, u32 out_width)
+static void render_image_view_bg0(struct debugger_interface *dbgr, struct debugger_view *dview, void *ptr, u32 out_width)
 {
     render_image_view_bg(dbgr, dview, ptr, out_width, 0);
 }
 
-static void render_image_view_bg1(debugger_interface *dbgr, debugger_view *dview, void *ptr, u32 out_width)
+static void render_image_view_bg1(struct debugger_interface *dbgr, struct debugger_view *dview, void *ptr, u32 out_width)
 {
     render_image_view_bg(dbgr, dview, ptr, out_width, 1);
 }
 
-static void render_image_view_bg2(debugger_interface *dbgr, debugger_view *dview, void *ptr, u32 out_width)
+static void render_image_view_bg2(struct debugger_interface *dbgr, struct debugger_view *dview, void *ptr, u32 out_width)
 {
     render_image_view_bg(dbgr, dview, ptr, out_width, 2);
 }
 
-static void render_image_view_bg3(debugger_interface *dbgr, debugger_view *dview, void *ptr, u32 out_width)
+static void render_image_view_bg3(struct debugger_interface *dbgr, struct debugger_view *dview, void *ptr, u32 out_width)
 {
     render_image_view_bg(dbgr, dview, ptr, out_width, 3);
 }
 
-static void render_image_view_bg0map(debugger_interface *dbgr, debugger_view *dview, void *ptr, u32 out_width)
+static void render_image_view_bg0map(struct debugger_interface *dbgr, struct debugger_view *dview, void *ptr, u32 out_width)
 {
     render_image_view_bgmap(dbgr, dview, ptr, out_width, 0);
 }
 
-static void render_image_view_bg1map(debugger_interface *dbgr, debugger_view *dview, void *ptr, u32 out_width)
+static void render_image_view_bg1map(struct debugger_interface *dbgr, struct debugger_view *dview, void *ptr, u32 out_width)
 {
     render_image_view_bgmap(dbgr, dview, ptr, out_width, 1);
 }
 
-static void render_image_view_bg2map(debugger_interface *dbgr, debugger_view *dview, void *ptr, u32 out_width)
+static void render_image_view_bg2map(struct debugger_interface *dbgr, struct debugger_view *dview, void *ptr, u32 out_width)
 {
     render_image_view_bgmap(dbgr, dview, ptr, out_width, 2);
 }
 
-static void render_image_view_bg3map(debugger_interface *dbgr, debugger_view *dview, void *ptr, u32 out_width)
+static void render_image_view_bg3map(struct debugger_interface *dbgr, struct debugger_view *dview, void *ptr, u32 out_width)
 {
     render_image_view_bgmap(dbgr, dview, ptr, out_width, 3);
 }
@@ -884,8 +884,8 @@ static void render_image_view_bg3map(debugger_interface *dbgr, debugger_view *dv
 
 #define PAL_BOX_SIZE 10
 #define PAL_BOX_SIZE_W_BORDER 11
-static void render_image_view_palette(debugger_interface *dbgr, debugger_view *dview, void *ptr, u32 out_width) {
-    struct GBA *this = (GBA *) ptr;
+static void render_image_view_palette(struct debugger_interface *dbgr, struct debugger_view *dview, void *ptr, u32 out_width) {
+    struct GBA *this = (struct GBA *) ptr;
     if (this->clock.master_frame == 0) return;
     struct image_view *iv = &dview->image;
     iv->draw_which_buf ^= 1;
@@ -916,22 +916,22 @@ static void render_image_view_palette(debugger_interface *dbgr, debugger_view *d
 
 
 
-static void get_disassembly_ARM7TDMI(void *genptr, debugger_interface *dbgr, disassembly_view *dview, disassembly_entry *entry)
+static void get_disassembly_ARM7TDMI(void *genptr, struct debugger_interface *dbgr, struct disassembly_view *dview, struct disassembly_entry *entry)
 {
-    struct GBA* this = (GBA*)genptr;
+    struct GBA* this = (struct GBA*)genptr;
     ARM7TDMI_disassemble_entry(&this->cpu, entry);
 }
 
-static struct disassembly_vars get_disassembly_vars_ARM7TDMI(void *macptr, debugger_interface *dbgr, disassembly_view *dv)
+static struct disassembly_vars get_disassembly_vars_ARM7TDMI(void *macptr, struct debugger_interface *dbgr, struct disassembly_view *dv)
 {
-    struct GBA* this = (GBA*)macptr;
+    struct GBA* this = (struct GBA*)macptr;
     struct disassembly_vars dvar;
     dvar.address_of_executing_instruction = this->cpu.trace.ins_PC;
     dvar.current_clock_cycle = this->clock.master_cycle_count;
     return dvar;
 }
 
-static void setup_cpu_trace(debugger_interface *dbgr, GBA *this)
+static void setup_cpu_trace(struct debugger_interface *dbgr, struct GBA *this)
 {
     struct cvec_ptr p = debugger_view_new(dbgr, dview_trace);
     struct debugger_view *dview = cpg(p);
@@ -949,7 +949,7 @@ static void setup_cpu_trace(debugger_interface *dbgr, GBA *this)
     this->cpu.dbg.tvptr = tv;
 }
 
-static void setup_ARM7TDMI_disassembly(debugger_interface *dbgr, GBA* this)
+static void setup_ARM7TDMI_disassembly(struct debugger_interface *dbgr, struct GBA* this)
 {
     struct cvec_ptr p = debugger_view_new(dbgr, dview_disassembly);
     struct debugger_view *dview = cpg(p);
@@ -970,7 +970,7 @@ static void setup_ARM7TDMI_disassembly(debugger_interface *dbgr, GBA* this)
     dv->get_disassembly_vars.func = &get_disassembly_vars_ARM7TDMI;
 }
 
-static void setup_image_view_tiles(GBA* this, debugger_interface *dbgr)
+static void setup_image_view_tiles(struct GBA* this, struct debugger_interface *dbgr)
 {
     struct debugger_view *dview;
     this->dbg.image_views.tiles = debugger_view_new(dbgr, dview_image);
@@ -981,15 +981,15 @@ static void setup_image_view_tiles(GBA* this, debugger_interface *dbgr)
     iv->height = 256;
     iv->viewport.exists = 1;
     iv->viewport.enabled = 1;
-    iv->viewport.p[0] = (ivec2){ 0, 0 };
-    iv->viewport.p[1] = (ivec2){ 256, 256 };
+    iv->viewport.p[0] = (struct ivec2){ 0, 0 };
+    iv->viewport.p[1] = (struct ivec2){ 256, 256 };
 
     iv->update_func.ptr = this;
     iv->update_func.func = &render_image_view_tiles;
     snprintf(iv->label, sizeof(iv->label), "Tile Viewer");
 }
 
-static void setup_image_view_sprites(GBA* this, debugger_interface *dbgr)
+static void setup_image_view_sprites(struct GBA* this, struct debugger_interface *dbgr)
 {
     struct debugger_view *dview;
     this->dbg.image_views.sprites = debugger_view_new(dbgr, dview_image);
@@ -1001,8 +1001,8 @@ static void setup_image_view_sprites(GBA* this, debugger_interface *dbgr)
 
     iv->viewport.exists = 1;
     iv->viewport.enabled = 1;
-    iv->viewport.p[0] = (ivec2){ 0, 0 };
-    iv->viewport.p[1] = (ivec2){ iv->width, iv->height };
+    iv->viewport.p[0] = (struct ivec2){ 0, 0 };
+    iv->viewport.p[1] = (struct ivec2){ iv->width, iv->height };
 
     iv->update_func.ptr = this;
     iv->update_func.func = &render_image_view_sprites;
@@ -1025,7 +1025,7 @@ static void setup_image_view_sprites(GBA* this, debugger_interface *dbgr)
     debugger_widgets_add_checkbox(&dview->options, "White box window", 1, 0, 1);
 }
 
-static void setup_image_view_palettes(GBA* this, debugger_interface *dbgr)
+static void setup_image_view_palettes(struct GBA* this, struct debugger_interface *dbgr)
 {
     struct debugger_view *dview;
     this->dbg.image_views.palettes = debugger_view_new(dbgr, dview_image);
@@ -1037,15 +1037,15 @@ static void setup_image_view_palettes(GBA* this, debugger_interface *dbgr)
 
     iv->viewport.exists = 1;
     iv->viewport.enabled = 1;
-    iv->viewport.p[0] = (ivec2){ 0, 0 };
-    iv->viewport.p[1] = (ivec2){ iv->width, iv->height };
+    iv->viewport.p[0] = (struct ivec2){ 0, 0 };
+    iv->viewport.p[1] = (struct ivec2){ iv->width, iv->height };
 
     iv->update_func.ptr = this;
     iv->update_func.func = &render_image_view_palette;
     snprintf(iv->label, sizeof(iv->label), "Palettes Viewer");
 }
 
-static void setup_image_view_bgmap(GBA* this, debugger_interface *dbgr, u32 wnum) {
+static void setup_image_view_bgmap(struct GBA* this, struct debugger_interface *dbgr, u32 wnum) {
     struct debugger_view *dview;
     switch(wnum) {
         case 0:
@@ -1070,8 +1070,8 @@ static void setup_image_view_bgmap(GBA* this, debugger_interface *dbgr, u32 wnum
     iv->height = 1024;
     iv->viewport.exists = 1;
     iv->viewport.enabled = 1;
-    iv->viewport.p[0] = (ivec2){ 0, 0 };
-    iv->viewport.p[1] = (ivec2){ 256, 256 };
+    iv->viewport.p[0] = (struct ivec2){ 0, 0 };
+    iv->viewport.p[1] = (struct ivec2){ 256, 256 };
 
     iv->update_func.ptr = this;
 
@@ -1107,7 +1107,7 @@ static void setup_image_view_bgmap(GBA* this, debugger_interface *dbgr, u32 wnum
 
 }
 
-static void setup_image_view_bg(GBA* this, debugger_interface *dbgr, u32 wnum)
+static void setup_image_view_bg(struct GBA* this, struct debugger_interface *dbgr, u32 wnum)
 {
     struct debugger_view *dview;
     switch(wnum) {
@@ -1134,8 +1134,8 @@ static void setup_image_view_bg(GBA* this, debugger_interface *dbgr, u32 wnum)
     iv->height = 160;
     iv->viewport.exists = 1;
     iv->viewport.enabled = 1;
-    iv->viewport.p[0] = (ivec2){ 0, 0 };
-    iv->viewport.p[1] = (ivec2){ 240, 160 };
+    iv->viewport.p[0] = (struct ivec2){ 0, 0 };
+    iv->viewport.p[1] = (struct ivec2){ 240, 160 };
 
     iv->update_func.ptr = this;
 
@@ -1164,7 +1164,7 @@ static void setup_image_view_bg(GBA* this, debugger_interface *dbgr, u32 wnum)
     }
 }
 
-static void setup_events_view(GBA* this, debugger_interface *dbgr) {
+static void setup_events_view(struct GBA* this, struct debugger_interface *dbgr) {
     this->dbg.events.view = debugger_view_new(dbgr, dview_events);
     struct debugger_view *dview = cpg(this->dbg.events.view);
     struct events_view *ev = &dview->events;
@@ -1198,7 +1198,7 @@ static void setup_events_view(GBA* this, debugger_interface *dbgr) {
 }
 
 
-static void setup_image_view_window(GBA* this, debugger_interface *dbgr, u32 wnum)
+static void setup_image_view_window(struct GBA* this, struct debugger_interface *dbgr, u32 wnum)
 {
     struct debugger_view *dview;
     switch(wnum) {
@@ -1225,8 +1225,8 @@ static void setup_image_view_window(GBA* this, debugger_interface *dbgr, u32 wnu
     iv->height = 160;
     iv->viewport.exists = 1;
     iv->viewport.enabled = 1;
-    iv->viewport.p[0] = (ivec2){ 0, 0 };
-    iv->viewport.p[1] = (ivec2){ 240, 160 };
+    iv->viewport.p[0] = (struct ivec2){ 0, 0 };
+    iv->viewport.p[1] = (struct ivec2){ 240, 160 };
 
     debugger_widgets_add_textbox(&dview->options, "enable:%d\nbg0:0  bg1:0  bg2:0  bg3:0  obj:0", 1);
 
@@ -1252,12 +1252,12 @@ static void setup_image_view_window(GBA* this, debugger_interface *dbgr, u32 wnu
 
 }
 
-static void setup_waveforms_view(GBA* this, debugger_interface *dbgr)
+static void setup_waveforms_view(struct GBA* this, struct debugger_interface *dbgr)
 {
     printf("\nSETTING UP WAVEFORMS VIEW...");
     this->dbg.waveforms.view = debugger_view_new(dbgr, dview_waveforms);
     struct debugger_view *dview = cpg(this->dbg.waveforms.view);
-    struct waveform_view *wv = (waveform_view *)&dview->waveform;
+    struct waveform_view *wv = (struct waveform_view *)&dview->waveform;
     snprintf(wv->name, sizeof(wv->name), "GBA APU");
 
     cvec_alloc_atleast(&wv->waveforms, 8);
@@ -1314,7 +1314,7 @@ static void setup_waveforms_view(GBA* this, debugger_interface *dbgr)
 }
 
 
-static void setup_image_view_sys_info(GBA *this, debugger_interface *dbgr)
+static void setup_image_view_sys_info(struct GBA *this, struct debugger_interface *dbgr)
 {
     struct debugger_view *dview;
     this->dbg.image_views.sys_info = debugger_view_new(dbgr, dview_image);
@@ -1325,8 +1325,8 @@ static void setup_image_view_sys_info(GBA *this, debugger_interface *dbgr)
     iv->height = 10;
     iv->viewport.exists = 1;
     iv->viewport.enabled = 1;
-    iv->viewport.p[0] = (ivec2){ 0, 0 };
-    iv->viewport.p[1] = (ivec2){ 10, 10 };
+    iv->viewport.p[0] = (struct ivec2){ 0, 0 };
+    iv->viewport.p[1] = (struct ivec2){ 10, 10 };
 
     iv->update_func.ptr = this;
     iv->update_func.func = &render_image_view_sys_info;
@@ -1336,7 +1336,7 @@ static void setup_image_view_sys_info(GBA *this, debugger_interface *dbgr)
     debugger_widgets_add_textbox(&dview->options, "blah!", 1);
 }
 
-static void setup_dbglog(debugger_interface *dbgr, GBA *this) {
+static void setup_dbglog(struct debugger_interface *dbgr, struct GBA *this) {
     struct cvec_ptr p = debugger_view_new(dbgr, dview_dbglog);
     struct debugger_view *dview = cpg(p);
     struct dbglog_view *dv = &dview->dbglog;
@@ -1356,7 +1356,7 @@ static void setup_dbglog(debugger_interface *dbgr, GBA *this) {
 }
 
 
-void GBAJ_setup_debugger_interface(JSM, debugger_interface *dbgr)
+void GBAJ_setup_debugger_interface(JSM, struct debugger_interface *dbgr)
 {
     JTHIS;
     this->dbg.interface = dbgr;

@@ -16,10 +16,10 @@ function replace_for_C(whatr) {
     whatr = whatr.replaceAll('let ', 'u32 '); // Inline variable declarations
     whatr = whatr.replaceAll('true', '1');
     whatr = whatr.replaceAll('false', '0');
-    whatr = whatr.replaceAll('cpu.read8(', 'cpu->read8(');
-    whatr = whatr.replaceAll('cpu.write8(', 'cpu->write8(');
-    whatr = whatr.replaceAll('cpu.read8D(', 'cpu->read8D(');
-    whatr = whatr.replaceAll('cpu.write8D(', 'cpu->write8D(');
+    whatr = whatr.replaceAll('cpu.read8(', 'SPC700_read8(cpu, ');
+    whatr = whatr.replaceAll('cpu.write8(', 'SPC700_write8(cpu, ');
+    whatr = whatr.replaceAll('cpu.read8D(', 'SPC700_read8D(cpu, ');
+    whatr = whatr.replaceAll('cpu.write8D(', 'SPC700_write8D(cpu, ');
 
     whatr = whatr.replaceAll('YARYARYAR', 'cpu->regs.') // Reference to pointer
 
@@ -1220,7 +1220,7 @@ function SPC_func_name(opcode)
 
 function SPC_generate_instruction_code_c(opcode)
 {
-    let outstr = '\n\nstatic void ' + SPC_func_name(opcode) + '(SPC700 *cpu) { ';
+    let outstr = '\n\nstatic void ' + SPC_func_name(opcode) + '(struct SPC700 *cpu) { ';
     let r = SPC_generate_instruction_function('', opcode);
     if (r.length === 0) {
         console.log('EMPTY?', )

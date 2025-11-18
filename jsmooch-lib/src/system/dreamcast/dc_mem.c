@@ -26,9 +26,9 @@
 //#define SH4MEM_BRK 0x005F7018
 //#define SH4_INS_BRK 0x80000000
 
-u64 DCread_flash(DC* this, u32 addr, u32 *success, u32 sz);
-void G1_write(DC* this, u32 addr, u64 val, u32 bits, u32* success);
-u64 G1_read(DC* this, u32 addr, u32 sz, u32* success);
+u64 DCread_flash(struct DC* this, u32 addr, u32 *success, u32 sz);
+void G1_write(struct DC* this, u32 addr, u64 val, u32 bits, u32* success);
+u64 G1_read(struct DC* this, u32 addr, u32 sz, u32* success);
 
 #define B32(b31_b28, b27_24,b23_20,b19_16,b15_12,b11_8,b7_4,b3_0) ( \
   ((0b##b31_b28) << 28) | ((0b##b27_24) << 24) | \
@@ -37,7 +37,7 @@ u64 G1_read(DC* this, u32 addr, u32 sz, u32* success);
   ((0b##b7_4) << 4) | (0b##b3_0))
 
 
-#define THIS struct DC* this = (DC*)ptr
+#define THIS struct DC* this = (struct DC*)ptr
 
 static u32 dcms(enum DC_MEM_SIZE sz)
 {
@@ -54,12 +54,12 @@ static u32 dcms(enum DC_MEM_SIZE sz)
 }
 
 
-static void gdrom_dma_start(DC* this)
+static void gdrom_dma_start(struct DC* this)
 {
     if (this->g1.SB_GDST) printf("\nGDROM DMA REQUEST!");
 }
 
-static void DC_write_C2DST(DC* this, u32 val)
+static void DC_write_C2DST(struct DC* this, u32 val)
 {
     if (this->io.SB_C2DST) { // TA FIFO DMA!
         printf(DBGC_GREEN "\nTA FIFO DMA START! %llu", this->trace_cycles);
@@ -78,13 +78,13 @@ static void DC_write_C2DST(DC* this, u32 val)
 
 }
 
-static void DC_write_SDST(DC* this, u32 val)
+static void DC_write_SDST(struct DC* this, u32 val)
 {
     if (val & 1)
         printf(DBGC_RED "\nSORT DMA START REQUEST" DBGC_RST);
 }
 
-#define MTHIS struct DC* this = (DC*)ptr
+#define MTHIS struct DC* this = (struct DC*)ptr
 
  u64 read_empty(void* ptr, u32 addr, enum DC_MEM_SIZE sz, u32 *success)
  {
@@ -104,16 +104,16 @@ static void DC_write_SDST(DC* this, u32 val)
      *success = 0;
  }
 
-static u64 aica_read(DC* this, u32 addr, u32 sz, u32* success) {
+static u64 aica_read(struct DC* this, u32 addr, u32 sz, u32* success) {
     return cR[sz](this->aica.mem, addr & 0x7FFF);
 }
 
-static void aica_write(DC* this, u32 addr, u64 val, u32 sz, u32* success)
+static void aica_write(struct DC* this, u32 addr, u64 val, u32 sz, u32* success)
 {
     cW[sz](this->aica.mem, addr & 0x7FFF, val);
 }
 
-static u32 RTC_read(DC* this)
+static u32 RTC_read(struct DC* this)
 {
     // Dreamcast epoch is 1950-something, ours is 1970, so...add 20 years!
     time_t t = time(NULL);
@@ -337,7 +337,7 @@ void write_area4(void* ptr, u32 addr, u64 val, enum DC_MEM_SIZE sz, u32* success
 }
 
 
-void DC_mem_init(DC* this)
+void DC_mem_init(struct DC* this)
 {
     for (u32 i = 0; i < 0x40; i++) {
         this->mem.read[i] = &read_empty;
@@ -497,7 +497,7 @@ u64 DCread(void *ptr, u32 addr, u32 sz, bool is_ins_fetch)
 }
 
 
-u64 DCread_flash(DC* this, u32 addr, u32 *success, u32 sz)
+u64 DCread_flash(struct DC* this, u32 addr, u32 *success, u32 sz)
 {
     *success =  1;
     u32 full_addr = addr;
@@ -583,7 +583,7 @@ u64 DCread_noins(void *ptr, u32 addr, u32 sz)
     return DCread(ptr, addr, sz, false);
 }
 
-u64 G1_read(DC* this, u32 addr, u32 sz, u32* success)
+u64 G1_read(struct DC* this, u32 addr, u32 sz, u32* success)
 {
     addr &= 0x1FFFFFFF;
     if ((addr >= 0x005F7000) && (addr <= 0x005F709C)) {
@@ -599,7 +599,7 @@ u64 G1_read(DC* this, u32 addr, u32 sz, u32* success)
     return 0;
 }
 
-void G1_write(DC* this, u32 addr, u64 val, u32 bits, u32* success)
+void G1_write(struct DC* this, u32 addr, u64 val, u32 bits, u32* success)
 {
     addr &= 0x1FFFFFFF;
     if ((addr >= 0x005F7000) && (addr <= 0x005F709C)) {

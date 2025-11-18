@@ -2,21 +2,21 @@
 // Created by . on 3/4/25.
 //
 
-#include <cstdlib>
+#include <stdlib.h>
 
 #include "ps1_timers.h"
 #include "../ps1_bus.h"
 
-static void write_timer(PS1 *this, u32 timer_num, u32 val, u32 sz);
+static void write_timer(struct PS1 *this, u32 timer_num, u32 val, u32 sz);
 
-static void deschedule(PS1 *this, PS1_TIMERS *t)
+static void deschedule(struct PS1 *this, struct PS1_TIMERS *t)
 {
     if (t->overflow.still_sched) {
         scheduler_delete_if_exist(&this->scheduler, t->overflow.sched_id);
     }
 }
 
-void PS1_timers_reset(PS1 *this)
+void PS1_timers_reset(struct PS1 *this)
 {
     for (u32 i = 0; i < 3; i++) {
         struct PS1_TIMERS *t = &this->timers[i];
@@ -29,7 +29,7 @@ void PS1_timers_reset(PS1 *this)
     }
 }
 
-void PS1_timers_vblank(PS1 *this, u64 key) {
+void PS1_timers_vblank(struct PS1 *this, u64 key) {
     struct PS1_TIMERS *t = &this->timers[1];
     if (key == 0) { // vblank off
         if (t->mode.sync_enable) {
@@ -70,7 +70,7 @@ void PS1_timers_vblank(PS1 *this, u64 key) {
     }
 }
 
-void PS1_timers_hblank(PS1 *this, u64 key)
+void PS1_timers_hblank(struct PS1 *this, u64 key)
 {
     struct PS1_TIMERS *t = &this->timers[0];
     if (key == 0) { // hblank off
@@ -112,12 +112,12 @@ void PS1_timers_hblank(PS1 *this, u64 key)
     }
 }
 
-u64 PS1_dotclock(PS1 *this)
+u64 PS1_dotclock(struct PS1 *this)
 {
     return (u64)((float)this->clock.master_cycle_count * this->clock.dot.ratio.cpu_to_dotclock);
 }
 
-static u32 read_timer_clk(PS1_TIMERS *t, u64 clk)
+static u32 read_timer_clk(struct PS1_TIMERS *t, u64 clk)
 {
     u32 r = t->start.value;
     if (t->running) r += clk - t->start.cycle;
@@ -125,7 +125,7 @@ static u32 read_timer_clk(PS1_TIMERS *t, u64 clk)
     return r;
 }
 
-static u64 get_clock_source(PS1 *this, u32 timer_num)
+static u64 get_clock_source(struct PS1 *this, u32 timer_num)
 {
     struct PS1_TIMERS *t = &this->timers[timer_num];
     if (timer_num == 1) printf("\nTimer %d on system clock: %d. master count:%lld", timer_num, t->on_system_clock, this->clock.master_cycle_count);
@@ -143,7 +143,7 @@ static u64 get_clock_source(PS1 *this, u32 timer_num)
     return 0;
 }
 
-static u32 read_timer(PS1 *this, u32 timer_num) {
+static u32 read_timer(struct PS1 *this, u32 timer_num) {
     struct PS1_TIMERS *t = &this->timers[timer_num];
     u32 v = read_timer_clk(t, get_clock_source(this, timer_num));
     if (timer_num == 1) printf("\nREAD timer %d: %04x", timer_num, v);
@@ -152,13 +152,13 @@ static u32 read_timer(PS1 *this, u32 timer_num) {
 
 static void timer_irq_down(void *ptr, u64 key, u64 clock, u32 jitter)
 {
-    struct PS1 *this = (PS1 *)ptr;
+    struct PS1 *this = (struct PS1 *)ptr;
     struct PS1_TIMERS *t = &this->timers[key];
     t->mode.irq_request = 1;
     PS1_set_irq(this, PS1IRQ_TMR0+key, 0);
 }
 
-static void update_irqs(PS1 *this)
+static void update_irqs(struct PS1 *this)
 {
     for (u32 i = 0; i < 3; i++) {
         struct PS1_TIMERS *t = &this->timers[i];
@@ -180,7 +180,7 @@ static void update_irqs(PS1 *this)
     }
 }
 
-u32 PS1_timers_read(PS1 *this, u32 addr, u32 sz)
+u32 PS1_timers_read(struct PS1 *this, u32 addr, u32 sz)
 {
     u32 timer_num = (addr >> 4) & 3;
     printf("\nREAD FROM %08x: %d", addr, timer_num);
@@ -203,7 +203,7 @@ u32 PS1_timers_read(PS1 *this, u32 addr, u32 sz)
 
 // Determine ticks until overflow
 // Schedule if it's not at the same time
-void PS1_disable_timer(PS1 *this, u32 timer_num)
+void PS1_disable_timer(struct PS1 *this, u32 timer_num)
 {
     struct PS1_TIMERS *t = &this->timers[timer_num];
     if (!t->running) return;
@@ -214,7 +214,7 @@ void PS1_disable_timer(PS1 *this, u32 timer_num)
     }
 }
 
-static inline u64 time_til_next_hblank(PS1 *this, u64 clk)
+static inline u64 time_til_next_hblank(struct PS1 *this, u64 clk)
 {
 
     // Determine which cycle of current line
@@ -229,7 +229,7 @@ static inline u64 time_til_next_hblank(PS1 *this, u64 clk)
     }
 }
 
-static u64 calculate_timer1_hblank(PS1 *this, u32 diff)
+static u64 calculate_timer1_hblank(struct PS1 *this, u32 diff)
 {
     // This routine answers one question:
     // How many CPU cycles until x hblanks have happened?
@@ -243,12 +243,12 @@ static u64 calculate_timer1_hblank(PS1 *this, u32 diff)
     return nd;
 }
 
-static void reschedule_timer(PS1 *this, u32 timer_num);
+static void reschedule_timer(struct PS1 *this, u32 timer_num);
 
 static void timer_overflow(void *ptr, u64 timer_num, u64 current_clock, u32 jitter)
 {
     u64 clk = current_clock - jitter;
-    struct PS1 *this = (PS1 *)ptr;
+    struct PS1 *this = (struct PS1 *)ptr;
     struct PS1_TIMERS *t = &this->timers[timer_num];
 
     u32 value = t->overflow.at & 0xFFFF;
@@ -272,7 +272,7 @@ static void timer_overflow(void *ptr, u64 timer_num, u64 current_clock, u32 jitt
     reschedule_timer(this, timer_num);
 }
 
-static void reschedule_timer(PS1 *this, u32 timer_num)
+static void reschedule_timer(struct PS1 *this, u32 timer_num)
 {
     struct PS1_TIMERS *t = &this->timers[timer_num];
 
@@ -330,7 +330,7 @@ static void reschedule_timer(PS1 *this, u32 timer_num)
     }
 }
 
-void PS1_enable_timer(PS1 *this, u32 timer_num)
+void PS1_enable_timer(struct PS1 *this, u32 timer_num)
 {
     struct PS1_TIMERS *t = &this->timers[timer_num];
     if (t->running) return;
@@ -343,7 +343,7 @@ void PS1_enable_timer(PS1 *this, u32 timer_num)
     reschedule_timer(this, timer_num);
 }
 
-static void setup_timer0(PS1 *this)
+static void setup_timer0(struct PS1 *this)
 {
     struct PS1_TIMERS *t = &this->timers[0];
     // Need to determine if this timer is on sysclk or not,
@@ -358,7 +358,7 @@ static void setup_timer0(PS1 *this)
     reschedule_timer(this, 0);
 }
 
-static void setup_timer1(PS1 *this)
+static void setup_timer1(struct PS1 *this)
 {
     struct PS1_TIMERS *t = &this->timers[1];
     // Need to determine if this timer is on sysclk or not,
@@ -373,7 +373,7 @@ static void setup_timer1(PS1 *this)
     reschedule_timer(this, 1);
 }
 
-static void setup_timer2(PS1 *this)
+static void setup_timer2(struct PS1 *this)
 {
     struct PS1_TIMERS *t = &this->timers[2];
     // Need to determine if this timer is on sysclk or not,
@@ -393,7 +393,7 @@ static void setup_timer2(PS1 *this)
 }
 
 
-static void do_timer_setup(PS1 *this, u32 timer_num)
+static void do_timer_setup(struct PS1 *this, u32 timer_num)
 {
     switch(timer_num) {
         case 0:
@@ -408,26 +408,26 @@ static void do_timer_setup(PS1 *this, u32 timer_num)
     }
 }
 
-static void reset_timer(PS1 *this, u32 timer_num, u32 reset_to)
+static void reset_timer(struct PS1 *this, u32 timer_num, u32 reset_to)
 {
     struct PS1_TIMERS *t = &this->timers[timer_num];
     t->start.cycle = PS1_clock_current(this) + 2;
     t->start.value = reset_to;
 }
 
-static void write_timer(PS1 *this, u32 timer_num, u32 val, u32 sz)
+static void write_timer(struct PS1 *this, u32 timer_num, u32 val, u32 sz)
 {
     this->timers[timer_num].start.value = val & 0xFFFF;
     reschedule_timer(this, timer_num);
 }
 
-static void write_target(PS1 *this, u32 timer_num, u32 val, u32 sz)
+static void write_target(struct PS1 *this, u32 timer_num, u32 val, u32 sz)
 {
     this->timers[timer_num].target = val & 0xFFFF;
     reschedule_timer(this, timer_num);
 }
 
-static void write_mode(PS1 *this, u32 timer_num, u32 val, u32 sz)
+static void write_mode(struct PS1 *this, u32 timer_num, u32 val, u32 sz)
 {
     val &= 0b1111111111;
     struct PS1_TIMERS *t = &this->timers[timer_num];
@@ -446,7 +446,7 @@ static void write_mode(PS1 *this, u32 timer_num, u32 val, u32 sz)
     update_irqs(this);
 }
 
-void PS1_timers_write(PS1 *this, u32 addr, u32 sz, u32 val)
+void PS1_timers_write(struct PS1 *this, u32 addr, u32 sz, u32 val)
 {
     u32 timer_num = (addr >> 4) & 3;
     switch(addr & 0x1FFFFFCF) {

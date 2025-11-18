@@ -84,8 +84,8 @@ struct galaksija {
 };
 
 
-u32 galaksija_mainbus_read(galaksija *, u32 addr, u32 open_bus, u32 has_effect);
-void galaksija_mainbus_write(galaksija *, u32 addr, u32 val);
-void galaksija_bus_init(galaksija *);
-void galaksija_cycle(galaksija *);
+u32 galaksija_mainbus_read(struct galaksija *, u32 addr, u32 open_bus, u32 has_effect);
+void galaksija_mainbus_write(struct galaksija *, u32 addr, u32 val);
+void galaksija_bus_init(struct galaksija *);
+void galaksija_cycle(struct galaksija *);
 #endif //JSMOOCH_EMUS_GALAKSIJA_BUS_H

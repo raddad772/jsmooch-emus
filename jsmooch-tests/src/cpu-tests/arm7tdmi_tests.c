@@ -10,8 +10,8 @@
 #include <dirent.h>
 #endif
 
-#include <cstring>
-#include <cassert>
+#include <string.h>
+#include <assert.h>
 #include <stdlib.h>
 #include <stdio.h>
 
@@ -332,7 +332,7 @@ static u32 do_test_read_trace(void *ptr, u32 addr, u32 sz) {
 
 #define NUMTESTS 20000
 
-static void copy_state_to_cpu(struct ARM7TDMI* cpu, arm7_test_state *ts)
+static void copy_state_to_cpu(struct ARM7TDMI* cpu, struct arm7_test_state *ts)
 {
     for (u32 i = 0; i < 16; i++) {
         cpu->regs.R[i] = ts->R[i];
@@ -463,7 +463,7 @@ static u32 compare_transactions(struct arm7_test_struct *ts)
 }
 
 
-static u32 compare_state_to_cpu(struct arm7_test_struct *ts, arm7_test_state *final, arm7_test_state *initial, u32 c_skip)
+static u32 compare_state_to_cpu(struct arm7_test_struct *ts, struct arm7_test_state *final, struct arm7_test_state *initial, u32 c_skip)
 {
     u32 all_passed = 1;
 #define CP(rn, rn2, rname) all_passed &= cval(ts->cpu.regs. rn, final-> rn2, initial-> rn2, "%08llx", rname);
@@ -512,7 +512,7 @@ static u32 compare_state_to_cpu(struct arm7_test_struct *ts, arm7_test_state *fi
 }
 
 static char kkttr[3] = {'I', 'R', 'W'};
-static u32 dopppt(char *ptr, transaction *t)
+static u32 dopppt(char *ptr, struct transaction *t)
 {
     char *m = ptr;
 
@@ -520,7 +520,7 @@ static u32 dopppt(char *ptr, transaction *t)
     return m - ptr;
 }
 
-static void pprint_transactions(struct arm7_test_transactions *ts, arm7_test_transactions *mts, arm7_test_struct *test)
+static void pprint_transactions(struct arm7_test_transactions *ts, struct arm7_test_transactions *mts, struct arm7_test_struct *test)
 {
     char buf[500];
     printf("\n---Transactions");

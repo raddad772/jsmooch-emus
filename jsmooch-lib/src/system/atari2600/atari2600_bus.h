@@ -61,6 +61,6 @@ struct atari2600 {
     } case_switches;
 };
 
-void atari2600_CPU_run_cycle(atari2600 *);
+void atari2600_CPU_run_cycle(struct atari2600 *);
 
 #endif //JSMOOCH_EMUS_ATARI2600_BUS_H

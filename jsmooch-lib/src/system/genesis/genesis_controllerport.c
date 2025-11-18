@@ -1,13 +1,13 @@
 
-#include <cstdio>
-#include <cassert>
-#include <cstdlib>
+#include <stdio.h>
+#include <assert.h>
+#include <stdlib.h>
 
 #include "genesis_bus.h"
 #include "component/controller/genesis3/genesis3.h"
 #include "component/controller/genesis6/genesis6.h"
 
-void genesis_controllerport_connect(genesis_controller_port *this, enum genesis_controller_kinds kind, void *ptr)
+void genesis_controllerport_connect(struct genesis_controller_port *this, enum genesis_controller_kinds kind, void *ptr)
 {
     this->controller_kind = kind;
     this->controller_ptr = ptr;
@@ -16,13 +16,13 @@ void genesis_controllerport_connect(genesis_controller_port *this, enum genesis_
     //this->data_latch = 0x7f;
 }
 
-void genesis_controllerport_delete(genesis_controller_port *this)
+void genesis_controllerport_delete(struct genesis_controller_port *this)
 {
     this->controller_kind = genesis_controller_none;
     this->controller_ptr = NULL;
 }
 
-static void refresh(genesis_controller_port* this)
+static void refresh(struct genesis_controller_port* this)
 {
     u16 data, mask;
     mask = 0x7F;
@@ -64,7 +64,7 @@ static void refresh(genesis_controller_port* this)
     }
 }
 
-u16 genesis_controllerport_read_data(genesis_controller_port* this)
+u16 genesis_controllerport_read_data(struct genesis_controller_port* this)
 {
     if (this->controller_ptr != NULL) {
         switch(this->controller_kind) {
@@ -85,7 +85,7 @@ u16 genesis_controllerport_read_data(genesis_controller_port* this)
     //return 0;
 }
 
-void genesis_controllerport_write_data(genesis_controller_port* this, u16 val)
+void genesis_controllerport_write_data(struct genesis_controller_port* this, u16 val)
 {
     //this->data_latch = val;
     //refresh(this);
@@ -106,12 +106,12 @@ void genesis_controllerport_write_data(genesis_controller_port* this, u16 val)
     }
 }
 
-u16 genesis_controllerport_read_control(genesis_controller_port* this)
+u16 genesis_controllerport_read_control(struct genesis_controller_port* this)
 {
     return this->control;
 }
 
-void genesis_controllerport_write_control(genesis_controller_port* this, u16 val)
+void genesis_controllerport_write_control(struct genesis_controller_port* this, u16 val)
 {
     this->control = val & 0xFF;
     refresh(this);

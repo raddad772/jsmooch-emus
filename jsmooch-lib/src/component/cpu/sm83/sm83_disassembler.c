@@ -3,7 +3,7 @@
 //
 
 #include "stdio.h"
-#include <cstring>
+#include "string.h"
 #include "sm83_disassembler.h"
 
 #define R(a) return snprintf(w, sz, a)

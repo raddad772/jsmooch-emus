@@ -2,12 +2,12 @@
 // Created by . on 6/18/25.
 //
 
-#include <cstring>
-#include <cstdio>
+#include <string.h>
+#include <stdio.h>
 
 #include "helpers/color.h"
 #include "helpers/debug.h"
-#include "fail"
+#include "helpers/debugger/debugger.h"
 
 #include "huc6270.h"
 
@@ -24,18 +24,18 @@
  */
 
 
-static void update_irqs(HUC6270 *this);
-static void new_v_state(HUC6270 *this, enum HUC6270_states st);
+static void update_irqs(struct HUC6270 *this);
+static void new_v_state(struct HUC6270 *this, enum HUC6270_states st);
 static void update_RCR(void *ptr, u64 key, u64 clock, u32 jitter);
-static void vblank(HUC6270 *this, u32 val);
-static void hblank(HUC6270 *this, u32 val);
+static void vblank(struct HUC6270 *this, u32 val);
+static void hblank(struct HUC6270 *this, u32 val);
 
-static inline u16 read_VRAM(HUC6270 *this, u32 addr)
+static inline u16 read_VRAM(struct HUC6270 *this, u32 addr)
 {
     return (addr & 0x8000) ? 0 : this->VRAM[addr];
 }
 
-static inline void write_VRAM(HUC6270 *this, u32 addr, u16 val)
+static inline void write_VRAM(struct HUC6270 *this, u32 addr, u16 val)
 {
     DBG_EVENT(this->dbg.events.WRITE_VRAM);
     /*if (addr == 0x1012) {
@@ -46,14 +46,14 @@ static inline void write_VRAM(HUC6270 *this, u32 addr, u16 val)
 }
 
 
-static void setup_new_frame(HUC6270 *this)
+static void setup_new_frame(struct HUC6270 *this)
 {
     //printf("\n\n6270 NEW FRAME line:%d line compare: %d", this->regs.y_counter -64, this->regs.y_counter);
     this->regs.yscroll = this->io.BYR.u;
     this->regs.next_yscroll = this->regs.yscroll;
 }
 
-static void eval_sprites(HUC6270 *this) {
+static void eval_sprites(struct HUC6270 *this) {
     static const u32 sprite_widths_sprs[2] = {1, 2};
     static const u32 sprite_height_sprs[4] = {1, 2, 2, 4};
     static const u32 sprite_widths_px[2] = {16, 32};
@@ -147,7 +147,7 @@ static void eval_sprites(HUC6270 *this) {
     }
 }
 
-static void setup_new_line(HUC6270 *this) {
+static void setup_new_line(struct HUC6270 *this) {
     if ((this->timing.v.state == H6S_wait_for_display) && (this->timing.v.counter == 1)) {
         this->regs.y_counter = 63;
     }
@@ -172,7 +172,7 @@ static void setup_new_line(HUC6270 *this) {
 }
 
 
-static void new_h_state(HUC6270 *this, enum HUC6270_states st)
+static void new_h_state(struct HUC6270 *this, enum HUC6270_states st)
 {
     this->timing.h.state = st;
     switch(st) {
@@ -203,7 +203,7 @@ static void new_h_state(HUC6270 *this, enum HUC6270_states st)
     }
 }
 
-static void new_v_state(HUC6270 *this, enum HUC6270_states st)
+static void new_v_state(struct HUC6270 *this, enum HUC6270_states st)
 {
     this->timing.v.state = st;
     switch(st) {
@@ -230,17 +230,17 @@ static void new_v_state(HUC6270 *this, enum HUC6270_states st)
     }
 }
 
-static void force_new_frame(HUC6270 *this)
+static void force_new_frame(struct HUC6270 *this)
 {
     //printf("\nbadly timed vsync!!! %d", this->timing.v.state);
 }
 
-static void force_new_line(HUC6270 *this)
+static void force_new_line(struct HUC6270 *this)
 {
     //printf("\nbadly timed hsync!? state:%d  left:%d", this->timing.h.state, this->timing.h.counter);
 }
 
-void HUC6270_hsync(HUC6270 *this, u32 val)
+void HUC6270_hsync(struct HUC6270 *this, u32 val)
 {
     if (this->regs.ignore_hsync) return;
     if (val) { // 0->1 means it's time for HSW to end and/or new line starting at wait for display
@@ -253,7 +253,7 @@ void HUC6270_hsync(HUC6270 *this, u32 val)
     }
 }
 
-void HUC6270_vsync(HUC6270 *this, u32 val)
+void HUC6270_vsync(struct HUC6270 *this, u32 val)
 {
     if (this->regs.ignore_vsync) return;
 
@@ -265,7 +265,7 @@ void HUC6270_vsync(HUC6270 *this, u32 val)
     }
 }
 
-void HUC6270_cycle(HUC6270 *this)
+void HUC6270_cycle(struct HUC6270 *this)
 {
     this->timing.h.counter--;
     if (this->timing.h.counter < 1) {
@@ -378,7 +378,7 @@ void HUC6270_cycle(HUC6270 *this)
     }*/
 }
 
-void HUC6270_init(HUC6270 *this, scheduler_t *scheduler)
+void HUC6270_init(struct HUC6270 *this, struct scheduler_t *scheduler)
 {
     memset(this, 0, sizeof(*this));
     this->scheduler = scheduler;
@@ -388,11 +388,11 @@ void HUC6270_init(HUC6270 *this, scheduler_t *scheduler)
 }
 
 
-void HUC6270_delete(HUC6270 *this)
+void HUC6270_delete(struct HUC6270 *this)
 {
 }
 
-void HUC6270_reset(HUC6270 *this)
+void HUC6270_reset(struct HUC6270 *this)
 {
     this->io.HSW = 2;
     this->io.HDS = 2;
@@ -405,7 +405,7 @@ void HUC6270_reset(HUC6270 *this)
 
 static void update_RCR(void *ptr, u64 key, u64 clock, u32 jitter)
 {
-    struct HUC6270 *this = (HUC6270 *)ptr;
+    struct HUC6270 *this = (struct HUC6270 *)ptr;
     u32 signal = (this->regs.y_counter == this->io.RCR.u);
     //printf("\nTEST LINE %d against %d @%lld", this->regs.y_counter, this->io.RCR.u, *this->scheduler->clock);
     if (signal && (signal != this->io.STATUS.RR) && (this->io.CR.IE & 4)) {
@@ -419,7 +419,7 @@ static void update_RCR(void *ptr, u64 key, u64 clock, u32 jitter)
 
 static void vram_satb_end(void *ptr, u64 key, u64 clock, u32 jitter)
 {
-    struct HUC6270 *this = (HUC6270 *)ptr;
+    struct HUC6270 *this = (struct HUC6270 *)ptr;
     this->io.STATUS.DS = 1;
     if (!this->io.DCR.DSR)
         this->regs.vram_satb_pending = 0;
@@ -428,12 +428,12 @@ static void vram_satb_end(void *ptr, u64 key, u64 clock, u32 jitter)
 
 static void vram_vram_end(void *ptr, u64 key, u64 clock, u32 jitter)
 {
-    struct HUC6270 *this = (HUC6270 *)ptr;
+    struct HUC6270 *this = (struct HUC6270 *)ptr;
     this->io.STATUS.DV = 1;
     update_irqs(this);
 }
 
-static void vram_satb(HUC6270 *this)
+static void vram_satb(struct HUC6270 *this)
 {
     // TODO: make not instant
     scheduler_only_add_abs(this->scheduler, (*this->scheduler->clock) + (1024 * this->regs.divisor), 0, this, &vram_satb_end, NULL);
@@ -443,12 +443,12 @@ static void vram_satb(HUC6270 *this)
     }
 }
 
-static void trigger_vram_satb(HUC6270 *this)
+static void trigger_vram_satb(struct HUC6270 *this)
 {
     this->regs.vram_satb_pending = 1;
 }
 
-static void trigger_vram_vram(HUC6270 *this)
+static void trigger_vram_vram(struct HUC6270 *this)
 {
     // TODO: make not instant
     if (!this->regs.in_vblank) {
@@ -472,7 +472,7 @@ static void trigger_vram_vram(HUC6270 *this)
     }
 }
 
-static void hblank(HUC6270 *this, u32 val)
+static void hblank(struct HUC6270 *this, u32 val)
 {
     if (val) {
         this->regs.px_out = 0x100;
@@ -482,7 +482,7 @@ static void hblank(HUC6270 *this, u32 val)
     }
 }
 
-static void vblank(HUC6270 *this, u32 val)
+static void vblank(struct HUC6270 *this, u32 val)
 {
     this->regs.in_vblank = val;
     if (val) {
@@ -503,12 +503,12 @@ static void vblank(HUC6270 *this, u32 val)
 }
 
 
-static void write_addr(HUC6270 *this, u32 val)
+static void write_addr(struct HUC6270 *this, u32 val)
 {
     this->io.ADDR = val & 0x1F;
 }
 
-static void update_ie(HUC6270 *this)
+static void update_ie(struct HUC6270 *this)
 {
     u32 ie = (this->io.CR.IE & 7) | ((this->io.CR.IE & 8) << 2);
     ie |= this->io.DCR.DSC << 3; // 0001 to 1000
@@ -525,7 +525,7 @@ static void update_ie(HUC6270 *this)
      */
 }
 
-static void update_irqs(HUC6270 *this)
+static void update_irqs(struct HUC6270 *this)
 {
     u32 old_line = this->irq.line;
     this->irq.line = !!(this->regs.IE & this->io.STATUS.u);
@@ -535,7 +535,7 @@ static void update_irqs(HUC6270 *this)
     }
 }
 
-static void write_lsb(HUC6270 *this, u32 val)
+static void write_lsb(struct HUC6270 *this, u32 val)
 {
     //printf("\nWRITE LSB %x: %02x", this->io.ADDR, val);
     switch(this->io.ADDR) {
@@ -641,7 +641,7 @@ static void write_lsb(HUC6270 *this, u32 val)
     printf("\nWRITE LSB NOT IMPL: %02x", this->io.ADDR);
 }
 
-static void write_msb(HUC6270 *this, u32 val)
+static void write_msb(struct HUC6270 *this, u32 val)
 {
     //printf("\nWRITE MSB %x: %02x", this->io.ADDR, val);
     switch(this->io.ADDR) {
@@ -734,7 +734,7 @@ static void write_msb(HUC6270 *this, u32 val)
     printf("\nWRITE MSB NOT IMPL: %02x", this->io.ADDR);
 }
 
-void HUC6270_write(HUC6270 *this, u32 addr, u32 val)
+void HUC6270_write(struct HUC6270 *this, u32 addr, u32 val)
 {
     addr &= 3;
 #ifdef TG16_LYCODER2
@@ -756,7 +756,7 @@ void HUC6270_write(HUC6270 *this, u32 addr, u32 val)
     }
 }
 
-static u32 read_status(HUC6270 *this)
+static u32 read_status(struct HUC6270 *this)
 {
     u32 v = this->io.STATUS.u;
     this->io.STATUS.u &= 0b1000000;
@@ -764,7 +764,7 @@ static u32 read_status(HUC6270 *this)
     return v;
 }
 
-u32 HUC6270_read(HUC6270 *this, u32 addr, u32 old)
+u32 HUC6270_read(struct HUC6270 *this, u32 addr, u32 old)
 {
     addr &= 3;
     switch(addr) {

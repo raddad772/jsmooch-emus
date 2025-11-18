@@ -5,7 +5,7 @@
 #include "atari2600_bus.h"
 
 
-void atari2600_CPU_run_cycle(atari2600* this)
+void atari2600_CPU_run_cycle(struct atari2600* this)
 {
     if (this->tia.cpu_RDY) return; // CPU is halted until next scanline
 

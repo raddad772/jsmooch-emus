@@ -3,12 +3,12 @@
 //
 
 #include "stdio.h"
-#include <cstring>
+#include "string.h"
 #include "sh4_disassembler.h"
 
-void dasm_support_init(dasm_support* this)
+void dasm_support_init(struct dasm_support* this)
 {
-    *this = (dasm_support) {
+    *this = (struct dasm_support) {
         .read8 = NULL,
         .read16 = NULL,
         .read32 = NULL
@@ -16,7 +16,7 @@ void dasm_support_init(dasm_support* this)
     buf_init(&this->strout);
 }
 
-void dasm_support_delete(dasm_support* this)
+void dasm_support_delete(struct dasm_support* this)
 {
     buf_delete(&this->strout);
 }

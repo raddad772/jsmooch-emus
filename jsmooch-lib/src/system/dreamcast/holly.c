@@ -8,7 +8,7 @@
  */
 
 
-#include <cstring>
+#include <string.h>
 #include "assert.h"
 #include "stdio.h"
 #include "stdlib.h"
@@ -19,7 +19,7 @@
 #include "component/cpu/sh4/sh4_interrupts.h"
 #include "helpers/multisize_memaccess.c"
 
-static void holly_soft_reset(DC* this)
+static void holly_soft_reset(struct DC* this)
 {
     printf("\nHOLLY soft reset!");
     this->holly.ta.cmd_buffer_index = 0;
@@ -38,7 +38,7 @@ static u32 HOLLY_IRQ_outputs[7] = {
 };
 #undef NI
 
-void holly_recalc_interrupts(DC* this)
+void holly_recalc_interrupts(struct DC* this)
 {
     u32 level2 = (this->io.SB_IML2NRM & this->io.SB_ISTNRM.u) & 0x3FFFFF;
     level2 |= (this->io.SB_IML2EXT.u & this->io.SB_ISTEXT.u);
@@ -71,13 +71,13 @@ void holly_recalc_interrupts(DC* this)
     SH4_set_IRL_irq_level(&this->sh4, lv);
 }
 
-void holly_eval_interrupt(DC* this, enum holly_interrupt_masks irq_num, u32 is_true)
+void holly_eval_interrupt(struct DC* this, enum holly_interrupt_masks irq_num, u32 is_true)
 {
     if (is_true) holly_raise_interrupt(this, irq_num, -1);
     else holly_lower_interrupt(this, irq_num);
 }
 
-void holly_lower_interrupt(DC* this, enum holly_interrupt_masks irq_num)
+void holly_lower_interrupt(struct DC* this, enum holly_interrupt_masks irq_num)
 {
     u32 imask = (1 << (irq_num & 0xFF)) ^ 0xFFFFFFFF;
     if (irq_num & 0x100)
@@ -126,12 +126,12 @@ struct delay_func_struct {
 
 void holly_delayed_raise_interrupt(void* ptr, u64 key, u64 clock, u32 jitter)
 {
-    struct DC* this = (DC*)ptr;
+    struct DC* this = (struct DC*)ptr;
     holly_raise_interrupt(this, key, 0);
 }
 
 
-void holly_raise_interrupt(DC* this, enum holly_interrupt_masks irq_num, i64 delay)
+void holly_raise_interrupt(struct DC* this, enum holly_interrupt_masks irq_num, i64 delay)
 {
     if (delay > 0) {
         i64 tcode = (i64)*this->sh4.trace.cycles + delay;
@@ -154,7 +154,7 @@ void holly_raise_interrupt(DC* this, enum holly_interrupt_masks irq_num, i64 del
     holly_recalc_interrupts(this);
 }
 
-void DC_recalc_frame_timing(DC* this)
+void DC_recalc_frame_timing(struct DC* this)
 {
     // We need to know:
     // kind line to vblank in IRQ. cycle # in frame
@@ -175,7 +175,7 @@ void DC_recalc_frame_timing(DC* this)
 
 #define B10_6_10 B32(0000,0011,1111,1111,0000,0011,1111,1111)
 
-static void holly_TA_list_init(DC* this)
+static void holly_TA_list_init(struct DC* this)
 {
     printf("\nTA LIST INIT!");
 
@@ -187,16 +187,16 @@ static void holly_TA_list_init(DC* this)
     this->holly.ta.list_type = HPL_none;
 }
 
-static u32 holly_get_frame_cycle(DC* this) {
+static u32 holly_get_frame_cycle(struct DC* this) {
     return (u32)(this->clock.frame_start_cycle - *this->sh4.trace.cycles);
 }
 
-static u32 holly_get_SPG_line(DC* this) {
+static u32 holly_get_SPG_line(struct DC* this) {
     u32 cycle_num = holly_get_frame_cycle(this);
     return cycle_num / this->clock.cycles_per_line;
 }
 
-u64 holly_read(DC* this, u32 addr, u32* success) {
+u64 holly_read(struct DC* this, u32 addr, u32* success) {
     *success = 1;
     u32 v;
     switch ((addr & 0x0000FFFF) | 0x005F0000) {
@@ -224,7 +224,7 @@ u64 holly_read(DC* this, u32 addr, u32* success) {
     return 0;
 }
 
-void holly_write(DC* this, u32 addr, u32 val, u32* success)
+void holly_write(struct DC* this, u32 addr, u32 val, u32* success)
 {
     *success = 1;
     addr = (addr & 0x0000FFFF) | 0x005F0000;
@@ -257,14 +257,14 @@ void holly_write(DC* this, u32 addr, u32 val, u32* success)
     fflush(stdout);
 }
 
-void holly_vblank_in(DC* this)
+void holly_vblank_in(struct DC* this)
 {
     this->clock.in_vblank = 1;
     this->io.SB_ISTNRM.vblank_in = 1;
     holly_raise_interrupt(this, hirq_vblank_in, -1);
 }
 
-void holly_vblank_out(DC* this) {
+void holly_vblank_out(struct DC* this) {
     this->clock.in_vblank = 0;
     this->io.SB_ISTNRM.vblank_out = 1;
     holly_raise_interrupt(this, hirq_vblank_out, -1);
@@ -286,7 +286,7 @@ enum VolumeInstruction {
 #pragma warning(disable: 4700) // warning C4700: uninitialized local variable 'cmd' used
 #endif
 
-void holly_TA_cmd(DC* this) {
+void holly_TA_cmd(struct DC* this) {
 
     if (this->holly.ta.cmd_buffer_index % 8 != 0) return; // All commands are 8 or 16 bytes long
     assert(this->holly.ta.cmd_buffer_index <= 64);
@@ -299,7 +299,7 @@ void holly_TA_cmd(DC* this) {
 #pragma warning(pop)
 #endif
 
-void holly_TA_FIFO_load(DC* this, u32 src_addr, u32 tx_len, void* src)
+void holly_TA_FIFO_load(struct DC* this, u32 src_addr, u32 tx_len, void* src)
 {
     u32 bytes_tx = 0;
     for (u32 i = 0; i < tx_len; i+= 8) {
@@ -335,7 +335,7 @@ void dump_RAM_to_console(u32 print_addr, void *src, u32 len)
     }
 }
 
-void holly_TA_FIFO_DMA(DC* this, u32 src_addr, u32 tx_len, void *src, u32 src_len)
+void holly_TA_FIFO_DMA(struct DC* this, u32 src_addr, u32 tx_len, void *src, u32 src_len)
 {
     if (tx_len == 0) {
         printf("\nHOLLY TA DMA TRANSFER SIZE 0!?");
@@ -358,7 +358,7 @@ void holly_TA_FIFO_DMA(DC* this, u32 src_addr, u32 tx_len, void *src, u32 src_le
     holly_raise_interrupt(this, hirq_ch2_dma, 200);
 }
 
-void holly_reset(DC* this)
+void holly_reset(struct DC* this)
 {
     this->holly.VO_BORDER_COL.u = 0;
     this->holly.SPG_VBLANK_INT.u = 0;
@@ -368,12 +368,12 @@ void holly_reset(DC* this)
 }
 
 
-void holly_init(DC* this)
+void holly_init(struct DC* this)
 {
     cvec_init(&this->holly.ta.cmd_buffer, 1, 2*1024*1024);
 }
 
-void holly_delete(DC* this)
+void holly_delete(struct DC* this)
 {
     cvec_delete(&this->holly.ta.cmd_buffer);
 }

@@ -5,11 +5,11 @@
 #include "gba_timers.h"
 #include "gba_bus.h"
 
-u32 GBA_timer_enabled(GBA *this, u32 tn) {
+u32 GBA_timer_enabled(struct GBA *this, u32 tn) {
     return GBA_clock_current(this) >= this->timer[tn].enable_at;
 }
 
-u32 GBA_read_timer(GBA *this, u32 tn)
+u32 GBA_read_timer(struct GBA *this, u32 tn)
 {
     struct GBA_TIMER *t = &this->timer[tn];
     u64 current_time = this->clock.master_cycle_count + this->waitstates.current_transaction;
@@ -21,9 +21,9 @@ u32 GBA_read_timer(GBA *this, u32 tn)
     return v;
 }
 
-static void overflow_timer(GBA *this, u32 tn, u64 current_time);
+static void overflow_timer(struct GBA *this, u32 tn, u64 current_time);
 
-static void cascade_timer_step(GBA *this, u32 tn, u64 current_time)
+static void cascade_timer_step(struct GBA *this, u32 tn, u64 current_time)
 {
     struct GBA_TIMER *t = &this->timer[tn];
     t->val_at_stop = (t->val_at_stop + 1) & 0xFFFF;
@@ -34,7 +34,7 @@ static void cascade_timer_step(GBA *this, u32 tn, u64 current_time)
 
 static void timer_overflow(void *ptr, u64 timer_num, u64 current_clock, u32 jitter);
 
-static void overflow_timer(GBA *this, u32 tn, u64 current_time) {
+static void overflow_timer(struct GBA *this, u32 tn, u64 current_time) {
     struct GBA_TIMER *t = &this->timer[tn];
 #ifdef GBA_STATS
     if (tn == 0) this->timing.timer0_cycles++;
@@ -68,7 +68,7 @@ static void overflow_timer(GBA *this, u32 tn, u64 current_time) {
 
 static void timer_overflow(void *ptr, u64 timer_num, u64 current_clock, u32 jitter)
 {
-    struct GBA *this = (GBA *)ptr;
+    struct GBA *this = (struct GBA *)ptr;
     overflow_timer(this, timer_num, GBA_clock_current(this));
 }
 
@@ -77,7 +77,7 @@ void GBA_timer_write_cnt(void *ptr, u64 tn_and_val, u64 clock, u32 jitter)
     u64 cur_clock = clock - jitter;
     u32 tn = (tn_and_val >> 24);
     u32 val = (tn_and_val & 0xFF);
-    struct GBA *this = (GBA *)ptr;
+    struct GBA *this = (struct GBA *)ptr;
     struct GBA_TIMER *t = &this->timer[tn];
 
     //printf("\nCNT%d  enable:%d  cascade:%d", tn, (val >> 7) & 1, (val >> 2) & 1);

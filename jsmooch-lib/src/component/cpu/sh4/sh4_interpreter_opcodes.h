@@ -8,7 +8,7 @@
 struct SH4_ins_t;
 
 struct SH4;
-typedef void (*SH4_ins_func)(SH4* sh4, SH4_ins_t *ins);
+typedef void (*SH4_ins_func)(struct SH4* sh4, struct SH4_ins_t *ins);
 struct SH4_ins_t {
     u16 opcode;
     u32 Rm;
@@ -44,6 +44,6 @@ extern struct SH4_ins_t SH4_decoded[4][65536];
 extern char SH4_disassembled[4][65536][30];
 extern char SH4_mnemonic[4][65536][30];
 extern struct SH4_ins_t SH4_decoded_by_encoding[65536];
-void process_SH4_instruct(sh4_str_ret *r, const char* stri);
+void process_SH4_instruct(struct sh4_str_ret *r, const char* stri);
 
 #endif //JSMOOCH_EMUS_SH4_INTERPRETER_OPCODES_H

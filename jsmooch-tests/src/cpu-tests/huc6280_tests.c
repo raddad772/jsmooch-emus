@@ -4,11 +4,11 @@
 
 #include "huc6280_tests.h"
 
-#include <cassert>
+#include <assert.h>
 
 #include <stdlib.h>
 #include <stdio.h>
-#include <cstring>
+#include <string.h>
 
 #define ISTART 0
 
@@ -96,7 +96,7 @@ static u32 do_test_read_trace(void *ptr, u32 addr)
     return 0;
 }
 
-static u32 decode_state(u8 *buf, huc6280_state *st)
+static u32 decode_state(u8 *buf, struct huc6280_state *st)
 {
     u32 full_sz = cR32(buf, 0);
     //printf("\nSTATE SZ:%d", full_sz);
@@ -328,7 +328,7 @@ static void pprint_cycles()
     }
 }
 
-static void pprint_cpu(u32 show_diffs_only, huc6280_state *st) {
+static void pprint_cpu(u32 show_diffs_only, struct huc6280_state *st) {
     u32 show_all = !show_diffs_only;
     //u32 show_all = 1;
 

@@ -160,15 +160,15 @@ struct ym2612 {
 };
 
 struct serialized_state;
-void ym2612_init(ym2612 *this, enum OPN2_variant variant, u64 *master_cycle_count, u64 master_wait_cycles);
-void ym2612_delete(ym2612*);
-void ym2612_serialize(ym2612*, serialized_state *state);
-void ym2612_deserialize(ym2612*, serialized_state *state);
+void ym2612_init(struct ym2612 *this, enum OPN2_variant variant, u64 *master_cycle_count, u64 master_wait_cycles);
+void ym2612_delete(struct ym2612*);
+void ym2612_serialize(struct ym2612*, struct serialized_state *state);
+void ym2612_deserialize(struct ym2612*, struct serialized_state *state);
 
-void ym2612_write(ym2612*, u32 addr, u8 val);
-u8 ym2612_read(ym2612*, u32 addr, u32 old, u32 has_effect);
-void ym2612_reset(ym2612*);
-void ym2612_cycle(ym2612*);
-i16 ym2612_sample_channel(ym2612*, u32 ch);
+void ym2612_write(struct ym2612*, u32 addr, u8 val);
+u8 ym2612_read(struct ym2612*, u32 addr, u32 old, u32 has_effect);
+void ym2612_reset(struct ym2612*);
+void ym2612_cycle(struct ym2612*);
+i16 ym2612_sample_channel(struct ym2612*, u32 ch);
 
 #endif //JSMOOCH_EMUS_YM2612_H

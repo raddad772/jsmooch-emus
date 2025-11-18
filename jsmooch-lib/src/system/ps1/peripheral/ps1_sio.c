@@ -2,24 +2,24 @@
 // Created by . on 2/26/25.
 //
 
-#include <cstring>
+#include <string.h>
 #include "ps1_sio.h"
 #include "../ps1_bus.h"
 
-void PS1_SIO0_init(PS1 *this)
+void PS1_SIO0_init(struct PS1 *this)
 {
     this->sio0.io.SIO_STAT.tx_fifo_not_full = 1;
     this->sio0.io.SIO_STAT.tx_idle = 1;
 }
 
-static void update_rx_signal(PS1 *this)
+static void update_rx_signal(struct PS1 *this)
 {
     static const u8 num[4] = { 1, 2, 4, 8};
     this->sio0.irq.rx_signal = this->sio0.io.RX_FIFO.num >= num[this->sio0.io.SIO_CTRL.rx_irq_mode];
     this->sio0.io.SIO_STAT.rx_fifo_not_empty = this->sio0.io.RX_FIFO.num > 0;
 }
 
-static void update_IRQs(PS1 *this)
+static void update_IRQs(struct PS1 *this)
 {
     printif(ps1.sio0.irq, "\nport: update IRQs. RX.e:%d RX.s:%d DSR.e:%d DSR.s:%d", this->sio0.io.SIO_CTRL.rx_irq_enable, this->sio0.irq.rx_signal, this->sio0.io.SIO_CTRL.dsr_irq_enable, this->sio0.io.SIO_STAT.dsr_input);
     u32 old_signal = this->sio0.io.SIO_STAT.irq_request;
@@ -39,7 +39,7 @@ struct PS1_SIO0_memport {
     struct PS1_SIO_device *memcard, *controller;
 };
 
-void PS1_SIO0_update_ACKs(PS1 *bus, enum PS1_SIO0_port port, u32 level)
+void PS1_SIO0_update_ACKs(struct PS1 *bus, enum PS1_SIO0_port port, u32 level)
 {
     struct PS1_SIO0 *this = &bus->sio0;
     u32 cont1_ack =0, cont2_ack = 0, mem1_ack = 0, mem2_ack = 0;
@@ -74,7 +74,7 @@ void PS1_SIO0_update_ACKs(PS1 *bus, enum PS1_SIO0_port port, u32 level)
 }
 
 
-static void get_select_port(PS1 *bus, u32 num, PS1_SIO0_memport *port)
+static void get_select_port(struct PS1 *bus, u32 num, struct PS1_SIO0_memport *port)
 {
     port->controller = NULL;
     port->memcard = NULL;
@@ -90,7 +90,7 @@ static void get_select_port(PS1 *bus, u32 num, PS1_SIO0_memport *port)
     }
 }
 
-static void send_DTR(PS1 *this, u32 port, u32 level)
+static void send_DTR(struct PS1 *this, u32 port, u32 level)
 {
     struct PS1_SIO0_memport p;
     get_select_port(this, port, &p);
@@ -98,7 +98,7 @@ static void send_DTR(PS1 *this, u32 port, u32 level)
     if (p.controller) p.controller->set_CS(p.controller->device_ptr, level, PS1_clock_current(this));
 }
 
-static void write_ctrl(PS1 *this, u32 sz, u32 val)
+static void write_ctrl(struct PS1 *this, u32 sz, u32 val)
 {
     printif(ps1.sio0.rw, "\nport: SIO0 WRITE CTRL %04x", val);
     u32 old_rx_enable = this->sio0.io.SIO_CTRL.rx_enable;
@@ -149,17 +149,17 @@ static void write_ctrl(PS1 *this, u32 sz, u32 val)
     update_IRQs(this);
 }
 
-static void write_mode(PS1 *this, u32 sz, u32 val)
+static void write_mode(struct PS1 *this, u32 sz, u32 val)
 {
     this->sio0.io.SIO_MODE.u = val & 0xFFFF;
 }
 
-static void write_stat(PS1 *this, u32 sz, u32 val)
+static void write_stat(struct PS1 *this, u32 sz, u32 val)
 {
     // read-only! :-D
 }
 
-static u8 do_exchange_byte(PS1 *this, u8 tx_byte)
+static u8 do_exchange_byte(struct PS1 *this, u8 tx_byte)
 {
     struct PS1_SIO0_memport port;
     get_select_port(this, this->sio0.io.SIO_CTRL.sio0_port_sel, &port);
@@ -180,7 +180,7 @@ static u8 do_exchange_byte(PS1 *this, u8 tx_byte)
     return rx_byte;
 }
 
-static void pprint_fifo(PS1_SIO0_RX_FIFO *this)
+static void pprint_fifo(struct PS1_SIO0_RX_FIFO *this)
 {
     dbg_printf("\n\nFIFO! %d", this->num);
     for (u32 i = 0; i < 7; i++) {
@@ -194,7 +194,7 @@ static void pprint_fifo(PS1_SIO0_RX_FIFO *this)
 }
 
 
-static void push_rx_FIFO(PS1_SIO0_RX_FIFO *this, u8 byte)
+static void push_rx_FIFO(struct PS1_SIO0_RX_FIFO *this, u8 byte)
 {
     printif(ps1.sio0.rw, "\nPush %02x to FIFO!", byte);
     if (this->num == 8) {
@@ -217,7 +217,7 @@ static void push_rx_FIFO(PS1_SIO0_RX_FIFO *this, u8 byte)
 
 static void scheduled_exchange_byte(void *ptr, u64 key, u64 clock, u32 jitter)
 {
-    struct PS1 *this = (PS1 *)ptr;
+    struct PS1 *this = (struct PS1 *)ptr;
 
     // Check which port
     //printf("\ncyc:%lld do byte exchange. RX ENABLE: %d", clock, this->sio0.io.SIO_CTRL.rx_enable);
@@ -238,7 +238,7 @@ static void scheduled_exchange_byte(void *ptr, u64 key, u64 clock, u32 jitter)
     this->sio0.io.SIO_STAT.rx_fifo_not_empty = this->sio0.io.RX_FIFO.num != 0;
 }
 
-static void write_tx_data(PS1 *this, u32 sz, u32 val)
+static void write_tx_data(struct PS1 *this, u32 sz, u32 val)
 {
     if (!this->sio0.io.SIO_CTRL.tx_enable) return;
     // schedule exchange_byte() for 1023 cycles out!
@@ -252,7 +252,7 @@ static void write_tx_data(PS1 *this, u32 sz, u32 val)
     this->sio0.sch_id = scheduler_add_or_run_abs(&this->scheduler, PS1_clock_current(this) + (this->sio0.io.baud * 8), val & 0xFF, this, &scheduled_exchange_byte, &this->sio0.still_sched);
 }
 
-void PS1_SIO0_write(PS1 *this, u32 addr, u32 sz, u32 val)
+void PS1_SIO0_write(struct PS1 *this, u32 addr, u32 sz, u32 val)
 {
 #define R_RX_DATA 0x1F801040
 #define R_TX_DATA R_RX_DATA
@@ -288,23 +288,23 @@ void PS1_SIO0_write(PS1 *this, u32 addr, u32 sz, u32 val)
     printf("\nUnhandled SIO write to %08x (%d): %08x", addr, sz, val);
 }
 
-static u32 read_ctrl(PS1 *this, u32 sz)
+static u32 read_ctrl(struct PS1 *this, u32 sz)
 {
     return this->sio0.io.SIO_CTRL.u;
 }
 
-static u32 read_mode(PS1 *this, u32 sz)
+static u32 read_mode(struct PS1 *this, u32 sz)
 {
     return this->sio0.io.SIO_MODE.u;
 }
 
-static u32 read_stat(PS1 *this, u32 sz)
+static u32 read_stat(struct PS1 *this, u32 sz)
 {
     return this->sio0.io.SIO_STAT.u;
 }
 
 
-static u32 read_rx_data(PS1 *this, u32 sz)
+static u32 read_rx_data(struct PS1 *this, u32 sz)
 {
     // POP a value from FIFO
     u32 out_val = this->sio0.io.RX_FIFO.buf[this->sio0.io.RX_FIFO.head];
@@ -333,7 +333,7 @@ static u32 read_rx_data(PS1 *this, u32 sz)
     return out_val;
 }
 
-u32 PS1_SIO0_read(PS1 *this, u32 addr, u32 sz)
+u32 PS1_SIO0_read(struct PS1 *this, u32 addr, u32 sz)
 {
     switch(addr) {
         case R_SIO_CTRL:

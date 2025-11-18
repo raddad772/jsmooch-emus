@@ -18,7 +18,7 @@
 #define NVI 8
 
 struct NDS;
-void NDS_VRAM_resetup_banks(NDS *);
-u32 NDS_VRAM_tex_read(NDS *, u32 addr, u32 sz);
-u32 NDS_VRAM_pal_read(NDS *, u32 addr, u32 sz);
+void NDS_VRAM_resetup_banks(struct NDS *);
+u32 NDS_VRAM_tex_read(struct NDS *, u32 addr, u32 sz);
+u32 NDS_VRAM_pal_read(struct NDS *, u32 addr, u32 sz);
 #endif //JSMOOCH_EMUS_NDS_VRAM_H

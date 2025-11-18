@@ -16,8 +16,8 @@
 #include "component/cpu/arm7tdmi/arm7tdmi.h"
 
 struct GBA;
-typedef u32 (*GBA_rdfunc)(GBA *, u32 addr, u32 sz, u32 access, u32 has_effect);
-typedef void (*GBA_wrfunc)(GBA *, u32 addr, u32 sz, u32 access, u32 val);
+typedef u32 (*GBA_rdfunc)(struct GBA *, u32 addr, u32 sz, u32 access, u32 has_effect);
+typedef void (*GBA_wrfunc)(struct GBA *, u32 addr, u32 sz, u32 access, u32 val);
 
 struct GBA {
     struct ARM7TDMI cpu;
@@ -230,12 +230,12 @@ u32 GBA_mainbus_read(void *ptr, u32 addr, u32 sz, u32 access, u32 has_effect);
 void GBA_mainbus_write(void *ptr, u32 addr, u32 sz, u32 access, u32 val);
 u32 GBA_mainbus_fetchins(void *ptr, u32 addr, u32 sz, u32 access);
 
-void GBA_bus_init(GBA *);
-void GBA_eval_irqs(GBA *);
-void GBA_check_dma_at_hblank(GBA *);
-void GBA_check_dma_at_vblank(GBA *);
-u32 GBA_open_bus_byte(GBA *, u32 addr);
-u32 GBA_open_bus(GBA *this, u32 addr, u32 sz);
+void GBA_bus_init(struct GBA *);
+void GBA_eval_irqs(struct GBA *);
+void GBA_check_dma_at_hblank(struct GBA *);
+void GBA_check_dma_at_vblank(struct GBA *);
+u32 GBA_open_bus_byte(struct GBA *, u32 addr);
+u32 GBA_open_bus(struct GBA *this, u32 addr, u32 sz);
 void GBA_block_step_cpu(void *ptr, u64 key, u64 clock, u32 jitter);
 void GBA_block_step_halted(void *ptr, u64 key, u64 clock, u32 jitter);
 

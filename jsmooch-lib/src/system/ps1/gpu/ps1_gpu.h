@@ -12,7 +12,7 @@
 
 struct PS1_GPU;
 struct PS1_GPU_TEXTURE_SAMPLER;
-typedef u16 (*PS1_GPU_texture_sample_func)(PS1_GPU_TEXTURE_SAMPLER *ts, i32 u, i32 v);
+typedef u16 (*PS1_GPU_texture_sample_func)(struct PS1_GPU_TEXTURE_SAMPLER *ts, i32 u, i32 v);
 struct PS1_GPU_TEXTURE_SAMPLER {
     u32 page_x, page_y, base_addr, clut_addr;
     u8 *VRAM;
@@ -36,7 +36,7 @@ struct PS1_GPU {
 
     struct scheduler_t *scheduler;
 
-    void (*current_ins)(PS1_GPU *);
+    void (*current_ins)(struct PS1_GPU *);
     u8 mmio_buffer[96];
     u32 gp0_buffer[256];
     u32 gp1_buffer[256];
@@ -128,7 +128,7 @@ struct PS1_GPU {
 
     u32 gp0_transfer_remaining;
 
-    void (*handle_gp0)(PS1_GPU *, u32 val);
+    void (*handle_gp0)(struct PS1_GPU *, u32 val);
 
     u16 *cur_output;
     struct cvec_ptr display_ptr;
@@ -137,11 +137,11 @@ struct PS1_GPU {
 
 struct PS1;
 
-void PS1_GPU_init(PS1 *);
-void PS1_GPU_reset(PS1_GPU *);
-void PS1_GPU_write_gp0(PS1_GPU *, u32 val);
-void PS1_GPU_write_gp1(PS1_GPU *, u32 val);
-u32 PS1_GPU_get_gpuread(PS1_GPU *);
-u32 PS1_GPU_get_gpustat(PS1_GPU *);
-void PS1_GPU_texture_sampler_new(PS1_GPU_TEXTURE_SAMPLER *, u32 page_x, u32 page_y, u32 clut, PS1_GPU *ctrl);
+void PS1_GPU_init(struct PS1 *);
+void PS1_GPU_reset(struct PS1_GPU *);
+void PS1_GPU_write_gp0(struct PS1_GPU *, u32 val);
+void PS1_GPU_write_gp1(struct PS1_GPU *, u32 val);
+u32 PS1_GPU_get_gpuread(struct PS1_GPU *);
+u32 PS1_GPU_get_gpustat(struct PS1_GPU *);
+void PS1_GPU_texture_sampler_new(struct PS1_GPU_TEXTURE_SAMPLER *, u32 page_x, u32 page_y, u32 clut, struct PS1_GPU *ctrl);
 #endif //JSMOOCH_EMUS_PS1_GPU_H

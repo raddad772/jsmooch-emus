@@ -2,8 +2,8 @@
 // Created by . on 6/18/25.
 //
 
-#include <cstdio>
-#include <cstring>
+#include <stdio.h>
+#include <string.h>
 #include "tg16_clock.h"
 #include "component/gpu/huc6260/huc6260.h"
 
@@ -19,13 +19,13 @@ VCE pixel clocks:
 "5MHz" = master clock / 4.
  */
 
-void TG16_clock_init(TG16_clock *this)
+void TG16_clock_init(struct TG16_clock *this)
 {
     memset(this, 0, sizeof(*this));
     TG16_clock_reset(this);
 }
 
-void TG16_clock_reset(TG16_clock *this)
+void TG16_clock_reset(struct TG16_clock *this)
 {
     this->timing.second.frames = 60;
     this->timing.frame.lines = 262;

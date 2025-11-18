@@ -1,9 +1,9 @@
 //
 // Created by . on 6/20/24.
 //
-#include <cstdio>
-#include <cstdlib>
-#include <cassert>
+#include <stdio.h>
+#include <stdlib.h>
+#include <assert.h>
 
 #include "helpers/cvec.h"
 #include "m68000.h"
@@ -15,12 +15,12 @@
 #define NO_REVERSE 0
 static u32 clip32[5] = { 0, 0xFF, 0xFFFF, 0, 0xFFFFFFFF};
 
-static u32 get_dr(M68k* this, u32 num, u32 sz)
+static u32 get_dr(struct M68k* this, u32 num, u32 sz)
 {
     return this->regs.D[num] & clip32[sz];
 }
 
-void M68k_adjust_IPC(M68k* this, u32 opnum, u32 sz)
+void M68k_adjust_IPC(struct M68k* this, u32 opnum, u32 sz)
 {
     u32 ex_words = this->state.op[opnum].ext_words;
     u32 kind0 = this->ins->ea[0].kind;
@@ -125,7 +125,7 @@ void M68k_adjust_IPC(M68k* this, u32 opnum, u32 sz)
     }
 }
 
-static u32 get_ar(M68k* this, u32 num, u32 sz)
+static u32 get_ar(struct M68k* this, u32 num, u32 sz)
 {
     u32 v = this->regs.A[num];
     switch(sz) {
@@ -140,14 +140,14 @@ static u32 get_ar(M68k* this, u32 num, u32 sz)
     return 0;
 }
 
-static u32 am_in_group0_or_1(M68k* this)
+static u32 am_in_group0_or_1(struct M68k* this)
 {
     if (this->state.bus_cycle.next_state == M68kS_exc_group0) return 1;
     // TODO: detect group 1
     return 0;
 }
 
-void M68k_bus_cycle_read(M68k* this)
+void M68k_bus_cycle_read(struct M68k* this)
 {
     switch(this->state.bus_cycle.TCU & 3) {
         case 0:
@@ -241,7 +241,7 @@ void M68k_bus_cycle_read(M68k* this)
     this->state.bus_cycle.TCU++;
 }
 
-void M68k_start_group0_exception(M68k* this, u32 vector_number, i32 wait_cycles, u32 was_in_group0_or_1, u32 addr)
+void M68k_start_group0_exception(struct M68k* this, u32 vector_number, i32 wait_cycles, u32 was_in_group0_or_1, u32 addr)
 {
     //M68k_start_wait(this, 1, M68kS_exc_group0);
     //this->state.current = M68kS_exc_group0;
@@ -258,7 +258,7 @@ void M68k_start_group0_exception(M68k* this, u32 vector_number, i32 wait_cycles,
     // tracing off
 }
 
-void M68k_start_group12_exception(M68k* this, u32 vector_number, i32 wait_cycles, u32 PC, u32 groupnum)
+void M68k_start_group12_exception(struct M68k* this, u32 vector_number, i32 wait_cycles, u32 PC, u32 groupnum)
 {
     this->state.current = M68kS_exc_group12;
     this->state.exception.group12.TCU = 0;
@@ -271,7 +271,7 @@ void M68k_start_group12_exception(M68k* this, u32 vector_number, i32 wait_cycles
 }
 
 // Bus cycle for acknowledging interrupt
-void M68k_bus_cycle_iaq(M68k* this)
+void M68k_bus_cycle_iaq(struct M68k* this)
 {
     switch(this->state.bus_cycle_iaq.TCU) {
         case 0:
@@ -322,12 +322,12 @@ void M68k_bus_cycle_iaq(M68k* this)
     this->state.bus_cycle_iaq.TCU++;
 }
 
-void M68k_start_group2_exception(M68k* this, u32 vector_number, i32 wait_cycles, u32 PC)
+void M68k_start_group2_exception(struct M68k* this, u32 vector_number, i32 wait_cycles, u32 PC)
 {
     M68k_start_group12_exception(this, vector_number, wait_cycles, PC, 2);
 }
 
-void M68k_start_group1_exception(M68k* this, u32 vector_number, i32 wait_cycles, u32 PC)
+void M68k_start_group1_exception(struct M68k* this, u32 vector_number, i32 wait_cycles, u32 PC)
 {
     M68k_start_group12_exception(this, vector_number, wait_cycles, PC, 1);
 }
@@ -335,7 +335,7 @@ void M68k_start_group1_exception(M68k* this, u32 vector_number, i32 wait_cycles,
 // this is duplicated in m68000_opcodes.c
 #define ADDRAND1 { this->pins.LDS = (this->state.bus_cycle.addr & 1); this->pins.UDS = this->pins.LDS ^ 1; }
 
-void M68k_bus_cycle_write(M68k* this)
+void M68k_bus_cycle_write(struct M68k* this)
 {
     switch(this->state.bus_cycle.TCU & 3) {
         case 0: {
@@ -430,7 +430,7 @@ void M68k_bus_cycle_write(M68k* this)
     this->state.bus_cycle.TCU++;
 }
 
-void M68k_start_prefetch(M68k* this, u32 num, u32 is_program, u32 next_state)
+void M68k_start_prefetch(struct M68k* this, u32 num, u32 is_program, u32 next_state)
 {
     this->state.current = M68kS_prefetch;
     this->state.prefetch.num = (i32)num;
@@ -439,7 +439,7 @@ void M68k_start_prefetch(M68k* this, u32 num, u32 is_program, u32 next_state)
     this->state.prefetch.next_state = next_state;
 }
 
-void M68k_start_read(M68k* this, u32 addr, u32 sz, u32 FC, u32 reversed, u32 next_state)
+void M68k_start_read(struct M68k* this, u32 addr, u32 sz, u32 FC, u32 reversed, u32 next_state)
 {
     switch(sz) {
         case 1:
@@ -464,7 +464,7 @@ void M68k_start_read(M68k* this, u32 addr, u32 sz, u32 FC, u32 reversed, u32 nex
     this->state.bus_cycle.FC = FC;
 }
 
-void M68k_start_write(M68k* this, u32 addr, u32 val, u32 sz, u32 FC, u32 reversed, u32 next_state)
+void M68k_start_write(struct M68k* this, u32 addr, u32 val, u32 sz, u32 FC, u32 reversed, u32 next_state)
 {
     switch(sz) {
         case 1:
@@ -491,7 +491,7 @@ void M68k_start_write(M68k* this, u32 addr, u32 val, u32 sz, u32 FC, u32 reverse
     this->state.bus_cycle.next_state = next_state;
 }
 
-void M68k_set_dr(M68k* this, u32 num, u32 result, u32 sz)
+void M68k_set_dr(struct M68k* this, u32 num, u32 result, u32 sz)
 {
     switch(sz) {
         case 1:
@@ -508,7 +508,7 @@ void M68k_set_dr(M68k* this, u32 num, u32 result, u32 sz)
     }
 }
 
-void M68k_set_ar(M68k* this, u32 num, u32 result, u32 sz)
+void M68k_set_ar(struct M68k* this, u32 num, u32 result, u32 sz)
 {
     switch(sz) {
         case 1:
@@ -523,7 +523,7 @@ void M68k_set_ar(M68k* this, u32 num, u32 result, u32 sz)
     }
 }
 
-u32 M68k_read_ea_addr(M68k* this, uint32 opnum, u32 sz, u32 hold, u32 prefetch)
+u32 M68k_read_ea_addr(struct M68k* this, uint32 opnum, u32 sz, u32 hold, u32 prefetch)
 {
     u32 v, c;
     i64 a, b;
@@ -585,7 +585,7 @@ u32 M68k_read_ea_addr(M68k* this, uint32 opnum, u32 sz, u32 hold, u32 prefetch)
     }
 }
 
-static u32 M68k_write_ea_addr(M68k* this, M68k_EA *ea, u32 sz, u32 commit, u32 opnum)
+static u32 M68k_write_ea_addr(struct M68k* this, struct M68k_EA *ea, u32 sz, u32 commit, u32 opnum)
 {
     switch(ea->kind) {
         case M68k_AM_address_register_indirect_with_postincrement:
@@ -607,7 +607,7 @@ static u32 M68k_write_ea_addr(M68k* this, M68k_EA *ea, u32 sz, u32 commit, u32 o
     return 0;
 }
 
-void M68k_start_write_operand(M68k* this, u32 commit, u32 op_num, u32 next_state, u32 allow_reverse, u32 force_reverse)
+void M68k_start_write_operand(struct M68k* this, u32 commit, u32 op_num, u32 next_state, u32 allow_reverse, u32 force_reverse)
 {
     this->state.operands.TCU = 0;
     this->state.operands.cur_op_num = op_num;
@@ -665,7 +665,7 @@ u32 M68k_AM_ext_words(enum M68k_address_modes am, u32 sz)
     return 0;
 }
 
-static void eval_ea_wait(M68k* this, u32 num_ea, u32 opnum, u32 sz)
+static void eval_ea_wait(struct M68k* this, u32 num_ea, u32 opnum, u32 sz)
 {
     u32 prefetchnum = opnum == 0 ? M68kOS_prefetch1 : M68kOS_prefetch2;
     u32 pausenum = opnum == 0 ? M68kOS_pause1 : M68kOS_pause2;
@@ -695,7 +695,7 @@ static void eval_ea_wait(M68k* this, u32 num_ea, u32 opnum, u32 sz)
     }
 }
 
-void M68k_swap_ASP(M68k* this)
+void M68k_swap_ASP(struct M68k* this)
 {
     u32 x = this->regs.A[7];
     this->regs.A[7] = this->regs.ASP;
@@ -714,14 +714,14 @@ static u32 is_immediate(enum M68k_address_modes am)
     }
 }
 
-void M68k_start_read_operand_for_ea(M68k* this, u32 fast, u32 sz, u32 next_state, u32 wait_states, u32 hold, u32 allow_reverse)
+void M68k_start_read_operand_for_ea(struct M68k* this, u32 fast, u32 sz, u32 next_state, u32 wait_states, u32 hold, u32 allow_reverse)
 {
     M68k_start_read_operands(this, fast, sz, next_state, wait_states, hold, allow_reverse, MAKE_FC(0));
     this->state.operands.state[M68kOS_read1] = this->state.operands.state[M68kOS_read2] = 0;
 }
 
 
-u32 M68k_get_r(M68k* this, M68k_EA *ea, u32 sz)
+u32 M68k_get_r(struct M68k* this, struct M68k_EA *ea, u32 sz)
 {
     u32 v;
     switch(ea->kind) {
@@ -752,7 +752,7 @@ u32 M68k_get_r(M68k* this, M68k_EA *ea, u32 sz)
     return 0;
 }
 
-void M68k_start_read_operands(M68k* this, u32 fast, u32 sz, u32 next_state, u32 wait_states, u32 hold, u32 allow_reverse, u32 read_fc)
+void M68k_start_read_operands(struct M68k* this, u32 fast, u32 sz, u32 next_state, u32 wait_states, u32 hold, u32 allow_reverse, u32 read_fc)
 {
     if (wait_states > 0) M68k_start_wait(this, wait_states, M68kS_read_operands);
     else this->state.current = M68kS_read_operands;
@@ -858,7 +858,7 @@ void M68k_start_read_operands(M68k* this, u32 fast, u32 sz, u32 next_state, u32 
     }
 }
 
-void M68k_start_wait(M68k* this, u32 num, u32 state_after) {
+void M68k_start_wait(struct M68k* this, u32 num, u32 state_after) {
     if (num == 0) {
         this->state.current = state_after;
         return;
@@ -868,34 +868,34 @@ void M68k_start_wait(M68k* this, u32 num, u32 state_after) {
     this->state.wait_cycles.next_state = state_after;
 }
 
-u32 M68k_inc_SSP(M68k* this, u32 num) {
+u32 M68k_inc_SSP(struct M68k* this, u32 num) {
     u32 *r = this->regs.SR.S ? &this->regs.A[7] : &this->regs.ASP;
     *r += num;
     return *r;
 }
 
-u32 M68k_dec_SSP(M68k* this, u32 num) {
+u32 M68k_dec_SSP(struct M68k* this, u32 num) {
     u32 *r = this->regs.SR.S ? &this->regs.A[7] : &this->regs.ASP;
     *r -= num;
     return *r;
 }
 
-u32 M68k_get_SSP(M68k* this) {
+u32 M68k_get_SSP(struct M68k* this) {
     if (this->regs.SR.S) return this->regs.A[7];
     return this->regs.ASP;
 }
 
-void M68k_set_SSP(M68k* this, u32 to) {
+void M68k_set_SSP(struct M68k* this, u32 to) {
     if (this->regs.SR.S) this->regs.A[7] = to;
     else this->regs.ASP = to;
 }
 
-u32 M68k_get_SR(M68k* this) {
+u32 M68k_get_SR(struct M68k* this) {
     return this->regs.SR.u;
 }
 
 
-void M68k_prefetch(M68k* this)
+void M68k_prefetch(struct M68k* this)
 {
     if (this->state.prefetch.TCU == 1) { // We just completed a cycle of prefetch
         this->regs.PC += 2;
@@ -912,7 +912,7 @@ void M68k_prefetch(M68k* this)
     this->state.prefetch.TCU = 1;
 }
 
-void M68k_finalize_ea(M68k* this, u32 opnum)
+void M68k_finalize_ea(struct M68k* this, u32 opnum)
 {
     if (!this->state.op[opnum].held) return;
     struct M68k_EA *ea = opnum == 0 ? &this->ins->ea[0] : &this->ins->ea[1];
@@ -927,7 +927,7 @@ void M68k_finalize_ea(M68k* this, u32 opnum)
     this->state.op[opnum].held = 0;
 }
 
-void M68k_read_operands_prefetch(M68k* this, u32 opnum)
+void M68k_read_operands_prefetch(struct M68k* this, u32 opnum)
 {
     // read 16 or 32 bits.
     // move them into
@@ -963,7 +963,7 @@ void M68k_read_operands_prefetch(M68k* this, u32 opnum)
     this->state.operands.TCU = 1;
 }
 
-void M68k_read_operands_read(M68k* this, u32 opnum, u32 commit)
+void M68k_read_operands_read(struct M68k* this, u32 opnum, u32 commit)
 {
     // get the EA
     if (this->state.operands.TCU == 1) { // read is done
@@ -989,7 +989,7 @@ void M68k_read_operands_read(M68k* this, u32 opnum, u32 commit)
     this->state.operands.TCU = 1;
 }
 
-void M68k_read_operands(M68k* this) {
+void M68k_read_operands(struct M68k* this) {
     i32 state = -1;
 
     for (u32 i = 0; i < 6; i++) {
@@ -1023,7 +1023,7 @@ void M68k_read_operands(M68k* this) {
     }
 }
 
-void M68k_sample_interrupts(M68k* this)
+void M68k_sample_interrupts(struct M68k* this)
 {
     if (!this->state.nmi) {
         if (this->pins.IPL <= this->regs.SR.I) return;
@@ -1036,7 +1036,7 @@ void M68k_sample_interrupts(M68k* this)
 
 #define EXC_WRITE(val, n, desc) M68k_start_write(this, this->state.exception.group0.base_addr+n, val, 2, M68k_FC_supervisor_data, M68K_RW_ORDER_NORMAL, M68kS_exc_group0)
 
-void M68k_exc_interrupt(M68k* this)
+void M68k_exc_interrupt(struct M68k* this)
 {
     switch(this->state.exception.interrupt.TCU) {
         case 0:
@@ -1060,7 +1060,7 @@ void M68k_exc_interrupt(M68k* this)
             this->state.internal_interrupt_level = this->state.bus_cycle_iaq.ilevel;
             M68k_start_wait(this, 4, M68kS_exc_interrupt);
             for (u32 i = 0; i < cvec_len(&this->iack_handlers); i++) {
-                struct M68k_iack_handler *h = (M68k_iack_handler *)cvec_get(&this->iack_handlers, i);
+                struct M68k_iack_handler *h = (struct M68k_iack_handler *)cvec_get(&this->iack_handlers, i);
                 h->handler(h->ptr);
             }
             break;
@@ -1087,7 +1087,7 @@ void M68k_exc_interrupt(M68k* this)
     this->state.exception.interrupt.TCU++;
 }
 
-void M68k_exc_group12(M68k* this)
+void M68k_exc_group12(struct M68k* this)
 {
     switch(this->state.exception.group12.TCU) {
         case 0: {
@@ -1124,7 +1124,7 @@ void M68k_exc_group12(M68k* this)
     this->state.exception.group12.TCU++;
 }
 
-void M68k_exc_group0(M68k* this)
+void M68k_exc_group0(struct M68k* this)
 {
     switch(this->state.exception.group0.TCU) {
         case 0: { // Save variables and write first word (FC, I/N, R/W). set S, unset T. write PC lo
@@ -1199,7 +1199,7 @@ static i32 sgn32(u32 num, u32 sz) {
     return 0;
 }
 
-void M68k_set_r(M68k* this, M68k_EA *ea, u32 val, u32 sz)
+void M68k_set_r(struct M68k* this, struct M68k_EA *ea, u32 val, u32 sz)
 {
     u32 v;
     switch(ea->kind) {
@@ -1221,7 +1221,7 @@ void M68k_set_r(M68k* this, M68k_EA *ea, u32 val, u32 sz)
     }
 }
 
-u32 M68k_serialize_func(M68k*this)
+u32 M68k_serialize_func(struct M68k*this)
 {
     if (this->state.bus_cycle.func == &M68k_bus_cycle_read)
         return 1;
@@ -1230,7 +1230,7 @@ u32 M68k_serialize_func(M68k*this)
     return 0;
 }
 
-void M68k_deserialize_func(M68k*this, u32 v)
+void M68k_deserialize_func(struct M68k*this, u32 v)
 {
     if (v == 1)
         this->state.bus_cycle.func = &M68k_bus_cycle_read;

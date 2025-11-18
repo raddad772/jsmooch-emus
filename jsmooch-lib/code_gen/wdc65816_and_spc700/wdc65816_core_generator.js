@@ -80,7 +80,6 @@ function wdc_replace_for_C(whatr) {
     whatr = whatr.replaceAll('let ', 'u32 '); // Inline variable declarations
     whatr = whatr.replaceAll('true', '1');
     whatr = whatr.replaceAll('false', '0');
-    whatr = whatr.replaceAll('struct ', '');
     //what = what.replaceAll('mksigned8(regs->TA)', '(i32)(i8)regs->TA')
     //what = what.replaceAll('mksigned8(regs->TR)', '(i32)(i8)regs->TR')
     return whatr;
@@ -259,14 +258,14 @@ class WDC_switchgen {
     // Passed in is reference cycle # from WDC doc, which is not 0-based
     addcycle(whatup) {
         if (this.in_case)
-            this.outstr += this.indent3 + 'break; }\n';
+            this.outstr += this.indent3 + 'break;\n';
         let what = (parseInt(this.last_case) + 1).toString();
         this.last_case = what;
         this.in_case = true;
         if (typeof(whatup) !== 'undefined')
-            this.outstr += this.indent2 + 'case ' + what + ': {// ' + whatup + '\n';
+            this.outstr += this.indent2 + 'case ' + what + ': // ' + whatup + '\n';
         else
-            this.outstr += this.indent2 + 'case ' + what + ':{\n';
+            this.outstr += this.indent2 + 'case ' + what + ':\n';
     }
 
     check_irqs() {
@@ -408,7 +407,7 @@ class WDC_switchgen {
         if (!this.no_RPDV_at_end)
             this.RPDV(0, 1, 1, 0);
         this.addl('regs.TCU = 0;')
-        this.addl('break; }')
+        this.addl('break;')
     }
 
     finished() {
@@ -2763,7 +2762,7 @@ function generate_instruction_table(indent, E, M, X, last) {
 
 function generate_instruction_code_c(opcode, indent, E, M, X)
 {
-    let outstr = '\n\nstatic void ' + func_name(opcode, E, M, X) + '(WDC65816_regs *regs, WDC65816_pins *pins) { ';
+    let outstr = '\n\nstatic void ' + func_name(opcode, E, M, X) + '(struct WDC65816_regs *regs, struct WDC65816_pins *pins) { ';
     let opcode_info = WDC_opcode_matrix[opcode];
     let r = WDC_generate_instruction_function('    ', opcode_info, E, M, X);
     if (r.strout.length === 0) {

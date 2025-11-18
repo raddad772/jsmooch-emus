@@ -2,7 +2,7 @@
 // Created by . on 4/5/25.
 //
 
-#include <cstdlib>
+#include <stdlib.h>
 #include "nds_eeprom.h"
 #include "../nds_bus.h"
 #include "helpers/multisize_memaccess.c"
@@ -10,7 +10,7 @@
 //#define flprintf(...) printf(__VA_ARGS__)
 #define flprintf(...) (void)0
 
-void NDS_eeprom_setup(NDS *this)
+void NDS_eeprom_setup(struct NDS *this)
 {
     if (this->cart.backup.detect.sz <= 512)
         this->cart.backup.detect.addr_bytes = 1;
@@ -36,12 +36,12 @@ void NDS_eeprom_setup(NDS *this)
     }
 }
 
-static void inc_addr(NDS *this)
+static void inc_addr(struct NDS *this)
 {
     this->cart.backup.cmd_addr = (this->cart.backup.cmd_addr & 0xFFFFFF00) | ((this->cart.backup.cmd_addr + 1) & 0xFF);
 }
 
-static void eeprom_get_addr(NDS *this, u32 val)
+static void eeprom_get_addr(struct NDS *this, u32 val)
 {
     if (this->cart.backup.data_in_pos == 0) {
         this->cart.backup.cmd_addr = 0;
@@ -63,7 +63,7 @@ static void eeprom_get_addr(NDS *this, u32 val)
     this->cart.backup.data_in_pos++;
 }
 
-static void eeprom_read(NDS *this)
+static void eeprom_read(struct NDS *this)
 {
     this->cart.backup.data_out.b8[0] = this->cart.backup.data_out.b8[1] = cR8(this->cart.backup.store->data, this->cart.backup.cmd_addr);
     flprintf("%04x: %02x", this->cart.backup.cmd_addr, this->cart.backup.data_out.b8[0]);
@@ -71,7 +71,7 @@ static void eeprom_read(NDS *this)
     this->cart.backup.data_in_pos++;
 }
 
-static void eeprom_write(NDS *this, u32 val)
+static void eeprom_write(struct NDS *this, u32 val)
 {
     this->cart.backup.data_out.b8[0] = 0xFF;
     switch(this->cart.backup.status.write_protect_mode) {
@@ -94,7 +94,7 @@ static void eeprom_write(NDS *this, u32 val)
     this->cart.backup.store->dirty = 1;
 }
 
-static void eeprom_handle_spi_cmd(NDS *this, u32 val, u32 is_cmd)
+static void eeprom_handle_spi_cmd(struct NDS *this, u32 val, u32 is_cmd)
 {
     switch(this->cart.backup.cmd) {
         case 0:
@@ -174,7 +174,7 @@ static void eeprom_handle_spi_cmd(NDS *this, u32 val, u32 is_cmd)
 
 }
 
-void NDS_eeprom_spi_transaction(NDS *this, u32 val)
+void NDS_eeprom_spi_transaction(struct NDS *this, u32 val)
 {
     u32 is_cmd = 0;
     if (!this->cart.backup.chipsel) {

@@ -116,9 +116,9 @@ struct atari_TIA {
 
 struct atari2600;
 
-void TIA_init(atari_TIA*);
-void TIA_reset(atari_TIA*);
-void TIA_bus_cycle(atari_TIA*, u32 addr, u32 *data, u32 rw);
-void TIA_run_cycle(atari_TIA*);
+void TIA_init(struct atari_TIA*);
+void TIA_reset(struct atari_TIA*);
+void TIA_bus_cycle(struct atari_TIA*, u32 addr, u32 *data, u32 rw);
+void TIA_run_cycle(struct atari_TIA*);
 
 #endif //JSMOOCH_EMUS_TIA_H

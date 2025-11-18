@@ -1,12 +1,12 @@
 //
 // Created by . on 6/1/24.
 //
-#include <cassert>
-#include <cstdlib>
-#include <cstdio>
-#include <cstring>
+#include <assert.h>
+#include <stdlib.h>
+#include <stdio.h>
+#include <string.h>
 
-#include "fail"
+#include "helpers/debugger/debugger.h"
 
 #include "component/controller/genesis3/genesis3.h"
 #include "component/controller/genesis6/genesis6.h"
@@ -20,7 +20,7 @@
 #define TAG_SCANLINE 1
 #define TAG_FRAME 2
 
-#define JTHIS struct genesis* this = (genesis*)jsm->ptr
+#define JTHIS struct genesis* this = (struct genesis*)jsm->ptr
 #define JSM struct jsm_system* jsm
 
 #define THIS struct genesis* this
@@ -28,26 +28,26 @@
 static void genesisJ_play(JSM);
 static void genesisJ_pause(JSM);
 static void genesisJ_stop(JSM);
-static void genesisJ_get_framevars(JSM, framevars* out);
+static void genesisJ_get_framevars(JSM, struct framevars* out);
 static void genesisJ_reset(JSM);
 static u32 genesisJ_finish_frame(JSM);
 static u32 genesisJ_finish_scanline(JSM);
 static u32 genesisJ_step_master(JSM, u32 howmany);
-static void genesisJ_load_BIOS(JSM, multi_file_set* mfs);
-static void genesisJ_describe_io(JSM, cvec* IOs);
+static void genesisJ_load_BIOS(JSM, struct multi_file_set* mfs);
+static void genesisJ_describe_io(JSM, struct cvec* IOs);
 
 
 u32 read_trace_z80(void *ptr, u32 addr) {
-    struct genesis* this = (genesis*)ptr;
+    struct genesis* this = (struct genesis*)ptr;
     return genesis_z80_bus_read(this, addr, this->z80.pins.D, 0);
 }
 
 u32 read_trace_m68k(void *ptr, u32 addr, u32 UDS, u32 LDS) {
-    struct genesis* this = (genesis*)ptr;
+    struct genesis* this = (struct genesis*)ptr;
     return genesis_mainbus_read(this, addr, UDS, LDS, this->io.m68k.open_bus_data, 0);
 }
 
-static void setup_debug_waveform(genesis *this, debug_waveform *dw)
+static void setup_debug_waveform(struct genesis *this, struct debug_waveform *dw)
 {
     if (dw->samples_requested == 0) return;
     dw->samples_rendered = dw->samples_requested;
@@ -55,7 +55,7 @@ static void setup_debug_waveform(genesis *this, debug_waveform *dw)
     dw->user.buf_pos = 0;
 }
 
-void genesisJ_set_audiobuf(jsm_system* jsm, audiobuf *ab)
+void genesisJ_set_audiobuf(struct jsm_system* jsm, struct audiobuf *ab)
 {
     JTHIS;
     this->audio.buf = ab;
@@ -65,7 +65,7 @@ void genesisJ_set_audiobuf(jsm_system* jsm, audiobuf *ab)
         struct debug_waveform *wf = cpg(this->dbg.waveforms_psg.main);
         this->audio.master_cycles_per_max_sample = (float)this->clock.timing.frame.cycles_per / (float)wf->samples_requested;
 
-        wf = (debug_waveform *)cpg(this->dbg.waveforms_psg.chan[0]);
+        wf = (struct debug_waveform *)cpg(this->dbg.waveforms_psg.chan[0]);
         this->audio.master_cycles_per_min_sample = (float)this->clock.timing.frame.cycles_per / (float)wf->samples_requested;
     }
 
@@ -76,7 +76,7 @@ void genesisJ_set_audiobuf(jsm_system* jsm, audiobuf *ab)
     if (wf->clock_divider == 0) wf->clock_divider = wf->default_clock_divider;
     this->clock.psg.clock_divisor = wf->clock_divider;
     for (u32 i = 0; i < 4; i++) {
-        wf = (debug_waveform *)cpg(this->dbg.waveforms_psg.chan[i]);
+        wf = (struct debug_waveform *)cpg(this->dbg.waveforms_psg.chan[i]);
         setup_debug_waveform(this, wf);
         if (i < 3) {
             this->psg.sw[i].ext_enable = wf->ch_output_enabled;
@@ -92,14 +92,14 @@ void genesisJ_set_audiobuf(jsm_system* jsm, audiobuf *ab)
     if (wf->clock_divider == 0) wf->clock_divider = wf->default_clock_divider;
     this->clock.ym2612.clock_divisor = wf->clock_divider;
     for (u32 i = 0; i < 6; i++) {
-        wf = (debug_waveform *)cpg(this->dbg.waveforms_ym2612.chan[i]);
+        wf = (struct debug_waveform *)cpg(this->dbg.waveforms_ym2612.chan[i]);
         setup_debug_waveform(this, wf);
         this->ym2612.channel[i].ext_enable = wf->ch_output_enabled;
     }
 
 }
 
-static void populate_opts(jsm_system *jsm)
+static void populate_opts(struct jsm_system *jsm)
 {
     debugger_widgets_add_checkbox(&jsm->opts, "VDP: Enable Layer A", 1, 1, 0);
     debugger_widgets_add_checkbox(&jsm->opts, "VDP: Enable Layer B", 1, 1, 0);
@@ -107,7 +107,7 @@ static void populate_opts(jsm_system *jsm)
     debugger_widgets_add_checkbox(&jsm->opts, "VDP: trace", 1, 0, 0);
 }
 
-static void read_opts(jsm_system *jsm, genesis* this)
+static void read_opts(struct jsm_system *jsm, struct genesis* this)
 {
     struct debugger_widget *w = cvec_get(&jsm->opts, 0);
     this->opts.vdp.enable_A = w->checkbox.value;
@@ -122,7 +122,7 @@ static void read_opts(jsm_system *jsm, genesis* this)
     this->opts.vdp.ex_trace = w->checkbox.value;
 }
 
-static void c_vdp_z80_m68k(genesis *this, gensched_item *e)
+static void c_vdp_z80_m68k(struct genesis *this, struct gensched_item *e)
 {
     this->clock.master_cycle_count += e->clk_add_vdp;
     genesis_VDP_cycle(this);
@@ -136,7 +136,7 @@ static void c_vdp_z80_m68k(genesis *this, gensched_item *e)
     //assert((e->clk_add_m68k+e->clk_add_vdp+e->clk_add_z80) == 7);
 }
 
-static void c_z80_vdp_m68k(genesis *this, gensched_item *e)
+static void c_z80_vdp_m68k(struct genesis *this, struct gensched_item *e)
 {
     this->clock.master_cycle_count += e->clk_add_z80;
     genesis_cycle_z80(this);
@@ -149,7 +149,7 @@ static void c_z80_vdp_m68k(genesis *this, gensched_item *e)
     //assert((e->clk_add_m68k+e->clk_add_vdp+e->clk_add_z80) == 7);
 }
 
-static void c_vdp_m68k(genesis *this, gensched_item *e)
+static void c_vdp_m68k(struct genesis *this, struct gensched_item *e)
 {
     this->clock.master_cycle_count += e->clk_add_vdp;
     genesis_VDP_cycle(this);
@@ -159,7 +159,7 @@ static void c_vdp_m68k(genesis *this, gensched_item *e)
     //assert((e->clk_add_m68k+e->clk_add_vdp) == 7);
 }
 
-static void c_z80_m68k(genesis *this, gensched_item *e)
+static void c_z80_m68k(struct genesis *this, struct gensched_item *e)
 {
     this->clock.master_cycle_count += e->clk_add_z80;
     genesis_cycle_z80(this);
@@ -169,13 +169,13 @@ static void c_z80_m68k(genesis *this, gensched_item *e)
     //assert((e->clk_add_m68k+e->clk_add_z80) == 7);
 }
 
-static void c_m68k(genesis *this, gensched_item *e)
+static void c_m68k(struct genesis *this, struct gensched_item *e)
 {
     genesis_cycle_m68k(this);
     this->clock.master_cycle_count += 7;
 }
 
-static void create_scheduling_lookup_table(genesis *this)
+static void create_scheduling_lookup_table(struct genesis *this)
 {
     u32 lookup_add = 0;
     for (i32 cycles=16; cycles<24; cycles+=4) { // 4 and 5 are the two possible vdp divisors
@@ -262,7 +262,7 @@ static void create_scheduling_lookup_table(genesis *this)
 
 static void block_step(void *ptr, u64 key, u64 clock, u32 jitter)
 {
-    struct genesis *this = (genesis *)ptr;
+    struct genesis *this = (struct genesis *)ptr;
     //             // Index = (z80-1 * x) + vdp-1
     u32 lu = ((this->clock.vdp.clock_divisor >> 2) - 4);
     assert(lu >= 0);
@@ -277,7 +277,7 @@ static void block_step(void *ptr, u64 key, u64 clock, u32 jitter)
 
 /*static void run_block(void *ptr, u64 key, u64 clock, u32 jitter)
 {
-    struct genesis *this = (genesis *)ptr;
+    struct genesis *this = (struct genesis *)ptr;
     this->block_cycles_to_run += key;
     while (this->block_cycles_to_run > 0) {
         block_step(this);
@@ -286,9 +286,9 @@ static void block_step(void *ptr, u64 key, u64 clock, u32 jitter)
     }
 }*/
 
-void genesis_new(JSM, enum jsm::systems kind)
+void genesis_new(JSM, enum jsm_systems kind)
 {
-    struct genesis* this = (genesis*)malloc(sizeof(genesis));
+    struct genesis* this = (struct genesis*)malloc(sizeof(struct genesis));
     memset(this, 0, sizeof(*this));
     populate_opts(jsm);
     create_scheduling_lookup_table(this);
@@ -297,7 +297,7 @@ void genesis_new(JSM, enum jsm::systems kind)
     this->scheduler.run.func = &block_step;
     this->scheduler.run.ptr = this;
 
-    this->PAL = kind == jsm::systems::MEGADRIVE_PAL;
+    this->PAL = kind == SYS_MEGADRIVE_PAL;
     Z80_init(&this->z80, 0);
     M68k_init(&this->m68k, 1);
     genesis_clock_init(&this->clock, kind);
@@ -357,7 +357,7 @@ void genesis_delete(JSM) {
     jsm_clearfuncs(jsm);
 }
 
-static void load_symbols(genesis* this) {
+static void load_symbols(struct genesis* this) {
     FILE *f = fopen("/Users/dave/s1symbols", "r");
     if (f == 0) abort();
     char buf[200];
@@ -383,7 +383,7 @@ static inline float i16_to_float(i16 val)
 
 static void run_ym2612(void *ptr, u64 key, u64 clock, u32 jitter)
 {
-    struct genesis* this = (genesis *)ptr;
+    struct genesis* this = (struct genesis *)ptr;
     this->timing.ym2612_cycles++;
     u64 cur = clock - jitter;
     scheduler_only_add_abs(&this->scheduler, cur+this->clock.ym2612.clock_divisor, 0, this, &run_ym2612, NULL);
@@ -392,7 +392,7 @@ static void run_ym2612(void *ptr, u64 key, u64 clock, u32 jitter)
 
 static void run_psg(void *ptr, u64 key, u64 clock, u32 jitter)
 {
-    struct genesis* this = (genesis *)ptr;
+    struct genesis* this = (struct genesis *)ptr;
     this->timing.psg_cycles++;
     u64 cur = clock - jitter;
     scheduler_only_add_abs(&this->scheduler, cur+this->clock.psg.clock_divisor, 0, this, &run_psg, NULL);
@@ -401,7 +401,7 @@ static void run_psg(void *ptr, u64 key, u64 clock, u32 jitter)
 
 static void sample_audio(void *ptr, u64 key, u64 clock, u32 jitter)
 {
-    struct genesis* this = (genesis *)ptr;
+    struct genesis* this = (struct genesis *)ptr;
     if (this->audio.buf) {
         this->audio.cycles++;
         this->audio.next_sample_cycle += this->audio.master_cycles_per_audio_sample;
@@ -424,7 +424,7 @@ static void sample_audio(void *ptr, u64 key, u64 clock, u32 jitter)
 
 static void sample_audio_debug_max(void *ptr, u64 key, u64 clock, u32 jitter)
 {
-    struct genesis *this = (genesis *)ptr;
+    struct genesis *this = (struct genesis *)ptr;
 
     /* PSG */
     struct debug_waveform *dw = cpg(this->dbg.waveforms_psg.main);
@@ -445,7 +445,7 @@ static void sample_audio_debug_max(void *ptr, u64 key, u64 clock, u32 jitter)
 
 static void sample_audio_debug_min(void *ptr, u64 key, u64 clock, u32 jitter)
 {
-    struct genesis *this = (genesis *)ptr;
+    struct genesis *this = (struct genesis *)ptr;
 
     /* PSG */
     struct debug_waveform *dw = cpg(this->dbg.waveforms_psg.chan[0]);
@@ -473,7 +473,7 @@ static void sample_audio_debug_min(void *ptr, u64 key, u64 clock, u32 jitter)
 }
 
 
-static void schedule_first(genesis *this)
+static void schedule_first(struct genesis *this)
 {
     scheduler_only_add_abs(&this->scheduler, (i64)this->audio.next_sample_cycle_max, 0, this, &sample_audio_debug_max, NULL);
     scheduler_only_add_abs(&this->scheduler, (i64)this->audio.next_sample_cycle_min, 0, this, &sample_audio_debug_min, NULL);
@@ -483,7 +483,7 @@ static void schedule_first(genesis *this)
     genesis_VDP_schedule_first(this);
 }
 
-static void genesisIO_load_cart(JSM, multi_file_set *mfs, physical_io_device *which_pio)
+static void genesisIO_load_cart(JSM, struct multi_file_set *mfs, struct physical_io_device *which_pio)
 {
     JTHIS;
     struct buf* b = &mfs->files[0].buf;
@@ -502,7 +502,7 @@ static void genesisIO_unload_cart(JSM)
 {
 }
 
-static void setup_crt(genesis *this, JSM_DISPLAY *d)
+static void setup_crt(struct genesis *this, struct JSM_DISPLAY *d)
 {
     d->standard = JSS_NTSC;
     d->enabled = 1;
@@ -535,7 +535,7 @@ static void setup_crt(genesis *this, JSM_DISPLAY *d)
     d->pixelometry.overscan.top = d->pixelometry.overscan.bottom = 0;
 }
 
-static void setup_audio(genesis *this, cvec* IOs)
+static void setup_audio(struct genesis *this, struct cvec* IOs)
 {
     struct physical_io_device *pio = cvec_push_back(IOs);
     pio->kind = HID_AUDIO_CHANNEL;
@@ -546,7 +546,7 @@ static void setup_audio(genesis *this, cvec* IOs)
     chan->low_pass_filter = 24000;
 }
 
-void genesisJ_describe_io(JSM, cvec *IOs)
+void genesisJ_describe_io(JSM, struct cvec *IOs)
 {
     cvec_lock_reallocs(IOs);
     JTHIS;
@@ -601,7 +601,7 @@ void genesisJ_describe_io(JSM, cvec *IOs)
 
     setup_audio(this, IOs);
 
-    this->vdp.display = &((physical_io_device *)cpg(this->vdp.display_ptr))->display;
+    this->vdp.display = &((struct physical_io_device *)cpg(this->vdp.display_ptr))->display;
     genesis_controllerport_connect(&this->io.controller_port1, genesis_controller_6button, &this->controller1);
     //genesis_controllerport_connect(&this->io.controller_port2, genesis_controller_3button, &this->controller2);
 }
@@ -618,7 +618,7 @@ void genesisJ_stop(JSM)
 {
 }
 
-void genesisJ_get_framevars(JSM, framevars* out)
+void genesisJ_get_framevars(JSM, struct framevars* out)
 {
     JTHIS;
     out->master_frame = this->clock.master_frame;
@@ -716,7 +716,7 @@ u32 genesisJ_step_master(JSM, u32 howmany)
     return 0;
 }
 
-void genesisJ_load_BIOS(JSM, multi_file_set* mfs)
+void genesisJ_load_BIOS(JSM, struct multi_file_set* mfs)
 {
     printf("\nSega Genesis doesn't have a BIOS...?");
 }

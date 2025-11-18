@@ -14,6 +14,6 @@ struct R3000ctxt {
     u64 cop; // bits 0-63: COP regs
 };
 
-void R3000_disassemble(u32 opcode, jsm_string *out, i64 ins_addr, R3000ctxt *ct);
+void R3000_disassemble(u32 opcode, struct jsm_string *out, i64 ins_addr, struct R3000ctxt *ct);
 
 #endif //JSMOOCH_EMUS_R3000_DISASSEMBLER_H

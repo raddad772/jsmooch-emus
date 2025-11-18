@@ -28,28 +28,28 @@ struct system_io {
         ch_power = ch_reset = ch_pause = nullptr;
     }
     struct CDKRKR {
-        HID_digital_button* up;
-        HID_digital_button* down;
-        HID_digital_button* left;
-        HID_digital_button* right;
-        HID_digital_button* fire1;
-        HID_digital_button* fire2;
-        HID_digital_button* fire3;
-        HID_digital_button* fire4;
-        HID_digital_button* fire5;
-        HID_digital_button* fire6;
-        HID_digital_button* shoulder_left;
-        HID_digital_button* shoulder_right;
-        HID_digital_button* start;
-        HID_digital_button* select;
+        struct HID_digital_button* up;
+        struct HID_digital_button* down;
+        struct HID_digital_button* left;
+        struct HID_digital_button* right;
+        struct HID_digital_button* fire1;
+        struct HID_digital_button* fire2;
+        struct HID_digital_button* fire3;
+        struct HID_digital_button* fire4;
+        struct HID_digital_button* fire5;
+        struct HID_digital_button* fire6;
+        struct HID_digital_button* shoulder_left;
+        struct HID_digital_button* shoulder_right;
+        struct HID_digital_button* start;
+        struct HID_digital_button* select;
     } p[2]{};
     struct kb {
         //SDL_KeyCode
-        //HID_digital_button* 1
+        //struct HID_digital_button* 1
     };
-    HID_digital_button* ch_power;
-    HID_digital_button* ch_reset;
-    HID_digital_button* ch_pause;
+    struct HID_digital_button* ch_power;
+    struct HID_digital_button* ch_reset;
+    struct HID_digital_button* ch_pause;
 };
 
 enum full_system_states {
@@ -64,9 +64,9 @@ struct fssothing {
 
 class WFORM {
 public:
-    my_texture tex{};
+    struct my_texture tex{};
     bool enabled{};
-    debug_waveform *wf{};
+    struct debug_waveform *wf{};
     bool output_enabled{true};
     u32 height{};
     std::vector<u8> drawbuf{};
@@ -74,39 +74,39 @@ public:
 
 class WVIEW {
 public:
-    waveform_view *view{};
+    struct waveform_view *view{};
     std::vector<class WFORM> waveforms{};
 };
 
 class CVIEW {
 public:
     bool enabled{};
-    debugger_view *view;
+    struct debugger_view *view;
 };
 
 class TVIEW {
 public:
     bool enabled{};
-    debugger_view *view;
+    struct debugger_view *view;
 };
 
 class IVIEW {
 public:
     bool enabled{};
-    debugger_view *view{};
-    my_texture texture;
+    struct debugger_view *view{};
+    struct my_texture texture;
 };
 
 class DLVIEW {
 public:
     bool enabled{};
-    debugger_view *view{};
+    struct debugger_view *view{};
 };
 
 class DVIEW {
 public:
-    debugger_view *view{};
-    std::vector<disassembly_entry_strings> dasm_rows{};
+    struct debugger_view *view{};
+    struct cvec dasm_rows{};
 };
 
 struct full_system {
@@ -121,56 +121,57 @@ public:
     WGPUDevice wgpu_device{};
     void platform_setup(WGPUDevice device) { wgpu_device = device; };
 #endif
-    jsm_system *sys;
-    debugger_interface dbgr{};
+    struct jsm_system *sys;
+    struct debugger_interface dbgr{};
 
-    multi_file_set ROMs;
+    struct multi_file_set ROMs;
     std::vector<WVIEW> waveform_views;
     std::vector<DVIEW> dasm_views;
     std::vector<TVIEW> trace_views;
     std::vector<CVIEW> console_views;
     bool screenshot;
-    system_io inputs;
-    std::vector<JSM_AUDIO_CHANNEL *> audiochans;
+    struct system_io inputs;
+    std::vector<struct JSM_AUDIO_CHANNEL *> audiochans;
     bool has_played_once{};
     bool enable_debugger{};
     u32 worked;
 
-    audiowrap audio{};
+    struct audiowrap audio{};
 
     u32 debugger_setup{};
 
     full_system() {
         sys = nullptr;
+        debugger_interface_init(&dbgr);
         //cvec_ptr_init(&dasm);
         worked = 0;
-        run_state = FSS_pause;
+        state = FSS_pause;
     }
 
     ~full_system();
-    full_system_states run_state;
+    enum full_system_states state;
 
     struct fsio {
-        cvec_ptr<physical_io_device> touchscreen{};
-        cvec_ptr<physical_io_device> controller1{};
-        cvec_ptr<physical_io_device> controller2{};
-        cvec_ptr<physical_io_device> display{};
-        cvec_ptr<physical_io_device> chassis{};
-        cvec_ptr<physical_io_device> keyboard{};
-        cvec_ptr<physical_io_device> mouse{};
-        cvec_ptr<physical_io_device> cartridge_port{};
-        cvec_ptr<physical_io_device> disk_drive{};
-        cvec_ptr<physical_io_device> audio_cassette{};
+        struct cvec_ptr touchscreen{};
+        struct cvec_ptr controller1{};
+        struct cvec_ptr controller2{};
+        struct cvec_ptr display{};
+        struct cvec_ptr chassis{};
+        struct cvec_ptr keyboard{};
+        struct cvec_ptr mouse{};
+        struct cvec_ptr cartridge_port{};
+        struct cvec_ptr disk_drive{};
+        struct cvec_ptr audio_cassette{};
 
         fsio() = default;
     } io{};
 
     struct {
         float u_overscan, v_overscan;
-        fssothing with_overscan;
-        fssothing without_overscan;
-        JSM_DISPLAY *display;
-        my_texture backbuffer_texture;
+        struct fssothing with_overscan;
+        struct fssothing without_overscan;
+        struct JSM_DISPLAY *display;
+        struct my_texture backbuffer_texture;
         void *backbuffer_backer{};
 
         double x_scale_mult, y_scale_mult;
@@ -179,11 +180,11 @@ public:
     } output{};
 
     struct {
-        memory_view *view{};
+        struct memory_view *view{};
     } memory;
     struct {
-        my_texture texture;
-        events_view *view{};
+        struct my_texture texture;
+        struct events_view *view{};
     } events;
 
     std::vector<IVIEW> images;
@@ -192,11 +193,11 @@ public:
     [[nodiscard]] ImVec2 output_size() const;
     [[nodiscard]] ImVec2 output_uv0() const;
     [[nodiscard]] ImVec2 output_uv1() const;
-    void setup_persistent_store(persistent_store &ps, multi_file_set &mfs);
+    void setup_persistent_store(struct persistent_store *ps, struct multi_file_set *mfs);
     void sync_persistent_storage();
     void update_touch(i32 x, i32 y, i32 button_down);
-    persistent_store *my_ps{};
-    void setup_system(jsm::systems which);
+    struct persistent_store *my_ps{};
+    void setup_system(enum jsm_systems which);
     void destroy_system();
     void save_state();
     void load_state();
@@ -211,19 +212,19 @@ public:
         u64 frames = 0xFFFFFFFFFFFFFFFF;
         bool has_audio_buf = {};
     } int_time = {};
-    framevars get_framevars() const;
+    struct framevars get_framevars() const;
     void present();
     void take_screenshot(void *where, u32 buf_width, u32 buf_height);
     void events_view_present();
     void pre_events_view_present();
-    void waveform_view_present(WVIEW &wv);
-    void image_view_present(debugger_view &dview, my_texture &tex);
+    void waveform_view_present(struct WVIEW &wv);
+    void image_view_present(struct debugger_view *dview, struct my_texture &tex);
     void setup_wgpu();
     void setup_audio();
     void setup_tracing();
 private:
     void debugger_pre_frame();
-    void debugger_pre_frame_waveforms(waveform_view &wv);
+    void debugger_pre_frame_waveforms(struct waveform_view *wv);
     void setup_ios();
     void load_default_ROM();
     void setup_bios();
@@ -236,10 +237,10 @@ private:
     void add_disassembly_view(u32);
     void add_image_view(u32);
     void add_waveform_view(u32 idx);
-    void waveform_view_present(debugger_view &dview, WFORM &wf);
+    void waveform_view_present(struct debugger_view *dview, struct WFORM &wf);
 };
 
-void newsys(full_system *fsys);
+void newsys(struct full_system *fsys);
 
 
 

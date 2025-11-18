@@ -66,11 +66,11 @@ struct HUC6260 {
 #define HUC6260_LINE_VSYNC_END 251 // line to term on, so 246 and 249 = 3 lines
 
 
-void HUC6260_init(HUC6260 *, scheduler_t *scheduler, HUC6270 *vdc0, HUC6270 *vdc1);
-void HUC6260_delete(HUC6260 *);
-void HUC6260_reset(HUC6260 *);
-void HUC6260_write(HUC6260 *, u32 addr, u32 val);
-u32 HUC6260_read(HUC6260 *, u32 addr, u32 old);
+void HUC6260_init(struct HUC6260 *, struct scheduler_t *scheduler, struct HUC6270 *vdc0, struct HUC6270 *vdc1);
+void HUC6260_delete(struct HUC6260 *);
+void HUC6260_reset(struct HUC6260 *);
+void HUC6260_write(struct HUC6260 *, u32 addr, u32 val);
+u32 HUC6260_read(struct HUC6260 *, u32 addr, u32 old);
 void HUC6260_pixel_clock(void *ptr, u64 key, u64 clock, u32 jitter);
-void HUC6260_schedule_first(HUC6260 *);
+void HUC6260_schedule_first(struct HUC6260 *);
 #endif //JSMOOCH_EMUS_HUC6260_H

@@ -11,7 +11,7 @@
 
 #include "assert.h"
 #include "stdio.h"
-#include <cstring>
+#include "string.h"
 #include "stdarg.h"
 #include "sh4_interpreter.h"
 #include "sh4_interpreter_opcodes.h"
@@ -33,28 +33,28 @@
 #define SH4_CLOCK_DIVIDER 1
 #define SH4_TIMER_MULTIPLIER (8)
 
-static void set_user_mode(SH4* this)
+static void set_user_mode(struct SH4* this)
 {
 
 }
 
-static void set_privileged_mode(SH4* this)
+static void set_privileged_mode(struct SH4* this)
 {
 
 }
 
-void SH4_regs_SR_reset(SH4_regs_SR* this)
+void SH4_regs_SR_reset(struct SH4_regs_SR* this)
 {
 
 }
 
-u32 SH4_regs_SR_get(SH4_regs_SR* this)
+u32 SH4_regs_SR_get(struct SH4_regs_SR* this)
 {
     return (this->data & 0b10001111111111110111110000001100) | (this->MD << 30) | (this->RB << 29) | (this->BL << 28) | (this->FD << 15) |
             (this->M << 9) | (this->Q << 8) | (this->IMASK << 4) | (this->S << 1) | (this->T);
 }
 
-void SH4_regs_FPSCR_update(SH4_regs_FPSCR* this, u32 old_RM, u32 old_DN)
+void SH4_regs_FPSCR_update(struct SH4_regs_FPSCR* this, u32 old_RM, u32 old_DN)
 {
     // 0=nearest, 1=zero, 2 & 3 = reserved
     /*assert(this->RM < 2);
@@ -149,20 +149,20 @@ void SH4_regs_FPSCR_update(SH4_regs_FPSCR* this, u32 old_RM, u32 old_DN)
 }
 
 
-u32 SH4_regs_FPSCR_get(SH4_regs_FPSCR* this)
+u32 SH4_regs_FPSCR_get(struct SH4_regs_FPSCR* this)
 {
     return (this->data & 0xFFC00000) | (this->FR << 21) | (this->SZ << 20) | (this->PR << 19) |
             (this->DN << 18) | (this->Cause << 12) | (this->Enable << 7) | (this->Flag << 2) | (this->RM);
 }
 
-void SH4_regs_FPSCR_bankswitch(SH4_regs* this)
+void SH4_regs_FPSCR_bankswitch(struct SH4_regs* this)
 {
     memcpy(&this->fb[2], &this->fb[0], 64);
     memcpy(&this->fb[0], &this->fb[1], 64);
     memcpy(&this->fb[1], &this->fb[2], 64);
 }
 
-void SH4_regs_FPSCR_set(SH4_regs* this, u32 val) {
+void SH4_regs_FPSCR_set(struct SH4_regs* this, u32 val) {
     // If floating-point select register changed
     if (this->FPSCR.FR != ((val >> 21) & 1)) {
         SH4_regs_FPSCR_bankswitch(this);
@@ -183,7 +183,7 @@ void SH4_regs_FPSCR_set(SH4_regs* this, u32 val) {
     SH4_regs_FPSCR_update(&this->FPSCR, old_RM, old_DN);
 }
 
-static void SH4_pprint(SH4* this, SH4_ins_t *ins, bool last_traces)
+static void SH4_pprint(struct SH4* this, struct SH4_ins_t *ins, bool last_traces)
 {
     u32 had_any = 0;
     i32 last_n = -1;
@@ -264,7 +264,7 @@ static void SH4_pprint(SH4* this, SH4_ins_t *ins, bool last_traces)
     this->pp_last_n = last_n;
 }
 
-void lycoder_print(SH4* this, u32 opcode)
+void lycoder_print(struct SH4* this, u32 opcode)
 {
     if (dbg.trace_on)
         dbg_printf("\n%08x %04x %08x %08x %08x %08x %08x %08x %08x %08x %08x %08x %08x %08x %08x %08x %08x %08x %08x %08x",
@@ -277,7 +277,7 @@ void lycoder_print(SH4* this, u32 opcode)
                    this->regs.R[15], SH4_regs_SR_get(&this->regs.SR), SH4_regs_FPSCR_get(&this->regs.FPSCR));
 }
 
-void SH4_fetch_and_exec(SH4* this, u32 is_delay_slot)
+void SH4_fetch_and_exec(struct SH4* this, u32 is_delay_slot)
 {
     u32 opcode = this->fetch_ins(this->mptr, this->regs.PC);
 #ifdef SH4_DBG_SUPPORT
@@ -316,7 +316,7 @@ void SH4_fetch_and_exec(SH4* this, u32 is_delay_slot)
     ins->exec(this, ins);
 }
 
-void SH4_run_cycles(SH4* this, u32 howmany) {
+void SH4_run_cycles(struct SH4* this, u32 howmany) {
     // fetch
     this->cycles += (i32)howmany;
     while(this->cycles > 0) {
@@ -343,12 +343,12 @@ void SH4_run_cycles(SH4* this, u32 howmany) {
     }
 }
 
-void SH4_delete(SH4* this)
+void SH4_delete(struct SH4* this)
 {
     jsm_string_delete(&this->console);
 }
 
-void SH4_init(SH4* this, scheduler_t* scheduler)
+void SH4_init(struct SH4* this, struct scheduler_t* scheduler)
 {
     this->trace.my_cycles = 0;
     this->trace.ok = 0;
@@ -374,7 +374,7 @@ void SH4_init(SH4* this, scheduler_t* scheduler)
 #endif
 }
 
-static void swap_register_banks(SH4* this)
+static void swap_register_banks(struct SH4* this)
 {
     //printf(DBGC_RED "\nBANK SWAP RB:%d" DBGC_RST, this->regs.SR.RB);
     for (u32 i = 0; i < 8; i++) {
@@ -385,11 +385,11 @@ static void swap_register_banks(SH4* this)
 }
 
 
-void SH4_update_mode(SH4* this)
+void SH4_update_mode(struct SH4* this)
 {
 }
 
-void SH4_SR_set(SH4* this, u32 val)
+void SH4_SR_set(struct SH4* this, u32 val)
 {
     // TODO: only do bank switch when MD is proper. DUH!
     val &= 0x700083F3;
@@ -434,7 +434,7 @@ void SH4_SR_set(SH4* this, u32 val)
 
 }
 
-void SH4_reset(SH4* this)
+void SH4_reset(struct SH4* this)
 {
     /* for SR,
      * MD bit = 1, RB bit = 1, BL bit = 1, FD bit = 0,
@@ -465,7 +465,7 @@ PC = H'A0000000;*
 
 u64 SH4_ma_read(void *ptr, u32 addr, u32 sz, u32* success)
 {
-    struct SH4* this = (SH4*)ptr;
+    struct SH4* this = (struct SH4*)ptr;
     u32 full_addr = addr;
     u32 up_addr = addr | 0xE0000000;
     addr &= 0x1FFFFFFF;
@@ -531,13 +531,13 @@ u64 SH4_ma_read(void *ptr, u32 addr, u32 sz, u32* success)
     return 0;
 }
 
-static void set_QACR(SH4* this, u32 num, u32 val)
+static void set_QACR(struct SH4* this, u32 num, u32 val)
 {
     this->regs.QACR[num] = val;
     u32 area = (val >> 2) & 7;
 }
 
-static void console_add(SH4* this, u32 val, u32 sz)
+static void console_add(struct SH4* this, u32 val, u32 sz)
 {
     if (sz == DC8) {
         jsm_string_sprintf(&this->console, "%c", val);
@@ -555,7 +555,7 @@ void SH4_ma_write(void *ptr, u32 addr, u64 val, u32 sz, u32* success)
         *success = 0;
         return;
     }
-    struct SH4* this = (SH4*)ptr;
+    struct SH4* this = (struct SH4*)ptr;
 
     if ((up_addr >= 0xFFD80000) && (up_addr <= 0xFFD8002C)) {
         TMU_write(this, full_addr, val, sz, success);
@@ -586,14 +586,14 @@ void SH4_ma_write(void *ptr, u32 addr, u64 val, u32 sz, u32* success)
     *success = 0;
 }
 
-void SH4_give_memaccess(SH4* this, SH4_memaccess_t* to)
+void SH4_give_memaccess(struct SH4* this, struct SH4_memaccess_t* to)
 {
     to->ptr = (void *)this;
     to->read = &SH4_ma_read;
     to->write = &SH4_ma_write;
 }
 
-void SH4_setup_tracing(SH4* this, jsm_debug_read_trace *rt, u64 *trace_cycles)
+void SH4_setup_tracing(struct SH4* this, struct jsm_debug_read_trace *rt, u64 *trace_cycles)
 {
     this->trace.ok = 1;
     jsm_copy_read_trace(&this->read_trace, rt);

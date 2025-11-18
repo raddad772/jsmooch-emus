@@ -81,21 +81,21 @@ struct SM83 {
     DBG_EVENT_VIEW_ONLY_END
 };
 
-void SM83_regs_F_setbyte(SM83_regs_F*, u32 val);
-u32 SM83_regs_F_getbyte(SM83_regs_F*);
-void SM83_regs_F_init(SM83_regs_F*);
-void SM83_regs_init(SM83_regs*);
-void SM83_pins_init(SM83_pins*);
+void SM83_regs_F_setbyte(struct SM83_regs_F*, u32 val);
+u32 SM83_regs_F_getbyte(struct SM83_regs_F*);
+void SM83_regs_F_init(struct SM83_regs_F*);
+void SM83_regs_init(struct SM83_regs*);
+void SM83_pins_init(struct SM83_pins*);
 
-void SM83_init(SM83*); // Initializes SM83 processor struct. Use before using the struct
-void SM83_cycle(SM83*); // Runs SM83 cycle
-void SM83_reset(SM83*); // Resets SM83 processor
-void SM83_enable_tracing(SM83*, jsm_debug_read_trace *dbg_read_trace);
-void SM83_disable_tracing(SM83*);
+void SM83_init(struct SM83*); // Initializes SM83 processor struct. Use before using the struct
+void SM83_cycle(struct SM83*); // Runs SM83 cycle
+void SM83_reset(struct SM83*); // Resets SM83 processor
+void SM83_enable_tracing(struct SM83*, struct jsm_debug_read_trace *dbg_read_trace);
+void SM83_disable_tracing(struct SM83*);
 
 struct serialized_state;
-void SM83_serialize(SM83*, serialized_state *state);
-void SM83_deserialize(SM83*, serialized_state *state);
+void SM83_serialize(struct SM83*, struct serialized_state *state);
+void SM83_deserialize(struct SM83*, struct serialized_state *state);
 
 
 #endif

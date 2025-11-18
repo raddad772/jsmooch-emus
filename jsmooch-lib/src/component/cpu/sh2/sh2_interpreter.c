@@ -4,7 +4,7 @@
 
 #include "sh2_interpreter.h"
 
-void SH2_SR_set(SH2_regs_SR *this, u32 val)
+void SH2_SR_set(struct SH2_regs_SR *this, u32 val)
 {
     this->data = val;
     this->M = (val >> 9) & 1;
@@ -14,12 +14,12 @@ void SH2_SR_set(SH2_regs_SR *this, u32 val)
     this->T = val & 1;
 }
 
-u32 SH2_SR_get(SH2_regs_SR *this)
+u32 SH2_SR_get(struct SH2_regs_SR *this)
 {
     return (this->M << 9) | (this->Q << 8) | (this->IMASK << 4) | (this->S << 1) | (this->T);
 }
 
-void SH2_init(SH2 *this, scheduler_t *scheduler)
+void SH2_init(struct SH2 *this, struct scheduler_t *scheduler)
 {
     this->trace.my_cycles = 0;
     this->trace.ok = 0;
@@ -42,7 +42,7 @@ void SH2_init(SH2 *this, scheduler_t *scheduler)
     this->write = NULL;
 }
 
-void SH2_reset(SH2 *this)
+void SH2_reset(struct SH2 *this)
 {
     this->regs.VBR = 0;
     // Get PC from global table

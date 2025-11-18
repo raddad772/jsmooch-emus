@@ -8,11 +8,11 @@
 #include "helpers/int.h"
 
 struct PS1_GPU;
-void setpix(PS1_GPU *this, i32 y, i32 x, u32 color, u32 is_tex, u32 tex_mask);
-void setpix_split(PS1_GPU *this, i32 y, i32 x, u32 r, u32 g, u32 b, u32 is_tex, u32 tex_mask);
-void semipix(PS1_GPU *this, i32 y, i32 x, u32 color, u32 is_tex, u32 tex_mask);
-void semipixm(PS1_GPU *this, i32 y, i32 x, u32 color, u32 mode, u32 is_tex, u32 tex_mask);
-void semipix_split(PS1_GPU *this, i32 y, i32 x, u32 r, u32 g, u32 b, u32 is_tex, u32 tex_mask);
+void setpix(struct PS1_GPU *this, i32 y, i32 x, u32 color, u32 is_tex, u32 tex_mask);
+void setpix_split(struct PS1_GPU *this, i32 y, i32 x, u32 r, u32 g, u32 b, u32 is_tex, u32 tex_mask);
+void semipix(struct PS1_GPU *this, i32 y, i32 x, u32 color, u32 is_tex, u32 tex_mask);
+void semipixm(struct PS1_GPU *this, i32 y, i32 x, u32 color, u32 mode, u32 is_tex, u32 tex_mask);
+void semipix_split(struct PS1_GPU *this, i32 y, i32 x, u32 r, u32 g, u32 b, u32 is_tex, u32 tex_mask);
 
 static inline u32 BGR24to15(u32 c)
 {

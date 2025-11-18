@@ -2,7 +2,7 @@
 // Created by . on 1/21/25.
 //
 
-#include <cstring>
+#include <string.h>
 
 #include "nds_rtc.h"
 #include "nds_bus.h"
@@ -24,7 +24,7 @@ static u32 bcd_inc(u32 v) {
     return v;
 }
 
-static u32 days_in_month(NDS *this)
+static u32 days_in_month(struct NDS *this)
 {
     u8 numdays;
 
@@ -67,7 +67,7 @@ static u32 days_in_month(NDS *this)
     return numdays;
 }
 
-static void set_irq(NDS *this, u32 which)
+static void set_irq(struct NDS *this, u32 which)
 {
     u8 oldstat = this->io.rtc.irq_flag;
     this->io.rtc.irq_flag |= which;
@@ -80,12 +80,12 @@ static void set_irq(NDS *this, u32 which)
     }
 }
 
-static void clear_irq(NDS *this, u32 flag)
+static void clear_irq(struct NDS *this, u32 flag)
 {
     this->io.rtc.irq_flag &= ~flag;
 }
 
-static void process_irqs(NDS *this, u32 kind) {
+static void process_irqs(struct NDS *this, u32 kind) {
     // process int1
     switch (this->io.rtc.status_reg[1] & 0x0F) {
         case 0: // none
@@ -184,7 +184,7 @@ static void process_irqs(NDS *this, u32 kind) {
     }
 }
 
-void NDS_RTC_reset(NDS *this)
+void NDS_RTC_reset(struct NDS *this)
 {
     this->io.rtc.input = 0;
     this->io.rtc.input_bit = this->io.rtc.input_pos = 0;
@@ -198,12 +198,12 @@ void NDS_RTC_reset(NDS *this)
     scheduler_add_or_run_abs(&this->scheduler, 32768, 0, this, &NDS_RTC_tick, NULL);
 }
 
-void NDS_RTC_init(NDS *this)
+void NDS_RTC_init(struct NDS *this)
 {
     this->io.rtc.status_reg[0] = 0x82;
 }
 
-static void check_end_of_month(NDS *this)
+static void check_end_of_month(struct NDS *this)
 {
     if (this->io.rtc.date_time[2] > days_in_month(this)) {
         this->io.rtc.date_time[2] = 1;
@@ -216,7 +216,7 @@ static void check_end_of_month(NDS *this)
     }
 }
 
-static void cmd_read(NDS *this)
+static void cmd_read(struct NDS *this)
 {
     if ((this->io.rtc.cmd & 0x0F) == 6)
     {
@@ -258,7 +258,7 @@ static void cmd_read(NDS *this)
     }
 }
 
-static void reset_state(NDS *this)
+static void reset_state(struct NDS *this)
 {
     this->io.rtc.date_time[0] = 0;
     this->io.rtc.date_time[1] = 1;
@@ -290,7 +290,7 @@ static u32 bcd_correct(u32 val, u32 vmin, u32 vmax)
     return val;    
 }
 
-static void write_dt(NDS *this, u32 num, u32 val) {
+static void write_dt(struct NDS *this, u32 num, u32 val) {
     switch (num) {
         case 1: // year
             RTC.date_time[0] = bcd_correct(val, 0x00, 0x99);
@@ -339,13 +339,13 @@ static void write_dt(NDS *this, u32 num, u32 val) {
     }
 }
 
-static void save_dt(NDS *this)
+static void save_dt(struct NDS *this)
 {
     printf("\nRTC DateTime save not support yet!");
 }
 
 
-static void cmd_write(NDS *this, u32 val) {
+static void cmd_write(struct NDS *this, u32 val) {
     if ((this->io.rtc.cmd & 0x0F) == 6) {
         switch (this->io.rtc.cmd & 0x70) {
             case 0x00:
@@ -445,7 +445,7 @@ static void cmd_write(NDS *this, u32 val) {
     }
 }
 
-static void RTC_byte_in(NDS *this)
+static void RTC_byte_in(struct NDS *this)
 {
     u8 val = this->io.rtc.input;
     if (this->io.rtc.input_pos == 0) { // First read byte. Command?
@@ -462,7 +462,7 @@ static void RTC_byte_in(NDS *this)
     cmd_write(this, val);
 }
 
-void NDS_write_RTC(NDS *this, u32 sz, u32 val)
+void NDS_write_RTC(struct NDS *this, u32 sz, u32 val)
 {
     if (sz != 1) val |= (this->io.rtc.data & 0xFF00);
 
@@ -517,7 +517,7 @@ void NDS_write_RTC(NDS *this, u32 sz, u32 val)
 
 }
 
-static void day_inc(NDS *this) {
+static void day_inc(struct NDS *this) {
     // day-of-week counter
     this->io.rtc.date_time[3]++;
     if (this->io.rtc.date_time[3] >= 7)
@@ -532,7 +532,7 @@ static void day_inc(NDS *this) {
 
 void NDS_RTC_tick(void *ptr, u64 key, u64 clock, u32 jitter) // Called on scanline start
 {
-    struct NDS *this = (NDS *)ptr;
+    struct NDS *this = (struct NDS *)ptr;
     u64 tstamp = (NDS_clock_current7(this) - jitter) + 32768;
     this->io.rtc.sch_id = scheduler_add_or_run_abs(&this->scheduler, tstamp, 0, this, &NDS_RTC_tick, NULL);
     this->io.rtc.divider++;

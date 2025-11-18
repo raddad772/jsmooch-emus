@@ -2,12 +2,12 @@
 // Created by . on 2/15/25.
 //
 
-#include <cstdlib>
+#include <stdlib.h>
 
 #include "ps1_bus.h"
 #include "ps1_dma.h"
 
-static void do_dma_linked_list(PS1 *ps1, PS1_DMA_channel *ch)
+static void do_dma_linked_list(struct PS1 *ps1, struct PS1_DMA_channel *ch)
 {
     u32 addr = ch->base_addr & 0x1FFFFC;
     if (ch->direction == PS1D_to_ram) {
@@ -40,7 +40,7 @@ static void do_dma_linked_list(PS1 *ps1, PS1_DMA_channel *ch)
     }
 }
 
-static u32 ch_transfer_size(PS1_DMA_channel *this)
+static u32 ch_transfer_size(struct PS1_DMA_channel *this)
 {
     u32 bs = this->block_size;
     u32 bc = this->block_count;
@@ -56,7 +56,7 @@ static u32 ch_transfer_size(PS1_DMA_channel *this)
     return 0;
 }
 
-static void do_dma_block(PS1 *ps1, PS1_DMA_channel *ch)
+static void do_dma_block(struct PS1 *ps1, struct PS1_DMA_channel *ch)
 {
     u32 step = (ch->step == PS1D_increment) ? 4 : -4;
     u32 addr = ch->base_addr;
@@ -130,7 +130,7 @@ static void do_dma_block(PS1 *ps1, PS1_DMA_channel *ch)
     }
 }
 
-static void do_dma(PS1 *ps1, PS1_DMA_channel *ch)
+static void do_dma(struct PS1 *ps1, struct PS1_DMA_channel *ch)
 {
     // Executes DMA for a channel
     // We'll just do an instant copy for now
@@ -142,13 +142,13 @@ static void do_dma(PS1 *ps1, PS1_DMA_channel *ch)
     ch->enable = 0;
 }
 
-static u32 active(PS1_DMA_channel *this)
+static u32 active(struct PS1_DMA_channel *this)
 {
     u32 enable = (this->sync == PS1D_manual) ? this->trigger : 1;
     return enable && this->enable;
 }
 
-static u32 get_control(PS1_DMA_channel *this) {
+static u32 get_control(struct PS1_DMA_channel *this) {
     return this->direction |
            (this->step << 1) |
            (this->chop << 8) |
@@ -160,7 +160,7 @@ static u32 get_control(PS1_DMA_channel *this) {
            (this->unknown << 29);
 }
 
-static void set_control(PS1_DMA_channel *this, u32 val)
+static void set_control(struct PS1_DMA_channel *this, u32 val)
 {
     this->direction = (val & 1) ? PS1D_from_ram : PS1D_to_ram;
     this->step = ((val >> 1) & 1) ? PS1D_decrement : PS1D_increment;
@@ -186,12 +186,12 @@ static void set_control(PS1_DMA_channel *this, u32 val)
     this->unknown = (val >> 29) & 3;
 }
 
-static u32 irq_status(PS1 *this)
+static u32 irq_status(struct PS1 *this)
 {
     return +(this->dma.irq_force || (this->dma.irq_enable && (this->dma.irq_flags_ch & this->dma.irq_enable_ch)));
 }
 
-u32 PS1_DMA_read(PS1 *this, u32 addr, u32 sz)
+u32 PS1_DMA_read(struct PS1 *this, u32 addr, u32 sz)
 {
     u32 ch_num = ((addr - 0x80) & 0x70) >> 4;
     u32 reg = (addr & 0x0F);
@@ -234,7 +234,7 @@ u32 PS1_DMA_read(PS1 *this, u32 addr, u32 sz)
     return 0xFFFFFFFF;
 }
 
-void PS1_DMA_write(PS1 *this, u32 addr, u32 sz, u32 val)
+void PS1_DMA_write(struct PS1 *this, u32 addr, u32 sz, u32 val)
 {
     u32 ch_num = ((addr - 0x80) & 0x70) >> 4;
     u32 reg = (addr & 0x0F);

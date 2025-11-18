@@ -7,13 +7,13 @@
 
 #include "dreamcast.h"
 
-void G2_write(DC*, u32 addr, u64 val, u32 bits, u32* success);
-u64 G2_read(DC*, u32 addr, u32 sz, u32* success);
+void G2_write(struct DC*, u32 addr, u64 val, u32 bits, u32* success);
+u64 G2_read(struct DC*, u32 addr, u32 sz, u32* success);
 
-void G2_write_ADST(DC*, u64 val);
-void G2_write_E1ST(DC*, u64 val);
-void G2_write_E2ST(DC*, u64 val);
-void G2_write_DDST(DC*, u64 val);
+void G2_write_ADST(struct DC*, u64 val);
+void G2_write_E1ST(struct DC*, u64 val);
+void G2_write_E2ST(struct DC*, u64 val);
+void G2_write_DDST(struct DC*, u64 val);
 
 
 #endif //JSMOOCH_EMUS_G2_H

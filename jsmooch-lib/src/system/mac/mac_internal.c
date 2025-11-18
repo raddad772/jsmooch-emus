@@ -2,9 +2,9 @@
 // Created by . on 7/24/24.
 //
 
-#include <cstdlib>
-#include <cstdio>
-#include <cassert>
+#include <stdlib.h>
+#include <stdio.h>
+#include <assert.h>
 
 #include "mac_internal.h"
 #include "mac_display.h"
@@ -16,7 +16,7 @@ static u16 ulmask[4] = {
         0xFFFF // UDS = 1 LDS = 1
 };
 
-static u8 read_rtc_bits(mac* this)
+static u8 read_rtc_bits(struct mac* this)
 {
     u8 o = 0;
     o |= (this->rtc.tx.shift >> 7) & 1;
@@ -26,7 +26,7 @@ static u8 read_rtc_bits(mac* this)
 }
 
 
-static void rtc_do_read(mac* this)
+static void rtc_do_read(struct mac* this)
 {
     u8 rand = this->rtc.cmd & 0b01110000;
     u8 addr;
@@ -61,7 +61,7 @@ static void rtc_do_read(mac* this)
     }
 }
 
-static void rtc_finish_write(mac* this)
+static void rtc_finish_write(struct mac* this)
 {
     u8 rand = this->rtc.cmd & 0b01110000;
     u8 addr;
@@ -103,7 +103,7 @@ static void rtc_finish_write(mac* this)
     }
 }
 
-static void write_rtc_bits(mac* this, u8 val, u8 write_mask)
+static void write_rtc_bits(struct mac* this, u8 val, u8 write_mask)
 {
     // bit 0 - serial data
     // bit 1 - data-clock
@@ -186,12 +186,12 @@ static void write_rtc_bits(mac* this, u8 val, u8 write_mask)
     }
 }
 
-void mac_set_sound_output(mac* this, u32 set_to)
+void mac_set_sound_output(struct mac* this, u32 set_to)
 {
     this->sound.io.on = set_to;
 }
 
-void mac_step_CPU(mac* this)
+void mac_step_CPU(struct mac* this)
 {
     //if (this->io.m68k.stuck) dbg_printf("\nSTUCK cyc %lld", *this->cpu.trace.cycles);
 
@@ -219,25 +219,25 @@ void mac_step_CPU(mac* this)
     }
 }
 
-void mac_reset_via(mac* this)
+void mac_reset_via(struct mac* this)
 {
     this->via.state.t1_active = this->via.state.t2_active = 0;
 }
 
-void mac_set_cpu_irq(mac* this)
+void mac_set_cpu_irq(struct mac* this)
 {
     //M68k_set_interrupt_level(&this->cpu, this->io.irq.via | (this->io.irq.scc << 1) | (this->io.irq.iswitch << 2));
     M68k_set_interrupt_level(&this->cpu, 0);
 }
 
-void mac_via_irq_sample(mac* this)
+void mac_via_irq_sample(struct mac* this)
 {
     u32 old_irq = this->io.irq.via;
     this->io.irq.via = (this->via.regs.IER & this->via.regs.IFR & 0x7F) ? 1 : 0;
     if (old_irq != this->io.irq.via) mac_set_cpu_irq(this);
 }
 
-void step_via(mac* this)
+void step_via(struct mac* this)
 {
     mac_via_irq_sample(this);
 
@@ -274,7 +274,7 @@ void step_via(mac* this)
     if (IRQ_sample) mac_via_irq_sample(this);
 }
 
-void mac_step_eclock(mac* this)
+void mac_step_eclock(struct mac* this)
 {
     if (this->io.eclock == 0) {
         step_via(this);
@@ -293,7 +293,7 @@ void mac_step_eclock(mac* this)
     mac_iwm_clock(this);
 }
 
-void mac_step_bus(mac* this)
+void mac_step_bus(struct mac* this)
 {
     // Step everything in the mac by 2
     mac_step_CPU(this);         // CPU, 1 clock
@@ -352,7 +352,7 @@ void mac_step_bus(mac* this)
 #define vBufA (512*15)
 
 
-u16 mac_mainbus_read_via(mac* this, u32 addr, u16 mask, u16 old, u32 has_effect)
+u16 mac_mainbus_read_via(struct mac* this, u32 addr, u16 mask, u16 old, u32 has_effect)
 {
     u16 v = 0;
     if (addr < vBase) {
@@ -443,12 +443,12 @@ down once each time the VIA receives an input for bit 6 of Data register B. */
     return old;
 }
 
-void mac_clock_init(mac* this)
+void mac_clock_init(struct mac* this)
 {
     this->clock.timing.cycles_per_frame = 704 * 370 * 60; // not quite right
 }
 
-void mac_via_load_SR(mac* this, u8 bit)
+void mac_via_load_SR(struct mac* this, u8 bit)
 {
     this->via.regs.num_shifts++;
     this->via.regs.SR = (this->via.regs.SR >> 1) | ((bit & 1) << 7);
@@ -459,7 +459,7 @@ void mac_via_load_SR(mac* this, u8 bit)
     }
 }
 
-static void update_via_RA(mac* this)
+static void update_via_RA(struct mac* this)
 {
     // emulated: bits 4, 6
     // not emulated:
@@ -474,7 +474,7 @@ static void update_via_RA(mac* this)
     this->io.ROM_overlay = (val >> 4) & 1;
 }
 
-static void update_via_RB(mac* this)
+static void update_via_RB(struct mac* this)
 {
     // emulated:  bit 7 (sound), bits 0-2 (RTC), bit 6 (horizontal blank bit)
     // not emulated:
@@ -488,7 +488,7 @@ static void update_via_RB(mac* this)
     write_rtc_bits(this, val & 7, 7);
 }
 
-void mac_mainbus_write_via(mac* this, u32 addr, u16 mask, u16 val)
+void mac_mainbus_write_via(struct mac* this, u32 addr, u16 mask, u16 val)
 {
     val >>= 8;
     u16 v = 0;
@@ -603,13 +603,13 @@ void mac_mainbus_write_via(mac* this, u32 addr, u16 mask, u16 val)
     }
     printf("\nUnhandled VIA write addr:%06x val:%04x cyc:%lld", addr, (val & mask) >> 8, this->clock.master_cycles);
 }
-u16 mac_mainbus_read_iwm(mac* this, u32 addr, u16 mask, u16 old, u32 has_effect)
+u16 mac_mainbus_read_iwm(struct mac* this, u32 addr, u16 mask, u16 old, u32 has_effect)
 {
     uint16_t result = mac_iwm_read(this, (addr >> 9) & 15);
     return (result << 8) | result;
 }
 
-void mac_mainbus_write_iwm(mac* this, u32 addr, u16 mask, u16 val)
+void mac_mainbus_write_iwm(struct mac* this, u32 addr, u16 mask, u16 val)
 {
     if (mask & 0xFF)
         mac_iwm_write(this, (addr >> 9) & 15, val & 0xFF);
@@ -617,7 +617,7 @@ void mac_mainbus_write_iwm(mac* this, u32 addr, u16 mask, u16 val)
         mac_iwm_write(this, (addr >> 9) & 15, val >> 8);
 }
 
-u16 mac_mainbus_read_scc(mac* this, u32 addr, u16 mask, u16 old, u32 has_effect)
+u16 mac_mainbus_read_scc(struct mac* this, u32 addr, u16 mask, u16 old, u32 has_effect)
 {
     /*if ((addr >= sccWBase) && (addr < (sccWBase + 10))) {
         printf("\nRead to SCC write addr:%06x cyc:%lld", addr, this->clock.master_cycles);
@@ -647,7 +647,7 @@ u16 mac_mainbus_read_scc(mac* this, u32 addr, u16 mask, u16 old, u32 has_effect)
     return 0xFFFF;
 }
 
-void mac_mainbus_write_scc(mac* this, u32 addr, u16 mask, u16 val)
+void mac_mainbus_write_scc(struct mac* this, u32 addr, u16 mask, u16 val)
 {
     val >>= 8;
     /*if ((addr >= sccRBase) && (addr < (sccRBase + 10))) {
@@ -680,23 +680,23 @@ void mac_mainbus_write_scc(mac* this, u32 addr, u16 mask, u16 val)
     printf("\nUnhandled SCC write addr:%06x val:%04x cyc:%lld", oaddr, val & mask, this->clock.master_cycles);
 }
 
-static inline void write_RAM(mac* this, u32 addr, u16 mask, u16 val)
+static inline void write_RAM(struct mac* this, u32 addr, u16 mask, u16 val)
 {
     this->RAM[(addr >> 1) & this->RAM_mask] = (this->RAM[(addr >> 1) & this->RAM_mask] & ~mask) | (val & mask);
 }
 
-static inline u16 read_ROM(mac* this, u32 addr, u16 mask, u16 old)
+static inline u16 read_ROM(struct mac* this, u32 addr, u16 mask, u16 old)
 {
     return this->ROM[(addr >> 1) & this->ROM_mask] & mask;
 }
 
-static inline u16 read_RAM(mac* this, u32 addr, u16 mask, u16 old)
+static inline u16 read_RAM(struct mac* this, u32 addr, u16 mask, u16 old)
 {
     return this->RAM[(addr >> 1) & this->RAM_mask];
 }
 
 
-void mac_mainbus_write(mac* this, u32 addr, u32 UDS, u32 LDS, u16 val)
+void mac_mainbus_write(struct mac* this, u32 addr, u32 UDS, u32 LDS, u16 val)
 {
     u16 mask = ulmask[(UDS << 1) | LDS];
     if (this->io.ROM_overlay) {
@@ -749,7 +749,7 @@ void mac_mainbus_write(mac* this, u32 addr, u32 UDS, u32 LDS, u16 val)
     printf("\nUnhandled mainbus write addr:%06x val:%04x sz:%d cyc:%lld", addr, val, UDS && LDS ? 2 : 1, this->clock.master_cycles);
 }
 
-u16 mac_mainbus_read(mac* this, u32 addr, u32 UDS, u32 LDS, u16 old, u32 has_effect)
+u16 mac_mainbus_read(struct mac* this, u32 addr, u32 UDS, u32 LDS, u16 old, u32 has_effect)
 {
     u16 mask = ulmask[(UDS << 1) | LDS];
     // 0-10k, 20-30k = ROM

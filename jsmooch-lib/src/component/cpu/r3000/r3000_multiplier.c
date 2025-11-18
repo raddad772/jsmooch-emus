@@ -2,11 +2,11 @@
 // Created by . on 2/11/25.
 //
 
-#include <cstdlib>
-#include <cassert>
+#include <stdlib.h>
+#include <assert.h>
 #include "r3000_multiplier.h"
 
-void R3000_multiplier_set(R3000_multiplier *this, u32 hi, u32 lo, u32 op1, u32 op2, u32 op_kind, u32 cycles, u64 current_clock)
+void R3000_multiplier_set(struct R3000_multiplier *this, u32 hi, u32 lo, u32 op1, u32 op2, u32 op_kind, u32 cycles, u64 current_clock)
 {
     this->hi = hi;
     this->lo = lo;
@@ -82,7 +82,7 @@ static inline void i32_divide(u32 a, u32 b, u32 *hi, u32 *lo)
 #pragma warning(pop)
 #endif
 
-void R3000_multiplier_finish(R3000_multiplier *this)
+void R3000_multiplier_finish(struct R3000_multiplier *this)
 {
     if (!this->op_going)
         return;

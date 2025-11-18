@@ -2,8 +2,8 @@
 // Created by RadDad772 on 3/13/24.
 //
 
-#include <cstring>
-#include <cstdio>
+#include <string.h>
+#include <stdio.h>
 #include "helpers/physical_io.h"
 #include "helpers/pack.h"
 #include "controller.h"
@@ -52,7 +52,7 @@ static u32 reply5[28] = {
         0xae01f401
 };
 
-void DC_controller_init(DC_controller* this)
+void DC_controller_init(struct DC_controller* this)
 {
     for (u32 i = 0; i < 16; i++)
         this->cmd[i] = 0;
@@ -61,7 +61,7 @@ void DC_controller_init(DC_controller* this)
     memset(&this->input_waiting, 0, sizeof(this->input_waiting));
 }
 
-void DC_controller_connect(DC* console, int portnum, DC_controller* which)
+void DC_controller_connect(struct DC* console, int portnum, struct DC_controller* which)
 {
     struct MAPLE_port* p = &console->maple.ports[portnum];
     p->device_kind = MAPLE_CONTROLLER;
@@ -72,7 +72,7 @@ void DC_controller_connect(DC* console, int portnum, DC_controller* which)
 
 void DC_controller_write(void *ptr, u32 data)
 {
-    struct DC_controller* this = (DC_controller*)ptr;
+    struct DC_controller* this = (struct DC_controller*)ptr;
     printf("\n\nDC controller written data:%08x index:%d", data, this->cmd_index);
     if (this->state == DCC_tx) {
         printf("\nDC CONTROLLER GOT COMMAND DURING TRANSMIT SEQUENCE!");
@@ -120,7 +120,7 @@ static void swap_32s(u32 *first, u32 num)
 
 u32 DC_controller_read(void *ptr, u32* more)
 {
-    struct DC_controller* this = (DC_controller*)ptr;
+    struct DC_controller* this = (struct DC_controller*)ptr;
     //printf("\nDC controller read");
     if ((this->state == DCC_rx) || (this->reply_cmd == 0xFFFFFFFF)) {
         printf("\nATTEMPT TO READ CONTROLLER WHEN WE EXPECED A WRITE");
@@ -133,7 +133,7 @@ u32 DC_controller_read(void *ptr, u32* more)
             if (this->cmd_index == 0) {
                 this->reply_len = 28;
                 ret = (5 << 24); // CMD 5
-                struct controller_info ci = (controller_info){
+                struct controller_info ci = (struct controller_info){
                         .func = 0x00000001,
                         .sub_func = { 0x000f06fe, 0, 0},
                         .region = 0xff,
@@ -150,7 +150,7 @@ u32 DC_controller_read(void *ptr, u32* more)
                 sptr = ci.license;
                 sptr += snprintf(ci.license, 60, "Produced By or Under License From SEGA ENTERPRISES,LTD.");
                 *sptr = 0x20;
-                memcpy(&this->reply_buf, &ci, sizeof(controller_info));
+                memcpy(&this->reply_buf, &ci, sizeof(struct controller_info));
                 swap_32s(this->reply_buf + 4, 28 - 4);
             }
             break;

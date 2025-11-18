@@ -2,8 +2,8 @@
 // Created by . on 3/9/25.
 //
 
-#include <cstdlib>
-#include <cstring>
+#include <stdlib.h>
+#include <string.h>
 #include "nds_ge.h"
 #include "system/nds/nds_bus.h"
 #include "system/nds/nds_irq.h"
@@ -78,7 +78,7 @@ static void identity_matrix(i32 *m)
 }
 
 
-static void vertex_list_init(NDS_GE_VTX_list *l)
+static void vertex_list_init(struct NDS_GE_VTX_list *l)
 {
     l->pool_bitmap = 0;
     l->len = 0;
@@ -86,7 +86,7 @@ static void vertex_list_init(NDS_GE_VTX_list *l)
     l->last = NULL;
 }
 
-static struct NDS_GE_VTX_list_node *vertex_list_alloc_node(NDS_GE_VTX_list *l, u32 vtx_parent)
+static struct NDS_GE_VTX_list_node *vertex_list_alloc_node(struct NDS_GE_VTX_list *l, u32 vtx_parent)
 {
     if (l->len >= NDS_GE_VTX_LIST_MAX) {
         NOGOHERE;
@@ -109,13 +109,13 @@ static struct NDS_GE_VTX_list_node *vertex_list_alloc_node(NDS_GE_VTX_list *l, u
     return a;
 }
 
-static void vertex_list_free_node(NDS_GE_VTX_list *p, NDS_GE_VTX_list_node *n)
+static void vertex_list_free_node(struct NDS_GE_VTX_list *p, struct NDS_GE_VTX_list_node *n)
 {
     p->pool_bitmap &= n->poolclear;
     n->next = n->prev = NULL;
 }
 
-static void vertex_list_swap_last_two(NDS_GE_VTX_list *l)
+static void vertex_list_swap_last_two(struct NDS_GE_VTX_list *l)
 {
     struct NDS_GE_VTX_list_node *next_to_last = l->last->prev;
     struct NDS_GE_VTX_list_node *last = l->last;
@@ -130,7 +130,7 @@ static void vertex_list_swap_last_two(NDS_GE_VTX_list *l)
     l->last = next_to_last;
 }
 
-static void vertex_list_delete_first(NDS_GE_VTX_list *l)
+static void vertex_list_delete_first(struct NDS_GE_VTX_list *l)
 {
     if (l->len == 0) return;
     if (l->len == 1) {
@@ -154,7 +154,7 @@ static void vertex_list_delete_first(NDS_GE_VTX_list *l)
 }
 
 
-static struct NDS_GE_VTX_list_node *vertex_list_add_to_end(NDS_GE_VTX_list *l, u32 vtx_parent)
+static struct NDS_GE_VTX_list_node *vertex_list_add_to_end(struct NDS_GE_VTX_list *l, u32 vtx_parent)
 {
     struct NDS_GE_VTX_list_node *n = vertex_list_alloc_node(l, vtx_parent);
     if (l->len == 0) {
@@ -175,19 +175,19 @@ static struct NDS_GE_VTX_list_node *vertex_list_add_to_end(NDS_GE_VTX_list *l, u
     return n;
 }
 
-static void copy_vertex_list_into(NDS_GE_VTX_list *dest, NDS_GE_VTX_list *src)
+static void copy_vertex_list_into(struct NDS_GE_VTX_list *dest, struct NDS_GE_VTX_list *src)
 {
     vertex_list_init(dest);
     struct NDS_GE_VTX_list_node *src_node = src->first;
     i32 num = 0;
     while(src_node) {
         struct NDS_GE_VTX_list_node *dst_node = vertex_list_add_to_end(dest, num++);
-        memcpy(&dst_node->data, &src_node->data, sizeof(NDS_GE_VTX_list_node_data));
+        memcpy(&dst_node->data, &src_node->data, sizeof(struct NDS_GE_VTX_list_node_data));
         src_node = src_node->next;
     }
 }
 
-void NDS_GE_init(NDS *this) {
+void NDS_GE_init(struct NDS *this) {
     vertex_list_init(&VTX_LIST);
     this->ge.ge_has_buffer = 0;
     for (u32 i = 0; i < 0xFF; i++) {
@@ -245,7 +245,7 @@ void NDS_GE_init(NDS *this) {
     NDS_GE_reset(this);
 }
 
-void NDS_GE_reset(NDS *this)
+void NDS_GE_reset(struct NDS *this)
 {
     // Load identity matrices everywhere
     identity_matrix(M_PROJECTION);
@@ -260,7 +260,7 @@ void NDS_GE_reset(NDS *this)
     FIFO.waiting_for_cmd = 1;
 }
 
-static void fifo_update_len(NDS *this, u32 from_dma, u32 did_add)
+static void fifo_update_len(struct NDS *this, u32 from_dma, u32 did_add)
 {
     u32 old_bit = 0;
     if (GXSTAT.cmd_fifo_irq_mode) {
@@ -289,7 +289,7 @@ static void fifo_update_len(NDS *this, u32 from_dma, u32 did_add)
         NDS_trigger_dma9_if(this, NDS_DMA_GE_FIFO);
 }
 
-static i32 get_num_cycles(NDS *this, u32 cmd)
+static i32 get_num_cycles(struct NDS *this, u32 cmd)
 {
     i32 num_cycles = tbl_num_cycles[cmd];
     if (num_cycles == -1) { // Calculate number of cycles a bit differently
@@ -312,20 +312,20 @@ static i32 get_num_cycles(NDS *this, u32 cmd)
     return num_cycles;
 }
 
-static void ge_handle_cmd(NDS *this);
+static void ge_handle_cmd(struct NDS *this);
 
-static void cmd_END_VTXS(NDS *this)
+static void cmd_END_VTXS(struct NDS *this)
 {
 
 }
 
-static void cmd_MTX_MODE(NDS *this)
+static void cmd_MTX_MODE(struct NDS *this)
 {
     this->ge.io.MTX_MODE = DATA[0] & 3;
     printfcd("\nMTX_MODE(%d);", this->ge.io.MTX_MODE);
 }
 
-static void calculate_clip_matrix(NDS *this)
+static void calculate_clip_matrix(struct NDS *this)
 {
     this->ge.clip_mtx_dirty = 0;
     // Clip matrix = projection * position
@@ -333,7 +333,7 @@ static void calculate_clip_matrix(NDS *this)
     matrix_multiply_4x4(M_CLIP, M_POSITION);
 }
 
-static void cmd_MTX_PUSH(NDS *this)
+static void cmd_MTX_PUSH(struct NDS *this)
 {
     // ClipMatrix = PositionMatrix * ProjectionMatrix
     u32 old_ptr;
@@ -363,7 +363,7 @@ static void cmd_MTX_PUSH(NDS *this)
     }
 }
 
-static void cmd_MTX_POP(NDS *this)
+static void cmd_MTX_POP(struct NDS *this)
 {
     u32 old_ptr;
     switch(this->ge.io.MTX_MODE) {
@@ -393,7 +393,7 @@ static void cmd_MTX_POP(NDS *this)
     }
 }
 
-static void cmd_MTX_STORE(NDS *this)
+static void cmd_MTX_STORE(struct NDS *this)
 {
     // bit 0..4 is stack address. copy stack[S] to stack[N]
     switch(this->ge.io.MTX_MODE) {
@@ -413,7 +413,7 @@ static void cmd_MTX_STORE(NDS *this)
     }
 }
 
-static void cmd_MTX_RESTORE(NDS *this)
+static void cmd_MTX_RESTORE(struct NDS *this)
 {
     // bit 0..4 is stack address. copy stack[N] to stack[S]
     switch(this->ge.io.MTX_MODE) {
@@ -435,7 +435,7 @@ static void cmd_MTX_RESTORE(NDS *this)
     }
 }
 
-static void cmd_MTX_IDENTITY(NDS *this)
+static void cmd_MTX_IDENTITY(struct NDS *this)
 {
     switch(this->ge.io.MTX_MODE) {
         case 0:
@@ -457,7 +457,7 @@ static void cmd_MTX_IDENTITY(NDS *this)
     }
 }
 
-static void cmd_MTX_LOAD_4x4(NDS *this)
+static void cmd_MTX_LOAD_4x4(struct NDS *this)
 {
     switch(this->ge.io.MTX_MODE) {
         case 0:
@@ -479,7 +479,7 @@ static void cmd_MTX_LOAD_4x4(NDS *this)
     }
 }
 
-static void cmd_MTX_LOAD_4x3(NDS *this)
+static void cmd_MTX_LOAD_4x3(struct NDS *this)
 {
     switch(this->ge.io.MTX_MODE) {
         case 0:
@@ -501,7 +501,7 @@ static void cmd_MTX_LOAD_4x3(NDS *this)
     }
 }
 
-static void cmd_SHININESS(NDS *this) {
+static void cmd_SHININESS(struct NDS *this) {
     u32 i = 0;
     for (u32 p = 0; p < 32; p++) {
         u32 word = DATA[p];
@@ -512,7 +512,7 @@ static void cmd_SHININESS(NDS *this) {
     }
 };
 
-static void cmd_MTX_MULT_4x4(NDS *this)
+static void cmd_MTX_MULT_4x4(struct NDS *this)
 {
     switch(this->ge.io.MTX_MODE) {
         case 0: // projection
@@ -534,7 +534,7 @@ static void cmd_MTX_MULT_4x4(NDS *this)
     }
 }
 
-static void cmd_MTX_MULT_4x3(NDS *this)
+static void cmd_MTX_MULT_4x3(struct NDS *this)
 {
     switch(this->ge.io.MTX_MODE) {
         case 0: // projection
@@ -557,7 +557,7 @@ static void cmd_MTX_MULT_4x3(NDS *this)
     }
 }
 
-static void cmd_MTX_MULT_3x3(NDS *this)
+static void cmd_MTX_MULT_3x3(struct NDS *this)
 {
     switch(this->ge.io.MTX_MODE) {
         case 0: // projection
@@ -579,7 +579,7 @@ static void cmd_MTX_MULT_3x3(NDS *this)
     }
 }
 
-static void cmd_MTX_SCALE(NDS *this)
+static void cmd_MTX_SCALE(struct NDS *this)
 {
     switch(this->ge.io.MTX_MODE) {
         case 0:
@@ -597,7 +597,7 @@ static void cmd_MTX_SCALE(NDS *this)
     }
 }
 
-static void cmd_MTX_TRANS(NDS *this)
+static void cmd_MTX_TRANS(struct NDS *this)
 {
     switch(this->ge.io.MTX_MODE) {
         case 0:
@@ -619,7 +619,7 @@ static void cmd_MTX_TRANS(NDS *this)
     }
 }
 
-static void cmd_COLOR(NDS *this)
+static void cmd_COLOR(struct NDS *this)
 {
     u32 color_in = DATA[0];
     u32 r = (color_in >> 0) & 0x1F;
@@ -630,7 +630,7 @@ static void cmd_COLOR(NDS *this)
     this->ge.params.vtx.color[2] = b;
 }
 
-static void cmd_NORMAL(NDS *this)
+static void cmd_NORMAL(struct NDS *this)
 {
     this->ge.lights.normal[0] = (i16)((DATA[0] & 0x000003FF) << 6) >> 6;
     this->ge.lights.normal[1] = (i16)((DATA[0] & 0x000FFC00) >> 4) >> 6;
@@ -697,7 +697,7 @@ static void cmd_NORMAL(NDS *this)
     this->ge.params.vtx.color[2] = ((vtxbuff[2] >> 14) > 31) ? 31 : (vtxbuff[2] >> 14);
 }
 
-static void cmd_TEXCOORD(NDS *this)
+static void cmd_TEXCOORD(struct NDS *this)
 {
     this->ge.params.vtx.original_uv[0] = DATA[0] & 0xFFFF;
     this->ge.params.vtx.original_uv[1] = DATA[0] >> 16;
@@ -719,7 +719,7 @@ static inline u32 C5to18(u32 c) {
     return c ? ((c << 12) + 0xFFF) : 0;
 }
 
-static void transform_vertex_on_ingestion(NDS *this, NDS_GE_VTX_list_node *node)
+static void transform_vertex_on_ingestion(struct NDS *this, struct NDS_GE_VTX_list_node *node)
 {
     if (this->ge.clip_mtx_dirty) calculate_clip_matrix(this);
     node->data.processed = 0;
@@ -744,13 +744,13 @@ static void transform_vertex_on_ingestion(NDS *this, NDS_GE_VTX_list_node *node)
     }
 }
 
-static void vertex_list_add_copy(NDS_GE_VTX_list *l, NDS_GE_VTX_list_node *src)
+static void vertex_list_add_copy(struct NDS_GE_VTX_list *l, struct NDS_GE_VTX_list_node *src)
 {
     struct NDS_GE_VTX_list_node *dest = vertex_list_add_to_end(l, 0);
     memcpy(&dest->data, &src->data, sizeof(dest->data));
 }
 
-static void clip_segment(NDS *this, u32 comp, i32 plane, u32 attribs, NDS_GE_VTX_list *outlist, NDS_GE_VTX_list_node *vin, NDS_GE_VTX_list_node *vout)
+static void clip_segment(struct NDS *this, u32 comp, i32 plane, u32 attribs, struct NDS_GE_VTX_list *outlist, struct NDS_GE_VTX_list_node *vin, struct NDS_GE_VTX_list_node *vout)
 {
     i64 factor_num = vin->data.xyzw[3] - (plane*vin->data.xyzw[comp]);
     i32 factor_den = factor_num - (vout->data.xyzw[3] - (plane*vout->data.xyzw[comp]));
@@ -778,7 +778,7 @@ static void clip_segment(NDS *this, u32 comp, i32 plane, u32 attribs, NDS_GE_VTX
 #undef INTERPOLATE
 }
 
-static void clip_verts_on_plane(NDS *this, u32 comp, u32 attribs, NDS_GE_VTX_list *vertices)
+static void clip_verts_on_plane(struct NDS *this, u32 comp, u32 attribs, struct NDS_GE_VTX_list *vertices)
 {
     struct NDS_GE_VTX_list tmp;
     vertex_list_init(&tmp);
@@ -837,13 +837,13 @@ static void clip_verts_on_plane(NDS *this, u32 comp, u32 attribs, NDS_GE_VTX_lis
     }
 }
 
-static void clip_verts(NDS *this, NDS_RE_POLY *out) {
+static void clip_verts(struct NDS *this, struct NDS_RE_POLY *out) {
     clip_verts_on_plane(this, 2, true, &out->vertex_list);
     clip_verts_on_plane(this, 1, true, &out->vertex_list);
     clip_verts_on_plane(this, 0, true, &out->vertex_list);
 }
 
-static u32 determine_needs_clipping(NDS_GE_VTX_list_node *v)
+static u32 determine_needs_clipping(struct NDS_GE_VTX_list_node *v)
 {
     if (v->data.processed) return 0;
     i32 w = v->data.xyzw[3];
@@ -856,7 +856,7 @@ static u32 determine_needs_clipping(NDS_GE_VTX_list_node *v)
     return 0;
 }
 
-static u32 commit_vertex(NDS *this, NDS_GE_VTX_list_node *v, i32 xx, i32 yy, i32 zz, i32 ww, i32 *uv, u32 cr, u32 cg, u32 cb)
+static u32 commit_vertex(struct NDS *this, struct NDS_GE_VTX_list_node *v, i32 xx, i32 yy, i32 zz, i32 ww, i32 *uv, u32 cr, u32 cg, u32 cb)
 {
     struct NDS_GE_BUFFERS *b = &this->ge.buffers[this->ge.ge_has_buffer];
     if (this->ge.ge_has_buffer > 1) {
@@ -889,7 +889,7 @@ static u32 commit_vertex(NDS *this, NDS_GE_VTX_list_node *v, i32 xx, i32 yy, i32
     return addr;
 }
 
-static void normalize_w(NDS *this, NDS_RE_POLY *out)
+static void normalize_w(struct NDS *this, struct NDS_RE_POLY *out)
 {
     out->w_normalization_left = 0;
     out->w_normalization_right = 0;
@@ -936,7 +936,7 @@ static void normalize_w(NDS *this, NDS_RE_POLY *out)
     }
 }
 
-static void finalize_verts_and_get_first_addr(NDS *this, NDS_RE_POLY *poly)
+static void finalize_verts_and_get_first_addr(struct NDS *this, struct NDS_RE_POLY *poly)
 {
     // Final transform to screen and write into vertex buffer
     struct NDS_GE_BUFFERS *b = &this->ge.buffers[this->ge.ge_has_buffer];
@@ -982,7 +982,7 @@ static void finalize_verts_and_get_first_addr(NDS *this, NDS_RE_POLY *poly)
     }
 }
 
-static u32 edge_is_top_or_bottom(NDS_RE_POLY *poly, NDS_GE_VTX_list_node *v[])
+static u32 edge_is_top_or_bottom(struct NDS_RE_POLY *poly, struct NDS_GE_VTX_list_node *v[])
 {
     u32 y1, y2;
     if (v[0]->data.xyzw[1] > v[1]->data.xyzw[1]) {
@@ -996,7 +996,7 @@ static u32 edge_is_top_or_bottom(NDS_RE_POLY *poly, NDS_GE_VTX_list_node *v[])
     return v[0]->data.xyzw[1] < v[1]->data.xyzw[1];
 }
 
-static void determine_highest_vertex(NDS_RE_POLY *poly, NDS_GE_BUFFERS *b)
+static void determine_highest_vertex(struct NDS_RE_POLY *poly, struct NDS_GE_BUFFERS *b)
 {
     poly->min_y = 512;
     poly->max_y = 0;
@@ -1010,7 +1010,7 @@ static void determine_highest_vertex(NDS_RE_POLY *poly, NDS_GE_BUFFERS *b)
     }
 }
 
-static u32 determine_winding_order(NDS_RE_POLY *poly, NDS_GE_BUFFERS *b)
+static u32 determine_winding_order(struct NDS_RE_POLY *poly, struct NDS_GE_BUFFERS *b)
 {
     // OK, now progress in order until we have a y-delta of >0.
     struct NDS_GE_VTX_list_node *n = poly->highest_vertex;
@@ -1030,7 +1030,7 @@ static u32 determine_winding_order(NDS_RE_POLY *poly, NDS_GE_BUFFERS *b)
     return CCW;
 }
 
-static void evaluate_edges(NDS *this, NDS_RE_POLY *poly, u32 expected_winding_order)
+static void evaluate_edges(struct NDS *this, struct NDS_RE_POLY *poly, u32 expected_winding_order)
 {
     struct NDS_GE_BUFFERS *b = &this->ge.buffers[this->ge.ge_has_buffer];
     struct NDS_GE_VTX_list_node *v[2];
@@ -1044,7 +1044,7 @@ static void evaluate_edges(NDS *this, NDS_RE_POLY *poly, u32 expected_winding_or
     poly->sorting_key = (poly->max_y << 9) | poly->min_y | (poly->is_translucent << 24);
 }
 
-static void list_reverse(NDS_GE_VTX_list *l)
+static void list_reverse(struct NDS_GE_VTX_list *l)
 {
     struct NDS_GE_VTX_list_node *node = l->first;
     l->first= l->last;
@@ -1059,7 +1059,7 @@ static void list_reverse(NDS_GE_VTX_list *l)
     }
 }
 
-static void ingest_poly(NDS *this, u32 winding_order) {
+static void ingest_poly(struct NDS *this, u32 winding_order) {
     struct NDS_GE_BUFFERS *b = &this->ge.buffers[this->ge.ge_has_buffer];
     u32 addr = b->polygon_index;
 
@@ -1152,7 +1152,7 @@ static void ingest_poly(NDS *this, u32 winding_order) {
     printfcd("\nOUTPUT POLY HAS %d SIDES", out->vertex_list.len);
 }
 
-static void ingest_vertex(NDS *this) {
+static void ingest_vertex(struct NDS *this) {
     if (this->re.io.DISP3DCNT.poly_vtx_ram_overflow) {
         //printf("\nVTX OVERFLOW...");
         return;
@@ -1198,7 +1198,7 @@ static void ingest_vertex(NDS *this) {
     }
 }
 
-static void cmd_VTX_16(NDS *this)
+static void cmd_VTX_16(struct NDS *this)
 {
     // unpack vertex and send it to our vertex stream
     //0-15 is X
@@ -1212,7 +1212,7 @@ static void cmd_VTX_16(NDS *this)
     //i32 x = DATA[0] &
 }
 
-static void cmd_VTX_DIFF(NDS *this)
+static void cmd_VTX_DIFF(struct NDS *this)
 {
     i16 xd = (i16)(DATA[0] & 0x3FF);
     i16 yd = (i16)((DATA[0] >> 10) & 0x3FF);
@@ -1230,28 +1230,28 @@ static void cmd_VTX_DIFF(NDS *this)
     ingest_vertex(this);
 }
 
-static void cmd_VTX_XY(NDS *this)
+static void cmd_VTX_XY(struct NDS *this)
 {
     this->ge.params.vtx.x = (i16)(DATA[0] & 0xFFFF);
     this->ge.params.vtx.y = (i16)(DATA[0] >> 16);
     ingest_vertex(this);
 }
 
-static void cmd_VTX_XZ(NDS *this)
+static void cmd_VTX_XZ(struct NDS *this)
 {
     this->ge.params.vtx.x = (i16)(DATA[0] & 0xFFFF);
     this->ge.params.vtx.z = (i16)(DATA[0] >> 16);
     ingest_vertex(this);
 }
 
-static void cmd_VTX_YZ(NDS *this)
+static void cmd_VTX_YZ(struct NDS *this)
 {
     this->ge.params.vtx.y = (i16)(DATA[0] & 0xFFFF);
     this->ge.params.vtx.z = (i16)(DATA[0] >> 16);
     ingest_vertex(this);
 }
 
-static void cmd_VTX_10(NDS *this)
+static void cmd_VTX_10(struct NDS *this)
 {
     this->ge.params.vtx.x = (i16)((DATA[0] & 0x3FF) << 6);
     this->ge.params.vtx.y = (i16)(((DATA[0] >> 10) & 0x3FF) << 6);
@@ -1259,7 +1259,7 @@ static void cmd_VTX_10(NDS *this)
     ingest_vertex(this);
 }
 
-static void cmd_POS_TEST(NDS *this)
+static void cmd_POS_TEST(struct NDS *this)
 {
     static int a = 1;
     if (a) {
@@ -1279,7 +1279,7 @@ static void cmd_POS_TEST(NDS *this)
     this->ge.results.pos_test[3] = ((vertex[0]*M_CLIP[3] + vertex[1]*M_CLIP[7] + vertex[2]*M_CLIP[11] + vertex[3]*M_CLIP[15]) >> 12);
 }
 
-static void box_test_clip_segment(NDS *this, i32 comp, i32 plane, NDS_GE_VTX_list_node* outbuf, NDS_GE_VTX_list_node* vin, NDS_GE_VTX_list_node* vout)
+static void box_test_clip_segment(struct NDS *this, i32 comp, i32 plane, struct NDS_GE_VTX_list_node* outbuf, struct NDS_GE_VTX_list_node* vin, struct NDS_GE_VTX_list_node* vout)
 {
     s64 factor_num = vin->data.xyzw[3] - (plane*vin->data.xyzw[comp]);
     s32 factor_den = factor_num - (vout->data.xyzw[3] - (plane*vout->data.xyzw[comp]));
@@ -1295,7 +1295,7 @@ static void box_test_clip_segment(NDS *this, i32 comp, i32 plane, NDS_GE_VTX_lis
 #undef INTERPOLATE
 }
 
-static int box_test_against_plane(NDS *this, int comp, NDS_GE_VTX_list_node *vertices, int nverts) {
+static int box_test_against_plane(struct NDS *this, int comp, struct NDS_GE_VTX_list_node *vertices, int nverts) {
     struct NDS_GE_VTX_list_node temp[10];
     i32 prev, next;
     i32 c = 0;
@@ -1320,7 +1320,7 @@ static int box_test_against_plane(NDS *this, int comp, NDS_GE_VTX_list_node *ver
                 c++;
             }
         } else {
-            memcpy(&temp[c++].data, &vtx->data, sizeof(NDS_GE_VTX_list_node_data));
+            memcpy(&temp[c++].data, &vtx->data, sizeof(struct NDS_GE_VTX_list_node_data));
         }
     }
 
@@ -1346,7 +1346,7 @@ static int box_test_against_plane(NDS *this, int comp, NDS_GE_VTX_list_node *ver
                 c++;
             }
         } else {
-            memcpy(&vertices[c++].data, &vtx->data, sizeof(NDS_GE_VTX_list_node_data));
+            memcpy(&vertices[c++].data, &vtx->data, sizeof(struct NDS_GE_VTX_list_node_data));
         }
     }
 
@@ -1354,7 +1354,7 @@ static int box_test_against_plane(NDS *this, int comp, NDS_GE_VTX_list_node *ver
 }
 
 
-static i32 box_test_clip_verts(NDS *this, NDS_GE_VTX_list_node *vertices, int nverts)
+static i32 box_test_clip_verts(struct NDS *this, struct NDS_GE_VTX_list_node *vertices, int nverts)
 {
     nverts = box_test_against_plane(this, 2, vertices, nverts);
 
@@ -1367,7 +1367,7 @@ static i32 box_test_clip_verts(NDS *this, NDS_GE_VTX_list_node *vertices, int nv
     return nverts;
 }
 
-static void cmd_BOX_TEST(NDS *this)
+static void cmd_BOX_TEST(struct NDS *this)
 {
     printf("\nBOX TEST!");
     struct NDS_GE_VTX_list_node box[8];
@@ -1474,7 +1474,7 @@ static void cmd_BOX_TEST(NDS *this)
 
 }
 
-static void cmd_SWAP_BUFFERS(NDS *this)
+static void cmd_SWAP_BUFFERS(struct NDS *this)
 {
     printfcd("\n\n---------------------------\ncmd_SWAP_BUFFERS()");
     this->ge.io.swap_buffers = 1;
@@ -1482,19 +1482,19 @@ static void cmd_SWAP_BUFFERS(NDS *this)
     this->ge.buffers[this->ge.ge_has_buffer].depth_buffering_w = (DATA[0] >> 1) & 1;
 }
 
-static void cmd_POLYGON_ATTR(NDS *this)
+static void cmd_POLYGON_ATTR(struct NDS *this)
 {
     printfcd("\nPOLYGON_ATTR");
     this->ge.params.poly.on_vtx_start.attr.u = DATA[0];
 }
 
-static void terminate_poly_strip(NDS *this)
+static void terminate_poly_strip(struct NDS *this)
 {
     vertex_list_init(&VTX_LIST);
     this->ge.winding_order = 0;
 }
 
-static void cmd_VIEWPORT(NDS *this)
+static void cmd_VIEWPORT(struct NDS *this)
 {
     this->re.io.viewport[0] = DATA[0] & 0xFF;
     this->re.io.viewport[1] = (191 - ((DATA[0] >> 8) & 0xFF)) & 0xFF;
@@ -1504,13 +1504,13 @@ static void cmd_VIEWPORT(NDS *this)
     this->re.io.viewport[5] = (this->re.io.viewport[1] - this->re.io.viewport[3] + 1) & 0xFF;
 }
 
-static void cmd_TEXIMAGE_PARAM(NDS *this)
+static void cmd_TEXIMAGE_PARAM(struct NDS *this)
 {
     printfcd("\nTEXIMAGE_PARAM");
     this->ge.params.poly.current.tex_param.u = DATA[0];
 }
 
-static void cmd_BEGIN_VTXS(NDS *this)
+static void cmd_BEGIN_VTXS(struct NDS *this)
 {
     // Empty vertex cache, terminate strip...
     terminate_poly_strip(this);
@@ -1521,12 +1521,12 @@ static void cmd_BEGIN_VTXS(NDS *this)
     printfcd("\nBEGIN_VTXS(%d);", this->ge.params.poly.current.attr.mode);
 }
 
-static void cmd_PLTT_BASE(NDS *this)
+static void cmd_PLTT_BASE(struct NDS *this)
 {
     this->ge.params.poly.current.pltt_base = DATA[0] & 0x1FFF;
 }
 
-static void cmd_LIGHT_VECTOR(NDS *this)
+static void cmd_LIGHT_VECTOR(struct NDS *this)
 {
     u32 l = DATA[0] >> 30;
     i16 dir[3];
@@ -1551,7 +1551,7 @@ static void C15to15(u32 c, u32 *o)
     o[2] = ((c >> 10) & 0x1F);
 }
 
-static void cmd_DIF_AMB(NDS *this)
+static void cmd_DIF_AMB(struct NDS *this)
 {
     C15to15(DATA[0] & 0x7FFF, this->ge.lights.material_color.diffuse);
     C15to15((DATA[0] >> 16) & 0x7FFF, this->ge.lights.material_color.ambient);
@@ -1562,7 +1562,7 @@ static void cmd_DIF_AMB(NDS *this)
     }
 }
 
-static void cmd_SPE_EMI(NDS *this)
+static void cmd_SPE_EMI(struct NDS *this)
 {
     C15to15(DATA[0] & 0x7FFF, this->ge.lights.material_color.reflection);
     C15to15((DATA[0] >> 16) & 0x7FFF, this->ge.lights.material_color.emission);
@@ -1570,14 +1570,14 @@ static void cmd_SPE_EMI(NDS *this)
 
 }
 
-static void cmd_LIGHT_COLOR(NDS *this) {
+static void cmd_LIGHT_COLOR(struct NDS *this) {
     u32 light_num = DATA[0] >> 30;
     C15to15(DATA[0] & 0x7FFF, this->ge.lights.light[light_num].color);
 }
 
 static void do_cmd(void *ptr, u64 cmd, u64 current_clock, u32 jitter)
 {
-    struct NDS *this = (NDS *)ptr;
+    struct NDS *this = (struct NDS *)ptr;
     // Handle command!
     printfcd("\ndo_cmd %02llx", cmd);
     switch(cmd) {
@@ -1629,7 +1629,7 @@ static void do_cmd(void *ptr, u64 cmd, u64 current_clock, u32 jitter)
     ge_handle_cmd(this);
 }
 
-static u32 fifo_pop_full_cmd(NDS *this)
+static u32 fifo_pop_full_cmd(struct NDS *this)
 {
     if (!FIFO.total_complete_cmds) {
         printfifo("\nFIFO POP FAIL NO CMDS!");
@@ -1656,7 +1656,7 @@ static u32 fifo_pop_full_cmd(NDS *this)
     return cmd;
 }
 
-static void ge_handle_cmd(NDS *this)
+static void ge_handle_cmd(struct NDS *this)
 {
     // Pop a command!
     // Schedule it to be completed in N cycles!
@@ -1692,7 +1692,7 @@ static void ge_handle_cmd(NDS *this)
     scheduler_only_add_abs(&this->scheduler, NDS_clock_current7(this) + num_cycles, cmd, this, &do_cmd, &FIFO.cmd_scheduled);
 }
 
-u32 NDS_GE_check_irq(NDS *this)
+u32 NDS_GE_check_irq(struct NDS *this)
 {
     switch(GXSTAT.cmd_fifo_irq_mode)
     {
@@ -1709,7 +1709,7 @@ u32 NDS_GE_check_irq(NDS *this)
     return 0;
 }
 
-static void write_fog_table(NDS *this, u32 addr, u32 sz, u32 val)
+static void write_fog_table(struct NDS *this, u32 addr, u32 sz, u32 val)
 {
     if (sz >= 2) {
         write_fog_table(this, addr, 1, val & 0xFF);
@@ -1723,7 +1723,7 @@ static void write_fog_table(NDS *this, u32 addr, u32 sz, u32 val)
     this->re.io.FOG.TABLE[addr] = val;
 }
 
-static void write_edge_table(NDS *this, u32 addr, u32 sz, u32 val)
+static void write_edge_table(struct NDS *this, u32 addr, u32 sz, u32 val)
 {
     if (sz == 4) {
         write_edge_table(this, addr, 1, val & 0xFFFF);
@@ -1744,7 +1744,7 @@ static inline u32 texc(u32 colo)
     return v;
 }
 
-static void write_toon_table(NDS *this, u32 addr, u32 sz, u32 val)
+static void write_toon_table(struct NDS *this, u32 addr, u32 sz, u32 val)
 {
     if (sz == 4) {
         write_toon_table(this, addr, 1, val & 0xFFFF);
@@ -1756,7 +1756,7 @@ static void write_toon_table(NDS *this, u32 addr, u32 sz, u32 val)
     this->re.io.TOON_TABLE_b[addr] = texc(val >> 10);;
 }
 
-static void fifo_push(NDS *this, u32 cmd, u32 val, u32 from_dma)
+static void fifo_push(struct NDS *this, u32 cmd, u32 val, u32 from_dma)
 {
     printfifo("\nFIFO PUSH cmd:%02x val:%08x", cmd, val);
     struct NDS_GE_FIFO_entry *e = &FIFO.items[FIFO.tail];
@@ -1767,7 +1767,7 @@ static void fifo_push(NDS *this, u32 cmd, u32 val, u32 from_dma)
     e->data = val;
 }
 
-static void fifo_parse_cmd(NDS *this, u32 val, u32 from_dma) {
+static void fifo_parse_cmd(struct NDS *this, u32 val, u32 from_dma) {
     // parse 0-3 commands and how many args each has
     // push them to cmd_queue
     FIFO.cmd_queue.len = 0;
@@ -1813,7 +1813,7 @@ static void fifo_parse_cmd(NDS *this, u32 val, u32 from_dma) {
     FIFO.cur_cmd = FIFO.cmd_queue.items[FIFO.cmd_queue.head].cmd;
 }
 
-static void fifo_drain_cmd_queue(NDS *this, u32 from_dma)
+static void fifo_drain_cmd_queue(struct NDS *this, u32 from_dma)
 {
     while(FIFO.cmd_queue.items[FIFO.cmd_queue.head].num_params_left == 0) {
         FIFO.cmd_queue.head++;
@@ -1834,7 +1834,7 @@ static void fifo_drain_cmd_queue(NDS *this, u32 from_dma)
     }
 }
 
-static void fifo_write_direct(NDS *this, u32 val, u32 from_dma, u32 from_addr)
+static void fifo_write_direct(struct NDS *this, u32 val, u32 from_dma, u32 from_addr)
 {
     if (FIFO.waiting_for_cmd) {
         printfifo("\nPARSE CMD %02x", val);
@@ -1854,7 +1854,7 @@ static void fifo_write_direct(NDS *this, u32 val, u32 from_dma, u32 from_addr)
     if (!from_addr && !GXSTAT.ge_busy) ge_handle_cmd(this);
 }
 
-static void fifo_write_from_addr(NDS *this, enum NDS_GE_cmds cmd, u32 val)
+static void fifo_write_from_addr(struct NDS *this, enum NDS_GE_cmds cmd, u32 val)
 {
     printfifo("\nADDR_CMD cmd:%02x val:%08x waiting:%d", cmd, val, FIFO.waiting_for_cmd);
     if (FIFO.waiting_for_cmd) fifo_write_direct(this, cmd, 0, 1);
@@ -1862,7 +1862,7 @@ static void fifo_write_from_addr(NDS *this, enum NDS_GE_cmds cmd, u32 val)
     if (!GXSTAT.ge_busy) ge_handle_cmd(this);
 }
 
-void NDS_GE_write(NDS *this, u32 addr, u32 sz, u32 val)
+void NDS_GE_write(struct NDS *this, u32 addr, u32 sz, u32 val)
 {
     if ((addr >= R9_GXFIFO) && (addr < (R9_GXFIFO + 0x40))) {
         //printf("\nAddr %08x val %08x", addr, val);
@@ -1971,7 +1971,7 @@ void NDS_GE_write(NDS *this, u32 addr, u32 sz, u32 val)
     printf("\nUnhandled write to GE addr:%08x sz:%d val:%08x", addr, sz, val);
 }
 
-static u32 read_results(NDS *this, u32 addr, u32 sz)
+static u32 read_results(struct NDS *this, u32 addr, u32 sz)
 {
     if ((addr >= 0x04000630) && (addr < 0x04000638)) {
         static int a = 1;
@@ -1996,7 +1996,7 @@ static u32 read_results(NDS *this, u32 addr, u32 sz)
     return 0;
 }
 
-u32 NDS_GE_read(NDS *this, u32 addr, u32 sz)
+u32 NDS_GE_read(struct NDS *this, u32 addr, u32 sz)
 {
     u32 v;
     switch(addr) {
@@ -2037,7 +2037,7 @@ u32 NDS_GE_read(NDS *this, u32 addr, u32 sz)
 static void do_swap_buffers(void *ptr, u64 key, u64 current_clock, u32 jitter)
 {
     printfifo("\n\ndo_swap_buffers()!!");
-    struct NDS *this = (NDS *)ptr;
+    struct NDS *this = (struct NDS *)ptr;
     this->ge.io.swap_buffers = 0;
     this->ge.ge_has_buffer ^= 1;
     this->ge.buffers[this->ge.ge_has_buffer].polygon_index = 0;
@@ -2047,7 +2047,7 @@ static void do_swap_buffers(void *ptr, u64 key, u64 current_clock, u32 jitter)
     ge_handle_cmd(this);
 }
 
-void NDS_GE_vblank_up(NDS *this)
+void NDS_GE_vblank_up(struct NDS *this)
 {
     // Schedule swap_buffers if we're scheduled to!
     if (this->ge.io.swap_buffers) {

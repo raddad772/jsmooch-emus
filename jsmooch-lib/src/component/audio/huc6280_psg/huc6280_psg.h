@@ -44,12 +44,12 @@ struct HUC6280_PSG {
 
 };
 
-void HUC6280_PSG_init(HUC6280_PSG *);
-void HUC6280_PSG_delete(HUC6280_PSG *);
-void HUC6280_PSG_reset(HUC6280_PSG *);
+void HUC6280_PSG_init(struct HUC6280_PSG *);
+void HUC6280_PSG_delete(struct HUC6280_PSG *);
+void HUC6280_PSG_reset(struct HUC6280_PSG *);
 
-void HUC6280_PSG_write(HUC6280_PSG *, u32 addr, u8 val);
-void HUC6280_PSG_cycle(HUC6280_PSG *);
-u16 HUC6280_PSG_debug_ch_sample(HUC6280_PSG *, u32 num);
+void HUC6280_PSG_write(struct HUC6280_PSG *, u32 addr, u8 val);
+void HUC6280_PSG_cycle(struct HUC6280_PSG *);
+u16 HUC6280_PSG_debug_ch_sample(struct HUC6280_PSG *, u32 num);
 
 #endif //JSMOOCH_EMUS_HUC6280_PSG_H

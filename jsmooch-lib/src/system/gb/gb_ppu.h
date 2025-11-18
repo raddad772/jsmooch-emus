@@ -143,11 +143,11 @@ struct GB_PPU {
     struct JSM_DISPLAY *display;
 };
 
-void GB_PPU_init(GB_PPU*, enum GB_variants variant, GB_clock* clock, GB_bus* bus);
-void GB_PPU_run_cycles(GB_PPU*, u32 howmany);
-void GB_PPU_quick_boot(GB_PPU*);
-void GB_PPU_reset(GB_PPU*);
-u32 GB_PPU_bus_read_IO(GB_bus* bus, u32 addr, u32 val);
-void GB_PPU_bus_write_IO(GB_bus* bus, u32 addr, u32 val);
+void GB_PPU_init(struct GB_PPU*, enum GB_variants variant, struct GB_clock* clock, struct GB_bus* bus);
+void GB_PPU_run_cycles(struct GB_PPU*, u32 howmany);
+void GB_PPU_quick_boot(struct GB_PPU*);
+void GB_PPU_reset(struct GB_PPU*);
+u32 GB_PPU_bus_read_IO(struct GB_bus* bus, u32 addr, u32 val);
+void GB_PPU_bus_write_IO(struct GB_bus* bus, u32 addr, u32 val);
 
 #endif

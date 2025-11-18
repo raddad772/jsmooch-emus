@@ -89,8 +89,8 @@ struct apple2 {
     u32 described_inputs;
 };
 
-void apple2_reset(apple2*);
-void apple2_cycle(apple2*);
+void apple2_reset(struct apple2*);
+void apple2_cycle(struct apple2*);
 u32 apple2_CPU_read_trace(void *ptr, u32 addr);
 
 #endif //JSMOOCH_EMUS_APPLE2_INTERNAL_H

@@ -4,12 +4,12 @@
 
 #include "m6532.h"
 
-void M6532_init(M6532* this)
+void M6532_init(struct M6532* this)
 {
     M6532_reset(this);
 }
 
-void M6532_reset(M6532* this)
+void M6532_reset(struct M6532* this)
 {
     // TODO
     this->timer.counter = 0;
@@ -22,7 +22,7 @@ void M6532_reset(M6532* this)
     this->io.underflow_since_instat = 0;
 }
 
-static u8 M6532_io_read(M6532* this, u32 addr, u32 val)
+static u8 M6532_io_read(struct M6532* this, u32 addr, u32 val)
 {
     u32 t;
     switch((addr & 7) | 0x280) {
@@ -47,7 +47,7 @@ static u8 M6532_io_read(M6532* this, u32 addr, u32 val)
     return 0;
 }
 
-void M6532_cycle(M6532* this)
+void M6532_cycle(struct M6532* this)
 {
     u32 do_decrement = 0;
     if (this->timer.highspeed_mode) do_decrement = 1;
@@ -65,7 +65,7 @@ void M6532_cycle(M6532* this)
     }
 }
 
-static void M6532_io_write(M6532* this, u32 addr, u32 val)
+static void M6532_io_write(struct M6532* this, u32 addr, u32 val)
 {
     u32 vmask;
     switch((addr & 7) | 0x280) {
@@ -122,7 +122,7 @@ static void M6532_io_write(M6532* this, u32 addr, u32 val)
     }
 }
 
-void M6532_bus_cycle(M6532* this, u32 addr, u32 *data, u32 rw)
+void M6532_bus_cycle(struct M6532* this, u32 addr, u32 *data, u32 rw)
 {
     addr &= 0x2FF;
     if (addr & 0x200) { // 280... switches

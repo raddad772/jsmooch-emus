@@ -31,7 +31,7 @@ struct SMSGG_mapper_sega {
     struct simplebuf8 RAM;
     struct simplebuf8 cart_RAM;
 
-    enum jsm::systems variant;
+    enum jsm_systems variant;
 
     struct SMSGG_mem_region regions[256]; // upper 8 bits of an address
     u32 sega_mapper_enabled;
@@ -52,15 +52,15 @@ struct SMSGG_mapper_sega {
     } io;
 };
 
-void SMSGG_mapper_sega_init(SMSGG_mapper_sega*, enum jsm::systems variant);
-void SMSGG_mapper_sega_delete(SMSGG_mapper_sega*);
-void SMSGG_mapper_sega_set_BIOS(SMSGG_mapper_sega*, u32 to);
-void SMSGG_mapper_sega_reset(SMSGG_mapper_sega*);
+void SMSGG_mapper_sega_init(struct SMSGG_mapper_sega*, enum jsm_systems variant);
+void SMSGG_mapper_sega_delete(struct SMSGG_mapper_sega*);
+void SMSGG_mapper_sega_set_BIOS(struct SMSGG_mapper_sega*, u32 to);
+void SMSGG_mapper_sega_reset(struct SMSGG_mapper_sega*);
 struct SMSGG;
-u8 SMSGG_bus_read(SMSGG* bus, u16 addr, u32 has_effect);
-void SMSGG_bus_write(SMSGG* bus, u16 addr, u8 val);
-void SMSGG_mapper_load_BIOS_from_RAM(SMSGG_mapper_sega*, buf *BIOS);
-void SMSGG_mapper_load_ROM_from_RAM(SMSGG_mapper_sega*, buf* inbuf);
-void SMSGG_mapper_refresh_mapping(SMSGG_mapper_sega *);
+u8 SMSGG_bus_read(struct SMSGG* bus, u16 addr, u32 has_effect);
+void SMSGG_bus_write(struct SMSGG* bus, u16 addr, u8 val);
+void SMSGG_mapper_load_BIOS_from_RAM(struct SMSGG_mapper_sega*, struct buf *BIOS);
+void SMSGG_mapper_load_ROM_from_RAM(struct SMSGG_mapper_sega*, struct buf* inbuf);
+void SMSGG_mapper_refresh_mapping(struct SMSGG_mapper_sega *);
 
 #endif //JSMOOCH_EMUS_SMS_GG_MAPPER_SEGA_H

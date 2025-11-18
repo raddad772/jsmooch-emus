@@ -30,12 +30,12 @@ enum SMSGGSS_kinds {
     SMSGGSS_mapper
 };
 
-void SMSGG_new(jsm_system* jsm, enum jsm::systems variant, enum jsm_regions region);
-void SMSGG_delete(jsm_system* jsm);
+void SMSGG_new(struct jsm_system* jsm, enum jsm_systems variant, enum jsm_regions region);
+void SMSGG_delete(struct jsm_system* jsm);
 
 struct SMSGG {
     struct SMSGG_clock clock;
-    enum jsm::systems variant;
+    enum jsm_systems variant;
     enum jsm_regions region;
     struct Z80 cpu;
     struct SMSGG_mapper_sega mapper;
@@ -53,8 +53,8 @@ struct SMSGG {
     u32 described_inputs;
     u32 last_frame;
 
-    u32 (*cpu_in)(SMSGG*, u32, u32, u32);
-    void (*cpu_out)(SMSGG*, u32, u32);
+    u32 (*cpu_in)(struct SMSGG*, u32, u32, u32);
+    void (*cpu_out)(struct SMSGG*, u32, u32);
 
     struct {
         struct SMSGG_gamepad controllerA;
@@ -96,6 +96,6 @@ struct SMSGG {
 
 };
 
-void SMSGG_bus_notify_IRQ(SMSGG*, u32 level);
+void SMSGG_bus_notify_IRQ(struct SMSGG*, u32 level);
 
 #endif //JSMOOCH_EMUS_SMS_GG_H

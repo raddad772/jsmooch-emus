@@ -12,7 +12,7 @@
 #include "stdio.h"
 #include "stdlib.h"
 #include "assert.h"
-#include <cstring>
+#include "string.h"
 
 #include "helpers/int.h"
 #include "helpers/user.h"
@@ -124,7 +124,7 @@ u32 is_call(u32 prefix, u32 ins) {
     }
 }
 
-static void pprint_regs(struct SM83_regs *cpu_regs, test_cpu_regs *test_regs, u32 last_pc, u32 only_print_diff)
+static void pprint_regs(struct SM83_regs *cpu_regs, struct test_cpu_regs *test_regs, u32 last_pc, u32 only_print_diff)
 {
     printf("\nREG CPU    TEST");
     printf("\n----------------");
@@ -150,7 +150,7 @@ static void pprint_regs(struct SM83_regs *cpu_regs, test_cpu_regs *test_regs, u3
         printf("\nF   %02x     %02x", SM83_regs_F_getbyte(&cpu_regs->F), test_regs->f);
 }
 
-static u32 testregs(struct SM83* cpu, test_state* final, u32 last_pc, u32 is_call)
+static u32 testregs(struct SM83* cpu, struct test_state* final, u32 last_pc, u32 is_call)
 {
     u32 passed = 1;
     u32 rpc = cpu->regs.PC == last_pc;
@@ -190,7 +190,7 @@ static void construct_path(char *out, u32 iclass, u32 ins)
     tp += sprintf(tp, "%02x.json", ins);
 }
 
-static void parse_state(struct json_object_s *object, test_state *state)
+static void parse_state(struct json_object_s *object, struct test_state *state)
 {
     struct json_object_element_s *el = object->start;
     state->num_ram_entry = 0;
@@ -274,7 +274,7 @@ static void parse_state(struct json_object_s *object, test_state *state)
     }
 }
 
-static void parse_and_fill_out(struct jsontest tests[1000], read_file_buf *infile)
+static void parse_and_fill_out(struct jsontest tests[1000], struct read_file_buf *infile)
 {
     struct json_value_s *root = json_parse(infile->buf.ptr, infile->buf.size);
     assert(root->type == json_type_array);
@@ -361,7 +361,7 @@ struct sm83_test_result
     struct jsontest *failed_test_struct;
 };
 
-static void pprint_test(struct jsontest *test, test_cycle *cpucycles) {
+static void pprint_test(struct jsontest *test, struct test_cycle *cpucycles) {
     printf("\nCycles");
     for (u32 i = 0; i < test->num_cycles; i++) {
         printf("\n\nTEST cycle:%d  addr:%04x  data:%02x  rwm:%d%d%d", i, test->cycles[i].addr, test->cycles[i].data, test->cycles[i].r, test->cycles[i].w, test->cycles[i].m);
@@ -369,7 +369,7 @@ static void pprint_test(struct jsontest *test, test_cycle *cpucycles) {
     }
 }
 
-void test_sm83_automated(struct sm83_test_result *out, SM83* cpu, jsontest tests[1000], u32 is_call)
+void test_sm83_automated(struct sm83_test_result *out, struct SM83* cpu, struct jsontest tests[1000], u32 is_call)
 {
     out->passed = 0;
     out->mycycles = 0;

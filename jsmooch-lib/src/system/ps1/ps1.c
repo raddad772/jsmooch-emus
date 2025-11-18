@@ -2,10 +2,10 @@
 // Created by . on 2/11/25.
 //
 
-#include <cassert>
-#include <cstdlib>
-#include <cstdio>
-#include <cstring>
+#include <assert.h>
+#include <stdlib.h>
+#include <stdio.h>
+#include <string.h>
 #include <math.h>
 
 #include "helpers/scheduler.h"
@@ -17,36 +17,36 @@
 #include "peripheral/ps1_digital_pad.h"
 
 
-#include "fail"
+#include "helpers/debugger/debugger.h"
 #include "component/cpu/r3000/r3000.h"
 
 #include "helpers/multisize_memaccess.c"
 #include "helpers/physical_io.h"
 
-#define JTHIS struct PS1* this = (PS1*)jsm->ptr
+#define JTHIS struct PS1* this = (struct PS1*)jsm->ptr
 #define JSM struct jsm_system* jsm
 
 static void PS1J_play(JSM);
 static void PS1J_pause(JSM);
 static void PS1J_stop(JSM);
-static void PS1J_get_framevars(JSM, framevars* out);
+static void PS1J_get_framevars(JSM, struct framevars* out);
 static void PS1J_reset(JSM);
 static u32 PS1J_finish_frame(JSM);
 static u32 PS1J_finish_scanline(JSM);
 static u32 PS1J_step_master(JSM, u32 howmany);
-static void PS1J_load_BIOS(JSM, multi_file_set* mfs);
-static void PS1J_describe_io(JSM, cvec* IOs);
+static void PS1J_load_BIOS(JSM, struct multi_file_set* mfs);
+static void PS1J_describe_io(JSM, struct cvec* IOs);
 
 // 240x160, but 308x228 with v and h blanks
 
 
 //typedef void (*scheduler_callback)(void *bound_ptr, u64 user_key, u64 current_clock, u32 jitter);
-static void schedule_frame(PS1 *this, u64 start_clock, u32 is_first);
+static void schedule_frame(struct PS1 *this, u64 start_clock, u32 is_first);
 
 static void vblank(void *bound_ptr, u64 key, u64 current_clock, u32 jitter)
 {
     // First function call on a new frame
-    struct PS1 *this = (PS1 *)bound_ptr;
+    struct PS1 *this = (struct PS1 *)bound_ptr;
     PS1_set_irq(this, PS1IRQ_VBlank, key);
     this->clock.in_vblank = key;
     PS1_timers_vblank(this, key);
@@ -55,7 +55,7 @@ static void vblank(void *bound_ptr, u64 key, u64 current_clock, u32 jitter)
 static void hblank(void *bound_ptr, u64 key, u64 current_clock, u32 jitter)
 {
     // Do what here?
-    struct PS1 *this = (PS1 *)bound_ptr;
+    struct PS1 *this = (struct PS1 *)bound_ptr;
     this->clock.in_hblank = key;
     this->clock.hblank_clock += key;
     PS1_timers_hblank(this, key);
@@ -63,12 +63,12 @@ static void hblank(void *bound_ptr, u64 key, u64 current_clock, u32 jitter)
 
 static void do_next_scheduled_frame(void *bound_ptr, u64 key, u64 current_clock, u32 jitter)
 {
-    struct PS1 *this = (PS1 *)bound_ptr;
+    struct PS1 *this = (struct PS1 *)bound_ptr;
     schedule_frame(this, current_clock-jitter, 0);
 }
 
 
-static void schedule_frame(PS1 *this, u64 start_clock, u32 is_first)
+static void schedule_frame(struct PS1 *this, u64 start_clock, u32 is_first)
 {
     if (!is_first) {
         this->clock.master_frame++;
@@ -97,7 +97,7 @@ static void schedule_frame(PS1 *this, u64 start_clock, u32 is_first)
 }
 
 
-static void setup_debug_waveform(debug_waveform *dw)
+static void setup_debug_waveform(struct debug_waveform *dw)
 {
     /*if (dw->samples_requested == 0) return;
     dw->samples_rendered = dw->samples_requested;
@@ -105,14 +105,14 @@ static void setup_debug_waveform(debug_waveform *dw)
     dw->user.buf_pos = 0;*/
 }
 
-void PS1J_set_audiobuf(jsm_system* jsm, audiobuf *ab)
+void PS1J_set_audiobuf(struct jsm_system* jsm, struct audiobuf *ab)
 {
     JTHIS;
     /*this->audio.buf = ab;
     if (this->audio.master_cycles_per_audio_sample == 0) {
         this->audio.master_cycles_per_audio_sample = ((float)(MASTER_CYCLES_PER_FRAME / (float)ab->samples_len));
         this->audio.next_sample_cycle = 0;
-        struct debug_waveform *wf = (debug_waveform *)cvec_get(this->dbg.waveforms.main.vec, this->dbg.waveforms.main.index);
+        struct debug_waveform *wf = (struct debug_waveform *)cvec_get(this->dbg.waveforms.main.vec, this->dbg.waveforms.main.index);
         this->apu.ext_enable = wf->ch_output_enabled;
     }
 
@@ -120,7 +120,7 @@ void PS1J_set_audiobuf(jsm_system* jsm, audiobuf *ab)
     setup_debug_waveform(cvec_get(this->dbg.waveforms.main.vec, this->dbg.waveforms.main.index));
     for (u32 i = 0; i < 6; i++) {
         setup_debug_waveform(cvec_get(this->dbg.waveforms.chan[i].vec, this->dbg.waveforms.chan[i].index));
-        struct debug_waveform *wf = (debug_waveform *)cvec_get(this->dbg.waveforms.chan[i].vec, this->dbg.waveforms.chan[i].index);
+        struct debug_waveform *wf = (struct debug_waveform *)cvec_get(this->dbg.waveforms.chan[i].vec, this->dbg.waveforms.chan[i].index);
         if (i < 4)
             this->apu.channels[i].ext_enable = wf->ch_output_enabled;
         else
@@ -129,7 +129,7 @@ void PS1J_set_audiobuf(jsm_system* jsm, audiobuf *ab)
     */
 }
 
-static void amidog_print_console(PS1 *this)
+static void amidog_print_console(struct PS1 *this)
 {
     static const char args[3][15] = {"auto", "console", "release"};
     int argLen = 2;
@@ -151,28 +151,28 @@ static void amidog_print_console(PS1 *this)
 
 static u32 read_trace_cpu(void *ptr, u32 addr, u32 sz)
 {
-    struct PS1 *this = (PS1 *)ptr;
+    struct PS1 *this = (struct PS1 *)ptr;
     return PS1_mainbus_read(this, addr, sz, 0);
 }
 
-static void PS1_update_SR(void *ptr, R3000 *core, u32 val)
+static void PS1_update_SR(void *ptr, struct R3000 *core, u32 val)
 {
-    struct PS1 *this = (PS1 *)ptr;
+    struct PS1 *this = (struct PS1 *)ptr;
     this->mem.cache_isolated = (val & 0x10000) == 0x10000;
     //printf("\nNew SR: %04x", core->regs.COP0[12] & 0xFFFF);
 }
 
-static void BIOS_patch_reset(PS1 *this)
+static void BIOS_patch_reset(struct PS1 *this)
 {
     memcpy(this->mem.BIOS, this->mem.BIOS_unpatched, 512 * 1024);
 }
 
-static void BIOS_patch(PS1 *this, u32 addr, u32 val)
+static void BIOS_patch(struct PS1 *this, u32 addr, u32 val)
 {
     cW32(this->mem.BIOS, addr, val);
 }
 
-static void PS1J_sideload(JSM, multi_file_set *fs) {
+static void PS1J_sideload(JSM, struct multi_file_set *fs) {
     JTHIS;
     buf_allocate(&this->sideloaded, fs->files[0].buf.size);
     memcpy(this->sideloaded.ptr, fs->files[0].buf.ptr, fs->files[0].buf.size);
@@ -193,13 +193,13 @@ static void snoop_write(void *ptr, u32 addr, u32 sz, u32 val)
 
 static void run_block(void *bound_ptr, u64 num, u64 current_clock, u32 jitter)
 {
-    struct PS1 *this = (PS1 *)bound_ptr;
+    struct PS1 *this = (struct PS1 *)bound_ptr;
     this->cycles_left += (i64)num;
     R3000_check_IRQ(&this->cpu);
     R3000_cycle(&this->cpu, num);
 }
 
-static void setup_IRQs(PS1 *this)
+static void setup_IRQs(struct PS1 *this)
 {
     IRQ_multiplexer_b_init(&this->IRQ_multiplexer, 11);
     IRQ_multiplexer_b_setup_irq(&this->IRQ_multiplexer, 0, "vblank", IRQMBK_edge_0_to_1);
@@ -215,9 +215,9 @@ static void setup_IRQs(PS1 *this)
     IRQ_multiplexer_b_setup_irq(&this->IRQ_multiplexer, 10, "lightpen_pio_dtl", IRQMBK_edge_0_to_1);
 }
 
-void PS1_new(jsm_system *jsm)
+void PS1_new(struct jsm_system *jsm)
 {
-    struct PS1* this = (PS1*)malloc(sizeof(PS1));
+    struct PS1* this = (struct PS1*)malloc(sizeof(struct PS1));
     memset(this, 0, sizeof(*this));
     scheduler_init(&this->scheduler, &this->clock.master_cycle_count, &this->clock.waitstates);
     this->scheduler.max_block_size = 30;
@@ -281,7 +281,7 @@ void PS1_new(jsm_system *jsm)
 
 }
 
-void PS1_delete(jsm_system *jsm)
+void PS1_delete(struct jsm_system *jsm)
 {
     JTHIS;
 
@@ -301,7 +301,7 @@ void PS1_delete(jsm_system *jsm)
     jsm_clearfuncs(jsm);
 }
 
-static void copy_vram(PS1 *this)
+static void copy_vram(struct PS1 *this)
 {
     memcpy(this->gpu.cur_output, this->gpu.VRAM, 1024*1024);
     this->gpu.cur_output = ((u16 *)this->gpu.display->output[this->gpu.display->last_written ^ 1]);
@@ -342,7 +342,7 @@ void PS1J_stop(JSM)
 {
 }
 
-void PS1J_get_framevars(JSM, framevars* out)
+void PS1J_get_framevars(JSM, struct framevars* out)
 {
     JTHIS;
     out->master_frame = this->clock.master_frame;
@@ -351,11 +351,11 @@ void PS1J_get_framevars(JSM, framevars* out)
     out->master_cycle = this->clock.master_cycle_count;
 }
 
-static void skip_BIOS(PS1* this)
+static void skip_BIOS(struct PS1* this)
 {
 }
 
-static void sideload_EXE(PS1 *this, buf *w)
+static void sideload_EXE(struct PS1 *this, struct buf *w)
 {
     u8 *r = w->ptr;
     if ((r[0] == 80) && (r[1] == 83) && (r[2] == 45) &&
@@ -437,7 +437,7 @@ void PS1J_reset(JSM)
     }
 }
 
-static void sample_audio(PS1* this, u32 num_cycles)
+static void sample_audio(struct PS1* this, u32 num_cycles)
 {
     /*
     for (u64 i = 0; i < num_cycles; i++) {
@@ -493,7 +493,7 @@ static u32 PS1J_step_master(JSM, u32 howmany)
     return 0;
 }
 
-static void PS1J_load_BIOS(JSM, multi_file_set* mfs)
+static void PS1J_load_BIOS(JSM, struct multi_file_set* mfs)
 {
     JTHIS;
     if (mfs->files[0].buf.size != (512*1024)) {
@@ -505,7 +505,7 @@ static void PS1J_load_BIOS(JSM, multi_file_set* mfs)
     printf("\nLOADED BIOS!");
 }
 
-static void setup_crt(JSM_DISPLAY *d)
+static void setup_crt(struct JSM_DISPLAY *d)
 {
     d->standard = JSS_CRT;
     d->enabled = 1;
@@ -533,7 +533,7 @@ static void setup_crt(JSM_DISPLAY *d)
     d->pixelometry.overscan.top = d->pixelometry.overscan.bottom = 0;
 }
 
-static void setup_audio(cvec* IOs)
+static void setup_audio(struct cvec* IOs)
 {
     struct physical_io_device *pio = cvec_push_back(IOs);
     pio->kind = HID_AUDIO_CHANNEL;
@@ -543,7 +543,7 @@ static void setup_audio(cvec* IOs)
 }
 
 
-static void PS1J_describe_io(JSM, cvec* IOs)
+static void PS1J_describe_io(JSM, struct cvec* IOs)
 {
     cvec_lock_reallocs(IOs);
     JTHIS;
@@ -593,5 +593,5 @@ static void PS1J_describe_io(JSM, cvec* IOs)
 
     setup_audio(IOs);
 
-    this->gpu.display = &((physical_io_device *)cpg(this->gpu.display_ptr))->display;
+    this->gpu.display = &((struct physical_io_device *)cpg(this->gpu.display_ptr))->display;
 }

@@ -7,8 +7,8 @@
 
 #include "helpers/int.h"
 struct GBA;
-u32 GBA_timer_enabled(GBA *, u32 tn);
-u32 GBA_read_timer(GBA *, u32 tn);
+u32 GBA_timer_enabled(struct GBA *, u32 tn);
+u32 GBA_read_timer(struct GBA *, u32 tn);
 void GBA_timer_write_cnt(void *ptr, u64 tn_and_val, u64 clock, u32 jitter);
 static inline u32 GBA_timer_reload_ticks(u32 reload)
 {

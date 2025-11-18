@@ -2,7 +2,7 @@
 // Created by . on 7/25/24.
 //
 
-#include <cstdio>
+#include <stdio.h>
 
 #include "mac_display.h"
 #include "mac_internal.h"
@@ -11,7 +11,7 @@
 #define SCREEN_WIDTH 512
 #define SCREEN_HEIGHT 342
 
-static void scanline_visible(mac* this)
+static void scanline_visible(struct mac* this)
 {
     if (this->clock.crt.hpos == 512)  {
         // TODO: hblank
@@ -30,11 +30,11 @@ static void scanline_visible(mac* this)
     }
 }
 
-static void scanline_vblank(mac* this)
+static void scanline_vblank(struct mac* this)
 {
 }
 
-static void new_frame(mac* this)
+static void new_frame(struct mac* this)
 {
     this->clock.master_frame++;
     this->clock.crt.vpos = 0;
@@ -59,7 +59,7 @@ static void new_frame(mac* this)
 #define DISPLAY_BASE (0x12700 >> 1)
 #define MAC512K_OFFSET (0x60000 >> 1)
 
-static void calc_display_addr(mac* this)
+static void calc_display_addr(struct mac* this)
 {
     u32 base_addr = DISPLAY_BASE | (0x40 << 8);//| ((this->via.regs.ORB & 0x40) << 8);
 
@@ -72,7 +72,7 @@ static void calc_display_addr(mac* this)
                               (this->clock.crt.vpos << 5);  // current y position
 }
 
-static void update_irqs(mac* this)
+static void update_irqs(struct mac* this)
 {
     this->display.IRQ_out = this->display.IRQ_signal;
     if (this->display.IRQ_out) {
@@ -80,7 +80,7 @@ static void update_irqs(mac* this)
     }
 }
 
-static void new_scanline(mac* this)
+static void new_scanline(struct mac* this)
 {
     this->clock.crt.hpos = 0;
     this->display.crt->scan_x = 0;
@@ -104,7 +104,7 @@ static void new_scanline(mac* this)
     calc_display_addr(this);
 }
 
-void mac_step_display2(mac* this)
+void mac_step_display2(struct mac* this)
 {
     // Draw two pixels
     /*
@@ -120,12 +120,12 @@ void mac_step_display2(mac* this)
     if (this->clock.crt.hpos >= 704) new_scanline(this);
 }
 
-u32 mac_display_in_hblank(mac* this)
+u32 mac_display_in_hblank(struct mac* this)
 {
     return this->clock.crt.hpos > 512;
 }
 
-void mac_display_reset(mac* this)
+void mac_display_reset(struct mac* this)
 {
     /*
 Macintosh 128K, the main screen buffer starts at $1A700 and the alternate buffer starts at

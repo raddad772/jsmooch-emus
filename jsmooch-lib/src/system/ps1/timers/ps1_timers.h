@@ -45,13 +45,13 @@ struct PS1_TIMERS {
 };
 
 struct PS1;
-u64 PS1_dotclock(PS1 *);
-void PS1_timers_hblank(PS1 *, u64 key);
-u32 PS1_timers_read(PS1 *, u32 addr, u32 sz);
-void PS1_timers_write(PS1 *, u32 addr, u32 sz, u32 val);
-void PS1_timers_vblank(PS1 *, u64 key);
-void PS1_disable_timer(PS1 *, u32 timer_num);
-void PS1_enable_timer(PS1 *, u32 timer_num);
-void PS1_timers_reset(PS1 *);
+u64 PS1_dotclock(struct PS1 *);
+void PS1_timers_hblank(struct PS1 *, u64 key);
+u32 PS1_timers_read(struct PS1 *, u32 addr, u32 sz);
+void PS1_timers_write(struct PS1 *, u32 addr, u32 sz, u32 val);
+void PS1_timers_vblank(struct PS1 *, u64 key);
+void PS1_disable_timer(struct PS1 *, u32 timer_num);
+void PS1_enable_timer(struct PS1 *, u32 timer_num);
+void PS1_timers_reset(struct PS1 *);
 
 #endif //JSMOOCH_EMUS_PS1_TIMERS_H

@@ -1,5 +1,5 @@
-#include <cassert>
-#include <cstdio>
+#include <assert.h>
+#include <stdio.h>
 #include "stdlib.h"
 #include "helpers/int.h"
 #include "cart.h"
@@ -26,7 +26,7 @@ u32 NUM_ROMBANKS(u32 inp) {
     return 1;
 }
 
-void GB_cart_init(GB_cart* this, enum GB_variants variant, GB_clock* clock, GB_bus* bus) {
+void GB_cart_init(struct GB_cart* this, enum GB_variants variant, struct GB_clock* clock, struct GB_bus* bus) {
     this->variant = variant;
     this->clock = clock;
     this->bus = bus;
@@ -51,7 +51,7 @@ void GB_cart_init(GB_cart* this, enum GB_variants variant, GB_clock* clock, GB_b
     this->header.mapper = NONE;
 }
 
-void GB_cart_delete(GB_cart* this) {
+void GB_cart_delete(struct GB_cart* this) {
     if (this->ROM != NULL) {
         free(this->ROM);
         this->ROM = NULL;
@@ -66,7 +66,7 @@ void GB_cart_delete(GB_cart* this) {
 #define MIN(x,y) (((x) <= (y)) ? (x) : (y));
 #endif
 
-void GBC_read_ROM(GB_cart* this, u8 *inp, u64 size)
+void GBC_read_ROM(struct GB_cart* this, u8 *inp, u64 size)
 {
     u32 k = MIN((u32)this->header.ROM_size, (u32)size);
     this->header.ROM_size = k;
@@ -76,7 +76,7 @@ void GBC_read_ROM(GB_cart* this, u8 *inp, u64 size)
     }
 }
 
-void GBC_setup_mapper(GB_cart* this)
+void GBC_setup_mapper(struct GB_cart* this)
 {
     this->mapper = new_GB_mapper(this->clock, this->bus, this->header.mapper);
     if (this->bus->mapper != NULL) {
@@ -86,7 +86,7 @@ void GBC_setup_mapper(GB_cart* this)
     this->mapper->set_cart(this->mapper, this);
 }
 
-void GB_cart_load_ROM_from_RAM(GB_cart*this, void* ibuf, u64 size, physical_io_device *pio)
+void GB_cart_load_ROM_from_RAM(struct GB_cart*this, void* ibuf, u64 size, struct physical_io_device *pio)
 {
     this->SRAM = &pio->cartridge_port.SRAM;
     this->SRAM->ready_to_use = 0;

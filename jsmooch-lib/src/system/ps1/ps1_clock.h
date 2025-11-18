@@ -78,6 +78,6 @@ struct PS1_clock {
 
 
 struct PS1;
-void PS1_clock_init(PS1_clock *, u32 is_ntsc);
-void PS1_clock_reset(PS1 *);
+void PS1_clock_init(struct PS1_clock *, u32 is_ntsc);
+void PS1_clock_reset(struct PS1 *);
 #endif //JSMOOCH_EMUS_PS1_CLOCK_H

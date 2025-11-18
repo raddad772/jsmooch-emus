@@ -2,10 +2,10 @@
 // Created by . on 7/24/24.
 //
 
-#include <cstdlib>
-#include <cstdio>
-#include <cassert>
-#include <cstring>
+#include <stdlib.h>
+#include <stdio.h>
+#include <assert.h>
+#include <string.h>
 
 #include "mac.h"
 #include "mac_internal.h"
@@ -15,11 +15,11 @@
 #include "helpers/int.h"
 #include "helpers/physical_io.h"
 #include "helpers/sys_interface.h"
-#include "fail"
+#include "helpers/debugger/debugger.h"
 
 #include "component/cpu/m68000/m68000.h"
 
-#define JTHIS struct mac* this = (mac*)jsm->ptr
+#define JTHIS struct mac* this = (struct mac*)jsm->ptr
 #define JSM struct jsm_system* jsm
 
 #define THIS struct mac* this
@@ -28,26 +28,26 @@
 static void macJ_play(JSM);
 static void macJ_pause(JSM);
 static void macJ_stop(JSM);
-static void macJ_get_framevars(JSM, framevars* out);
+static void macJ_get_framevars(JSM, struct framevars* out);
 static void macJ_reset(JSM);
 static void macJ_killall(JSM);
 static u32 macJ_finish_frame(JSM);
 static u32 macJ_finish_scanline(JSM);
 static u32 macJ_step_master(JSM, u32 howmany);
-static void macJ_load_BIOS(JSM, multi_file_set* mfs);
+static void macJ_load_BIOS(JSM, struct multi_file_set* mfs);
 static void macJ_enable_tracing(JSM);
 static void macJ_disable_tracing(JSM);
-static void macJ_describe_io(JSM, cvec* IOs);
+static void macJ_describe_io(JSM, struct cvec* IOs);
 
 static u32 read_trace_m68k(void *ptr, u32 addr, u32 UDS, u32 LDS) {
-    struct mac* this = (mac*)ptr;
+    struct mac* this = (struct mac*)ptr;
     return mac_mainbus_read(this, addr, UDS, LDS, this->io.cpu.last_read_data, 0);
 }
 
 
-void mac_new(jsm_system* jsm, enum mac_variants variant)
+void mac_new(struct jsm_system* jsm, enum mac_variants variant)
 {
-    struct mac* this = (mac*)calloc(1, sizeof(mac));
+    struct mac* this = (struct mac*)calloc(1, sizeof(struct mac));
     this->dbgr = NULL;
     this->kind = variant;
     mac_clock_init(this);
@@ -106,7 +106,7 @@ void mac_new(jsm_system* jsm, enum mac_variants variant)
 
 }
 
-void mac_delete(jsm_system* jsm)
+void mac_delete(struct jsm_system* jsm)
 {
     JTHIS;
 
@@ -156,7 +156,7 @@ static u32 mac_keyboard_keymap[77] = {
         JK_NUM_DIVIDE, JK_NUM_STAR, JK_NUM_LOCK, JK_NUM_CLEAR
 };
 
-static void setup_keyboard(mac* this)
+static void setup_keyboard(struct mac* this)
 {
     struct physical_io_device *d = cvec_push_back(this->IOs);
     physical_io_device_init(d, HID_KEYBOARD, 0, 0, 1, 1);
@@ -166,7 +166,7 @@ static void setup_keyboard(mac* this)
     d->connected = 1;
 
     struct JSM_KEYBOARD* kbd = &d->keyboard;
-    memset(kbd, 0, sizeof(JSM_KEYBOARD));
+    memset(kbd, 0, sizeof(struct JSM_KEYBOARD));
     kbd->num_keys = 77;
 
     for (u32 i = 0; i < kbd->num_keys; i++) {
@@ -174,7 +174,7 @@ static void setup_keyboard(mac* this)
     }
 }
 
-void macJ_IO_insert_disk(jsm_system *jsm, physical_io_device* pio, multi_file_set* mfs)
+void macJ_IO_insert_disk(struct jsm_system *jsm, struct physical_io_device* pio, struct multi_file_set* mfs)
 {
     JTHIS;
     struct mac_floppy *mflpy = cvec_push_back(&this->iwm.my_disks);
@@ -183,7 +183,7 @@ void macJ_IO_insert_disk(jsm_system *jsm, physical_io_device* pio, multi_file_se
     this->iwm.drive[0].disc = mflpy;
 }
 
-static void setup_crt(JSM_DISPLAY *d)
+static void setup_crt(struct JSM_DISPLAY *d)
 {
     d->standard = JSS_NTSC;
     d->enabled = 1;
@@ -212,7 +212,7 @@ static void setup_crt(JSM_DISPLAY *d)
 }
 
 
-void macJ_describe_io(JSM, cvec *IOs)
+void macJ_describe_io(JSM, struct cvec *IOs)
 {
     JTHIS;
     if (this->described_inputs) return;
@@ -262,7 +262,7 @@ void macJ_describe_io(JSM, cvec *IOs)
     d->display.last_written = 1;
     //d->display.last_displayed = 1;
 
-    this->display.crt = &((physical_io_device *)cpg(this->display.crt_ptr))->display;
+    this->display.crt = &((struct physical_io_device *)cpg(this->display.crt_ptr))->display;
 }
 
 void macJ_play(JSM)
@@ -277,7 +277,7 @@ void macJ_stop(JSM)
 {
 }
 
-void macJ_get_framevars(JSM, framevars* out)
+void macJ_get_framevars(JSM, struct framevars* out)
 {
     JTHIS;
     out->master_frame = this->clock.master_frame;
@@ -286,7 +286,7 @@ void macJ_get_framevars(JSM, framevars* out)
     out->master_cycle = this->clock.master_cycles;
 }
 
-void macJ_load_BIOS(JSM, multi_file_set* mfs)
+void macJ_load_BIOS(JSM, struct multi_file_set* mfs)
 {
     JTHIS;
     struct buf* b = &mfs->files[0].buf;

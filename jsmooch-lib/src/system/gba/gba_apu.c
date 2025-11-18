@@ -1,8 +1,8 @@
 //
 // Created by . on 12/28/24.
 //
-#include <cstring>
-#include <cstdlib>
+#include <string.h>
+#include <stdlib.h>
 
 #include "helpers/int.h"
 #include "gba_bus.h"
@@ -16,7 +16,7 @@ static i32 sq_duty[4][8] = {
         { 0, 1, 1, 1, 1, 1, 1, 0 }, // 11 - 75%
 };
 
-void GBA_APU_init(GBA*this)
+void GBA_APU_init(struct GBA*this)
 {
     memset(&this->apu, 0, sizeof(this->apu));
     for (u32 i = 0; i < 4; i++) {
@@ -52,7 +52,7 @@ void GBA_APU_init(GBA*this)
 
 #define WAVE_RAM 0x04000090
 
-static inline u8 read_NRx0(GBASNDCHAN *chan)
+static inline u8 read_NRx0(struct GBASNDCHAN *chan)
 {
     u8 r = 0;
     if (chan->number == 2) {
@@ -68,7 +68,7 @@ static inline u8 read_NRx0(GBASNDCHAN *chan)
     return r;
 }
 
-static inline u8 read_NRx1(GBASNDCHAN *chan)
+static inline u8 read_NRx1(struct GBASNDCHAN *chan)
 {
     u8 r = 0;
     switch(chan->number) {
@@ -84,7 +84,7 @@ static inline u8 read_NRx1(GBASNDCHAN *chan)
     return 0;
 }
 
-static inline u8 read_NRx2(GBASNDCHAN *chan)
+static inline u8 read_NRx2(struct GBASNDCHAN *chan)
 {
     u8 r = 0;
     switch(chan->number) {
@@ -108,7 +108,7 @@ static inline u8 read_NRx2(GBASNDCHAN *chan)
     return 0;
 }
 
-static inline u8 read_NRx3(GBASNDCHAN* chan)
+static inline u8 read_NRx3(struct GBASNDCHAN* chan)
 {
     if (chan->number == 3) {
         u8 r = 0;
@@ -121,12 +121,12 @@ static inline u8 read_NRx3(GBASNDCHAN* chan)
     return 0;
 }
 
-static inline u8 read_NRx4(GBASNDCHAN* chan)
+static inline u8 read_NRx4(struct GBASNDCHAN* chan)
 {
     return chan->length_enable << 6;
 }
 
-static inline void trigger_channel(GBASNDCHAN* chan) {
+static inline void trigger_channel(struct GBASNDCHAN* chan) {
     chan->on = chan->dac_on;
     chan->env.on = 1;
     chan->period_counter = 0;
@@ -154,7 +154,7 @@ static inline void trigger_channel(GBASNDCHAN* chan) {
     }
 }
 
-static inline void write_NRx0(GBASNDCHAN* chan, u8 val)
+static inline void write_NRx0(struct GBASNDCHAN* chan, u8 val)
 {
     if (chan->number == 2) {
         chan->sample_bank_mode = (val >> 5) & 1;
@@ -170,7 +170,7 @@ static inline void write_NRx0(GBASNDCHAN* chan, u8 val)
     }
 }
 
-static inline void write_NRx1(GBASNDCHAN* chan, u8 val)
+static inline void write_NRx1(struct GBASNDCHAN* chan, u8 val)
 {
     switch(chan->number) {
         case 0:
@@ -188,7 +188,7 @@ static inline void write_NRx1(GBASNDCHAN* chan, u8 val)
     assert(1==2);
 }
 
-static inline void write_NRx2(GBASNDCHAN* chan, u8 val)
+static inline void write_NRx2(struct GBASNDCHAN* chan, u8 val)
 {
     switch(chan->number) {
         case 0:
@@ -228,7 +228,7 @@ static inline void write_NRx2(GBASNDCHAN* chan, u8 val)
 
 static u32 noise_periods[8] = { 8, 16, 32, 48, 64, 80, 96, 112};
 
-static inline void write_NRx3(GBASNDCHAN* chan, u8 val)
+static inline void write_NRx3(struct GBASNDCHAN* chan, u8 val)
 {
     switch(chan->number) {
         case 0:
@@ -249,7 +249,7 @@ static inline void write_NRx3(GBASNDCHAN* chan, u8 val)
     assert(1==2);
 }
 
-static inline void write_NRx4(GBASNDCHAN *chan, u8 val)
+static inline void write_NRx4(struct GBASNDCHAN *chan, u8 val)
 {
     switch(chan->number) {
         case 0:
@@ -270,12 +270,12 @@ static inline void write_NRx4(GBASNDCHAN *chan, u8 val)
     }
 }
 
-static void write_wave_ram(GBA *this, u32 addr, u32 val)
+static void write_wave_ram(struct GBA *this, u32 addr, u32 val)
 {
     this->apu.channels[2].samples[((this->apu.channels[2].cur_sample_bank ^ 1) << 4) | addr] = val;
 }
 
-static u32 read_wave_ram(GBA *this, u32 addr)
+static u32 read_wave_ram(struct GBA *this, u32 addr)
 {
     return this->apu.channels[2].samples[((this->apu.channels[2].cur_sample_bank ^ 1) << 4) | addr];
 
@@ -286,7 +286,7 @@ static u32 read_wave_ram(GBA *this, u32 addr)
 #define C2 &this->apu.channels[2]
 #define C3 &this->apu.channels[3]
 
-u32 GBA_APU_read_IO(GBA*this, u32 addr, u32 sz, u32 access, u32 has_effect)
+u32 GBA_APU_read_IO(struct GBA*this, u32 addr, u32 sz, u32 access, u32 has_effect)
 {
     u32 v;
     switch(addr) {
@@ -438,7 +438,7 @@ u32 GBA_APU_read_IO(GBA*this, u32 addr, u32 sz, u32 access, u32 has_effect)
 #undef C2
 #undef C3
 
-void GBA_APU_sound_FIFO(GBA *this, u32 num) {
+void GBA_APU_sound_FIFO(struct GBA *this, u32 num) {
     struct GBA_APU_FIFO *fifo = &this->apu.fifo[num];
 
     if (fifo->len > 0) {
@@ -456,7 +456,7 @@ void GBA_APU_sound_FIFO(GBA *this, u32 num) {
     }
 }
 
-static void FIFO_reset(GBA *this, u32 fn)
+static void FIFO_reset(struct GBA *this, u32 fn)
 {
     struct GBA_APU_FIFO *f = &this->apu.fifo[fn];
     f->needs_commit = 0;
@@ -465,7 +465,7 @@ static void FIFO_reset(GBA *this, u32 fn)
     f->output_head = 0;
 }
 
-static void FIFO_commit(GBA *this, u32 fn)
+static void FIFO_commit(struct GBA *this, u32 fn)
 {
     struct GBA_APU_FIFO *f = &this->apu.fifo[fn];
     if (!f->needs_commit) return;
@@ -477,7 +477,7 @@ static void FIFO_commit(GBA *this, u32 fn)
     }
 }
 
-static void FIFO_write(GBA* this, u32 fn, u32 which, u32 v)
+static void FIFO_write(struct GBA* this, u32 fn, u32 which, u32 v)
 {
     struct GBA_APU_FIFO *f = &this->apu.fifo[fn];
     if (f->len == 32) f->head = (f->head + 1) & 31; // Full buffer, push another byte?...
@@ -492,7 +492,7 @@ static void FIFO_write(GBA* this, u32 fn, u32 which, u32 v)
 #define C2 &this->apu.channels[2], val
 #define C3 &this->apu.channels[3], val
 
-static void GBA_APU_write_IO8(GBA *this, u32 addr, u32 sz, u32 access, u32 val)
+static void GBA_APU_write_IO8(struct GBA *this, u32 addr, u32 sz, u32 access, u32 val)
 {
     switch(addr) {
         case SOUND1CNT_L+0:
@@ -664,7 +664,7 @@ static void GBA_APU_write_IO8(GBA *this, u32 addr, u32 sz, u32 access, u32 val)
 #undef C2
 #undef C3
 
-void GBA_APU_write_IO(GBA*this, u32 addr, u32 sz, u32 access, u32 val) {
+void GBA_APU_write_IO(struct GBA*this, u32 addr, u32 sz, u32 access, u32 val) {
     GBA_APU_write_IO8(this, addr, 1, access, val & 0xFF);
     if (sz >= 2) {
         GBA_APU_write_IO8(this, addr + 1, 1, access, (val >> 8) & 0xFF);
@@ -677,7 +677,7 @@ void GBA_APU_write_IO(GBA*this, u32 addr, u32 sz, u32 access, u32 val) {
     if (this->apu.fifo[1].needs_commit) FIFO_commit(this, 1);
 }
 
-float GB_APU_sample_channel_for_GBA(GBA_APU* this, int cnum) {
+float GB_APU_sample_channel_for_GBA(struct GBA_APU* this, int cnum) {
     struct GBASNDCHAN *chan = &this->channels[cnum];
     float output = 0;
 
@@ -697,7 +697,7 @@ float GB_APU_sample_channel_for_GBA(GBA_APU* this, int cnum) {
     return output;
 }
 
-float GBA_APU_sample_channel(GBA *this, u32 n)
+float GBA_APU_sample_channel(struct GBA *this, u32 n)
 {
     if (n < 4) return GB_APU_sample_channel_for_GBA(&this->apu, n);
     struct GBA_APU_FIFO *fifo = &this->apu.fifo[n - 4];
@@ -713,7 +713,7 @@ float GBA_APU_sample_channel(GBA *this, u32 n)
     return (float)(sample << 7) / 32768.0f;
 }
 
-float GBA_APU_mix_sample(GBA*this, u32 is_debug)
+float GBA_APU_mix_sample(struct GBA*this, u32 is_debug)
 {
     float s = 0.0f;
     if (this->apu.io.master_enable && (this->apu.ext_enable || is_debug)) {
@@ -758,7 +758,7 @@ float GBA_APU_mix_sample(GBA*this, u32 is_debug)
     return s;
 }
 
-static void tick_pulse_period(GBA_APU *this, int cnum)
+static void tick_pulse_period(struct GBA_APU *this, int cnum)
 {
     struct GBASNDCHAN *chan = &this->channels[cnum];
     if (chan->on) {
@@ -771,7 +771,7 @@ static void tick_pulse_period(GBA_APU *this, int cnum)
     }
 }
 
-static void tick_wave_period_twice(GBA_APU *this) {
+static void tick_wave_period_twice(struct GBA_APU *this) {
     struct GBASNDCHAN *chan = &this->channels[2];
     for (u32 i = 0; i < 2; i++) {
         if (chan->on) {
@@ -799,7 +799,7 @@ static void tick_wave_period_twice(GBA_APU *this) {
     }
 }
 
-static void tick_noise_period(GBA_APU *this)
+static void tick_noise_period(struct GBA_APU *this)
 {
     struct GBASNDCHAN *chan = &this->channels[3];
     if (chan->on && (chan->clock_shift < 14) && (chan->period != 0)) {
@@ -819,7 +819,7 @@ static void tick_noise_period(GBA_APU *this)
     }
 }
 
-static void tick_sweep(GBA_APU* this, u32 cnum)
+static void tick_sweep(struct GBA_APU* this, u32 cnum)
 {
     struct GBASNDCHAN *chan = &this->channels[cnum];
     if (chan->sweep.pace != 0) {
@@ -838,7 +838,7 @@ static void tick_sweep(GBA_APU* this, u32 cnum)
     }
 }
 
-static void tick_length_timer(GBA_APU *this, u32 cnum)
+static void tick_length_timer(struct GBA_APU *this, u32 cnum)
 {
     struct GBASNDCHAN *chan = &this->channels[cnum];
     if (chan->length_enable) {
@@ -850,7 +850,7 @@ static void tick_length_timer(GBA_APU *this, u32 cnum)
     }
 }
 
-static void tick_env(GBA_APU *this, u32 cnum)
+static void tick_env(struct GBA_APU *this, u32 cnum)
 {
     struct GBASNDCHAN *chan = &this->channels[cnum];
     if (chan->env.period != 0 && chan->env.on) {
@@ -869,7 +869,7 @@ static void tick_env(GBA_APU *this, u32 cnum)
     }
 }
 
-static void tick_psg(GBA* this)
+static void tick_psg(struct GBA* this)
 {
     // @1MHz
     tick_pulse_period(&this->apu, 0);
@@ -901,7 +901,7 @@ static void tick_psg(GBA* this)
 
 }
 
-static void sample_psg(GBA* this)
+static void sample_psg(struct GBA* this)
 {
     // So we want a 9-bit signed output?
 
@@ -947,7 +947,7 @@ static void sample_psg(GBA* this)
     this->apu.psg.output_r = right;
 }
 
-void GBA_APU_cycle(GBA*this)
+void GBA_APU_cycle(struct GBA*this)
 {
     // 2 MHz divider for PSG, /8 divider.
 

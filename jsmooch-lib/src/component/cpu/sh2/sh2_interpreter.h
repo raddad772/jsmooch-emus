@@ -98,10 +98,10 @@ struct SH2 {
 
 };
 
-void SH2_SR_set(SH2_regs_SR *, u32 val);
-u32 SH2_SR_get(SH2_regs_SR *);
+void SH2_SR_set(struct SH2_regs_SR *, u32 val);
+u32 SH2_SR_get(struct SH2_regs_SR *);
 
-void SH2_init(SH2 *, scheduler_t *scheduler);
-void SH2_reset(SH2 *);
+void SH2_init(struct SH2 *, struct scheduler_t *scheduler);
+void SH2_reset(struct SH2 *);
 
 #endif //JSMOOCH_EMUS_SH2_INTERPRETER_H
