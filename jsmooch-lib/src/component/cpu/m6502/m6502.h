@@ -2,8 +2,7 @@
 // Created by Dave on 2/4/2024.
 //
 
-#ifndef JSMOOCH_EMUS_M6502_CPP_H
-#define JSMOOCH_EMUS_M6502_CPP_H
+#pragma once
 
 #include "helpers/int.h"
 #include "helpers/debug.h"
@@ -96,5 +95,3 @@ void M6502_poll_IRQs(M6502_regs *regs, M6502_pins *pins);
 void M6502_poll_NMI_only(M6502_regs *regs, M6502_pins *pins);
 
 struct serialized_state;
-
-#endif //JSMOOCH_EMUS_M6502_H
