@@ -28,6 +28,7 @@ static constexpr int skip_tests[] = {
     0x3D, // in original version, EF not included
     0x3E, // in original version, EF not included
     0x3F, // in original version, EF not included
+    0x68, // no file for this
 };
 
 struct test_cpu_regs {
@@ -455,7 +456,7 @@ void test_rca1802()
     cpu.pins.clear_wait = RCA1802::pins::RUN;
 
     u32 total_fail = 0;
-    u32 start_test = 0x60;
+    u32 start_test = 0;
     for (u32 i = start_test; i < 0x100; i++) {
         if (skip_test(i)) continue;
         u32 result = test_rca1802_ins(cpu, i);

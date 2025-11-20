@@ -73,7 +73,6 @@ bool core::perform_interrupts() {
 }
 
 void core::prepare_fetch() {
-    if constexpr (TEST_MODE) num_fetches++;
     if (!perform_interrupts()) { // Only proceed if no interrupt pending
         pins.SC = pins::S0_fetch;
         pins.Addr = regs.R[regs.P].u++;
@@ -247,7 +246,7 @@ void core::prepare_execute_70() {
             ins = &ins_SHLC_RSHL;
             break;
         case 0x7F: // SMBI
-            ins = &ins_SDB;
+            ins = &ins_SMB;
             do_immediate();
             break;
     }

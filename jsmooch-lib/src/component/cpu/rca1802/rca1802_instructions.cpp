@@ -67,13 +67,14 @@ I(IRX) {
 
 I(OUT) {
     core->pins.N = 0;
-    core->regs.X = (core->regs.X + 1) & 15;
+    core->regs.R[core->regs.X].u++;
     core->prepare_fetch();
 }
 
 I(INP) {
     core->pins.N = 0;
     core->pins.MWR = 0;
+    core->regs.D = core->pins.D;
     core->prepare_fetch();
 }
 

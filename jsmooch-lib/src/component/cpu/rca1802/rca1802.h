@@ -20,7 +20,6 @@
 */
 
 namespace RCA1802 {
-    constexpr bool TEST_MODE = true;
 
 struct pins {
     enum SC {
@@ -87,8 +86,6 @@ struct core {
 
     void cycle();
     void reset();
-
-    int num_fetches;
 
     ins_func ins{};
     void prepare_fetch();
