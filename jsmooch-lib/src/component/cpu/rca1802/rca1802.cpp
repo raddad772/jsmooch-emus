@@ -17,8 +17,6 @@ void core::reset() {
     regs.X = 0;
     regs.P = 0;
     regs.R[0].u = 0;
-    clocks = 0;
-    next_clock = 9;
     prepare_fetch();
 }
 
@@ -27,8 +25,7 @@ void core::dma_in() {
     pins.MWR = 1;
     pins.Addr = regs.R[0].u;
     regs.R[0].u++;
-    pins.SC = pins::dma;
-    state = S2_dma;
+    pins.SC = pins::S2_dma;
 }
 
 void core::dma_out() {
@@ -36,8 +33,7 @@ void core::dma_out() {
     pins.MWR = 0;
     pins.Addr = regs.R[0].u;
     regs.R[0].u++;
-    pins.SC = pins::dma;
-    state = S2_dma;
+    pins.SC = pins::S2_dma;
 }
 
 void core::dma_end() {
@@ -54,8 +50,7 @@ void core::interrupt() {
     regs.IE = 0;
     regs.P = 1;
     regs.X = 2;
-    pins.SC = pins::interrupt;
-    state = S3_interrupt;
+    pins.SC = pins::S3_interrupt;
 }
 
 bool core::perform_interrupts() {
@@ -78,8 +73,9 @@ bool core::perform_interrupts() {
 }
 
 void core::prepare_fetch() {
+    if constexpr (TEST_MODE) num_fetches++;
     if (!perform_interrupts()) { // Only proceed if no interrupt pending
-        pins.SC = pins::fetch;
+        pins.SC = pins::S0_fetch;
         pins.Addr = regs.R[regs.P].u++;
         pins.MWR = 0;
         pins.MRD = 1;
@@ -109,7 +105,7 @@ void core::do_store(u8 addr_ptr, u8 val) {
 }
 
 void core::prepare_execute() {
-    pins.SC = pins::execute;
+    pins.SC = pins::S1_execute;
     pins.MRD = pins.MWR = 0;
     execs_left = 1;
     switch (regs.I) {
@@ -157,6 +153,7 @@ void core::prepare_execute() {
                     ins = &ins_INP;
                 }
             }
+            break;
         case 0x7:
             prepare_execute_70();
             break;
@@ -341,27 +338,20 @@ void core::execute() {
 }
 
 void core::cycle() {
-    clocks++;
-    pins.ran = 0;
     if (pins.clear_wait != pins::RUN) return;
-    if (clocks >= next_clock) {
-        next_clock += 8;
-        pins.ran = 1;
-        switch (state) {
-            case S0_fetch:
-                fetch();
-                break;
-            case S1_execute:
-                execute();
-                break;
-            case S2_dma:
-                dma_end();
-                break;
-            case S3_interrupt:
-                interrupt_end();
-                break;
-        }
-        // do stuff here
+    switch (pins.SC) {
+        case pins::S0_fetch:
+            fetch();
+            break;
+        case pins::S1_execute:
+            execute();
+            break;
+        case pins::S2_dma:
+            dma_end();
+            break;
+        case pins::S3_interrupt:
+            interrupt_end();
+            break;
     }
 }
 

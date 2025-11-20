@@ -38,6 +38,8 @@ set(SOURCE_LIST
         #"src/z80_drag_race.c"
         #"src/z80_drag_race.h"
         ".editorconfig"
+        src/cpu-tests/rca1802_tests.cpp
+        src/cpu-tests/rca1802_tests.h
 )
 
 add_executable(jsmooch-tests ${SOURCE_LIST})

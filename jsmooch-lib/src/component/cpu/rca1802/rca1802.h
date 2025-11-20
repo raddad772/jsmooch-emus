@@ -10,7 +10,6 @@
 #include "helpers/debugger/debugger.h"
 #include "helpers/serialize/serialize.h"
 
-
 /*
  *In order for IO/DMA to work properly, you need to do
  *
@@ -21,12 +20,14 @@
 */
 
 namespace RCA1802 {
+    constexpr bool TEST_MODE = true;
+
 struct pins {
     enum SC {
-        fetch=0,
-        execute=1,
-        dma=2,
-        interrupt=3
+        S0_fetch=0,
+        S1_execute=1,
+        S2_dma=2,
+        S3_interrupt=3
     }SC{}; //
     enum clear_wait {
         LOAD = 0,
@@ -34,8 +35,6 @@ struct pins {
         PAUSE = 2,
         RUN = 3
     } clear_wait{};
-
-    u8 ran{}; // Indicate if run cycle happened internally
 
     u8 EF{}; // EF lines
 
@@ -86,26 +85,10 @@ struct core {
     pins pins{};
     regs regs{};
 
-    u64 clocks{0}, next_clock{0};
-    enum state {
-        S0_fetch = 0,
-        S1_execute = 1,
-        S2_dma = 2,
-        S3_interrupt = 3
-    } state{S0_fetch};
-
     void cycle();
     void reset();
 
-    struct {
-        void *ptr{};
-        void (*func)(void *, u16 addr, bool has_effect){};
-    } mem_read{};
-
-    struct {
-        void *ptr{};
-        void (*func)(void *ptr, u16 addr, u8 val){};
-    } mem_write{};
+    int num_fetches;
 
     ins_func ins{};
     void prepare_fetch();

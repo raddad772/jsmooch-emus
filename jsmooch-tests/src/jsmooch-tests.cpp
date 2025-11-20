@@ -8,6 +8,7 @@
 //#include "z80_drag_race.h"
 #include "jsmooch-tests.h"
 #include "cpu-tests/spc700_tests.h"
+#include "cpu-tests/rca1802_tests.h"
 /*#include "cpu-tests/huc6280_tests.h"
 #include "cpu-tests/sm83-tests.h"
 #include "cpu-tests/z80-tests.h"
@@ -90,7 +91,8 @@ int main()
 {
     dbg_init();
     dbg.trace_on = 0;
-    test_spc700();
+    test_rca1802();
+    //test_spc700();
     //test_wdc65816();
     //test_huc6280();
     //z80_drag_race();

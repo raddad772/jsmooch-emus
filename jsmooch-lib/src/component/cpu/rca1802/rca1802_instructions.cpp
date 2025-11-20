@@ -61,7 +61,7 @@ I(SEX) {
 }
 
 I(IRX) {
-    core->regs.X = (core->regs.X + 1) & 15;
+    core->regs.R[core->regs.X].u++;
     core->prepare_fetch();
 }
 
