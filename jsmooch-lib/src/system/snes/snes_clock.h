@@ -10,7 +10,7 @@ struct SNES_clock {
     SNES_clock();
     void fill_timing_ntsc();
 
-    u64 master_cycle_count{}, nothing{};
+    u64 master_cycle_count{};
     u64 master_frame{};
     u32 rev{};
 

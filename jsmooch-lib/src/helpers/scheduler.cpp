@@ -9,7 +9,7 @@
 
 
 inline i64 scheduler_t::current_time() const {
-    return static_cast<i64>(*clock) + static_cast<i64>(*waitstates);
+    return static_cast<i64>(*clock);
 }
 
 void scheduler_t::del_event(scheduler_event *e)
@@ -32,7 +32,7 @@ void scheduler_t::del_event(scheduler_event *e)
     }
 }
 
-scheduler_t::scheduler_t(u64 *in_clock, u64 *in_waitstates) : clock(in_clock), waitstates(in_waitstates)
+scheduler_t::scheduler_t(u64 *in_clock) : clock(in_clock)
 {
 }
 

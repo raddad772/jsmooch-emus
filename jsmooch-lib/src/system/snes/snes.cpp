@@ -16,10 +16,10 @@
 #define TAG_SCANLINE 1
 #define TAG_FRAME 2
 
-#define JTHIS SNES* th = (SNES*)jsm->ptr
+
 #define JSM jsm_system* jsm
 
-SNES::SNES() : r5a22(this, &this->clock.master_cycle_count), apu(this, &clock.master_cycle_count), scheduler(&clock.master_cycle_count, &clock.nothing), cart(this), ppu(this), mem(this) {
+SNES::SNES() : r5a22(this, &this->clock.master_cycle_count), apu(this, &clock.master_cycle_count), scheduler(&clock.master_cycle_count), cart(this), ppu(this), mem(this) {
     has.save_state = false;
     has.load_BIOS = false;
     has.set_audiobuf = true;
@@ -96,7 +96,6 @@ jsm_system *SNES_new()
     th->scheduler.max_block_size = 20;
     th->scheduler.run.func = &run_block;
     th->scheduler.run.ptr = th;
-    th->clock.nothing = 0;
 
     th->apu.dsp.sample.func = &sample_audio;
     th->apu.dsp.sample.ptr = th;

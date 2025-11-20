@@ -72,6 +72,9 @@ void physical_io_device::init(IO_CLASSES inkind, u32 inenabled, u32 inconnected,
         case HID_AUDIO_CASSETTE:
             new(&audio_cassette)JSM_AUDIO_CASSETTE();
             break;
+        case HID_HEX_KEYPAD:
+            new(&hex_keypad)JSM_HEX_KEYPAD();
+            break;
         case HID_NONE:
             break;
     }
@@ -110,6 +113,9 @@ void physical_io_device::destroy_active_member() noexcept
             break;
         case HID_AUDIO_CASSETTE:
             audio_cassette.~JSM_AUDIO_CASSETTE();
+            break;
+        case HID_HEX_KEYPAD:
+            hex_keypad.~JSM_HEX_KEYPAD();
             break;
         case HID_NONE:
             break;

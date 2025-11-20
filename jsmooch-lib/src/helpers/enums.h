@@ -26,7 +26,9 @@ namespace jsm {
 		GBA,
 		NDS,
 		GALAKSIJA,
-		TURBOGRAFX16
+		TURBOGRAFX16,
+		COSMAC_VIP_2k,
+		COSMAC_VIP_4k
 	};
 
 	enum regions {

@@ -157,6 +157,14 @@ set(SOURCE_LIST
         src/component/cpu/rca1802/rca1802_instructions.h
         src/component/cpu/rca1802/rca1802_disassembler.cpp
         src/component/cpu/rca1802/rca1802_disassembler.h
+        src/system/cosmac_vip/cosmac_vip.cpp
+        src/system/cosmac_vip/cosmac_vip.h
+        src/system/cosmac_vip/vip_bus.cpp
+        src/system/cosmac_vip/vip_bus.h
+        src/component/gpu/cdp1861/cdp1861.cpp
+        src/component/gpu/cdp1861/cdp1861.h
+        src/system/cosmac_vip/vip_clock.cpp
+        src/system/cosmac_vip/vip_clock.h
 )
 
 # TODO: Fix elf-parser repo for windows

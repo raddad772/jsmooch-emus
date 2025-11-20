@@ -51,7 +51,7 @@ private:
     void draw_sprite_line(i32 ppu_y);
 
 public:
-    void write( u32 addr, u32 val, SNES_memmap_block *bl);
+    void write(u32 addr, u32 val, SNES_memmap_block *bl);
     u32 read(u32 addr, u32 old, u32 has_effect, SNES_memmap_block *bl);
     void latch_counters();
     void draw_line();
@@ -61,7 +61,6 @@ public:
     SNES *snes;
 
     u16 *cur_output{};
-    u32 cur_pixel{};
     cvec_ptr<physical_io_device> display_ptr{};
     JSM_DISPLAY *display{};
 

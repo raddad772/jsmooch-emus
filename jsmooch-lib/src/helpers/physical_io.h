@@ -154,7 +154,8 @@ enum IO_CLASSES {
     HID_CART_PORT,
     HID_DISC_DRIVE,
     HID_AUDIO_CASSETTE,
-    HID_TOUCHSCREEN
+    HID_TOUCHSCREEN,
+    HID_HEX_KEYPAD
 };
 
 enum DIGITAL_BUTTON_KIND {
@@ -188,6 +189,10 @@ struct JSM_CONTROLLER {
     char name[50]{};
     std::vector<HID_analog_axis> analog_axes{};
     std::vector<HID_digital_button> digital_buttons{};
+};
+
+struct JSM_HEX_KEYPAD {
+    u32 key_states[16];
 };
 
 struct JSM_KEYBOARD {
@@ -362,6 +367,8 @@ struct physical_io_device {
         JSM_DISC_DRIVE disc_drive;
         JSM_AUDIO_CASSETTE audio_cassette;
         JSM_TOUCHSCREEN touchscreen;
+        JSM_HEX_KEYPAD hex_keypad;
+
     };
 
 private:
