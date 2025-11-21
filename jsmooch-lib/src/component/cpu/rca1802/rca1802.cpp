@@ -22,6 +22,7 @@ void core::reset() {
 }
 
 void core::dma_in() {
+    printf("\nDMA IN!");
     pins.MRD = 0;
     pins.MWR = 1;
     pins.Addr = regs.R[0].u;
@@ -30,6 +31,7 @@ void core::dma_in() {
 }
 
 void core::dma_out() {
+    printf("\nDMA OUT! %04x", regs.R[0].u);
     pins.MRD = 1;
     pins.MWR = 0;
     pins.Addr = regs.R[0].u;
@@ -38,6 +40,7 @@ void core::dma_out() {
 }
 
 void core::dma_end() {
+    printf("\nDMA END with value: %02x", pins.D);
     prepare_fetch();
 }
 
@@ -46,6 +49,7 @@ void core::interrupt_end() {
 }
 
 void core::interrupt() {
+    printf("\nIRQ @ %lld new PC:%04x!", *master_clock, regs.R[regs.P].u);
     regs.T.hi = regs.X;
     regs.T.lo = regs.P;
     regs.IE = 0;
@@ -66,7 +70,7 @@ bool core::perform_interrupts() {
         dma_out();
         return true;
     }
-    else if (pins.INTERRUPT) {
+    else if (pins.INTERRUPT && regs.IE) {
         interrupt();
         return true;
     }
@@ -327,9 +331,9 @@ void core::prepare_execute_F0() {
 }
 
 void core::pprint_context(jsm_string &out) {
-        out.sprintf("X:%02d  P:%02d  N:%02d  DF:%d  Q:%d  R[X]:%04x  R[P]:%04x  R[N]:%04x ",
+        out.sprintf("X:%02d  P:%02d  N:%02d  D:%02x  DF:%d  Q:%d  R[X]:%04x  R[P]:%04x  R[N]:%04x ",
             regs.X, regs.P, regs.N,
-            regs.DF, pins.Q,
+            regs.D, regs.DF, pins.Q,
             regs.R[regs.X].u, regs.R[regs.P], regs.R[regs.N]);
 }
 

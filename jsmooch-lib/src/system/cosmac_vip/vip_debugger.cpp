@@ -18,7 +18,7 @@ static void render_image_view_video(debugger_interface *dbgr, debugger_view *dvi
     iv->draw_which_buf ^= 1;
     auto *outbuf = static_cast<u32 *>(iv->img_buf[iv->draw_which_buf].ptr);
     memset(outbuf, 0, out_width * 256 * 4); // Clear out at least 4 rows worth
-    u16 addr = 0x400;
+    u16 addr = 0xf00;
 
     for (u32 y = 0; y < 128; y++) {
         u32 *optr = &outbuf[y * out_width];
@@ -185,7 +185,6 @@ static disassembly_vars get_disassembly_vars(void *coreptr, disassembly_view &dv
     disassembly_vars dvar;
     dvar.address_of_executing_instruction = th->cpu.most_recent_fetch;
     dvar.current_clock_cycle = th->clock.master_cycle_count;
-    printf("\nGIVEN %04x", th->cpu.most_recent_fetch);
     return dvar;
 }
 

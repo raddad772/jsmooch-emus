@@ -127,9 +127,9 @@ u8 core::read_main_bus(u16 addr, u8 old, bool has_effect) {
         }
         return RAM[addr & RAM_mask];
     }
-    if (addr < 0x9000) {
-        return ROM[addr & 0x1FF];
-    }
+    //if (addr < 0x9000) {
+    return ROM[addr & 0x1FF];
+    //}
     if (has_effect) {
         printf("\nUnserviced read from %04x", addr);
         dbg_break("BAD READ", 0);
@@ -138,10 +138,11 @@ u8 core::read_main_bus(u16 addr, u8 old, bool has_effect) {
 }
 
 void core::reset() {
+    u6b = 0x8000;
     cpu.reset();
     cpu.pins.clear_wait = RCA1802::pins::RUN;
+    cpu.pins.D = read_main_bus(cpu.pins.Addr, 0, 1);
     pixie.reset();
-    u6b = 0x8000;
     scheduler.clear();
     schedule_first();
     printf("\nCosmac VIP reset!");
@@ -178,7 +179,7 @@ void core::do_cycle() {
     if (hex_keypad.keys[hex_keypad.latch]) cpu.pins.EF |= 4;
 
     if (cpu.pins.MWR) {
-        if (cpu.pins.N) service_N_out();
+        if (cpu.pins.N) service_N_in();
         write_main_bus(cpu.pins.Addr, cpu.pins.D);
         dbgloglog(this, VIP_CAT_CPU_WRITE, DBGLS_INFO, "%04x%c%c (write) %02x", cpu.pins.Addr, cpu.pins.N ? '0' + cpu.pins.N : ' ', cpu.pins.DMA_IN | cpu.pins.DMA_OUT ? 'D' : ' ', cpu.pins.D);
     }
@@ -187,11 +188,10 @@ void core::do_cycle() {
     cpu.cycle();
     if (cpu.pins.N & 4) u6b = 0;
 
-
     // service reads
     if (cpu.pins.MRD) {
         cpu.pins.D = read_main_bus(cpu.pins.Addr, cpu.pins.D, true);
-        if (cpu.pins.N) service_N_in();
+        if (cpu.pins.N) service_N_out();
         dbgloglog(this, VIP_CAT_CPU_READ, DBGLS_INFO, "%04x%c%c  (read) %02x", cpu.pins.Addr, cpu.pins.N ? '0' + cpu.pins.N : ' ', cpu.pins.DMA_IN | cpu.pins.DMA_OUT ? 'D' : ' ', cpu.pins.D);
     }
 
