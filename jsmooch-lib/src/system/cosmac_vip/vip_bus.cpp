@@ -73,6 +73,9 @@ void core::reset() {
 
 void core::service_N() {
     printf("\nN%d", cpu.pins.N);
+    if ((cpu.pins.N == 2) && (cpu.pins.MRD)) {
+        hex_keypad.latch = cpu.pins.D & 15;
+    }
     if ((cpu.pins.N == 4) && (cpu.pins.MRD)) {
         printf("\ndisable ROM at 0000");
         u6b = 0;
@@ -81,6 +84,8 @@ void core::service_N() {
 
 void core::do_cycle() {
     // service writes
+    cpu.pins.EF &= ~4;
+    if (hex_keypad.keys[hex_keypad.latch]) cpu.pins.EF |= 4;
     if (cpu.pins.MWR) {
         write_main_bus(cpu.pins.Addr, cpu.pins.D);
     }
@@ -88,23 +93,26 @@ void core::do_cycle() {
     // Cycle 1802 *8
     cpu.cycle();
 
-    if (cpu.pins.N) service_N();
     // service reads
     if (cpu.pins.MRD) {
         cpu.pins.D = read_main_bus(cpu.pins.Addr, cpu.pins.D, true);
     }
+
+    // service OUT
+    if (cpu.pins.N) service_N();
 
     // do bus for cpu->1861
     pixie.bus.D = cpu.pins.D;
     pixie.bus.DMA_OUT = cpu.pins.DMA_OUT;
     pixie.bus.IRQ = cpu.pins.INTERRUPT;
     pixie.bus.EF1 = cpu.pins.EF & 1;
+    pixie.bus.SC = cpu.pins.SC;
 
     // cycle 1861 *8
     pixie.cycle();
 
     // do bus for 1861->cpu
-    cpu.pins.D = pixie.bus.D;
+    //cpu.pins.D = pixie.bus.D;
     cpu.pins.DMA_OUT = pixie.bus.DMA_OUT;
     cpu.pins.INTERRUPT = pixie.bus.IRQ;
     cpu.pins.EF = (cpu.pins.EF & ~1) | pixie.bus.EF1;

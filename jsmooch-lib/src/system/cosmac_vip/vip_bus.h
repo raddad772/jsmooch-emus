@@ -34,6 +34,12 @@ private:
     u16 RAM_mask{0x7FF};
     void service_N();
 
+    struct {
+        cvec_ptr<physical_io_device> pio_ptr{};
+        int keys[16]{};
+        u8 latch{};
+    } hex_keypad{};
+
 public:
     // Everything here down is frontend & debugger stuff
     struct {

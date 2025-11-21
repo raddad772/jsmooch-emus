@@ -8,6 +8,5 @@
 namespace VIP {
 struct clock {
     u64 master_cycle_count{};
-    u64 master_frame{};
 };
 }

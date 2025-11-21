@@ -145,7 +145,7 @@ void core::prepare_execute() {
                     printf("\n WARN 0x68;");
                 }
                 else {
-                    pins.D = 0;
+                    pins.D = 0xFF;
                     pins.N = regs.N & 7;
                     pins.MWR = 1;
                     pins.Addr = regs.R[regs.X].u;
