@@ -27,12 +27,13 @@ struct core {
     u8 *line_output{};
     cvec_ptr<physical_io_device> display_ptr{};
     JSM_DISPLAY *display{};
-    u8 x{}, y{};
+    u16 x{}, y{};
     u64 master_frame{};
 private:
     void new_scanline();
     void new_frame();
 
+    bool display_area;
     struct {
         u8 enable{1};
         struct {

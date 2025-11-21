@@ -2,8 +2,7 @@
 // Created by . on 4/23/25.
 //
 
-#ifndef JSMOOCH_EMUS_SNES_DEBUGGER_H
-#define JSMOOCH_EMUS_SNES_DEBUGGER_H
+#pragma once
 
 #include "helpers/debugger/debugger.h"
 #include "helpers/sys_interface.h"
@@ -48,7 +47,3 @@ enum SNES_DBLOG_CATEGORIES {
 
 
 #define dbgloglog(wth, r_cat, r_severity, r_format, ...) if (wth->dbg.dvptr->ids_enabled[r_cat]) { wth->dbg.dvptr->add_printf(r_cat, wth->clock.master_cycle_count, r_severity, r_format, __VA_ARGS__); wth->dbg.dvptr->extra_printf(""); }
-
-void SNESJ_setup_debugger_interface(jsm_system *, debugger_interface *dbgr);
-
-#endif //JSMOOCH_EMUS_SNES_DEBUGGER_H

@@ -362,6 +362,9 @@ void cpu_reg_context_render(cpu_reg_context *ctx, char* outbuf, size_t outbuf_sz
             case RK_bool:
                 snprintf(outbuf, outbuf_sz, "%s", ctx->bool_data ? "true" : "false");
                 break;
+            case RK_int4:
+                snprintf(outbuf, outbuf_sz, "%1x", (u32)ctx->int4_data);
+                break;
             case RK_int8:
                 snprintf(outbuf, outbuf_sz, "%02x", (u32)ctx->int8_data);
                 break;

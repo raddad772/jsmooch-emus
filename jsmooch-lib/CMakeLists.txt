@@ -165,6 +165,10 @@ set(SOURCE_LIST
         src/component/gpu/cdp1861/cdp1861.h
         src/system/cosmac_vip/vip_clock.cpp
         src/system/cosmac_vip/vip_clock.h
+        src/system/cosmac_vip/vip_serialize.cpp
+        src/system/cosmac_vip/vip_serialize.h
+        src/system/cosmac_vip/vip_debugger.cpp
+        src/system/cosmac_vip/vip_debugger.h
 )
 
 # TODO: Fix elf-parser repo for windows

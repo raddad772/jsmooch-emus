@@ -6,6 +6,7 @@
 //#include "system/gb/gb.h"
 #include "system/nes/nes.h"
 //#include "system/nds/nds.h"
+#include "system/cosmac_vip/cosmac_vip.h"
 #include "system/snes/snes.h"
 //#include "system/sms_gg/sms_gg.h"
 //#include "system/dreamcast/dreamcast.h"
@@ -60,6 +61,10 @@ jsm_system* new_system(jsm::systems which)
         case jsm::systems::MACPLUS_1MB:
             mac_new(out, macplus_1mb);
             break;*/
+        case jsm::systems::COSMAC_VIP_2k:
+        case jsm::systems::COSMAC_VIP_4k:
+            out = VIP_new(which);
+            break;
         case jsm::systems::NES:
             out = NES_new();
             break;

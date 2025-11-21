@@ -102,6 +102,9 @@ void cpu_reg_context::render(char* outbuf, size_t outbuf_sz) {
             case RK_bool:
                 snprintf(outbuf, outbuf_sz, "%s", bool_data ? "true" : "false");
                 break;
+            case RK_int4:
+                snprintf(outbuf, outbuf_sz, "%01x", static_cast<u32>(int4_data));
+                break;
             case RK_int8:
                 snprintf(outbuf, outbuf_sz, "%02x", static_cast<u32>(int8_data));
                 break;

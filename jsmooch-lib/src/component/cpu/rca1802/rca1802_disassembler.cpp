@@ -6,18 +6,6 @@
 #include "rca1802.h"
 
 namespace RCA1802 {
-union ctxt {
-    struct {
-        u32 X : 1;
-        u32 P : 1;
-        u32 N : 1;
-        u32 D : 1;
-        u32 _blank : 12;
-        u32 registers : 16;
-    };
-    u32 u{};
-};
-
 static u8 dbg_read(jsm_debug_read_trace &trace, u16 &PC)
 {
     u16 v = trace.read_trace(trace.ptr, PC);
@@ -206,7 +194,7 @@ void disassemble(u16 &PC, jsm_debug_read_trace &trace, jsm_string &outstr, ctxt 
             setreg(N);
             break;
         case 0xB0:
-            printf("PHI %d", N);
+            dasm("PHI %d", N);
             ctx.N = 1;
             ctx.D = 1;
             setreg(N);

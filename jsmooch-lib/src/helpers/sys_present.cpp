@@ -135,6 +135,24 @@ void galaksija_present(physical_io_device &device, void *out_buf, u32 out_width,
     }
 }
 
+void cosmac_vip_present(physical_io_device &device, void *out_buf, u32 out_width, u32 out_height) {
+
+    u8* output = static_cast<u8 *>(device.display.output[device.display.last_written]);
+    u32* imgdata = static_cast<u32 *>(out_buf);
+    for (u32 ry = 0; ry < 262; ry++) {
+        u32 y = ry;
+        for (u32 rx = 0; rx < 114; rx++) {
+            u32 x = rx;
+            u32 di = ((y * out_width) + x);
+            u32 ulai = (y * 114) + x;
+
+            u32 color = output[ulai];
+            imgdata[di] = color ? 0xFFFFFFFF : 0xFF000000;
+        }
+    }
+}
+
+
 void zx_spectrum_present(physical_io_device &device, void *out_buf, u32 out_width, u32 out_height)
 {
     u8* output = (u8 *)device.display.output[device.display.last_written];
@@ -622,6 +640,10 @@ void jsm_present(jsm::systems which, physical_io_device &display, void *out_buf,
             break;
         case jsm::systems::GALAKSIJA:
             galaksija_present(display, out_buf, out_width, out_height);
+            break;
+        case jsm::systems::COSMAC_VIP_2k:
+        case jsm::systems::COSMAC_VIP_4k:
+            cosmac_vip_present(display, out_buf,out_width, out_height);;
             break;
         case jsm::systems::ZX_SPECTRUM_48K:
         case jsm::systems::ZX_SPECTRUM_128K:

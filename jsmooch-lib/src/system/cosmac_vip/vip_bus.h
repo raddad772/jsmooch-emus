@@ -12,10 +12,10 @@
 namespace VIP {
 struct core : jsm_system {
     explicit core(jsm::systems in_kind);
-    jsm::systems kind;
-    RCA1802::core cpu{};
-    CDP1861::core pixie{};
     clock clock{};
+    jsm::systems kind;
+    RCA1802::core cpu;
+    CDP1861::core pixie{};
 
     scheduler_t scheduler;
 
@@ -25,6 +25,9 @@ struct core : jsm_system {
     u8 read_main_bus(u16 addr, u8 old, bool has_effect);
 
 private:
+    void trace_format_write();
+    void trace_format_read();
+    i64 cycles_deficit{};
     void schedule_first();
     u16 u6b{};
 
@@ -47,7 +50,7 @@ public:
 
     DBG_START
         DBG_CPU_REG_START(cpu)
-                    *R[16], *N, *I, *T, *IE, *P, *X, *D, *B, *DF, *Q, *EF, *DMA_IN, *DMA_OUT
+                    *R[16], *N, *I, *T, *IE, *P, *X, *D, *DF, *Q
         DBG_CPU_REG_END(cpu)
 
         DBG_MEMORY_VIEW
@@ -71,24 +74,23 @@ public:
         u64 cycles{};
     } audio{};
 
-    void play() override;
-    void pause() override;
-    void stop() override;
-    void get_framevars(framevars& out) override;
-    void reset() override;
+    void play() final;
+    void pause() final;
+    void stop() final;
+    void get_framevars(framevars& out) final;
+    void reset() final;
     void killall();
-    u32 finish_frame() override;
-    u32 finish_scanline() override;
-    u32 step_master(u32 howmany) override;
-    //void load_BIOS(multi_file_set& mfs) override;
+    u32 finish_frame() final;
+    u32 finish_scanline() final;
+    u32 step_master(u32 howmany) final;
+    //void load_BIOS(multi_file_set& mfs) final;
     void enable_tracing();
     void disable_tracing();
-    void describe_io() override;
-    void save_state(serialized_state &state) override;
-    void load_state(serialized_state &state, deserialize_ret &ret) override;
-    void set_audiobuf(audiobuf *ab) override;
-    void setup_debugger_interface(debugger_interface &intf) override;
-    void load_BIOS(multi_file_set& mfs) override;
-    void sideload(multi_file_set& mfs) override;
+    void describe_io() final;
+    void save_state(serialized_state &state) final;
+    void load_state(serialized_state &state, deserialize_ret &ret) final;
+    void set_audiobuf(audiobuf *ab) final;
+    void setup_debugger_interface(debugger_interface &intf) final;
+    void sideload(multi_file_set& mfs) final;
 };
 }

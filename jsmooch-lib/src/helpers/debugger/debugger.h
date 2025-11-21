@@ -70,6 +70,7 @@ struct disassembly_entry_strings {
 enum cpu_reg_kinds {
     RK_bitflags,
     RK_bool,
+    RK_int4,
     RK_int8,
     RK_int16,
     RK_int32,
@@ -89,6 +90,7 @@ struct cpu_reg_context {
     cpu_reg_kinds kind{};
     union {
         u8 bool_data;
+        u8 int4_data;
         u8 int8_data;
         u16 int16_data;
         u32 int32_data;

@@ -96,22 +96,22 @@ public:
         } line[224]{};
     } dbg_info{};
 
-    void play() override;
-    void pause() override;
-    void stop() override;
-    void get_framevars(framevars& out) override;
-    void reset() override;
+    void play() final;
+    void pause() final;
+    void stop() final;
+    void get_framevars(framevars& out) final;
+    void reset() final;
     void killall();
-    u32 finish_frame() override;
-    u32 finish_scanline() override;
-    u32 step_master(u32 howmany) override;
-    //void load_BIOS(multi_file_set& mfs) override;
+    u32 finish_frame() final;
+    u32 finish_scanline() final;
+    u32 step_master(u32 howmany) final;
+    //void load_BIOS(multi_file_set& mfs) final;
     void enable_tracing();
     void disable_tracing();
-    void describe_io() override;
-    void save_state(serialized_state &state) override;
-    void load_state(serialized_state &state, deserialize_ret &ret) override;
-    void set_audiobuf(audiobuf *ab) override;
-    void setup_debugger_interface(debugger_interface &intf) override;
+    void describe_io() final;
+    void save_state(serialized_state &state) final;
+    void load_state(serialized_state &state, deserialize_ret &ret) final;
+    void set_audiobuf(audiobuf *ab) final;
+    void setup_debugger_interface(debugger_interface &intf) final;
 
 };

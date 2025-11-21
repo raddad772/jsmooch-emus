@@ -4,6 +4,7 @@
 
 #include <cassert>
 #include "vip_bus.h"
+#include "vip_debugger.h"
 
 namespace VIP {
 
@@ -78,9 +79,9 @@ static constexpr u8 chip8_interpreter[] = {
 };
 
 
-core::core(jsm::systems in_kind) : scheduler(&clock.master_cycle_count), kind(in_kind) {
+core::core(jsm::systems in_kind) : kind(in_kind), cpu(&clock.master_cycle_count), scheduler(&clock.master_cycle_count) {
     has.save_state = false;
-    has.load_BIOS = true;
+    has.load_BIOS = false;
     has.set_audiobuf = false;
     switch (kind) {
         case jsm::systems::COSMAC_VIP_2k:
@@ -129,12 +130,16 @@ u8 core::read_main_bus(u16 addr, u8 old, bool has_effect) {
     if (addr < 0x9000) {
         return ROM[addr & 0x1FF];
     }
-    printf("\nUnserviced read from %04x", addr);
+    if (has_effect) {
+        printf("\nUnserviced read from %04x", addr);
+        dbg_break("BAD READ", 0);
+    }
     return 0xFF;
 }
 
 void core::reset() {
     cpu.reset();
+    cpu.pins.clear_wait = RCA1802::pins::RUN;
     pixie.reset();
     u6b = 0x8000;
     scheduler.clear();
@@ -143,13 +148,10 @@ void core::reset() {
 }
 
 void core::service_N_out() {
+    printf("\nOUT %d!", cpu.pins.N);;
     switch (cpu.pins.N) {
         case 2:
             hex_keypad.latch = cpu.pins.D & 15;
-            break;
-        case 4:
-            printf("\ndisable ROM at 0000");
-            u6b = 0;
             break;
         case 1: // pixie!
             pixie.OUT(0);
@@ -160,6 +162,7 @@ void core::service_N_out() {
 }
 
 void core::service_N_in() {
+    printf("\nINP %d!", cpu.pins.N);;
     switch (cpu.pins.N) {
         case 1:
             cpu.pins.D = pixie.INP(cpu.pins.D);
@@ -174,19 +177,22 @@ void core::do_cycle() {
     cpu.pins.EF &= ~4;
     if (hex_keypad.keys[hex_keypad.latch]) cpu.pins.EF |= 4;
 
-    if (cpu.pins.N && cpu.pins.MWR) service_N_out();
     if (cpu.pins.MWR) {
         if (cpu.pins.N) service_N_out();
         write_main_bus(cpu.pins.Addr, cpu.pins.D);
+        dbgloglog(this, VIP_CAT_CPU_WRITE, DBGLS_INFO, "%04x%c%c (write) %02x", cpu.pins.Addr, cpu.pins.N ? '0' + cpu.pins.N : ' ', cpu.pins.DMA_IN | cpu.pins.DMA_OUT ? 'D' : ' ', cpu.pins.D);
     }
 
     // Cycle 1802 *8
     cpu.cycle();
+    if (cpu.pins.N & 4) u6b = 0;
+
 
     // service reads
     if (cpu.pins.MRD) {
         cpu.pins.D = read_main_bus(cpu.pins.Addr, cpu.pins.D, true);
-        if (cpu.pins.N) service_N_out();
+        if (cpu.pins.N) service_N_in();
+        dbgloglog(this, VIP_CAT_CPU_READ, DBGLS_INFO, "%04x%c%c  (read) %02x", cpu.pins.Addr, cpu.pins.N ? '0' + cpu.pins.N : ' ', cpu.pins.DMA_IN | cpu.pins.DMA_OUT ? 'D' : ' ', cpu.pins.D);
     }
 
     // do bus for cpu->1861
@@ -204,6 +210,7 @@ void core::do_cycle() {
     cpu.pins.DMA_OUT = pixie.bus.DMA_OUT;
     cpu.pins.INTERRUPT = pixie.bus.IRQ;
     cpu.pins.EF = (cpu.pins.EF & ~1) | pixie.bus.EF1;
+    //clock.master_cycle_count += 8;
 }
 
 void core::sideload(multi_file_set &mfs) {

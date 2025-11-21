@@ -14,6 +14,7 @@ namespace CDP1861 {
 void core::reset() {
     x = y = 0;
     line_output = cur_output;
+    io.enable = io.latch.enable = false;
 }
 
 void core::new_frame() {
@@ -32,21 +33,23 @@ void core::new_scanline() {
     y++;
     switch (y) {
         // Configure EF, INT signals here...
-        case 60:
-            bus.EF1 = 1;
+        case 76:
+            bus.EF1 = io.enable;
             break;
-        case 62:
-            bus.IRQ = 1;
+        case 78:
+            bus.IRQ = io.enable;
             break;
-        case 64:
+        case 80:
             bus.IRQ = 0;
             bus.EF1 = 0;
+            display_area = true;
             break;
-        case 188:
-            bus.EF1 = 1;
+        case 204:
+            bus.EF1 = io.enable;
             break;
-        case 192:
+        case 208:
             bus.EF1 = 0;
+            display_area = false;
             break;
         case 262:
             new_frame();
@@ -58,11 +61,13 @@ void core::new_scanline() {
 }
 
 u8 core::INP(u8 old) {
+    printf("\nPIXIE ENABLE!");
     io.latch.enable = 1;
     return old;
 }
 
 void core::OUT(u8 val) {
+    printf("\nPIXIE DISABLE!");
     io.latch.enable = 0;
 }
 
@@ -75,11 +80,10 @@ void core::cycle() {
     // line 60 start IRQ?
     // line 62 stop IRQ?
     // display start line 64, end line 192
-    bool display_field = (y >= 64) && (y < 192);
-    bus.DMA_OUT = io.enable && display_field && (x >= 3) && (x < 12);
+    bus.DMA_OUT = io.enable && display_area && (x >= 3) && (x < 12);
 
     u8 data = 0;
-    if (display_field && bus.SC == 2) {
+    if (display_area && bus.SC == 2) {
         data = bus.D;
     }
 
@@ -87,7 +91,7 @@ void core::cycle() {
     u8 *outp = line_output + (x * 8);
     for (u32 i = 0; i < 8; i++) {
         u32 out = data >> 7;
-        data >>= 1;
+        data <<= 1;
         *outp = out ? 1 : 0;
         outp++;
     }

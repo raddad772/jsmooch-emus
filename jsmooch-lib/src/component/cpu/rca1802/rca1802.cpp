@@ -6,6 +6,7 @@
 
 #include "rca1802.h"
 #include "rca1802_instructions.h"
+#include "rca1802_disassembler.h"
 
 namespace RCA1802 {
 
@@ -76,6 +77,7 @@ void core::prepare_fetch() {
     if (!perform_interrupts()) { // Only proceed if no interrupt pending
         pins.SC = pins::S0_fetch;
         pins.Addr = regs.R[regs.P].u++;
+        most_recent_fetch = pins.Addr;
         pins.MWR = 0;
         pins.MRD = 1;
     }
@@ -324,10 +326,56 @@ void core::prepare_execute_F0() {
     }
 }
 
+void core::pprint_context(jsm_string &out) {
+        out.sprintf("X:%02d  P:%02d  N:%02d  DF:%d  Q:%d  R[X]:%04x  R[P]:%04x  R[N]:%04x ",
+            regs.X, regs.P, regs.N,
+            regs.DF, pins.Q,
+            regs.R[regs.X].u, regs.R[regs.P], regs.R[regs.N]);
+}
+
+
+void core::trace_format() {
+    if (trace.dbglog.view && trace.dbglog.view->ids_enabled[trace.dbglog.id]) {
+        // addr, regs, e, m, x, rt, out
+        trace.str.quickempty();
+        trace.str2.quickempty();
+        u64 tc = *master_clock;
+        dbglog_view *dv = trace.dbglog.view;
+
+
+        if  (pins.SC != pins::S0_fetch) {
+            switch(pins.SC) {
+                case pins::S2_dma:
+                    if (pins.DMA_IN) trace.str.sprintf("DMA IN %d", pins.N);
+                    else trace.str.sprintf("DMA OUT %d", pins.N);
+                    break;
+                case pins::S3_interrupt:
+                    trace.str.sprintf("INTERRUPT");
+                    break;
+                default:
+                    assert(1==2);
+                    break;
+            }
+            dv->add_printf(trace.dbglog.id, tc, DBGLS_TRACE, "%s", trace.str.ptr);
+            dv->extra_printf("");
+            return;
+        }
+        trace.ins_PC = most_recent_fetch;
+        u32 opc = (regs.I << 4) | regs.N;
+        ctxt ctx;
+        disassemble(trace.ins_PC, trace.strct, trace.str, ctx);
+        pprint_context(trace.str2);
+
+        dv->add_printf(trace.dbglog.id, tc, DBGLS_TRACE, "%04x  (%02x) %s", most_recent_fetch, opc, trace.str.ptr);
+        dv->extra_printf("%s", trace.str2.ptr);
+    }
+}
+
 void core::fetch() {
     regs.IR = pins.D;
     regs.I = (regs.IR >> 4) & 15;
     regs.N = regs.IR & 15;
+    trace_format();
     prepare_execute();
 }
 

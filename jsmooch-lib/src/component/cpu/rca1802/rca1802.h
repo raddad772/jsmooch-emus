@@ -81,6 +81,7 @@ struct core;
 typedef void (*ins_func)(core*);
 
 struct core {
+    explicit core(u64 *master_clk) : master_clock(master_clk) {}
     pins pins{};
     regs regs{};
 
@@ -90,21 +91,28 @@ struct core {
     ins_func ins{};
     void prepare_fetch();
     i32 execs_left{};
+    u64 *master_clock;
     bool perform_interrupts();
 
-    DBG_EVENT_VIEW_ONLY_START
-    IRQ, DMA
-    DBG_EVENT_VIEW_ONLY_END
+    DBG_START
+        DBG_TRACE_VIEW
+    DBG_END
     struct {
         u32 ok{};
         u64 *cycles{};
         u64 my_cycles{};
+        jsm_string str{1000}, str2{200};
         jsm_debug_read_trace strct{};
+        u16 ins_PC;
+        struct {
+            dbglog_view *view{};
+            u32 id{};
+        } dbglog{};
     } trace{};
 
     void setup_tracing(jsm_debug_read_trace *strct, u64 *trace_cycle_pointer);
-
-
+    u16 most_recent_fetch{};
+    void pprint_context(jsm_string &out);
 private:
     void fetch();
     void execute();
@@ -112,9 +120,9 @@ private:
     void dma_out();
     void interrupt();
     void do_out();
-    void do_in();
     void dma_end();
     void interrupt_end();
+    void trace_format();
 
     void prepare_execute();
     void prepare_execute_70();

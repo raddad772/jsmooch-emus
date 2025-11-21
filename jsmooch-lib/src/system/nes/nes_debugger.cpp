@@ -20,7 +20,7 @@ static int print_dasm_addr(void *nesptr, u32 addr, char *out, size_t out_sz) {
     return 4;
 }
 
-static void get_dissasembly(void *nesptr, disassembly_view &dview, disassembly_entry &entry)
+static void get_disassembly(void *nesptr, disassembly_view &dview, disassembly_entry &entry)
 {
     NES* th = static_cast<NES *>(nesptr);
     M6502_disassemble_entry(&th->cpu.cpu, entry);
@@ -129,7 +129,7 @@ static void setup_disassembly_view( NES& th, debugger_interface *dbgr)
     dv.print_addr.func = &print_dasm_addr;
 
     dv.get_disassembly.ptr = &th;;
-    dv.get_disassembly.func = &get_dissasembly;
+    dv.get_disassembly.func = &get_disassembly;
 
     dv.get_disassembly_vars.ptr = &th;;
     dv.get_disassembly_vars.func = &get_disassembly_vars;

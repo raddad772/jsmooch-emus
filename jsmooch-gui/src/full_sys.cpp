@@ -178,6 +178,8 @@ u32 grab_BIOSes(multi_file_set* BIOSes, jsm::systems which)
         case jsm::systems::SMS2:
         case jsm::systems::SNES:
         case jsm::systems::TURBOGRAFX16:
+        case jsm::systems::COSMAC_VIP_2k:
+        case jsm::systems::COSMAC_VIP_4k:
             has_bios = 0;
             break;
         default:
@@ -236,6 +238,11 @@ void GET_HOME_BASE_SYS(char *out, size_t out_sz, jsm::systems which, const char*
             break;
         case jsm::systems::GALAKSIJA:
             snprintf(out, out_sz, "%s/galaksija", BASER_PATH);
+            *worked = 1;
+            break;
+        case jsm::systems::COSMAC_VIP_2k:
+        case jsm::systems::COSMAC_VIP_4k:
+            snprintf(out, out_sz, "%s/chip8", BASER_PATH);
             *worked = 1;
             break;
         case jsm::systems::ZX_SPECTRUM_48K:
@@ -310,10 +317,14 @@ u32 grab_ROM(multi_file_set* ROMs, jsm::systems which, const char* fname, const 
     u32 worked = 0;
 
     GET_HOME_BASE_SYS(BASE_PATH, sizeof(BASE_PATH), which, sec_path, &worked);
-    if (!worked) return 0;
+    if (!worked) {
+        printf("\nEARLY QUIT!");
+        return 0;
+    }
 
     ROMs->add(fname, BASE_PATH);
-    //printf("\n%d %s %s", ROMs->files[ROMs->num_files-1].buf.size > 0, BASE_PATH, fname);
+    printf("\nHERE...");
+    printf("\n%d %s %s", ROMs->files[ROMs->files.size()-1].buf.size > 0, BASE_PATH, fname);
     return ROMs->files[ROMs->files.size()-1].buf.size > 0;
 }
 
@@ -706,11 +717,14 @@ void full_system::load_default_ROM()
         case jsm::systems::GALAKSIJA:
             worked = 1;
             break;
+        case jsm::systems::COSMAC_VIP_2k:
+        case jsm::systems::COSMAC_VIP_4k:
+            worked = grab_ROM(&ROMs, which, "1-chip8-logo.ch8", nullptr);
+            break;
         case jsm::systems::ZX_SPECTRUM_48K:
         case jsm::systems::ZX_SPECTRUM_128K:
             //worked = grab_ROM(&ROMs, which, "manic.tap", nullptr);
             worked = grab_ROM(&ROMs, which, "jetset.tap", nullptr);
-            worked = 1;
             break;
         case jsm::systems::APPLEIIe:
             worked = 1;
@@ -1055,17 +1069,21 @@ void full_system::load_default_ROM()
         return;
     }
 
-    if (which == jsm::systems::PS1) {
-        sys->sideload(ROMs);
-    }
-    else {
-        physical_io_device *fileioport = load_ROM_into_emu(sys, IOs, ROMs);
-        if (fileioport != nullptr) {
-            printf("\nSRAM requested size: %lld\n", fileioport->cartridge_port.SRAM.requested_size);
-            if (fileioport->cartridge_port.SRAM.requested_size > 0) {
-                setup_persistent_store(fileioport->cartridge_port.SRAM, ROMs);
+    switch (which) {
+        case jsm::systems::PS1:
+        case jsm::systems::COSMAC_VIP_2k:
+        case jsm::systems::COSMAC_VIP_4k:
+            sys->sideload(ROMs);
+            break;
+        default: {
+            physical_io_device *fileioport = load_ROM_into_emu(sys, IOs, ROMs);
+            if (fileioport != nullptr) {
+                printf("\nSRAM requested size: %lld\n", fileioport->cartridge_port.SRAM.requested_size);
+                if (fileioport->cartridge_port.SRAM.requested_size > 0) {
+                    setup_persistent_store(fileioport->cartridge_port.SRAM, ROMs);
+                }
             }
-        }
+            break; }
     }
 }
 
@@ -1180,7 +1198,6 @@ void full_system::setup_system(jsm::systems which)
     sys = new_system(which);
 
     assert(sys);
-
 
     setup_ios();
 

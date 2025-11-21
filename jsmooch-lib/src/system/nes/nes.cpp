@@ -323,7 +323,7 @@ u32 NESJ::finish_scanline()
         }
         nes.ppu.cycle(done);
         nes.cycles_left -= cpu_step;
-        if (dbg.do_break) break;
+        if (::dbg.do_break) break;
     }
     return 0;
 }
@@ -352,7 +352,7 @@ u32 NESJ::step_master(u32 howmany)
         }
         nes.ppu.cycle(done);
         nes.cycles_left -= cpu_step;
-        if (dbg.do_break) break;
+        if (::dbg.do_break) break;
     }
     return 0;
 }

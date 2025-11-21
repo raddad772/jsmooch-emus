@@ -2,12 +2,12 @@
 // Created by . on 4/23/25.
 //
 
-#include "snes_debugger.h"
-
 #include <cstdlib>
 #include <cstdio>
 #include <cassert>
 #include <cstring>
+
+#include "snes_debugger.h"
 
 #include "helpers/color.h"
 #include "snes_bus.h"
@@ -15,10 +15,6 @@
 #include "component/cpu/wdc65816/wdc65816_disassembler.h"
 #include "component/cpu/spc700/spc700_disassembler.h"
 
-#define JTHIS SNES* th = (SNES*)jsm->ptr
-#define JSM jsm_system* jsm
-
-#define THIS SNES* th
 #define PAL_BOX_SIZE 10
 #define PAL_BOX_SIZE_W_BORDER 11
 
@@ -495,7 +491,6 @@ static void setup_waveforms(SNES& th, debugger_interface *dbgr)
     snprintf(dw->name, sizeof(dw->name), "Voice 8");
     dw->kind = dwk_channel;
     dw->samples_requested = 200;
-
 }
 
 static void readcpumem(void *ptr, u32 addr, void *dest)

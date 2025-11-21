@@ -16,7 +16,7 @@ u32 read_trace_rca1802(void *ptr, u32 addr) {
 
 jsm_system *VIP_new(jsm::systems in_kind)
 {
-    VIP::core* th = new VIP::core(in_kind);
+    auto* th = new VIP::core(in_kind);
 
     th->scheduler.max_block_size = 8;
 
@@ -30,7 +30,7 @@ jsm_system *VIP_new(jsm::systems in_kind)
 }
 
 void VIP_delete(JSM) {
-    VIP::core *th = dynamic_cast<VIP::core *>(jsm);
+    auto *th = dynamic_cast<VIP::core *>(jsm);
 
     for (physical_io_device &pio : th->IOs) {
     }
@@ -62,16 +62,6 @@ void core::set_audiobuf(audiobuf *ab)
     setup_debug_waveform(this, *wf);
 }
 
-static void run_block(void *ptr, u64 key, u64 clock, u32 jitter)
-{
-    core *th = static_cast<core *>(ptr);
-    u64 cur = clock - jitter;
-
-    th->do_cycle();
-    //u64 scheduler_t::only_add_abs(i64 timecode, u64 key, void *ptr, scheduler_callback callback, u32 *still_sched)
-    th->scheduler.only_add_abs(cur + 8, 0, th, &run_block, nullptr);
-}
-
 static inline float i16_to_float(i16 val)
 {
     return ((static_cast<float>(static_cast<i32>(val) + 32768) / 65535.0f) * 2.0f) - 1.0f;
@@ -95,8 +85,10 @@ static void sample_audio(void *ptr, u64 key, u64 clock, u32 jitter)
 static void do_cycle(void *ptr, u64 key, u64 clock, u32 jitter) {
     core *th = static_cast<core *>(ptr);
     th->do_cycle();
-    u64 cur = clock - jitter;
-    th->scheduler.only_add_abs(cur+8, 0, th, &do_cycle, nullptr);;
+    clock -= jitter;
+    //printf("\nCYCLE AT %lld", cur);
+    th->scheduler.only_add_abs(clock+8, 0, th, &do_cycle, nullptr);;
+    //if (clock > 29456) printf("\nGOT PAST 29456!");
 }
 
 static void sample_audio_debug_max(void *ptr, u64 key, u64 clock, u32 jitter)
@@ -120,18 +112,20 @@ static void new_scanline (void *ptr, u64 key, u64 cur, u32 jitter) {
 static void schedule_frame(void *ptr, u64 key, u64 cur, u32 jitter) {
     auto *th = static_cast<core *>(ptr);
     cur -= jitter;
+    printf("\nSCHEDULING FRAME!");
     for (u32 i = 0; i < 262; i++) {
         cur += 14*8;
         th->scheduler.only_add_abs_w_tag(static_cast<i64>(cur), 0, th, &new_scanline, nullptr, TAG_SCANLINE);
     }
     cur += 14*8;
+    printf("\nFRAMESCHED AT %lld", cur);
     th->scheduler.only_add_abs_w_tag(static_cast<i64>(cur), 0, th, &schedule_frame, nullptr, TAG_FRAME);
 }
 
 void core::schedule_first()
 {
     scheduler.only_add_abs(static_cast<i64>(audio.next_sample_cycle_max), 0, this, &sample_audio_debug_max, nullptr);
-    scheduler.only_add_abs((i64)audio.next_sample_cycle, 0, this, &sample_audio, nullptr);
+    scheduler.only_add_abs(static_cast<i64>(audio.next_sample_cycle), 0, this, &sample_audio, nullptr);
     scheduler.only_add_abs(0, 0, this, &VIP::do_cycle, nullptr);;
 
     schedule_frame(this, 0, 0, 0);
@@ -248,7 +242,13 @@ u32 core::finish_frame()
     u64 spc_start = apu.cpu.int_clock;
     u64 wdc_start = r5a22.cpu.int_clock;
 #endif
-    scheduler.run_til_tag(TAG_FRAME);
+    //scheduler.run_til_tag_tg16(TAG_FRAME);
+    u64 start_frame = pixie.master_frame;
+    while (pixie.master_frame == start_frame) {
+        finish_scanline();
+        if (::dbg.do_break) break;
+    }
+
 #ifdef DO_STATS
     u64 spc_num_cycles = (apu.cpu.int_clock - spc_start) * 60;
     u64 wdc_num_cycles = (r5a22.cpu.int_clock - wdc_start) * 60;
@@ -265,7 +265,12 @@ u32 core::finish_frame()
 u32 core::finish_scanline()
 {
     //read_opts(jsm, th);
-    scheduler.run_til_tag(TAG_SCANLINE);
+    i32 start_y = pixie.y;
+    while (pixie.y == start_y) {
+        do_cycle();
+        this->clock.master_cycle_count += 8;
+        if (::dbg.do_break) break;
+    }
 
     return pixie.display->last_written;
 }
@@ -275,18 +280,17 @@ u32 core::step_master(u32 howmany)
     //read_opts(jsm, th);
     //printf("\nRUN FOR %d CYCLES:", howmany);
     //u64 cur = clock.master_cycle_count;
-    scheduler.run_for_cycles(howmany);
+    //scheduler.run_for_cycles_tg16(howmany);
     //u64 dif = clock.master_cycle_count - cur;
     //printf("\nRAN %lld CYCLES", dif);
+    cycles_deficit += howmany;
+    while (cycles_deficit > 0) {
+        do_cycle();
+        this->clock.master_cycle_count += 8;
+        cycles_deficit -= 8;
+        if (::dbg.do_break) break;
+    }
     return 0;
 }
 
-void core::load_BIOS(multi_file_set& mfs)
-{
-    buf* b = &mfs.files[0].buf;
-    memcpy(ROM, b->ptr, 512);
-
-    b = &mfs.files[1].buf;
-    memcpy(chip8_interpreter, b->ptr, 512);
-}
 };
