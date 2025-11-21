@@ -6,7 +6,6 @@
 #include "vip_bus.h"
 
 namespace VIP {
-
 core::core(jsm::systems in_kind) : scheduler(&clock.master_cycle_count), kind(in_kind) {
     has.save_state = false;
     has.load_BIOS = true;
@@ -23,11 +22,11 @@ core::core(jsm::systems in_kind) : scheduler(&clock.master_cycle_count), kind(in
     }
 }
 
-    /* MEM MAP
- * 0000-7FFF RAM (2K)
- * 8000-8FFF 512-byte ROM
- * 9000-FFFF free
- */
+/* MEM MAP
+* 0000-7FFF RAM, mirrored for 4ks
+* 8000-8FFF 512-byte ROM, mirrored
+* 9000-FFFF free
+*/
 
 void core::write_main_bus(u16 addr, u8 val) {
     addr |= u6b;
@@ -71,14 +70,30 @@ void core::reset() {
     printf("\nCosmac VIP reset!");
 }
 
-void core::service_N() {
-    printf("\nN%d", cpu.pins.N);
-    if ((cpu.pins.N == 2) && (cpu.pins.MRD)) {
-        hex_keypad.latch = cpu.pins.D & 15;
+void core::service_N_out() {
+    switch (cpu.pins.N) {
+        case 2:
+            hex_keypad.latch = cpu.pins.D & 15;
+            break;
+        case 4:
+            printf("\ndisable ROM at 0000");
+            u6b = 0;
+            break;
+        case 1: // pixie!
+            pixie.OUT(0);
+            break;
+        default:
+            printf("\nOUT %d unserviced!", cpu.pins.N);;
     }
-    if ((cpu.pins.N == 4) && (cpu.pins.MRD)) {
-        printf("\ndisable ROM at 0000");
-        u6b = 0;
+}
+
+void core::service_N_in() {
+    switch (cpu.pins.N) {
+        case 1:
+            cpu.pins.D = pixie.INP(cpu.pins.D);
+            break;
+        default:
+            printf("\nINP %d unserviced!", cpu.pins.N);
     }
 }
 
@@ -86,7 +101,10 @@ void core::do_cycle() {
     // service writes
     cpu.pins.EF &= ~4;
     if (hex_keypad.keys[hex_keypad.latch]) cpu.pins.EF |= 4;
+
+    if (cpu.pins.N && cpu.pins.MWR) service_N_out();
     if (cpu.pins.MWR) {
+        if (cpu.pins.N) service_N_out();
         write_main_bus(cpu.pins.Addr, cpu.pins.D);
     }
 
@@ -96,10 +114,8 @@ void core::do_cycle() {
     // service reads
     if (cpu.pins.MRD) {
         cpu.pins.D = read_main_bus(cpu.pins.Addr, cpu.pins.D, true);
+        if (cpu.pins.N) service_N_out();
     }
-
-    // service OUT
-    if (cpu.pins.N) service_N();
 
     // do bus for cpu->1861
     pixie.bus.D = cpu.pins.D;
@@ -112,9 +128,9 @@ void core::do_cycle() {
     pixie.cycle();
 
     // do bus for 1861->cpu
-    //cpu.pins.D = pixie.bus.D;
+    cpu.pins.D = pixie.bus.D;
     cpu.pins.DMA_OUT = pixie.bus.DMA_OUT;
     cpu.pins.INTERRUPT = pixie.bus.IRQ;
     cpu.pins.EF = (cpu.pins.EF & ~1) | pixie.bus.EF1;
 }
-}
+};

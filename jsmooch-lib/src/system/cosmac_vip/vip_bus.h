@@ -32,7 +32,8 @@ private:
     u8 ROM[0x200]{};
     u8 chip8_interpreter[0x200]{};
     u16 RAM_mask{0x7FF};
-    void service_N();
+    void service_N_in();
+    void service_N_out();
 
     struct {
         cvec_ptr<physical_io_device> pio_ptr{};

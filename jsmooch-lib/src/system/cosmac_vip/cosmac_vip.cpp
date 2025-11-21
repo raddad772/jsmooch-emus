@@ -211,7 +211,7 @@ void core::describe_io()
     setup_crt(&d->display);
     pixie.display_ptr.make(IOs, IOs.size()-1);
     d->display.last_written = 1;
-    pixie.cur_output = static_cast<u16 *>(d->display.output[0]);
+    pixie.cur_output = static_cast<u8 *>(d->display.output[0]);
 
     setup_audio(IOs);
 
@@ -233,7 +233,7 @@ void core::stop()
 void core::get_framevars(framevars& out)
 {
 
-    out.master_frame = clock.master_frame;
+    out.master_frame = pixie.master_frame;
     out.x = static_cast<i32>(pixie.x);
     out.scanline = pixie.y;
     out.master_cycle = clock.master_cycle_count;

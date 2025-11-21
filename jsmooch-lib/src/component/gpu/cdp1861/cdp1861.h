@@ -19,6 +19,8 @@ struct core {
     explicit core() = default;
     void reset();
     void cycle();
+    u8 INP(u8 old);
+    void OUT(u8 val);
 
     bus bus{};
     u8 *cur_output{};
@@ -26,13 +28,16 @@ struct core {
     cvec_ptr<physical_io_device> display_ptr{};
     JSM_DISPLAY *display{};
     u8 x{}, y{};
-u64 master_frame;
+    u64 master_frame{};
 private:
     void new_scanline();
     void new_frame();
 
     struct {
-        u8 enabled{1};
+        u8 enable{1};
+        struct {
+            u8 enable{1};
+        } latch{};
     } io{};
 };
 };
