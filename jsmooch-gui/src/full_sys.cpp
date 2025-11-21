@@ -719,7 +719,11 @@ void full_system::load_default_ROM()
             break;
         case jsm::systems::COSMAC_VIP_2k:
         case jsm::systems::COSMAC_VIP_4k:
-            worked = grab_ROM(&ROMs, which, "1-chip8-logo.ch8", nullptr);
+            //worked = grab_ROM(&ROMs, which, "1-chip8-logo.ch8", nullptr);
+            //worked = grab_ROM(&ROMs, which, "2-ibm-logo.ch8", nullptr);
+            //worked = grab_ROM(&ROMs, which, "3-corax+.ch8", nullptr);
+            //worked = grab_ROM(&ROMs, which, "4-flags.ch8", nullptr);
+            worked = grab_ROM(&ROMs, which, "5-quirks.ch8", nullptr);
             break;
         case jsm::systems::ZX_SPECTRUM_48K:
         case jsm::systems::ZX_SPECTRUM_128K:

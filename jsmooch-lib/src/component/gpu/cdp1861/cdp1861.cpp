@@ -19,7 +19,7 @@ void core::reset() {
 
 void core::new_frame() {
     x = y = 0;
-    cur_output = static_cast<u8 *>(display->output[display->last_written ^ 1]);
+    cur_output = static_cast<u8 *>(display->output[display->last_written]);
     master_frame++;
     line_output = cur_output;
     memset(cur_output, 0, 112*262);
@@ -76,19 +76,17 @@ void core::cycle() {
     if (x >= 14) {
         new_scanline();
     }
-    // Beginning in third cycle, assert DMAO
-    // line 60 start IRQ?
-    // line 62 stop IRQ?
-    // display start line 64, end line 192
+
     bus.DMA_OUT = io.enable && display_area && (x >= 3) && (x < 12);
 
     u8 data = 0;
     if (display_area && bus.SC == 2) {
         data = bus.D;
     }
-
     // Now draw 8 pixels out from data, MSB-first!
     u8 *outp = line_output + (x * 8);
+    //if (x == 13) data = 0xFF;
+    //else data = 0;
     for (u32 i = 0; i < 8; i++) {
         u32 out = data >> 7;
         data <<= 1;

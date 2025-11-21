@@ -31,7 +31,6 @@ void core::dma_in() {
 }
 
 void core::dma_out() {
-    printf("\nDMA OUT! %04x", regs.R[0].u);
     pins.MRD = 1;
     pins.MWR = 0;
     pins.Addr = regs.R[0].u;
@@ -40,7 +39,6 @@ void core::dma_out() {
 }
 
 void core::dma_end() {
-    printf("\nDMA END with value: %02x", pins.D);
     prepare_fetch();
 }
 
@@ -49,7 +47,6 @@ void core::interrupt_end() {
 }
 
 void core::interrupt() {
-    printf("\nIRQ @ %lld new PC:%04x!", *master_clock, regs.R[regs.P].u);
     regs.T.hi = regs.X;
     regs.T.lo = regs.P;
     regs.IE = 0;

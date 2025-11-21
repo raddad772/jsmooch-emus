@@ -141,10 +141,10 @@ void cosmac_vip_present(physical_io_device &device, void *out_buf, u32 out_width
     u32* imgdata = static_cast<u32 *>(out_buf);
     for (u32 ry = 0; ry < 262; ry++) {
         u32 y = ry;
-        for (u32 rx = 0; rx < 114; rx++) {
+        for (u32 rx = 0; rx < 112; rx++) {
             u32 x = rx;
             u32 di = ((y * out_width) + x);
-            u32 ulai = (y * 114) + x;
+            u32 ulai = (y * 112) + x;
 
             u32 color = output[ulai];
             imgdata[di] = color ? 0xFFFFFFFF : 0xFF000000;

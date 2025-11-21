@@ -149,7 +149,6 @@ void core::reset() {
 }
 
 void core::service_N_out() {
-    printf("\nOUT %d!", cpu.pins.N);;
     switch (cpu.pins.N) {
         case 2:
             hex_keypad.latch = cpu.pins.D & 15;
@@ -163,7 +162,6 @@ void core::service_N_out() {
 }
 
 void core::service_N_in() {
-    printf("\nINP %d!", cpu.pins.N);;
     switch (cpu.pins.N) {
         case 1:
             cpu.pins.D = pixie.INP(cpu.pins.D);
