@@ -29,8 +29,6 @@ private:
     u16 u6b{};
 
     u8 RAM[0x1000]{};
-    u8 ROM[0x200]{};
-    u8 chip8_interpreter[0x200]{};
     u16 RAM_mask{0x7FF};
     void service_N_in();
     void service_N_out();
@@ -91,5 +89,6 @@ public:
     void set_audiobuf(audiobuf *ab) override;
     void setup_debugger_interface(debugger_interface &intf) override;
     void load_BIOS(multi_file_set& mfs) override;
+    void sideload(multi_file_set& mfs) override;
 };
 }
