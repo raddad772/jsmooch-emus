@@ -61,13 +61,11 @@ void core::new_scanline() {
 }
 
 u8 core::INP(u8 old) {
-    printf("\nPIXIE ENABLE!");
     io.latch.enable = 1;
     return old;
 }
 
 void core::OUT(u8 val) {
-    printf("\nPIXIE DISABLE!");
     io.latch.enable = 0;
 }
 
@@ -77,7 +75,7 @@ void core::cycle() {
         new_scanline();
     }
 
-    bus.DMA_OUT = io.enable && display_area && (x >= 3) && (x < 12);
+    bus.DMA_OUT = io.enable && display_area && (x >= 2) && (x < 11);
 
     u8 data = 0;
     if (display_area && bus.SC == 2) {

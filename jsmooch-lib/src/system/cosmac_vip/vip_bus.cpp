@@ -212,8 +212,15 @@ void core::do_cycle() {
 }
 
 void core::sideload(multi_file_set &mfs) {
-    memcpy(RAM, chip8_interpreter, 0x200);
-    const size_t sz = mfs.files[0].buf.size < 0x1E00 ? mfs.files[0].buf.size : 0x1E00;
-    memcpy(RAM+0x200, mfs.files[0].buf.ptr, sz);
+    if (ends_with(mfs.files[0].name, ".ch8")) {
+        memcpy(RAM, chip8_interpreter, 0x200);
+        const size_t sz = mfs.files[0].buf.size < 0x1E00 ? mfs.files[0].buf.size : 0x1E00;
+        memcpy(RAM+0x200, mfs.files[0].buf.ptr, sz);
+
+    }
+    else {
+        const size_t sz = mfs.files[0].buf.size <= RAM_mask ? mfs.files[0].buf.size : (RAM_mask + 1);
+        memcpy(RAM, mfs.files[0].buf.ptr, sz);
+    }
 }
 };

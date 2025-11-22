@@ -22,12 +22,12 @@ void core::reset() {
 }
 
 void core::dma_in() {
-    printf("\nDMA IN!");
     pins.MRD = 0;
     pins.MWR = 1;
     pins.Addr = regs.R[0].u;
     regs.R[0].u++;
     pins.SC = pins::S2_dma;
+    trace_format();
 }
 
 void core::dma_out() {
@@ -36,6 +36,7 @@ void core::dma_out() {
     pins.Addr = regs.R[0].u;
     regs.R[0].u++;
     pins.SC = pins::S2_dma;
+    trace_format();
 }
 
 void core::dma_end() {
@@ -53,6 +54,7 @@ void core::interrupt() {
     regs.P = 1;
     regs.X = 2;
     pins.SC = pins::S3_interrupt;
+    trace_format();
 }
 
 bool core::perform_interrupts() {
@@ -68,6 +70,7 @@ bool core::perform_interrupts() {
         return true;
     }
     else if (pins.INTERRUPT && regs.IE) {
+        //dbg_break("IRQ", 0);
         interrupt();
         return true;
     }

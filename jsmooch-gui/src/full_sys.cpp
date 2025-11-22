@@ -723,7 +723,11 @@ void full_system::load_default_ROM()
             //worked = grab_ROM(&ROMs, which, "2-ibm-logo.ch8", nullptr);
             //worked = grab_ROM(&ROMs, which, "3-corax+.ch8", nullptr);
             //worked = grab_ROM(&ROMs, which, "4-flags.ch8", nullptr);
-            worked = grab_ROM(&ROMs, which, "5-quirks.ch8", nullptr);
+            //worked = grab_ROM(&ROMs, which, "5-quirks.ch8", nullptr);
+            //worked = grab_ROM(&ROMs, which, "Android Signboard Demo.cos", nullptr);
+            //worked = grab_ROM(&ROMs, which, "Dr"a"gon.cos", nullptr);
+            worked = grab_ROM(&ROMs, which, "Cosmac Demo.bin", nullptr);
+            //worked = grab_ROM(&ROMs, which, "RCA Cosmac Picture.cos", nullptr);
             break;
         case jsm::systems::ZX_SPECTRUM_48K:
         case jsm::systems::ZX_SPECTRUM_128K:
