@@ -25,6 +25,7 @@ struct core : jsm_system {
     u8 read_main_bus(u16 addr, u8 old, bool has_effect);
 
 private:
+    void update_hex_keypad();
     void trace_format_write();
     void trace_format_read();
     i64 cycles_deficit{};
@@ -38,7 +39,7 @@ private:
 
     struct {
         cvec_ptr<physical_io_device> pio_ptr{};
-        int keys[16]{};
+        u32 keys[16]{};
         u8 latch{};
     } hex_keypad{};
 

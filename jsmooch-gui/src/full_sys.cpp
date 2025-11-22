@@ -438,6 +438,9 @@ void full_system::setup_ios()
                     setup_controller(&inputs, pio, 1);
                 }
                 continue; }
+            case HID_HEX_KEYPAD:
+                io.hex_keypad.make(IOs, i);
+                break;
             case HID_KEYBOARD: {
                 io.keyboard.make(IOs, i);
                 continue; }
@@ -724,9 +727,10 @@ void full_system::load_default_ROM()
             //worked = grab_ROM(&ROMs, which, "3-corax+.ch8", nullptr);
             //worked = grab_ROM(&ROMs, which, "4-flags.ch8", nullptr);
             //worked = grab_ROM(&ROMs, which, "5-quirks.ch8", nullptr);
+            worked = grab_ROM(&ROMs, which, "6-keypad.ch8", nullptr);
             //worked = grab_ROM(&ROMs, which, "Android Signboard Demo.cos", nullptr);
             //worked = grab_ROM(&ROMs, which, "Dr"a"gon.cos", nullptr);
-            worked = grab_ROM(&ROMs, which, "Cosmac Demo.bin", nullptr);
+            //worked = grab_ROM(&ROMs, which, "Cosmac Demo.bin", nullptr);
             //worked = grab_ROM(&ROMs, which, "RCA Cosmac Picture.cos", nullptr);
             break;
         case jsm::systems::ZX_SPECTRUM_48K:

@@ -84,6 +84,49 @@ static void load_inifile(inifile& ini)
     ini.load(OUTPATH);
 }
 
+static void render_hex_keypad(full_system *fsys) {
+    if (ImGui::Begin("Hex Keypad")) {
+        /* Cosmac VIP layout
+         * 1 2 3 C
+         * 4 5 6 D
+         * 7 8 9 E
+         * A 0 B F */
+        auto &hk = fsys->io.hex_keypad.get().hex_keypad;
+        hk.key_states[1] = ImGui::Button("1");
+        ImGui::SameLine();
+        hk.key_states[2] = ImGui::Button("2");
+        ImGui::SameLine();
+        hk.key_states[3] = ImGui::Button("3");
+        ImGui::SameLine();
+        hk.key_states[12] = ImGui::Button("C");
+
+        hk.key_states[4] = ImGui::Button("4");
+        ImGui::SameLine();
+        hk.key_states[5] = ImGui::Button("5");
+        ImGui::SameLine();
+        hk.key_states[6] = ImGui::Button("6");
+        ImGui::SameLine();
+        hk.key_states[13] = ImGui::Button("D");
+
+        hk.key_states[7] = ImGui::Button("7");
+        ImGui::SameLine();
+        hk.key_states[8] = ImGui::Button("8");
+        ImGui::SameLine();
+        hk.key_states[9] = ImGui::Button("9");
+        ImGui::SameLine();
+        hk.key_states[14] = ImGui::Button("E");
+
+        hk.key_states[10] = ImGui::Button("A");
+        ImGui::SameLine();
+        hk.key_states[0] = ImGui::Button("0");
+        ImGui::SameLine();
+        hk.key_states[11] = ImGui::Button("B");
+        ImGui::SameLine();
+        hk.key_states[15] = ImGui::Button("F");
+    }
+    ImGui::End();
+}
+
 static void update_input(full_system* fsys, u32 *hotkeys, ImGuiIO& io) {
     //if (io.WantCaptureKeyboard) {
         // Handle KB
@@ -95,6 +138,9 @@ static void update_input(full_system* fsys, u32 *hotkeys, ImGuiIO& io) {
                     kbd->key_states[i] = ImGui::IsKeyDown(jk_to_imgui(kbd->key_defs[i]));
                 }
             }
+        }
+        if (fsys->io.hex_keypad.vec) {
+            render_hex_keypad(fsys);
         }
         hotkeys[0] = ImGui::IsKeyPressed(ImGuiKey_K, false); // save
         hotkeys[1] = ImGui::IsKeyPressed(ImGuiKey_L, false); // load

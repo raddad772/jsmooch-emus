@@ -177,7 +177,8 @@ void core::describe_io()
     IOs.reserve(15);
 
     // controllers
-    physical_io_device &c1 = IOs.emplace_back();
+    physical_io_device &kp = IOs.emplace_back();
+    kp.init(HID_HEX_KEYPAD, 1, 1, 1, 0);
     hex_keypad.pio_ptr.make(IOs, IOs.size()-1);
 
     // power and reset buttons
@@ -235,8 +236,17 @@ void core::get_framevars(framevars& out)
 
 //#define DO_STATS
 
+void core::update_hex_keypad() {
+    auto& kp = hex_keypad.pio_ptr.get().hex_keypad;
+    for (u32 i = 0; i < 16; i++) {
+        hex_keypad.keys[i] = kp.key_states[i];
+    }
+}
+
+
 u32 core::finish_frame()
 {
+    update_hex_keypad();
 
 #ifdef DO_STATS
     u64 spc_start = apu.cpu.int_clock;

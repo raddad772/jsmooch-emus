@@ -157,6 +157,7 @@ public:
         cvec_ptr<physical_io_device> display{};
         cvec_ptr<physical_io_device> chassis{};
         cvec_ptr<physical_io_device> keyboard{};
+        cvec_ptr<physical_io_device> hex_keypad{};
         cvec_ptr<physical_io_device> mouse{};
         cvec_ptr<physical_io_device> cartridge_port{};
         cvec_ptr<physical_io_device> disk_drive{};
