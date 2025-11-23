@@ -2,9 +2,7 @@
 // Created by RadDad772 on 2/28/24.
 //
 
-#include <stdio.h>
 #include <cassert>
-#include <stdlib.h>
 #if !defined(_MSC_VER)
 #include <unistd.h>
 #include <pwd.h>
@@ -39,9 +37,9 @@ struct ram_entry {
 
 
 struct test_state {
-    struct test_cpu_regs regs;
+    test_cpu_regs regs;
     u32 num_ram_entry;
-    struct ram_entry ram[50];
+    ram_entry ram[50];
 };
 
 struct port_entry {
@@ -63,29 +61,29 @@ static u32 test_RAM[65536];
 
 struct jsontest {
     char name[50];
-    struct test_state initial;
-    struct test_state final;
-    struct test_cycle cycles[40];
+    test_state initial;
+    test_state final;
+    test_cycle cycles[40];
     u32 num_cycles;
     u32 num_ports;
 
-    struct ram_entry opcodes[14];
-    struct port_entry ports[10];
+    ram_entry opcodes[14];
+    port_entry ports[10];
 };
 
 struct z80_test_result
 {
     u32 passed;
-    struct test_cycle cycles[100];
+    test_cycle cycles[100];
     char msg[5000];
     u32 addr_io_mismatches;
     u32 length_mismatches;
-    struct jsontest *failed_test_struct;
+    jsontest *failed_test_struct;
 };
 
 
-static u32 skip_tests(u32 class, u32 ins) {
-    switch(class) {
+static u32 skip_tests(u32 cl, u32 ins) {
+    switch(cl) {
         case 0:
         case 0xDD:
         case 0xFD: {
@@ -96,7 +94,7 @@ static u32 skip_tests(u32 class, u32 ins) {
         }
     }
 
-    switch(class) {
+    switch(cl) {
         case 0:
             switch(ins) {
                 case 0xCB:
@@ -109,8 +107,8 @@ static u32 skip_tests(u32 class, u32 ins) {
     return 0;
 }
 
-static u32 is_call(u32 class, u32 ins) {
-    switch(class) {
+static u32 is_call(u32 cl, u32 ins) {
+    switch(cl) {
         case 0x00:
             switch(ins) {
                 case 0xCD:
@@ -142,19 +140,19 @@ static u32 is_call(u32 class, u32 ins) {
     return 0;
 }
 
-static void construct_path(char *out, u32 iclass, u32 ins)
+static void construct_path(char *out, u32 icl, u32 ins, size_t sz)
 {
     char test_path[500];
     const char *homeDir = get_user_dir();
 
     char *tp = out;
-    tp += sprintf(tp, "%s", homeDir);
-    tp += sprintf(tp, "/dev/z80/v1");
+    tp += snprintf(tp, sz - (tp - out), "%s", homeDir);
+    tp += snprintf(tp, sz - (tp - out), "/dev/z80/v1");
 
-    tp += sprintf(tp, "%s/", test_path);
-    if (iclass != 0)
-        tp += sprintf(tp, "cb ");
-    tp += sprintf(tp, "%02x.json", ins);
+    tp += snprintf(tp, sz - (tp - out), "%s/", test_path);
+    if (icl != 0)
+        tp += snprintf(tp, sz - (tp - out),  "cb ");
+    tp += snprintf(tp,  sz - (tp - out), "%02x.json", ins);
 }
 //"ports":[[40816,2,"w"]]
 
@@ -231,12 +229,12 @@ static void construct_path(char *out, u32 iclass, u32 ins)
   "cycles": [
     [
       19935,
-      null,
+      nullptr,
       "----"
     ],
     [
       19935,
-      null,
+      nullptr,
       "r-m-"
     ],
     [
@@ -246,21 +244,21 @@ static void construct_path(char *out, u32 iclass, u32 ins)
     ],
     [
       42512,
-      null,
+      nullptr,
       "----"
     ]
   ]
 }
  */
 
-static void parse_state(struct json_object_s *object, test_state *state)
+static void parse_state(json_object_s *object, test_state *state)
 {
-    struct json_object_element_s *el = object->start;
+    json_object_element_s *el = object->start;
     state->num_ram_entry = 0;
     for (u32 i = 0; i < object->length; i++) {
         u32 p = 0;
-        struct json_string_s *str = (struct json_string_s *)el->value->payload;
-        u32 *dest = 0;
+        //auto *str = (json_string_s *)el->value->payload;
+        u32 *dest = nullptr;
         if (strcmp(el->name->string, "a") == 0) {
             dest = &state->regs.a;
         }
@@ -335,20 +333,20 @@ static void parse_state(struct json_object_s *object, test_state *state)
             dest = &state->regs.iff2;
         }
         if (strcmp(el->name->string, "ram") == 0) {
-            struct json_array_s *arr1 = (struct json_array_s *)el->value->payload;
-            state->num_ram_entry = (u32)arr1->length;
-            struct json_array_element_s *arr_el = arr1->start;
+            auto *arr1 = static_cast<json_array_s *>(el->value->payload);
+            state->num_ram_entry = static_cast<u32>(arr1->length);
+            json_array_element_s *arr_el = arr1->start;
             for (u32 arr1_i = 0; arr1_i < arr1->length; arr1_i++) {
                 assert(arr_el->value->type == json_type_array);
-                struct json_array_s *arr2 = (struct json_array_s*) arr_el->value->payload;
+                auto *arr2 = static_cast<json_array_s *>(arr_el->value->payload);
                 assert(arr2->length == 2);
-                struct json_array_element_s *arr2_el = arr2->start;
+                json_array_element_s *arr2_el = arr2->start;
                 // Address
-                struct json_number_s* nr = (struct json_number_s*)arr2_el->value->payload;
+                auto* nr = static_cast<json_number_s *>(arr2_el->value->payload);
                 state->ram[arr1_i].addr = atoi(nr->number);
                 // Data
                 arr2_el = arr2_el->next;
-                nr = (struct json_number_s*)arr2_el->value->payload;
+                nr = static_cast<json_number_s *>(arr2_el->value->payload);
                 state->ram[arr1_i].val = atoi(nr->number);
 
                 arr_el = arr_el->next;
@@ -357,11 +355,11 @@ static void parse_state(struct json_object_s *object, test_state *state)
         else {
             // Grab number
             assert(el->value->type == json_type_number);
-            struct json_number_s *num = (struct json_number_s *) el->value->payload;
+            auto *num = static_cast<json_number_s *>(el->value->payload);
             char *yo;
             u32 a = strtol(num->number, &yo, 10);
             assert(yo != num->number);
-            if (dest == NULL) {
+            if (dest == nullptr) {
                 //printf("\nUHOH! %s \n", el->name->string);
             }
             else {
@@ -374,60 +372,60 @@ static void parse_state(struct json_object_s *object, test_state *state)
 }
 
 
-static void parse_and_fill_out(struct jsontest tests[1000], read_file_buf *infile)
+static void parse_and_fill_out(jsontest tests[1000], read_file_buf *infile)
 {
-    struct json_value_s *root = json_parse(infile->buf.ptr, infile->buf.size);
+    json_value_s *root = json_parse(infile->buf.ptr, infile->buf.size);
     assert(root->type == json_type_array);
 
-    struct json_array_s* arr = (struct json_array_s*)root->payload;
-    struct json_array_element_s r;
+    auto* arr = static_cast<json_array_s *>(root->payload);
+    json_array_element_s r{};
     assert(arr->length == 1000);
-    struct json_array_element_s* cur_node = arr->start;
+    json_array_element_s* cur_node = arr->start;
     for (u32 i = 0; i < 1000; i++) {
-        struct jsontest *test = tests+i;
+        jsontest *test = tests+i;
         test->num_cycles = 0;
         // TODO: add opcodes here
 
-        sprintf(test->name, "Unknown");
+        snprintf(test->name, sizeof(test->name), "Unknown");
         assert(cur_node->value->type == json_type_object);
-        struct json_object_s *tst = (struct json_object_s *)cur_node->value->payload;
-        struct json_object_element_s *s = (struct json_object_element_s *)tst->start;
+        auto *tst = static_cast<json_object_s *>(cur_node->value->payload);
+        auto *s = tst->start;
         for (u32 j = 0; j < tst->length; j++) {
             if (strcmp(s->name->string, "name") == 0) {
                 assert(s->value->type == json_type_string);
-                struct json_string_s *str = (struct json_string_s *)s->value->payload;
-                sprintf(test->name,"%s", str->string);
+                auto *str = static_cast<json_string_s *>(s->value->payload);
+                snprintf(test->name, sizeof(test->name), "%s", str->string);
             }
             else if (strcmp(s->name->string, "initial") == 0) {
                 assert(s->value->type == json_type_object);
-                struct json_object_s* state = (struct json_object_s *)s->value->payload;
+                auto* state = static_cast<json_object_s *>(s->value->payload);
                 parse_state(state, &test->initial);
             }
             else if (strcmp(s->name->string, "final") == 0) {
                 assert(s->value->type == json_type_object);
-                struct json_object_s* state = (struct json_object_s*)s->value->payload;
+                auto* state = static_cast<json_object_s *>(s->value->payload);
                 parse_state(state, &test->final);
             }
             else if (strcmp(s->name->string, "cycles") == 0) {
                 assert(s->value->type == json_type_array);
-                struct json_array_s* arr1 = (struct json_array_s*)s->value->payload;
-                test->num_cycles = (u32)arr1->length;
-                struct json_array_element_s* arr1_el = arr1->start;
+                auto* arr1 = static_cast<json_array_s *>(s->value->payload);
+                test->num_cycles = static_cast<u32>(arr1->length);
+                json_array_element_s* arr1_el = arr1->start;
                 for (u32 h = 0; h < arr1->length; h++) {
-                    assert(arr1_el != NULL);
+                    assert(arr1_el != nullptr);
                     assert(arr1->length < 20);
-                    struct json_array_s* arr2 = (struct json_array_s*)arr1_el->value->payload;
-                    struct json_array_element_s* arr2_el = (struct json_array_element_s*)arr2->start;
+                    auto* arr2 = static_cast<json_array_s *>(arr1_el->value->payload);
+                    auto* arr2_el = arr2->start;
 
                     // number, number, string
-                    struct json_number_s *num = (struct json_number_s *)arr2_el->value->payload;
+                    auto *num = static_cast<json_number_s *>(arr2_el->value->payload);
 
                     test->cycles[h].addr = atoi(num->number);
 
                     arr2_el = arr2_el->next;
-                    num = (struct json_number_s *)arr2_el->value->payload;
+                    num = static_cast<json_number_s *>(arr2_el->value->payload);
 
-                    if (num == NULL) {
+                    if (num == nullptr) {
                         test->cycles[h].data = -1;
                     }
                     else
@@ -435,7 +433,7 @@ static void parse_and_fill_out(struct jsontest tests[1000], read_file_buf *infil
 
                     arr2_el = arr2_el->next;
 
-                    struct json_string_s* st = (struct json_string_s *)arr2_el->value->payload;
+                    auto* st = static_cast<json_string_s *>(arr2_el->value->payload);
                     // rwmi
                     test->cycles[h].r = st->string[0] == 'r' ? 1 : 0;
                     test->cycles[h].w = st->string[1] == 'w' ? 1 : 0;
@@ -448,27 +446,27 @@ static void parse_and_fill_out(struct jsontest tests[1000], read_file_buf *infil
             else if (strcmp(s->name->string, "ports") == 0) {
                 // "ports":[[40816,2,"w"]]
                 assert(s->value->type == json_type_array);
-                struct json_array_s* arr1 = (struct json_array_s*)s->value->payload;
-                test->num_ports = (u32)arr1->length;
-                struct json_array_element_s* arr1_el = arr1->start;
+                auto* arr1 = static_cast<json_array_s *>(s->value->payload);
+                test->num_ports = static_cast<u32>(arr1->length);
+                json_array_element_s* arr1_el = arr1->start;
                 for (u32 h = 0; h < arr1->length; h++) {
-                    assert(arr1_el != NULL);
+                    assert(arr1_el != nullptr);
                     assert(arr1->length < 20);
-                    struct json_array_s* arr2 = (struct json_array_s*)arr1_el->value->payload;
-                    struct json_array_element_s* arr2_el = (struct json_array_element_s*)arr2->start;
+                    auto* arr2 = static_cast<json_array_s *>(arr1_el->value->payload);
+                    auto* arr2_el = arr2->start;
 
                     // number, number, string
-                    struct json_number_s *num = (struct json_number_s *)arr2_el->value->payload;
+                    auto *num = static_cast<json_number_s *>(arr2_el->value->payload);
 
                     test->ports[h].addr = atoi(num->number);
 
                     arr2_el = arr2_el->next;
-                    num = (struct json_number_s *)arr2_el->value->payload;
+                    num = static_cast<json_number_s *>(arr2_el->value->payload);
 
                     test->ports[h].data = atoi(num->number);
                     arr2_el = arr2_el->next;
 
-                    struct json_string_s* st = (struct json_string_s *)arr2_el->value->payload;
+                    auto* st = static_cast<json_string_s *>(arr2_el->value->payload);
                     // rwmi
                     test->ports[h].rw = st->string[0] == 'w' ? 1 : 0;
 
@@ -487,7 +485,7 @@ static void parse_and_fill_out(struct jsontest tests[1000], read_file_buf *infil
     free(root);
 }
 
-static void pprint_regs(struct Z80_regs *cpu_regs, test_cpu_regs *test_regs, u32 last_pc, u32 only_print_diff)
+static void pprint_regs(Z80::regs *cpu_regs, test_cpu_regs *test_regs, u32 last_pc, u32 only_print_diff)
 {
     printf("\nREG CPU       TEST");
     printf("\n------------------");
@@ -509,8 +507,8 @@ static void pprint_regs(struct Z80_regs *cpu_regs, test_cpu_regs *test_regs, u32
         printf("\nH   %02x        %02x", cpu_regs->H, test_regs->h);
     if ((only_print_diff && (cpu_regs->L != test_regs->l)) || (!only_print_diff))
         printf("\nL   %02x        %02x", cpu_regs->L, test_regs->l);
-    if ((only_print_diff && (Z80_regs_F_getbyte(&cpu_regs->F) != test_regs->f)) || (!only_print_diff))
-        printf("\nF   %02x        %02x", Z80_regs_F_getbyte(&cpu_regs->F), test_regs->f);
+    if ((only_print_diff && (cpu_regs->F.u != test_regs->f)) || (!only_print_diff))
+        printf("\nF   %02x        %02x", cpu_regs->F.u, test_regs->f);
     if ((only_print_diff && (cpu_regs->I != test_regs->i)) || (!only_print_diff))
         printf("\nI   %02x        %02x", cpu_regs->I, test_regs->i);
     if ((only_print_diff && (cpu_regs->R != test_regs->r)) || (!only_print_diff))
@@ -537,7 +535,7 @@ static void pprint_regs(struct Z80_regs *cpu_regs, test_cpu_regs *test_regs, u32
         printf("\nIM  %02x        %02x", cpu_regs->IM, test_regs->im);
 }
 
-static void pprint_test(struct jsontest *test, test_cycle *cpucycles) {
+static void pprint_test(jsontest *test, test_cycle *cpucycles) {
     printf("\nCycles");
     for (u32 i = 0; i < test->num_cycles; i++) {
         printf("\n\nTEST cycle:%d  addr:%04x  data:%02x  rwmi:%d%d%d%d", i, test->cycles[i].addr, test->cycles[i].data, test->cycles[i].r, test->cycles[i].w, test->cycles[i].m, test->cycles[i].i);
@@ -548,7 +546,7 @@ static void pprint_test(struct jsontest *test, test_cycle *cpucycles) {
 //#define PP(a, b) passed &= cpu->regs.a == final->regs.b; printf("\n%s %04x %04x %d", #a, cpu->regs.a, final->regs.b, passed)
 #define PP(a, b) passed &= cpu->regs.a == final->regs.b
 
-static u32 testregs(struct Z80* cpu, test_state* final, u32 last_pc, u32 is_call, u32 tn)
+static u32 testregs(Z80::core* cpu, test_state* final, u32 last_pc, u32 is_call, u32 tn)
 {
     u32 passed = 1;
     u32 rpc = last_pc == final->regs.pc;
@@ -562,7 +560,7 @@ static u32 testregs(struct Z80* cpu, test_state* final, u32 last_pc, u32 is_call
     PP(C, c);
     PP(D, d);
     PP(E, e);
-    passed &= Z80_regs_F_getbyte(&cpu->regs.F) == final->regs.f;
+    passed &= cpu->regs.F.u == final->regs.f;
     //printf("\nF %02x %02x", Z80_regs_F_getbyte(&cpu->regs.F), final->regs.f);
     PP(H, h);
     PP(L, l);
@@ -588,51 +586,25 @@ static u32 testregs(struct Z80* cpu, test_state* final, u32 last_pc, u32 is_call
 
 }
 
-static void test_z80_automated(struct z80_test_result *out, Z80* cpu, jsontest tests[1000], u32 is_call)
+static void test_z80_automated(z80_test_result *out, Z80::core* cpu, jsontest tests[1000], u32 is_call)
 {
     out->passed = 0;
-    sprintf(out->msg, "");
+    snprintf(out->msg, sizeof(out->msg), "");
     char *msgptr = out->msg;
     out->addr_io_mismatches = 0;
     out->length_mismatches = 0;
-    out->failed_test_struct = NULL;
+    out->failed_test_struct = nullptr;
 
     u32 last_pc;
     u32 ins;
     *cpu->trace.cycles = 1;
+    memset(test_RAM, 0xFF, sizeof(test_RAM));
     for (u32 i = 0; i < 1000; i++) {
         out->failed_test_struct = &tests[i];
-        struct jsontest *test = &tests[i];
-        struct test_state *initial = &tests[i].initial;
-        struct test_state *final = &tests[i].final;
-        /*
-             "pc": 19935,
-    "sp": 59438,
-    "a": 110,
-    "b": 185,
-    "c": 144,
-    "d": 208,
-    "e": 190,
-    "f": 250,
-    "h": 131,
-    "l": 147,
-    "i": 166,
-    "r": 16,
-    "ei": 1,
-    "wz": 62861,
-    "ix": 35859,
-    "iy": 45708,
-    "af_": 30257,
-    "bc_": 17419,
-    "de_": 13842,
-    "hl_": 28289,
-    "im": 0,
-    "p": 1,
-    "q": 0,
-    "iff1": 1,
-    "iff2": 1,
-*
-         */
+        jsontest *test = &tests[i];
+        test_state *initial = &tests[i].initial;
+        test_state *final = &tests[i].final;
+
         cpu->regs.PC = initial->regs.pc;
         cpu->regs.SP = initial->regs.sp;
         cpu->regs.A = initial->regs.a;
@@ -640,7 +612,7 @@ static void test_z80_automated(struct z80_test_result *out, Z80* cpu, jsontest t
         cpu->regs.C = initial->regs.c;
         cpu->regs.D = initial->regs.d;
         cpu->regs.E = initial->regs.e;
-        Z80_regs_F_setbyte(&cpu->regs.F, initial->regs.f);
+        cpu->regs.F.u = initial->regs.f;
         cpu->regs.H = initial->regs.h;
         cpu->regs.L = initial->regs.l;
         cpu->regs.I = initial->regs.i;
@@ -661,12 +633,12 @@ static void test_z80_automated(struct z80_test_result *out, Z80* cpu, jsontest t
         cpu->regs.IFF2 = initial->regs.iff2;
 
         for (u32 j = 0; j < initial->num_ram_entry; j++) {
-            test_RAM[initial->ram[j].addr] = (u8)initial->ram[j].val;
+            test_RAM[initial->ram[j].addr] = static_cast<u8>(initial->ram[j].val);
         }
 
         cpu->regs.prefix = 0;
-        cpu->regs.rprefix = Z80P_HL;
-        cpu->regs.IR = Z80_S_DECODE;
+        cpu->regs.rprefix = Z80::regs::P_HL;
+        cpu->regs.IR = Z80::S_DECODE;
         cpu->pins.Addr = cpu->regs.PC;
         cpu->pins.D = -1;
         cpu->pins.MRQ = 1;
@@ -676,19 +648,18 @@ static void test_z80_automated(struct z80_test_result *out, Z80* cpu, jsontest t
         cpu->regs.TCU = -1;
         //cpu->regs.PC = (cpu->regs.PC + 1) & 0xFFFF;
 
-        u32 addr;
         u32 passed = 1;
         for (u32 cyclei = 0; cyclei < test->num_cycles; cyclei++) {
-            struct test_cycle *cycle = &test->cycles[cyclei];
+            test_cycle *cycle = &test->cycles[cyclei];
 
-            struct test_cycle *out_cycle = &out->cycles[cyclei];
+            test_cycle *out_cycle = &out->cycles[cyclei];
 
-            addr = cpu->pins.Addr;
+            u32 addr = cpu->pins.Addr;
             if (cpu->pins.RD && cpu->pins.MRQ) {
                 if (test_RAM[cpu->pins.Addr] != 0xFFFFFFFF)
                     cpu->pins.D = test_RAM[cpu->pins.Addr];
             }
-            if (cpu->pins.RD && cpu->pins.IO  && (cpu->pins.M1 == 0)) {
+            if (cpu->pins.RD && cpu->pins.IO && (cpu->pins.M1 == 0)) {
                 for (u32 p = 0; p < test->num_ports; p++) {
                     if (test->ports[p].addr == cpu->pins.Addr) {
                         cpu->pins.D = test->ports[p].data;
@@ -697,7 +668,7 @@ static void test_z80_automated(struct z80_test_result *out, Z80* cpu, jsontest t
                 }
             }
 
-            Z80_cycle(cpu);
+            cpu->cycle();
             addr = cpu->pins.Addr;
 
             if (cycle->addr != addr) {
@@ -724,8 +695,8 @@ static void test_z80_automated(struct z80_test_result *out, Z80* cpu, jsontest t
                 printf("\nMISMATCH IN M");
                 passed = 0;
             }
-            out_cycle->data = (i32)cpu->pins.D;
-            out_cycle->addr = (i32)cpu->pins.Addr;
+            out_cycle->data = static_cast<i32>(cpu->pins.D);
+            out_cycle->addr = static_cast<i32>(cpu->pins.Addr);
             out_cycle->r = cpu->pins.RD;
             out_cycle->w = cpu->pins.WR;
             out_cycle->m = cpu->pins.MRQ;
@@ -745,13 +716,13 @@ static void test_z80_automated(struct z80_test_result *out, Z80* cpu, jsontest t
         }
         if (!passed) {
             printf("\nFAILED TEST! %d", i);
-            Z80_cycle(cpu);
+            cpu->cycle();
             out->passed = 0;
             return;
         }
 
         //SM83_cycle(cpu);
-        Z80_cycle(cpu);
+        cpu->cycle();
         passed &= testregs(cpu, final, last_pc, is_call, i);
         for (u32 x = 0; x < final->num_ram_entry; x++) {
             if (test_RAM[final->ram[x].addr] != final->ram[x].val) {
@@ -760,38 +731,36 @@ static void test_z80_automated(struct z80_test_result *out, Z80* cpu, jsontest t
             }
         }
 
-        if (passed == 0) {
+        if (!passed) {
             printf("\nFAILED AT END!");
-            Z80_cycle(cpu);
+            cpu->cycle();
             out->passed = 0;
             return;
         }
     }
     out->passed = 1;
-    out->failed_test_struct = NULL;
+    out->failed_test_struct = nullptr;
 }
 
-u32 test_z80_ins(struct Z80* cpu, u32 iclass, u32 ins, u32 is_call)
+u32 test_z80_ins(Z80::core* cpu, u32 icl, u32 ins, u32 is_call)
 {
     char path[200];
-    construct_path(path, iclass, ins);
+    construct_path(path, icl, ins, sizeof(path));
 
-    struct read_file_buf infile;
-    rfb_init(&infile);
-    struct jsontest tests[1000];
-    if (!rfb_read(NULL, path, &infile)) {
+    read_file_buf infile;
+    jsontest tests[1000];
+    if (!infile.read(nullptr, path)) {
         printf("\n\nCouldn't open file! %s", path);
         return 0;
     }
     parse_and_fill_out(tests, &infile);
 
-    struct z80_test_result result;
+    z80_test_result result{};
     test_z80_automated(&result, cpu, tests, is_call);
     if (!result.passed) {
-        printf("\nFAILED INSTRUCTION: %02x %02x", iclass ? 0xCB : 0, ins);
+        printf("\nFAILED INSTRUCTION: %02x %02x", icl ? 0xCB : 0, ins);
         pprint_test(result.failed_test_struct, result.cycles);
     }
-    rfb_delete(&infile);
 
     return result.passed;
 }
@@ -804,28 +773,27 @@ static u32 read_trace_z80(void *ptr, u32 addr)
 void test_z80()
 {
     dbg_init();
-    struct Z80 cpu;
+    Z80::core cpu(false);
     u64 trace_cycles = 0;
-    struct jsm_debug_read_trace rd;
-    rd.ptr = NULL;
+    jsm_debug_read_trace rd;
+    rd.ptr = nullptr;
     rd.read_trace = &read_trace_z80;
-    Z80_init(&cpu, 0);
-    Z80_setup_tracing(&cpu, &rd, &trace_cycles);
-    u32 test_classes[7] = {0, 0xCB, 0xED, 0xDD, 0xFD, 0xDDCB, 0xFDCB};
+    cpu.setup_tracing(&rd, &trace_cycles);
     u32 start_test = 0;
-    u32 start_class = 0;
+    u32 start_cl = 0;
     u32 total_fail = 0;
 
-    for (u32 mclass = start_class; mclass < 7; mclass++) {
-        u32 iclass = test_classes[mclass];
-        printf("\nTesting instruction class %04x", iclass);
+    for (u32 mcl = start_cl; mcl < 7; mcl++) {
+        constexpr u32 test_cles[7] = {0, 0xCB, 0xED, 0xDD, 0xFD, 0xDDCB, 0xFDCB};
+        u32 icl = test_cles[mcl];
+        printf("\nTesting instruction cl %04x", icl);
         for (u32 i = start_test; i < 256; i++) {
-            if (skip_tests(iclass, i)) {
+            if (skip_tests(icl, i)) {
                 printf("\nTest for %02x skipped.", i);
                 continue;
             }
-            u32 icall = is_call(iclass, i);
-            u32 result = test_z80_ins(&cpu, iclass, i, icall);
+            u32 icall = is_call(icl, i);
+            u32 result = test_z80_ins(&cpu, icl, i, icall);
             if (!result) {
                 total_fail = 1;
                 printf("\nFAIL!");

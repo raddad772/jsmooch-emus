@@ -18,17 +18,14 @@ constexpr u32 MAX_OPCODE = 0x101;
 struct regs_F {
     union {
         struct {
-            u8 C : 1{};
-            u8 N : 1{};
-            union {
-                u8 P: 1{};
-                u8 V: 1;
-            };
-            u8 Y : 1{};
-            u8 H : 1{};
-            u8 X : 1{};
-            u8 Z : 1{};
-            u8 S : 1{};
+            u8 C : 1{}; // 0 - 1
+            u8 N : 1{}; // 1 - 2
+            u8 PV: 1{}; // 2 - 4
+            u8 Y : 1{}; // 3 - 8
+            u8 H : 1{}; // 4 - 16
+            u8 X : 1{}; // 5 - 32
+            u8 Z : 1{}; // 6 - 40
+            u8 S : 1{}; // 7 - 80
         };
         u8 u;
     };
@@ -39,24 +36,24 @@ struct regs {
     void deserialize(serialized_state &state);
     u16 reset_vector{};
     u32 IR{}; // Instruction Register
-    u8 TCU{}; // Internal instruction cycle timer register (not on real Z80 under this name)
+    u32 TCU{}; // Internal instruction cycle timer register (not on real Z80 under this name)
 
-    u16 A{};
-    u16 B{};
-    u16 C{};
-    u16 D{};
-    u16 E{};
-    u16 H{};
-    u16 L{};
+    u32 A{};
+    u32 B{};
+    u32 C{};
+    u32 D{};
+    u32 E{};
+    u32 H{};
+    u32 L{};
     regs_F F;
     u32 I{}; // Iforget
     u32 R{}; // Refresh counter
 
     // Shadow registers
-    u16 AF_{};
-    u16 BC_{};
-    u16 DE_{};
-    u16 HL_{};
+    u32 AF_{};
+    u32 BC_{};
+    u32 DE_{};
+    u32 HL_{};
 
     // Junk calculations
     u32 TR{}, TA{};
@@ -78,8 +75,8 @@ struct regs {
     u32 t[10]{};
     u16 WZ{};
     u16 EI{};
-    u8 P{};
-    u8 Q{};
+    u32 P{};
+    u32 Q{};
     u8 IFF1{};
     u8 IFF2{};
     u8 IM{};

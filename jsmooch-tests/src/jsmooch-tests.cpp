@@ -9,10 +9,10 @@
 #include "jsmooch-tests.h"
 #include "cpu-tests/spc700_tests.h"
 #include "cpu-tests/rca1802_tests.h"
-/*#include "cpu-tests/huc6280_tests.h"
-#include "cpu-tests/sm83-tests.h"
+//#include "cpu-tests/huc6280_tests.h"
+//#include "cpu-tests/sm83-tests.h"
 #include "cpu-tests/z80-tests.h"
-#include "cpu-test-generators/sh4_test_generator.h"
+/*#include "cpu-test-generators/sh4_test_generator.h"
 #include "cpu-tests/sh4-tests.h"
 #include "cpu-tests/m6502_tests.h"
 #include "cpu-tests/m68000-tests.h"
@@ -91,14 +91,14 @@ int main()
 {
     dbg_init();
     dbg.trace_on = 0;
-    test_rca1802();
+    //test_rca1802();
     //test_spc700();
     //test_wdc65816();
     //test_huc6280();
     //z80_drag_race();
     //test_scheduler();
     //test_sm83();
-    //test_z80();
+    test_z80();
     //generate_sh4();
     //generate_sh4_tests(); // NOTE: reicast tests superceded these
     //test_sh4();

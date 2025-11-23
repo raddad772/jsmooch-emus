@@ -131,13 +131,14 @@ void Z80_ins_00_04_INC_r(regs& regs, pins& pins)
             regs.Q = 1;
             regs.TR = ((regs.B) + 1) & 0xFF;
             regs.F.N = 0;
-            regs.F.V = +(regs.TR == 0x80);
+            regs.F.PV = +(regs.TR == 0x80);
             regs.F.X = ((regs.TR) & 8) >> 3;
             regs.F.Y = ((regs.TR) & 0x20) >> 5;
             regs.F.H = +((regs.TR & 0x0F) == 0);
             regs.F.Z = +(regs.TR == 0);
             regs.F.S = ((regs.TR) & 0x80) >> 7;
             regs.B = regs.TR;
+            printf("\nB: %02x", regs.B);
             // Following is auto-generated code for instruction finish
             pins.Addr = regs.PC;
             regs.PC = (regs.PC + 1) & 0xFFFF;
@@ -159,7 +160,7 @@ void Z80_ins_00_05_DEC_r(regs& regs, pins& pins)
             regs.Q = 1;
             regs.TR = ((regs.B) - 1) & 0xFF;
             regs.F.N = 1;
-            regs.F.V = +(regs.TR == 0x7F);
+            regs.F.PV = +(regs.TR == 0x7F);
             regs.F.X = ((regs.TR) & 8) >> 3;
             regs.F.Y = ((regs.TR) & 0x20) >> 5;
             regs.F.H = +((regs.TR & 0x0F) == 0x0F);
@@ -264,7 +265,7 @@ void Z80_ins_00_09_ADD_hl_rr(regs& regs, pins& pins)
             // SUB was HL
             regs.Q = 1;
             regs.WZ = (((regs.H << 8) | regs.L) + 1) & 0xFFFF;
-            regs.t[0] = regs.F.P; regs.t[1] = regs.F.Z; regs.t[2] = regs.F.S;
+            regs.t[0] = regs.F.PV; regs.t[1] = regs.F.Z; regs.t[2] = regs.F.S;
             break; }
         case 2: {
             break; }
@@ -276,7 +277,7 @@ void Z80_ins_00_09_ADD_hl_rr(regs& regs, pins& pins)
             z = x + y + 0;
             regs.F.C = +(z > 0xFF);
             regs.F.N = 0;
-            regs.F.V = ((((x ^ y) ^ 0xFF) & (x ^ z)) & 0x80) >> 7;
+            regs.F.PV = ((((x ^ y) ^ 0xFF) & (x ^ z)) & 0x80) >> 7;
             regs.F.X = ((z) & 8) >> 3;
             regs.F.H = ((x ^ y ^ z) & 0x10) >> 4;
             regs.F.Y = ((z) & 0x20) >> 5;
@@ -294,14 +295,14 @@ void Z80_ins_00_09_ADD_hl_rr(regs& regs, pins& pins)
             z = x + y + regs.F.C;
             regs.F.C = +(z > 0xFF);
             regs.F.N = 0;
-            regs.F.V = ((((x ^ y) ^ 0xFF) & (x ^ z)) & 0x80) >> 7;
+            regs.F.PV = ((((x ^ y) ^ 0xFF) & (x ^ z)) & 0x80) >> 7;
             regs.F.X = ((z) & 8) >> 3;
             regs.F.H = ((x ^ y ^ z) & 0x10) >> 4;
             regs.F.Y = ((z) & 0x20) >> 5;
             regs.F.Z = +((z & 0xFF) == 0);
             regs.F.S = ((z) & 0x80) >> 7;
             regs.t[5] = z & 0xFF;
-            regs.F.P = regs.t[0]; regs.F.Z = regs.t[1]; regs.F.S = regs.t[2];
+            regs.F.PV = regs.t[0]; regs.F.Z = regs.t[1]; regs.F.S = regs.t[2];
             regs.H = regs.t[5];
             regs.L = regs.t[4];
             // Following is auto-generated code for instruction finish
@@ -385,7 +386,7 @@ void Z80_ins_00_0C_INC_r(regs& regs, pins& pins)
             regs.Q = 1;
             regs.TR = ((regs.C) + 1) & 0xFF;
             regs.F.N = 0;
-            regs.F.V = +(regs.TR == 0x80);
+            regs.F.PV = +(regs.TR == 0x80);
             regs.F.X = ((regs.TR) & 8) >> 3;
             regs.F.Y = ((regs.TR) & 0x20) >> 5;
             regs.F.H = +((regs.TR & 0x0F) == 0);
@@ -413,7 +414,7 @@ void Z80_ins_00_0D_DEC_r(regs& regs, pins& pins)
             regs.Q = 1;
             regs.TR = ((regs.C) - 1) & 0xFF;
             regs.F.N = 1;
-            regs.F.V = +(regs.TR == 0x7F);
+            regs.F.PV = +(regs.TR == 0x7F);
             regs.F.X = ((regs.TR) & 8) >> 3;
             regs.F.Y = ((regs.TR) & 0x20) >> 5;
             regs.F.H = +((regs.TR & 0x0F) == 0x0F);
@@ -644,7 +645,7 @@ void Z80_ins_00_14_INC_r(regs& regs, pins& pins)
             regs.Q = 1;
             regs.TR = ((regs.D) + 1) & 0xFF;
             regs.F.N = 0;
-            regs.F.V = +(regs.TR == 0x80);
+            regs.F.PV = +(regs.TR == 0x80);
             regs.F.X = ((regs.TR) & 8) >> 3;
             regs.F.Y = ((regs.TR) & 0x20) >> 5;
             regs.F.H = +((regs.TR & 0x0F) == 0);
@@ -672,7 +673,7 @@ void Z80_ins_00_15_DEC_r(regs& regs, pins& pins)
             regs.Q = 1;
             regs.TR = ((regs.D) - 1) & 0xFF;
             regs.F.N = 1;
-            regs.F.V = +(regs.TR == 0x7F);
+            regs.F.PV = +(regs.TR == 0x7F);
             regs.F.X = ((regs.TR) & 8) >> 3;
             regs.F.Y = ((regs.TR) & 0x20) >> 5;
             regs.F.H = +((regs.TR & 0x0F) == 0x0F);
@@ -800,7 +801,7 @@ void Z80_ins_00_19_ADD_hl_rr(regs& regs, pins& pins)
             // SUB was HL
             regs.Q = 1;
             regs.WZ = (((regs.H << 8) | regs.L) + 1) & 0xFFFF;
-            regs.t[0] = regs.F.P; regs.t[1] = regs.F.Z; regs.t[2] = regs.F.S;
+            regs.t[0] = regs.F.PV; regs.t[1] = regs.F.Z; regs.t[2] = regs.F.S;
             break; }
         case 2: {
             break; }
@@ -812,7 +813,7 @@ void Z80_ins_00_19_ADD_hl_rr(regs& regs, pins& pins)
             z = x + y + 0;
             regs.F.C = +(z > 0xFF);
             regs.F.N = 0;
-            regs.F.V = ((((x ^ y) ^ 0xFF) & (x ^ z)) & 0x80) >> 7;
+            regs.F.PV = ((((x ^ y) ^ 0xFF) & (x ^ z)) & 0x80) >> 7;
             regs.F.X = ((z) & 8) >> 3;
             regs.F.H = ((x ^ y ^ z) & 0x10) >> 4;
             regs.F.Y = ((z) & 0x20) >> 5;
@@ -830,14 +831,14 @@ void Z80_ins_00_19_ADD_hl_rr(regs& regs, pins& pins)
             z = x + y + regs.F.C;
             regs.F.C = +(z > 0xFF);
             regs.F.N = 0;
-            regs.F.V = ((((x ^ y) ^ 0xFF) & (x ^ z)) & 0x80) >> 7;
+            regs.F.PV = ((((x ^ y) ^ 0xFF) & (x ^ z)) & 0x80) >> 7;
             regs.F.X = ((z) & 8) >> 3;
             regs.F.H = ((x ^ y ^ z) & 0x10) >> 4;
             regs.F.Y = ((z) & 0x20) >> 5;
             regs.F.Z = +((z & 0xFF) == 0);
             regs.F.S = ((z) & 0x80) >> 7;
             regs.t[5] = z & 0xFF;
-            regs.F.P = regs.t[0]; regs.F.Z = regs.t[1]; regs.F.S = regs.t[2];
+            regs.F.PV = regs.t[0]; regs.F.Z = regs.t[1]; regs.F.S = regs.t[2];
             regs.H = regs.t[5];
             regs.L = regs.t[4];
             // Following is auto-generated code for instruction finish
@@ -921,7 +922,7 @@ void Z80_ins_00_1C_INC_r(regs& regs, pins& pins)
             regs.Q = 1;
             regs.TR = ((regs.E) + 1) & 0xFF;
             regs.F.N = 0;
-            regs.F.V = +(regs.TR == 0x80);
+            regs.F.PV = +(regs.TR == 0x80);
             regs.F.X = ((regs.TR) & 8) >> 3;
             regs.F.Y = ((regs.TR) & 0x20) >> 5;
             regs.F.H = +((regs.TR & 0x0F) == 0);
@@ -949,7 +950,7 @@ void Z80_ins_00_1D_DEC_r(regs& regs, pins& pins)
             regs.Q = 1;
             regs.TR = ((regs.E) - 1) & 0xFF;
             regs.F.N = 1;
-            regs.F.V = +(regs.TR == 0x7F);
+            regs.F.PV = +(regs.TR == 0x7F);
             regs.F.X = ((regs.TR) & 8) >> 3;
             regs.F.Y = ((regs.TR) & 0x20) >> 5;
             regs.F.H = +((regs.TR & 0x0F) == 0x0F);
@@ -1209,7 +1210,7 @@ void Z80_ins_00_24_INC_r(regs& regs, pins& pins)
             regs.Q = 1;
             regs.TR = ((regs.H) + 1) & 0xFF;
             regs.F.N = 0;
-            regs.F.V = +(regs.TR == 0x80);
+            regs.F.PV = +(regs.TR == 0x80);
             regs.F.X = ((regs.TR) & 8) >> 3;
             regs.F.Y = ((regs.TR) & 0x20) >> 5;
             regs.F.H = +((regs.TR & 0x0F) == 0);
@@ -1237,7 +1238,7 @@ void Z80_ins_00_25_DEC_r(regs& regs, pins& pins)
             regs.Q = 1;
             regs.TR = ((regs.H) - 1) & 0xFF;
             regs.F.N = 1;
-            regs.F.V = +(regs.TR == 0x7F);
+            regs.F.PV = +(regs.TR == 0x7F);
             regs.F.X = ((regs.TR) & 8) >> 3;
             regs.F.Y = ((regs.TR) & 0x20) >> 5;
             regs.F.H = +((regs.TR & 0x0F) == 0x0F);
@@ -1297,7 +1298,7 @@ void Z80_ins_00_27_DAA(regs& regs, pins& pins)
             u32 a = regs.A;
             if (regs.F.C || (regs.A > 0x99)) { regs.A = (regs.A + (regs.F.N ? -0x60: 0x60)) & 0xFF; regs.F.C = 1; }
             if (regs.F.H || ((regs.A & 0x0F) > 0x09)) { regs.A = (regs.A + (regs.F.N ? -6 : 6)) & 0xFF; }
-            regs.F.P = parity(regs.A);
+            regs.F.PV = parity(regs.A);
             regs.F.X = ((regs.A) & 8) >> 3;
             regs.F.Y = ((regs.A) & 0x20) >> 5;
             regs.F.H = ((a ^ regs.A) & 0x10) >> 4;
@@ -1368,7 +1369,7 @@ void Z80_ins_00_29_ADD_hl_rr(regs& regs, pins& pins)
             // SUB was HL
             regs.Q = 1;
             regs.WZ = (((regs.H << 8) | regs.L) + 1) & 0xFFFF;
-            regs.t[0] = regs.F.P; regs.t[1] = regs.F.Z; regs.t[2] = regs.F.S;
+            regs.t[0] = regs.F.PV; regs.t[1] = regs.F.Z; regs.t[2] = regs.F.S;
             break; }
         case 2: {
             break; }
@@ -1380,7 +1381,7 @@ void Z80_ins_00_29_ADD_hl_rr(regs& regs, pins& pins)
             z = x + y + 0;
             regs.F.C = +(z > 0xFF);
             regs.F.N = 0;
-            regs.F.V = ((((x ^ y) ^ 0xFF) & (x ^ z)) & 0x80) >> 7;
+            regs.F.PV = ((((x ^ y) ^ 0xFF) & (x ^ z)) & 0x80) >> 7;
             regs.F.X = ((z) & 8) >> 3;
             regs.F.H = ((x ^ y ^ z) & 0x10) >> 4;
             regs.F.Y = ((z) & 0x20) >> 5;
@@ -1398,14 +1399,14 @@ void Z80_ins_00_29_ADD_hl_rr(regs& regs, pins& pins)
             z = x + y + regs.F.C;
             regs.F.C = +(z > 0xFF);
             regs.F.N = 0;
-            regs.F.V = ((((x ^ y) ^ 0xFF) & (x ^ z)) & 0x80) >> 7;
+            regs.F.PV = ((((x ^ y) ^ 0xFF) & (x ^ z)) & 0x80) >> 7;
             regs.F.X = ((z) & 8) >> 3;
             regs.F.H = ((x ^ y ^ z) & 0x10) >> 4;
             regs.F.Y = ((z) & 0x20) >> 5;
             regs.F.Z = +((z & 0xFF) == 0);
             regs.F.S = ((z) & 0x80) >> 7;
             regs.t[5] = z & 0xFF;
-            regs.F.P = regs.t[0]; regs.F.Z = regs.t[1]; regs.F.S = regs.t[2];
+            regs.F.PV = regs.t[0]; regs.F.Z = regs.t[1]; regs.F.S = regs.t[2];
             regs.H = regs.t[5];
             regs.L = regs.t[4];
             // Following is auto-generated code for instruction finish
@@ -1524,7 +1525,7 @@ void Z80_ins_00_2C_INC_r(regs& regs, pins& pins)
             regs.Q = 1;
             regs.TR = ((regs.L) + 1) & 0xFF;
             regs.F.N = 0;
-            regs.F.V = +(regs.TR == 0x80);
+            regs.F.PV = +(regs.TR == 0x80);
             regs.F.X = ((regs.TR) & 8) >> 3;
             regs.F.Y = ((regs.TR) & 0x20) >> 5;
             regs.F.H = +((regs.TR & 0x0F) == 0);
@@ -1552,7 +1553,7 @@ void Z80_ins_00_2D_DEC_r(regs& regs, pins& pins)
             regs.Q = 1;
             regs.TR = ((regs.L) - 1) & 0xFF;
             regs.F.N = 1;
-            regs.F.V = +(regs.TR == 0x7F);
+            regs.F.PV = +(regs.TR == 0x7F);
             regs.F.X = ((regs.TR) & 8) >> 3;
             regs.F.Y = ((regs.TR) & 0x20) >> 5;
             regs.F.H = +((regs.TR & 0x0F) == 0x0F);
@@ -1809,7 +1810,7 @@ void Z80_ins_00_34_INC_irr(regs& regs, pins& pins)
         case 4: {
             regs.TR = ((regs.TR) + 1) & 0xFF;
             regs.F.N = 0;
-            regs.F.V = +(regs.TR == 0x80);
+            regs.F.PV = +(regs.TR == 0x80);
             regs.F.X = ((regs.TR) & 8) >> 3;
             regs.F.Y = ((regs.TR) & 0x20) >> 5;
             regs.F.H = +((regs.TR & 0x0F) == 0);
@@ -1859,7 +1860,7 @@ void Z80_ins_00_35_DEC_irr(regs& regs, pins& pins)
         case 4: {
             regs.TR = ((regs.TR) - 1) & 0xFF;
             regs.F.N = 1;
-            regs.F.V = +(regs.TR == 0x7F);
+            regs.F.PV = +(regs.TR == 0x7F);
             regs.F.X = ((regs.TR) & 8) >> 3;
             regs.F.Y = ((regs.TR) & 0x20) >> 5;
             regs.F.H = +((regs.TR & 0x0F) == 0x0F);
@@ -2006,7 +2007,7 @@ void Z80_ins_00_39_ADD_hl_rr(regs& regs, pins& pins)
             // SUB was HL
             regs.Q = 1;
             regs.WZ = (((regs.H << 8) | regs.L) + 1) & 0xFFFF;
-            regs.t[0] = regs.F.P; regs.t[1] = regs.F.Z; regs.t[2] = regs.F.S;
+            regs.t[0] = regs.F.PV; regs.t[1] = regs.F.Z; regs.t[2] = regs.F.S;
             break; }
         case 2: {
             break; }
@@ -2018,7 +2019,7 @@ void Z80_ins_00_39_ADD_hl_rr(regs& regs, pins& pins)
             z = x + y + 0;
             regs.F.C = +(z > 0xFF);
             regs.F.N = 0;
-            regs.F.V = ((((x ^ y) ^ 0xFF) & (x ^ z)) & 0x80) >> 7;
+            regs.F.PV = ((((x ^ y) ^ 0xFF) & (x ^ z)) & 0x80) >> 7;
             regs.F.X = ((z) & 8) >> 3;
             regs.F.H = ((x ^ y ^ z) & 0x10) >> 4;
             regs.F.Y = ((z) & 0x20) >> 5;
@@ -2036,14 +2037,14 @@ void Z80_ins_00_39_ADD_hl_rr(regs& regs, pins& pins)
             z = x + y + regs.F.C;
             regs.F.C = +(z > 0xFF);
             regs.F.N = 0;
-            regs.F.V = ((((x ^ y) ^ 0xFF) & (x ^ z)) & 0x80) >> 7;
+            regs.F.PV = ((((x ^ y) ^ 0xFF) & (x ^ z)) & 0x80) >> 7;
             regs.F.X = ((z) & 8) >> 3;
             regs.F.H = ((x ^ y ^ z) & 0x10) >> 4;
             regs.F.Y = ((z) & 0x20) >> 5;
             regs.F.Z = +((z & 0xFF) == 0);
             regs.F.S = ((z) & 0x80) >> 7;
             regs.t[5] = z & 0xFF;
-            regs.F.P = regs.t[0]; regs.F.Z = regs.t[1]; regs.F.S = regs.t[2];
+            regs.F.PV = regs.t[0]; regs.F.Z = regs.t[1]; regs.F.S = regs.t[2];
             regs.H = regs.t[5];
             regs.L = regs.t[4];
             // Following is auto-generated code for instruction finish
@@ -2148,7 +2149,7 @@ void Z80_ins_00_3C_INC_r(regs& regs, pins& pins)
             regs.Q = 1;
             regs.TR = ((regs.A) + 1) & 0xFF;
             regs.F.N = 0;
-            regs.F.V = +(regs.TR == 0x80);
+            regs.F.PV = +(regs.TR == 0x80);
             regs.F.X = ((regs.TR) & 8) >> 3;
             regs.F.Y = ((regs.TR) & 0x20) >> 5;
             regs.F.H = +((regs.TR & 0x0F) == 0);
@@ -2176,7 +2177,7 @@ void Z80_ins_00_3D_DEC_r(regs& regs, pins& pins)
             regs.Q = 1;
             regs.TR = ((regs.A) - 1) & 0xFF;
             regs.F.N = 1;
-            regs.F.V = +(regs.TR == 0x7F);
+            regs.F.PV = +(regs.TR == 0x7F);
             regs.F.X = ((regs.TR) & 8) >> 3;
             regs.F.Y = ((regs.TR) & 0x20) >> 5;
             regs.F.H = +((regs.TR & 0x0F) == 0x0F);
@@ -3690,7 +3691,7 @@ void Z80_ins_00_80_ADD_a_r(regs& regs, pins& pins)
             u32 z = x + y + 0;
             regs.F.C = +(z > 0xFF);
             regs.F.N = 0;
-            regs.F.V = ((((x ^ y) ^ 0xFF) & (x ^ z)) & 0x80) >> 7;
+            regs.F.PV = ((((x ^ y) ^ 0xFF) & (x ^ z)) & 0x80) >> 7;
             regs.F.X = ((z) & 8) >> 3;
             regs.F.H = ((x ^ y ^ z) & 0x10) >> 4;
             regs.F.Y = ((z) & 0x20) >> 5;
@@ -3721,7 +3722,7 @@ void Z80_ins_00_81_ADD_a_r(regs& regs, pins& pins)
             u32 z = x + y + 0;
             regs.F.C = +(z > 0xFF);
             regs.F.N = 0;
-            regs.F.V = ((((x ^ y) ^ 0xFF) & (x ^ z)) & 0x80) >> 7;
+            regs.F.PV = ((((x ^ y) ^ 0xFF) & (x ^ z)) & 0x80) >> 7;
             regs.F.X = ((z) & 8) >> 3;
             regs.F.H = ((x ^ y ^ z) & 0x10) >> 4;
             regs.F.Y = ((z) & 0x20) >> 5;
@@ -3752,7 +3753,7 @@ void Z80_ins_00_82_ADD_a_r(regs& regs, pins& pins)
             u32 z = x + y + 0;
             regs.F.C = +(z > 0xFF);
             regs.F.N = 0;
-            regs.F.V = ((((x ^ y) ^ 0xFF) & (x ^ z)) & 0x80) >> 7;
+            regs.F.PV = ((((x ^ y) ^ 0xFF) & (x ^ z)) & 0x80) >> 7;
             regs.F.X = ((z) & 8) >> 3;
             regs.F.H = ((x ^ y ^ z) & 0x10) >> 4;
             regs.F.Y = ((z) & 0x20) >> 5;
@@ -3783,7 +3784,7 @@ void Z80_ins_00_83_ADD_a_r(regs& regs, pins& pins)
             u32 z = x + y + 0;
             regs.F.C = +(z > 0xFF);
             regs.F.N = 0;
-            regs.F.V = ((((x ^ y) ^ 0xFF) & (x ^ z)) & 0x80) >> 7;
+            regs.F.PV = ((((x ^ y) ^ 0xFF) & (x ^ z)) & 0x80) >> 7;
             regs.F.X = ((z) & 8) >> 3;
             regs.F.H = ((x ^ y ^ z) & 0x10) >> 4;
             regs.F.Y = ((z) & 0x20) >> 5;
@@ -3814,7 +3815,7 @@ void Z80_ins_00_84_ADD_a_r(regs& regs, pins& pins)
             u32 z = x + y + 0;
             regs.F.C = +(z > 0xFF);
             regs.F.N = 0;
-            regs.F.V = ((((x ^ y) ^ 0xFF) & (x ^ z)) & 0x80) >> 7;
+            regs.F.PV = ((((x ^ y) ^ 0xFF) & (x ^ z)) & 0x80) >> 7;
             regs.F.X = ((z) & 8) >> 3;
             regs.F.H = ((x ^ y ^ z) & 0x10) >> 4;
             regs.F.Y = ((z) & 0x20) >> 5;
@@ -3845,7 +3846,7 @@ void Z80_ins_00_85_ADD_a_r(regs& regs, pins& pins)
             u32 z = x + y + 0;
             regs.F.C = +(z > 0xFF);
             regs.F.N = 0;
-            regs.F.V = ((((x ^ y) ^ 0xFF) & (x ^ z)) & 0x80) >> 7;
+            regs.F.PV = ((((x ^ y) ^ 0xFF) & (x ^ z)) & 0x80) >> 7;
             regs.F.X = ((z) & 8) >> 3;
             regs.F.H = ((x ^ y ^ z) & 0x10) >> 4;
             regs.F.Y = ((z) & 0x20) >> 5;
@@ -3885,7 +3886,7 @@ void Z80_ins_00_86_ADD_a_irr(regs& regs, pins& pins)
             u32 z = x + y + 0;
             regs.F.C = +(z > 0xFF);
             regs.F.N = 0;
-            regs.F.V = ((((x ^ y) ^ 0xFF) & (x ^ z)) & 0x80) >> 7;
+            regs.F.PV = ((((x ^ y) ^ 0xFF) & (x ^ z)) & 0x80) >> 7;
             regs.F.X = ((z) & 8) >> 3;
             regs.F.H = ((x ^ y ^ z) & 0x10) >> 4;
             regs.F.Y = ((z) & 0x20) >> 5;
@@ -3918,7 +3919,7 @@ void Z80_ins_00_87_ADD_a_r(regs& regs, pins& pins)
             u32 z = x + y + 0;
             regs.F.C = +(z > 0xFF);
             regs.F.N = 0;
-            regs.F.V = ((((x ^ y) ^ 0xFF) & (x ^ z)) & 0x80) >> 7;
+            regs.F.PV = ((((x ^ y) ^ 0xFF) & (x ^ z)) & 0x80) >> 7;
             regs.F.X = ((z) & 8) >> 3;
             regs.F.H = ((x ^ y ^ z) & 0x10) >> 4;
             regs.F.Y = ((z) & 0x20) >> 5;
@@ -3949,7 +3950,7 @@ void Z80_ins_00_88_ADC_a_r(regs& regs, pins& pins)
             u32 z = x + y + regs.F.C;
             regs.F.C = +(z > 0xFF);
             regs.F.N = 0;
-            regs.F.V = ((((x ^ y) ^ 0xFF) & (x ^ z)) & 0x80) >> 7;
+            regs.F.PV = ((((x ^ y) ^ 0xFF) & (x ^ z)) & 0x80) >> 7;
             regs.F.X = ((z) & 8) >> 3;
             regs.F.H = ((x ^ y ^ z) & 0x10) >> 4;
             regs.F.Y = ((z) & 0x20) >> 5;
@@ -3980,7 +3981,7 @@ void Z80_ins_00_89_ADC_a_r(regs& regs, pins& pins)
             u32 z = x + y + regs.F.C;
             regs.F.C = +(z > 0xFF);
             regs.F.N = 0;
-            regs.F.V = ((((x ^ y) ^ 0xFF) & (x ^ z)) & 0x80) >> 7;
+            regs.F.PV = ((((x ^ y) ^ 0xFF) & (x ^ z)) & 0x80) >> 7;
             regs.F.X = ((z) & 8) >> 3;
             regs.F.H = ((x ^ y ^ z) & 0x10) >> 4;
             regs.F.Y = ((z) & 0x20) >> 5;
@@ -4011,7 +4012,7 @@ void Z80_ins_00_8A_ADC_a_r(regs& regs, pins& pins)
             u32 z = x + y + regs.F.C;
             regs.F.C = +(z > 0xFF);
             regs.F.N = 0;
-            regs.F.V = ((((x ^ y) ^ 0xFF) & (x ^ z)) & 0x80) >> 7;
+            regs.F.PV = ((((x ^ y) ^ 0xFF) & (x ^ z)) & 0x80) >> 7;
             regs.F.X = ((z) & 8) >> 3;
             regs.F.H = ((x ^ y ^ z) & 0x10) >> 4;
             regs.F.Y = ((z) & 0x20) >> 5;
@@ -4042,7 +4043,7 @@ void Z80_ins_00_8B_ADC_a_r(regs& regs, pins& pins)
             u32 z = x + y + regs.F.C;
             regs.F.C = +(z > 0xFF);
             regs.F.N = 0;
-            regs.F.V = ((((x ^ y) ^ 0xFF) & (x ^ z)) & 0x80) >> 7;
+            regs.F.PV = ((((x ^ y) ^ 0xFF) & (x ^ z)) & 0x80) >> 7;
             regs.F.X = ((z) & 8) >> 3;
             regs.F.H = ((x ^ y ^ z) & 0x10) >> 4;
             regs.F.Y = ((z) & 0x20) >> 5;
@@ -4073,7 +4074,7 @@ void Z80_ins_00_8C_ADC_a_r(regs& regs, pins& pins)
             u32 z = x + y + regs.F.C;
             regs.F.C = +(z > 0xFF);
             regs.F.N = 0;
-            regs.F.V = ((((x ^ y) ^ 0xFF) & (x ^ z)) & 0x80) >> 7;
+            regs.F.PV = ((((x ^ y) ^ 0xFF) & (x ^ z)) & 0x80) >> 7;
             regs.F.X = ((z) & 8) >> 3;
             regs.F.H = ((x ^ y ^ z) & 0x10) >> 4;
             regs.F.Y = ((z) & 0x20) >> 5;
@@ -4104,7 +4105,7 @@ void Z80_ins_00_8D_ADC_a_r(regs& regs, pins& pins)
             u32 z = x + y + regs.F.C;
             regs.F.C = +(z > 0xFF);
             regs.F.N = 0;
-            regs.F.V = ((((x ^ y) ^ 0xFF) & (x ^ z)) & 0x80) >> 7;
+            regs.F.PV = ((((x ^ y) ^ 0xFF) & (x ^ z)) & 0x80) >> 7;
             regs.F.X = ((z) & 8) >> 3;
             regs.F.H = ((x ^ y ^ z) & 0x10) >> 4;
             regs.F.Y = ((z) & 0x20) >> 5;
@@ -4144,7 +4145,7 @@ void Z80_ins_00_8E_ADC_a_irr(regs& regs, pins& pins)
             u32 z = x + y + regs.F.C;
             regs.F.C = +(z > 0xFF);
             regs.F.N = 0;
-            regs.F.V = ((((x ^ y) ^ 0xFF) & (x ^ z)) & 0x80) >> 7;
+            regs.F.PV = ((((x ^ y) ^ 0xFF) & (x ^ z)) & 0x80) >> 7;
             regs.F.X = ((z) & 8) >> 3;
             regs.F.H = ((x ^ y ^ z) & 0x10) >> 4;
             regs.F.Y = ((z) & 0x20) >> 5;
@@ -4177,7 +4178,7 @@ void Z80_ins_00_8F_ADC_a_r(regs& regs, pins& pins)
             u32 z = x + y + regs.F.C;
             regs.F.C = +(z > 0xFF);
             regs.F.N = 0;
-            regs.F.V = ((((x ^ y) ^ 0xFF) & (x ^ z)) & 0x80) >> 7;
+            regs.F.PV = ((((x ^ y) ^ 0xFF) & (x ^ z)) & 0x80) >> 7;
             regs.F.X = ((z) & 8) >> 3;
             regs.F.H = ((x ^ y ^ z) & 0x10) >> 4;
             regs.F.Y = ((z) & 0x20) >> 5;
@@ -4209,7 +4210,7 @@ void Z80_ins_00_90_SUB_a_r(regs& regs, pins& pins)
             u32 z = (x - y - c) & 0x1FF;
             regs.F.C = (z & 0x100) >> 8;
             regs.F.N = 1;
-            regs.F.V = (((x ^ y) & (x ^ z)) & 0x80) >> 7;
+            regs.F.PV = (((x ^ y) & (x ^ z)) & 0x80) >> 7;
             regs.F.X = ((z) & 8) >> 3;
             regs.F.Y = ((z) & 0x20) >> 5;
             regs.F.H = ((x ^ y ^ z) & 0x10) >> 4;
@@ -4241,7 +4242,7 @@ void Z80_ins_00_91_SUB_a_r(regs& regs, pins& pins)
             u32 z = (x - y - c) & 0x1FF;
             regs.F.C = (z & 0x100) >> 8;
             regs.F.N = 1;
-            regs.F.V = (((x ^ y) & (x ^ z)) & 0x80) >> 7;
+            regs.F.PV = (((x ^ y) & (x ^ z)) & 0x80) >> 7;
             regs.F.X = ((z) & 8) >> 3;
             regs.F.Y = ((z) & 0x20) >> 5;
             regs.F.H = ((x ^ y ^ z) & 0x10) >> 4;
@@ -4273,7 +4274,7 @@ void Z80_ins_00_92_SUB_a_r(regs& regs, pins& pins)
             u32 z = (x - y - c) & 0x1FF;
             regs.F.C = (z & 0x100) >> 8;
             regs.F.N = 1;
-            regs.F.V = (((x ^ y) & (x ^ z)) & 0x80) >> 7;
+            regs.F.PV = (((x ^ y) & (x ^ z)) & 0x80) >> 7;
             regs.F.X = ((z) & 8) >> 3;
             regs.F.Y = ((z) & 0x20) >> 5;
             regs.F.H = ((x ^ y ^ z) & 0x10) >> 4;
@@ -4305,7 +4306,7 @@ void Z80_ins_00_93_SUB_a_r(regs& regs, pins& pins)
             u32 z = (x - y - c) & 0x1FF;
             regs.F.C = (z & 0x100) >> 8;
             regs.F.N = 1;
-            regs.F.V = (((x ^ y) & (x ^ z)) & 0x80) >> 7;
+            regs.F.PV = (((x ^ y) & (x ^ z)) & 0x80) >> 7;
             regs.F.X = ((z) & 8) >> 3;
             regs.F.Y = ((z) & 0x20) >> 5;
             regs.F.H = ((x ^ y ^ z) & 0x10) >> 4;
@@ -4337,7 +4338,7 @@ void Z80_ins_00_94_SUB_a_r(regs& regs, pins& pins)
             u32 z = (x - y - c) & 0x1FF;
             regs.F.C = (z & 0x100) >> 8;
             regs.F.N = 1;
-            regs.F.V = (((x ^ y) & (x ^ z)) & 0x80) >> 7;
+            regs.F.PV = (((x ^ y) & (x ^ z)) & 0x80) >> 7;
             regs.F.X = ((z) & 8) >> 3;
             regs.F.Y = ((z) & 0x20) >> 5;
             regs.F.H = ((x ^ y ^ z) & 0x10) >> 4;
@@ -4369,7 +4370,7 @@ void Z80_ins_00_95_SUB_a_r(regs& regs, pins& pins)
             u32 z = (x - y - c) & 0x1FF;
             regs.F.C = (z & 0x100) >> 8;
             regs.F.N = 1;
-            regs.F.V = (((x ^ y) & (x ^ z)) & 0x80) >> 7;
+            regs.F.PV = (((x ^ y) & (x ^ z)) & 0x80) >> 7;
             regs.F.X = ((z) & 8) >> 3;
             regs.F.Y = ((z) & 0x20) >> 5;
             regs.F.H = ((x ^ y ^ z) & 0x10) >> 4;
@@ -4410,7 +4411,7 @@ void Z80_ins_00_96_SUB_a_irr(regs& regs, pins& pins)
             u32 z = (x - y - c) & 0x1FF;
             regs.F.C = (z & 0x100) >> 8;
             regs.F.N = 1;
-            regs.F.V = (((x ^ y) & (x ^ z)) & 0x80) >> 7;
+            regs.F.PV = (((x ^ y) & (x ^ z)) & 0x80) >> 7;
             regs.F.X = ((z) & 8) >> 3;
             regs.F.Y = ((z) & 0x20) >> 5;
             regs.F.H = ((x ^ y ^ z) & 0x10) >> 4;
@@ -4444,7 +4445,7 @@ void Z80_ins_00_97_SUB_a_r(regs& regs, pins& pins)
             u32 z = (x - y - c) & 0x1FF;
             regs.F.C = (z & 0x100) >> 8;
             regs.F.N = 1;
-            regs.F.V = (((x ^ y) & (x ^ z)) & 0x80) >> 7;
+            regs.F.PV = (((x ^ y) & (x ^ z)) & 0x80) >> 7;
             regs.F.X = ((z) & 8) >> 3;
             regs.F.Y = ((z) & 0x20) >> 5;
             regs.F.H = ((x ^ y ^ z) & 0x10) >> 4;
@@ -4476,7 +4477,7 @@ void Z80_ins_00_98_SBC_a_r(regs& regs, pins& pins)
             u32 z = (x - y - c) & 0x1FF;
             regs.F.C = (z & 0x100) >> 8;
             regs.F.N = 1;
-            regs.F.V = (((x ^ y) & (x ^ z)) & 0x80) >> 7;
+            regs.F.PV = (((x ^ y) & (x ^ z)) & 0x80) >> 7;
             regs.F.X = ((z) & 8) >> 3;
             regs.F.Y = ((z) & 0x20) >> 5;
             regs.F.H = ((x ^ y ^ z) & 0x10) >> 4;
@@ -4508,7 +4509,7 @@ void Z80_ins_00_99_SBC_a_r(regs& regs, pins& pins)
             u32 z = (x - y - c) & 0x1FF;
             regs.F.C = (z & 0x100) >> 8;
             regs.F.N = 1;
-            regs.F.V = (((x ^ y) & (x ^ z)) & 0x80) >> 7;
+            regs.F.PV = (((x ^ y) & (x ^ z)) & 0x80) >> 7;
             regs.F.X = ((z) & 8) >> 3;
             regs.F.Y = ((z) & 0x20) >> 5;
             regs.F.H = ((x ^ y ^ z) & 0x10) >> 4;
@@ -4540,7 +4541,7 @@ void Z80_ins_00_9A_SBC_a_r(regs& regs, pins& pins)
             u32 z = (x - y - c) & 0x1FF;
             regs.F.C = (z & 0x100) >> 8;
             regs.F.N = 1;
-            regs.F.V = (((x ^ y) & (x ^ z)) & 0x80) >> 7;
+            regs.F.PV = (((x ^ y) & (x ^ z)) & 0x80) >> 7;
             regs.F.X = ((z) & 8) >> 3;
             regs.F.Y = ((z) & 0x20) >> 5;
             regs.F.H = ((x ^ y ^ z) & 0x10) >> 4;
@@ -4572,7 +4573,7 @@ void Z80_ins_00_9B_SBC_a_r(regs& regs, pins& pins)
             u32 z = (x - y - c) & 0x1FF;
             regs.F.C = (z & 0x100) >> 8;
             regs.F.N = 1;
-            regs.F.V = (((x ^ y) & (x ^ z)) & 0x80) >> 7;
+            regs.F.PV = (((x ^ y) & (x ^ z)) & 0x80) >> 7;
             regs.F.X = ((z) & 8) >> 3;
             regs.F.Y = ((z) & 0x20) >> 5;
             regs.F.H = ((x ^ y ^ z) & 0x10) >> 4;
@@ -4604,7 +4605,7 @@ void Z80_ins_00_9C_SBC_a_r(regs& regs, pins& pins)
             u32 z = (x - y - c) & 0x1FF;
             regs.F.C = (z & 0x100) >> 8;
             regs.F.N = 1;
-            regs.F.V = (((x ^ y) & (x ^ z)) & 0x80) >> 7;
+            regs.F.PV = (((x ^ y) & (x ^ z)) & 0x80) >> 7;
             regs.F.X = ((z) & 8) >> 3;
             regs.F.Y = ((z) & 0x20) >> 5;
             regs.F.H = ((x ^ y ^ z) & 0x10) >> 4;
@@ -4636,7 +4637,7 @@ void Z80_ins_00_9D_SBC_a_r(regs& regs, pins& pins)
             u32 z = (x - y - c) & 0x1FF;
             regs.F.C = (z & 0x100) >> 8;
             regs.F.N = 1;
-            regs.F.V = (((x ^ y) & (x ^ z)) & 0x80) >> 7;
+            regs.F.PV = (((x ^ y) & (x ^ z)) & 0x80) >> 7;
             regs.F.X = ((z) & 8) >> 3;
             regs.F.Y = ((z) & 0x20) >> 5;
             regs.F.H = ((x ^ y ^ z) & 0x10) >> 4;
@@ -4677,7 +4678,7 @@ void Z80_ins_00_9E_SBC_a_irr(regs& regs, pins& pins)
             u32 z = (x - y - c) & 0x1FF;
             regs.F.C = (z & 0x100) >> 8;
             regs.F.N = 1;
-            regs.F.V = (((x ^ y) & (x ^ z)) & 0x80) >> 7;
+            regs.F.PV = (((x ^ y) & (x ^ z)) & 0x80) >> 7;
             regs.F.X = ((z) & 8) >> 3;
             regs.F.Y = ((z) & 0x20) >> 5;
             regs.F.H = ((x ^ y ^ z) & 0x10) >> 4;
@@ -4711,7 +4712,7 @@ void Z80_ins_00_9F_SBC_a_r(regs& regs, pins& pins)
             u32 z = (x - y - c) & 0x1FF;
             regs.F.C = (z & 0x100) >> 8;
             regs.F.N = 1;
-            regs.F.V = (((x ^ y) & (x ^ z)) & 0x80) >> 7;
+            regs.F.PV = (((x ^ y) & (x ^ z)) & 0x80) >> 7;
             regs.F.X = ((z) & 8) >> 3;
             regs.F.Y = ((z) & 0x20) >> 5;
             regs.F.H = ((x ^ y ^ z) & 0x10) >> 4;
@@ -4739,7 +4740,7 @@ void Z80_ins_00_A0_AND_a_r(regs& regs, pins& pins)
             regs.Q = 1;
             u32 z = (regs.A) & (regs.B);
             regs.F.C = regs.F.N = 0;
-            regs.F.V = parity(z);
+            regs.F.PV = parity(z);
             regs.F.X = ((z) & 8) >> 3;
             regs.F.H = 1;
             regs.F.Y = ((z) & 0x20) >> 5;
@@ -4767,7 +4768,7 @@ void Z80_ins_00_A1_AND_a_r(regs& regs, pins& pins)
             regs.Q = 1;
             u32 z = (regs.A) & (regs.C);
             regs.F.C = regs.F.N = 0;
-            regs.F.V = parity(z);
+            regs.F.PV = parity(z);
             regs.F.X = ((z) & 8) >> 3;
             regs.F.H = 1;
             regs.F.Y = ((z) & 0x20) >> 5;
@@ -4795,7 +4796,7 @@ void Z80_ins_00_A2_AND_a_r(regs& regs, pins& pins)
             regs.Q = 1;
             u32 z = (regs.A) & (regs.D);
             regs.F.C = regs.F.N = 0;
-            regs.F.V = parity(z);
+            regs.F.PV = parity(z);
             regs.F.X = ((z) & 8) >> 3;
             regs.F.H = 1;
             regs.F.Y = ((z) & 0x20) >> 5;
@@ -4823,7 +4824,7 @@ void Z80_ins_00_A3_AND_a_r(regs& regs, pins& pins)
             regs.Q = 1;
             u32 z = (regs.A) & (regs.E);
             regs.F.C = regs.F.N = 0;
-            regs.F.V = parity(z);
+            regs.F.PV = parity(z);
             regs.F.X = ((z) & 8) >> 3;
             regs.F.H = 1;
             regs.F.Y = ((z) & 0x20) >> 5;
@@ -4851,7 +4852,7 @@ void Z80_ins_00_A4_AND_a_r(regs& regs, pins& pins)
             regs.Q = 1;
             u32 z = (regs.A) & (regs.H);
             regs.F.C = regs.F.N = 0;
-            regs.F.V = parity(z);
+            regs.F.PV = parity(z);
             regs.F.X = ((z) & 8) >> 3;
             regs.F.H = 1;
             regs.F.Y = ((z) & 0x20) >> 5;
@@ -4879,7 +4880,7 @@ void Z80_ins_00_A5_AND_a_r(regs& regs, pins& pins)
             regs.Q = 1;
             u32 z = (regs.A) & (regs.L);
             regs.F.C = regs.F.N = 0;
-            regs.F.V = parity(z);
+            regs.F.PV = parity(z);
             regs.F.X = ((z) & 8) >> 3;
             regs.F.H = 1;
             regs.F.Y = ((z) & 0x20) >> 5;
@@ -4916,7 +4917,7 @@ void Z80_ins_00_A6_AND_a_irr(regs& regs, pins& pins)
             pins.RD = 0; pins.MRQ = 0;
             u32 z = (regs.A) & (regs.TR);
             regs.F.C = regs.F.N = 0;
-            regs.F.V = parity(z);
+            regs.F.PV = parity(z);
             regs.F.X = ((z) & 8) >> 3;
             regs.F.H = 1;
             regs.F.Y = ((z) & 0x20) >> 5;
@@ -4946,7 +4947,7 @@ void Z80_ins_00_A7_AND_a_r(regs& regs, pins& pins)
             regs.Q = 1;
             u32 z = (regs.A) & (regs.A);
             regs.F.C = regs.F.N = 0;
-            regs.F.V = parity(z);
+            regs.F.PV = parity(z);
             regs.F.X = ((z) & 8) >> 3;
             regs.F.H = 1;
             regs.F.Y = ((z) & 0x20) >> 5;
@@ -4976,7 +4977,7 @@ void Z80_ins_00_A8_XOR_a_r(regs& regs, pins& pins)
             regs.F.C = regs.F.N = regs.F.H = 0;
             regs.F.X = ((z) & 8) >> 3;
             regs.F.Y = ((z) & 0x20) >> 5;
-            regs.F.V = parity(z);
+            regs.F.PV = parity(z);
             regs.F.Z = +((z) == 0);
             regs.F.S = ((z) & 0x80) >> 7;
             regs.A = z;
@@ -5003,7 +5004,7 @@ void Z80_ins_00_A9_XOR_a_r(regs& regs, pins& pins)
             regs.F.C = regs.F.N = regs.F.H = 0;
             regs.F.X = ((z) & 8) >> 3;
             regs.F.Y = ((z) & 0x20) >> 5;
-            regs.F.V = parity(z);
+            regs.F.PV = parity(z);
             regs.F.Z = +((z) == 0);
             regs.F.S = ((z) & 0x80) >> 7;
             regs.A = z;
@@ -5030,7 +5031,7 @@ void Z80_ins_00_AA_XOR_a_r(regs& regs, pins& pins)
             regs.F.C = regs.F.N = regs.F.H = 0;
             regs.F.X = ((z) & 8) >> 3;
             regs.F.Y = ((z) & 0x20) >> 5;
-            regs.F.V = parity(z);
+            regs.F.PV = parity(z);
             regs.F.Z = +((z) == 0);
             regs.F.S = ((z) & 0x80) >> 7;
             regs.A = z;
@@ -5057,7 +5058,7 @@ void Z80_ins_00_AB_XOR_a_r(regs& regs, pins& pins)
             regs.F.C = regs.F.N = regs.F.H = 0;
             regs.F.X = ((z) & 8) >> 3;
             regs.F.Y = ((z) & 0x20) >> 5;
-            regs.F.V = parity(z);
+            regs.F.PV = parity(z);
             regs.F.Z = +((z) == 0);
             regs.F.S = ((z) & 0x80) >> 7;
             regs.A = z;
@@ -5084,7 +5085,7 @@ void Z80_ins_00_AC_XOR_a_r(regs& regs, pins& pins)
             regs.F.C = regs.F.N = regs.F.H = 0;
             regs.F.X = ((z) & 8) >> 3;
             regs.F.Y = ((z) & 0x20) >> 5;
-            regs.F.V = parity(z);
+            regs.F.PV = parity(z);
             regs.F.Z = +((z) == 0);
             regs.F.S = ((z) & 0x80) >> 7;
             regs.A = z;
@@ -5111,7 +5112,7 @@ void Z80_ins_00_AD_XOR_a_r(regs& regs, pins& pins)
             regs.F.C = regs.F.N = regs.F.H = 0;
             regs.F.X = ((z) & 8) >> 3;
             regs.F.Y = ((z) & 0x20) >> 5;
-            regs.F.V = parity(z);
+            regs.F.PV = parity(z);
             regs.F.Z = +((z) == 0);
             regs.F.S = ((z) & 0x80) >> 7;
             regs.A = z;
@@ -5147,7 +5148,7 @@ void Z80_ins_00_AE_XOR_a_irr(regs& regs, pins& pins)
             regs.F.C = regs.F.N = regs.F.H = 0;
             regs.F.X = ((z) & 8) >> 3;
             regs.F.Y = ((z) & 0x20) >> 5;
-            regs.F.V = parity(z);
+            regs.F.PV = parity(z);
             regs.F.Z = +((z) == 0);
             regs.F.S = ((z) & 0x80) >> 7;
             regs.A = z;
@@ -5176,7 +5177,7 @@ void Z80_ins_00_AF_XOR_a_r(regs& regs, pins& pins)
             regs.F.C = regs.F.N = regs.F.H = 0;
             regs.F.X = ((z) & 8) >> 3;
             regs.F.Y = ((z) & 0x20) >> 5;
-            regs.F.V = parity(z);
+            regs.F.PV = parity(z);
             regs.F.Z = +((z) == 0);
             regs.F.S = ((z) & 0x80) >> 7;
             regs.A = z;
@@ -5203,7 +5204,7 @@ void Z80_ins_00_B0_OR_a_r(regs& regs, pins& pins)
             regs.F.C = regs.F.N = regs.F.H = 0;
             regs.F.X = ((z) & 8) >> 3;
             regs.F.Y = ((z) & 0x20) >> 5;
-            regs.F.V = parity(z);
+            regs.F.PV = parity(z);
             regs.F.Z = +((z) == 0);
             regs.F.S = ((z) & 0x80) >> 7;
             regs.A = z;
@@ -5230,7 +5231,7 @@ void Z80_ins_00_B1_OR_a_r(regs& regs, pins& pins)
             regs.F.C = regs.F.N = regs.F.H = 0;
             regs.F.X = ((z) & 8) >> 3;
             regs.F.Y = ((z) & 0x20) >> 5;
-            regs.F.V = parity(z);
+            regs.F.PV = parity(z);
             regs.F.Z = +((z) == 0);
             regs.F.S = ((z) & 0x80) >> 7;
             regs.A = z;
@@ -5257,7 +5258,7 @@ void Z80_ins_00_B2_OR_a_r(regs& regs, pins& pins)
             regs.F.C = regs.F.N = regs.F.H = 0;
             regs.F.X = ((z) & 8) >> 3;
             regs.F.Y = ((z) & 0x20) >> 5;
-            regs.F.V = parity(z);
+            regs.F.PV = parity(z);
             regs.F.Z = +((z) == 0);
             regs.F.S = ((z) & 0x80) >> 7;
             regs.A = z;
@@ -5284,7 +5285,7 @@ void Z80_ins_00_B3_OR_a_r(regs& regs, pins& pins)
             regs.F.C = regs.F.N = regs.F.H = 0;
             regs.F.X = ((z) & 8) >> 3;
             regs.F.Y = ((z) & 0x20) >> 5;
-            regs.F.V = parity(z);
+            regs.F.PV = parity(z);
             regs.F.Z = +((z) == 0);
             regs.F.S = ((z) & 0x80) >> 7;
             regs.A = z;
@@ -5311,7 +5312,7 @@ void Z80_ins_00_B4_OR_a_r(regs& regs, pins& pins)
             regs.F.C = regs.F.N = regs.F.H = 0;
             regs.F.X = ((z) & 8) >> 3;
             regs.F.Y = ((z) & 0x20) >> 5;
-            regs.F.V = parity(z);
+            regs.F.PV = parity(z);
             regs.F.Z = +((z) == 0);
             regs.F.S = ((z) & 0x80) >> 7;
             regs.A = z;
@@ -5338,7 +5339,7 @@ void Z80_ins_00_B5_OR_a_r(regs& regs, pins& pins)
             regs.F.C = regs.F.N = regs.F.H = 0;
             regs.F.X = ((z) & 8) >> 3;
             regs.F.Y = ((z) & 0x20) >> 5;
-            regs.F.V = parity(z);
+            regs.F.PV = parity(z);
             regs.F.Z = +((z) == 0);
             regs.F.S = ((z) & 0x80) >> 7;
             regs.A = z;
@@ -5374,7 +5375,7 @@ void Z80_ins_00_B6_OR_a_irr(regs& regs, pins& pins)
             regs.F.C = regs.F.N = regs.F.H = 0;
             regs.F.X = ((z) & 8) >> 3;
             regs.F.Y = ((z) & 0x20) >> 5;
-            regs.F.V = parity(z);
+            regs.F.PV = parity(z);
             regs.F.Z = +((z) == 0);
             regs.F.S = ((z) & 0x80) >> 7;
             regs.A = z;
@@ -5403,7 +5404,7 @@ void Z80_ins_00_B7_OR_a_r(regs& regs, pins& pins)
             regs.F.C = regs.F.N = regs.F.H = 0;
             regs.F.X = ((z) & 8) >> 3;
             regs.F.Y = ((z) & 0x20) >> 5;
-            regs.F.V = parity(z);
+            regs.F.PV = parity(z);
             regs.F.Z = +((z) == 0);
             regs.F.S = ((z) & 0x80) >> 7;
             regs.A = z;
@@ -5431,7 +5432,7 @@ void Z80_ins_00_B8_CP_a_r(regs& regs, pins& pins)
             i32 z = x - y;
             regs.F.C = +(z < 0);
             regs.F.N = 1;
-            regs.F.V = (((x ^ y) & (x ^ z)) & 0x80) >> 7;
+            regs.F.PV = (((x ^ y) & (x ^ z)) & 0x80) >> 7;
             regs.F.X = ((y) & 8) >> 3;
             regs.F.Y = ((y) & 0x20) >> 5;
             regs.F.H = ((x ^ y ^ z) & 0x10) >> 4;
@@ -5461,7 +5462,7 @@ void Z80_ins_00_B9_CP_a_r(regs& regs, pins& pins)
             i32 z = x - y;
             regs.F.C = +(z < 0);
             regs.F.N = 1;
-            regs.F.V = (((x ^ y) & (x ^ z)) & 0x80) >> 7;
+            regs.F.PV = (((x ^ y) & (x ^ z)) & 0x80) >> 7;
             regs.F.X = ((y) & 8) >> 3;
             regs.F.Y = ((y) & 0x20) >> 5;
             regs.F.H = ((x ^ y ^ z) & 0x10) >> 4;
@@ -5491,7 +5492,7 @@ void Z80_ins_00_BA_CP_a_r(regs& regs, pins& pins)
             i32 z = x - y;
             regs.F.C = +(z < 0);
             regs.F.N = 1;
-            regs.F.V = (((x ^ y) & (x ^ z)) & 0x80) >> 7;
+            regs.F.PV = (((x ^ y) & (x ^ z)) & 0x80) >> 7;
             regs.F.X = ((y) & 8) >> 3;
             regs.F.Y = ((y) & 0x20) >> 5;
             regs.F.H = ((x ^ y ^ z) & 0x10) >> 4;
@@ -5521,7 +5522,7 @@ void Z80_ins_00_BB_CP_a_r(regs& regs, pins& pins)
             i32 z = x - y;
             regs.F.C = +(z < 0);
             regs.F.N = 1;
-            regs.F.V = (((x ^ y) & (x ^ z)) & 0x80) >> 7;
+            regs.F.PV = (((x ^ y) & (x ^ z)) & 0x80) >> 7;
             regs.F.X = ((y) & 8) >> 3;
             regs.F.Y = ((y) & 0x20) >> 5;
             regs.F.H = ((x ^ y ^ z) & 0x10) >> 4;
@@ -5551,7 +5552,7 @@ void Z80_ins_00_BC_CP_a_r(regs& regs, pins& pins)
             i32 z = x - y;
             regs.F.C = +(z < 0);
             regs.F.N = 1;
-            regs.F.V = (((x ^ y) & (x ^ z)) & 0x80) >> 7;
+            regs.F.PV = (((x ^ y) & (x ^ z)) & 0x80) >> 7;
             regs.F.X = ((y) & 8) >> 3;
             regs.F.Y = ((y) & 0x20) >> 5;
             regs.F.H = ((x ^ y ^ z) & 0x10) >> 4;
@@ -5581,7 +5582,7 @@ void Z80_ins_00_BD_CP_a_r(regs& regs, pins& pins)
             i32 z = x - y;
             regs.F.C = +(z < 0);
             regs.F.N = 1;
-            regs.F.V = (((x ^ y) & (x ^ z)) & 0x80) >> 7;
+            regs.F.PV = (((x ^ y) & (x ^ z)) & 0x80) >> 7;
             regs.F.X = ((y) & 8) >> 3;
             regs.F.Y = ((y) & 0x20) >> 5;
             regs.F.H = ((x ^ y ^ z) & 0x10) >> 4;
@@ -5620,7 +5621,7 @@ void Z80_ins_00_BE_CP_a_irr(regs& regs, pins& pins)
             i32 z = x - y;
             regs.F.C = +(z < 0);
             regs.F.N = 1;
-            regs.F.V = (((x ^ y) & (x ^ z)) & 0x80) >> 7;
+            regs.F.PV = (((x ^ y) & (x ^ z)) & 0x80) >> 7;
             regs.F.X = ((y) & 8) >> 3;
             regs.F.Y = ((y) & 0x20) >> 5;
             regs.F.H = ((x ^ y ^ z) & 0x10) >> 4;
@@ -5652,7 +5653,7 @@ void Z80_ins_00_BF_CP_a_r(regs& regs, pins& pins)
             i32 z = x - y;
             regs.F.C = +(z < 0);
             regs.F.N = 1;
-            regs.F.V = (((x ^ y) & (x ^ z)) & 0x80) >> 7;
+            regs.F.PV = (((x ^ y) & (x ^ z)) & 0x80) >> 7;
             regs.F.X = ((y) & 8) >> 3;
             regs.F.Y = ((y) & 0x20) >> 5;
             regs.F.H = ((x ^ y ^ z) & 0x10) >> 4;
@@ -5981,7 +5982,7 @@ void Z80_ins_00_C6_ADD_a_n(regs& regs, pins& pins)
             u32 z = x + y + 0;
             regs.F.C = +(z > 0xFF);
             regs.F.N = 0;
-            regs.F.V = ((((x ^ y) ^ 0xFF) & (x ^ z)) & 0x80) >> 7;
+            regs.F.PV = ((((x ^ y) ^ 0xFF) & (x ^ z)) & 0x80) >> 7;
             regs.F.X = ((z) & 8) >> 3;
             regs.F.H = ((x ^ y ^ z) & 0x10) >> 4;
             regs.F.Y = ((z) & 0x20) >> 5;
@@ -6339,7 +6340,7 @@ void Z80_ins_00_CE_ADC_a_n(regs& regs, pins& pins)
             u32 z = x + y + regs.F.C;
             regs.F.C = +(z > 0xFF);
             regs.F.N = 0;
-            regs.F.V = ((((x ^ y) ^ 0xFF) & (x ^ z)) & 0x80) >> 7;
+            regs.F.PV = ((((x ^ y) ^ 0xFF) & (x ^ z)) & 0x80) >> 7;
             regs.F.X = ((z) & 8) >> 3;
             regs.F.H = ((x ^ y ^ z) & 0x10) >> 4;
             regs.F.Y = ((z) & 0x20) >> 5;
@@ -6719,7 +6720,7 @@ void Z80_ins_00_D6_SUB_a_n(regs& regs, pins& pins)
             u32 z = (x - y - c) & 0x1FF;
             regs.F.C = (z & 0x100) >> 8;
             regs.F.N = 1;
-            regs.F.V = (((x ^ y) & (x ^ z)) & 0x80) >> 7;
+            regs.F.PV = (((x ^ y) & (x ^ z)) & 0x80) >> 7;
             regs.F.X = ((z) & 8) >> 3;
             regs.F.Y = ((z) & 0x20) >> 5;
             regs.F.H = ((x ^ y ^ z) & 0x10) >> 4;
@@ -7032,7 +7033,7 @@ void Z80_ins_00_DE_SBC_a_n(regs& regs, pins& pins)
             u32 z = (x - y - c) & 0x1FF;
             regs.F.C = (z & 0x100) >> 8;
             regs.F.N = 1;
-            regs.F.V = (((x ^ y) & (x ^ z)) & 0x80) >> 7;
+            regs.F.PV = (((x ^ y) & (x ^ z)) & 0x80) >> 7;
             regs.F.X = ((z) & 8) >> 3;
             regs.F.Y = ((z) & 0x20) >> 5;
             regs.F.H = ((x ^ y ^ z) & 0x10) >> 4;
@@ -7105,7 +7106,7 @@ void Z80_ins_00_E0_RET_c(regs& regs, pins& pins)
     switch(regs.TCU) {
         case 1: { // 0
             regs.Q = 0;
-            if (!(regs.F.P == 0)) { regs.TCU += 6; break; }
+            if (!(regs.F.PV == 0)) { regs.TCU += 6; break; }
             break; }
         case 2: { // Start read
             pins.Addr = (regs.SP);
@@ -7217,7 +7218,7 @@ void Z80_ins_00_E2_JP_c_nn(regs& regs, pins& pins)
             pins.RD = 0; pins.MRQ = 0;
             regs.PC = (regs.PC + 1) & 0xFFFF;
             regs.WZ |= (regs.t[4] << 8);
-            if (regs.F.P == 0) regs.PC = regs.WZ;
+            if (regs.F.PV == 0) regs.PC = regs.WZ;
             // Following is auto-generated code for instruction finish
             break; }
         case 7: { // cleanup_custom
@@ -7331,7 +7332,7 @@ void Z80_ins_00_E4_CALL_c_nn(regs& regs, pins& pins)
             regs.PC = (regs.PC + 1) & 0xFFFF;
             regs.WZ |= (regs.t[4] << 8);
             regs.TA = regs.WZ;
-            regs.TR = +(regs.F.P == 0);
+            regs.TR = +(regs.F.PV == 0);
             if (!regs.TR) { regs.TA = regs.PC; regs.TCU+=7; break; }
             break; }
         case 7: {
@@ -7433,7 +7434,7 @@ void Z80_ins_00_E6_AND_a_n(regs& regs, pins& pins)
             regs.PC = (regs.PC + 1) & 0xFFFF;
             u32 z = (regs.A) & (regs.TR);
             regs.F.C = regs.F.N = 0;
-            regs.F.V = parity(z);
+            regs.F.PV = parity(z);
             regs.F.X = ((z) & 8) >> 3;
             regs.F.H = 1;
             regs.F.Y = ((z) & 0x20) >> 5;
@@ -7506,7 +7507,7 @@ void Z80_ins_00_E8_RET_c(regs& regs, pins& pins)
     switch(regs.TCU) {
         case 1: { // 0
             regs.Q = 0;
-            if (!(regs.F.P == 1)) { regs.TCU += 6; break; }
+            if (!(regs.F.PV == 1)) { regs.TCU += 6; break; }
             break; }
         case 2: { // Start read
             pins.Addr = (regs.SP);
@@ -7594,7 +7595,7 @@ void Z80_ins_00_EA_JP_c_nn(regs& regs, pins& pins)
             pins.RD = 0; pins.MRQ = 0;
             regs.PC = (regs.PC + 1) & 0xFFFF;
             regs.WZ |= (regs.t[4] << 8);
-            if (regs.F.P == 1) regs.PC = regs.WZ;
+            if (regs.F.PV == 1) regs.PC = regs.WZ;
             // Following is auto-generated code for instruction finish
             break; }
         case 7: { // cleanup_custom
@@ -7658,7 +7659,7 @@ void Z80_ins_00_EC_CALL_c_nn(regs& regs, pins& pins)
             regs.PC = (regs.PC + 1) & 0xFFFF;
             regs.WZ |= (regs.t[4] << 8);
             regs.TA = regs.WZ;
-            regs.TR = +(regs.F.P == 1);
+            regs.TR = +(regs.F.PV == 1);
             if (!regs.TR) { regs.TA = regs.PC; regs.TCU+=7; break; }
             break; }
         case 7: {
@@ -7719,7 +7720,7 @@ void Z80_ins_00_EE_XOR_a_n(regs& regs, pins& pins)
             regs.F.C = regs.F.N = regs.F.H = 0;
             regs.F.X = ((z) & 8) >> 3;
             regs.F.Y = ((z) & 0x20) >> 5;
-            regs.F.V = parity(z);
+            regs.F.PV = parity(z);
             regs.F.Z = +((z) == 0);
             regs.F.S = ((z) & 0x80) >> 7;
             regs.A = z;
@@ -8069,7 +8070,7 @@ void Z80_ins_00_F6_OR_a_n(regs& regs, pins& pins)
             regs.F.C = regs.F.N = regs.F.H = 0;
             regs.F.X = ((z) & 8) >> 3;
             regs.F.Y = ((z) & 0x20) >> 5;
-            regs.F.V = parity(z);
+            regs.F.PV = parity(z);
             regs.F.Z = +((z) == 0);
             regs.F.S = ((z) & 0x80) >> 7;
             regs.A = z;
@@ -8356,7 +8357,7 @@ void Z80_ins_00_FE_CP_a_n(regs& regs, pins& pins)
             i32 z = x - y;
             regs.F.C = +(z < 0);
             regs.F.N = 1;
-            regs.F.V = (((x ^ y) & (x ^ z)) & 0x80) >> 7;
+            regs.F.PV = (((x ^ y) & (x ^ z)) & 0x80) >> 7;
             regs.F.X = ((y) & 8) >> 3;
             regs.F.Y = ((y) & 0x20) >> 5;
             regs.F.H = ((x ^ y ^ z) & 0x10) >> 4;
@@ -8558,7 +8559,7 @@ void Z80_ins_CB_00_RLC_r(regs& regs, pins& pins)
             x = ((x << 1) | (x >> 7)) & 0xFF;
             regs.F.C = x & 1;
             regs.F.N = regs.F.H = 0;
-            regs.F.V = parity(x);
+            regs.F.PV = parity(x);
             regs.F.X = ((x) & 8) >> 3;
             regs.F.Y = ((x) & 0x20) >> 5;
             regs.F.Z = +((x) == 0);
@@ -8588,7 +8589,7 @@ void Z80_ins_CB_01_RLC_r(regs& regs, pins& pins)
             x = ((x << 1) | (x >> 7)) & 0xFF;
             regs.F.C = x & 1;
             regs.F.N = regs.F.H = 0;
-            regs.F.V = parity(x);
+            regs.F.PV = parity(x);
             regs.F.X = ((x) & 8) >> 3;
             regs.F.Y = ((x) & 0x20) >> 5;
             regs.F.Z = +((x) == 0);
@@ -8618,7 +8619,7 @@ void Z80_ins_CB_02_RLC_r(regs& regs, pins& pins)
             x = ((x << 1) | (x >> 7)) & 0xFF;
             regs.F.C = x & 1;
             regs.F.N = regs.F.H = 0;
-            regs.F.V = parity(x);
+            regs.F.PV = parity(x);
             regs.F.X = ((x) & 8) >> 3;
             regs.F.Y = ((x) & 0x20) >> 5;
             regs.F.Z = +((x) == 0);
@@ -8648,7 +8649,7 @@ void Z80_ins_CB_03_RLC_r(regs& regs, pins& pins)
             x = ((x << 1) | (x >> 7)) & 0xFF;
             regs.F.C = x & 1;
             regs.F.N = regs.F.H = 0;
-            regs.F.V = parity(x);
+            regs.F.PV = parity(x);
             regs.F.X = ((x) & 8) >> 3;
             regs.F.Y = ((x) & 0x20) >> 5;
             regs.F.Z = +((x) == 0);
@@ -8678,7 +8679,7 @@ void Z80_ins_CB_04_RLC_r(regs& regs, pins& pins)
             x = ((x << 1) | (x >> 7)) & 0xFF;
             regs.F.C = x & 1;
             regs.F.N = regs.F.H = 0;
-            regs.F.V = parity(x);
+            regs.F.PV = parity(x);
             regs.F.X = ((x) & 8) >> 3;
             regs.F.Y = ((x) & 0x20) >> 5;
             regs.F.Z = +((x) == 0);
@@ -8708,7 +8709,7 @@ void Z80_ins_CB_05_RLC_r(regs& regs, pins& pins)
             x = ((x << 1) | (x >> 7)) & 0xFF;
             regs.F.C = x & 1;
             regs.F.N = regs.F.H = 0;
-            regs.F.V = parity(x);
+            regs.F.PV = parity(x);
             regs.F.X = ((x) & 8) >> 3;
             regs.F.Y = ((x) & 0x20) >> 5;
             regs.F.Z = +((x) == 0);
@@ -8746,7 +8747,7 @@ void Z80_ins_CB_06_RLC_irr(regs& regs, pins& pins)
             x = ((x << 1) | (x >> 7)) & 0xFF;
             regs.F.C = x & 1;
             regs.F.N = regs.F.H = 0;
-            regs.F.V = parity(x);
+            regs.F.PV = parity(x);
             regs.F.X = ((x) & 8) >> 3;
             regs.F.Y = ((x) & 0x20) >> 5;
             regs.F.Z = +((x) == 0);
@@ -8789,7 +8790,7 @@ void Z80_ins_CB_07_RLC_r(regs& regs, pins& pins)
             x = ((x << 1) | (x >> 7)) & 0xFF;
             regs.F.C = x & 1;
             regs.F.N = regs.F.H = 0;
-            regs.F.V = parity(x);
+            regs.F.PV = parity(x);
             regs.F.X = ((x) & 8) >> 3;
             regs.F.Y = ((x) & 0x20) >> 5;
             regs.F.Z = +((x) == 0);
@@ -8819,7 +8820,7 @@ void Z80_ins_CB_08_RRC_r(regs& regs, pins& pins)
             x = ((x >> 1) | (x << 7)) & 0xFF;
             regs.F.C = (x & 0x80) >> 7;
             regs.F.N = regs.F.H = 0;
-            regs.F.V = parity(x);
+            regs.F.PV = parity(x);
             regs.F.X = ((x) & 8) >> 3;
             regs.F.Y = ((x) & 0x20) >> 5;
             regs.F.Z = +((x) == 0);
@@ -8849,7 +8850,7 @@ void Z80_ins_CB_09_RRC_r(regs& regs, pins& pins)
             x = ((x >> 1) | (x << 7)) & 0xFF;
             regs.F.C = (x & 0x80) >> 7;
             regs.F.N = regs.F.H = 0;
-            regs.F.V = parity(x);
+            regs.F.PV = parity(x);
             regs.F.X = ((x) & 8) >> 3;
             regs.F.Y = ((x) & 0x20) >> 5;
             regs.F.Z = +((x) == 0);
@@ -8879,7 +8880,7 @@ void Z80_ins_CB_0A_RRC_r(regs& regs, pins& pins)
             x = ((x >> 1) | (x << 7)) & 0xFF;
             regs.F.C = (x & 0x80) >> 7;
             regs.F.N = regs.F.H = 0;
-            regs.F.V = parity(x);
+            regs.F.PV = parity(x);
             regs.F.X = ((x) & 8) >> 3;
             regs.F.Y = ((x) & 0x20) >> 5;
             regs.F.Z = +((x) == 0);
@@ -8909,7 +8910,7 @@ void Z80_ins_CB_0B_RRC_r(regs& regs, pins& pins)
             x = ((x >> 1) | (x << 7)) & 0xFF;
             regs.F.C = (x & 0x80) >> 7;
             regs.F.N = regs.F.H = 0;
-            regs.F.V = parity(x);
+            regs.F.PV = parity(x);
             regs.F.X = ((x) & 8) >> 3;
             regs.F.Y = ((x) & 0x20) >> 5;
             regs.F.Z = +((x) == 0);
@@ -8939,7 +8940,7 @@ void Z80_ins_CB_0C_RRC_r(regs& regs, pins& pins)
             x = ((x >> 1) | (x << 7)) & 0xFF;
             regs.F.C = (x & 0x80) >> 7;
             regs.F.N = regs.F.H = 0;
-            regs.F.V = parity(x);
+            regs.F.PV = parity(x);
             regs.F.X = ((x) & 8) >> 3;
             regs.F.Y = ((x) & 0x20) >> 5;
             regs.F.Z = +((x) == 0);
@@ -8969,7 +8970,7 @@ void Z80_ins_CB_0D_RRC_r(regs& regs, pins& pins)
             x = ((x >> 1) | (x << 7)) & 0xFF;
             regs.F.C = (x & 0x80) >> 7;
             regs.F.N = regs.F.H = 0;
-            regs.F.V = parity(x);
+            regs.F.PV = parity(x);
             regs.F.X = ((x) & 8) >> 3;
             regs.F.Y = ((x) & 0x20) >> 5;
             regs.F.Z = +((x) == 0);
@@ -9007,7 +9008,7 @@ void Z80_ins_CB_0E_RRC_irr(regs& regs, pins& pins)
             x = ((x >> 1) | (x << 7)) & 0xFF;
             regs.F.C = (x & 0x80) >> 7;
             regs.F.N = regs.F.H = 0;
-            regs.F.V = parity(x);
+            regs.F.PV = parity(x);
             regs.F.X = ((x) & 8) >> 3;
             regs.F.Y = ((x) & 0x20) >> 5;
             regs.F.Z = +((x) == 0);
@@ -9050,7 +9051,7 @@ void Z80_ins_CB_0F_RRC_r(regs& regs, pins& pins)
             x = ((x >> 1) | (x << 7)) & 0xFF;
             regs.F.C = (x & 0x80) >> 7;
             regs.F.N = regs.F.H = 0;
-            regs.F.V = parity(x);
+            regs.F.PV = parity(x);
             regs.F.X = ((x) & 8) >> 3;
             regs.F.Y = ((x) & 0x20) >> 5;
             regs.F.Z = +((x) == 0);
@@ -9081,7 +9082,7 @@ void Z80_ins_CB_10_RL_r(regs& regs, pins& pins)
             x = ((x << 1) | regs.F.C) & 0xFF;
             regs.F.C = c;
             regs.F.N = regs.F.H = 0;
-            regs.F.V = parity(x);
+            regs.F.PV = parity(x);
             regs.F.X = ((x) & 8) >> 3;
             regs.F.Y = ((x) & 0x20) >> 5;
             regs.F.Z = +((x) == 0);
@@ -9112,7 +9113,7 @@ void Z80_ins_CB_11_RL_r(regs& regs, pins& pins)
             x = ((x << 1) | regs.F.C) & 0xFF;
             regs.F.C = c;
             regs.F.N = regs.F.H = 0;
-            regs.F.V = parity(x);
+            regs.F.PV = parity(x);
             regs.F.X = ((x) & 8) >> 3;
             regs.F.Y = ((x) & 0x20) >> 5;
             regs.F.Z = +((x) == 0);
@@ -9143,7 +9144,7 @@ void Z80_ins_CB_12_RL_r(regs& regs, pins& pins)
             x = ((x << 1) | regs.F.C) & 0xFF;
             regs.F.C = c;
             regs.F.N = regs.F.H = 0;
-            regs.F.V = parity(x);
+            regs.F.PV = parity(x);
             regs.F.X = ((x) & 8) >> 3;
             regs.F.Y = ((x) & 0x20) >> 5;
             regs.F.Z = +((x) == 0);
@@ -9174,7 +9175,7 @@ void Z80_ins_CB_13_RL_r(regs& regs, pins& pins)
             x = ((x << 1) | regs.F.C) & 0xFF;
             regs.F.C = c;
             regs.F.N = regs.F.H = 0;
-            regs.F.V = parity(x);
+            regs.F.PV = parity(x);
             regs.F.X = ((x) & 8) >> 3;
             regs.F.Y = ((x) & 0x20) >> 5;
             regs.F.Z = +((x) == 0);
@@ -9205,7 +9206,7 @@ void Z80_ins_CB_14_RL_r(regs& regs, pins& pins)
             x = ((x << 1) | regs.F.C) & 0xFF;
             regs.F.C = c;
             regs.F.N = regs.F.H = 0;
-            regs.F.V = parity(x);
+            regs.F.PV = parity(x);
             regs.F.X = ((x) & 8) >> 3;
             regs.F.Y = ((x) & 0x20) >> 5;
             regs.F.Z = +((x) == 0);
@@ -9236,7 +9237,7 @@ void Z80_ins_CB_15_RL_r(regs& regs, pins& pins)
             x = ((x << 1) | regs.F.C) & 0xFF;
             regs.F.C = c;
             regs.F.N = regs.F.H = 0;
-            regs.F.V = parity(x);
+            regs.F.PV = parity(x);
             regs.F.X = ((x) & 8) >> 3;
             regs.F.Y = ((x) & 0x20) >> 5;
             regs.F.Z = +((x) == 0);
@@ -9275,7 +9276,7 @@ void Z80_ins_CB_16_RL_irr(regs& regs, pins& pins)
             x = ((x << 1) | regs.F.C) & 0xFF;
             regs.F.C = c;
             regs.F.N = regs.F.H = 0;
-            regs.F.V = parity(x);
+            regs.F.PV = parity(x);
             regs.F.X = ((x) & 8) >> 3;
             regs.F.Y = ((x) & 0x20) >> 5;
             regs.F.Z = +((x) == 0);
@@ -9319,7 +9320,7 @@ void Z80_ins_CB_17_RL_r(regs& regs, pins& pins)
             x = ((x << 1) | regs.F.C) & 0xFF;
             regs.F.C = c;
             regs.F.N = regs.F.H = 0;
-            regs.F.V = parity(x);
+            regs.F.PV = parity(x);
             regs.F.X = ((x) & 8) >> 3;
             regs.F.Y = ((x) & 0x20) >> 5;
             regs.F.Z = +((x) == 0);
@@ -9350,7 +9351,7 @@ void Z80_ins_CB_18_RR_r(regs& regs, pins& pins)
             x = (x >> 1) | (regs.F.C << 7);
             regs.F.C = c;
             regs.F.N = regs.F.H = 0;
-            regs.F.V = parity(x);
+            regs.F.PV = parity(x);
             regs.F.X = ((x) & 8) >> 3;
             regs.F.Y = ((x) & 0x20) >> 5;
             regs.F.Z = +((x) == 0);
@@ -9381,7 +9382,7 @@ void Z80_ins_CB_19_RR_r(regs& regs, pins& pins)
             x = (x >> 1) | (regs.F.C << 7);
             regs.F.C = c;
             regs.F.N = regs.F.H = 0;
-            regs.F.V = parity(x);
+            regs.F.PV = parity(x);
             regs.F.X = ((x) & 8) >> 3;
             regs.F.Y = ((x) & 0x20) >> 5;
             regs.F.Z = +((x) == 0);
@@ -9412,7 +9413,7 @@ void Z80_ins_CB_1A_RR_r(regs& regs, pins& pins)
             x = (x >> 1) | (regs.F.C << 7);
             regs.F.C = c;
             regs.F.N = regs.F.H = 0;
-            regs.F.V = parity(x);
+            regs.F.PV = parity(x);
             regs.F.X = ((x) & 8) >> 3;
             regs.F.Y = ((x) & 0x20) >> 5;
             regs.F.Z = +((x) == 0);
@@ -9443,7 +9444,7 @@ void Z80_ins_CB_1B_RR_r(regs& regs, pins& pins)
             x = (x >> 1) | (regs.F.C << 7);
             regs.F.C = c;
             regs.F.N = regs.F.H = 0;
-            regs.F.V = parity(x);
+            regs.F.PV = parity(x);
             regs.F.X = ((x) & 8) >> 3;
             regs.F.Y = ((x) & 0x20) >> 5;
             regs.F.Z = +((x) == 0);
@@ -9474,7 +9475,7 @@ void Z80_ins_CB_1C_RR_r(regs& regs, pins& pins)
             x = (x >> 1) | (regs.F.C << 7);
             regs.F.C = c;
             regs.F.N = regs.F.H = 0;
-            regs.F.V = parity(x);
+            regs.F.PV = parity(x);
             regs.F.X = ((x) & 8) >> 3;
             regs.F.Y = ((x) & 0x20) >> 5;
             regs.F.Z = +((x) == 0);
@@ -9505,7 +9506,7 @@ void Z80_ins_CB_1D_RR_r(regs& regs, pins& pins)
             x = (x >> 1) | (regs.F.C << 7);
             regs.F.C = c;
             regs.F.N = regs.F.H = 0;
-            regs.F.V = parity(x);
+            regs.F.PV = parity(x);
             regs.F.X = ((x) & 8) >> 3;
             regs.F.Y = ((x) & 0x20) >> 5;
             regs.F.Z = +((x) == 0);
@@ -9544,7 +9545,7 @@ void Z80_ins_CB_1E_RR_irr(regs& regs, pins& pins)
             x = (x >> 1) | (regs.F.C << 7);
             regs.F.C = c;
             regs.F.N = regs.F.H = 0;
-            regs.F.V = parity(x);
+            regs.F.PV = parity(x);
             regs.F.X = ((x) & 8) >> 3;
             regs.F.Y = ((x) & 0x20) >> 5;
             regs.F.Z = +((x) == 0);
@@ -9588,7 +9589,7 @@ void Z80_ins_CB_1F_RR_r(regs& regs, pins& pins)
             x = (x >> 1) | (regs.F.C << 7);
             regs.F.C = c;
             regs.F.N = regs.F.H = 0;
-            regs.F.V = parity(x);
+            regs.F.PV = parity(x);
             regs.F.X = ((x) & 8) >> 3;
             regs.F.Y = ((x) & 0x20) >> 5;
             regs.F.Z = +((x) == 0);
@@ -9619,7 +9620,7 @@ void Z80_ins_CB_20_SLA_r(regs& regs, pins& pins)
             x = (x << 1) & 0xFF;
             regs.F.C = c;
             regs.F.N = regs.F.H = 0;
-            regs.F.V = parity(x);
+            regs.F.PV = parity(x);
             regs.F.X = ((x) & 8) >> 3;
             regs.F.Y = ((x) & 0x20) >> 5;
             regs.F.Z = +((x) == 0);
@@ -9650,7 +9651,7 @@ void Z80_ins_CB_21_SLA_r(regs& regs, pins& pins)
             x = (x << 1) & 0xFF;
             regs.F.C = c;
             regs.F.N = regs.F.H = 0;
-            regs.F.V = parity(x);
+            regs.F.PV = parity(x);
             regs.F.X = ((x) & 8) >> 3;
             regs.F.Y = ((x) & 0x20) >> 5;
             regs.F.Z = +((x) == 0);
@@ -9681,7 +9682,7 @@ void Z80_ins_CB_22_SLA_r(regs& regs, pins& pins)
             x = (x << 1) & 0xFF;
             regs.F.C = c;
             regs.F.N = regs.F.H = 0;
-            regs.F.V = parity(x);
+            regs.F.PV = parity(x);
             regs.F.X = ((x) & 8) >> 3;
             regs.F.Y = ((x) & 0x20) >> 5;
             regs.F.Z = +((x) == 0);
@@ -9712,7 +9713,7 @@ void Z80_ins_CB_23_SLA_r(regs& regs, pins& pins)
             x = (x << 1) & 0xFF;
             regs.F.C = c;
             regs.F.N = regs.F.H = 0;
-            regs.F.V = parity(x);
+            regs.F.PV = parity(x);
             regs.F.X = ((x) & 8) >> 3;
             regs.F.Y = ((x) & 0x20) >> 5;
             regs.F.Z = +((x) == 0);
@@ -9743,7 +9744,7 @@ void Z80_ins_CB_24_SLA_r(regs& regs, pins& pins)
             x = (x << 1) & 0xFF;
             regs.F.C = c;
             regs.F.N = regs.F.H = 0;
-            regs.F.V = parity(x);
+            regs.F.PV = parity(x);
             regs.F.X = ((x) & 8) >> 3;
             regs.F.Y = ((x) & 0x20) >> 5;
             regs.F.Z = +((x) == 0);
@@ -9774,7 +9775,7 @@ void Z80_ins_CB_25_SLA_r(regs& regs, pins& pins)
             x = (x << 1) & 0xFF;
             regs.F.C = c;
             regs.F.N = regs.F.H = 0;
-            regs.F.V = parity(x);
+            regs.F.PV = parity(x);
             regs.F.X = ((x) & 8) >> 3;
             regs.F.Y = ((x) & 0x20) >> 5;
             regs.F.Z = +((x) == 0);
@@ -9813,7 +9814,7 @@ void Z80_ins_CB_26_SLA_irr(regs& regs, pins& pins)
             x = (x << 1) & 0xFF;
             regs.F.C = c;
             regs.F.N = regs.F.H = 0;
-            regs.F.V = parity(x);
+            regs.F.PV = parity(x);
             regs.F.X = ((x) & 8) >> 3;
             regs.F.Y = ((x) & 0x20) >> 5;
             regs.F.Z = +((x) == 0);
@@ -9857,7 +9858,7 @@ void Z80_ins_CB_27_SLA_r(regs& regs, pins& pins)
             x = (x << 1) & 0xFF;
             regs.F.C = c;
             regs.F.N = regs.F.H = 0;
-            regs.F.V = parity(x);
+            regs.F.PV = parity(x);
             regs.F.X = ((x) & 8) >> 3;
             regs.F.Y = ((x) & 0x20) >> 5;
             regs.F.Z = +((x) == 0);
@@ -9888,7 +9889,7 @@ void Z80_ins_CB_28_SRA_r(regs& regs, pins& pins)
             x = (x & 0x80) | (x >> 1);
             regs.F.C = c;
             regs.F.N = regs.F.H = 0;
-            regs.F.V = parity(x);
+            regs.F.PV = parity(x);
             regs.F.X = ((x) & 8) >> 3;
             regs.F.Y = ((x) & 0x20) >> 5;
             regs.F.Z = +((x) == 0);
@@ -9919,7 +9920,7 @@ void Z80_ins_CB_29_SRA_r(regs& regs, pins& pins)
             x = (x & 0x80) | (x >> 1);
             regs.F.C = c;
             regs.F.N = regs.F.H = 0;
-            regs.F.V = parity(x);
+            regs.F.PV = parity(x);
             regs.F.X = ((x) & 8) >> 3;
             regs.F.Y = ((x) & 0x20) >> 5;
             regs.F.Z = +((x) == 0);
@@ -9950,7 +9951,7 @@ void Z80_ins_CB_2A_SRA_r(regs& regs, pins& pins)
             x = (x & 0x80) | (x >> 1);
             regs.F.C = c;
             regs.F.N = regs.F.H = 0;
-            regs.F.V = parity(x);
+            regs.F.PV = parity(x);
             regs.F.X = ((x) & 8) >> 3;
             regs.F.Y = ((x) & 0x20) >> 5;
             regs.F.Z = +((x) == 0);
@@ -9981,7 +9982,7 @@ void Z80_ins_CB_2B_SRA_r(regs& regs, pins& pins)
             x = (x & 0x80) | (x >> 1);
             regs.F.C = c;
             regs.F.N = regs.F.H = 0;
-            regs.F.V = parity(x);
+            regs.F.PV = parity(x);
             regs.F.X = ((x) & 8) >> 3;
             regs.F.Y = ((x) & 0x20) >> 5;
             regs.F.Z = +((x) == 0);
@@ -10012,7 +10013,7 @@ void Z80_ins_CB_2C_SRA_r(regs& regs, pins& pins)
             x = (x & 0x80) | (x >> 1);
             regs.F.C = c;
             regs.F.N = regs.F.H = 0;
-            regs.F.V = parity(x);
+            regs.F.PV = parity(x);
             regs.F.X = ((x) & 8) >> 3;
             regs.F.Y = ((x) & 0x20) >> 5;
             regs.F.Z = +((x) == 0);
@@ -10043,7 +10044,7 @@ void Z80_ins_CB_2D_SRA_r(regs& regs, pins& pins)
             x = (x & 0x80) | (x >> 1);
             regs.F.C = c;
             regs.F.N = regs.F.H = 0;
-            regs.F.V = parity(x);
+            regs.F.PV = parity(x);
             regs.F.X = ((x) & 8) >> 3;
             regs.F.Y = ((x) & 0x20) >> 5;
             regs.F.Z = +((x) == 0);
@@ -10082,7 +10083,7 @@ void Z80_ins_CB_2E_SRA_irr(regs& regs, pins& pins)
             x = (x & 0x80) | (x >> 1);
             regs.F.C = c;
             regs.F.N = regs.F.H = 0;
-            regs.F.V = parity(x);
+            regs.F.PV = parity(x);
             regs.F.X = ((x) & 8) >> 3;
             regs.F.Y = ((x) & 0x20) >> 5;
             regs.F.Z = +((x) == 0);
@@ -10126,7 +10127,7 @@ void Z80_ins_CB_2F_SRA_r(regs& regs, pins& pins)
             x = (x & 0x80) | (x >> 1);
             regs.F.C = c;
             regs.F.N = regs.F.H = 0;
-            regs.F.V = parity(x);
+            regs.F.PV = parity(x);
             regs.F.X = ((x) & 8) >> 3;
             regs.F.Y = ((x) & 0x20) >> 5;
             regs.F.Z = +((x) == 0);
@@ -10157,7 +10158,7 @@ void Z80_ins_CB_30_SLL_r(regs& regs, pins& pins)
             x = ((x << 1) | 1) & 0xFF;
             regs.F.C = c;
             regs.F.N = regs.F.H = 0;
-            regs.F.V = parity(x);
+            regs.F.PV = parity(x);
             regs.F.X = ((x) & 8) >> 3;
             regs.F.Y = ((x) & 0x20) >> 5;
             regs.F.Z = +((x) == 0);
@@ -10188,7 +10189,7 @@ void Z80_ins_CB_31_SLL_r(regs& regs, pins& pins)
             x = ((x << 1) | 1) & 0xFF;
             regs.F.C = c;
             regs.F.N = regs.F.H = 0;
-            regs.F.V = parity(x);
+            regs.F.PV = parity(x);
             regs.F.X = ((x) & 8) >> 3;
             regs.F.Y = ((x) & 0x20) >> 5;
             regs.F.Z = +((x) == 0);
@@ -10219,7 +10220,7 @@ void Z80_ins_CB_32_SLL_r(regs& regs, pins& pins)
             x = ((x << 1) | 1) & 0xFF;
             regs.F.C = c;
             regs.F.N = regs.F.H = 0;
-            regs.F.V = parity(x);
+            regs.F.PV = parity(x);
             regs.F.X = ((x) & 8) >> 3;
             regs.F.Y = ((x) & 0x20) >> 5;
             regs.F.Z = +((x) == 0);
@@ -10250,7 +10251,7 @@ void Z80_ins_CB_33_SLL_r(regs& regs, pins& pins)
             x = ((x << 1) | 1) & 0xFF;
             regs.F.C = c;
             regs.F.N = regs.F.H = 0;
-            regs.F.V = parity(x);
+            regs.F.PV = parity(x);
             regs.F.X = ((x) & 8) >> 3;
             regs.F.Y = ((x) & 0x20) >> 5;
             regs.F.Z = +((x) == 0);
@@ -10281,7 +10282,7 @@ void Z80_ins_CB_34_SLL_r(regs& regs, pins& pins)
             x = ((x << 1) | 1) & 0xFF;
             regs.F.C = c;
             regs.F.N = regs.F.H = 0;
-            regs.F.V = parity(x);
+            regs.F.PV = parity(x);
             regs.F.X = ((x) & 8) >> 3;
             regs.F.Y = ((x) & 0x20) >> 5;
             regs.F.Z = +((x) == 0);
@@ -10312,7 +10313,7 @@ void Z80_ins_CB_35_SLL_r(regs& regs, pins& pins)
             x = ((x << 1) | 1) & 0xFF;
             regs.F.C = c;
             regs.F.N = regs.F.H = 0;
-            regs.F.V = parity(x);
+            regs.F.PV = parity(x);
             regs.F.X = ((x) & 8) >> 3;
             regs.F.Y = ((x) & 0x20) >> 5;
             regs.F.Z = +((x) == 0);
@@ -10353,7 +10354,7 @@ void Z80_ins_CB_36_SLL_irr(regs& regs, pins& pins)
             x = ((x << 1) | 1) & 0xFF;
             regs.F.C = c;
             regs.F.N = regs.F.H = 0;
-            regs.F.V = parity(x);
+            regs.F.PV = parity(x);
             regs.F.X = ((x) & 8) >> 3;
             regs.F.Y = ((x) & 0x20) >> 5;
             regs.F.Z = +((x) == 0);
@@ -10395,7 +10396,7 @@ void Z80_ins_CB_37_SLL_r(regs& regs, pins& pins)
             x = ((x << 1) | 1) & 0xFF;
             regs.F.C = c;
             regs.F.N = regs.F.H = 0;
-            regs.F.V = parity(x);
+            regs.F.PV = parity(x);
             regs.F.X = ((x) & 8) >> 3;
             regs.F.Y = ((x) & 0x20) >> 5;
             regs.F.Z = +((x) == 0);
@@ -10426,7 +10427,7 @@ void Z80_ins_CB_38_SRL_r(regs& regs, pins& pins)
             x = (x >> 1) & 0xFF;
             regs.F.C = c;
             regs.F.N = regs.F.H = 0;
-            regs.F.V = parity(x);
+            regs.F.PV = parity(x);
             regs.F.X = ((x) & 8) >> 3;
             regs.F.Y = ((x) & 0x20) >> 5;
             regs.F.Z = +((x) == 0);
@@ -10457,7 +10458,7 @@ void Z80_ins_CB_39_SRL_r(regs& regs, pins& pins)
             x = (x >> 1) & 0xFF;
             regs.F.C = c;
             regs.F.N = regs.F.H = 0;
-            regs.F.V = parity(x);
+            regs.F.PV = parity(x);
             regs.F.X = ((x) & 8) >> 3;
             regs.F.Y = ((x) & 0x20) >> 5;
             regs.F.Z = +((x) == 0);
@@ -10488,7 +10489,7 @@ void Z80_ins_CB_3A_SRL_r(regs& regs, pins& pins)
             x = (x >> 1) & 0xFF;
             regs.F.C = c;
             regs.F.N = regs.F.H = 0;
-            regs.F.V = parity(x);
+            regs.F.PV = parity(x);
             regs.F.X = ((x) & 8) >> 3;
             regs.F.Y = ((x) & 0x20) >> 5;
             regs.F.Z = +((x) == 0);
@@ -10519,7 +10520,7 @@ void Z80_ins_CB_3B_SRL_r(regs& regs, pins& pins)
             x = (x >> 1) & 0xFF;
             regs.F.C = c;
             regs.F.N = regs.F.H = 0;
-            regs.F.V = parity(x);
+            regs.F.PV = parity(x);
             regs.F.X = ((x) & 8) >> 3;
             regs.F.Y = ((x) & 0x20) >> 5;
             regs.F.Z = +((x) == 0);
@@ -10550,7 +10551,7 @@ void Z80_ins_CB_3C_SRL_r(regs& regs, pins& pins)
             x = (x >> 1) & 0xFF;
             regs.F.C = c;
             regs.F.N = regs.F.H = 0;
-            regs.F.V = parity(x);
+            regs.F.PV = parity(x);
             regs.F.X = ((x) & 8) >> 3;
             regs.F.Y = ((x) & 0x20) >> 5;
             regs.F.Z = +((x) == 0);
@@ -10581,7 +10582,7 @@ void Z80_ins_CB_3D_SRL_r(regs& regs, pins& pins)
             x = (x >> 1) & 0xFF;
             regs.F.C = c;
             regs.F.N = regs.F.H = 0;
-            regs.F.V = parity(x);
+            regs.F.PV = parity(x);
             regs.F.X = ((x) & 8) >> 3;
             regs.F.Y = ((x) & 0x20) >> 5;
             regs.F.Z = +((x) == 0);
@@ -10620,7 +10621,7 @@ void Z80_ins_CB_3E_SRL_irr(regs& regs, pins& pins)
             x = (x >> 1) & 0xFF;
             regs.F.C = c;
             regs.F.N = regs.F.H = 0;
-            regs.F.V = parity(x);
+            regs.F.PV = parity(x);
             regs.F.X = ((x) & 8) >> 3;
             regs.F.Y = ((x) & 0x20) >> 5;
             regs.F.Z = +((x) == 0);
@@ -10664,7 +10665,7 @@ void Z80_ins_CB_3F_SRL_r(regs& regs, pins& pins)
             x = (x >> 1) & 0xFF;
             regs.F.C = c;
             regs.F.N = regs.F.H = 0;
-            regs.F.V = parity(x);
+            regs.F.PV = parity(x);
             regs.F.X = ((x) & 8) >> 3;
             regs.F.Y = ((x) & 0x20) >> 5;
             regs.F.Z = +((x) == 0);
@@ -10692,7 +10693,7 @@ void Z80_ins_CB_40_BIT_o_r(regs& regs, pins& pins)
             regs.Q = 1;
             u32 z = (regs.B) & (1 << 0);
             regs.F.N = 0;
-            regs.F.V = parity(z);
+            regs.F.PV = parity(z);
             regs.F.H = 1;
             regs.F.X = ((regs.B) & 8) >> 3;
             regs.F.Y = ((regs.B) & 0x20) >> 5;
@@ -10719,7 +10720,7 @@ void Z80_ins_CB_41_BIT_o_r(regs& regs, pins& pins)
             regs.Q = 1;
             u32 z = (regs.C) & (1 << 0);
             regs.F.N = 0;
-            regs.F.V = parity(z);
+            regs.F.PV = parity(z);
             regs.F.H = 1;
             regs.F.X = ((regs.C) & 8) >> 3;
             regs.F.Y = ((regs.C) & 0x20) >> 5;
@@ -10746,7 +10747,7 @@ void Z80_ins_CB_42_BIT_o_r(regs& regs, pins& pins)
             regs.Q = 1;
             u32 z = (regs.D) & (1 << 0);
             regs.F.N = 0;
-            regs.F.V = parity(z);
+            regs.F.PV = parity(z);
             regs.F.H = 1;
             regs.F.X = ((regs.D) & 8) >> 3;
             regs.F.Y = ((regs.D) & 0x20) >> 5;
@@ -10773,7 +10774,7 @@ void Z80_ins_CB_43_BIT_o_r(regs& regs, pins& pins)
             regs.Q = 1;
             u32 z = (regs.E) & (1 << 0);
             regs.F.N = 0;
-            regs.F.V = parity(z);
+            regs.F.PV = parity(z);
             regs.F.H = 1;
             regs.F.X = ((regs.E) & 8) >> 3;
             regs.F.Y = ((regs.E) & 0x20) >> 5;
@@ -10800,7 +10801,7 @@ void Z80_ins_CB_44_BIT_o_r(regs& regs, pins& pins)
             regs.Q = 1;
             u32 z = (regs.H) & (1 << 0);
             regs.F.N = 0;
-            regs.F.V = parity(z);
+            regs.F.PV = parity(z);
             regs.F.H = 1;
             regs.F.X = ((regs.H) & 8) >> 3;
             regs.F.Y = ((regs.H) & 0x20) >> 5;
@@ -10827,7 +10828,7 @@ void Z80_ins_CB_45_BIT_o_r(regs& regs, pins& pins)
             regs.Q = 1;
             u32 z = (regs.L) & (1 << 0);
             regs.F.N = 0;
-            regs.F.V = parity(z);
+            regs.F.PV = parity(z);
             regs.F.H = 1;
             regs.F.X = ((regs.L) & 8) >> 3;
             regs.F.Y = ((regs.L) & 0x20) >> 5;
@@ -10862,7 +10863,7 @@ void Z80_ins_CB_46_BIT_o_irr(regs& regs, pins& pins)
             pins.RD = 0; pins.MRQ = 0;
             u32 z = (regs.TR) & (1 << 0);
             regs.F.N = 0;
-            regs.F.V = parity(z);
+            regs.F.PV = parity(z);
             regs.F.H = 1;
             regs.F.X = ((regs.TR) & 8) >> 3;
             regs.F.Y = ((regs.TR) & 0x20) >> 5;
@@ -10895,7 +10896,7 @@ void Z80_ins_CB_47_BIT_o_r(regs& regs, pins& pins)
             regs.Q = 1;
             u32 z = (regs.A) & (1 << 0);
             regs.F.N = 0;
-            regs.F.V = parity(z);
+            regs.F.PV = parity(z);
             regs.F.H = 1;
             regs.F.X = ((regs.A) & 8) >> 3;
             regs.F.Y = ((regs.A) & 0x20) >> 5;
@@ -10922,7 +10923,7 @@ void Z80_ins_CB_48_BIT_o_r(regs& regs, pins& pins)
             regs.Q = 1;
             u32 z = (regs.B) & (1 << 1);
             regs.F.N = 0;
-            regs.F.V = parity(z);
+            regs.F.PV = parity(z);
             regs.F.H = 1;
             regs.F.X = ((regs.B) & 8) >> 3;
             regs.F.Y = ((regs.B) & 0x20) >> 5;
@@ -10949,7 +10950,7 @@ void Z80_ins_CB_49_BIT_o_r(regs& regs, pins& pins)
             regs.Q = 1;
             u32 z = (regs.C) & (1 << 1);
             regs.F.N = 0;
-            regs.F.V = parity(z);
+            regs.F.PV = parity(z);
             regs.F.H = 1;
             regs.F.X = ((regs.C) & 8) >> 3;
             regs.F.Y = ((regs.C) & 0x20) >> 5;
@@ -10976,7 +10977,7 @@ void Z80_ins_CB_4A_BIT_o_r(regs& regs, pins& pins)
             regs.Q = 1;
             u32 z = (regs.D) & (1 << 1);
             regs.F.N = 0;
-            regs.F.V = parity(z);
+            regs.F.PV = parity(z);
             regs.F.H = 1;
             regs.F.X = ((regs.D) & 8) >> 3;
             regs.F.Y = ((regs.D) & 0x20) >> 5;
@@ -11003,7 +11004,7 @@ void Z80_ins_CB_4B_BIT_o_r(regs& regs, pins& pins)
             regs.Q = 1;
             u32 z = (regs.E) & (1 << 1);
             regs.F.N = 0;
-            regs.F.V = parity(z);
+            regs.F.PV = parity(z);
             regs.F.H = 1;
             regs.F.X = ((regs.E) & 8) >> 3;
             regs.F.Y = ((regs.E) & 0x20) >> 5;
@@ -11030,7 +11031,7 @@ void Z80_ins_CB_4C_BIT_o_r(regs& regs, pins& pins)
             regs.Q = 1;
             u32 z = (regs.H) & (1 << 1);
             regs.F.N = 0;
-            regs.F.V = parity(z);
+            regs.F.PV = parity(z);
             regs.F.H = 1;
             regs.F.X = ((regs.H) & 8) >> 3;
             regs.F.Y = ((regs.H) & 0x20) >> 5;
@@ -11057,7 +11058,7 @@ void Z80_ins_CB_4D_BIT_o_r(regs& regs, pins& pins)
             regs.Q = 1;
             u32 z = (regs.L) & (1 << 1);
             regs.F.N = 0;
-            regs.F.V = parity(z);
+            regs.F.PV = parity(z);
             regs.F.H = 1;
             regs.F.X = ((regs.L) & 8) >> 3;
             regs.F.Y = ((regs.L) & 0x20) >> 5;
@@ -11092,7 +11093,7 @@ void Z80_ins_CB_4E_BIT_o_irr(regs& regs, pins& pins)
             pins.RD = 0; pins.MRQ = 0;
             u32 z = (regs.TR) & (1 << 1);
             regs.F.N = 0;
-            regs.F.V = parity(z);
+            regs.F.PV = parity(z);
             regs.F.H = 1;
             regs.F.X = ((regs.TR) & 8) >> 3;
             regs.F.Y = ((regs.TR) & 0x20) >> 5;
@@ -11125,7 +11126,7 @@ void Z80_ins_CB_4F_BIT_o_r(regs& regs, pins& pins)
             regs.Q = 1;
             u32 z = (regs.A) & (1 << 1);
             regs.F.N = 0;
-            regs.F.V = parity(z);
+            regs.F.PV = parity(z);
             regs.F.H = 1;
             regs.F.X = ((regs.A) & 8) >> 3;
             regs.F.Y = ((regs.A) & 0x20) >> 5;
@@ -11152,7 +11153,7 @@ void Z80_ins_CB_50_BIT_o_r(regs& regs, pins& pins)
             regs.Q = 1;
             u32 z = (regs.B) & (1 << 2);
             regs.F.N = 0;
-            regs.F.V = parity(z);
+            regs.F.PV = parity(z);
             regs.F.H = 1;
             regs.F.X = ((regs.B) & 8) >> 3;
             regs.F.Y = ((regs.B) & 0x20) >> 5;
@@ -11179,7 +11180,7 @@ void Z80_ins_CB_51_BIT_o_r(regs& regs, pins& pins)
             regs.Q = 1;
             u32 z = (regs.C) & (1 << 2);
             regs.F.N = 0;
-            regs.F.V = parity(z);
+            regs.F.PV = parity(z);
             regs.F.H = 1;
             regs.F.X = ((regs.C) & 8) >> 3;
             regs.F.Y = ((regs.C) & 0x20) >> 5;
@@ -11206,7 +11207,7 @@ void Z80_ins_CB_52_BIT_o_r(regs& regs, pins& pins)
             regs.Q = 1;
             u32 z = (regs.D) & (1 << 2);
             regs.F.N = 0;
-            regs.F.V = parity(z);
+            regs.F.PV = parity(z);
             regs.F.H = 1;
             regs.F.X = ((regs.D) & 8) >> 3;
             regs.F.Y = ((regs.D) & 0x20) >> 5;
@@ -11233,7 +11234,7 @@ void Z80_ins_CB_53_BIT_o_r(regs& regs, pins& pins)
             regs.Q = 1;
             u32 z = (regs.E) & (1 << 2);
             regs.F.N = 0;
-            regs.F.V = parity(z);
+            regs.F.PV = parity(z);
             regs.F.H = 1;
             regs.F.X = ((regs.E) & 8) >> 3;
             regs.F.Y = ((regs.E) & 0x20) >> 5;
@@ -11260,7 +11261,7 @@ void Z80_ins_CB_54_BIT_o_r(regs& regs, pins& pins)
             regs.Q = 1;
             u32 z = (regs.H) & (1 << 2);
             regs.F.N = 0;
-            regs.F.V = parity(z);
+            regs.F.PV = parity(z);
             regs.F.H = 1;
             regs.F.X = ((regs.H) & 8) >> 3;
             regs.F.Y = ((regs.H) & 0x20) >> 5;
@@ -11287,7 +11288,7 @@ void Z80_ins_CB_55_BIT_o_r(regs& regs, pins& pins)
             regs.Q = 1;
             u32 z = (regs.L) & (1 << 2);
             regs.F.N = 0;
-            regs.F.V = parity(z);
+            regs.F.PV = parity(z);
             regs.F.H = 1;
             regs.F.X = ((regs.L) & 8) >> 3;
             regs.F.Y = ((regs.L) & 0x20) >> 5;
@@ -11322,7 +11323,7 @@ void Z80_ins_CB_56_BIT_o_irr(regs& regs, pins& pins)
             pins.RD = 0; pins.MRQ = 0;
             u32 z = (regs.TR) & (1 << 2);
             regs.F.N = 0;
-            regs.F.V = parity(z);
+            regs.F.PV = parity(z);
             regs.F.H = 1;
             regs.F.X = ((regs.TR) & 8) >> 3;
             regs.F.Y = ((regs.TR) & 0x20) >> 5;
@@ -11355,7 +11356,7 @@ void Z80_ins_CB_57_BIT_o_r(regs& regs, pins& pins)
             regs.Q = 1;
             u32 z = (regs.A) & (1 << 2);
             regs.F.N = 0;
-            regs.F.V = parity(z);
+            regs.F.PV = parity(z);
             regs.F.H = 1;
             regs.F.X = ((regs.A) & 8) >> 3;
             regs.F.Y = ((regs.A) & 0x20) >> 5;
@@ -11382,7 +11383,7 @@ void Z80_ins_CB_58_BIT_o_r(regs& regs, pins& pins)
             regs.Q = 1;
             u32 z = (regs.B) & (1 << 3);
             regs.F.N = 0;
-            regs.F.V = parity(z);
+            regs.F.PV = parity(z);
             regs.F.H = 1;
             regs.F.X = ((regs.B) & 8) >> 3;
             regs.F.Y = ((regs.B) & 0x20) >> 5;
@@ -11409,7 +11410,7 @@ void Z80_ins_CB_59_BIT_o_r(regs& regs, pins& pins)
             regs.Q = 1;
             u32 z = (regs.C) & (1 << 3);
             regs.F.N = 0;
-            regs.F.V = parity(z);
+            regs.F.PV = parity(z);
             regs.F.H = 1;
             regs.F.X = ((regs.C) & 8) >> 3;
             regs.F.Y = ((regs.C) & 0x20) >> 5;
@@ -11436,7 +11437,7 @@ void Z80_ins_CB_5A_BIT_o_r(regs& regs, pins& pins)
             regs.Q = 1;
             u32 z = (regs.D) & (1 << 3);
             regs.F.N = 0;
-            regs.F.V = parity(z);
+            regs.F.PV = parity(z);
             regs.F.H = 1;
             regs.F.X = ((regs.D) & 8) >> 3;
             regs.F.Y = ((regs.D) & 0x20) >> 5;
@@ -11463,7 +11464,7 @@ void Z80_ins_CB_5B_BIT_o_r(regs& regs, pins& pins)
             regs.Q = 1;
             u32 z = (regs.E) & (1 << 3);
             regs.F.N = 0;
-            regs.F.V = parity(z);
+            regs.F.PV = parity(z);
             regs.F.H = 1;
             regs.F.X = ((regs.E) & 8) >> 3;
             regs.F.Y = ((regs.E) & 0x20) >> 5;
@@ -11490,7 +11491,7 @@ void Z80_ins_CB_5C_BIT_o_r(regs& regs, pins& pins)
             regs.Q = 1;
             u32 z = (regs.H) & (1 << 3);
             regs.F.N = 0;
-            regs.F.V = parity(z);
+            regs.F.PV = parity(z);
             regs.F.H = 1;
             regs.F.X = ((regs.H) & 8) >> 3;
             regs.F.Y = ((regs.H) & 0x20) >> 5;
@@ -11517,7 +11518,7 @@ void Z80_ins_CB_5D_BIT_o_r(regs& regs, pins& pins)
             regs.Q = 1;
             u32 z = (regs.L) & (1 << 3);
             regs.F.N = 0;
-            regs.F.V = parity(z);
+            regs.F.PV = parity(z);
             regs.F.H = 1;
             regs.F.X = ((regs.L) & 8) >> 3;
             regs.F.Y = ((regs.L) & 0x20) >> 5;
@@ -11552,7 +11553,7 @@ void Z80_ins_CB_5E_BIT_o_irr(regs& regs, pins& pins)
             pins.RD = 0; pins.MRQ = 0;
             u32 z = (regs.TR) & (1 << 3);
             regs.F.N = 0;
-            regs.F.V = parity(z);
+            regs.F.PV = parity(z);
             regs.F.H = 1;
             regs.F.X = ((regs.TR) & 8) >> 3;
             regs.F.Y = ((regs.TR) & 0x20) >> 5;
@@ -11585,7 +11586,7 @@ void Z80_ins_CB_5F_BIT_o_r(regs& regs, pins& pins)
             regs.Q = 1;
             u32 z = (regs.A) & (1 << 3);
             regs.F.N = 0;
-            regs.F.V = parity(z);
+            regs.F.PV = parity(z);
             regs.F.H = 1;
             regs.F.X = ((regs.A) & 8) >> 3;
             regs.F.Y = ((regs.A) & 0x20) >> 5;
@@ -11612,7 +11613,7 @@ void Z80_ins_CB_60_BIT_o_r(regs& regs, pins& pins)
             regs.Q = 1;
             u32 z = (regs.B) & (1 << 4);
             regs.F.N = 0;
-            regs.F.V = parity(z);
+            regs.F.PV = parity(z);
             regs.F.H = 1;
             regs.F.X = ((regs.B) & 8) >> 3;
             regs.F.Y = ((regs.B) & 0x20) >> 5;
@@ -11639,7 +11640,7 @@ void Z80_ins_CB_61_BIT_o_r(regs& regs, pins& pins)
             regs.Q = 1;
             u32 z = (regs.C) & (1 << 4);
             regs.F.N = 0;
-            regs.F.V = parity(z);
+            regs.F.PV = parity(z);
             regs.F.H = 1;
             regs.F.X = ((regs.C) & 8) >> 3;
             regs.F.Y = ((regs.C) & 0x20) >> 5;
@@ -11666,7 +11667,7 @@ void Z80_ins_CB_62_BIT_o_r(regs& regs, pins& pins)
             regs.Q = 1;
             u32 z = (regs.D) & (1 << 4);
             regs.F.N = 0;
-            regs.F.V = parity(z);
+            regs.F.PV = parity(z);
             regs.F.H = 1;
             regs.F.X = ((regs.D) & 8) >> 3;
             regs.F.Y = ((regs.D) & 0x20) >> 5;
@@ -11693,7 +11694,7 @@ void Z80_ins_CB_63_BIT_o_r(regs& regs, pins& pins)
             regs.Q = 1;
             u32 z = (regs.E) & (1 << 4);
             regs.F.N = 0;
-            regs.F.V = parity(z);
+            regs.F.PV = parity(z);
             regs.F.H = 1;
             regs.F.X = ((regs.E) & 8) >> 3;
             regs.F.Y = ((regs.E) & 0x20) >> 5;
@@ -11720,7 +11721,7 @@ void Z80_ins_CB_64_BIT_o_r(regs& regs, pins& pins)
             regs.Q = 1;
             u32 z = (regs.H) & (1 << 4);
             regs.F.N = 0;
-            regs.F.V = parity(z);
+            regs.F.PV = parity(z);
             regs.F.H = 1;
             regs.F.X = ((regs.H) & 8) >> 3;
             regs.F.Y = ((regs.H) & 0x20) >> 5;
@@ -11747,7 +11748,7 @@ void Z80_ins_CB_65_BIT_o_r(regs& regs, pins& pins)
             regs.Q = 1;
             u32 z = (regs.L) & (1 << 4);
             regs.F.N = 0;
-            regs.F.V = parity(z);
+            regs.F.PV = parity(z);
             regs.F.H = 1;
             regs.F.X = ((regs.L) & 8) >> 3;
             regs.F.Y = ((regs.L) & 0x20) >> 5;
@@ -11782,7 +11783,7 @@ void Z80_ins_CB_66_BIT_o_irr(regs& regs, pins& pins)
             pins.RD = 0; pins.MRQ = 0;
             u32 z = (regs.TR) & (1 << 4);
             regs.F.N = 0;
-            regs.F.V = parity(z);
+            regs.F.PV = parity(z);
             regs.F.H = 1;
             regs.F.X = ((regs.TR) & 8) >> 3;
             regs.F.Y = ((regs.TR) & 0x20) >> 5;
@@ -11815,7 +11816,7 @@ void Z80_ins_CB_67_BIT_o_r(regs& regs, pins& pins)
             regs.Q = 1;
             u32 z = (regs.A) & (1 << 4);
             regs.F.N = 0;
-            regs.F.V = parity(z);
+            regs.F.PV = parity(z);
             regs.F.H = 1;
             regs.F.X = ((regs.A) & 8) >> 3;
             regs.F.Y = ((regs.A) & 0x20) >> 5;
@@ -11842,7 +11843,7 @@ void Z80_ins_CB_68_BIT_o_r(regs& regs, pins& pins)
             regs.Q = 1;
             u32 z = (regs.B) & (1 << 5);
             regs.F.N = 0;
-            regs.F.V = parity(z);
+            regs.F.PV = parity(z);
             regs.F.H = 1;
             regs.F.X = ((regs.B) & 8) >> 3;
             regs.F.Y = ((regs.B) & 0x20) >> 5;
@@ -11869,7 +11870,7 @@ void Z80_ins_CB_69_BIT_o_r(regs& regs, pins& pins)
             regs.Q = 1;
             u32 z = (regs.C) & (1 << 5);
             regs.F.N = 0;
-            regs.F.V = parity(z);
+            regs.F.PV = parity(z);
             regs.F.H = 1;
             regs.F.X = ((regs.C) & 8) >> 3;
             regs.F.Y = ((regs.C) & 0x20) >> 5;
@@ -11896,7 +11897,7 @@ void Z80_ins_CB_6A_BIT_o_r(regs& regs, pins& pins)
             regs.Q = 1;
             u32 z = (regs.D) & (1 << 5);
             regs.F.N = 0;
-            regs.F.V = parity(z);
+            regs.F.PV = parity(z);
             regs.F.H = 1;
             regs.F.X = ((regs.D) & 8) >> 3;
             regs.F.Y = ((regs.D) & 0x20) >> 5;
@@ -11923,7 +11924,7 @@ void Z80_ins_CB_6B_BIT_o_r(regs& regs, pins& pins)
             regs.Q = 1;
             u32 z = (regs.E) & (1 << 5);
             regs.F.N = 0;
-            regs.F.V = parity(z);
+            regs.F.PV = parity(z);
             regs.F.H = 1;
             regs.F.X = ((regs.E) & 8) >> 3;
             regs.F.Y = ((regs.E) & 0x20) >> 5;
@@ -11950,7 +11951,7 @@ void Z80_ins_CB_6C_BIT_o_r(regs& regs, pins& pins)
             regs.Q = 1;
             u32 z = (regs.H) & (1 << 5);
             regs.F.N = 0;
-            regs.F.V = parity(z);
+            regs.F.PV = parity(z);
             regs.F.H = 1;
             regs.F.X = ((regs.H) & 8) >> 3;
             regs.F.Y = ((regs.H) & 0x20) >> 5;
@@ -11977,7 +11978,7 @@ void Z80_ins_CB_6D_BIT_o_r(regs& regs, pins& pins)
             regs.Q = 1;
             u32 z = (regs.L) & (1 << 5);
             regs.F.N = 0;
-            regs.F.V = parity(z);
+            regs.F.PV = parity(z);
             regs.F.H = 1;
             regs.F.X = ((regs.L) & 8) >> 3;
             regs.F.Y = ((regs.L) & 0x20) >> 5;
@@ -12012,7 +12013,7 @@ void Z80_ins_CB_6E_BIT_o_irr(regs& regs, pins& pins)
             pins.RD = 0; pins.MRQ = 0;
             u32 z = (regs.TR) & (1 << 5);
             regs.F.N = 0;
-            regs.F.V = parity(z);
+            regs.F.PV = parity(z);
             regs.F.H = 1;
             regs.F.X = ((regs.TR) & 8) >> 3;
             regs.F.Y = ((regs.TR) & 0x20) >> 5;
@@ -12045,7 +12046,7 @@ void Z80_ins_CB_6F_BIT_o_r(regs& regs, pins& pins)
             regs.Q = 1;
             u32 z = (regs.A) & (1 << 5);
             regs.F.N = 0;
-            regs.F.V = parity(z);
+            regs.F.PV = parity(z);
             regs.F.H = 1;
             regs.F.X = ((regs.A) & 8) >> 3;
             regs.F.Y = ((regs.A) & 0x20) >> 5;
@@ -12072,7 +12073,7 @@ void Z80_ins_CB_70_BIT_o_r(regs& regs, pins& pins)
             regs.Q = 1;
             u32 z = (regs.B) & (1 << 6);
             regs.F.N = 0;
-            regs.F.V = parity(z);
+            regs.F.PV = parity(z);
             regs.F.H = 1;
             regs.F.X = ((regs.B) & 8) >> 3;
             regs.F.Y = ((regs.B) & 0x20) >> 5;
@@ -12099,7 +12100,7 @@ void Z80_ins_CB_71_BIT_o_r(regs& regs, pins& pins)
             regs.Q = 1;
             u32 z = (regs.C) & (1 << 6);
             regs.F.N = 0;
-            regs.F.V = parity(z);
+            regs.F.PV = parity(z);
             regs.F.H = 1;
             regs.F.X = ((regs.C) & 8) >> 3;
             regs.F.Y = ((regs.C) & 0x20) >> 5;
@@ -12126,7 +12127,7 @@ void Z80_ins_CB_72_BIT_o_r(regs& regs, pins& pins)
             regs.Q = 1;
             u32 z = (regs.D) & (1 << 6);
             regs.F.N = 0;
-            regs.F.V = parity(z);
+            regs.F.PV = parity(z);
             regs.F.H = 1;
             regs.F.X = ((regs.D) & 8) >> 3;
             regs.F.Y = ((regs.D) & 0x20) >> 5;
@@ -12153,7 +12154,7 @@ void Z80_ins_CB_73_BIT_o_r(regs& regs, pins& pins)
             regs.Q = 1;
             u32 z = (regs.E) & (1 << 6);
             regs.F.N = 0;
-            regs.F.V = parity(z);
+            regs.F.PV = parity(z);
             regs.F.H = 1;
             regs.F.X = ((regs.E) & 8) >> 3;
             regs.F.Y = ((regs.E) & 0x20) >> 5;
@@ -12180,7 +12181,7 @@ void Z80_ins_CB_74_BIT_o_r(regs& regs, pins& pins)
             regs.Q = 1;
             u32 z = (regs.H) & (1 << 6);
             regs.F.N = 0;
-            regs.F.V = parity(z);
+            regs.F.PV = parity(z);
             regs.F.H = 1;
             regs.F.X = ((regs.H) & 8) >> 3;
             regs.F.Y = ((regs.H) & 0x20) >> 5;
@@ -12207,7 +12208,7 @@ void Z80_ins_CB_75_BIT_o_r(regs& regs, pins& pins)
             regs.Q = 1;
             u32 z = (regs.L) & (1 << 6);
             regs.F.N = 0;
-            regs.F.V = parity(z);
+            regs.F.PV = parity(z);
             regs.F.H = 1;
             regs.F.X = ((regs.L) & 8) >> 3;
             regs.F.Y = ((regs.L) & 0x20) >> 5;
@@ -12242,7 +12243,7 @@ void Z80_ins_CB_76_BIT_o_irr(regs& regs, pins& pins)
             pins.RD = 0; pins.MRQ = 0;
             u32 z = (regs.TR) & (1 << 6);
             regs.F.N = 0;
-            regs.F.V = parity(z);
+            regs.F.PV = parity(z);
             regs.F.H = 1;
             regs.F.X = ((regs.TR) & 8) >> 3;
             regs.F.Y = ((regs.TR) & 0x20) >> 5;
@@ -12275,7 +12276,7 @@ void Z80_ins_CB_77_BIT_o_r(regs& regs, pins& pins)
             regs.Q = 1;
             u32 z = (regs.A) & (1 << 6);
             regs.F.N = 0;
-            regs.F.V = parity(z);
+            regs.F.PV = parity(z);
             regs.F.H = 1;
             regs.F.X = ((regs.A) & 8) >> 3;
             regs.F.Y = ((regs.A) & 0x20) >> 5;
@@ -12302,7 +12303,7 @@ void Z80_ins_CB_78_BIT_o_r(regs& regs, pins& pins)
             regs.Q = 1;
             u32 z = (regs.B) & (1 << 7);
             regs.F.N = 0;
-            regs.F.V = parity(z);
+            regs.F.PV = parity(z);
             regs.F.H = 1;
             regs.F.X = ((regs.B) & 8) >> 3;
             regs.F.Y = ((regs.B) & 0x20) >> 5;
@@ -12329,7 +12330,7 @@ void Z80_ins_CB_79_BIT_o_r(regs& regs, pins& pins)
             regs.Q = 1;
             u32 z = (regs.C) & (1 << 7);
             regs.F.N = 0;
-            regs.F.V = parity(z);
+            regs.F.PV = parity(z);
             regs.F.H = 1;
             regs.F.X = ((regs.C) & 8) >> 3;
             regs.F.Y = ((regs.C) & 0x20) >> 5;
@@ -12356,7 +12357,7 @@ void Z80_ins_CB_7A_BIT_o_r(regs& regs, pins& pins)
             regs.Q = 1;
             u32 z = (regs.D) & (1 << 7);
             regs.F.N = 0;
-            regs.F.V = parity(z);
+            regs.F.PV = parity(z);
             regs.F.H = 1;
             regs.F.X = ((regs.D) & 8) >> 3;
             regs.F.Y = ((regs.D) & 0x20) >> 5;
@@ -12383,7 +12384,7 @@ void Z80_ins_CB_7B_BIT_o_r(regs& regs, pins& pins)
             regs.Q = 1;
             u32 z = (regs.E) & (1 << 7);
             regs.F.N = 0;
-            regs.F.V = parity(z);
+            regs.F.PV = parity(z);
             regs.F.H = 1;
             regs.F.X = ((regs.E) & 8) >> 3;
             regs.F.Y = ((regs.E) & 0x20) >> 5;
@@ -12410,7 +12411,7 @@ void Z80_ins_CB_7C_BIT_o_r(regs& regs, pins& pins)
             regs.Q = 1;
             u32 z = (regs.H) & (1 << 7);
             regs.F.N = 0;
-            regs.F.V = parity(z);
+            regs.F.PV = parity(z);
             regs.F.H = 1;
             regs.F.X = ((regs.H) & 8) >> 3;
             regs.F.Y = ((regs.H) & 0x20) >> 5;
@@ -12437,7 +12438,7 @@ void Z80_ins_CB_7D_BIT_o_r(regs& regs, pins& pins)
             regs.Q = 1;
             u32 z = (regs.L) & (1 << 7);
             regs.F.N = 0;
-            regs.F.V = parity(z);
+            regs.F.PV = parity(z);
             regs.F.H = 1;
             regs.F.X = ((regs.L) & 8) >> 3;
             regs.F.Y = ((regs.L) & 0x20) >> 5;
@@ -12472,7 +12473,7 @@ void Z80_ins_CB_7E_BIT_o_irr(regs& regs, pins& pins)
             pins.RD = 0; pins.MRQ = 0;
             u32 z = (regs.TR) & (1 << 7);
             regs.F.N = 0;
-            regs.F.V = parity(z);
+            regs.F.PV = parity(z);
             regs.F.H = 1;
             regs.F.X = ((regs.TR) & 8) >> 3;
             regs.F.Y = ((regs.TR) & 0x20) >> 5;
@@ -12505,7 +12506,7 @@ void Z80_ins_CB_7F_BIT_o_r(regs& regs, pins& pins)
             regs.Q = 1;
             u32 z = (regs.A) & (1 << 7);
             regs.F.N = 0;
-            regs.F.V = parity(z);
+            regs.F.PV = parity(z);
             regs.F.H = 1;
             regs.F.X = ((regs.A) & 8) >> 3;
             regs.F.Y = ((regs.A) & 0x20) >> 5;
@@ -15620,7 +15621,7 @@ void Z80_ins_DD_04_INC_r(regs& regs, pins& pins)
             regs.Q = 1;
             regs.TR = ((regs.B) + 1) & 0xFF;
             regs.F.N = 0;
-            regs.F.V = +(regs.TR == 0x80);
+            regs.F.PV = +(regs.TR == 0x80);
             regs.F.X = ((regs.TR) & 8) >> 3;
             regs.F.Y = ((regs.TR) & 0x20) >> 5;
             regs.F.H = +((regs.TR & 0x0F) == 0);
@@ -15648,7 +15649,7 @@ void Z80_ins_DD_05_DEC_r(regs& regs, pins& pins)
             regs.Q = 1;
             regs.TR = ((regs.B) - 1) & 0xFF;
             regs.F.N = 1;
-            regs.F.V = +(regs.TR == 0x7F);
+            regs.F.PV = +(regs.TR == 0x7F);
             regs.F.X = ((regs.TR) & 8) >> 3;
             regs.F.Y = ((regs.TR) & 0x20) >> 5;
             regs.F.H = +((regs.TR & 0x0F) == 0x0F);
@@ -15753,7 +15754,7 @@ void Z80_ins_DD_09_ADD_hl_rr(regs& regs, pins& pins)
             // SUB was IX
             regs.Q = 1;
             regs.WZ = (regs.IX + 1) & 0xFFFF;
-            regs.t[0] = regs.F.P; regs.t[1] = regs.F.Z; regs.t[2] = regs.F.S;
+            regs.t[0] = regs.F.PV; regs.t[1] = regs.F.Z; regs.t[2] = regs.F.S;
             break; }
         case 2: {
             break; }
@@ -15765,7 +15766,7 @@ void Z80_ins_DD_09_ADD_hl_rr(regs& regs, pins& pins)
             z = x + y + 0;
             regs.F.C = +(z > 0xFF);
             regs.F.N = 0;
-            regs.F.V = ((((x ^ y) ^ 0xFF) & (x ^ z)) & 0x80) >> 7;
+            regs.F.PV = ((((x ^ y) ^ 0xFF) & (x ^ z)) & 0x80) >> 7;
             regs.F.X = ((z) & 8) >> 3;
             regs.F.H = ((x ^ y ^ z) & 0x10) >> 4;
             regs.F.Y = ((z) & 0x20) >> 5;
@@ -15783,14 +15784,14 @@ void Z80_ins_DD_09_ADD_hl_rr(regs& regs, pins& pins)
             z = x + y + regs.F.C;
             regs.F.C = +(z > 0xFF);
             regs.F.N = 0;
-            regs.F.V = ((((x ^ y) ^ 0xFF) & (x ^ z)) & 0x80) >> 7;
+            regs.F.PV = ((((x ^ y) ^ 0xFF) & (x ^ z)) & 0x80) >> 7;
             regs.F.X = ((z) & 8) >> 3;
             regs.F.H = ((x ^ y ^ z) & 0x10) >> 4;
             regs.F.Y = ((z) & 0x20) >> 5;
             regs.F.Z = +((z & 0xFF) == 0);
             regs.F.S = ((z) & 0x80) >> 7;
             regs.t[5] = z & 0xFF;
-            regs.F.P = regs.t[0]; regs.F.Z = regs.t[1]; regs.F.S = regs.t[2];
+            regs.F.PV = regs.t[0]; regs.F.Z = regs.t[1]; regs.F.S = regs.t[2];
             regs.IX = (regs.t[5] << 8) | regs.t[4];
             // Following is auto-generated code for instruction finish
             break; }
@@ -15873,7 +15874,7 @@ void Z80_ins_DD_0C_INC_r(regs& regs, pins& pins)
             regs.Q = 1;
             regs.TR = ((regs.C) + 1) & 0xFF;
             regs.F.N = 0;
-            regs.F.V = +(regs.TR == 0x80);
+            regs.F.PV = +(regs.TR == 0x80);
             regs.F.X = ((regs.TR) & 8) >> 3;
             regs.F.Y = ((regs.TR) & 0x20) >> 5;
             regs.F.H = +((regs.TR & 0x0F) == 0);
@@ -15901,7 +15902,7 @@ void Z80_ins_DD_0D_DEC_r(regs& regs, pins& pins)
             regs.Q = 1;
             regs.TR = ((regs.C) - 1) & 0xFF;
             regs.F.N = 1;
-            regs.F.V = +(regs.TR == 0x7F);
+            regs.F.PV = +(regs.TR == 0x7F);
             regs.F.X = ((regs.TR) & 8) >> 3;
             regs.F.Y = ((regs.TR) & 0x20) >> 5;
             regs.F.H = +((regs.TR & 0x0F) == 0x0F);
@@ -16132,7 +16133,7 @@ void Z80_ins_DD_14_INC_r(regs& regs, pins& pins)
             regs.Q = 1;
             regs.TR = ((regs.D) + 1) & 0xFF;
             regs.F.N = 0;
-            regs.F.V = +(regs.TR == 0x80);
+            regs.F.PV = +(regs.TR == 0x80);
             regs.F.X = ((regs.TR) & 8) >> 3;
             regs.F.Y = ((regs.TR) & 0x20) >> 5;
             regs.F.H = +((regs.TR & 0x0F) == 0);
@@ -16160,7 +16161,7 @@ void Z80_ins_DD_15_DEC_r(regs& regs, pins& pins)
             regs.Q = 1;
             regs.TR = ((regs.D) - 1) & 0xFF;
             regs.F.N = 1;
-            regs.F.V = +(regs.TR == 0x7F);
+            regs.F.PV = +(regs.TR == 0x7F);
             regs.F.X = ((regs.TR) & 8) >> 3;
             regs.F.Y = ((regs.TR) & 0x20) >> 5;
             regs.F.H = +((regs.TR & 0x0F) == 0x0F);
@@ -16288,7 +16289,7 @@ void Z80_ins_DD_19_ADD_hl_rr(regs& regs, pins& pins)
             // SUB was IX
             regs.Q = 1;
             regs.WZ = (regs.IX + 1) & 0xFFFF;
-            regs.t[0] = regs.F.P; regs.t[1] = regs.F.Z; regs.t[2] = regs.F.S;
+            regs.t[0] = regs.F.PV; regs.t[1] = regs.F.Z; regs.t[2] = regs.F.S;
             break; }
         case 2: {
             break; }
@@ -16300,7 +16301,7 @@ void Z80_ins_DD_19_ADD_hl_rr(regs& regs, pins& pins)
             z = x + y + 0;
             regs.F.C = +(z > 0xFF);
             regs.F.N = 0;
-            regs.F.V = ((((x ^ y) ^ 0xFF) & (x ^ z)) & 0x80) >> 7;
+            regs.F.PV = ((((x ^ y) ^ 0xFF) & (x ^ z)) & 0x80) >> 7;
             regs.F.X = ((z) & 8) >> 3;
             regs.F.H = ((x ^ y ^ z) & 0x10) >> 4;
             regs.F.Y = ((z) & 0x20) >> 5;
@@ -16318,14 +16319,14 @@ void Z80_ins_DD_19_ADD_hl_rr(regs& regs, pins& pins)
             z = x + y + regs.F.C;
             regs.F.C = +(z > 0xFF);
             regs.F.N = 0;
-            regs.F.V = ((((x ^ y) ^ 0xFF) & (x ^ z)) & 0x80) >> 7;
+            regs.F.PV = ((((x ^ y) ^ 0xFF) & (x ^ z)) & 0x80) >> 7;
             regs.F.X = ((z) & 8) >> 3;
             regs.F.H = ((x ^ y ^ z) & 0x10) >> 4;
             regs.F.Y = ((z) & 0x20) >> 5;
             regs.F.Z = +((z & 0xFF) == 0);
             regs.F.S = ((z) & 0x80) >> 7;
             regs.t[5] = z & 0xFF;
-            regs.F.P = regs.t[0]; regs.F.Z = regs.t[1]; regs.F.S = regs.t[2];
+            regs.F.PV = regs.t[0]; regs.F.Z = regs.t[1]; regs.F.S = regs.t[2];
             regs.IX = (regs.t[5] << 8) | regs.t[4];
             // Following is auto-generated code for instruction finish
             break; }
@@ -16408,7 +16409,7 @@ void Z80_ins_DD_1C_INC_r(regs& regs, pins& pins)
             regs.Q = 1;
             regs.TR = ((regs.E) + 1) & 0xFF;
             regs.F.N = 0;
-            regs.F.V = +(regs.TR == 0x80);
+            regs.F.PV = +(regs.TR == 0x80);
             regs.F.X = ((regs.TR) & 8) >> 3;
             regs.F.Y = ((regs.TR) & 0x20) >> 5;
             regs.F.H = +((regs.TR & 0x0F) == 0);
@@ -16436,7 +16437,7 @@ void Z80_ins_DD_1D_DEC_r(regs& regs, pins& pins)
             regs.Q = 1;
             regs.TR = ((regs.E) - 1) & 0xFF;
             regs.F.N = 1;
-            regs.F.V = +(regs.TR == 0x7F);
+            regs.F.PV = +(regs.TR == 0x7F);
             regs.F.X = ((regs.TR) & 8) >> 3;
             regs.F.Y = ((regs.TR) & 0x20) >> 5;
             regs.F.H = +((regs.TR & 0x0F) == 0x0F);
@@ -16694,7 +16695,7 @@ void Z80_ins_DD_24_INC_r(regs& regs, pins& pins)
             regs.Q = 1;
             regs.TR = (((regs.IX & 0xFF00) >> 8) + 1) & 0xFF;
             regs.F.N = 0;
-            regs.F.V = +(regs.TR == 0x80);
+            regs.F.PV = +(regs.TR == 0x80);
             regs.F.X = ((regs.TR) & 8) >> 3;
             regs.F.Y = ((regs.TR) & 0x20) >> 5;
             regs.F.H = +((regs.TR & 0x0F) == 0);
@@ -16722,7 +16723,7 @@ void Z80_ins_DD_25_DEC_r(regs& regs, pins& pins)
             regs.Q = 1;
             regs.TR = (((regs.IX & 0xFF00) >> 8) - 1) & 0xFF;
             regs.F.N = 1;
-            regs.F.V = +(regs.TR == 0x7F);
+            regs.F.PV = +(regs.TR == 0x7F);
             regs.F.X = ((regs.TR) & 8) >> 3;
             regs.F.Y = ((regs.TR) & 0x20) >> 5;
             regs.F.H = +((regs.TR & 0x0F) == 0x0F);
@@ -16782,7 +16783,7 @@ void Z80_ins_DD_27_DAA(regs& regs, pins& pins)
             u32 a = regs.A;
             if (regs.F.C || (regs.A > 0x99)) { regs.A = (regs.A + (regs.F.N ? -0x60: 0x60)) & 0xFF; regs.F.C = 1; }
             if (regs.F.H || ((regs.A & 0x0F) > 0x09)) { regs.A = (regs.A + (regs.F.N ? -6 : 6)) & 0xFF; }
-            regs.F.P = parity(regs.A);
+            regs.F.PV = parity(regs.A);
             regs.F.X = ((regs.A) & 8) >> 3;
             regs.F.Y = ((regs.A) & 0x20) >> 5;
             regs.F.H = ((a ^ regs.A) & 0x10) >> 4;
@@ -16853,7 +16854,7 @@ void Z80_ins_DD_29_ADD_hl_rr(regs& regs, pins& pins)
             // SUB was IX
             regs.Q = 1;
             regs.WZ = (regs.IX + 1) & 0xFFFF;
-            regs.t[0] = regs.F.P; regs.t[1] = regs.F.Z; regs.t[2] = regs.F.S;
+            regs.t[0] = regs.F.PV; regs.t[1] = regs.F.Z; regs.t[2] = regs.F.S;
             break; }
         case 2: {
             break; }
@@ -16865,7 +16866,7 @@ void Z80_ins_DD_29_ADD_hl_rr(regs& regs, pins& pins)
             z = x + y + 0;
             regs.F.C = +(z > 0xFF);
             regs.F.N = 0;
-            regs.F.V = ((((x ^ y) ^ 0xFF) & (x ^ z)) & 0x80) >> 7;
+            regs.F.PV = ((((x ^ y) ^ 0xFF) & (x ^ z)) & 0x80) >> 7;
             regs.F.X = ((z) & 8) >> 3;
             regs.F.H = ((x ^ y ^ z) & 0x10) >> 4;
             regs.F.Y = ((z) & 0x20) >> 5;
@@ -16883,14 +16884,14 @@ void Z80_ins_DD_29_ADD_hl_rr(regs& regs, pins& pins)
             z = x + y + regs.F.C;
             regs.F.C = +(z > 0xFF);
             regs.F.N = 0;
-            regs.F.V = ((((x ^ y) ^ 0xFF) & (x ^ z)) & 0x80) >> 7;
+            regs.F.PV = ((((x ^ y) ^ 0xFF) & (x ^ z)) & 0x80) >> 7;
             regs.F.X = ((z) & 8) >> 3;
             regs.F.H = ((x ^ y ^ z) & 0x10) >> 4;
             regs.F.Y = ((z) & 0x20) >> 5;
             regs.F.Z = +((z & 0xFF) == 0);
             regs.F.S = ((z) & 0x80) >> 7;
             regs.t[5] = z & 0xFF;
-            regs.F.P = regs.t[0]; regs.F.Z = regs.t[1]; regs.F.S = regs.t[2];
+            regs.F.PV = regs.t[0]; regs.F.Z = regs.t[1]; regs.F.S = regs.t[2];
             regs.IX = (regs.t[5] << 8) | regs.t[4];
             // Following is auto-generated code for instruction finish
             break; }
@@ -17007,7 +17008,7 @@ void Z80_ins_DD_2C_INC_r(regs& regs, pins& pins)
             regs.Q = 1;
             regs.TR = ((regs.IX & 0xFF) + 1) & 0xFF;
             regs.F.N = 0;
-            regs.F.V = +(regs.TR == 0x80);
+            regs.F.PV = +(regs.TR == 0x80);
             regs.F.X = ((regs.TR) & 8) >> 3;
             regs.F.Y = ((regs.TR) & 0x20) >> 5;
             regs.F.H = +((regs.TR & 0x0F) == 0);
@@ -17035,7 +17036,7 @@ void Z80_ins_DD_2D_DEC_r(regs& regs, pins& pins)
             regs.Q = 1;
             regs.TR = ((regs.IX & 0xFF) - 1) & 0xFF;
             regs.F.N = 1;
-            regs.F.V = +(regs.TR == 0x7F);
+            regs.F.PV = +(regs.TR == 0x7F);
             regs.F.X = ((regs.TR) & 8) >> 3;
             regs.F.Y = ((regs.TR) & 0x20) >> 5;
             regs.F.H = +((regs.TR & 0x0F) == 0x0F);
@@ -17314,7 +17315,7 @@ void Z80_ins_DD_34_INC_irr(regs& regs, pins& pins)
         case 12: {
             regs.TR = ((regs.TR) + 1) & 0xFF;
             regs.F.N = 0;
-            regs.F.V = +(regs.TR == 0x80);
+            regs.F.PV = +(regs.TR == 0x80);
             regs.F.X = ((regs.TR) & 8) >> 3;
             regs.F.Y = ((regs.TR) & 0x20) >> 5;
             regs.F.H = +((regs.TR & 0x0F) == 0);
@@ -17386,7 +17387,7 @@ void Z80_ins_DD_35_DEC_irr(regs& regs, pins& pins)
         case 12: {
             regs.TR = ((regs.TR) - 1) & 0xFF;
             regs.F.N = 1;
-            regs.F.V = +(regs.TR == 0x7F);
+            regs.F.PV = +(regs.TR == 0x7F);
             regs.F.X = ((regs.TR) & 8) >> 3;
             regs.F.Y = ((regs.TR) & 0x20) >> 5;
             regs.F.H = +((regs.TR & 0x0F) == 0x0F);
@@ -17549,7 +17550,7 @@ void Z80_ins_DD_39_ADD_hl_rr(regs& regs, pins& pins)
             // SUB was IX
             regs.Q = 1;
             regs.WZ = (regs.IX + 1) & 0xFFFF;
-            regs.t[0] = regs.F.P; regs.t[1] = regs.F.Z; regs.t[2] = regs.F.S;
+            regs.t[0] = regs.F.PV; regs.t[1] = regs.F.Z; regs.t[2] = regs.F.S;
             break; }
         case 2: {
             break; }
@@ -17561,7 +17562,7 @@ void Z80_ins_DD_39_ADD_hl_rr(regs& regs, pins& pins)
             z = x + y + 0;
             regs.F.C = +(z > 0xFF);
             regs.F.N = 0;
-            regs.F.V = ((((x ^ y) ^ 0xFF) & (x ^ z)) & 0x80) >> 7;
+            regs.F.PV = ((((x ^ y) ^ 0xFF) & (x ^ z)) & 0x80) >> 7;
             regs.F.X = ((z) & 8) >> 3;
             regs.F.H = ((x ^ y ^ z) & 0x10) >> 4;
             regs.F.Y = ((z) & 0x20) >> 5;
@@ -17579,14 +17580,14 @@ void Z80_ins_DD_39_ADD_hl_rr(regs& regs, pins& pins)
             z = x + y + regs.F.C;
             regs.F.C = +(z > 0xFF);
             regs.F.N = 0;
-            regs.F.V = ((((x ^ y) ^ 0xFF) & (x ^ z)) & 0x80) >> 7;
+            regs.F.PV = ((((x ^ y) ^ 0xFF) & (x ^ z)) & 0x80) >> 7;
             regs.F.X = ((z) & 8) >> 3;
             regs.F.H = ((x ^ y ^ z) & 0x10) >> 4;
             regs.F.Y = ((z) & 0x20) >> 5;
             regs.F.Z = +((z & 0xFF) == 0);
             regs.F.S = ((z) & 0x80) >> 7;
             regs.t[5] = z & 0xFF;
-            regs.F.P = regs.t[0]; regs.F.Z = regs.t[1]; regs.F.S = regs.t[2];
+            regs.F.PV = regs.t[0]; regs.F.Z = regs.t[1]; regs.F.S = regs.t[2];
             regs.IX = (regs.t[5] << 8) | regs.t[4];
             // Following is auto-generated code for instruction finish
             break; }
@@ -17690,7 +17691,7 @@ void Z80_ins_DD_3C_INC_r(regs& regs, pins& pins)
             regs.Q = 1;
             regs.TR = ((regs.A) + 1) & 0xFF;
             regs.F.N = 0;
-            regs.F.V = +(regs.TR == 0x80);
+            regs.F.PV = +(regs.TR == 0x80);
             regs.F.X = ((regs.TR) & 8) >> 3;
             regs.F.Y = ((regs.TR) & 0x20) >> 5;
             regs.F.H = +((regs.TR & 0x0F) == 0);
@@ -17718,7 +17719,7 @@ void Z80_ins_DD_3D_DEC_r(regs& regs, pins& pins)
             regs.Q = 1;
             regs.TR = ((regs.A) - 1) & 0xFF;
             regs.F.N = 1;
-            regs.F.V = +(regs.TR == 0x7F);
+            regs.F.PV = +(regs.TR == 0x7F);
             regs.F.X = ((regs.TR) & 8) >> 3;
             regs.F.Y = ((regs.TR) & 0x20) >> 5;
             regs.F.H = +((regs.TR & 0x0F) == 0x0F);
@@ -19540,7 +19541,7 @@ void Z80_ins_DD_80_ADD_a_r(regs& regs, pins& pins)
             u32 z = x + y + 0;
             regs.F.C = +(z > 0xFF);
             regs.F.N = 0;
-            regs.F.V = ((((x ^ y) ^ 0xFF) & (x ^ z)) & 0x80) >> 7;
+            regs.F.PV = ((((x ^ y) ^ 0xFF) & (x ^ z)) & 0x80) >> 7;
             regs.F.X = ((z) & 8) >> 3;
             regs.F.H = ((x ^ y ^ z) & 0x10) >> 4;
             regs.F.Y = ((z) & 0x20) >> 5;
@@ -19571,7 +19572,7 @@ void Z80_ins_DD_81_ADD_a_r(regs& regs, pins& pins)
             u32 z = x + y + 0;
             regs.F.C = +(z > 0xFF);
             regs.F.N = 0;
-            regs.F.V = ((((x ^ y) ^ 0xFF) & (x ^ z)) & 0x80) >> 7;
+            regs.F.PV = ((((x ^ y) ^ 0xFF) & (x ^ z)) & 0x80) >> 7;
             regs.F.X = ((z) & 8) >> 3;
             regs.F.H = ((x ^ y ^ z) & 0x10) >> 4;
             regs.F.Y = ((z) & 0x20) >> 5;
@@ -19602,7 +19603,7 @@ void Z80_ins_DD_82_ADD_a_r(regs& regs, pins& pins)
             u32 z = x + y + 0;
             regs.F.C = +(z > 0xFF);
             regs.F.N = 0;
-            regs.F.V = ((((x ^ y) ^ 0xFF) & (x ^ z)) & 0x80) >> 7;
+            regs.F.PV = ((((x ^ y) ^ 0xFF) & (x ^ z)) & 0x80) >> 7;
             regs.F.X = ((z) & 8) >> 3;
             regs.F.H = ((x ^ y ^ z) & 0x10) >> 4;
             regs.F.Y = ((z) & 0x20) >> 5;
@@ -19633,7 +19634,7 @@ void Z80_ins_DD_83_ADD_a_r(regs& regs, pins& pins)
             u32 z = x + y + 0;
             regs.F.C = +(z > 0xFF);
             regs.F.N = 0;
-            regs.F.V = ((((x ^ y) ^ 0xFF) & (x ^ z)) & 0x80) >> 7;
+            regs.F.PV = ((((x ^ y) ^ 0xFF) & (x ^ z)) & 0x80) >> 7;
             regs.F.X = ((z) & 8) >> 3;
             regs.F.H = ((x ^ y ^ z) & 0x10) >> 4;
             regs.F.Y = ((z) & 0x20) >> 5;
@@ -19664,7 +19665,7 @@ void Z80_ins_DD_84_ADD_a_r(regs& regs, pins& pins)
             u32 z = x + y + 0;
             regs.F.C = +(z > 0xFF);
             regs.F.N = 0;
-            regs.F.V = ((((x ^ y) ^ 0xFF) & (x ^ z)) & 0x80) >> 7;
+            regs.F.PV = ((((x ^ y) ^ 0xFF) & (x ^ z)) & 0x80) >> 7;
             regs.F.X = ((z) & 8) >> 3;
             regs.F.H = ((x ^ y ^ z) & 0x10) >> 4;
             regs.F.Y = ((z) & 0x20) >> 5;
@@ -19695,7 +19696,7 @@ void Z80_ins_DD_85_ADD_a_r(regs& regs, pins& pins)
             u32 z = x + y + 0;
             regs.F.C = +(z > 0xFF);
             regs.F.N = 0;
-            regs.F.V = ((((x ^ y) ^ 0xFF) & (x ^ z)) & 0x80) >> 7;
+            regs.F.PV = ((((x ^ y) ^ 0xFF) & (x ^ z)) & 0x80) >> 7;
             regs.F.X = ((z) & 8) >> 3;
             regs.F.H = ((x ^ y ^ z) & 0x10) >> 4;
             regs.F.Y = ((z) & 0x20) >> 5;
@@ -19757,7 +19758,7 @@ void Z80_ins_DD_86_ADD_a_irr(regs& regs, pins& pins)
             u32 z = x + y + 0;
             regs.F.C = +(z > 0xFF);
             regs.F.N = 0;
-            regs.F.V = ((((x ^ y) ^ 0xFF) & (x ^ z)) & 0x80) >> 7;
+            regs.F.PV = ((((x ^ y) ^ 0xFF) & (x ^ z)) & 0x80) >> 7;
             regs.F.X = ((z) & 8) >> 3;
             regs.F.H = ((x ^ y ^ z) & 0x10) >> 4;
             regs.F.Y = ((z) & 0x20) >> 5;
@@ -19790,7 +19791,7 @@ void Z80_ins_DD_87_ADD_a_r(regs& regs, pins& pins)
             u32 z = x + y + 0;
             regs.F.C = +(z > 0xFF);
             regs.F.N = 0;
-            regs.F.V = ((((x ^ y) ^ 0xFF) & (x ^ z)) & 0x80) >> 7;
+            regs.F.PV = ((((x ^ y) ^ 0xFF) & (x ^ z)) & 0x80) >> 7;
             regs.F.X = ((z) & 8) >> 3;
             regs.F.H = ((x ^ y ^ z) & 0x10) >> 4;
             regs.F.Y = ((z) & 0x20) >> 5;
@@ -19821,7 +19822,7 @@ void Z80_ins_DD_88_ADC_a_r(regs& regs, pins& pins)
             u32 z = x + y + regs.F.C;
             regs.F.C = +(z > 0xFF);
             regs.F.N = 0;
-            regs.F.V = ((((x ^ y) ^ 0xFF) & (x ^ z)) & 0x80) >> 7;
+            regs.F.PV = ((((x ^ y) ^ 0xFF) & (x ^ z)) & 0x80) >> 7;
             regs.F.X = ((z) & 8) >> 3;
             regs.F.H = ((x ^ y ^ z) & 0x10) >> 4;
             regs.F.Y = ((z) & 0x20) >> 5;
@@ -19852,7 +19853,7 @@ void Z80_ins_DD_89_ADC_a_r(regs& regs, pins& pins)
             u32 z = x + y + regs.F.C;
             regs.F.C = +(z > 0xFF);
             regs.F.N = 0;
-            regs.F.V = ((((x ^ y) ^ 0xFF) & (x ^ z)) & 0x80) >> 7;
+            regs.F.PV = ((((x ^ y) ^ 0xFF) & (x ^ z)) & 0x80) >> 7;
             regs.F.X = ((z) & 8) >> 3;
             regs.F.H = ((x ^ y ^ z) & 0x10) >> 4;
             regs.F.Y = ((z) & 0x20) >> 5;
@@ -19883,7 +19884,7 @@ void Z80_ins_DD_8A_ADC_a_r(regs& regs, pins& pins)
             u32 z = x + y + regs.F.C;
             regs.F.C = +(z > 0xFF);
             regs.F.N = 0;
-            regs.F.V = ((((x ^ y) ^ 0xFF) & (x ^ z)) & 0x80) >> 7;
+            regs.F.PV = ((((x ^ y) ^ 0xFF) & (x ^ z)) & 0x80) >> 7;
             regs.F.X = ((z) & 8) >> 3;
             regs.F.H = ((x ^ y ^ z) & 0x10) >> 4;
             regs.F.Y = ((z) & 0x20) >> 5;
@@ -19914,7 +19915,7 @@ void Z80_ins_DD_8B_ADC_a_r(regs& regs, pins& pins)
             u32 z = x + y + regs.F.C;
             regs.F.C = +(z > 0xFF);
             regs.F.N = 0;
-            regs.F.V = ((((x ^ y) ^ 0xFF) & (x ^ z)) & 0x80) >> 7;
+            regs.F.PV = ((((x ^ y) ^ 0xFF) & (x ^ z)) & 0x80) >> 7;
             regs.F.X = ((z) & 8) >> 3;
             regs.F.H = ((x ^ y ^ z) & 0x10) >> 4;
             regs.F.Y = ((z) & 0x20) >> 5;
@@ -19945,7 +19946,7 @@ void Z80_ins_DD_8C_ADC_a_r(regs& regs, pins& pins)
             u32 z = x + y + regs.F.C;
             regs.F.C = +(z > 0xFF);
             regs.F.N = 0;
-            regs.F.V = ((((x ^ y) ^ 0xFF) & (x ^ z)) & 0x80) >> 7;
+            regs.F.PV = ((((x ^ y) ^ 0xFF) & (x ^ z)) & 0x80) >> 7;
             regs.F.X = ((z) & 8) >> 3;
             regs.F.H = ((x ^ y ^ z) & 0x10) >> 4;
             regs.F.Y = ((z) & 0x20) >> 5;
@@ -19976,7 +19977,7 @@ void Z80_ins_DD_8D_ADC_a_r(regs& regs, pins& pins)
             u32 z = x + y + regs.F.C;
             regs.F.C = +(z > 0xFF);
             regs.F.N = 0;
-            regs.F.V = ((((x ^ y) ^ 0xFF) & (x ^ z)) & 0x80) >> 7;
+            regs.F.PV = ((((x ^ y) ^ 0xFF) & (x ^ z)) & 0x80) >> 7;
             regs.F.X = ((z) & 8) >> 3;
             regs.F.H = ((x ^ y ^ z) & 0x10) >> 4;
             regs.F.Y = ((z) & 0x20) >> 5;
@@ -20038,7 +20039,7 @@ void Z80_ins_DD_8E_ADC_a_irr(regs& regs, pins& pins)
             u32 z = x + y + regs.F.C;
             regs.F.C = +(z > 0xFF);
             regs.F.N = 0;
-            regs.F.V = ((((x ^ y) ^ 0xFF) & (x ^ z)) & 0x80) >> 7;
+            regs.F.PV = ((((x ^ y) ^ 0xFF) & (x ^ z)) & 0x80) >> 7;
             regs.F.X = ((z) & 8) >> 3;
             regs.F.H = ((x ^ y ^ z) & 0x10) >> 4;
             regs.F.Y = ((z) & 0x20) >> 5;
@@ -20071,7 +20072,7 @@ void Z80_ins_DD_8F_ADC_a_r(regs& regs, pins& pins)
             u32 z = x + y + regs.F.C;
             regs.F.C = +(z > 0xFF);
             regs.F.N = 0;
-            regs.F.V = ((((x ^ y) ^ 0xFF) & (x ^ z)) & 0x80) >> 7;
+            regs.F.PV = ((((x ^ y) ^ 0xFF) & (x ^ z)) & 0x80) >> 7;
             regs.F.X = ((z) & 8) >> 3;
             regs.F.H = ((x ^ y ^ z) & 0x10) >> 4;
             regs.F.Y = ((z) & 0x20) >> 5;
@@ -20103,7 +20104,7 @@ void Z80_ins_DD_90_SUB_a_r(regs& regs, pins& pins)
             u32 z = (x - y - c) & 0x1FF;
             regs.F.C = (z & 0x100) >> 8;
             regs.F.N = 1;
-            regs.F.V = (((x ^ y) & (x ^ z)) & 0x80) >> 7;
+            regs.F.PV = (((x ^ y) & (x ^ z)) & 0x80) >> 7;
             regs.F.X = ((z) & 8) >> 3;
             regs.F.Y = ((z) & 0x20) >> 5;
             regs.F.H = ((x ^ y ^ z) & 0x10) >> 4;
@@ -20135,7 +20136,7 @@ void Z80_ins_DD_91_SUB_a_r(regs& regs, pins& pins)
             u32 z = (x - y - c) & 0x1FF;
             regs.F.C = (z & 0x100) >> 8;
             regs.F.N = 1;
-            regs.F.V = (((x ^ y) & (x ^ z)) & 0x80) >> 7;
+            regs.F.PV = (((x ^ y) & (x ^ z)) & 0x80) >> 7;
             regs.F.X = ((z) & 8) >> 3;
             regs.F.Y = ((z) & 0x20) >> 5;
             regs.F.H = ((x ^ y ^ z) & 0x10) >> 4;
@@ -20167,7 +20168,7 @@ void Z80_ins_DD_92_SUB_a_r(regs& regs, pins& pins)
             u32 z = (x - y - c) & 0x1FF;
             regs.F.C = (z & 0x100) >> 8;
             regs.F.N = 1;
-            regs.F.V = (((x ^ y) & (x ^ z)) & 0x80) >> 7;
+            regs.F.PV = (((x ^ y) & (x ^ z)) & 0x80) >> 7;
             regs.F.X = ((z) & 8) >> 3;
             regs.F.Y = ((z) & 0x20) >> 5;
             regs.F.H = ((x ^ y ^ z) & 0x10) >> 4;
@@ -20199,7 +20200,7 @@ void Z80_ins_DD_93_SUB_a_r(regs& regs, pins& pins)
             u32 z = (x - y - c) & 0x1FF;
             regs.F.C = (z & 0x100) >> 8;
             regs.F.N = 1;
-            regs.F.V = (((x ^ y) & (x ^ z)) & 0x80) >> 7;
+            regs.F.PV = (((x ^ y) & (x ^ z)) & 0x80) >> 7;
             regs.F.X = ((z) & 8) >> 3;
             regs.F.Y = ((z) & 0x20) >> 5;
             regs.F.H = ((x ^ y ^ z) & 0x10) >> 4;
@@ -20231,7 +20232,7 @@ void Z80_ins_DD_94_SUB_a_r(regs& regs, pins& pins)
             u32 z = (x - y - c) & 0x1FF;
             regs.F.C = (z & 0x100) >> 8;
             regs.F.N = 1;
-            regs.F.V = (((x ^ y) & (x ^ z)) & 0x80) >> 7;
+            regs.F.PV = (((x ^ y) & (x ^ z)) & 0x80) >> 7;
             regs.F.X = ((z) & 8) >> 3;
             regs.F.Y = ((z) & 0x20) >> 5;
             regs.F.H = ((x ^ y ^ z) & 0x10) >> 4;
@@ -20263,7 +20264,7 @@ void Z80_ins_DD_95_SUB_a_r(regs& regs, pins& pins)
             u32 z = (x - y - c) & 0x1FF;
             regs.F.C = (z & 0x100) >> 8;
             regs.F.N = 1;
-            regs.F.V = (((x ^ y) & (x ^ z)) & 0x80) >> 7;
+            regs.F.PV = (((x ^ y) & (x ^ z)) & 0x80) >> 7;
             regs.F.X = ((z) & 8) >> 3;
             regs.F.Y = ((z) & 0x20) >> 5;
             regs.F.H = ((x ^ y ^ z) & 0x10) >> 4;
@@ -20326,7 +20327,7 @@ void Z80_ins_DD_96_SUB_a_irr(regs& regs, pins& pins)
             u32 z = (x - y - c) & 0x1FF;
             regs.F.C = (z & 0x100) >> 8;
             regs.F.N = 1;
-            regs.F.V = (((x ^ y) & (x ^ z)) & 0x80) >> 7;
+            regs.F.PV = (((x ^ y) & (x ^ z)) & 0x80) >> 7;
             regs.F.X = ((z) & 8) >> 3;
             regs.F.Y = ((z) & 0x20) >> 5;
             regs.F.H = ((x ^ y ^ z) & 0x10) >> 4;
@@ -20360,7 +20361,7 @@ void Z80_ins_DD_97_SUB_a_r(regs& regs, pins& pins)
             u32 z = (x - y - c) & 0x1FF;
             regs.F.C = (z & 0x100) >> 8;
             regs.F.N = 1;
-            regs.F.V = (((x ^ y) & (x ^ z)) & 0x80) >> 7;
+            regs.F.PV = (((x ^ y) & (x ^ z)) & 0x80) >> 7;
             regs.F.X = ((z) & 8) >> 3;
             regs.F.Y = ((z) & 0x20) >> 5;
             regs.F.H = ((x ^ y ^ z) & 0x10) >> 4;
@@ -20392,7 +20393,7 @@ void Z80_ins_DD_98_SBC_a_r(regs& regs, pins& pins)
             u32 z = (x - y - c) & 0x1FF;
             regs.F.C = (z & 0x100) >> 8;
             regs.F.N = 1;
-            regs.F.V = (((x ^ y) & (x ^ z)) & 0x80) >> 7;
+            regs.F.PV = (((x ^ y) & (x ^ z)) & 0x80) >> 7;
             regs.F.X = ((z) & 8) >> 3;
             regs.F.Y = ((z) & 0x20) >> 5;
             regs.F.H = ((x ^ y ^ z) & 0x10) >> 4;
@@ -20424,7 +20425,7 @@ void Z80_ins_DD_99_SBC_a_r(regs& regs, pins& pins)
             u32 z = (x - y - c) & 0x1FF;
             regs.F.C = (z & 0x100) >> 8;
             regs.F.N = 1;
-            regs.F.V = (((x ^ y) & (x ^ z)) & 0x80) >> 7;
+            regs.F.PV = (((x ^ y) & (x ^ z)) & 0x80) >> 7;
             regs.F.X = ((z) & 8) >> 3;
             regs.F.Y = ((z) & 0x20) >> 5;
             regs.F.H = ((x ^ y ^ z) & 0x10) >> 4;
@@ -20456,7 +20457,7 @@ void Z80_ins_DD_9A_SBC_a_r(regs& regs, pins& pins)
             u32 z = (x - y - c) & 0x1FF;
             regs.F.C = (z & 0x100) >> 8;
             regs.F.N = 1;
-            regs.F.V = (((x ^ y) & (x ^ z)) & 0x80) >> 7;
+            regs.F.PV = (((x ^ y) & (x ^ z)) & 0x80) >> 7;
             regs.F.X = ((z) & 8) >> 3;
             regs.F.Y = ((z) & 0x20) >> 5;
             regs.F.H = ((x ^ y ^ z) & 0x10) >> 4;
@@ -20488,7 +20489,7 @@ void Z80_ins_DD_9B_SBC_a_r(regs& regs, pins& pins)
             u32 z = (x - y - c) & 0x1FF;
             regs.F.C = (z & 0x100) >> 8;
             regs.F.N = 1;
-            regs.F.V = (((x ^ y) & (x ^ z)) & 0x80) >> 7;
+            regs.F.PV = (((x ^ y) & (x ^ z)) & 0x80) >> 7;
             regs.F.X = ((z) & 8) >> 3;
             regs.F.Y = ((z) & 0x20) >> 5;
             regs.F.H = ((x ^ y ^ z) & 0x10) >> 4;
@@ -20520,7 +20521,7 @@ void Z80_ins_DD_9C_SBC_a_r(regs& regs, pins& pins)
             u32 z = (x - y - c) & 0x1FF;
             regs.F.C = (z & 0x100) >> 8;
             regs.F.N = 1;
-            regs.F.V = (((x ^ y) & (x ^ z)) & 0x80) >> 7;
+            regs.F.PV = (((x ^ y) & (x ^ z)) & 0x80) >> 7;
             regs.F.X = ((z) & 8) >> 3;
             regs.F.Y = ((z) & 0x20) >> 5;
             regs.F.H = ((x ^ y ^ z) & 0x10) >> 4;
@@ -20552,7 +20553,7 @@ void Z80_ins_DD_9D_SBC_a_r(regs& regs, pins& pins)
             u32 z = (x - y - c) & 0x1FF;
             regs.F.C = (z & 0x100) >> 8;
             regs.F.N = 1;
-            regs.F.V = (((x ^ y) & (x ^ z)) & 0x80) >> 7;
+            regs.F.PV = (((x ^ y) & (x ^ z)) & 0x80) >> 7;
             regs.F.X = ((z) & 8) >> 3;
             regs.F.Y = ((z) & 0x20) >> 5;
             regs.F.H = ((x ^ y ^ z) & 0x10) >> 4;
@@ -20615,7 +20616,7 @@ void Z80_ins_DD_9E_SBC_a_irr(regs& regs, pins& pins)
             u32 z = (x - y - c) & 0x1FF;
             regs.F.C = (z & 0x100) >> 8;
             regs.F.N = 1;
-            regs.F.V = (((x ^ y) & (x ^ z)) & 0x80) >> 7;
+            regs.F.PV = (((x ^ y) & (x ^ z)) & 0x80) >> 7;
             regs.F.X = ((z) & 8) >> 3;
             regs.F.Y = ((z) & 0x20) >> 5;
             regs.F.H = ((x ^ y ^ z) & 0x10) >> 4;
@@ -20649,7 +20650,7 @@ void Z80_ins_DD_9F_SBC_a_r(regs& regs, pins& pins)
             u32 z = (x - y - c) & 0x1FF;
             regs.F.C = (z & 0x100) >> 8;
             regs.F.N = 1;
-            regs.F.V = (((x ^ y) & (x ^ z)) & 0x80) >> 7;
+            regs.F.PV = (((x ^ y) & (x ^ z)) & 0x80) >> 7;
             regs.F.X = ((z) & 8) >> 3;
             regs.F.Y = ((z) & 0x20) >> 5;
             regs.F.H = ((x ^ y ^ z) & 0x10) >> 4;
@@ -20677,7 +20678,7 @@ void Z80_ins_DD_A0_AND_a_r(regs& regs, pins& pins)
             regs.Q = 1;
             u32 z = (regs.A) & (regs.B);
             regs.F.C = regs.F.N = 0;
-            regs.F.V = parity(z);
+            regs.F.PV = parity(z);
             regs.F.X = ((z) & 8) >> 3;
             regs.F.H = 1;
             regs.F.Y = ((z) & 0x20) >> 5;
@@ -20705,7 +20706,7 @@ void Z80_ins_DD_A1_AND_a_r(regs& regs, pins& pins)
             regs.Q = 1;
             u32 z = (regs.A) & (regs.C);
             regs.F.C = regs.F.N = 0;
-            regs.F.V = parity(z);
+            regs.F.PV = parity(z);
             regs.F.X = ((z) & 8) >> 3;
             regs.F.H = 1;
             regs.F.Y = ((z) & 0x20) >> 5;
@@ -20733,7 +20734,7 @@ void Z80_ins_DD_A2_AND_a_r(regs& regs, pins& pins)
             regs.Q = 1;
             u32 z = (regs.A) & (regs.D);
             regs.F.C = regs.F.N = 0;
-            regs.F.V = parity(z);
+            regs.F.PV = parity(z);
             regs.F.X = ((z) & 8) >> 3;
             regs.F.H = 1;
             regs.F.Y = ((z) & 0x20) >> 5;
@@ -20761,7 +20762,7 @@ void Z80_ins_DD_A3_AND_a_r(regs& regs, pins& pins)
             regs.Q = 1;
             u32 z = (regs.A) & (regs.E);
             regs.F.C = regs.F.N = 0;
-            regs.F.V = parity(z);
+            regs.F.PV = parity(z);
             regs.F.X = ((z) & 8) >> 3;
             regs.F.H = 1;
             regs.F.Y = ((z) & 0x20) >> 5;
@@ -20789,7 +20790,7 @@ void Z80_ins_DD_A4_AND_a_r(regs& regs, pins& pins)
             regs.Q = 1;
             u32 z = (regs.A) & (((regs.IX & 0xFF00) >> 8));
             regs.F.C = regs.F.N = 0;
-            regs.F.V = parity(z);
+            regs.F.PV = parity(z);
             regs.F.X = ((z) & 8) >> 3;
             regs.F.H = 1;
             regs.F.Y = ((z) & 0x20) >> 5;
@@ -20817,7 +20818,7 @@ void Z80_ins_DD_A5_AND_a_r(regs& regs, pins& pins)
             regs.Q = 1;
             u32 z = (regs.A) & ((regs.IX & 0xFF));
             regs.F.C = regs.F.N = 0;
-            regs.F.V = parity(z);
+            regs.F.PV = parity(z);
             regs.F.X = ((z) & 8) >> 3;
             regs.F.H = 1;
             regs.F.Y = ((z) & 0x20) >> 5;
@@ -20876,7 +20877,7 @@ void Z80_ins_DD_A6_AND_a_irr(regs& regs, pins& pins)
             pins.RD = 0; pins.MRQ = 0;
             u32 z = (regs.A) & (regs.TR);
             regs.F.C = regs.F.N = 0;
-            regs.F.V = parity(z);
+            regs.F.PV = parity(z);
             regs.F.X = ((z) & 8) >> 3;
             regs.F.H = 1;
             regs.F.Y = ((z) & 0x20) >> 5;
@@ -20906,7 +20907,7 @@ void Z80_ins_DD_A7_AND_a_r(regs& regs, pins& pins)
             regs.Q = 1;
             u32 z = (regs.A) & (regs.A);
             regs.F.C = regs.F.N = 0;
-            regs.F.V = parity(z);
+            regs.F.PV = parity(z);
             regs.F.X = ((z) & 8) >> 3;
             regs.F.H = 1;
             regs.F.Y = ((z) & 0x20) >> 5;
@@ -20936,7 +20937,7 @@ void Z80_ins_DD_A8_XOR_a_r(regs& regs, pins& pins)
             regs.F.C = regs.F.N = regs.F.H = 0;
             regs.F.X = ((z) & 8) >> 3;
             regs.F.Y = ((z) & 0x20) >> 5;
-            regs.F.V = parity(z);
+            regs.F.PV = parity(z);
             regs.F.Z = +((z) == 0);
             regs.F.S = ((z) & 0x80) >> 7;
             regs.A = z;
@@ -20963,7 +20964,7 @@ void Z80_ins_DD_A9_XOR_a_r(regs& regs, pins& pins)
             regs.F.C = regs.F.N = regs.F.H = 0;
             regs.F.X = ((z) & 8) >> 3;
             regs.F.Y = ((z) & 0x20) >> 5;
-            regs.F.V = parity(z);
+            regs.F.PV = parity(z);
             regs.F.Z = +((z) == 0);
             regs.F.S = ((z) & 0x80) >> 7;
             regs.A = z;
@@ -20990,7 +20991,7 @@ void Z80_ins_DD_AA_XOR_a_r(regs& regs, pins& pins)
             regs.F.C = regs.F.N = regs.F.H = 0;
             regs.F.X = ((z) & 8) >> 3;
             regs.F.Y = ((z) & 0x20) >> 5;
-            regs.F.V = parity(z);
+            regs.F.PV = parity(z);
             regs.F.Z = +((z) == 0);
             regs.F.S = ((z) & 0x80) >> 7;
             regs.A = z;
@@ -21017,7 +21018,7 @@ void Z80_ins_DD_AB_XOR_a_r(regs& regs, pins& pins)
             regs.F.C = regs.F.N = regs.F.H = 0;
             regs.F.X = ((z) & 8) >> 3;
             regs.F.Y = ((z) & 0x20) >> 5;
-            regs.F.V = parity(z);
+            regs.F.PV = parity(z);
             regs.F.Z = +((z) == 0);
             regs.F.S = ((z) & 0x80) >> 7;
             regs.A = z;
@@ -21044,7 +21045,7 @@ void Z80_ins_DD_AC_XOR_a_r(regs& regs, pins& pins)
             regs.F.C = regs.F.N = regs.F.H = 0;
             regs.F.X = ((z) & 8) >> 3;
             regs.F.Y = ((z) & 0x20) >> 5;
-            regs.F.V = parity(z);
+            regs.F.PV = parity(z);
             regs.F.Z = +((z) == 0);
             regs.F.S = ((z) & 0x80) >> 7;
             regs.A = z;
@@ -21071,7 +21072,7 @@ void Z80_ins_DD_AD_XOR_a_r(regs& regs, pins& pins)
             regs.F.C = regs.F.N = regs.F.H = 0;
             regs.F.X = ((z) & 8) >> 3;
             regs.F.Y = ((z) & 0x20) >> 5;
-            regs.F.V = parity(z);
+            regs.F.PV = parity(z);
             regs.F.Z = +((z) == 0);
             regs.F.S = ((z) & 0x80) >> 7;
             regs.A = z;
@@ -21129,7 +21130,7 @@ void Z80_ins_DD_AE_XOR_a_irr(regs& regs, pins& pins)
             regs.F.C = regs.F.N = regs.F.H = 0;
             regs.F.X = ((z) & 8) >> 3;
             regs.F.Y = ((z) & 0x20) >> 5;
-            regs.F.V = parity(z);
+            regs.F.PV = parity(z);
             regs.F.Z = +((z) == 0);
             regs.F.S = ((z) & 0x80) >> 7;
             regs.A = z;
@@ -21158,7 +21159,7 @@ void Z80_ins_DD_AF_XOR_a_r(regs& regs, pins& pins)
             regs.F.C = regs.F.N = regs.F.H = 0;
             regs.F.X = ((z) & 8) >> 3;
             regs.F.Y = ((z) & 0x20) >> 5;
-            regs.F.V = parity(z);
+            regs.F.PV = parity(z);
             regs.F.Z = +((z) == 0);
             regs.F.S = ((z) & 0x80) >> 7;
             regs.A = z;
@@ -21185,7 +21186,7 @@ void Z80_ins_DD_B0_OR_a_r(regs& regs, pins& pins)
             regs.F.C = regs.F.N = regs.F.H = 0;
             regs.F.X = ((z) & 8) >> 3;
             regs.F.Y = ((z) & 0x20) >> 5;
-            regs.F.V = parity(z);
+            regs.F.PV = parity(z);
             regs.F.Z = +((z) == 0);
             regs.F.S = ((z) & 0x80) >> 7;
             regs.A = z;
@@ -21212,7 +21213,7 @@ void Z80_ins_DD_B1_OR_a_r(regs& regs, pins& pins)
             regs.F.C = regs.F.N = regs.F.H = 0;
             regs.F.X = ((z) & 8) >> 3;
             regs.F.Y = ((z) & 0x20) >> 5;
-            regs.F.V = parity(z);
+            regs.F.PV = parity(z);
             regs.F.Z = +((z) == 0);
             regs.F.S = ((z) & 0x80) >> 7;
             regs.A = z;
@@ -21239,7 +21240,7 @@ void Z80_ins_DD_B2_OR_a_r(regs& regs, pins& pins)
             regs.F.C = regs.F.N = regs.F.H = 0;
             regs.F.X = ((z) & 8) >> 3;
             regs.F.Y = ((z) & 0x20) >> 5;
-            regs.F.V = parity(z);
+            regs.F.PV = parity(z);
             regs.F.Z = +((z) == 0);
             regs.F.S = ((z) & 0x80) >> 7;
             regs.A = z;
@@ -21266,7 +21267,7 @@ void Z80_ins_DD_B3_OR_a_r(regs& regs, pins& pins)
             regs.F.C = regs.F.N = regs.F.H = 0;
             regs.F.X = ((z) & 8) >> 3;
             regs.F.Y = ((z) & 0x20) >> 5;
-            regs.F.V = parity(z);
+            regs.F.PV = parity(z);
             regs.F.Z = +((z) == 0);
             regs.F.S = ((z) & 0x80) >> 7;
             regs.A = z;
@@ -21293,7 +21294,7 @@ void Z80_ins_DD_B4_OR_a_r(regs& regs, pins& pins)
             regs.F.C = regs.F.N = regs.F.H = 0;
             regs.F.X = ((z) & 8) >> 3;
             regs.F.Y = ((z) & 0x20) >> 5;
-            regs.F.V = parity(z);
+            regs.F.PV = parity(z);
             regs.F.Z = +((z) == 0);
             regs.F.S = ((z) & 0x80) >> 7;
             regs.A = z;
@@ -21320,7 +21321,7 @@ void Z80_ins_DD_B5_OR_a_r(regs& regs, pins& pins)
             regs.F.C = regs.F.N = regs.F.H = 0;
             regs.F.X = ((z) & 8) >> 3;
             regs.F.Y = ((z) & 0x20) >> 5;
-            regs.F.V = parity(z);
+            regs.F.PV = parity(z);
             regs.F.Z = +((z) == 0);
             regs.F.S = ((z) & 0x80) >> 7;
             regs.A = z;
@@ -21378,7 +21379,7 @@ void Z80_ins_DD_B6_OR_a_irr(regs& regs, pins& pins)
             regs.F.C = regs.F.N = regs.F.H = 0;
             regs.F.X = ((z) & 8) >> 3;
             regs.F.Y = ((z) & 0x20) >> 5;
-            regs.F.V = parity(z);
+            regs.F.PV = parity(z);
             regs.F.Z = +((z) == 0);
             regs.F.S = ((z) & 0x80) >> 7;
             regs.A = z;
@@ -21407,7 +21408,7 @@ void Z80_ins_DD_B7_OR_a_r(regs& regs, pins& pins)
             regs.F.C = regs.F.N = regs.F.H = 0;
             regs.F.X = ((z) & 8) >> 3;
             regs.F.Y = ((z) & 0x20) >> 5;
-            regs.F.V = parity(z);
+            regs.F.PV = parity(z);
             regs.F.Z = +((z) == 0);
             regs.F.S = ((z) & 0x80) >> 7;
             regs.A = z;
@@ -21435,7 +21436,7 @@ void Z80_ins_DD_B8_CP_a_r(regs& regs, pins& pins)
             i32 z = x - y;
             regs.F.C = +(z < 0);
             regs.F.N = 1;
-            regs.F.V = (((x ^ y) & (x ^ z)) & 0x80) >> 7;
+            regs.F.PV = (((x ^ y) & (x ^ z)) & 0x80) >> 7;
             regs.F.X = ((y) & 8) >> 3;
             regs.F.Y = ((y) & 0x20) >> 5;
             regs.F.H = ((x ^ y ^ z) & 0x10) >> 4;
@@ -21465,7 +21466,7 @@ void Z80_ins_DD_B9_CP_a_r(regs& regs, pins& pins)
             i32 z = x - y;
             regs.F.C = +(z < 0);
             regs.F.N = 1;
-            regs.F.V = (((x ^ y) & (x ^ z)) & 0x80) >> 7;
+            regs.F.PV = (((x ^ y) & (x ^ z)) & 0x80) >> 7;
             regs.F.X = ((y) & 8) >> 3;
             regs.F.Y = ((y) & 0x20) >> 5;
             regs.F.H = ((x ^ y ^ z) & 0x10) >> 4;
@@ -21495,7 +21496,7 @@ void Z80_ins_DD_BA_CP_a_r(regs& regs, pins& pins)
             i32 z = x - y;
             regs.F.C = +(z < 0);
             regs.F.N = 1;
-            regs.F.V = (((x ^ y) & (x ^ z)) & 0x80) >> 7;
+            regs.F.PV = (((x ^ y) & (x ^ z)) & 0x80) >> 7;
             regs.F.X = ((y) & 8) >> 3;
             regs.F.Y = ((y) & 0x20) >> 5;
             regs.F.H = ((x ^ y ^ z) & 0x10) >> 4;
@@ -21525,7 +21526,7 @@ void Z80_ins_DD_BB_CP_a_r(regs& regs, pins& pins)
             i32 z = x - y;
             regs.F.C = +(z < 0);
             regs.F.N = 1;
-            regs.F.V = (((x ^ y) & (x ^ z)) & 0x80) >> 7;
+            regs.F.PV = (((x ^ y) & (x ^ z)) & 0x80) >> 7;
             regs.F.X = ((y) & 8) >> 3;
             regs.F.Y = ((y) & 0x20) >> 5;
             regs.F.H = ((x ^ y ^ z) & 0x10) >> 4;
@@ -21555,7 +21556,7 @@ void Z80_ins_DD_BC_CP_a_r(regs& regs, pins& pins)
             i32 z = x - y;
             regs.F.C = +(z < 0);
             regs.F.N = 1;
-            regs.F.V = (((x ^ y) & (x ^ z)) & 0x80) >> 7;
+            regs.F.PV = (((x ^ y) & (x ^ z)) & 0x80) >> 7;
             regs.F.X = ((y) & 8) >> 3;
             regs.F.Y = ((y) & 0x20) >> 5;
             regs.F.H = ((x ^ y ^ z) & 0x10) >> 4;
@@ -21585,7 +21586,7 @@ void Z80_ins_DD_BD_CP_a_r(regs& regs, pins& pins)
             i32 z = x - y;
             regs.F.C = +(z < 0);
             regs.F.N = 1;
-            regs.F.V = (((x ^ y) & (x ^ z)) & 0x80) >> 7;
+            regs.F.PV = (((x ^ y) & (x ^ z)) & 0x80) >> 7;
             regs.F.X = ((y) & 8) >> 3;
             regs.F.Y = ((y) & 0x20) >> 5;
             regs.F.H = ((x ^ y ^ z) & 0x10) >> 4;
@@ -21646,7 +21647,7 @@ void Z80_ins_DD_BE_CP_a_irr(regs& regs, pins& pins)
             i32 z = x - y;
             regs.F.C = +(z < 0);
             regs.F.N = 1;
-            regs.F.V = (((x ^ y) & (x ^ z)) & 0x80) >> 7;
+            regs.F.PV = (((x ^ y) & (x ^ z)) & 0x80) >> 7;
             regs.F.X = ((y) & 8) >> 3;
             regs.F.Y = ((y) & 0x20) >> 5;
             regs.F.H = ((x ^ y ^ z) & 0x10) >> 4;
@@ -21678,7 +21679,7 @@ void Z80_ins_DD_BF_CP_a_r(regs& regs, pins& pins)
             i32 z = x - y;
             regs.F.C = +(z < 0);
             regs.F.N = 1;
-            regs.F.V = (((x ^ y) & (x ^ z)) & 0x80) >> 7;
+            regs.F.PV = (((x ^ y) & (x ^ z)) & 0x80) >> 7;
             regs.F.X = ((y) & 8) >> 3;
             regs.F.Y = ((y) & 0x20) >> 5;
             regs.F.H = ((x ^ y ^ z) & 0x10) >> 4;
@@ -22007,7 +22008,7 @@ void Z80_ins_DD_C6_ADD_a_n(regs& regs, pins& pins)
             u32 z = x + y + 0;
             regs.F.C = +(z > 0xFF);
             regs.F.N = 0;
-            regs.F.V = ((((x ^ y) ^ 0xFF) & (x ^ z)) & 0x80) >> 7;
+            regs.F.PV = ((((x ^ y) ^ 0xFF) & (x ^ z)) & 0x80) >> 7;
             regs.F.X = ((z) & 8) >> 3;
             regs.F.H = ((x ^ y ^ z) & 0x10) >> 4;
             regs.F.Y = ((z) & 0x20) >> 5;
@@ -22365,7 +22366,7 @@ void Z80_ins_DD_CE_ADC_a_n(regs& regs, pins& pins)
             u32 z = x + y + regs.F.C;
             regs.F.C = +(z > 0xFF);
             regs.F.N = 0;
-            regs.F.V = ((((x ^ y) ^ 0xFF) & (x ^ z)) & 0x80) >> 7;
+            regs.F.PV = ((((x ^ y) ^ 0xFF) & (x ^ z)) & 0x80) >> 7;
             regs.F.X = ((z) & 8) >> 3;
             regs.F.H = ((x ^ y ^ z) & 0x10) >> 4;
             regs.F.Y = ((z) & 0x20) >> 5;
@@ -22745,7 +22746,7 @@ void Z80_ins_DD_D6_SUB_a_n(regs& regs, pins& pins)
             u32 z = (x - y - c) & 0x1FF;
             regs.F.C = (z & 0x100) >> 8;
             regs.F.N = 1;
-            regs.F.V = (((x ^ y) & (x ^ z)) & 0x80) >> 7;
+            regs.F.PV = (((x ^ y) & (x ^ z)) & 0x80) >> 7;
             regs.F.X = ((z) & 8) >> 3;
             regs.F.Y = ((z) & 0x20) >> 5;
             regs.F.H = ((x ^ y ^ z) & 0x10) >> 4;
@@ -23058,7 +23059,7 @@ void Z80_ins_DD_DE_SBC_a_n(regs& regs, pins& pins)
             u32 z = (x - y - c) & 0x1FF;
             regs.F.C = (z & 0x100) >> 8;
             regs.F.N = 1;
-            regs.F.V = (((x ^ y) & (x ^ z)) & 0x80) >> 7;
+            regs.F.PV = (((x ^ y) & (x ^ z)) & 0x80) >> 7;
             regs.F.X = ((z) & 8) >> 3;
             regs.F.Y = ((z) & 0x20) >> 5;
             regs.F.H = ((x ^ y ^ z) & 0x10) >> 4;
@@ -23131,7 +23132,7 @@ void Z80_ins_DD_E0_RET_c(regs& regs, pins& pins)
     switch(regs.TCU) {
         case 1: { // 0
             regs.Q = 0;
-            if (!(regs.F.P == 0)) { regs.TCU += 6; break; }
+            if (!(regs.F.PV == 0)) { regs.TCU += 6; break; }
             break; }
         case 2: { // Start read
             pins.Addr = (regs.SP);
@@ -23242,7 +23243,7 @@ void Z80_ins_DD_E2_JP_c_nn(regs& regs, pins& pins)
             pins.RD = 0; pins.MRQ = 0;
             regs.PC = (regs.PC + 1) & 0xFFFF;
             regs.WZ |= (regs.t[4] << 8);
-            if (regs.F.P == 0) regs.PC = regs.WZ;
+            if (regs.F.PV == 0) regs.PC = regs.WZ;
             // Following is auto-generated code for instruction finish
             break; }
         case 7: { // cleanup_custom
@@ -23355,7 +23356,7 @@ void Z80_ins_DD_E4_CALL_c_nn(regs& regs, pins& pins)
             regs.PC = (regs.PC + 1) & 0xFFFF;
             regs.WZ |= (regs.t[4] << 8);
             regs.TA = regs.WZ;
-            regs.TR = +(regs.F.P == 0);
+            regs.TR = +(regs.F.PV == 0);
             if (!regs.TR) { regs.TA = regs.PC; regs.TCU+=7; break; }
             break; }
         case 7: {
@@ -23457,7 +23458,7 @@ void Z80_ins_DD_E6_AND_a_n(regs& regs, pins& pins)
             regs.PC = (regs.PC + 1) & 0xFFFF;
             u32 z = (regs.A) & (regs.TR);
             regs.F.C = regs.F.N = 0;
-            regs.F.V = parity(z);
+            regs.F.PV = parity(z);
             regs.F.X = ((z) & 8) >> 3;
             regs.F.H = 1;
             regs.F.Y = ((z) & 0x20) >> 5;
@@ -23530,7 +23531,7 @@ void Z80_ins_DD_E8_RET_c(regs& regs, pins& pins)
     switch(regs.TCU) {
         case 1: { // 0
             regs.Q = 0;
-            if (!(regs.F.P == 1)) { regs.TCU += 6; break; }
+            if (!(regs.F.PV == 1)) { regs.TCU += 6; break; }
             break; }
         case 2: { // Start read
             pins.Addr = (regs.SP);
@@ -23618,7 +23619,7 @@ void Z80_ins_DD_EA_JP_c_nn(regs& regs, pins& pins)
             pins.RD = 0; pins.MRQ = 0;
             regs.PC = (regs.PC + 1) & 0xFFFF;
             regs.WZ |= (regs.t[4] << 8);
-            if (regs.F.P == 1) regs.PC = regs.WZ;
+            if (regs.F.PV == 1) regs.PC = regs.WZ;
             // Following is auto-generated code for instruction finish
             break; }
         case 7: { // cleanup_custom
@@ -23682,7 +23683,7 @@ void Z80_ins_DD_EC_CALL_c_nn(regs& regs, pins& pins)
             regs.PC = (regs.PC + 1) & 0xFFFF;
             regs.WZ |= (regs.t[4] << 8);
             regs.TA = regs.WZ;
-            regs.TR = +(regs.F.P == 1);
+            regs.TR = +(regs.F.PV == 1);
             if (!regs.TR) { regs.TA = regs.PC; regs.TCU+=7; break; }
             break; }
         case 7: {
@@ -23743,7 +23744,7 @@ void Z80_ins_DD_EE_XOR_a_n(regs& regs, pins& pins)
             regs.F.C = regs.F.N = regs.F.H = 0;
             regs.F.X = ((z) & 8) >> 3;
             regs.F.Y = ((z) & 0x20) >> 5;
-            regs.F.V = parity(z);
+            regs.F.PV = parity(z);
             regs.F.Z = +((z) == 0);
             regs.F.S = ((z) & 0x80) >> 7;
             regs.A = z;
@@ -24093,7 +24094,7 @@ void Z80_ins_DD_F6_OR_a_n(regs& regs, pins& pins)
             regs.F.C = regs.F.N = regs.F.H = 0;
             regs.F.X = ((z) & 8) >> 3;
             regs.F.Y = ((z) & 0x20) >> 5;
-            regs.F.V = parity(z);
+            regs.F.PV = parity(z);
             regs.F.Z = +((z) == 0);
             regs.F.S = ((z) & 0x80) >> 7;
             regs.A = z;
@@ -24380,7 +24381,7 @@ void Z80_ins_DD_FE_CP_a_n(regs& regs, pins& pins)
             i32 z = x - y;
             regs.F.C = +(z < 0);
             regs.F.N = 1;
-            regs.F.V = (((x ^ y) & (x ^ z)) & 0x80) >> 7;
+            regs.F.PV = (((x ^ y) & (x ^ z)) & 0x80) >> 7;
             regs.F.X = ((y) & 8) >> 3;
             regs.F.Y = ((y) & 0x20) >> 5;
             regs.F.H = ((x ^ y ^ z) & 0x10) >> 4;
@@ -24593,7 +24594,7 @@ void Z80_ins_ED_40_IN_r_ic(regs& regs, pins& pins)
             regs.F.N = regs.F.H = 0;
             regs.F.X = ((regs.TR) & 8) >> 3;
             regs.F.Y = ((regs.TR) & 0x20) >> 5;
-            regs.F.V = parity(regs.TR);
+            regs.F.PV = parity(regs.TR);
             regs.F.Z = +((regs.TR) == 0);
             regs.F.S = ((regs.TR) & 0x80) >> 7;
             regs.B = regs.TR;
@@ -24669,7 +24670,7 @@ void Z80_ins_ED_42_SBC_hl_rr(regs& regs, pins& pins)
             z = (x - y - c) & 0x1FF;
             regs.F.C = (z & 0x100) >> 8;
             regs.F.N = 1;
-            regs.F.V = (((x ^ y) & (x ^ z)) & 0x80) >> 7;
+            regs.F.PV = (((x ^ y) & (x ^ z)) & 0x80) >> 7;
             regs.F.X = ((z) & 8) >> 3;
             regs.F.Y = ((z) & 0x20) >> 5;
             regs.F.H = ((x ^ y ^ z) & 0x10) >> 4;
@@ -24688,7 +24689,7 @@ void Z80_ins_ED_42_SBC_hl_rr(regs& regs, pins& pins)
             z = (x - y - c) & 0x1FF;
             regs.F.C = (z & 0x100) >> 8;
             regs.F.N = 1;
-            regs.F.V = (((x ^ y) & (x ^ z)) & 0x80) >> 7;
+            regs.F.PV = (((x ^ y) & (x ^ z)) & 0x80) >> 7;
             regs.F.X = ((z) & 8) >> 3;
             regs.F.Y = ((z) & 0x20) >> 5;
             regs.F.H = ((x ^ y ^ z) & 0x10) >> 4;
@@ -24788,7 +24789,7 @@ void Z80_ins_ED_44_NEG(regs& regs, pins& pins)
             u32 z = (x - y - c) & 0x1FF;
             regs.F.C = (z & 0x100) >> 8;
             regs.F.N = 1;
-            regs.F.V = (((x ^ y) & (x ^ z)) & 0x80) >> 7;
+            regs.F.PV = (((x ^ y) & (x ^ z)) & 0x80) >> 7;
             regs.F.X = ((z) & 8) >> 3;
             regs.F.Y = ((z) & 0x20) >> 5;
             regs.F.H = ((x ^ y ^ z) & 0x10) >> 4;
@@ -24916,7 +24917,7 @@ void Z80_ins_ED_48_IN_r_ic(regs& regs, pins& pins)
             regs.F.N = regs.F.H = 0;
             regs.F.X = ((regs.TR) & 8) >> 3;
             regs.F.Y = ((regs.TR) & 0x20) >> 5;
-            regs.F.V = parity(regs.TR);
+            regs.F.PV = parity(regs.TR);
             regs.F.Z = +((regs.TR) == 0);
             regs.F.S = ((regs.TR) & 0x80) >> 7;
             regs.C = regs.TR;
@@ -24990,7 +24991,7 @@ void Z80_ins_ED_4A_ADC_hl_rr(regs& regs, pins& pins)
             z = x + y + regs.F.C;
             regs.F.C = +(z > 0xFF);
             regs.F.N = 0;
-            regs.F.V = ((((x ^ y) ^ 0xFF) & (x ^ z)) & 0x80) >> 7;
+            regs.F.PV = ((((x ^ y) ^ 0xFF) & (x ^ z)) & 0x80) >> 7;
             regs.F.X = ((z) & 8) >> 3;
             regs.F.H = ((x ^ y ^ z) & 0x10) >> 4;
             regs.F.Y = ((z) & 0x20) >> 5;
@@ -25008,7 +25009,7 @@ void Z80_ins_ED_4A_ADC_hl_rr(regs& regs, pins& pins)
             z = x + y + regs.F.C;
             regs.F.C = +(z > 0xFF);
             regs.F.N = 0;
-            regs.F.V = ((((x ^ y) ^ 0xFF) & (x ^ z)) & 0x80) >> 7;
+            regs.F.PV = ((((x ^ y) ^ 0xFF) & (x ^ z)) & 0x80) >> 7;
             regs.F.X = ((z) & 8) >> 3;
             regs.F.H = ((x ^ y ^ z) & 0x10) >> 4;
             regs.F.Y = ((z) & 0x20) >> 5;
@@ -25109,7 +25110,7 @@ void Z80_ins_ED_4C_NEG(regs& regs, pins& pins)
             u32 z = (x - y - c) & 0x1FF;
             regs.F.C = (z & 0x100) >> 8;
             regs.F.N = 1;
-            regs.F.V = (((x ^ y) & (x ^ z)) & 0x80) >> 7;
+            regs.F.PV = (((x ^ y) & (x ^ z)) & 0x80) >> 7;
             regs.F.X = ((z) & 8) >> 3;
             regs.F.Y = ((z) & 0x20) >> 5;
             regs.F.H = ((x ^ y ^ z) & 0x10) >> 4;
@@ -25237,7 +25238,7 @@ void Z80_ins_ED_50_IN_r_ic(regs& regs, pins& pins)
             regs.F.N = regs.F.H = 0;
             regs.F.X = ((regs.TR) & 8) >> 3;
             regs.F.Y = ((regs.TR) & 0x20) >> 5;
-            regs.F.V = parity(regs.TR);
+            regs.F.PV = parity(regs.TR);
             regs.F.Z = +((regs.TR) == 0);
             regs.F.S = ((regs.TR) & 0x80) >> 7;
             regs.D = regs.TR;
@@ -25312,7 +25313,7 @@ void Z80_ins_ED_52_SBC_hl_rr(regs& regs, pins& pins)
             z = (x - y - c) & 0x1FF;
             regs.F.C = (z & 0x100) >> 8;
             regs.F.N = 1;
-            regs.F.V = (((x ^ y) & (x ^ z)) & 0x80) >> 7;
+            regs.F.PV = (((x ^ y) & (x ^ z)) & 0x80) >> 7;
             regs.F.X = ((z) & 8) >> 3;
             regs.F.Y = ((z) & 0x20) >> 5;
             regs.F.H = ((x ^ y ^ z) & 0x10) >> 4;
@@ -25331,7 +25332,7 @@ void Z80_ins_ED_52_SBC_hl_rr(regs& regs, pins& pins)
             z = (x - y - c) & 0x1FF;
             regs.F.C = (z & 0x100) >> 8;
             regs.F.N = 1;
-            regs.F.V = (((x ^ y) & (x ^ z)) & 0x80) >> 7;
+            regs.F.PV = (((x ^ y) & (x ^ z)) & 0x80) >> 7;
             regs.F.X = ((z) & 8) >> 3;
             regs.F.Y = ((z) & 0x20) >> 5;
             regs.F.H = ((x ^ y ^ z) & 0x10) >> 4;
@@ -25431,7 +25432,7 @@ void Z80_ins_ED_54_NEG(regs& regs, pins& pins)
             u32 z = (x - y - c) & 0x1FF;
             regs.F.C = (z & 0x100) >> 8;
             regs.F.N = 1;
-            regs.F.V = (((x ^ y) & (x ^ z)) & 0x80) >> 7;
+            regs.F.PV = (((x ^ y) & (x ^ z)) & 0x80) >> 7;
             regs.F.X = ((z) & 8) >> 3;
             regs.F.Y = ((z) & 0x20) >> 5;
             regs.F.H = ((x ^ y ^ z) & 0x10) >> 4;
@@ -25527,7 +25528,7 @@ void Z80_ins_ED_57_LD_r_r2(regs& regs, pins& pins)
             regs.F.N = regs.F.H = 0;
             regs.F.X = ((x) & 8) >> 3;
             regs.F.Y = ((x) & 0x20) >> 5;
-            regs.F.P = regs.IFF2;
+            regs.F.PV = regs.IFF2;
             regs.F.Z = +((x) == 0);
             regs.F.S = ((x) & 0x80) >> 7;
             regs.P = 1;
@@ -25567,7 +25568,7 @@ void Z80_ins_ED_58_IN_r_ic(regs& regs, pins& pins)
             regs.F.N = regs.F.H = 0;
             regs.F.X = ((regs.TR) & 8) >> 3;
             regs.F.Y = ((regs.TR) & 0x20) >> 5;
-            regs.F.V = parity(regs.TR);
+            regs.F.PV = parity(regs.TR);
             regs.F.Z = +((regs.TR) == 0);
             regs.F.S = ((regs.TR) & 0x80) >> 7;
             regs.E = regs.TR;
@@ -25640,7 +25641,7 @@ void Z80_ins_ED_5A_ADC_hl_rr(regs& regs, pins& pins)
             z = x + y + regs.F.C;
             regs.F.C = +(z > 0xFF);
             regs.F.N = 0;
-            regs.F.V = ((((x ^ y) ^ 0xFF) & (x ^ z)) & 0x80) >> 7;
+            regs.F.PV = ((((x ^ y) ^ 0xFF) & (x ^ z)) & 0x80) >> 7;
             regs.F.X = ((z) & 8) >> 3;
             regs.F.H = ((x ^ y ^ z) & 0x10) >> 4;
             regs.F.Y = ((z) & 0x20) >> 5;
@@ -25658,7 +25659,7 @@ void Z80_ins_ED_5A_ADC_hl_rr(regs& regs, pins& pins)
             z = x + y + regs.F.C;
             regs.F.C = +(z > 0xFF);
             regs.F.N = 0;
-            regs.F.V = ((((x ^ y) ^ 0xFF) & (x ^ z)) & 0x80) >> 7;
+            regs.F.PV = ((((x ^ y) ^ 0xFF) & (x ^ z)) & 0x80) >> 7;
             regs.F.X = ((z) & 8) >> 3;
             regs.F.H = ((x ^ y ^ z) & 0x10) >> 4;
             regs.F.Y = ((z) & 0x20) >> 5;
@@ -25759,7 +25760,7 @@ void Z80_ins_ED_5C_NEG(regs& regs, pins& pins)
             u32 z = (x - y - c) & 0x1FF;
             regs.F.C = (z & 0x100) >> 8;
             regs.F.N = 1;
-            regs.F.V = (((x ^ y) & (x ^ z)) & 0x80) >> 7;
+            regs.F.PV = (((x ^ y) & (x ^ z)) & 0x80) >> 7;
             regs.F.X = ((z) & 8) >> 3;
             regs.F.Y = ((z) & 0x20) >> 5;
             regs.F.H = ((x ^ y ^ z) & 0x10) >> 4;
@@ -25855,7 +25856,7 @@ void Z80_ins_ED_5F_LD_r_r2(regs& regs, pins& pins)
             regs.F.N = regs.F.H = 0;
             regs.F.X = ((x) & 8) >> 3;
             regs.F.Y = ((x) & 0x20) >> 5;
-            regs.F.P = regs.IFF2;
+            regs.F.PV = regs.IFF2;
             regs.F.Z = +((x) == 0);
             regs.F.S = ((x) & 0x80) >> 7;
             regs.P = 1;
@@ -25895,7 +25896,7 @@ void Z80_ins_ED_60_IN_r_ic(regs& regs, pins& pins)
             regs.F.N = regs.F.H = 0;
             regs.F.X = ((regs.TR) & 8) >> 3;
             regs.F.Y = ((regs.TR) & 0x20) >> 5;
-            regs.F.V = parity(regs.TR);
+            regs.F.PV = parity(regs.TR);
             regs.F.Z = +((regs.TR) == 0);
             regs.F.S = ((regs.TR) & 0x80) >> 7;
             regs.H = regs.TR;
@@ -25970,7 +25971,7 @@ void Z80_ins_ED_62_SBC_hl_rr(regs& regs, pins& pins)
             z = (x - y - c) & 0x1FF;
             regs.F.C = (z & 0x100) >> 8;
             regs.F.N = 1;
-            regs.F.V = (((x ^ y) & (x ^ z)) & 0x80) >> 7;
+            regs.F.PV = (((x ^ y) & (x ^ z)) & 0x80) >> 7;
             regs.F.X = ((z) & 8) >> 3;
             regs.F.Y = ((z) & 0x20) >> 5;
             regs.F.H = ((x ^ y ^ z) & 0x10) >> 4;
@@ -25989,7 +25990,7 @@ void Z80_ins_ED_62_SBC_hl_rr(regs& regs, pins& pins)
             z = (x - y - c) & 0x1FF;
             regs.F.C = (z & 0x100) >> 8;
             regs.F.N = 1;
-            regs.F.V = (((x ^ y) & (x ^ z)) & 0x80) >> 7;
+            regs.F.PV = (((x ^ y) & (x ^ z)) & 0x80) >> 7;
             regs.F.X = ((z) & 8) >> 3;
             regs.F.Y = ((z) & 0x20) >> 5;
             regs.F.H = ((x ^ y ^ z) & 0x10) >> 4;
@@ -26089,7 +26090,7 @@ void Z80_ins_ED_64_NEG(regs& regs, pins& pins)
             u32 z = (x - y - c) & 0x1FF;
             regs.F.C = (z & 0x100) >> 8;
             regs.F.N = 1;
-            regs.F.V = (((x ^ y) & (x ^ z)) & 0x80) >> 7;
+            regs.F.PV = (((x ^ y) & (x ^ z)) & 0x80) >> 7;
             regs.F.X = ((z) & 8) >> 3;
             regs.F.Y = ((z) & 0x20) >> 5;
             regs.F.H = ((x ^ y ^ z) & 0x10) >> 4;
@@ -26210,7 +26211,7 @@ void Z80_ins_ED_67_RRD(regs& regs, pins& pins)
         case 10: {
             regs.A = (regs.A & 0xF0) | (regs.TR & 0x0F);
             regs.F.N = regs.F.H = 0;
-            regs.F.V = parity(regs.A);
+            regs.F.PV = parity(regs.A);
             regs.F.X = ((regs.A) & 8) >> 3;
             regs.F.Y = ((regs.A) & 0x20) >> 5;
             regs.F.Z = +((regs.A) == 0);
@@ -26251,7 +26252,7 @@ void Z80_ins_ED_68_IN_r_ic(regs& regs, pins& pins)
             regs.F.N = regs.F.H = 0;
             regs.F.X = ((regs.TR) & 8) >> 3;
             regs.F.Y = ((regs.TR) & 0x20) >> 5;
-            regs.F.V = parity(regs.TR);
+            regs.F.PV = parity(regs.TR);
             regs.F.Z = +((regs.TR) == 0);
             regs.F.S = ((regs.TR) & 0x80) >> 7;
             regs.L = regs.TR;
@@ -26324,7 +26325,7 @@ void Z80_ins_ED_6A_ADC_hl_rr(regs& regs, pins& pins)
             z = x + y + regs.F.C;
             regs.F.C = +(z > 0xFF);
             regs.F.N = 0;
-            regs.F.V = ((((x ^ y) ^ 0xFF) & (x ^ z)) & 0x80) >> 7;
+            regs.F.PV = ((((x ^ y) ^ 0xFF) & (x ^ z)) & 0x80) >> 7;
             regs.F.X = ((z) & 8) >> 3;
             regs.F.H = ((x ^ y ^ z) & 0x10) >> 4;
             regs.F.Y = ((z) & 0x20) >> 5;
@@ -26342,7 +26343,7 @@ void Z80_ins_ED_6A_ADC_hl_rr(regs& regs, pins& pins)
             z = x + y + regs.F.C;
             regs.F.C = +(z > 0xFF);
             regs.F.N = 0;
-            regs.F.V = ((((x ^ y) ^ 0xFF) & (x ^ z)) & 0x80) >> 7;
+            regs.F.PV = ((((x ^ y) ^ 0xFF) & (x ^ z)) & 0x80) >> 7;
             regs.F.X = ((z) & 8) >> 3;
             regs.F.H = ((x ^ y ^ z) & 0x10) >> 4;
             regs.F.Y = ((z) & 0x20) >> 5;
@@ -26443,7 +26444,7 @@ void Z80_ins_ED_6C_NEG(regs& regs, pins& pins)
             u32 z = (x - y - c) & 0x1FF;
             regs.F.C = (z & 0x100) >> 8;
             regs.F.N = 1;
-            regs.F.V = (((x ^ y) & (x ^ z)) & 0x80) >> 7;
+            regs.F.PV = (((x ^ y) & (x ^ z)) & 0x80) >> 7;
             regs.F.X = ((z) & 8) >> 3;
             regs.F.Y = ((z) & 0x20) >> 5;
             regs.F.H = ((x ^ y ^ z) & 0x10) >> 4;
@@ -26564,7 +26565,7 @@ void Z80_ins_ED_6F_RLD(regs& regs, pins& pins)
         case 10: {
             regs.A = (regs.A & 0xF0) | (regs.TR >> 4);
             regs.F.N = regs.F.H = 0;
-            regs.F.V = parity(regs.A);
+            regs.F.PV = parity(regs.A);
             regs.F.X = ((regs.A) & 8) >> 3;
             regs.F.Y = ((regs.A) & 0x20) >> 5;
             regs.F.Z = +((regs.A) == 0);
@@ -26605,7 +26606,7 @@ void Z80_ins_ED_70_IN_ic(regs& regs, pins& pins)
             regs.F.N = regs.F.H = 0;
             regs.F.X = ((regs.TR) & 8) >> 3;
             regs.F.Y = ((regs.TR) & 0x20) >> 5;
-            regs.F.V = parity(regs.TR);
+            regs.F.PV = parity(regs.TR);
             regs.F.Z = +((regs.TR) == 0);
             regs.F.S = ((regs.TR) & 0x80) >> 7;
             regs.WZ = (regs.TA + 1) & 0xFFFF;
@@ -26678,7 +26679,7 @@ void Z80_ins_ED_72_SBC_hl_rr(regs& regs, pins& pins)
             z = (x - y - c) & 0x1FF;
             regs.F.C = (z & 0x100) >> 8;
             regs.F.N = 1;
-            regs.F.V = (((x ^ y) & (x ^ z)) & 0x80) >> 7;
+            regs.F.PV = (((x ^ y) & (x ^ z)) & 0x80) >> 7;
             regs.F.X = ((z) & 8) >> 3;
             regs.F.Y = ((z) & 0x20) >> 5;
             regs.F.H = ((x ^ y ^ z) & 0x10) >> 4;
@@ -26697,7 +26698,7 @@ void Z80_ins_ED_72_SBC_hl_rr(regs& regs, pins& pins)
             z = (x - y - c) & 0x1FF;
             regs.F.C = (z & 0x100) >> 8;
             regs.F.N = 1;
-            regs.F.V = (((x ^ y) & (x ^ z)) & 0x80) >> 7;
+            regs.F.PV = (((x ^ y) & (x ^ z)) & 0x80) >> 7;
             regs.F.X = ((z) & 8) >> 3;
             regs.F.Y = ((z) & 0x20) >> 5;
             regs.F.H = ((x ^ y ^ z) & 0x10) >> 4;
@@ -26797,7 +26798,7 @@ void Z80_ins_ED_74_NEG(regs& regs, pins& pins)
             u32 z = (x - y - c) & 0x1FF;
             regs.F.C = (z & 0x100) >> 8;
             regs.F.N = 1;
-            regs.F.V = (((x ^ y) & (x ^ z)) & 0x80) >> 7;
+            regs.F.PV = (((x ^ y) & (x ^ z)) & 0x80) >> 7;
             regs.F.X = ((z) & 8) >> 3;
             regs.F.Y = ((z) & 0x20) >> 5;
             regs.F.H = ((x ^ y ^ z) & 0x10) >> 4;
@@ -26922,7 +26923,7 @@ void Z80_ins_ED_78_IN_r_ic(regs& regs, pins& pins)
             regs.F.N = regs.F.H = 0;
             regs.F.X = ((regs.TR) & 8) >> 3;
             regs.F.Y = ((regs.TR) & 0x20) >> 5;
-            regs.F.V = parity(regs.TR);
+            regs.F.PV = parity(regs.TR);
             regs.F.Z = +((regs.TR) == 0);
             regs.F.S = ((regs.TR) & 0x80) >> 7;
             regs.A = regs.TR;
@@ -26995,7 +26996,7 @@ void Z80_ins_ED_7A_ADC_hl_rr(regs& regs, pins& pins)
             z = x + y + regs.F.C;
             regs.F.C = +(z > 0xFF);
             regs.F.N = 0;
-            regs.F.V = ((((x ^ y) ^ 0xFF) & (x ^ z)) & 0x80) >> 7;
+            regs.F.PV = ((((x ^ y) ^ 0xFF) & (x ^ z)) & 0x80) >> 7;
             regs.F.X = ((z) & 8) >> 3;
             regs.F.H = ((x ^ y ^ z) & 0x10) >> 4;
             regs.F.Y = ((z) & 0x20) >> 5;
@@ -27013,7 +27014,7 @@ void Z80_ins_ED_7A_ADC_hl_rr(regs& regs, pins& pins)
             z = x + y + regs.F.C;
             regs.F.C = +(z > 0xFF);
             regs.F.N = 0;
-            regs.F.V = ((((x ^ y) ^ 0xFF) & (x ^ z)) & 0x80) >> 7;
+            regs.F.PV = ((((x ^ y) ^ 0xFF) & (x ^ z)) & 0x80) >> 7;
             regs.F.X = ((z) & 8) >> 3;
             regs.F.H = ((x ^ y ^ z) & 0x10) >> 4;
             regs.F.Y = ((z) & 0x20) >> 5;
@@ -27114,7 +27115,7 @@ void Z80_ins_ED_7C_NEG(regs& regs, pins& pins)
             u32 z = (x - y - c) & 0x1FF;
             regs.F.C = (z & 0x100) >> 8;
             regs.F.N = 1;
-            regs.F.V = (((x ^ y) & (x ^ z)) & 0x80) >> 7;
+            regs.F.PV = (((x ^ y) & (x ^ z)) & 0x80) >> 7;
             regs.F.X = ((z) & 8) >> 3;
             regs.F.Y = ((z) & 0x20) >> 5;
             regs.F.H = ((x ^ y ^ z) & 0x10) >> 4;
@@ -27261,7 +27262,7 @@ void Z80_ins_ED_A0_LDI(regs& regs, pins& pins)
             regs.TA = (((regs.B << 8) | regs.C) - 1) & 0xFFFF;
             regs.B = ((regs.TA) & 0xFF00) >> 8;
             regs.C = (regs.TA) & 0xFF;
-            regs.F.V = +(regs.TA != 0);
+            regs.F.PV = +(regs.TA != 0);
             // Following is auto-generated code for instruction finish
             break; }
         case 9: { // cleanup_custom
@@ -27309,7 +27310,7 @@ void Z80_ins_ED_A1_CPI(regs& regs, pins& pins)
             u32 n = (regs.A - regs.TR) & 0xFF;
             regs.F.N = 1;
             regs.TA = (((regs.B << 8) | regs.C) - 1) & 0xFFFF;
-            regs.F.V = regs.TA != 0;
+            regs.F.PV = regs.TA != 0;
             regs.F.H = ((regs.A ^ regs.TR ^ n) & 0x10) >> 4;
             regs.B = (regs.TA & 0xFF00) >> 8;
             regs.C = regs.TA & 0xFF;
@@ -27372,7 +27373,7 @@ void Z80_ins_ED_A2_INI(regs& regs, pins& pins)
             regs.F.C = ((regs.C + 1 + regs.TR) & 0x100) >> 8;
             regs.F.N = (regs.TR & 0x80) >> 7;
             regs.TA = ((regs.C + 1) & 0xFF) + regs.TR & 7 ^ regs.B;
-            regs.F.V = parity(regs.TA);
+            regs.F.PV = parity(regs.TA);
             regs.F.X = ((regs.B) & 8) >> 3;
             regs.F.Y = ((regs.B) & 0x20) >> 5;
             regs.F.H = regs.F.C;
@@ -27432,7 +27433,7 @@ void Z80_ins_ED_A3_OUTI(regs& regs, pins& pins)
             regs.F.C = ((regs.L + regs.TR) & 0x100) >> 8;
             regs.F.N = (regs.TR & 0x80) >> 7;
             regs.TR = (regs.L + regs.TR & 7 ^ regs.B) & 0xFF;
-            regs.F.V = parity(regs.TR);
+            regs.F.PV = parity(regs.TR);
             regs.F.X = ((regs.B) & 8) >> 3;
             regs.F.Y = ((regs.B) & 0x20) >> 5;
             regs.F.H = regs.F.C;
@@ -27493,7 +27494,7 @@ void Z80_ins_ED_A8_LDD(regs& regs, pins& pins)
             regs.TA = (((regs.B << 8) | regs.C) - 1) & 0xFFFF;
             regs.B = ((regs.TA) & 0xFF00) >> 8;
             regs.C = (regs.TA) & 0xFF;
-            regs.F.V = +(regs.TA != 0);
+            regs.F.PV = +(regs.TA != 0);
             regs.TA = (regs.A + regs.TR) & 0xFF;
             regs.F.X = (regs.TA & 8) >> 3;
             regs.F.Y = (regs.TA & 2) >> 1;
@@ -27546,7 +27547,7 @@ void Z80_ins_ED_A9_CPD(regs& regs, pins& pins)
             regs.C = regs.TA & 0xFF;
             u32 n = regs.A - regs.TR;
             regs.F.N = 1;
-            regs.F.V = +(regs.TA != 0);
+            regs.F.PV = +(regs.TA != 0);
             regs.F.H = ((regs.A ^ regs.TR ^ n) & 0x10) >> 4;
             regs.F.X = ((n - regs.F.H) & 8) >> 3;
             regs.F.Y = ((n - regs.F.H) & 2) >> 1;
@@ -27606,7 +27607,7 @@ void Z80_ins_ED_AA_IND(regs& regs, pins& pins)
             regs.F.C = ((((regs.C - 1) & 0xFF) + regs.TR) & 0x100) >> 8;
             regs.F.N = (regs.TR & 0x80) >> 7;
             regs.TA = ((regs.C - 1) & 0xFF) + regs.TR & 7 ^ regs.B;
-            regs.F.V = parity(regs.TA);
+            regs.F.PV = parity(regs.TA);
             regs.F.X = ((regs.B) & 8) >> 3;
             regs.F.Y = ((regs.B) & 0x20) >> 5;
             regs.F.H = regs.F.C;
@@ -27666,7 +27667,7 @@ void Z80_ins_ED_AB_OUTD(regs& regs, pins& pins)
             regs.F.C = ((regs.L + regs.TR) & 0x100) >> 8;
             regs.F.N = (regs.TR & 0x80) >> 7;
             regs.TR = (regs.L + regs.TR & 7 ^ regs.B) & 0xFF;
-            regs.F.V = parity(regs.TR);
+            regs.F.PV = parity(regs.TR);
             regs.F.X = ((regs.B) & 8) >> 3;
             regs.F.Y = ((regs.B) & 0x20) >> 5;
             regs.F.H = regs.F.C;
@@ -27730,7 +27731,7 @@ void Z80_ins_ED_B0_LDIR(regs& regs, pins& pins)
             regs.TA = (((regs.B << 8) | regs.C) - 1) & 0xFFFF;
             regs.B = ((regs.TA) & 0xFF00) >> 8;
             regs.C = (regs.TA) & 0xFF;
-            regs.F.V = +(regs.TA != 0);
+            regs.F.PV = +(regs.TA != 0);
             if ((regs.B == 0) && (regs.C == 0)) { regs.TCU += 5; break; }
             break; }
         case 9: {
@@ -27793,7 +27794,7 @@ void Z80_ins_ED_B1_CPIR(regs& regs, pins& pins)
             u32 n = (regs.A - regs.TR) & 0xFF;
             regs.F.N = 1;
             regs.TA = (((regs.B << 8) | regs.C) - 1) & 0xFFFF;
-            regs.F.V = regs.TA != 0;
+            regs.F.PV = regs.TA != 0;
             regs.F.H = ((regs.A ^ regs.TR ^ n) & 0x10) >> 4;
             regs.B = (regs.TA & 0xFF00) >> 8;
             regs.C = regs.TA & 0xFF;
@@ -27871,7 +27872,7 @@ void Z80_ins_ED_B2_INIR(regs& regs, pins& pins)
             regs.F.C = ((regs.C + 1 + regs.TR) & 0x100) >> 8;
             regs.F.N = (regs.TR & 0x80) >> 7;
             regs.TA = ((regs.C + 1) & 0xFF) + regs.TR & 7 ^ regs.B;
-            regs.F.V = parity(regs.TA);
+            regs.F.PV = parity(regs.TA);
             regs.F.X = ((regs.B) & 8) >> 3;
             regs.F.Y = ((regs.B) & 0x20) >> 5;
             regs.F.H = regs.F.C;
@@ -27885,16 +27886,16 @@ void Z80_ins_ED_B2_INIR(regs& regs, pins& pins)
             regs.F.Y = (regs.PC >> 13) & 1;
             if (regs.F.C) {
                 if (regs.data & 0x80) {
-                    regs.F.P ^= parity((regs.B - 1) & 7) ^ 1;
+                    regs.F.PV ^= parity((regs.B - 1) & 7) ^ 1;
                     regs.F.H = +((regs.B & 0x0F) == 0);
                 }
                 else {
-                    regs.F.P ^= parity((regs.B + 1) & 7) ^ 1;
+                    regs.F.PV ^= parity((regs.B + 1) & 7) ^ 1;
                     regs.F.H = +((regs.B & 0x0F) == 0x0F);
                 }
             }
             else {
-                regs.F.P ^= parity(regs.B & 7) ^ 1;
+                regs.F.PV ^= parity(regs.B & 7) ^ 1;
             }
             break; }
         case 10: { // Adding 4 cycles
@@ -27958,7 +27959,7 @@ void Z80_ins_ED_B3_OTIR(regs& regs, pins& pins)
             regs.F.C = ((regs.L + regs.TR) & 0x100) >> 8;
             regs.F.N = (regs.TR & 0x80) >> 7;
             regs.TR = (regs.L + regs.TR & 7 ^ regs.B) & 0xFF;
-            regs.F.V = parity(regs.TR);
+            regs.F.PV = parity(regs.TR);
             regs.F.X = ((regs.B) & 8) >> 3;
             regs.F.Y = ((regs.B) & 0x20) >> 5;
             regs.F.H = regs.F.C;
@@ -27972,16 +27973,16 @@ void Z80_ins_ED_B3_OTIR(regs& regs, pins& pins)
             regs.F.Y = (regs.PC >> 13) & 1;
             if (regs.F.C) {
                 if (regs.data & 0x80) {
-                    regs.F.P ^= parity((regs.B - 1) & 7) ^ 1;
+                    regs.F.PV ^= parity((regs.B - 1) & 7) ^ 1;
                     regs.F.H = +((regs.B & 0x0F) == 0);
                 }
                 else {
-                    regs.F.P ^= parity((regs.B + 1) & 7) ^ 1;
+                    regs.F.PV ^= parity((regs.B + 1) & 7) ^ 1;
                     regs.F.H = +((regs.B & 0x0F) == 0x0F);
                 }
             }
             else {
-                regs.F.P ^= parity(regs.B & 7) ^ 1;
+                regs.F.PV ^= parity(regs.B & 7) ^ 1;
             }
             break; }
         case 10: { // Adding 4 cycles
@@ -28046,7 +28047,7 @@ void Z80_ins_ED_B8_LDDR(regs& regs, pins& pins)
             regs.TA = (((regs.B << 8) | regs.C) - 1) & 0xFFFF;
             regs.B = ((regs.TA) & 0xFF00) >> 8;
             regs.C = (regs.TA) & 0xFF;
-            regs.F.V = +(regs.TA != 0);
+            regs.F.PV = +(regs.TA != 0);
             regs.TA = (regs.A + regs.TR) & 0xFF;
             regs.F.X = (regs.TA & 8) >> 3;
             regs.F.Y = (regs.TA & 2) >> 1;
@@ -28114,7 +28115,7 @@ void Z80_ins_ED_B9_CPDR(regs& regs, pins& pins)
             regs.C = regs.TA & 0xFF;
             u32 n = regs.A - regs.TR;
             regs.F.N = 1;
-            regs.F.V = +(regs.TA != 0);
+            regs.F.PV = +(regs.TA != 0);
             regs.F.H = ((regs.A ^ regs.TR ^ n) & 0x10) >> 4;
             regs.F.X = ((n - regs.F.H) & 8) >> 3;
             regs.F.Y = ((n - regs.F.H) & 2) >> 1;
@@ -28189,7 +28190,7 @@ void Z80_ins_ED_BA_INDR(regs& regs, pins& pins)
             regs.F.C = ((((regs.C - 1) & 0xFF) + regs.TR) & 0x100) >> 8;
             regs.F.N = (regs.TR & 0x80) >> 7;
             regs.TA = ((regs.C - 1) & 0xFF) + regs.TR & 7 ^ regs.B;
-            regs.F.V = parity(regs.TA);
+            regs.F.PV = parity(regs.TA);
             regs.F.X = ((regs.B) & 8) >> 3;
             regs.F.Y = ((regs.B) & 0x20) >> 5;
             regs.F.H = regs.F.C;
@@ -28203,16 +28204,16 @@ void Z80_ins_ED_BA_INDR(regs& regs, pins& pins)
             regs.F.Y = (regs.PC >> 13) & 1;
             if (regs.F.C) {
                 if (regs.data & 0x80) {
-                    regs.F.P ^= parity((regs.B - 1) & 7) ^ 1;
+                    regs.F.PV ^= parity((regs.B - 1) & 7) ^ 1;
                     regs.F.H = +((regs.B & 0x0F) == 0);
                 }
                 else {
-                    regs.F.P ^= parity((regs.B + 1) & 7) ^ 1;
+                    regs.F.PV ^= parity((regs.B + 1) & 7) ^ 1;
                     regs.F.H = +((regs.B & 0x0F) == 0x0F);
                 }
             }
             else {
-                regs.F.P ^= parity(regs.B & 7) ^ 1;
+                regs.F.PV ^= parity(regs.B & 7) ^ 1;
             }
             break; }
         case 10: { // Adding 4 cycles
@@ -28276,7 +28277,7 @@ void Z80_ins_ED_BB_OTDR(regs& regs, pins& pins)
             regs.F.C = ((regs.L + regs.TR) & 0x100) >> 8;
             regs.F.N = (regs.TR & 0x80) >> 7;
             regs.TR = (regs.L + regs.TR & 7 ^ regs.B) & 0xFF;
-            regs.F.V = parity(regs.TR);
+            regs.F.PV = parity(regs.TR);
             regs.F.X = ((regs.B) & 8) >> 3;
             regs.F.Y = ((regs.B) & 0x20) >> 5;
             regs.F.H = regs.F.C;
@@ -28290,16 +28291,16 @@ void Z80_ins_ED_BB_OTDR(regs& regs, pins& pins)
             regs.F.Y = (regs.PC >> 13) & 1;
             if (regs.F.C) {
                 if (regs.data & 0x80) {
-                    regs.F.P ^= parity((regs.B - 1) & 7) ^ 1;
+                    regs.F.PV ^= parity((regs.B - 1) & 7) ^ 1;
                     regs.F.H = +((regs.B & 0x0F) == 0);
                 }
                 else {
-                    regs.F.P ^= parity((regs.B + 1) & 7) ^ 1;
+                    regs.F.PV ^= parity((regs.B + 1) & 7) ^ 1;
                     regs.F.H = +((regs.B & 0x0F) == 0x0F);
                 }
             }
             else {
-                regs.F.P ^= parity(regs.B & 7) ^ 1;
+                regs.F.PV ^= parity(regs.B & 7) ^ 1;
             }
             break; }
         case 10: { // Adding 4 cycles
@@ -28452,7 +28453,7 @@ void Z80_ins_FD_04_INC_r(regs& regs, pins& pins)
             regs.Q = 1;
             regs.TR = ((regs.B) + 1) & 0xFF;
             regs.F.N = 0;
-            regs.F.V = +(regs.TR == 0x80);
+            regs.F.PV = +(regs.TR == 0x80);
             regs.F.X = ((regs.TR) & 8) >> 3;
             regs.F.Y = ((regs.TR) & 0x20) >> 5;
             regs.F.H = +((regs.TR & 0x0F) == 0);
@@ -28480,7 +28481,7 @@ void Z80_ins_FD_05_DEC_r(regs& regs, pins& pins)
             regs.Q = 1;
             regs.TR = ((regs.B) - 1) & 0xFF;
             regs.F.N = 1;
-            regs.F.V = +(regs.TR == 0x7F);
+            regs.F.PV = +(regs.TR == 0x7F);
             regs.F.X = ((regs.TR) & 8) >> 3;
             regs.F.Y = ((regs.TR) & 0x20) >> 5;
             regs.F.H = +((regs.TR & 0x0F) == 0x0F);
@@ -28585,7 +28586,7 @@ void Z80_ins_FD_09_ADD_hl_rr(regs& regs, pins& pins)
             // SUB was IY
             regs.Q = 1;
             regs.WZ = (regs.IY + 1) & 0xFFFF;
-            regs.t[0] = regs.F.P; regs.t[1] = regs.F.Z; regs.t[2] = regs.F.S;
+            regs.t[0] = regs.F.PV; regs.t[1] = regs.F.Z; regs.t[2] = regs.F.S;
             break; }
         case 2: {
             break; }
@@ -28597,7 +28598,7 @@ void Z80_ins_FD_09_ADD_hl_rr(regs& regs, pins& pins)
             z = x + y + 0;
             regs.F.C = +(z > 0xFF);
             regs.F.N = 0;
-            regs.F.V = ((((x ^ y) ^ 0xFF) & (x ^ z)) & 0x80) >> 7;
+            regs.F.PV = ((((x ^ y) ^ 0xFF) & (x ^ z)) & 0x80) >> 7;
             regs.F.X = ((z) & 8) >> 3;
             regs.F.H = ((x ^ y ^ z) & 0x10) >> 4;
             regs.F.Y = ((z) & 0x20) >> 5;
@@ -28615,14 +28616,14 @@ void Z80_ins_FD_09_ADD_hl_rr(regs& regs, pins& pins)
             z = x + y + regs.F.C;
             regs.F.C = +(z > 0xFF);
             regs.F.N = 0;
-            regs.F.V = ((((x ^ y) ^ 0xFF) & (x ^ z)) & 0x80) >> 7;
+            regs.F.PV = ((((x ^ y) ^ 0xFF) & (x ^ z)) & 0x80) >> 7;
             regs.F.X = ((z) & 8) >> 3;
             regs.F.H = ((x ^ y ^ z) & 0x10) >> 4;
             regs.F.Y = ((z) & 0x20) >> 5;
             regs.F.Z = +((z & 0xFF) == 0);
             regs.F.S = ((z) & 0x80) >> 7;
             regs.t[5] = z & 0xFF;
-            regs.F.P = regs.t[0]; regs.F.Z = regs.t[1]; regs.F.S = regs.t[2];
+            regs.F.PV = regs.t[0]; regs.F.Z = regs.t[1]; regs.F.S = regs.t[2];
             regs.IY = (regs.t[5] << 8) | regs.t[4];
             // Following is auto-generated code for instruction finish
             break; }
@@ -28705,7 +28706,7 @@ void Z80_ins_FD_0C_INC_r(regs& regs, pins& pins)
             regs.Q = 1;
             regs.TR = ((regs.C) + 1) & 0xFF;
             regs.F.N = 0;
-            regs.F.V = +(regs.TR == 0x80);
+            regs.F.PV = +(regs.TR == 0x80);
             regs.F.X = ((regs.TR) & 8) >> 3;
             regs.F.Y = ((regs.TR) & 0x20) >> 5;
             regs.F.H = +((regs.TR & 0x0F) == 0);
@@ -28733,7 +28734,7 @@ void Z80_ins_FD_0D_DEC_r(regs& regs, pins& pins)
             regs.Q = 1;
             regs.TR = ((regs.C) - 1) & 0xFF;
             regs.F.N = 1;
-            regs.F.V = +(regs.TR == 0x7F);
+            regs.F.PV = +(regs.TR == 0x7F);
             regs.F.X = ((regs.TR) & 8) >> 3;
             regs.F.Y = ((regs.TR) & 0x20) >> 5;
             regs.F.H = +((regs.TR & 0x0F) == 0x0F);
@@ -28964,7 +28965,7 @@ void Z80_ins_FD_14_INC_r(regs& regs, pins& pins)
             regs.Q = 1;
             regs.TR = ((regs.D) + 1) & 0xFF;
             regs.F.N = 0;
-            regs.F.V = +(regs.TR == 0x80);
+            regs.F.PV = +(regs.TR == 0x80);
             regs.F.X = ((regs.TR) & 8) >> 3;
             regs.F.Y = ((regs.TR) & 0x20) >> 5;
             regs.F.H = +((regs.TR & 0x0F) == 0);
@@ -28992,7 +28993,7 @@ void Z80_ins_FD_15_DEC_r(regs& regs, pins& pins)
             regs.Q = 1;
             regs.TR = ((regs.D) - 1) & 0xFF;
             regs.F.N = 1;
-            regs.F.V = +(regs.TR == 0x7F);
+            regs.F.PV = +(regs.TR == 0x7F);
             regs.F.X = ((regs.TR) & 8) >> 3;
             regs.F.Y = ((regs.TR) & 0x20) >> 5;
             regs.F.H = +((regs.TR & 0x0F) == 0x0F);
@@ -29120,7 +29121,7 @@ void Z80_ins_FD_19_ADD_hl_rr(regs& regs, pins& pins)
             // SUB was IY
             regs.Q = 1;
             regs.WZ = (regs.IY + 1) & 0xFFFF;
-            regs.t[0] = regs.F.P; regs.t[1] = regs.F.Z; regs.t[2] = regs.F.S;
+            regs.t[0] = regs.F.PV; regs.t[1] = regs.F.Z; regs.t[2] = regs.F.S;
             break; }
         case 2: {
             break; }
@@ -29132,7 +29133,7 @@ void Z80_ins_FD_19_ADD_hl_rr(regs& regs, pins& pins)
             z = x + y + 0;
             regs.F.C = +(z > 0xFF);
             regs.F.N = 0;
-            regs.F.V = ((((x ^ y) ^ 0xFF) & (x ^ z)) & 0x80) >> 7;
+            regs.F.PV = ((((x ^ y) ^ 0xFF) & (x ^ z)) & 0x80) >> 7;
             regs.F.X = ((z) & 8) >> 3;
             regs.F.H = ((x ^ y ^ z) & 0x10) >> 4;
             regs.F.Y = ((z) & 0x20) >> 5;
@@ -29150,14 +29151,14 @@ void Z80_ins_FD_19_ADD_hl_rr(regs& regs, pins& pins)
             z = x + y + regs.F.C;
             regs.F.C = +(z > 0xFF);
             regs.F.N = 0;
-            regs.F.V = ((((x ^ y) ^ 0xFF) & (x ^ z)) & 0x80) >> 7;
+            regs.F.PV = ((((x ^ y) ^ 0xFF) & (x ^ z)) & 0x80) >> 7;
             regs.F.X = ((z) & 8) >> 3;
             regs.F.H = ((x ^ y ^ z) & 0x10) >> 4;
             regs.F.Y = ((z) & 0x20) >> 5;
             regs.F.Z = +((z & 0xFF) == 0);
             regs.F.S = ((z) & 0x80) >> 7;
             regs.t[5] = z & 0xFF;
-            regs.F.P = regs.t[0]; regs.F.Z = regs.t[1]; regs.F.S = regs.t[2];
+            regs.F.PV = regs.t[0]; regs.F.Z = regs.t[1]; regs.F.S = regs.t[2];
             regs.IY = (regs.t[5] << 8) | regs.t[4];
             // Following is auto-generated code for instruction finish
             break; }
@@ -29240,7 +29241,7 @@ void Z80_ins_FD_1C_INC_r(regs& regs, pins& pins)
             regs.Q = 1;
             regs.TR = ((regs.E) + 1) & 0xFF;
             regs.F.N = 0;
-            regs.F.V = +(regs.TR == 0x80);
+            regs.F.PV = +(regs.TR == 0x80);
             regs.F.X = ((regs.TR) & 8) >> 3;
             regs.F.Y = ((regs.TR) & 0x20) >> 5;
             regs.F.H = +((regs.TR & 0x0F) == 0);
@@ -29268,7 +29269,7 @@ void Z80_ins_FD_1D_DEC_r(regs& regs, pins& pins)
             regs.Q = 1;
             regs.TR = ((regs.E) - 1) & 0xFF;
             regs.F.N = 1;
-            regs.F.V = +(regs.TR == 0x7F);
+            regs.F.PV = +(regs.TR == 0x7F);
             regs.F.X = ((regs.TR) & 8) >> 3;
             regs.F.Y = ((regs.TR) & 0x20) >> 5;
             regs.F.H = +((regs.TR & 0x0F) == 0x0F);
@@ -29526,7 +29527,7 @@ void Z80_ins_FD_24_INC_r(regs& regs, pins& pins)
             regs.Q = 1;
             regs.TR = (((regs.IY & 0xFF00) >> 8) + 1) & 0xFF;
             regs.F.N = 0;
-            regs.F.V = +(regs.TR == 0x80);
+            regs.F.PV = +(regs.TR == 0x80);
             regs.F.X = ((regs.TR) & 8) >> 3;
             regs.F.Y = ((regs.TR) & 0x20) >> 5;
             regs.F.H = +((regs.TR & 0x0F) == 0);
@@ -29554,7 +29555,7 @@ void Z80_ins_FD_25_DEC_r(regs& regs, pins& pins)
             regs.Q = 1;
             regs.TR = (((regs.IY & 0xFF00) >> 8) - 1) & 0xFF;
             regs.F.N = 1;
-            regs.F.V = +(regs.TR == 0x7F);
+            regs.F.PV = +(regs.TR == 0x7F);
             regs.F.X = ((regs.TR) & 8) >> 3;
             regs.F.Y = ((regs.TR) & 0x20) >> 5;
             regs.F.H = +((regs.TR & 0x0F) == 0x0F);
@@ -29614,7 +29615,7 @@ void Z80_ins_FD_27_DAA(regs& regs, pins& pins)
             u32 a = regs.A;
             if (regs.F.C || (regs.A > 0x99)) { regs.A = (regs.A + (regs.F.N ? -0x60: 0x60)) & 0xFF; regs.F.C = 1; }
             if (regs.F.H || ((regs.A & 0x0F) > 0x09)) { regs.A = (regs.A + (regs.F.N ? -6 : 6)) & 0xFF; }
-            regs.F.P = parity(regs.A);
+            regs.F.PV = parity(regs.A);
             regs.F.X = ((regs.A) & 8) >> 3;
             regs.F.Y = ((regs.A) & 0x20) >> 5;
             regs.F.H = ((a ^ regs.A) & 0x10) >> 4;
@@ -29685,7 +29686,7 @@ void Z80_ins_FD_29_ADD_hl_rr(regs& regs, pins& pins)
             // SUB was IY
             regs.Q = 1;
             regs.WZ = (regs.IY + 1) & 0xFFFF;
-            regs.t[0] = regs.F.P; regs.t[1] = regs.F.Z; regs.t[2] = regs.F.S;
+            regs.t[0] = regs.F.PV; regs.t[1] = regs.F.Z; regs.t[2] = regs.F.S;
             break; }
         case 2: {
             break; }
@@ -29697,7 +29698,7 @@ void Z80_ins_FD_29_ADD_hl_rr(regs& regs, pins& pins)
             z = x + y + 0;
             regs.F.C = +(z > 0xFF);
             regs.F.N = 0;
-            regs.F.V = ((((x ^ y) ^ 0xFF) & (x ^ z)) & 0x80) >> 7;
+            regs.F.PV = ((((x ^ y) ^ 0xFF) & (x ^ z)) & 0x80) >> 7;
             regs.F.X = ((z) & 8) >> 3;
             regs.F.H = ((x ^ y ^ z) & 0x10) >> 4;
             regs.F.Y = ((z) & 0x20) >> 5;
@@ -29715,14 +29716,14 @@ void Z80_ins_FD_29_ADD_hl_rr(regs& regs, pins& pins)
             z = x + y + regs.F.C;
             regs.F.C = +(z > 0xFF);
             regs.F.N = 0;
-            regs.F.V = ((((x ^ y) ^ 0xFF) & (x ^ z)) & 0x80) >> 7;
+            regs.F.PV = ((((x ^ y) ^ 0xFF) & (x ^ z)) & 0x80) >> 7;
             regs.F.X = ((z) & 8) >> 3;
             regs.F.H = ((x ^ y ^ z) & 0x10) >> 4;
             regs.F.Y = ((z) & 0x20) >> 5;
             regs.F.Z = +((z & 0xFF) == 0);
             regs.F.S = ((z) & 0x80) >> 7;
             regs.t[5] = z & 0xFF;
-            regs.F.P = regs.t[0]; regs.F.Z = regs.t[1]; regs.F.S = regs.t[2];
+            regs.F.PV = regs.t[0]; regs.F.Z = regs.t[1]; regs.F.S = regs.t[2];
             regs.IY = (regs.t[5] << 8) | regs.t[4];
             // Following is auto-generated code for instruction finish
             break; }
@@ -29839,7 +29840,7 @@ void Z80_ins_FD_2C_INC_r(regs& regs, pins& pins)
             regs.Q = 1;
             regs.TR = ((regs.IY & 0xFF) + 1) & 0xFF;
             regs.F.N = 0;
-            regs.F.V = +(regs.TR == 0x80);
+            regs.F.PV = +(regs.TR == 0x80);
             regs.F.X = ((regs.TR) & 8) >> 3;
             regs.F.Y = ((regs.TR) & 0x20) >> 5;
             regs.F.H = +((regs.TR & 0x0F) == 0);
@@ -29867,7 +29868,7 @@ void Z80_ins_FD_2D_DEC_r(regs& regs, pins& pins)
             regs.Q = 1;
             regs.TR = ((regs.IY & 0xFF) - 1) & 0xFF;
             regs.F.N = 1;
-            regs.F.V = +(regs.TR == 0x7F);
+            regs.F.PV = +(regs.TR == 0x7F);
             regs.F.X = ((regs.TR) & 8) >> 3;
             regs.F.Y = ((regs.TR) & 0x20) >> 5;
             regs.F.H = +((regs.TR & 0x0F) == 0x0F);
@@ -30146,7 +30147,7 @@ void Z80_ins_FD_34_INC_irr(regs& regs, pins& pins)
         case 12: {
             regs.TR = ((regs.TR) + 1) & 0xFF;
             regs.F.N = 0;
-            regs.F.V = +(regs.TR == 0x80);
+            regs.F.PV = +(regs.TR == 0x80);
             regs.F.X = ((regs.TR) & 8) >> 3;
             regs.F.Y = ((regs.TR) & 0x20) >> 5;
             regs.F.H = +((regs.TR & 0x0F) == 0);
@@ -30218,7 +30219,7 @@ void Z80_ins_FD_35_DEC_irr(regs& regs, pins& pins)
         case 12: {
             regs.TR = ((regs.TR) - 1) & 0xFF;
             regs.F.N = 1;
-            regs.F.V = +(regs.TR == 0x7F);
+            regs.F.PV = +(regs.TR == 0x7F);
             regs.F.X = ((regs.TR) & 8) >> 3;
             regs.F.Y = ((regs.TR) & 0x20) >> 5;
             regs.F.H = +((regs.TR & 0x0F) == 0x0F);
@@ -30381,7 +30382,7 @@ void Z80_ins_FD_39_ADD_hl_rr(regs& regs, pins& pins)
             // SUB was IY
             regs.Q = 1;
             regs.WZ = (regs.IY + 1) & 0xFFFF;
-            regs.t[0] = regs.F.P; regs.t[1] = regs.F.Z; regs.t[2] = regs.F.S;
+            regs.t[0] = regs.F.PV; regs.t[1] = regs.F.Z; regs.t[2] = regs.F.S;
             break; }
         case 2: {
             break; }
@@ -30393,7 +30394,7 @@ void Z80_ins_FD_39_ADD_hl_rr(regs& regs, pins& pins)
             z = x + y + 0;
             regs.F.C = +(z > 0xFF);
             regs.F.N = 0;
-            regs.F.V = ((((x ^ y) ^ 0xFF) & (x ^ z)) & 0x80) >> 7;
+            regs.F.PV = ((((x ^ y) ^ 0xFF) & (x ^ z)) & 0x80) >> 7;
             regs.F.X = ((z) & 8) >> 3;
             regs.F.H = ((x ^ y ^ z) & 0x10) >> 4;
             regs.F.Y = ((z) & 0x20) >> 5;
@@ -30411,14 +30412,14 @@ void Z80_ins_FD_39_ADD_hl_rr(regs& regs, pins& pins)
             z = x + y + regs.F.C;
             regs.F.C = +(z > 0xFF);
             regs.F.N = 0;
-            regs.F.V = ((((x ^ y) ^ 0xFF) & (x ^ z)) & 0x80) >> 7;
+            regs.F.PV = ((((x ^ y) ^ 0xFF) & (x ^ z)) & 0x80) >> 7;
             regs.F.X = ((z) & 8) >> 3;
             regs.F.H = ((x ^ y ^ z) & 0x10) >> 4;
             regs.F.Y = ((z) & 0x20) >> 5;
             regs.F.Z = +((z & 0xFF) == 0);
             regs.F.S = ((z) & 0x80) >> 7;
             regs.t[5] = z & 0xFF;
-            regs.F.P = regs.t[0]; regs.F.Z = regs.t[1]; regs.F.S = regs.t[2];
+            regs.F.PV = regs.t[0]; regs.F.Z = regs.t[1]; regs.F.S = regs.t[2];
             regs.IY = (regs.t[5] << 8) | regs.t[4];
             // Following is auto-generated code for instruction finish
             break; }
@@ -30522,7 +30523,7 @@ void Z80_ins_FD_3C_INC_r(regs& regs, pins& pins)
             regs.Q = 1;
             regs.TR = ((regs.A) + 1) & 0xFF;
             regs.F.N = 0;
-            regs.F.V = +(regs.TR == 0x80);
+            regs.F.PV = +(regs.TR == 0x80);
             regs.F.X = ((regs.TR) & 8) >> 3;
             regs.F.Y = ((regs.TR) & 0x20) >> 5;
             regs.F.H = +((regs.TR & 0x0F) == 0);
@@ -30550,7 +30551,7 @@ void Z80_ins_FD_3D_DEC_r(regs& regs, pins& pins)
             regs.Q = 1;
             regs.TR = ((regs.A) - 1) & 0xFF;
             regs.F.N = 1;
-            regs.F.V = +(regs.TR == 0x7F);
+            regs.F.PV = +(regs.TR == 0x7F);
             regs.F.X = ((regs.TR) & 8) >> 3;
             regs.F.Y = ((regs.TR) & 0x20) >> 5;
             regs.F.H = +((regs.TR & 0x0F) == 0x0F);
@@ -32372,7 +32373,7 @@ void Z80_ins_FD_80_ADD_a_r(regs& regs, pins& pins)
             u32 z = x + y + 0;
             regs.F.C = +(z > 0xFF);
             regs.F.N = 0;
-            regs.F.V = ((((x ^ y) ^ 0xFF) & (x ^ z)) & 0x80) >> 7;
+            regs.F.PV = ((((x ^ y) ^ 0xFF) & (x ^ z)) & 0x80) >> 7;
             regs.F.X = ((z) & 8) >> 3;
             regs.F.H = ((x ^ y ^ z) & 0x10) >> 4;
             regs.F.Y = ((z) & 0x20) >> 5;
@@ -32403,7 +32404,7 @@ void Z80_ins_FD_81_ADD_a_r(regs& regs, pins& pins)
             u32 z = x + y + 0;
             regs.F.C = +(z > 0xFF);
             regs.F.N = 0;
-            regs.F.V = ((((x ^ y) ^ 0xFF) & (x ^ z)) & 0x80) >> 7;
+            regs.F.PV = ((((x ^ y) ^ 0xFF) & (x ^ z)) & 0x80) >> 7;
             regs.F.X = ((z) & 8) >> 3;
             regs.F.H = ((x ^ y ^ z) & 0x10) >> 4;
             regs.F.Y = ((z) & 0x20) >> 5;
@@ -32434,7 +32435,7 @@ void Z80_ins_FD_82_ADD_a_r(regs& regs, pins& pins)
             u32 z = x + y + 0;
             regs.F.C = +(z > 0xFF);
             regs.F.N = 0;
-            regs.F.V = ((((x ^ y) ^ 0xFF) & (x ^ z)) & 0x80) >> 7;
+            regs.F.PV = ((((x ^ y) ^ 0xFF) & (x ^ z)) & 0x80) >> 7;
             regs.F.X = ((z) & 8) >> 3;
             regs.F.H = ((x ^ y ^ z) & 0x10) >> 4;
             regs.F.Y = ((z) & 0x20) >> 5;
@@ -32465,7 +32466,7 @@ void Z80_ins_FD_83_ADD_a_r(regs& regs, pins& pins)
             u32 z = x + y + 0;
             regs.F.C = +(z > 0xFF);
             regs.F.N = 0;
-            regs.F.V = ((((x ^ y) ^ 0xFF) & (x ^ z)) & 0x80) >> 7;
+            regs.F.PV = ((((x ^ y) ^ 0xFF) & (x ^ z)) & 0x80) >> 7;
             regs.F.X = ((z) & 8) >> 3;
             regs.F.H = ((x ^ y ^ z) & 0x10) >> 4;
             regs.F.Y = ((z) & 0x20) >> 5;
@@ -32496,7 +32497,7 @@ void Z80_ins_FD_84_ADD_a_r(regs& regs, pins& pins)
             u32 z = x + y + 0;
             regs.F.C = +(z > 0xFF);
             regs.F.N = 0;
-            regs.F.V = ((((x ^ y) ^ 0xFF) & (x ^ z)) & 0x80) >> 7;
+            regs.F.PV = ((((x ^ y) ^ 0xFF) & (x ^ z)) & 0x80) >> 7;
             regs.F.X = ((z) & 8) >> 3;
             regs.F.H = ((x ^ y ^ z) & 0x10) >> 4;
             regs.F.Y = ((z) & 0x20) >> 5;
@@ -32527,7 +32528,7 @@ void Z80_ins_FD_85_ADD_a_r(regs& regs, pins& pins)
             u32 z = x + y + 0;
             regs.F.C = +(z > 0xFF);
             regs.F.N = 0;
-            regs.F.V = ((((x ^ y) ^ 0xFF) & (x ^ z)) & 0x80) >> 7;
+            regs.F.PV = ((((x ^ y) ^ 0xFF) & (x ^ z)) & 0x80) >> 7;
             regs.F.X = ((z) & 8) >> 3;
             regs.F.H = ((x ^ y ^ z) & 0x10) >> 4;
             regs.F.Y = ((z) & 0x20) >> 5;
@@ -32589,7 +32590,7 @@ void Z80_ins_FD_86_ADD_a_irr(regs& regs, pins& pins)
             u32 z = x + y + 0;
             regs.F.C = +(z > 0xFF);
             regs.F.N = 0;
-            regs.F.V = ((((x ^ y) ^ 0xFF) & (x ^ z)) & 0x80) >> 7;
+            regs.F.PV = ((((x ^ y) ^ 0xFF) & (x ^ z)) & 0x80) >> 7;
             regs.F.X = ((z) & 8) >> 3;
             regs.F.H = ((x ^ y ^ z) & 0x10) >> 4;
             regs.F.Y = ((z) & 0x20) >> 5;
@@ -32622,7 +32623,7 @@ void Z80_ins_FD_87_ADD_a_r(regs& regs, pins& pins)
             u32 z = x + y + 0;
             regs.F.C = +(z > 0xFF);
             regs.F.N = 0;
-            regs.F.V = ((((x ^ y) ^ 0xFF) & (x ^ z)) & 0x80) >> 7;
+            regs.F.PV = ((((x ^ y) ^ 0xFF) & (x ^ z)) & 0x80) >> 7;
             regs.F.X = ((z) & 8) >> 3;
             regs.F.H = ((x ^ y ^ z) & 0x10) >> 4;
             regs.F.Y = ((z) & 0x20) >> 5;
@@ -32653,7 +32654,7 @@ void Z80_ins_FD_88_ADC_a_r(regs& regs, pins& pins)
             u32 z = x + y + regs.F.C;
             regs.F.C = +(z > 0xFF);
             regs.F.N = 0;
-            regs.F.V = ((((x ^ y) ^ 0xFF) & (x ^ z)) & 0x80) >> 7;
+            regs.F.PV = ((((x ^ y) ^ 0xFF) & (x ^ z)) & 0x80) >> 7;
             regs.F.X = ((z) & 8) >> 3;
             regs.F.H = ((x ^ y ^ z) & 0x10) >> 4;
             regs.F.Y = ((z) & 0x20) >> 5;
@@ -32684,7 +32685,7 @@ void Z80_ins_FD_89_ADC_a_r(regs& regs, pins& pins)
             u32 z = x + y + regs.F.C;
             regs.F.C = +(z > 0xFF);
             regs.F.N = 0;
-            regs.F.V = ((((x ^ y) ^ 0xFF) & (x ^ z)) & 0x80) >> 7;
+            regs.F.PV = ((((x ^ y) ^ 0xFF) & (x ^ z)) & 0x80) >> 7;
             regs.F.X = ((z) & 8) >> 3;
             regs.F.H = ((x ^ y ^ z) & 0x10) >> 4;
             regs.F.Y = ((z) & 0x20) >> 5;
@@ -32715,7 +32716,7 @@ void Z80_ins_FD_8A_ADC_a_r(regs& regs, pins& pins)
             u32 z = x + y + regs.F.C;
             regs.F.C = +(z > 0xFF);
             regs.F.N = 0;
-            regs.F.V = ((((x ^ y) ^ 0xFF) & (x ^ z)) & 0x80) >> 7;
+            regs.F.PV = ((((x ^ y) ^ 0xFF) & (x ^ z)) & 0x80) >> 7;
             regs.F.X = ((z) & 8) >> 3;
             regs.F.H = ((x ^ y ^ z) & 0x10) >> 4;
             regs.F.Y = ((z) & 0x20) >> 5;
@@ -32746,7 +32747,7 @@ void Z80_ins_FD_8B_ADC_a_r(regs& regs, pins& pins)
             u32 z = x + y + regs.F.C;
             regs.F.C = +(z > 0xFF);
             regs.F.N = 0;
-            regs.F.V = ((((x ^ y) ^ 0xFF) & (x ^ z)) & 0x80) >> 7;
+            regs.F.PV = ((((x ^ y) ^ 0xFF) & (x ^ z)) & 0x80) >> 7;
             regs.F.X = ((z) & 8) >> 3;
             regs.F.H = ((x ^ y ^ z) & 0x10) >> 4;
             regs.F.Y = ((z) & 0x20) >> 5;
@@ -32777,7 +32778,7 @@ void Z80_ins_FD_8C_ADC_a_r(regs& regs, pins& pins)
             u32 z = x + y + regs.F.C;
             regs.F.C = +(z > 0xFF);
             regs.F.N = 0;
-            regs.F.V = ((((x ^ y) ^ 0xFF) & (x ^ z)) & 0x80) >> 7;
+            regs.F.PV = ((((x ^ y) ^ 0xFF) & (x ^ z)) & 0x80) >> 7;
             regs.F.X = ((z) & 8) >> 3;
             regs.F.H = ((x ^ y ^ z) & 0x10) >> 4;
             regs.F.Y = ((z) & 0x20) >> 5;
@@ -32808,7 +32809,7 @@ void Z80_ins_FD_8D_ADC_a_r(regs& regs, pins& pins)
             u32 z = x + y + regs.F.C;
             regs.F.C = +(z > 0xFF);
             regs.F.N = 0;
-            regs.F.V = ((((x ^ y) ^ 0xFF) & (x ^ z)) & 0x80) >> 7;
+            regs.F.PV = ((((x ^ y) ^ 0xFF) & (x ^ z)) & 0x80) >> 7;
             regs.F.X = ((z) & 8) >> 3;
             regs.F.H = ((x ^ y ^ z) & 0x10) >> 4;
             regs.F.Y = ((z) & 0x20) >> 5;
@@ -32870,7 +32871,7 @@ void Z80_ins_FD_8E_ADC_a_irr(regs& regs, pins& pins)
             u32 z = x + y + regs.F.C;
             regs.F.C = +(z > 0xFF);
             regs.F.N = 0;
-            regs.F.V = ((((x ^ y) ^ 0xFF) & (x ^ z)) & 0x80) >> 7;
+            regs.F.PV = ((((x ^ y) ^ 0xFF) & (x ^ z)) & 0x80) >> 7;
             regs.F.X = ((z) & 8) >> 3;
             regs.F.H = ((x ^ y ^ z) & 0x10) >> 4;
             regs.F.Y = ((z) & 0x20) >> 5;
@@ -32903,7 +32904,7 @@ void Z80_ins_FD_8F_ADC_a_r(regs& regs, pins& pins)
             u32 z = x + y + regs.F.C;
             regs.F.C = +(z > 0xFF);
             regs.F.N = 0;
-            regs.F.V = ((((x ^ y) ^ 0xFF) & (x ^ z)) & 0x80) >> 7;
+            regs.F.PV = ((((x ^ y) ^ 0xFF) & (x ^ z)) & 0x80) >> 7;
             regs.F.X = ((z) & 8) >> 3;
             regs.F.H = ((x ^ y ^ z) & 0x10) >> 4;
             regs.F.Y = ((z) & 0x20) >> 5;
@@ -32935,7 +32936,7 @@ void Z80_ins_FD_90_SUB_a_r(regs& regs, pins& pins)
             u32 z = (x - y - c) & 0x1FF;
             regs.F.C = (z & 0x100) >> 8;
             regs.F.N = 1;
-            regs.F.V = (((x ^ y) & (x ^ z)) & 0x80) >> 7;
+            regs.F.PV = (((x ^ y) & (x ^ z)) & 0x80) >> 7;
             regs.F.X = ((z) & 8) >> 3;
             regs.F.Y = ((z) & 0x20) >> 5;
             regs.F.H = ((x ^ y ^ z) & 0x10) >> 4;
@@ -32967,7 +32968,7 @@ void Z80_ins_FD_91_SUB_a_r(regs& regs, pins& pins)
             u32 z = (x - y - c) & 0x1FF;
             regs.F.C = (z & 0x100) >> 8;
             regs.F.N = 1;
-            regs.F.V = (((x ^ y) & (x ^ z)) & 0x80) >> 7;
+            regs.F.PV = (((x ^ y) & (x ^ z)) & 0x80) >> 7;
             regs.F.X = ((z) & 8) >> 3;
             regs.F.Y = ((z) & 0x20) >> 5;
             regs.F.H = ((x ^ y ^ z) & 0x10) >> 4;
@@ -32999,7 +33000,7 @@ void Z80_ins_FD_92_SUB_a_r(regs& regs, pins& pins)
             u32 z = (x - y - c) & 0x1FF;
             regs.F.C = (z & 0x100) >> 8;
             regs.F.N = 1;
-            regs.F.V = (((x ^ y) & (x ^ z)) & 0x80) >> 7;
+            regs.F.PV = (((x ^ y) & (x ^ z)) & 0x80) >> 7;
             regs.F.X = ((z) & 8) >> 3;
             regs.F.Y = ((z) & 0x20) >> 5;
             regs.F.H = ((x ^ y ^ z) & 0x10) >> 4;
@@ -33031,7 +33032,7 @@ void Z80_ins_FD_93_SUB_a_r(regs& regs, pins& pins)
             u32 z = (x - y - c) & 0x1FF;
             regs.F.C = (z & 0x100) >> 8;
             regs.F.N = 1;
-            regs.F.V = (((x ^ y) & (x ^ z)) & 0x80) >> 7;
+            regs.F.PV = (((x ^ y) & (x ^ z)) & 0x80) >> 7;
             regs.F.X = ((z) & 8) >> 3;
             regs.F.Y = ((z) & 0x20) >> 5;
             regs.F.H = ((x ^ y ^ z) & 0x10) >> 4;
@@ -33063,7 +33064,7 @@ void Z80_ins_FD_94_SUB_a_r(regs& regs, pins& pins)
             u32 z = (x - y - c) & 0x1FF;
             regs.F.C = (z & 0x100) >> 8;
             regs.F.N = 1;
-            regs.F.V = (((x ^ y) & (x ^ z)) & 0x80) >> 7;
+            regs.F.PV = (((x ^ y) & (x ^ z)) & 0x80) >> 7;
             regs.F.X = ((z) & 8) >> 3;
             regs.F.Y = ((z) & 0x20) >> 5;
             regs.F.H = ((x ^ y ^ z) & 0x10) >> 4;
@@ -33095,7 +33096,7 @@ void Z80_ins_FD_95_SUB_a_r(regs& regs, pins& pins)
             u32 z = (x - y - c) & 0x1FF;
             regs.F.C = (z & 0x100) >> 8;
             regs.F.N = 1;
-            regs.F.V = (((x ^ y) & (x ^ z)) & 0x80) >> 7;
+            regs.F.PV = (((x ^ y) & (x ^ z)) & 0x80) >> 7;
             regs.F.X = ((z) & 8) >> 3;
             regs.F.Y = ((z) & 0x20) >> 5;
             regs.F.H = ((x ^ y ^ z) & 0x10) >> 4;
@@ -33158,7 +33159,7 @@ void Z80_ins_FD_96_SUB_a_irr(regs& regs, pins& pins)
             u32 z = (x - y - c) & 0x1FF;
             regs.F.C = (z & 0x100) >> 8;
             regs.F.N = 1;
-            regs.F.V = (((x ^ y) & (x ^ z)) & 0x80) >> 7;
+            regs.F.PV = (((x ^ y) & (x ^ z)) & 0x80) >> 7;
             regs.F.X = ((z) & 8) >> 3;
             regs.F.Y = ((z) & 0x20) >> 5;
             regs.F.H = ((x ^ y ^ z) & 0x10) >> 4;
@@ -33192,7 +33193,7 @@ void Z80_ins_FD_97_SUB_a_r(regs& regs, pins& pins)
             u32 z = (x - y - c) & 0x1FF;
             regs.F.C = (z & 0x100) >> 8;
             regs.F.N = 1;
-            regs.F.V = (((x ^ y) & (x ^ z)) & 0x80) >> 7;
+            regs.F.PV = (((x ^ y) & (x ^ z)) & 0x80) >> 7;
             regs.F.X = ((z) & 8) >> 3;
             regs.F.Y = ((z) & 0x20) >> 5;
             regs.F.H = ((x ^ y ^ z) & 0x10) >> 4;
@@ -33224,7 +33225,7 @@ void Z80_ins_FD_98_SBC_a_r(regs& regs, pins& pins)
             u32 z = (x - y - c) & 0x1FF;
             regs.F.C = (z & 0x100) >> 8;
             regs.F.N = 1;
-            regs.F.V = (((x ^ y) & (x ^ z)) & 0x80) >> 7;
+            regs.F.PV = (((x ^ y) & (x ^ z)) & 0x80) >> 7;
             regs.F.X = ((z) & 8) >> 3;
             regs.F.Y = ((z) & 0x20) >> 5;
             regs.F.H = ((x ^ y ^ z) & 0x10) >> 4;
@@ -33256,7 +33257,7 @@ void Z80_ins_FD_99_SBC_a_r(regs& regs, pins& pins)
             u32 z = (x - y - c) & 0x1FF;
             regs.F.C = (z & 0x100) >> 8;
             regs.F.N = 1;
-            regs.F.V = (((x ^ y) & (x ^ z)) & 0x80) >> 7;
+            regs.F.PV = (((x ^ y) & (x ^ z)) & 0x80) >> 7;
             regs.F.X = ((z) & 8) >> 3;
             regs.F.Y = ((z) & 0x20) >> 5;
             regs.F.H = ((x ^ y ^ z) & 0x10) >> 4;
@@ -33288,7 +33289,7 @@ void Z80_ins_FD_9A_SBC_a_r(regs& regs, pins& pins)
             u32 z = (x - y - c) & 0x1FF;
             regs.F.C = (z & 0x100) >> 8;
             regs.F.N = 1;
-            regs.F.V = (((x ^ y) & (x ^ z)) & 0x80) >> 7;
+            regs.F.PV = (((x ^ y) & (x ^ z)) & 0x80) >> 7;
             regs.F.X = ((z) & 8) >> 3;
             regs.F.Y = ((z) & 0x20) >> 5;
             regs.F.H = ((x ^ y ^ z) & 0x10) >> 4;
@@ -33320,7 +33321,7 @@ void Z80_ins_FD_9B_SBC_a_r(regs& regs, pins& pins)
             u32 z = (x - y - c) & 0x1FF;
             regs.F.C = (z & 0x100) >> 8;
             regs.F.N = 1;
-            regs.F.V = (((x ^ y) & (x ^ z)) & 0x80) >> 7;
+            regs.F.PV = (((x ^ y) & (x ^ z)) & 0x80) >> 7;
             regs.F.X = ((z) & 8) >> 3;
             regs.F.Y = ((z) & 0x20) >> 5;
             regs.F.H = ((x ^ y ^ z) & 0x10) >> 4;
@@ -33352,7 +33353,7 @@ void Z80_ins_FD_9C_SBC_a_r(regs& regs, pins& pins)
             u32 z = (x - y - c) & 0x1FF;
             regs.F.C = (z & 0x100) >> 8;
             regs.F.N = 1;
-            regs.F.V = (((x ^ y) & (x ^ z)) & 0x80) >> 7;
+            regs.F.PV = (((x ^ y) & (x ^ z)) & 0x80) >> 7;
             regs.F.X = ((z) & 8) >> 3;
             regs.F.Y = ((z) & 0x20) >> 5;
             regs.F.H = ((x ^ y ^ z) & 0x10) >> 4;
@@ -33384,7 +33385,7 @@ void Z80_ins_FD_9D_SBC_a_r(regs& regs, pins& pins)
             u32 z = (x - y - c) & 0x1FF;
             regs.F.C = (z & 0x100) >> 8;
             regs.F.N = 1;
-            regs.F.V = (((x ^ y) & (x ^ z)) & 0x80) >> 7;
+            regs.F.PV = (((x ^ y) & (x ^ z)) & 0x80) >> 7;
             regs.F.X = ((z) & 8) >> 3;
             regs.F.Y = ((z) & 0x20) >> 5;
             regs.F.H = ((x ^ y ^ z) & 0x10) >> 4;
@@ -33447,7 +33448,7 @@ void Z80_ins_FD_9E_SBC_a_irr(regs& regs, pins& pins)
             u32 z = (x - y - c) & 0x1FF;
             regs.F.C = (z & 0x100) >> 8;
             regs.F.N = 1;
-            regs.F.V = (((x ^ y) & (x ^ z)) & 0x80) >> 7;
+            regs.F.PV = (((x ^ y) & (x ^ z)) & 0x80) >> 7;
             regs.F.X = ((z) & 8) >> 3;
             regs.F.Y = ((z) & 0x20) >> 5;
             regs.F.H = ((x ^ y ^ z) & 0x10) >> 4;
@@ -33481,7 +33482,7 @@ void Z80_ins_FD_9F_SBC_a_r(regs& regs, pins& pins)
             u32 z = (x - y - c) & 0x1FF;
             regs.F.C = (z & 0x100) >> 8;
             regs.F.N = 1;
-            regs.F.V = (((x ^ y) & (x ^ z)) & 0x80) >> 7;
+            regs.F.PV = (((x ^ y) & (x ^ z)) & 0x80) >> 7;
             regs.F.X = ((z) & 8) >> 3;
             regs.F.Y = ((z) & 0x20) >> 5;
             regs.F.H = ((x ^ y ^ z) & 0x10) >> 4;
@@ -33509,7 +33510,7 @@ void Z80_ins_FD_A0_AND_a_r(regs& regs, pins& pins)
             regs.Q = 1;
             u32 z = (regs.A) & (regs.B);
             regs.F.C = regs.F.N = 0;
-            regs.F.V = parity(z);
+            regs.F.PV = parity(z);
             regs.F.X = ((z) & 8) >> 3;
             regs.F.H = 1;
             regs.F.Y = ((z) & 0x20) >> 5;
@@ -33537,7 +33538,7 @@ void Z80_ins_FD_A1_AND_a_r(regs& regs, pins& pins)
             regs.Q = 1;
             u32 z = (regs.A) & (regs.C);
             regs.F.C = regs.F.N = 0;
-            regs.F.V = parity(z);
+            regs.F.PV = parity(z);
             regs.F.X = ((z) & 8) >> 3;
             regs.F.H = 1;
             regs.F.Y = ((z) & 0x20) >> 5;
@@ -33565,7 +33566,7 @@ void Z80_ins_FD_A2_AND_a_r(regs& regs, pins& pins)
             regs.Q = 1;
             u32 z = (regs.A) & (regs.D);
             regs.F.C = regs.F.N = 0;
-            regs.F.V = parity(z);
+            regs.F.PV = parity(z);
             regs.F.X = ((z) & 8) >> 3;
             regs.F.H = 1;
             regs.F.Y = ((z) & 0x20) >> 5;
@@ -33593,7 +33594,7 @@ void Z80_ins_FD_A3_AND_a_r(regs& regs, pins& pins)
             regs.Q = 1;
             u32 z = (regs.A) & (regs.E);
             regs.F.C = regs.F.N = 0;
-            regs.F.V = parity(z);
+            regs.F.PV = parity(z);
             regs.F.X = ((z) & 8) >> 3;
             regs.F.H = 1;
             regs.F.Y = ((z) & 0x20) >> 5;
@@ -33621,7 +33622,7 @@ void Z80_ins_FD_A4_AND_a_r(regs& regs, pins& pins)
             regs.Q = 1;
             u32 z = (regs.A) & (((regs.IY & 0xFF00) >> 8));
             regs.F.C = regs.F.N = 0;
-            regs.F.V = parity(z);
+            regs.F.PV = parity(z);
             regs.F.X = ((z) & 8) >> 3;
             regs.F.H = 1;
             regs.F.Y = ((z) & 0x20) >> 5;
@@ -33649,7 +33650,7 @@ void Z80_ins_FD_A5_AND_a_r(regs& regs, pins& pins)
             regs.Q = 1;
             u32 z = (regs.A) & ((regs.IY & 0xFF));
             regs.F.C = regs.F.N = 0;
-            regs.F.V = parity(z);
+            regs.F.PV = parity(z);
             regs.F.X = ((z) & 8) >> 3;
             regs.F.H = 1;
             regs.F.Y = ((z) & 0x20) >> 5;
@@ -33708,7 +33709,7 @@ void Z80_ins_FD_A6_AND_a_irr(regs& regs, pins& pins)
             pins.RD = 0; pins.MRQ = 0;
             u32 z = (regs.A) & (regs.TR);
             regs.F.C = regs.F.N = 0;
-            regs.F.V = parity(z);
+            regs.F.PV = parity(z);
             regs.F.X = ((z) & 8) >> 3;
             regs.F.H = 1;
             regs.F.Y = ((z) & 0x20) >> 5;
@@ -33738,7 +33739,7 @@ void Z80_ins_FD_A7_AND_a_r(regs& regs, pins& pins)
             regs.Q = 1;
             u32 z = (regs.A) & (regs.A);
             regs.F.C = regs.F.N = 0;
-            regs.F.V = parity(z);
+            regs.F.PV = parity(z);
             regs.F.X = ((z) & 8) >> 3;
             regs.F.H = 1;
             regs.F.Y = ((z) & 0x20) >> 5;
@@ -33768,7 +33769,7 @@ void Z80_ins_FD_A8_XOR_a_r(regs& regs, pins& pins)
             regs.F.C = regs.F.N = regs.F.H = 0;
             regs.F.X = ((z) & 8) >> 3;
             regs.F.Y = ((z) & 0x20) >> 5;
-            regs.F.V = parity(z);
+            regs.F.PV = parity(z);
             regs.F.Z = +((z) == 0);
             regs.F.S = ((z) & 0x80) >> 7;
             regs.A = z;
@@ -33795,7 +33796,7 @@ void Z80_ins_FD_A9_XOR_a_r(regs& regs, pins& pins)
             regs.F.C = regs.F.N = regs.F.H = 0;
             regs.F.X = ((z) & 8) >> 3;
             regs.F.Y = ((z) & 0x20) >> 5;
-            regs.F.V = parity(z);
+            regs.F.PV = parity(z);
             regs.F.Z = +((z) == 0);
             regs.F.S = ((z) & 0x80) >> 7;
             regs.A = z;
@@ -33822,7 +33823,7 @@ void Z80_ins_FD_AA_XOR_a_r(regs& regs, pins& pins)
             regs.F.C = regs.F.N = regs.F.H = 0;
             regs.F.X = ((z) & 8) >> 3;
             regs.F.Y = ((z) & 0x20) >> 5;
-            regs.F.V = parity(z);
+            regs.F.PV = parity(z);
             regs.F.Z = +((z) == 0);
             regs.F.S = ((z) & 0x80) >> 7;
             regs.A = z;
@@ -33849,7 +33850,7 @@ void Z80_ins_FD_AB_XOR_a_r(regs& regs, pins& pins)
             regs.F.C = regs.F.N = regs.F.H = 0;
             regs.F.X = ((z) & 8) >> 3;
             regs.F.Y = ((z) & 0x20) >> 5;
-            regs.F.V = parity(z);
+            regs.F.PV = parity(z);
             regs.F.Z = +((z) == 0);
             regs.F.S = ((z) & 0x80) >> 7;
             regs.A = z;
@@ -33876,7 +33877,7 @@ void Z80_ins_FD_AC_XOR_a_r(regs& regs, pins& pins)
             regs.F.C = regs.F.N = regs.F.H = 0;
             regs.F.X = ((z) & 8) >> 3;
             regs.F.Y = ((z) & 0x20) >> 5;
-            regs.F.V = parity(z);
+            regs.F.PV = parity(z);
             regs.F.Z = +((z) == 0);
             regs.F.S = ((z) & 0x80) >> 7;
             regs.A = z;
@@ -33903,7 +33904,7 @@ void Z80_ins_FD_AD_XOR_a_r(regs& regs, pins& pins)
             regs.F.C = regs.F.N = regs.F.H = 0;
             regs.F.X = ((z) & 8) >> 3;
             regs.F.Y = ((z) & 0x20) >> 5;
-            regs.F.V = parity(z);
+            regs.F.PV = parity(z);
             regs.F.Z = +((z) == 0);
             regs.F.S = ((z) & 0x80) >> 7;
             regs.A = z;
@@ -33961,7 +33962,7 @@ void Z80_ins_FD_AE_XOR_a_irr(regs& regs, pins& pins)
             regs.F.C = regs.F.N = regs.F.H = 0;
             regs.F.X = ((z) & 8) >> 3;
             regs.F.Y = ((z) & 0x20) >> 5;
-            regs.F.V = parity(z);
+            regs.F.PV = parity(z);
             regs.F.Z = +((z) == 0);
             regs.F.S = ((z) & 0x80) >> 7;
             regs.A = z;
@@ -33990,7 +33991,7 @@ void Z80_ins_FD_AF_XOR_a_r(regs& regs, pins& pins)
             regs.F.C = regs.F.N = regs.F.H = 0;
             regs.F.X = ((z) & 8) >> 3;
             regs.F.Y = ((z) & 0x20) >> 5;
-            regs.F.V = parity(z);
+            regs.F.PV = parity(z);
             regs.F.Z = +((z) == 0);
             regs.F.S = ((z) & 0x80) >> 7;
             regs.A = z;
@@ -34017,7 +34018,7 @@ void Z80_ins_FD_B0_OR_a_r(regs& regs, pins& pins)
             regs.F.C = regs.F.N = regs.F.H = 0;
             regs.F.X = ((z) & 8) >> 3;
             regs.F.Y = ((z) & 0x20) >> 5;
-            regs.F.V = parity(z);
+            regs.F.PV = parity(z);
             regs.F.Z = +((z) == 0);
             regs.F.S = ((z) & 0x80) >> 7;
             regs.A = z;
@@ -34044,7 +34045,7 @@ void Z80_ins_FD_B1_OR_a_r(regs& regs, pins& pins)
             regs.F.C = regs.F.N = regs.F.H = 0;
             regs.F.X = ((z) & 8) >> 3;
             regs.F.Y = ((z) & 0x20) >> 5;
-            regs.F.V = parity(z);
+            regs.F.PV = parity(z);
             regs.F.Z = +((z) == 0);
             regs.F.S = ((z) & 0x80) >> 7;
             regs.A = z;
@@ -34071,7 +34072,7 @@ void Z80_ins_FD_B2_OR_a_r(regs& regs, pins& pins)
             regs.F.C = regs.F.N = regs.F.H = 0;
             regs.F.X = ((z) & 8) >> 3;
             regs.F.Y = ((z) & 0x20) >> 5;
-            regs.F.V = parity(z);
+            regs.F.PV = parity(z);
             regs.F.Z = +((z) == 0);
             regs.F.S = ((z) & 0x80) >> 7;
             regs.A = z;
@@ -34098,7 +34099,7 @@ void Z80_ins_FD_B3_OR_a_r(regs& regs, pins& pins)
             regs.F.C = regs.F.N = regs.F.H = 0;
             regs.F.X = ((z) & 8) >> 3;
             regs.F.Y = ((z) & 0x20) >> 5;
-            regs.F.V = parity(z);
+            regs.F.PV = parity(z);
             regs.F.Z = +((z) == 0);
             regs.F.S = ((z) & 0x80) >> 7;
             regs.A = z;
@@ -34125,7 +34126,7 @@ void Z80_ins_FD_B4_OR_a_r(regs& regs, pins& pins)
             regs.F.C = regs.F.N = regs.F.H = 0;
             regs.F.X = ((z) & 8) >> 3;
             regs.F.Y = ((z) & 0x20) >> 5;
-            regs.F.V = parity(z);
+            regs.F.PV = parity(z);
             regs.F.Z = +((z) == 0);
             regs.F.S = ((z) & 0x80) >> 7;
             regs.A = z;
@@ -34152,7 +34153,7 @@ void Z80_ins_FD_B5_OR_a_r(regs& regs, pins& pins)
             regs.F.C = regs.F.N = regs.F.H = 0;
             regs.F.X = ((z) & 8) >> 3;
             regs.F.Y = ((z) & 0x20) >> 5;
-            regs.F.V = parity(z);
+            regs.F.PV = parity(z);
             regs.F.Z = +((z) == 0);
             regs.F.S = ((z) & 0x80) >> 7;
             regs.A = z;
@@ -34210,7 +34211,7 @@ void Z80_ins_FD_B6_OR_a_irr(regs& regs, pins& pins)
             regs.F.C = regs.F.N = regs.F.H = 0;
             regs.F.X = ((z) & 8) >> 3;
             regs.F.Y = ((z) & 0x20) >> 5;
-            regs.F.V = parity(z);
+            regs.F.PV = parity(z);
             regs.F.Z = +((z) == 0);
             regs.F.S = ((z) & 0x80) >> 7;
             regs.A = z;
@@ -34239,7 +34240,7 @@ void Z80_ins_FD_B7_OR_a_r(regs& regs, pins& pins)
             regs.F.C = regs.F.N = regs.F.H = 0;
             regs.F.X = ((z) & 8) >> 3;
             regs.F.Y = ((z) & 0x20) >> 5;
-            regs.F.V = parity(z);
+            regs.F.PV = parity(z);
             regs.F.Z = +((z) == 0);
             regs.F.S = ((z) & 0x80) >> 7;
             regs.A = z;
@@ -34267,7 +34268,7 @@ void Z80_ins_FD_B8_CP_a_r(regs& regs, pins& pins)
             i32 z = x - y;
             regs.F.C = +(z < 0);
             regs.F.N = 1;
-            regs.F.V = (((x ^ y) & (x ^ z)) & 0x80) >> 7;
+            regs.F.PV = (((x ^ y) & (x ^ z)) & 0x80) >> 7;
             regs.F.X = ((y) & 8) >> 3;
             regs.F.Y = ((y) & 0x20) >> 5;
             regs.F.H = ((x ^ y ^ z) & 0x10) >> 4;
@@ -34297,7 +34298,7 @@ void Z80_ins_FD_B9_CP_a_r(regs& regs, pins& pins)
             i32 z = x - y;
             regs.F.C = +(z < 0);
             regs.F.N = 1;
-            regs.F.V = (((x ^ y) & (x ^ z)) & 0x80) >> 7;
+            regs.F.PV = (((x ^ y) & (x ^ z)) & 0x80) >> 7;
             regs.F.X = ((y) & 8) >> 3;
             regs.F.Y = ((y) & 0x20) >> 5;
             regs.F.H = ((x ^ y ^ z) & 0x10) >> 4;
@@ -34327,7 +34328,7 @@ void Z80_ins_FD_BA_CP_a_r(regs& regs, pins& pins)
             i32 z = x - y;
             regs.F.C = +(z < 0);
             regs.F.N = 1;
-            regs.F.V = (((x ^ y) & (x ^ z)) & 0x80) >> 7;
+            regs.F.PV = (((x ^ y) & (x ^ z)) & 0x80) >> 7;
             regs.F.X = ((y) & 8) >> 3;
             regs.F.Y = ((y) & 0x20) >> 5;
             regs.F.H = ((x ^ y ^ z) & 0x10) >> 4;
@@ -34357,7 +34358,7 @@ void Z80_ins_FD_BB_CP_a_r(regs& regs, pins& pins)
             i32 z = x - y;
             regs.F.C = +(z < 0);
             regs.F.N = 1;
-            regs.F.V = (((x ^ y) & (x ^ z)) & 0x80) >> 7;
+            regs.F.PV = (((x ^ y) & (x ^ z)) & 0x80) >> 7;
             regs.F.X = ((y) & 8) >> 3;
             regs.F.Y = ((y) & 0x20) >> 5;
             regs.F.H = ((x ^ y ^ z) & 0x10) >> 4;
@@ -34387,7 +34388,7 @@ void Z80_ins_FD_BC_CP_a_r(regs& regs, pins& pins)
             i32 z = x - y;
             regs.F.C = +(z < 0);
             regs.F.N = 1;
-            regs.F.V = (((x ^ y) & (x ^ z)) & 0x80) >> 7;
+            regs.F.PV = (((x ^ y) & (x ^ z)) & 0x80) >> 7;
             regs.F.X = ((y) & 8) >> 3;
             regs.F.Y = ((y) & 0x20) >> 5;
             regs.F.H = ((x ^ y ^ z) & 0x10) >> 4;
@@ -34417,7 +34418,7 @@ void Z80_ins_FD_BD_CP_a_r(regs& regs, pins& pins)
             i32 z = x - y;
             regs.F.C = +(z < 0);
             regs.F.N = 1;
-            regs.F.V = (((x ^ y) & (x ^ z)) & 0x80) >> 7;
+            regs.F.PV = (((x ^ y) & (x ^ z)) & 0x80) >> 7;
             regs.F.X = ((y) & 8) >> 3;
             regs.F.Y = ((y) & 0x20) >> 5;
             regs.F.H = ((x ^ y ^ z) & 0x10) >> 4;
@@ -34478,7 +34479,7 @@ void Z80_ins_FD_BE_CP_a_irr(regs& regs, pins& pins)
             i32 z = x - y;
             regs.F.C = +(z < 0);
             regs.F.N = 1;
-            regs.F.V = (((x ^ y) & (x ^ z)) & 0x80) >> 7;
+            regs.F.PV = (((x ^ y) & (x ^ z)) & 0x80) >> 7;
             regs.F.X = ((y) & 8) >> 3;
             regs.F.Y = ((y) & 0x20) >> 5;
             regs.F.H = ((x ^ y ^ z) & 0x10) >> 4;
@@ -34510,7 +34511,7 @@ void Z80_ins_FD_BF_CP_a_r(regs& regs, pins& pins)
             i32 z = x - y;
             regs.F.C = +(z < 0);
             regs.F.N = 1;
-            regs.F.V = (((x ^ y) & (x ^ z)) & 0x80) >> 7;
+            regs.F.PV = (((x ^ y) & (x ^ z)) & 0x80) >> 7;
             regs.F.X = ((y) & 8) >> 3;
             regs.F.Y = ((y) & 0x20) >> 5;
             regs.F.H = ((x ^ y ^ z) & 0x10) >> 4;
@@ -34839,7 +34840,7 @@ void Z80_ins_FD_C6_ADD_a_n(regs& regs, pins& pins)
             u32 z = x + y + 0;
             regs.F.C = +(z > 0xFF);
             regs.F.N = 0;
-            regs.F.V = ((((x ^ y) ^ 0xFF) & (x ^ z)) & 0x80) >> 7;
+            regs.F.PV = ((((x ^ y) ^ 0xFF) & (x ^ z)) & 0x80) >> 7;
             regs.F.X = ((z) & 8) >> 3;
             regs.F.H = ((x ^ y ^ z) & 0x10) >> 4;
             regs.F.Y = ((z) & 0x20) >> 5;
@@ -35197,7 +35198,7 @@ void Z80_ins_FD_CE_ADC_a_n(regs& regs, pins& pins)
             u32 z = x + y + regs.F.C;
             regs.F.C = +(z > 0xFF);
             regs.F.N = 0;
-            regs.F.V = ((((x ^ y) ^ 0xFF) & (x ^ z)) & 0x80) >> 7;
+            regs.F.PV = ((((x ^ y) ^ 0xFF) & (x ^ z)) & 0x80) >> 7;
             regs.F.X = ((z) & 8) >> 3;
             regs.F.H = ((x ^ y ^ z) & 0x10) >> 4;
             regs.F.Y = ((z) & 0x20) >> 5;
@@ -35577,7 +35578,7 @@ void Z80_ins_FD_D6_SUB_a_n(regs& regs, pins& pins)
             u32 z = (x - y - c) & 0x1FF;
             regs.F.C = (z & 0x100) >> 8;
             regs.F.N = 1;
-            regs.F.V = (((x ^ y) & (x ^ z)) & 0x80) >> 7;
+            regs.F.PV = (((x ^ y) & (x ^ z)) & 0x80) >> 7;
             regs.F.X = ((z) & 8) >> 3;
             regs.F.Y = ((z) & 0x20) >> 5;
             regs.F.H = ((x ^ y ^ z) & 0x10) >> 4;
@@ -35890,7 +35891,7 @@ void Z80_ins_FD_DE_SBC_a_n(regs& regs, pins& pins)
             u32 z = (x - y - c) & 0x1FF;
             regs.F.C = (z & 0x100) >> 8;
             regs.F.N = 1;
-            regs.F.V = (((x ^ y) & (x ^ z)) & 0x80) >> 7;
+            regs.F.PV = (((x ^ y) & (x ^ z)) & 0x80) >> 7;
             regs.F.X = ((z) & 8) >> 3;
             regs.F.Y = ((z) & 0x20) >> 5;
             regs.F.H = ((x ^ y ^ z) & 0x10) >> 4;
@@ -35963,7 +35964,7 @@ void Z80_ins_FD_E0_RET_c(regs& regs, pins& pins)
     switch(regs.TCU) {
         case 1: { // 0
             regs.Q = 0;
-            if (!(regs.F.P == 0)) { regs.TCU += 6; break; }
+            if (!(regs.F.PV == 0)) { regs.TCU += 6; break; }
             break; }
         case 2: { // Start read
             pins.Addr = (regs.SP);
@@ -36074,7 +36075,7 @@ void Z80_ins_FD_E2_JP_c_nn(regs& regs, pins& pins)
             pins.RD = 0; pins.MRQ = 0;
             regs.PC = (regs.PC + 1) & 0xFFFF;
             regs.WZ |= (regs.t[4] << 8);
-            if (regs.F.P == 0) regs.PC = regs.WZ;
+            if (regs.F.PV == 0) regs.PC = regs.WZ;
             // Following is auto-generated code for instruction finish
             break; }
         case 7: { // cleanup_custom
@@ -36187,7 +36188,7 @@ void Z80_ins_FD_E4_CALL_c_nn(regs& regs, pins& pins)
             regs.PC = (regs.PC + 1) & 0xFFFF;
             regs.WZ |= (regs.t[4] << 8);
             regs.TA = regs.WZ;
-            regs.TR = +(regs.F.P == 0);
+            regs.TR = +(regs.F.PV == 0);
             if (!regs.TR) { regs.TA = regs.PC; regs.TCU+=7; break; }
             break; }
         case 7: {
@@ -36289,7 +36290,7 @@ void Z80_ins_FD_E6_AND_a_n(regs& regs, pins& pins)
             regs.PC = (regs.PC + 1) & 0xFFFF;
             u32 z = (regs.A) & (regs.TR);
             regs.F.C = regs.F.N = 0;
-            regs.F.V = parity(z);
+            regs.F.PV = parity(z);
             regs.F.X = ((z) & 8) >> 3;
             regs.F.H = 1;
             regs.F.Y = ((z) & 0x20) >> 5;
@@ -36362,7 +36363,7 @@ void Z80_ins_FD_E8_RET_c(regs& regs, pins& pins)
     switch(regs.TCU) {
         case 1: { // 0
             regs.Q = 0;
-            if (!(regs.F.P == 1)) { regs.TCU += 6; break; }
+            if (!(regs.F.PV == 1)) { regs.TCU += 6; break; }
             break; }
         case 2: { // Start read
             pins.Addr = (regs.SP);
@@ -36450,7 +36451,7 @@ void Z80_ins_FD_EA_JP_c_nn(regs& regs, pins& pins)
             pins.RD = 0; pins.MRQ = 0;
             regs.PC = (regs.PC + 1) & 0xFFFF;
             regs.WZ |= (regs.t[4] << 8);
-            if (regs.F.P == 1) regs.PC = regs.WZ;
+            if (regs.F.PV == 1) regs.PC = regs.WZ;
             // Following is auto-generated code for instruction finish
             break; }
         case 7: { // cleanup_custom
@@ -36514,7 +36515,7 @@ void Z80_ins_FD_EC_CALL_c_nn(regs& regs, pins& pins)
             regs.PC = (regs.PC + 1) & 0xFFFF;
             regs.WZ |= (regs.t[4] << 8);
             regs.TA = regs.WZ;
-            regs.TR = +(regs.F.P == 1);
+            regs.TR = +(regs.F.PV == 1);
             if (!regs.TR) { regs.TA = regs.PC; regs.TCU+=7; break; }
             break; }
         case 7: {
@@ -36575,7 +36576,7 @@ void Z80_ins_FD_EE_XOR_a_n(regs& regs, pins& pins)
             regs.F.C = regs.F.N = regs.F.H = 0;
             regs.F.X = ((z) & 8) >> 3;
             regs.F.Y = ((z) & 0x20) >> 5;
-            regs.F.V = parity(z);
+            regs.F.PV = parity(z);
             regs.F.Z = +((z) == 0);
             regs.F.S = ((z) & 0x80) >> 7;
             regs.A = z;
@@ -36925,7 +36926,7 @@ void Z80_ins_FD_F6_OR_a_n(regs& regs, pins& pins)
             regs.F.C = regs.F.N = regs.F.H = 0;
             regs.F.X = ((z) & 8) >> 3;
             regs.F.Y = ((z) & 0x20) >> 5;
-            regs.F.V = parity(z);
+            regs.F.PV = parity(z);
             regs.F.Z = +((z) == 0);
             regs.F.S = ((z) & 0x80) >> 7;
             regs.A = z;
@@ -37212,7 +37213,7 @@ void Z80_ins_FD_FE_CP_a_n(regs& regs, pins& pins)
             i32 z = x - y;
             regs.F.C = +(z < 0);
             regs.F.N = 1;
-            regs.F.V = (((x ^ y) & (x ^ z)) & 0x80) >> 7;
+            regs.F.PV = (((x ^ y) & (x ^ z)) & 0x80) >> 7;
             regs.F.X = ((y) & 8) >> 3;
             regs.F.Y = ((y) & 0x20) >> 5;
             regs.F.H = ((x ^ y ^ z) & 0x10) >> 4;
@@ -37426,7 +37427,7 @@ void Z80_ins_DDCB_00_RLC_irr_r(regs& regs, pins& pins)
             x = ((x << 1) | (x >> 7)) & 0xFF;
             regs.F.C = x & 1;
             regs.F.N = regs.F.H = 0;
-            regs.F.V = parity(x);
+            regs.F.PV = parity(x);
             regs.F.X = ((x) & 8) >> 3;
             regs.F.Y = ((x) & 0x20) >> 5;
             regs.F.Z = +((x) == 0);
@@ -37482,7 +37483,7 @@ void Z80_ins_DDCB_01_RLC_irr_r(regs& regs, pins& pins)
             x = ((x << 1) | (x >> 7)) & 0xFF;
             regs.F.C = x & 1;
             regs.F.N = regs.F.H = 0;
-            regs.F.V = parity(x);
+            regs.F.PV = parity(x);
             regs.F.X = ((x) & 8) >> 3;
             regs.F.Y = ((x) & 0x20) >> 5;
             regs.F.Z = +((x) == 0);
@@ -37538,7 +37539,7 @@ void Z80_ins_DDCB_02_RLC_irr_r(regs& regs, pins& pins)
             x = ((x << 1) | (x >> 7)) & 0xFF;
             regs.F.C = x & 1;
             regs.F.N = regs.F.H = 0;
-            regs.F.V = parity(x);
+            regs.F.PV = parity(x);
             regs.F.X = ((x) & 8) >> 3;
             regs.F.Y = ((x) & 0x20) >> 5;
             regs.F.Z = +((x) == 0);
@@ -37594,7 +37595,7 @@ void Z80_ins_DDCB_03_RLC_irr_r(regs& regs, pins& pins)
             x = ((x << 1) | (x >> 7)) & 0xFF;
             regs.F.C = x & 1;
             regs.F.N = regs.F.H = 0;
-            regs.F.V = parity(x);
+            regs.F.PV = parity(x);
             regs.F.X = ((x) & 8) >> 3;
             regs.F.Y = ((x) & 0x20) >> 5;
             regs.F.Z = +((x) == 0);
@@ -37650,7 +37651,7 @@ void Z80_ins_DDCB_04_RLC_irr_r(regs& regs, pins& pins)
             x = ((x << 1) | (x >> 7)) & 0xFF;
             regs.F.C = x & 1;
             regs.F.N = regs.F.H = 0;
-            regs.F.V = parity(x);
+            regs.F.PV = parity(x);
             regs.F.X = ((x) & 8) >> 3;
             regs.F.Y = ((x) & 0x20) >> 5;
             regs.F.Z = +((x) == 0);
@@ -37706,7 +37707,7 @@ void Z80_ins_DDCB_05_RLC_irr_r(regs& regs, pins& pins)
             x = ((x << 1) | (x >> 7)) & 0xFF;
             regs.F.C = x & 1;
             regs.F.N = regs.F.H = 0;
-            regs.F.V = parity(x);
+            regs.F.PV = parity(x);
             regs.F.X = ((x) & 8) >> 3;
             regs.F.Y = ((x) & 0x20) >> 5;
             regs.F.Z = +((x) == 0);
@@ -37762,7 +37763,7 @@ void Z80_ins_DDCB_06_RLC_irr_r(regs& regs, pins& pins)
             x = ((x << 1) | (x >> 7)) & 0xFF;
             regs.F.C = x & 1;
             regs.F.N = regs.F.H = 0;
-            regs.F.V = parity(x);
+            regs.F.PV = parity(x);
             regs.F.X = ((x) & 8) >> 3;
             regs.F.Y = ((x) & 0x20) >> 5;
             regs.F.Z = +((x) == 0);
@@ -37818,7 +37819,7 @@ void Z80_ins_DDCB_07_RLC_irr_r(regs& regs, pins& pins)
             x = ((x << 1) | (x >> 7)) & 0xFF;
             regs.F.C = x & 1;
             regs.F.N = regs.F.H = 0;
-            regs.F.V = parity(x);
+            regs.F.PV = parity(x);
             regs.F.X = ((x) & 8) >> 3;
             regs.F.Y = ((x) & 0x20) >> 5;
             regs.F.Z = +((x) == 0);
@@ -37874,7 +37875,7 @@ void Z80_ins_DDCB_08_RRC_irr_r(regs& regs, pins& pins)
             x = ((x >> 1) | (x << 7)) & 0xFF;
             regs.F.C = (x & 0x80) >> 7;
             regs.F.N = regs.F.H = 0;
-            regs.F.V = parity(x);
+            regs.F.PV = parity(x);
             regs.F.X = ((x) & 8) >> 3;
             regs.F.Y = ((x) & 0x20) >> 5;
             regs.F.Z = +((x) == 0);
@@ -37930,7 +37931,7 @@ void Z80_ins_DDCB_09_RRC_irr_r(regs& regs, pins& pins)
             x = ((x >> 1) | (x << 7)) & 0xFF;
             regs.F.C = (x & 0x80) >> 7;
             regs.F.N = regs.F.H = 0;
-            regs.F.V = parity(x);
+            regs.F.PV = parity(x);
             regs.F.X = ((x) & 8) >> 3;
             regs.F.Y = ((x) & 0x20) >> 5;
             regs.F.Z = +((x) == 0);
@@ -37986,7 +37987,7 @@ void Z80_ins_DDCB_0A_RRC_irr_r(regs& regs, pins& pins)
             x = ((x >> 1) | (x << 7)) & 0xFF;
             regs.F.C = (x & 0x80) >> 7;
             regs.F.N = regs.F.H = 0;
-            regs.F.V = parity(x);
+            regs.F.PV = parity(x);
             regs.F.X = ((x) & 8) >> 3;
             regs.F.Y = ((x) & 0x20) >> 5;
             regs.F.Z = +((x) == 0);
@@ -38042,7 +38043,7 @@ void Z80_ins_DDCB_0B_RRC_irr_r(regs& regs, pins& pins)
             x = ((x >> 1) | (x << 7)) & 0xFF;
             regs.F.C = (x & 0x80) >> 7;
             regs.F.N = regs.F.H = 0;
-            regs.F.V = parity(x);
+            regs.F.PV = parity(x);
             regs.F.X = ((x) & 8) >> 3;
             regs.F.Y = ((x) & 0x20) >> 5;
             regs.F.Z = +((x) == 0);
@@ -38098,7 +38099,7 @@ void Z80_ins_DDCB_0C_RRC_irr_r(regs& regs, pins& pins)
             x = ((x >> 1) | (x << 7)) & 0xFF;
             regs.F.C = (x & 0x80) >> 7;
             regs.F.N = regs.F.H = 0;
-            regs.F.V = parity(x);
+            regs.F.PV = parity(x);
             regs.F.X = ((x) & 8) >> 3;
             regs.F.Y = ((x) & 0x20) >> 5;
             regs.F.Z = +((x) == 0);
@@ -38154,7 +38155,7 @@ void Z80_ins_DDCB_0D_RRC_irr_r(regs& regs, pins& pins)
             x = ((x >> 1) | (x << 7)) & 0xFF;
             regs.F.C = (x & 0x80) >> 7;
             regs.F.N = regs.F.H = 0;
-            regs.F.V = parity(x);
+            regs.F.PV = parity(x);
             regs.F.X = ((x) & 8) >> 3;
             regs.F.Y = ((x) & 0x20) >> 5;
             regs.F.Z = +((x) == 0);
@@ -38210,7 +38211,7 @@ void Z80_ins_DDCB_0E_RRC_irr_r(regs& regs, pins& pins)
             x = ((x >> 1) | (x << 7)) & 0xFF;
             regs.F.C = (x & 0x80) >> 7;
             regs.F.N = regs.F.H = 0;
-            regs.F.V = parity(x);
+            regs.F.PV = parity(x);
             regs.F.X = ((x) & 8) >> 3;
             regs.F.Y = ((x) & 0x20) >> 5;
             regs.F.Z = +((x) == 0);
@@ -38266,7 +38267,7 @@ void Z80_ins_DDCB_0F_RRC_irr_r(regs& regs, pins& pins)
             x = ((x >> 1) | (x << 7)) & 0xFF;
             regs.F.C = (x & 0x80) >> 7;
             regs.F.N = regs.F.H = 0;
-            regs.F.V = parity(x);
+            regs.F.PV = parity(x);
             regs.F.X = ((x) & 8) >> 3;
             regs.F.Y = ((x) & 0x20) >> 5;
             regs.F.Z = +((x) == 0);
@@ -38323,7 +38324,7 @@ void Z80_ins_DDCB_10_RL_irr_r(regs& regs, pins& pins)
             x = ((x << 1) | regs.F.C) & 0xFF;
             regs.F.C = c;
             regs.F.N = regs.F.H = 0;
-            regs.F.V = parity(x);
+            regs.F.PV = parity(x);
             regs.F.X = ((x) & 8) >> 3;
             regs.F.Y = ((x) & 0x20) >> 5;
             regs.F.Z = +((x) == 0);
@@ -38380,7 +38381,7 @@ void Z80_ins_DDCB_11_RL_irr_r(regs& regs, pins& pins)
             x = ((x << 1) | regs.F.C) & 0xFF;
             regs.F.C = c;
             regs.F.N = regs.F.H = 0;
-            regs.F.V = parity(x);
+            regs.F.PV = parity(x);
             regs.F.X = ((x) & 8) >> 3;
             regs.F.Y = ((x) & 0x20) >> 5;
             regs.F.Z = +((x) == 0);
@@ -38437,7 +38438,7 @@ void Z80_ins_DDCB_12_RL_irr_r(regs& regs, pins& pins)
             x = ((x << 1) | regs.F.C) & 0xFF;
             regs.F.C = c;
             regs.F.N = regs.F.H = 0;
-            regs.F.V = parity(x);
+            regs.F.PV = parity(x);
             regs.F.X = ((x) & 8) >> 3;
             regs.F.Y = ((x) & 0x20) >> 5;
             regs.F.Z = +((x) == 0);
@@ -38494,7 +38495,7 @@ void Z80_ins_DDCB_13_RL_irr_r(regs& regs, pins& pins)
             x = ((x << 1) | regs.F.C) & 0xFF;
             regs.F.C = c;
             regs.F.N = regs.F.H = 0;
-            regs.F.V = parity(x);
+            regs.F.PV = parity(x);
             regs.F.X = ((x) & 8) >> 3;
             regs.F.Y = ((x) & 0x20) >> 5;
             regs.F.Z = +((x) == 0);
@@ -38551,7 +38552,7 @@ void Z80_ins_DDCB_14_RL_irr_r(regs& regs, pins& pins)
             x = ((x << 1) | regs.F.C) & 0xFF;
             regs.F.C = c;
             regs.F.N = regs.F.H = 0;
-            regs.F.V = parity(x);
+            regs.F.PV = parity(x);
             regs.F.X = ((x) & 8) >> 3;
             regs.F.Y = ((x) & 0x20) >> 5;
             regs.F.Z = +((x) == 0);
@@ -38608,7 +38609,7 @@ void Z80_ins_DDCB_15_RL_irr_r(regs& regs, pins& pins)
             x = ((x << 1) | regs.F.C) & 0xFF;
             regs.F.C = c;
             regs.F.N = regs.F.H = 0;
-            regs.F.V = parity(x);
+            regs.F.PV = parity(x);
             regs.F.X = ((x) & 8) >> 3;
             regs.F.Y = ((x) & 0x20) >> 5;
             regs.F.Z = +((x) == 0);
@@ -38665,7 +38666,7 @@ void Z80_ins_DDCB_16_RL_irr_r(regs& regs, pins& pins)
             x = ((x << 1) | regs.F.C) & 0xFF;
             regs.F.C = c;
             regs.F.N = regs.F.H = 0;
-            regs.F.V = parity(x);
+            regs.F.PV = parity(x);
             regs.F.X = ((x) & 8) >> 3;
             regs.F.Y = ((x) & 0x20) >> 5;
             regs.F.Z = +((x) == 0);
@@ -38722,7 +38723,7 @@ void Z80_ins_DDCB_17_RL_irr_r(regs& regs, pins& pins)
             x = ((x << 1) | regs.F.C) & 0xFF;
             regs.F.C = c;
             regs.F.N = regs.F.H = 0;
-            regs.F.V = parity(x);
+            regs.F.PV = parity(x);
             regs.F.X = ((x) & 8) >> 3;
             regs.F.Y = ((x) & 0x20) >> 5;
             regs.F.Z = +((x) == 0);
@@ -38779,7 +38780,7 @@ void Z80_ins_DDCB_18_RR_irr_r(regs& regs, pins& pins)
             x = (x >> 1) | (regs.F.C << 7);
             regs.F.C = c;
             regs.F.N = regs.F.H = 0;
-            regs.F.V = parity(x);
+            regs.F.PV = parity(x);
             regs.F.X = ((x) & 8) >> 3;
             regs.F.Y = ((x) & 0x20) >> 5;
             regs.F.Z = +((x) == 0);
@@ -38836,7 +38837,7 @@ void Z80_ins_DDCB_19_RR_irr_r(regs& regs, pins& pins)
             x = (x >> 1) | (regs.F.C << 7);
             regs.F.C = c;
             regs.F.N = regs.F.H = 0;
-            regs.F.V = parity(x);
+            regs.F.PV = parity(x);
             regs.F.X = ((x) & 8) >> 3;
             regs.F.Y = ((x) & 0x20) >> 5;
             regs.F.Z = +((x) == 0);
@@ -38893,7 +38894,7 @@ void Z80_ins_DDCB_1A_RR_irr_r(regs& regs, pins& pins)
             x = (x >> 1) | (regs.F.C << 7);
             regs.F.C = c;
             regs.F.N = regs.F.H = 0;
-            regs.F.V = parity(x);
+            regs.F.PV = parity(x);
             regs.F.X = ((x) & 8) >> 3;
             regs.F.Y = ((x) & 0x20) >> 5;
             regs.F.Z = +((x) == 0);
@@ -38950,7 +38951,7 @@ void Z80_ins_DDCB_1B_RR_irr_r(regs& regs, pins& pins)
             x = (x >> 1) | (regs.F.C << 7);
             regs.F.C = c;
             regs.F.N = regs.F.H = 0;
-            regs.F.V = parity(x);
+            regs.F.PV = parity(x);
             regs.F.X = ((x) & 8) >> 3;
             regs.F.Y = ((x) & 0x20) >> 5;
             regs.F.Z = +((x) == 0);
@@ -39007,7 +39008,7 @@ void Z80_ins_DDCB_1C_RR_irr_r(regs& regs, pins& pins)
             x = (x >> 1) | (regs.F.C << 7);
             regs.F.C = c;
             regs.F.N = regs.F.H = 0;
-            regs.F.V = parity(x);
+            regs.F.PV = parity(x);
             regs.F.X = ((x) & 8) >> 3;
             regs.F.Y = ((x) & 0x20) >> 5;
             regs.F.Z = +((x) == 0);
@@ -39064,7 +39065,7 @@ void Z80_ins_DDCB_1D_RR_irr_r(regs& regs, pins& pins)
             x = (x >> 1) | (regs.F.C << 7);
             regs.F.C = c;
             regs.F.N = regs.F.H = 0;
-            regs.F.V = parity(x);
+            regs.F.PV = parity(x);
             regs.F.X = ((x) & 8) >> 3;
             regs.F.Y = ((x) & 0x20) >> 5;
             regs.F.Z = +((x) == 0);
@@ -39121,7 +39122,7 @@ void Z80_ins_DDCB_1E_RR_irr_r(regs& regs, pins& pins)
             x = (x >> 1) | (regs.F.C << 7);
             regs.F.C = c;
             regs.F.N = regs.F.H = 0;
-            regs.F.V = parity(x);
+            regs.F.PV = parity(x);
             regs.F.X = ((x) & 8) >> 3;
             regs.F.Y = ((x) & 0x20) >> 5;
             regs.F.Z = +((x) == 0);
@@ -39178,7 +39179,7 @@ void Z80_ins_DDCB_1F_RR_irr_r(regs& regs, pins& pins)
             x = (x >> 1) | (regs.F.C << 7);
             regs.F.C = c;
             regs.F.N = regs.F.H = 0;
-            regs.F.V = parity(x);
+            regs.F.PV = parity(x);
             regs.F.X = ((x) & 8) >> 3;
             regs.F.Y = ((x) & 0x20) >> 5;
             regs.F.Z = +((x) == 0);
@@ -39235,7 +39236,7 @@ void Z80_ins_DDCB_20_SLA_irr_r(regs& regs, pins& pins)
             x = (x << 1) & 0xFF;
             regs.F.C = c;
             regs.F.N = regs.F.H = 0;
-            regs.F.V = parity(x);
+            regs.F.PV = parity(x);
             regs.F.X = ((x) & 8) >> 3;
             regs.F.Y = ((x) & 0x20) >> 5;
             regs.F.Z = +((x) == 0);
@@ -39292,7 +39293,7 @@ void Z80_ins_DDCB_21_SLA_irr_r(regs& regs, pins& pins)
             x = (x << 1) & 0xFF;
             regs.F.C = c;
             regs.F.N = regs.F.H = 0;
-            regs.F.V = parity(x);
+            regs.F.PV = parity(x);
             regs.F.X = ((x) & 8) >> 3;
             regs.F.Y = ((x) & 0x20) >> 5;
             regs.F.Z = +((x) == 0);
@@ -39349,7 +39350,7 @@ void Z80_ins_DDCB_22_SLA_irr_r(regs& regs, pins& pins)
             x = (x << 1) & 0xFF;
             regs.F.C = c;
             regs.F.N = regs.F.H = 0;
-            regs.F.V = parity(x);
+            regs.F.PV = parity(x);
             regs.F.X = ((x) & 8) >> 3;
             regs.F.Y = ((x) & 0x20) >> 5;
             regs.F.Z = +((x) == 0);
@@ -39406,7 +39407,7 @@ void Z80_ins_DDCB_23_SLA_irr_r(regs& regs, pins& pins)
             x = (x << 1) & 0xFF;
             regs.F.C = c;
             regs.F.N = regs.F.H = 0;
-            regs.F.V = parity(x);
+            regs.F.PV = parity(x);
             regs.F.X = ((x) & 8) >> 3;
             regs.F.Y = ((x) & 0x20) >> 5;
             regs.F.Z = +((x) == 0);
@@ -39463,7 +39464,7 @@ void Z80_ins_DDCB_24_SLA_irr_r(regs& regs, pins& pins)
             x = (x << 1) & 0xFF;
             regs.F.C = c;
             regs.F.N = regs.F.H = 0;
-            regs.F.V = parity(x);
+            regs.F.PV = parity(x);
             regs.F.X = ((x) & 8) >> 3;
             regs.F.Y = ((x) & 0x20) >> 5;
             regs.F.Z = +((x) == 0);
@@ -39520,7 +39521,7 @@ void Z80_ins_DDCB_25_SLA_irr_r(regs& regs, pins& pins)
             x = (x << 1) & 0xFF;
             regs.F.C = c;
             regs.F.N = regs.F.H = 0;
-            regs.F.V = parity(x);
+            regs.F.PV = parity(x);
             regs.F.X = ((x) & 8) >> 3;
             regs.F.Y = ((x) & 0x20) >> 5;
             regs.F.Z = +((x) == 0);
@@ -39577,7 +39578,7 @@ void Z80_ins_DDCB_26_SLA_irr_r(regs& regs, pins& pins)
             x = (x << 1) & 0xFF;
             regs.F.C = c;
             regs.F.N = regs.F.H = 0;
-            regs.F.V = parity(x);
+            regs.F.PV = parity(x);
             regs.F.X = ((x) & 8) >> 3;
             regs.F.Y = ((x) & 0x20) >> 5;
             regs.F.Z = +((x) == 0);
@@ -39634,7 +39635,7 @@ void Z80_ins_DDCB_27_SLA_irr_r(regs& regs, pins& pins)
             x = (x << 1) & 0xFF;
             regs.F.C = c;
             regs.F.N = regs.F.H = 0;
-            regs.F.V = parity(x);
+            regs.F.PV = parity(x);
             regs.F.X = ((x) & 8) >> 3;
             regs.F.Y = ((x) & 0x20) >> 5;
             regs.F.Z = +((x) == 0);
@@ -39691,7 +39692,7 @@ void Z80_ins_DDCB_28_SRA_irr_r(regs& regs, pins& pins)
             x = (x & 0x80) | (x >> 1);
             regs.F.C = c;
             regs.F.N = regs.F.H = 0;
-            regs.F.V = parity(x);
+            regs.F.PV = parity(x);
             regs.F.X = ((x) & 8) >> 3;
             regs.F.Y = ((x) & 0x20) >> 5;
             regs.F.Z = +((x) == 0);
@@ -39748,7 +39749,7 @@ void Z80_ins_DDCB_29_SRA_irr_r(regs& regs, pins& pins)
             x = (x & 0x80) | (x >> 1);
             regs.F.C = c;
             regs.F.N = regs.F.H = 0;
-            regs.F.V = parity(x);
+            regs.F.PV = parity(x);
             regs.F.X = ((x) & 8) >> 3;
             regs.F.Y = ((x) & 0x20) >> 5;
             regs.F.Z = +((x) == 0);
@@ -39805,7 +39806,7 @@ void Z80_ins_DDCB_2A_SRA_irr_r(regs& regs, pins& pins)
             x = (x & 0x80) | (x >> 1);
             regs.F.C = c;
             regs.F.N = regs.F.H = 0;
-            regs.F.V = parity(x);
+            regs.F.PV = parity(x);
             regs.F.X = ((x) & 8) >> 3;
             regs.F.Y = ((x) & 0x20) >> 5;
             regs.F.Z = +((x) == 0);
@@ -39862,7 +39863,7 @@ void Z80_ins_DDCB_2B_SRA_irr_r(regs& regs, pins& pins)
             x = (x & 0x80) | (x >> 1);
             regs.F.C = c;
             regs.F.N = regs.F.H = 0;
-            regs.F.V = parity(x);
+            regs.F.PV = parity(x);
             regs.F.X = ((x) & 8) >> 3;
             regs.F.Y = ((x) & 0x20) >> 5;
             regs.F.Z = +((x) == 0);
@@ -39919,7 +39920,7 @@ void Z80_ins_DDCB_2C_SRA_irr_r(regs& regs, pins& pins)
             x = (x & 0x80) | (x >> 1);
             regs.F.C = c;
             regs.F.N = regs.F.H = 0;
-            regs.F.V = parity(x);
+            regs.F.PV = parity(x);
             regs.F.X = ((x) & 8) >> 3;
             regs.F.Y = ((x) & 0x20) >> 5;
             regs.F.Z = +((x) == 0);
@@ -39976,7 +39977,7 @@ void Z80_ins_DDCB_2D_SRA_irr_r(regs& regs, pins& pins)
             x = (x & 0x80) | (x >> 1);
             regs.F.C = c;
             regs.F.N = regs.F.H = 0;
-            regs.F.V = parity(x);
+            regs.F.PV = parity(x);
             regs.F.X = ((x) & 8) >> 3;
             regs.F.Y = ((x) & 0x20) >> 5;
             regs.F.Z = +((x) == 0);
@@ -40033,7 +40034,7 @@ void Z80_ins_DDCB_2E_SRA_irr_r(regs& regs, pins& pins)
             x = (x & 0x80) | (x >> 1);
             regs.F.C = c;
             regs.F.N = regs.F.H = 0;
-            regs.F.V = parity(x);
+            regs.F.PV = parity(x);
             regs.F.X = ((x) & 8) >> 3;
             regs.F.Y = ((x) & 0x20) >> 5;
             regs.F.Z = +((x) == 0);
@@ -40090,7 +40091,7 @@ void Z80_ins_DDCB_2F_SRA_irr_r(regs& regs, pins& pins)
             x = (x & 0x80) | (x >> 1);
             regs.F.C = c;
             regs.F.N = regs.F.H = 0;
-            regs.F.V = parity(x);
+            regs.F.PV = parity(x);
             regs.F.X = ((x) & 8) >> 3;
             regs.F.Y = ((x) & 0x20) >> 5;
             regs.F.Z = +((x) == 0);
@@ -40147,7 +40148,7 @@ void Z80_ins_DDCB_30_SLL_irr_r(regs& regs, pins& pins)
             x = ((x << 1) | 1) & 0xFF;
             regs.F.C = c;
             regs.F.N = regs.F.H = 0;
-            regs.F.V = parity(x);
+            regs.F.PV = parity(x);
             regs.F.X = ((x) & 8) >> 3;
             regs.F.Y = ((x) & 0x20) >> 5;
             regs.F.Z = +((x) == 0);
@@ -40204,7 +40205,7 @@ void Z80_ins_DDCB_31_SLL_irr_r(regs& regs, pins& pins)
             x = ((x << 1) | 1) & 0xFF;
             regs.F.C = c;
             regs.F.N = regs.F.H = 0;
-            regs.F.V = parity(x);
+            regs.F.PV = parity(x);
             regs.F.X = ((x) & 8) >> 3;
             regs.F.Y = ((x) & 0x20) >> 5;
             regs.F.Z = +((x) == 0);
@@ -40261,7 +40262,7 @@ void Z80_ins_DDCB_32_SLL_irr_r(regs& regs, pins& pins)
             x = ((x << 1) | 1) & 0xFF;
             regs.F.C = c;
             regs.F.N = regs.F.H = 0;
-            regs.F.V = parity(x);
+            regs.F.PV = parity(x);
             regs.F.X = ((x) & 8) >> 3;
             regs.F.Y = ((x) & 0x20) >> 5;
             regs.F.Z = +((x) == 0);
@@ -40318,7 +40319,7 @@ void Z80_ins_DDCB_33_SLL_irr_r(regs& regs, pins& pins)
             x = ((x << 1) | 1) & 0xFF;
             regs.F.C = c;
             regs.F.N = regs.F.H = 0;
-            regs.F.V = parity(x);
+            regs.F.PV = parity(x);
             regs.F.X = ((x) & 8) >> 3;
             regs.F.Y = ((x) & 0x20) >> 5;
             regs.F.Z = +((x) == 0);
@@ -40375,7 +40376,7 @@ void Z80_ins_DDCB_34_SLL_irr_r(regs& regs, pins& pins)
             x = ((x << 1) | 1) & 0xFF;
             regs.F.C = c;
             regs.F.N = regs.F.H = 0;
-            regs.F.V = parity(x);
+            regs.F.PV = parity(x);
             regs.F.X = ((x) & 8) >> 3;
             regs.F.Y = ((x) & 0x20) >> 5;
             regs.F.Z = +((x) == 0);
@@ -40432,7 +40433,7 @@ void Z80_ins_DDCB_35_SLL_irr_r(regs& regs, pins& pins)
             x = ((x << 1) | 1) & 0xFF;
             regs.F.C = c;
             regs.F.N = regs.F.H = 0;
-            regs.F.V = parity(x);
+            regs.F.PV = parity(x);
             regs.F.X = ((x) & 8) >> 3;
             regs.F.Y = ((x) & 0x20) >> 5;
             regs.F.Z = +((x) == 0);
@@ -40489,7 +40490,7 @@ void Z80_ins_DDCB_36_SLL_irr_r(regs& regs, pins& pins)
             x = ((x << 1) | 1) & 0xFF;
             regs.F.C = c;
             regs.F.N = regs.F.H = 0;
-            regs.F.V = parity(x);
+            regs.F.PV = parity(x);
             regs.F.X = ((x) & 8) >> 3;
             regs.F.Y = ((x) & 0x20) >> 5;
             regs.F.Z = +((x) == 0);
@@ -40546,7 +40547,7 @@ void Z80_ins_DDCB_37_SLL_irr_r(regs& regs, pins& pins)
             x = ((x << 1) | 1) & 0xFF;
             regs.F.C = c;
             regs.F.N = regs.F.H = 0;
-            regs.F.V = parity(x);
+            regs.F.PV = parity(x);
             regs.F.X = ((x) & 8) >> 3;
             regs.F.Y = ((x) & 0x20) >> 5;
             regs.F.Z = +((x) == 0);
@@ -40603,7 +40604,7 @@ void Z80_ins_DDCB_38_SRL_irr_r(regs& regs, pins& pins)
             x = (x >> 1) & 0xFF;
             regs.F.C = c;
             regs.F.N = regs.F.H = 0;
-            regs.F.V = parity(x);
+            regs.F.PV = parity(x);
             regs.F.X = ((x) & 8) >> 3;
             regs.F.Y = ((x) & 0x20) >> 5;
             regs.F.Z = +((x) == 0);
@@ -40660,7 +40661,7 @@ void Z80_ins_DDCB_39_SRL_irr_r(regs& regs, pins& pins)
             x = (x >> 1) & 0xFF;
             regs.F.C = c;
             regs.F.N = regs.F.H = 0;
-            regs.F.V = parity(x);
+            regs.F.PV = parity(x);
             regs.F.X = ((x) & 8) >> 3;
             regs.F.Y = ((x) & 0x20) >> 5;
             regs.F.Z = +((x) == 0);
@@ -40717,7 +40718,7 @@ void Z80_ins_DDCB_3A_SRL_irr_r(regs& regs, pins& pins)
             x = (x >> 1) & 0xFF;
             regs.F.C = c;
             regs.F.N = regs.F.H = 0;
-            regs.F.V = parity(x);
+            regs.F.PV = parity(x);
             regs.F.X = ((x) & 8) >> 3;
             regs.F.Y = ((x) & 0x20) >> 5;
             regs.F.Z = +((x) == 0);
@@ -40774,7 +40775,7 @@ void Z80_ins_DDCB_3B_SRL_irr_r(regs& regs, pins& pins)
             x = (x >> 1) & 0xFF;
             regs.F.C = c;
             regs.F.N = regs.F.H = 0;
-            regs.F.V = parity(x);
+            regs.F.PV = parity(x);
             regs.F.X = ((x) & 8) >> 3;
             regs.F.Y = ((x) & 0x20) >> 5;
             regs.F.Z = +((x) == 0);
@@ -40831,7 +40832,7 @@ void Z80_ins_DDCB_3C_SRL_irr_r(regs& regs, pins& pins)
             x = (x >> 1) & 0xFF;
             regs.F.C = c;
             regs.F.N = regs.F.H = 0;
-            regs.F.V = parity(x);
+            regs.F.PV = parity(x);
             regs.F.X = ((x) & 8) >> 3;
             regs.F.Y = ((x) & 0x20) >> 5;
             regs.F.Z = +((x) == 0);
@@ -40888,7 +40889,7 @@ void Z80_ins_DDCB_3D_SRL_irr_r(regs& regs, pins& pins)
             x = (x >> 1) & 0xFF;
             regs.F.C = c;
             regs.F.N = regs.F.H = 0;
-            regs.F.V = parity(x);
+            regs.F.PV = parity(x);
             regs.F.X = ((x) & 8) >> 3;
             regs.F.Y = ((x) & 0x20) >> 5;
             regs.F.Z = +((x) == 0);
@@ -40945,7 +40946,7 @@ void Z80_ins_DDCB_3E_SRL_irr_r(regs& regs, pins& pins)
             x = (x >> 1) & 0xFF;
             regs.F.C = c;
             regs.F.N = regs.F.H = 0;
-            regs.F.V = parity(x);
+            regs.F.PV = parity(x);
             regs.F.X = ((x) & 8) >> 3;
             regs.F.Y = ((x) & 0x20) >> 5;
             regs.F.Z = +((x) == 0);
@@ -41002,7 +41003,7 @@ void Z80_ins_DDCB_3F_SRL_irr_r(regs& regs, pins& pins)
             x = (x >> 1) & 0xFF;
             regs.F.C = c;
             regs.F.N = regs.F.H = 0;
-            regs.F.V = parity(x);
+            regs.F.PV = parity(x);
             regs.F.X = ((x) & 8) >> 3;
             regs.F.Y = ((x) & 0x20) >> 5;
             regs.F.Z = +((x) == 0);
@@ -41056,7 +41057,7 @@ void Z80_ins_DDCB_40_BIT_o_irr_r(regs& regs, pins& pins)
             pins.RD = 0; pins.MRQ = 0;
             u32 z = (regs.TR) & (1 << 0);
             regs.F.N = 0;
-            regs.F.V = parity(z);
+            regs.F.PV = parity(z);
             regs.F.H = 1;
             regs.F.X = ((regs.TR) & 8) >> 3;
             regs.F.Y = ((regs.TR) & 0x20) >> 5;
@@ -41101,7 +41102,7 @@ void Z80_ins_DDCB_41_BIT_o_irr_r(regs& regs, pins& pins)
             pins.RD = 0; pins.MRQ = 0;
             u32 z = (regs.TR) & (1 << 0);
             regs.F.N = 0;
-            regs.F.V = parity(z);
+            regs.F.PV = parity(z);
             regs.F.H = 1;
             regs.F.X = ((regs.TR) & 8) >> 3;
             regs.F.Y = ((regs.TR) & 0x20) >> 5;
@@ -41146,7 +41147,7 @@ void Z80_ins_DDCB_42_BIT_o_irr_r(regs& regs, pins& pins)
             pins.RD = 0; pins.MRQ = 0;
             u32 z = (regs.TR) & (1 << 0);
             regs.F.N = 0;
-            regs.F.V = parity(z);
+            regs.F.PV = parity(z);
             regs.F.H = 1;
             regs.F.X = ((regs.TR) & 8) >> 3;
             regs.F.Y = ((regs.TR) & 0x20) >> 5;
@@ -41191,7 +41192,7 @@ void Z80_ins_DDCB_43_BIT_o_irr_r(regs& regs, pins& pins)
             pins.RD = 0; pins.MRQ = 0;
             u32 z = (regs.TR) & (1 << 0);
             regs.F.N = 0;
-            regs.F.V = parity(z);
+            regs.F.PV = parity(z);
             regs.F.H = 1;
             regs.F.X = ((regs.TR) & 8) >> 3;
             regs.F.Y = ((regs.TR) & 0x20) >> 5;
@@ -41236,7 +41237,7 @@ void Z80_ins_DDCB_44_BIT_o_irr_r(regs& regs, pins& pins)
             pins.RD = 0; pins.MRQ = 0;
             u32 z = (regs.TR) & (1 << 0);
             regs.F.N = 0;
-            regs.F.V = parity(z);
+            regs.F.PV = parity(z);
             regs.F.H = 1;
             regs.F.X = ((regs.TR) & 8) >> 3;
             regs.F.Y = ((regs.TR) & 0x20) >> 5;
@@ -41281,7 +41282,7 @@ void Z80_ins_DDCB_45_BIT_o_irr_r(regs& regs, pins& pins)
             pins.RD = 0; pins.MRQ = 0;
             u32 z = (regs.TR) & (1 << 0);
             regs.F.N = 0;
-            regs.F.V = parity(z);
+            regs.F.PV = parity(z);
             regs.F.H = 1;
             regs.F.X = ((regs.TR) & 8) >> 3;
             regs.F.Y = ((regs.TR) & 0x20) >> 5;
@@ -41326,7 +41327,7 @@ void Z80_ins_DDCB_46_BIT_o_irr_r(regs& regs, pins& pins)
             pins.RD = 0; pins.MRQ = 0;
             u32 z = (regs.TR) & (1 << 0);
             regs.F.N = 0;
-            regs.F.V = parity(z);
+            regs.F.PV = parity(z);
             regs.F.H = 1;
             regs.F.X = ((regs.TR) & 8) >> 3;
             regs.F.Y = ((regs.TR) & 0x20) >> 5;
@@ -41371,7 +41372,7 @@ void Z80_ins_DDCB_47_BIT_o_irr_r(regs& regs, pins& pins)
             pins.RD = 0; pins.MRQ = 0;
             u32 z = (regs.TR) & (1 << 0);
             regs.F.N = 0;
-            regs.F.V = parity(z);
+            regs.F.PV = parity(z);
             regs.F.H = 1;
             regs.F.X = ((regs.TR) & 8) >> 3;
             regs.F.Y = ((regs.TR) & 0x20) >> 5;
@@ -41416,7 +41417,7 @@ void Z80_ins_DDCB_48_BIT_o_irr_r(regs& regs, pins& pins)
             pins.RD = 0; pins.MRQ = 0;
             u32 z = (regs.TR) & (1 << 1);
             regs.F.N = 0;
-            regs.F.V = parity(z);
+            regs.F.PV = parity(z);
             regs.F.H = 1;
             regs.F.X = ((regs.TR) & 8) >> 3;
             regs.F.Y = ((regs.TR) & 0x20) >> 5;
@@ -41461,7 +41462,7 @@ void Z80_ins_DDCB_49_BIT_o_irr_r(regs& regs, pins& pins)
             pins.RD = 0; pins.MRQ = 0;
             u32 z = (regs.TR) & (1 << 1);
             regs.F.N = 0;
-            regs.F.V = parity(z);
+            regs.F.PV = parity(z);
             regs.F.H = 1;
             regs.F.X = ((regs.TR) & 8) >> 3;
             regs.F.Y = ((regs.TR) & 0x20) >> 5;
@@ -41506,7 +41507,7 @@ void Z80_ins_DDCB_4A_BIT_o_irr_r(regs& regs, pins& pins)
             pins.RD = 0; pins.MRQ = 0;
             u32 z = (regs.TR) & (1 << 1);
             regs.F.N = 0;
-            regs.F.V = parity(z);
+            regs.F.PV = parity(z);
             regs.F.H = 1;
             regs.F.X = ((regs.TR) & 8) >> 3;
             regs.F.Y = ((regs.TR) & 0x20) >> 5;
@@ -41551,7 +41552,7 @@ void Z80_ins_DDCB_4B_BIT_o_irr_r(regs& regs, pins& pins)
             pins.RD = 0; pins.MRQ = 0;
             u32 z = (regs.TR) & (1 << 1);
             regs.F.N = 0;
-            regs.F.V = parity(z);
+            regs.F.PV = parity(z);
             regs.F.H = 1;
             regs.F.X = ((regs.TR) & 8) >> 3;
             regs.F.Y = ((regs.TR) & 0x20) >> 5;
@@ -41596,7 +41597,7 @@ void Z80_ins_DDCB_4C_BIT_o_irr_r(regs& regs, pins& pins)
             pins.RD = 0; pins.MRQ = 0;
             u32 z = (regs.TR) & (1 << 1);
             regs.F.N = 0;
-            regs.F.V = parity(z);
+            regs.F.PV = parity(z);
             regs.F.H = 1;
             regs.F.X = ((regs.TR) & 8) >> 3;
             regs.F.Y = ((regs.TR) & 0x20) >> 5;
@@ -41641,7 +41642,7 @@ void Z80_ins_DDCB_4D_BIT_o_irr_r(regs& regs, pins& pins)
             pins.RD = 0; pins.MRQ = 0;
             u32 z = (regs.TR) & (1 << 1);
             regs.F.N = 0;
-            regs.F.V = parity(z);
+            regs.F.PV = parity(z);
             regs.F.H = 1;
             regs.F.X = ((regs.TR) & 8) >> 3;
             regs.F.Y = ((regs.TR) & 0x20) >> 5;
@@ -41686,7 +41687,7 @@ void Z80_ins_DDCB_4E_BIT_o_irr_r(regs& regs, pins& pins)
             pins.RD = 0; pins.MRQ = 0;
             u32 z = (regs.TR) & (1 << 1);
             regs.F.N = 0;
-            regs.F.V = parity(z);
+            regs.F.PV = parity(z);
             regs.F.H = 1;
             regs.F.X = ((regs.TR) & 8) >> 3;
             regs.F.Y = ((regs.TR) & 0x20) >> 5;
@@ -41731,7 +41732,7 @@ void Z80_ins_DDCB_4F_BIT_o_irr_r(regs& regs, pins& pins)
             pins.RD = 0; pins.MRQ = 0;
             u32 z = (regs.TR) & (1 << 1);
             regs.F.N = 0;
-            regs.F.V = parity(z);
+            regs.F.PV = parity(z);
             regs.F.H = 1;
             regs.F.X = ((regs.TR) & 8) >> 3;
             regs.F.Y = ((regs.TR) & 0x20) >> 5;
@@ -41776,7 +41777,7 @@ void Z80_ins_DDCB_50_BIT_o_irr_r(regs& regs, pins& pins)
             pins.RD = 0; pins.MRQ = 0;
             u32 z = (regs.TR) & (1 << 2);
             regs.F.N = 0;
-            regs.F.V = parity(z);
+            regs.F.PV = parity(z);
             regs.F.H = 1;
             regs.F.X = ((regs.TR) & 8) >> 3;
             regs.F.Y = ((regs.TR) & 0x20) >> 5;
@@ -41821,7 +41822,7 @@ void Z80_ins_DDCB_51_BIT_o_irr_r(regs& regs, pins& pins)
             pins.RD = 0; pins.MRQ = 0;
             u32 z = (regs.TR) & (1 << 2);
             regs.F.N = 0;
-            regs.F.V = parity(z);
+            regs.F.PV = parity(z);
             regs.F.H = 1;
             regs.F.X = ((regs.TR) & 8) >> 3;
             regs.F.Y = ((regs.TR) & 0x20) >> 5;
@@ -41866,7 +41867,7 @@ void Z80_ins_DDCB_52_BIT_o_irr_r(regs& regs, pins& pins)
             pins.RD = 0; pins.MRQ = 0;
             u32 z = (regs.TR) & (1 << 2);
             regs.F.N = 0;
-            regs.F.V = parity(z);
+            regs.F.PV = parity(z);
             regs.F.H = 1;
             regs.F.X = ((regs.TR) & 8) >> 3;
             regs.F.Y = ((regs.TR) & 0x20) >> 5;
@@ -41911,7 +41912,7 @@ void Z80_ins_DDCB_53_BIT_o_irr_r(regs& regs, pins& pins)
             pins.RD = 0; pins.MRQ = 0;
             u32 z = (regs.TR) & (1 << 2);
             regs.F.N = 0;
-            regs.F.V = parity(z);
+            regs.F.PV = parity(z);
             regs.F.H = 1;
             regs.F.X = ((regs.TR) & 8) >> 3;
             regs.F.Y = ((regs.TR) & 0x20) >> 5;
@@ -41956,7 +41957,7 @@ void Z80_ins_DDCB_54_BIT_o_irr_r(regs& regs, pins& pins)
             pins.RD = 0; pins.MRQ = 0;
             u32 z = (regs.TR) & (1 << 2);
             regs.F.N = 0;
-            regs.F.V = parity(z);
+            regs.F.PV = parity(z);
             regs.F.H = 1;
             regs.F.X = ((regs.TR) & 8) >> 3;
             regs.F.Y = ((regs.TR) & 0x20) >> 5;
@@ -42001,7 +42002,7 @@ void Z80_ins_DDCB_55_BIT_o_irr_r(regs& regs, pins& pins)
             pins.RD = 0; pins.MRQ = 0;
             u32 z = (regs.TR) & (1 << 2);
             regs.F.N = 0;
-            regs.F.V = parity(z);
+            regs.F.PV = parity(z);
             regs.F.H = 1;
             regs.F.X = ((regs.TR) & 8) >> 3;
             regs.F.Y = ((regs.TR) & 0x20) >> 5;
@@ -42046,7 +42047,7 @@ void Z80_ins_DDCB_56_BIT_o_irr_r(regs& regs, pins& pins)
             pins.RD = 0; pins.MRQ = 0;
             u32 z = (regs.TR) & (1 << 2);
             regs.F.N = 0;
-            regs.F.V = parity(z);
+            regs.F.PV = parity(z);
             regs.F.H = 1;
             regs.F.X = ((regs.TR) & 8) >> 3;
             regs.F.Y = ((regs.TR) & 0x20) >> 5;
@@ -42091,7 +42092,7 @@ void Z80_ins_DDCB_57_BIT_o_irr_r(regs& regs, pins& pins)
             pins.RD = 0; pins.MRQ = 0;
             u32 z = (regs.TR) & (1 << 2);
             regs.F.N = 0;
-            regs.F.V = parity(z);
+            regs.F.PV = parity(z);
             regs.F.H = 1;
             regs.F.X = ((regs.TR) & 8) >> 3;
             regs.F.Y = ((regs.TR) & 0x20) >> 5;
@@ -42136,7 +42137,7 @@ void Z80_ins_DDCB_58_BIT_o_irr_r(regs& regs, pins& pins)
             pins.RD = 0; pins.MRQ = 0;
             u32 z = (regs.TR) & (1 << 3);
             regs.F.N = 0;
-            regs.F.V = parity(z);
+            regs.F.PV = parity(z);
             regs.F.H = 1;
             regs.F.X = ((regs.TR) & 8) >> 3;
             regs.F.Y = ((regs.TR) & 0x20) >> 5;
@@ -42181,7 +42182,7 @@ void Z80_ins_DDCB_59_BIT_o_irr_r(regs& regs, pins& pins)
             pins.RD = 0; pins.MRQ = 0;
             u32 z = (regs.TR) & (1 << 3);
             regs.F.N = 0;
-            regs.F.V = parity(z);
+            regs.F.PV = parity(z);
             regs.F.H = 1;
             regs.F.X = ((regs.TR) & 8) >> 3;
             regs.F.Y = ((regs.TR) & 0x20) >> 5;
@@ -42226,7 +42227,7 @@ void Z80_ins_DDCB_5A_BIT_o_irr_r(regs& regs, pins& pins)
             pins.RD = 0; pins.MRQ = 0;
             u32 z = (regs.TR) & (1 << 3);
             regs.F.N = 0;
-            regs.F.V = parity(z);
+            regs.F.PV = parity(z);
             regs.F.H = 1;
             regs.F.X = ((regs.TR) & 8) >> 3;
             regs.F.Y = ((regs.TR) & 0x20) >> 5;
@@ -42271,7 +42272,7 @@ void Z80_ins_DDCB_5B_BIT_o_irr_r(regs& regs, pins& pins)
             pins.RD = 0; pins.MRQ = 0;
             u32 z = (regs.TR) & (1 << 3);
             regs.F.N = 0;
-            regs.F.V = parity(z);
+            regs.F.PV = parity(z);
             regs.F.H = 1;
             regs.F.X = ((regs.TR) & 8) >> 3;
             regs.F.Y = ((regs.TR) & 0x20) >> 5;
@@ -42316,7 +42317,7 @@ void Z80_ins_DDCB_5C_BIT_o_irr_r(regs& regs, pins& pins)
             pins.RD = 0; pins.MRQ = 0;
             u32 z = (regs.TR) & (1 << 3);
             regs.F.N = 0;
-            regs.F.V = parity(z);
+            regs.F.PV = parity(z);
             regs.F.H = 1;
             regs.F.X = ((regs.TR) & 8) >> 3;
             regs.F.Y = ((regs.TR) & 0x20) >> 5;
@@ -42361,7 +42362,7 @@ void Z80_ins_DDCB_5D_BIT_o_irr_r(regs& regs, pins& pins)
             pins.RD = 0; pins.MRQ = 0;
             u32 z = (regs.TR) & (1 << 3);
             regs.F.N = 0;
-            regs.F.V = parity(z);
+            regs.F.PV = parity(z);
             regs.F.H = 1;
             regs.F.X = ((regs.TR) & 8) >> 3;
             regs.F.Y = ((regs.TR) & 0x20) >> 5;
@@ -42406,7 +42407,7 @@ void Z80_ins_DDCB_5E_BIT_o_irr_r(regs& regs, pins& pins)
             pins.RD = 0; pins.MRQ = 0;
             u32 z = (regs.TR) & (1 << 3);
             regs.F.N = 0;
-            regs.F.V = parity(z);
+            regs.F.PV = parity(z);
             regs.F.H = 1;
             regs.F.X = ((regs.TR) & 8) >> 3;
             regs.F.Y = ((regs.TR) & 0x20) >> 5;
@@ -42451,7 +42452,7 @@ void Z80_ins_DDCB_5F_BIT_o_irr_r(regs& regs, pins& pins)
             pins.RD = 0; pins.MRQ = 0;
             u32 z = (regs.TR) & (1 << 3);
             regs.F.N = 0;
-            regs.F.V = parity(z);
+            regs.F.PV = parity(z);
             regs.F.H = 1;
             regs.F.X = ((regs.TR) & 8) >> 3;
             regs.F.Y = ((regs.TR) & 0x20) >> 5;
@@ -42496,7 +42497,7 @@ void Z80_ins_DDCB_60_BIT_o_irr_r(regs& regs, pins& pins)
             pins.RD = 0; pins.MRQ = 0;
             u32 z = (regs.TR) & (1 << 4);
             regs.F.N = 0;
-            regs.F.V = parity(z);
+            regs.F.PV = parity(z);
             regs.F.H = 1;
             regs.F.X = ((regs.TR) & 8) >> 3;
             regs.F.Y = ((regs.TR) & 0x20) >> 5;
@@ -42541,7 +42542,7 @@ void Z80_ins_DDCB_61_BIT_o_irr_r(regs& regs, pins& pins)
             pins.RD = 0; pins.MRQ = 0;
             u32 z = (regs.TR) & (1 << 4);
             regs.F.N = 0;
-            regs.F.V = parity(z);
+            regs.F.PV = parity(z);
             regs.F.H = 1;
             regs.F.X = ((regs.TR) & 8) >> 3;
             regs.F.Y = ((regs.TR) & 0x20) >> 5;
@@ -42586,7 +42587,7 @@ void Z80_ins_DDCB_62_BIT_o_irr_r(regs& regs, pins& pins)
             pins.RD = 0; pins.MRQ = 0;
             u32 z = (regs.TR) & (1 << 4);
             regs.F.N = 0;
-            regs.F.V = parity(z);
+            regs.F.PV = parity(z);
             regs.F.H = 1;
             regs.F.X = ((regs.TR) & 8) >> 3;
             regs.F.Y = ((regs.TR) & 0x20) >> 5;
@@ -42631,7 +42632,7 @@ void Z80_ins_DDCB_63_BIT_o_irr_r(regs& regs, pins& pins)
             pins.RD = 0; pins.MRQ = 0;
             u32 z = (regs.TR) & (1 << 4);
             regs.F.N = 0;
-            regs.F.V = parity(z);
+            regs.F.PV = parity(z);
             regs.F.H = 1;
             regs.F.X = ((regs.TR) & 8) >> 3;
             regs.F.Y = ((regs.TR) & 0x20) >> 5;
@@ -42676,7 +42677,7 @@ void Z80_ins_DDCB_64_BIT_o_irr_r(regs& regs, pins& pins)
             pins.RD = 0; pins.MRQ = 0;
             u32 z = (regs.TR) & (1 << 4);
             regs.F.N = 0;
-            regs.F.V = parity(z);
+            regs.F.PV = parity(z);
             regs.F.H = 1;
             regs.F.X = ((regs.TR) & 8) >> 3;
             regs.F.Y = ((regs.TR) & 0x20) >> 5;
@@ -42721,7 +42722,7 @@ void Z80_ins_DDCB_65_BIT_o_irr_r(regs& regs, pins& pins)
             pins.RD = 0; pins.MRQ = 0;
             u32 z = (regs.TR) & (1 << 4);
             regs.F.N = 0;
-            regs.F.V = parity(z);
+            regs.F.PV = parity(z);
             regs.F.H = 1;
             regs.F.X = ((regs.TR) & 8) >> 3;
             regs.F.Y = ((regs.TR) & 0x20) >> 5;
@@ -42766,7 +42767,7 @@ void Z80_ins_DDCB_66_BIT_o_irr_r(regs& regs, pins& pins)
             pins.RD = 0; pins.MRQ = 0;
             u32 z = (regs.TR) & (1 << 4);
             regs.F.N = 0;
-            regs.F.V = parity(z);
+            regs.F.PV = parity(z);
             regs.F.H = 1;
             regs.F.X = ((regs.TR) & 8) >> 3;
             regs.F.Y = ((regs.TR) & 0x20) >> 5;
@@ -42811,7 +42812,7 @@ void Z80_ins_DDCB_67_BIT_o_irr_r(regs& regs, pins& pins)
             pins.RD = 0; pins.MRQ = 0;
             u32 z = (regs.TR) & (1 << 4);
             regs.F.N = 0;
-            regs.F.V = parity(z);
+            regs.F.PV = parity(z);
             regs.F.H = 1;
             regs.F.X = ((regs.TR) & 8) >> 3;
             regs.F.Y = ((regs.TR) & 0x20) >> 5;
@@ -42856,7 +42857,7 @@ void Z80_ins_DDCB_68_BIT_o_irr_r(regs& regs, pins& pins)
             pins.RD = 0; pins.MRQ = 0;
             u32 z = (regs.TR) & (1 << 5);
             regs.F.N = 0;
-            regs.F.V = parity(z);
+            regs.F.PV = parity(z);
             regs.F.H = 1;
             regs.F.X = ((regs.TR) & 8) >> 3;
             regs.F.Y = ((regs.TR) & 0x20) >> 5;
@@ -42901,7 +42902,7 @@ void Z80_ins_DDCB_69_BIT_o_irr_r(regs& regs, pins& pins)
             pins.RD = 0; pins.MRQ = 0;
             u32 z = (regs.TR) & (1 << 5);
             regs.F.N = 0;
-            regs.F.V = parity(z);
+            regs.F.PV = parity(z);
             regs.F.H = 1;
             regs.F.X = ((regs.TR) & 8) >> 3;
             regs.F.Y = ((regs.TR) & 0x20) >> 5;
@@ -42946,7 +42947,7 @@ void Z80_ins_DDCB_6A_BIT_o_irr_r(regs& regs, pins& pins)
             pins.RD = 0; pins.MRQ = 0;
             u32 z = (regs.TR) & (1 << 5);
             regs.F.N = 0;
-            regs.F.V = parity(z);
+            regs.F.PV = parity(z);
             regs.F.H = 1;
             regs.F.X = ((regs.TR) & 8) >> 3;
             regs.F.Y = ((regs.TR) & 0x20) >> 5;
@@ -42991,7 +42992,7 @@ void Z80_ins_DDCB_6B_BIT_o_irr_r(regs& regs, pins& pins)
             pins.RD = 0; pins.MRQ = 0;
             u32 z = (regs.TR) & (1 << 5);
             regs.F.N = 0;
-            regs.F.V = parity(z);
+            regs.F.PV = parity(z);
             regs.F.H = 1;
             regs.F.X = ((regs.TR) & 8) >> 3;
             regs.F.Y = ((regs.TR) & 0x20) >> 5;
@@ -43036,7 +43037,7 @@ void Z80_ins_DDCB_6C_BIT_o_irr_r(regs& regs, pins& pins)
             pins.RD = 0; pins.MRQ = 0;
             u32 z = (regs.TR) & (1 << 5);
             regs.F.N = 0;
-            regs.F.V = parity(z);
+            regs.F.PV = parity(z);
             regs.F.H = 1;
             regs.F.X = ((regs.TR) & 8) >> 3;
             regs.F.Y = ((regs.TR) & 0x20) >> 5;
@@ -43081,7 +43082,7 @@ void Z80_ins_DDCB_6D_BIT_o_irr_r(regs& regs, pins& pins)
             pins.RD = 0; pins.MRQ = 0;
             u32 z = (regs.TR) & (1 << 5);
             regs.F.N = 0;
-            regs.F.V = parity(z);
+            regs.F.PV = parity(z);
             regs.F.H = 1;
             regs.F.X = ((regs.TR) & 8) >> 3;
             regs.F.Y = ((regs.TR) & 0x20) >> 5;
@@ -43126,7 +43127,7 @@ void Z80_ins_DDCB_6E_BIT_o_irr_r(regs& regs, pins& pins)
             pins.RD = 0; pins.MRQ = 0;
             u32 z = (regs.TR) & (1 << 5);
             regs.F.N = 0;
-            regs.F.V = parity(z);
+            regs.F.PV = parity(z);
             regs.F.H = 1;
             regs.F.X = ((regs.TR) & 8) >> 3;
             regs.F.Y = ((regs.TR) & 0x20) >> 5;
@@ -43171,7 +43172,7 @@ void Z80_ins_DDCB_6F_BIT_o_irr_r(regs& regs, pins& pins)
             pins.RD = 0; pins.MRQ = 0;
             u32 z = (regs.TR) & (1 << 5);
             regs.F.N = 0;
-            regs.F.V = parity(z);
+            regs.F.PV = parity(z);
             regs.F.H = 1;
             regs.F.X = ((regs.TR) & 8) >> 3;
             regs.F.Y = ((regs.TR) & 0x20) >> 5;
@@ -43216,7 +43217,7 @@ void Z80_ins_DDCB_70_BIT_o_irr_r(regs& regs, pins& pins)
             pins.RD = 0; pins.MRQ = 0;
             u32 z = (regs.TR) & (1 << 6);
             regs.F.N = 0;
-            regs.F.V = parity(z);
+            regs.F.PV = parity(z);
             regs.F.H = 1;
             regs.F.X = ((regs.TR) & 8) >> 3;
             regs.F.Y = ((regs.TR) & 0x20) >> 5;
@@ -43261,7 +43262,7 @@ void Z80_ins_DDCB_71_BIT_o_irr_r(regs& regs, pins& pins)
             pins.RD = 0; pins.MRQ = 0;
             u32 z = (regs.TR) & (1 << 6);
             regs.F.N = 0;
-            regs.F.V = parity(z);
+            regs.F.PV = parity(z);
             regs.F.H = 1;
             regs.F.X = ((regs.TR) & 8) >> 3;
             regs.F.Y = ((regs.TR) & 0x20) >> 5;
@@ -43306,7 +43307,7 @@ void Z80_ins_DDCB_72_BIT_o_irr_r(regs& regs, pins& pins)
             pins.RD = 0; pins.MRQ = 0;
             u32 z = (regs.TR) & (1 << 6);
             regs.F.N = 0;
-            regs.F.V = parity(z);
+            regs.F.PV = parity(z);
             regs.F.H = 1;
             regs.F.X = ((regs.TR) & 8) >> 3;
             regs.F.Y = ((regs.TR) & 0x20) >> 5;
@@ -43351,7 +43352,7 @@ void Z80_ins_DDCB_73_BIT_o_irr_r(regs& regs, pins& pins)
             pins.RD = 0; pins.MRQ = 0;
             u32 z = (regs.TR) & (1 << 6);
             regs.F.N = 0;
-            regs.F.V = parity(z);
+            regs.F.PV = parity(z);
             regs.F.H = 1;
             regs.F.X = ((regs.TR) & 8) >> 3;
             regs.F.Y = ((regs.TR) & 0x20) >> 5;
@@ -43396,7 +43397,7 @@ void Z80_ins_DDCB_74_BIT_o_irr_r(regs& regs, pins& pins)
             pins.RD = 0; pins.MRQ = 0;
             u32 z = (regs.TR) & (1 << 6);
             regs.F.N = 0;
-            regs.F.V = parity(z);
+            regs.F.PV = parity(z);
             regs.F.H = 1;
             regs.F.X = ((regs.TR) & 8) >> 3;
             regs.F.Y = ((regs.TR) & 0x20) >> 5;
@@ -43441,7 +43442,7 @@ void Z80_ins_DDCB_75_BIT_o_irr_r(regs& regs, pins& pins)
             pins.RD = 0; pins.MRQ = 0;
             u32 z = (regs.TR) & (1 << 6);
             regs.F.N = 0;
-            regs.F.V = parity(z);
+            regs.F.PV = parity(z);
             regs.F.H = 1;
             regs.F.X = ((regs.TR) & 8) >> 3;
             regs.F.Y = ((regs.TR) & 0x20) >> 5;
@@ -43486,7 +43487,7 @@ void Z80_ins_DDCB_76_BIT_o_irr_r(regs& regs, pins& pins)
             pins.RD = 0; pins.MRQ = 0;
             u32 z = (regs.TR) & (1 << 6);
             regs.F.N = 0;
-            regs.F.V = parity(z);
+            regs.F.PV = parity(z);
             regs.F.H = 1;
             regs.F.X = ((regs.TR) & 8) >> 3;
             regs.F.Y = ((regs.TR) & 0x20) >> 5;
@@ -43531,7 +43532,7 @@ void Z80_ins_DDCB_77_BIT_o_irr_r(regs& regs, pins& pins)
             pins.RD = 0; pins.MRQ = 0;
             u32 z = (regs.TR) & (1 << 6);
             regs.F.N = 0;
-            regs.F.V = parity(z);
+            regs.F.PV = parity(z);
             regs.F.H = 1;
             regs.F.X = ((regs.TR) & 8) >> 3;
             regs.F.Y = ((regs.TR) & 0x20) >> 5;
@@ -43576,7 +43577,7 @@ void Z80_ins_DDCB_78_BIT_o_irr_r(regs& regs, pins& pins)
             pins.RD = 0; pins.MRQ = 0;
             u32 z = (regs.TR) & (1 << 7);
             regs.F.N = 0;
-            regs.F.V = parity(z);
+            regs.F.PV = parity(z);
             regs.F.H = 1;
             regs.F.X = ((regs.TR) & 8) >> 3;
             regs.F.Y = ((regs.TR) & 0x20) >> 5;
@@ -43621,7 +43622,7 @@ void Z80_ins_DDCB_79_BIT_o_irr_r(regs& regs, pins& pins)
             pins.RD = 0; pins.MRQ = 0;
             u32 z = (regs.TR) & (1 << 7);
             regs.F.N = 0;
-            regs.F.V = parity(z);
+            regs.F.PV = parity(z);
             regs.F.H = 1;
             regs.F.X = ((regs.TR) & 8) >> 3;
             regs.F.Y = ((regs.TR) & 0x20) >> 5;
@@ -43666,7 +43667,7 @@ void Z80_ins_DDCB_7A_BIT_o_irr_r(regs& regs, pins& pins)
             pins.RD = 0; pins.MRQ = 0;
             u32 z = (regs.TR) & (1 << 7);
             regs.F.N = 0;
-            regs.F.V = parity(z);
+            regs.F.PV = parity(z);
             regs.F.H = 1;
             regs.F.X = ((regs.TR) & 8) >> 3;
             regs.F.Y = ((regs.TR) & 0x20) >> 5;
@@ -43711,7 +43712,7 @@ void Z80_ins_DDCB_7B_BIT_o_irr_r(regs& regs, pins& pins)
             pins.RD = 0; pins.MRQ = 0;
             u32 z = (regs.TR) & (1 << 7);
             regs.F.N = 0;
-            regs.F.V = parity(z);
+            regs.F.PV = parity(z);
             regs.F.H = 1;
             regs.F.X = ((regs.TR) & 8) >> 3;
             regs.F.Y = ((regs.TR) & 0x20) >> 5;
@@ -43756,7 +43757,7 @@ void Z80_ins_DDCB_7C_BIT_o_irr_r(regs& regs, pins& pins)
             pins.RD = 0; pins.MRQ = 0;
             u32 z = (regs.TR) & (1 << 7);
             regs.F.N = 0;
-            regs.F.V = parity(z);
+            regs.F.PV = parity(z);
             regs.F.H = 1;
             regs.F.X = ((regs.TR) & 8) >> 3;
             regs.F.Y = ((regs.TR) & 0x20) >> 5;
@@ -43801,7 +43802,7 @@ void Z80_ins_DDCB_7D_BIT_o_irr_r(regs& regs, pins& pins)
             pins.RD = 0; pins.MRQ = 0;
             u32 z = (regs.TR) & (1 << 7);
             regs.F.N = 0;
-            regs.F.V = parity(z);
+            regs.F.PV = parity(z);
             regs.F.H = 1;
             regs.F.X = ((regs.TR) & 8) >> 3;
             regs.F.Y = ((regs.TR) & 0x20) >> 5;
@@ -43846,7 +43847,7 @@ void Z80_ins_DDCB_7E_BIT_o_irr_r(regs& regs, pins& pins)
             pins.RD = 0; pins.MRQ = 0;
             u32 z = (regs.TR) & (1 << 7);
             regs.F.N = 0;
-            regs.F.V = parity(z);
+            regs.F.PV = parity(z);
             regs.F.H = 1;
             regs.F.X = ((regs.TR) & 8) >> 3;
             regs.F.Y = ((regs.TR) & 0x20) >> 5;
@@ -43891,7 +43892,7 @@ void Z80_ins_DDCB_7F_BIT_o_irr_r(regs& regs, pins& pins)
             pins.RD = 0; pins.MRQ = 0;
             u32 z = (regs.TR) & (1 << 7);
             regs.F.N = 0;
-            regs.F.V = parity(z);
+            regs.F.PV = parity(z);
             regs.F.H = 1;
             regs.F.X = ((regs.TR) & 8) >> 3;
             regs.F.Y = ((regs.TR) & 0x20) >> 5;
@@ -49954,7 +49955,7 @@ void Z80_ins_FDCB_00_RLC_irr_r(regs& regs, pins& pins)
             x = ((x << 1) | (x >> 7)) & 0xFF;
             regs.F.C = x & 1;
             regs.F.N = regs.F.H = 0;
-            regs.F.V = parity(x);
+            regs.F.PV = parity(x);
             regs.F.X = ((x) & 8) >> 3;
             regs.F.Y = ((x) & 0x20) >> 5;
             regs.F.Z = +((x) == 0);
@@ -50010,7 +50011,7 @@ void Z80_ins_FDCB_01_RLC_irr_r(regs& regs, pins& pins)
             x = ((x << 1) | (x >> 7)) & 0xFF;
             regs.F.C = x & 1;
             regs.F.N = regs.F.H = 0;
-            regs.F.V = parity(x);
+            regs.F.PV = parity(x);
             regs.F.X = ((x) & 8) >> 3;
             regs.F.Y = ((x) & 0x20) >> 5;
             regs.F.Z = +((x) == 0);
@@ -50066,7 +50067,7 @@ void Z80_ins_FDCB_02_RLC_irr_r(regs& regs, pins& pins)
             x = ((x << 1) | (x >> 7)) & 0xFF;
             regs.F.C = x & 1;
             regs.F.N = regs.F.H = 0;
-            regs.F.V = parity(x);
+            regs.F.PV = parity(x);
             regs.F.X = ((x) & 8) >> 3;
             regs.F.Y = ((x) & 0x20) >> 5;
             regs.F.Z = +((x) == 0);
@@ -50122,7 +50123,7 @@ void Z80_ins_FDCB_03_RLC_irr_r(regs& regs, pins& pins)
             x = ((x << 1) | (x >> 7)) & 0xFF;
             regs.F.C = x & 1;
             regs.F.N = regs.F.H = 0;
-            regs.F.V = parity(x);
+            regs.F.PV = parity(x);
             regs.F.X = ((x) & 8) >> 3;
             regs.F.Y = ((x) & 0x20) >> 5;
             regs.F.Z = +((x) == 0);
@@ -50178,7 +50179,7 @@ void Z80_ins_FDCB_04_RLC_irr_r(regs& regs, pins& pins)
             x = ((x << 1) | (x >> 7)) & 0xFF;
             regs.F.C = x & 1;
             regs.F.N = regs.F.H = 0;
-            regs.F.V = parity(x);
+            regs.F.PV = parity(x);
             regs.F.X = ((x) & 8) >> 3;
             regs.F.Y = ((x) & 0x20) >> 5;
             regs.F.Z = +((x) == 0);
@@ -50234,7 +50235,7 @@ void Z80_ins_FDCB_05_RLC_irr_r(regs& regs, pins& pins)
             x = ((x << 1) | (x >> 7)) & 0xFF;
             regs.F.C = x & 1;
             regs.F.N = regs.F.H = 0;
-            regs.F.V = parity(x);
+            regs.F.PV = parity(x);
             regs.F.X = ((x) & 8) >> 3;
             regs.F.Y = ((x) & 0x20) >> 5;
             regs.F.Z = +((x) == 0);
@@ -50290,7 +50291,7 @@ void Z80_ins_FDCB_06_RLC_irr_r(regs& regs, pins& pins)
             x = ((x << 1) | (x >> 7)) & 0xFF;
             regs.F.C = x & 1;
             regs.F.N = regs.F.H = 0;
-            regs.F.V = parity(x);
+            regs.F.PV = parity(x);
             regs.F.X = ((x) & 8) >> 3;
             regs.F.Y = ((x) & 0x20) >> 5;
             regs.F.Z = +((x) == 0);
@@ -50346,7 +50347,7 @@ void Z80_ins_FDCB_07_RLC_irr_r(regs& regs, pins& pins)
             x = ((x << 1) | (x >> 7)) & 0xFF;
             regs.F.C = x & 1;
             regs.F.N = regs.F.H = 0;
-            regs.F.V = parity(x);
+            regs.F.PV = parity(x);
             regs.F.X = ((x) & 8) >> 3;
             regs.F.Y = ((x) & 0x20) >> 5;
             regs.F.Z = +((x) == 0);
@@ -50402,7 +50403,7 @@ void Z80_ins_FDCB_08_RRC_irr_r(regs& regs, pins& pins)
             x = ((x >> 1) | (x << 7)) & 0xFF;
             regs.F.C = (x & 0x80) >> 7;
             regs.F.N = regs.F.H = 0;
-            regs.F.V = parity(x);
+            regs.F.PV = parity(x);
             regs.F.X = ((x) & 8) >> 3;
             regs.F.Y = ((x) & 0x20) >> 5;
             regs.F.Z = +((x) == 0);
@@ -50458,7 +50459,7 @@ void Z80_ins_FDCB_09_RRC_irr_r(regs& regs, pins& pins)
             x = ((x >> 1) | (x << 7)) & 0xFF;
             regs.F.C = (x & 0x80) >> 7;
             regs.F.N = regs.F.H = 0;
-            regs.F.V = parity(x);
+            regs.F.PV = parity(x);
             regs.F.X = ((x) & 8) >> 3;
             regs.F.Y = ((x) & 0x20) >> 5;
             regs.F.Z = +((x) == 0);
@@ -50514,7 +50515,7 @@ void Z80_ins_FDCB_0A_RRC_irr_r(regs& regs, pins& pins)
             x = ((x >> 1) | (x << 7)) & 0xFF;
             regs.F.C = (x & 0x80) >> 7;
             regs.F.N = regs.F.H = 0;
-            regs.F.V = parity(x);
+            regs.F.PV = parity(x);
             regs.F.X = ((x) & 8) >> 3;
             regs.F.Y = ((x) & 0x20) >> 5;
             regs.F.Z = +((x) == 0);
@@ -50570,7 +50571,7 @@ void Z80_ins_FDCB_0B_RRC_irr_r(regs& regs, pins& pins)
             x = ((x >> 1) | (x << 7)) & 0xFF;
             regs.F.C = (x & 0x80) >> 7;
             regs.F.N = regs.F.H = 0;
-            regs.F.V = parity(x);
+            regs.F.PV = parity(x);
             regs.F.X = ((x) & 8) >> 3;
             regs.F.Y = ((x) & 0x20) >> 5;
             regs.F.Z = +((x) == 0);
@@ -50626,7 +50627,7 @@ void Z80_ins_FDCB_0C_RRC_irr_r(regs& regs, pins& pins)
             x = ((x >> 1) | (x << 7)) & 0xFF;
             regs.F.C = (x & 0x80) >> 7;
             regs.F.N = regs.F.H = 0;
-            regs.F.V = parity(x);
+            regs.F.PV = parity(x);
             regs.F.X = ((x) & 8) >> 3;
             regs.F.Y = ((x) & 0x20) >> 5;
             regs.F.Z = +((x) == 0);
@@ -50682,7 +50683,7 @@ void Z80_ins_FDCB_0D_RRC_irr_r(regs& regs, pins& pins)
             x = ((x >> 1) | (x << 7)) & 0xFF;
             regs.F.C = (x & 0x80) >> 7;
             regs.F.N = regs.F.H = 0;
-            regs.F.V = parity(x);
+            regs.F.PV = parity(x);
             regs.F.X = ((x) & 8) >> 3;
             regs.F.Y = ((x) & 0x20) >> 5;
             regs.F.Z = +((x) == 0);
@@ -50738,7 +50739,7 @@ void Z80_ins_FDCB_0E_RRC_irr_r(regs& regs, pins& pins)
             x = ((x >> 1) | (x << 7)) & 0xFF;
             regs.F.C = (x & 0x80) >> 7;
             regs.F.N = regs.F.H = 0;
-            regs.F.V = parity(x);
+            regs.F.PV = parity(x);
             regs.F.X = ((x) & 8) >> 3;
             regs.F.Y = ((x) & 0x20) >> 5;
             regs.F.Z = +((x) == 0);
@@ -50794,7 +50795,7 @@ void Z80_ins_FDCB_0F_RRC_irr_r(regs& regs, pins& pins)
             x = ((x >> 1) | (x << 7)) & 0xFF;
             regs.F.C = (x & 0x80) >> 7;
             regs.F.N = regs.F.H = 0;
-            regs.F.V = parity(x);
+            regs.F.PV = parity(x);
             regs.F.X = ((x) & 8) >> 3;
             regs.F.Y = ((x) & 0x20) >> 5;
             regs.F.Z = +((x) == 0);
@@ -50851,7 +50852,7 @@ void Z80_ins_FDCB_10_RL_irr_r(regs& regs, pins& pins)
             x = ((x << 1) | regs.F.C) & 0xFF;
             regs.F.C = c;
             regs.F.N = regs.F.H = 0;
-            regs.F.V = parity(x);
+            regs.F.PV = parity(x);
             regs.F.X = ((x) & 8) >> 3;
             regs.F.Y = ((x) & 0x20) >> 5;
             regs.F.Z = +((x) == 0);
@@ -50908,7 +50909,7 @@ void Z80_ins_FDCB_11_RL_irr_r(regs& regs, pins& pins)
             x = ((x << 1) | regs.F.C) & 0xFF;
             regs.F.C = c;
             regs.F.N = regs.F.H = 0;
-            regs.F.V = parity(x);
+            regs.F.PV = parity(x);
             regs.F.X = ((x) & 8) >> 3;
             regs.F.Y = ((x) & 0x20) >> 5;
             regs.F.Z = +((x) == 0);
@@ -50965,7 +50966,7 @@ void Z80_ins_FDCB_12_RL_irr_r(regs& regs, pins& pins)
             x = ((x << 1) | regs.F.C) & 0xFF;
             regs.F.C = c;
             regs.F.N = regs.F.H = 0;
-            regs.F.V = parity(x);
+            regs.F.PV = parity(x);
             regs.F.X = ((x) & 8) >> 3;
             regs.F.Y = ((x) & 0x20) >> 5;
             regs.F.Z = +((x) == 0);
@@ -51022,7 +51023,7 @@ void Z80_ins_FDCB_13_RL_irr_r(regs& regs, pins& pins)
             x = ((x << 1) | regs.F.C) & 0xFF;
             regs.F.C = c;
             regs.F.N = regs.F.H = 0;
-            regs.F.V = parity(x);
+            regs.F.PV = parity(x);
             regs.F.X = ((x) & 8) >> 3;
             regs.F.Y = ((x) & 0x20) >> 5;
             regs.F.Z = +((x) == 0);
@@ -51079,7 +51080,7 @@ void Z80_ins_FDCB_14_RL_irr_r(regs& regs, pins& pins)
             x = ((x << 1) | regs.F.C) & 0xFF;
             regs.F.C = c;
             regs.F.N = regs.F.H = 0;
-            regs.F.V = parity(x);
+            regs.F.PV = parity(x);
             regs.F.X = ((x) & 8) >> 3;
             regs.F.Y = ((x) & 0x20) >> 5;
             regs.F.Z = +((x) == 0);
@@ -51136,7 +51137,7 @@ void Z80_ins_FDCB_15_RL_irr_r(regs& regs, pins& pins)
             x = ((x << 1) | regs.F.C) & 0xFF;
             regs.F.C = c;
             regs.F.N = regs.F.H = 0;
-            regs.F.V = parity(x);
+            regs.F.PV = parity(x);
             regs.F.X = ((x) & 8) >> 3;
             regs.F.Y = ((x) & 0x20) >> 5;
             regs.F.Z = +((x) == 0);
@@ -51193,7 +51194,7 @@ void Z80_ins_FDCB_16_RL_irr_r(regs& regs, pins& pins)
             x = ((x << 1) | regs.F.C) & 0xFF;
             regs.F.C = c;
             regs.F.N = regs.F.H = 0;
-            regs.F.V = parity(x);
+            regs.F.PV = parity(x);
             regs.F.X = ((x) & 8) >> 3;
             regs.F.Y = ((x) & 0x20) >> 5;
             regs.F.Z = +((x) == 0);
@@ -51250,7 +51251,7 @@ void Z80_ins_FDCB_17_RL_irr_r(regs& regs, pins& pins)
             x = ((x << 1) | regs.F.C) & 0xFF;
             regs.F.C = c;
             regs.F.N = regs.F.H = 0;
-            regs.F.V = parity(x);
+            regs.F.PV = parity(x);
             regs.F.X = ((x) & 8) >> 3;
             regs.F.Y = ((x) & 0x20) >> 5;
             regs.F.Z = +((x) == 0);
@@ -51307,7 +51308,7 @@ void Z80_ins_FDCB_18_RR_irr_r(regs& regs, pins& pins)
             x = (x >> 1) | (regs.F.C << 7);
             regs.F.C = c;
             regs.F.N = regs.F.H = 0;
-            regs.F.V = parity(x);
+            regs.F.PV = parity(x);
             regs.F.X = ((x) & 8) >> 3;
             regs.F.Y = ((x) & 0x20) >> 5;
             regs.F.Z = +((x) == 0);
@@ -51364,7 +51365,7 @@ void Z80_ins_FDCB_19_RR_irr_r(regs& regs, pins& pins)
             x = (x >> 1) | (regs.F.C << 7);
             regs.F.C = c;
             regs.F.N = regs.F.H = 0;
-            regs.F.V = parity(x);
+            regs.F.PV = parity(x);
             regs.F.X = ((x) & 8) >> 3;
             regs.F.Y = ((x) & 0x20) >> 5;
             regs.F.Z = +((x) == 0);
@@ -51421,7 +51422,7 @@ void Z80_ins_FDCB_1A_RR_irr_r(regs& regs, pins& pins)
             x = (x >> 1) | (regs.F.C << 7);
             regs.F.C = c;
             regs.F.N = regs.F.H = 0;
-            regs.F.V = parity(x);
+            regs.F.PV = parity(x);
             regs.F.X = ((x) & 8) >> 3;
             regs.F.Y = ((x) & 0x20) >> 5;
             regs.F.Z = +((x) == 0);
@@ -51478,7 +51479,7 @@ void Z80_ins_FDCB_1B_RR_irr_r(regs& regs, pins& pins)
             x = (x >> 1) | (regs.F.C << 7);
             regs.F.C = c;
             regs.F.N = regs.F.H = 0;
-            regs.F.V = parity(x);
+            regs.F.PV = parity(x);
             regs.F.X = ((x) & 8) >> 3;
             regs.F.Y = ((x) & 0x20) >> 5;
             regs.F.Z = +((x) == 0);
@@ -51535,7 +51536,7 @@ void Z80_ins_FDCB_1C_RR_irr_r(regs& regs, pins& pins)
             x = (x >> 1) | (regs.F.C << 7);
             regs.F.C = c;
             regs.F.N = regs.F.H = 0;
-            regs.F.V = parity(x);
+            regs.F.PV = parity(x);
             regs.F.X = ((x) & 8) >> 3;
             regs.F.Y = ((x) & 0x20) >> 5;
             regs.F.Z = +((x) == 0);
@@ -51592,7 +51593,7 @@ void Z80_ins_FDCB_1D_RR_irr_r(regs& regs, pins& pins)
             x = (x >> 1) | (regs.F.C << 7);
             regs.F.C = c;
             regs.F.N = regs.F.H = 0;
-            regs.F.V = parity(x);
+            regs.F.PV = parity(x);
             regs.F.X = ((x) & 8) >> 3;
             regs.F.Y = ((x) & 0x20) >> 5;
             regs.F.Z = +((x) == 0);
@@ -51649,7 +51650,7 @@ void Z80_ins_FDCB_1E_RR_irr_r(regs& regs, pins& pins)
             x = (x >> 1) | (regs.F.C << 7);
             regs.F.C = c;
             regs.F.N = regs.F.H = 0;
-            regs.F.V = parity(x);
+            regs.F.PV = parity(x);
             regs.F.X = ((x) & 8) >> 3;
             regs.F.Y = ((x) & 0x20) >> 5;
             regs.F.Z = +((x) == 0);
@@ -51706,7 +51707,7 @@ void Z80_ins_FDCB_1F_RR_irr_r(regs& regs, pins& pins)
             x = (x >> 1) | (regs.F.C << 7);
             regs.F.C = c;
             regs.F.N = regs.F.H = 0;
-            regs.F.V = parity(x);
+            regs.F.PV = parity(x);
             regs.F.X = ((x) & 8) >> 3;
             regs.F.Y = ((x) & 0x20) >> 5;
             regs.F.Z = +((x) == 0);
@@ -51763,7 +51764,7 @@ void Z80_ins_FDCB_20_SLA_irr_r(regs& regs, pins& pins)
             x = (x << 1) & 0xFF;
             regs.F.C = c;
             regs.F.N = regs.F.H = 0;
-            regs.F.V = parity(x);
+            regs.F.PV = parity(x);
             regs.F.X = ((x) & 8) >> 3;
             regs.F.Y = ((x) & 0x20) >> 5;
             regs.F.Z = +((x) == 0);
@@ -51820,7 +51821,7 @@ void Z80_ins_FDCB_21_SLA_irr_r(regs& regs, pins& pins)
             x = (x << 1) & 0xFF;
             regs.F.C = c;
             regs.F.N = regs.F.H = 0;
-            regs.F.V = parity(x);
+            regs.F.PV = parity(x);
             regs.F.X = ((x) & 8) >> 3;
             regs.F.Y = ((x) & 0x20) >> 5;
             regs.F.Z = +((x) == 0);
@@ -51877,7 +51878,7 @@ void Z80_ins_FDCB_22_SLA_irr_r(regs& regs, pins& pins)
             x = (x << 1) & 0xFF;
             regs.F.C = c;
             regs.F.N = regs.F.H = 0;
-            regs.F.V = parity(x);
+            regs.F.PV = parity(x);
             regs.F.X = ((x) & 8) >> 3;
             regs.F.Y = ((x) & 0x20) >> 5;
             regs.F.Z = +((x) == 0);
@@ -51934,7 +51935,7 @@ void Z80_ins_FDCB_23_SLA_irr_r(regs& regs, pins& pins)
             x = (x << 1) & 0xFF;
             regs.F.C = c;
             regs.F.N = regs.F.H = 0;
-            regs.F.V = parity(x);
+            regs.F.PV = parity(x);
             regs.F.X = ((x) & 8) >> 3;
             regs.F.Y = ((x) & 0x20) >> 5;
             regs.F.Z = +((x) == 0);
@@ -51991,7 +51992,7 @@ void Z80_ins_FDCB_24_SLA_irr_r(regs& regs, pins& pins)
             x = (x << 1) & 0xFF;
             regs.F.C = c;
             regs.F.N = regs.F.H = 0;
-            regs.F.V = parity(x);
+            regs.F.PV = parity(x);
             regs.F.X = ((x) & 8) >> 3;
             regs.F.Y = ((x) & 0x20) >> 5;
             regs.F.Z = +((x) == 0);
@@ -52048,7 +52049,7 @@ void Z80_ins_FDCB_25_SLA_irr_r(regs& regs, pins& pins)
             x = (x << 1) & 0xFF;
             regs.F.C = c;
             regs.F.N = regs.F.H = 0;
-            regs.F.V = parity(x);
+            regs.F.PV = parity(x);
             regs.F.X = ((x) & 8) >> 3;
             regs.F.Y = ((x) & 0x20) >> 5;
             regs.F.Z = +((x) == 0);
@@ -52105,7 +52106,7 @@ void Z80_ins_FDCB_26_SLA_irr_r(regs& regs, pins& pins)
             x = (x << 1) & 0xFF;
             regs.F.C = c;
             regs.F.N = regs.F.H = 0;
-            regs.F.V = parity(x);
+            regs.F.PV = parity(x);
             regs.F.X = ((x) & 8) >> 3;
             regs.F.Y = ((x) & 0x20) >> 5;
             regs.F.Z = +((x) == 0);
@@ -52162,7 +52163,7 @@ void Z80_ins_FDCB_27_SLA_irr_r(regs& regs, pins& pins)
             x = (x << 1) & 0xFF;
             regs.F.C = c;
             regs.F.N = regs.F.H = 0;
-            regs.F.V = parity(x);
+            regs.F.PV = parity(x);
             regs.F.X = ((x) & 8) >> 3;
             regs.F.Y = ((x) & 0x20) >> 5;
             regs.F.Z = +((x) == 0);
@@ -52219,7 +52220,7 @@ void Z80_ins_FDCB_28_SRA_irr_r(regs& regs, pins& pins)
             x = (x & 0x80) | (x >> 1);
             regs.F.C = c;
             regs.F.N = regs.F.H = 0;
-            regs.F.V = parity(x);
+            regs.F.PV = parity(x);
             regs.F.X = ((x) & 8) >> 3;
             regs.F.Y = ((x) & 0x20) >> 5;
             regs.F.Z = +((x) == 0);
@@ -52276,7 +52277,7 @@ void Z80_ins_FDCB_29_SRA_irr_r(regs& regs, pins& pins)
             x = (x & 0x80) | (x >> 1);
             regs.F.C = c;
             regs.F.N = regs.F.H = 0;
-            regs.F.V = parity(x);
+            regs.F.PV = parity(x);
             regs.F.X = ((x) & 8) >> 3;
             regs.F.Y = ((x) & 0x20) >> 5;
             regs.F.Z = +((x) == 0);
@@ -52333,7 +52334,7 @@ void Z80_ins_FDCB_2A_SRA_irr_r(regs& regs, pins& pins)
             x = (x & 0x80) | (x >> 1);
             regs.F.C = c;
             regs.F.N = regs.F.H = 0;
-            regs.F.V = parity(x);
+            regs.F.PV = parity(x);
             regs.F.X = ((x) & 8) >> 3;
             regs.F.Y = ((x) & 0x20) >> 5;
             regs.F.Z = +((x) == 0);
@@ -52390,7 +52391,7 @@ void Z80_ins_FDCB_2B_SRA_irr_r(regs& regs, pins& pins)
             x = (x & 0x80) | (x >> 1);
             regs.F.C = c;
             regs.F.N = regs.F.H = 0;
-            regs.F.V = parity(x);
+            regs.F.PV = parity(x);
             regs.F.X = ((x) & 8) >> 3;
             regs.F.Y = ((x) & 0x20) >> 5;
             regs.F.Z = +((x) == 0);
@@ -52447,7 +52448,7 @@ void Z80_ins_FDCB_2C_SRA_irr_r(regs& regs, pins& pins)
             x = (x & 0x80) | (x >> 1);
             regs.F.C = c;
             regs.F.N = regs.F.H = 0;
-            regs.F.V = parity(x);
+            regs.F.PV = parity(x);
             regs.F.X = ((x) & 8) >> 3;
             regs.F.Y = ((x) & 0x20) >> 5;
             regs.F.Z = +((x) == 0);
@@ -52504,7 +52505,7 @@ void Z80_ins_FDCB_2D_SRA_irr_r(regs& regs, pins& pins)
             x = (x & 0x80) | (x >> 1);
             regs.F.C = c;
             regs.F.N = regs.F.H = 0;
-            regs.F.V = parity(x);
+            regs.F.PV = parity(x);
             regs.F.X = ((x) & 8) >> 3;
             regs.F.Y = ((x) & 0x20) >> 5;
             regs.F.Z = +((x) == 0);
@@ -52561,7 +52562,7 @@ void Z80_ins_FDCB_2E_SRA_irr_r(regs& regs, pins& pins)
             x = (x & 0x80) | (x >> 1);
             regs.F.C = c;
             regs.F.N = regs.F.H = 0;
-            regs.F.V = parity(x);
+            regs.F.PV = parity(x);
             regs.F.X = ((x) & 8) >> 3;
             regs.F.Y = ((x) & 0x20) >> 5;
             regs.F.Z = +((x) == 0);
@@ -52618,7 +52619,7 @@ void Z80_ins_FDCB_2F_SRA_irr_r(regs& regs, pins& pins)
             x = (x & 0x80) | (x >> 1);
             regs.F.C = c;
             regs.F.N = regs.F.H = 0;
-            regs.F.V = parity(x);
+            regs.F.PV = parity(x);
             regs.F.X = ((x) & 8) >> 3;
             regs.F.Y = ((x) & 0x20) >> 5;
             regs.F.Z = +((x) == 0);
@@ -52675,7 +52676,7 @@ void Z80_ins_FDCB_30_SLL_irr_r(regs& regs, pins& pins)
             x = ((x << 1) | 1) & 0xFF;
             regs.F.C = c;
             regs.F.N = regs.F.H = 0;
-            regs.F.V = parity(x);
+            regs.F.PV = parity(x);
             regs.F.X = ((x) & 8) >> 3;
             regs.F.Y = ((x) & 0x20) >> 5;
             regs.F.Z = +((x) == 0);
@@ -52732,7 +52733,7 @@ void Z80_ins_FDCB_31_SLL_irr_r(regs& regs, pins& pins)
             x = ((x << 1) | 1) & 0xFF;
             regs.F.C = c;
             regs.F.N = regs.F.H = 0;
-            regs.F.V = parity(x);
+            regs.F.PV = parity(x);
             regs.F.X = ((x) & 8) >> 3;
             regs.F.Y = ((x) & 0x20) >> 5;
             regs.F.Z = +((x) == 0);
@@ -52789,7 +52790,7 @@ void Z80_ins_FDCB_32_SLL_irr_r(regs& regs, pins& pins)
             x = ((x << 1) | 1) & 0xFF;
             regs.F.C = c;
             regs.F.N = regs.F.H = 0;
-            regs.F.V = parity(x);
+            regs.F.PV = parity(x);
             regs.F.X = ((x) & 8) >> 3;
             regs.F.Y = ((x) & 0x20) >> 5;
             regs.F.Z = +((x) == 0);
@@ -52846,7 +52847,7 @@ void Z80_ins_FDCB_33_SLL_irr_r(regs& regs, pins& pins)
             x = ((x << 1) | 1) & 0xFF;
             regs.F.C = c;
             regs.F.N = regs.F.H = 0;
-            regs.F.V = parity(x);
+            regs.F.PV = parity(x);
             regs.F.X = ((x) & 8) >> 3;
             regs.F.Y = ((x) & 0x20) >> 5;
             regs.F.Z = +((x) == 0);
@@ -52903,7 +52904,7 @@ void Z80_ins_FDCB_34_SLL_irr_r(regs& regs, pins& pins)
             x = ((x << 1) | 1) & 0xFF;
             regs.F.C = c;
             regs.F.N = regs.F.H = 0;
-            regs.F.V = parity(x);
+            regs.F.PV = parity(x);
             regs.F.X = ((x) & 8) >> 3;
             regs.F.Y = ((x) & 0x20) >> 5;
             regs.F.Z = +((x) == 0);
@@ -52960,7 +52961,7 @@ void Z80_ins_FDCB_35_SLL_irr_r(regs& regs, pins& pins)
             x = ((x << 1) | 1) & 0xFF;
             regs.F.C = c;
             regs.F.N = regs.F.H = 0;
-            regs.F.V = parity(x);
+            regs.F.PV = parity(x);
             regs.F.X = ((x) & 8) >> 3;
             regs.F.Y = ((x) & 0x20) >> 5;
             regs.F.Z = +((x) == 0);
@@ -53017,7 +53018,7 @@ void Z80_ins_FDCB_36_SLL_irr_r(regs& regs, pins& pins)
             x = ((x << 1) | 1) & 0xFF;
             regs.F.C = c;
             regs.F.N = regs.F.H = 0;
-            regs.F.V = parity(x);
+            regs.F.PV = parity(x);
             regs.F.X = ((x) & 8) >> 3;
             regs.F.Y = ((x) & 0x20) >> 5;
             regs.F.Z = +((x) == 0);
@@ -53074,7 +53075,7 @@ void Z80_ins_FDCB_37_SLL_irr_r(regs& regs, pins& pins)
             x = ((x << 1) | 1) & 0xFF;
             regs.F.C = c;
             regs.F.N = regs.F.H = 0;
-            regs.F.V = parity(x);
+            regs.F.PV = parity(x);
             regs.F.X = ((x) & 8) >> 3;
             regs.F.Y = ((x) & 0x20) >> 5;
             regs.F.Z = +((x) == 0);
@@ -53131,7 +53132,7 @@ void Z80_ins_FDCB_38_SRL_irr_r(regs& regs, pins& pins)
             x = (x >> 1) & 0xFF;
             regs.F.C = c;
             regs.F.N = regs.F.H = 0;
-            regs.F.V = parity(x);
+            regs.F.PV = parity(x);
             regs.F.X = ((x) & 8) >> 3;
             regs.F.Y = ((x) & 0x20) >> 5;
             regs.F.Z = +((x) == 0);
@@ -53188,7 +53189,7 @@ void Z80_ins_FDCB_39_SRL_irr_r(regs& regs, pins& pins)
             x = (x >> 1) & 0xFF;
             regs.F.C = c;
             regs.F.N = regs.F.H = 0;
-            regs.F.V = parity(x);
+            regs.F.PV = parity(x);
             regs.F.X = ((x) & 8) >> 3;
             regs.F.Y = ((x) & 0x20) >> 5;
             regs.F.Z = +((x) == 0);
@@ -53245,7 +53246,7 @@ void Z80_ins_FDCB_3A_SRL_irr_r(regs& regs, pins& pins)
             x = (x >> 1) & 0xFF;
             regs.F.C = c;
             regs.F.N = regs.F.H = 0;
-            regs.F.V = parity(x);
+            regs.F.PV = parity(x);
             regs.F.X = ((x) & 8) >> 3;
             regs.F.Y = ((x) & 0x20) >> 5;
             regs.F.Z = +((x) == 0);
@@ -53302,7 +53303,7 @@ void Z80_ins_FDCB_3B_SRL_irr_r(regs& regs, pins& pins)
             x = (x >> 1) & 0xFF;
             regs.F.C = c;
             regs.F.N = regs.F.H = 0;
-            regs.F.V = parity(x);
+            regs.F.PV = parity(x);
             regs.F.X = ((x) & 8) >> 3;
             regs.F.Y = ((x) & 0x20) >> 5;
             regs.F.Z = +((x) == 0);
@@ -53359,7 +53360,7 @@ void Z80_ins_FDCB_3C_SRL_irr_r(regs& regs, pins& pins)
             x = (x >> 1) & 0xFF;
             regs.F.C = c;
             regs.F.N = regs.F.H = 0;
-            regs.F.V = parity(x);
+            regs.F.PV = parity(x);
             regs.F.X = ((x) & 8) >> 3;
             regs.F.Y = ((x) & 0x20) >> 5;
             regs.F.Z = +((x) == 0);
@@ -53416,7 +53417,7 @@ void Z80_ins_FDCB_3D_SRL_irr_r(regs& regs, pins& pins)
             x = (x >> 1) & 0xFF;
             regs.F.C = c;
             regs.F.N = regs.F.H = 0;
-            regs.F.V = parity(x);
+            regs.F.PV = parity(x);
             regs.F.X = ((x) & 8) >> 3;
             regs.F.Y = ((x) & 0x20) >> 5;
             regs.F.Z = +((x) == 0);
@@ -53473,7 +53474,7 @@ void Z80_ins_FDCB_3E_SRL_irr_r(regs& regs, pins& pins)
             x = (x >> 1) & 0xFF;
             regs.F.C = c;
             regs.F.N = regs.F.H = 0;
-            regs.F.V = parity(x);
+            regs.F.PV = parity(x);
             regs.F.X = ((x) & 8) >> 3;
             regs.F.Y = ((x) & 0x20) >> 5;
             regs.F.Z = +((x) == 0);
@@ -53530,7 +53531,7 @@ void Z80_ins_FDCB_3F_SRL_irr_r(regs& regs, pins& pins)
             x = (x >> 1) & 0xFF;
             regs.F.C = c;
             regs.F.N = regs.F.H = 0;
-            regs.F.V = parity(x);
+            regs.F.PV = parity(x);
             regs.F.X = ((x) & 8) >> 3;
             regs.F.Y = ((x) & 0x20) >> 5;
             regs.F.Z = +((x) == 0);
@@ -53584,7 +53585,7 @@ void Z80_ins_FDCB_40_BIT_o_irr_r(regs& regs, pins& pins)
             pins.RD = 0; pins.MRQ = 0;
             u32 z = (regs.TR) & (1 << 0);
             regs.F.N = 0;
-            regs.F.V = parity(z);
+            regs.F.PV = parity(z);
             regs.F.H = 1;
             regs.F.X = ((regs.TR) & 8) >> 3;
             regs.F.Y = ((regs.TR) & 0x20) >> 5;
@@ -53629,7 +53630,7 @@ void Z80_ins_FDCB_41_BIT_o_irr_r(regs& regs, pins& pins)
             pins.RD = 0; pins.MRQ = 0;
             u32 z = (regs.TR) & (1 << 0);
             regs.F.N = 0;
-            regs.F.V = parity(z);
+            regs.F.PV = parity(z);
             regs.F.H = 1;
             regs.F.X = ((regs.TR) & 8) >> 3;
             regs.F.Y = ((regs.TR) & 0x20) >> 5;
@@ -53674,7 +53675,7 @@ void Z80_ins_FDCB_42_BIT_o_irr_r(regs& regs, pins& pins)
             pins.RD = 0; pins.MRQ = 0;
             u32 z = (regs.TR) & (1 << 0);
             regs.F.N = 0;
-            regs.F.V = parity(z);
+            regs.F.PV = parity(z);
             regs.F.H = 1;
             regs.F.X = ((regs.TR) & 8) >> 3;
             regs.F.Y = ((regs.TR) & 0x20) >> 5;
@@ -53719,7 +53720,7 @@ void Z80_ins_FDCB_43_BIT_o_irr_r(regs& regs, pins& pins)
             pins.RD = 0; pins.MRQ = 0;
             u32 z = (regs.TR) & (1 << 0);
             regs.F.N = 0;
-            regs.F.V = parity(z);
+            regs.F.PV = parity(z);
             regs.F.H = 1;
             regs.F.X = ((regs.TR) & 8) >> 3;
             regs.F.Y = ((regs.TR) & 0x20) >> 5;
@@ -53764,7 +53765,7 @@ void Z80_ins_FDCB_44_BIT_o_irr_r(regs& regs, pins& pins)
             pins.RD = 0; pins.MRQ = 0;
             u32 z = (regs.TR) & (1 << 0);
             regs.F.N = 0;
-            regs.F.V = parity(z);
+            regs.F.PV = parity(z);
             regs.F.H = 1;
             regs.F.X = ((regs.TR) & 8) >> 3;
             regs.F.Y = ((regs.TR) & 0x20) >> 5;
@@ -53809,7 +53810,7 @@ void Z80_ins_FDCB_45_BIT_o_irr_r(regs& regs, pins& pins)
             pins.RD = 0; pins.MRQ = 0;
             u32 z = (regs.TR) & (1 << 0);
             regs.F.N = 0;
-            regs.F.V = parity(z);
+            regs.F.PV = parity(z);
             regs.F.H = 1;
             regs.F.X = ((regs.TR) & 8) >> 3;
             regs.F.Y = ((regs.TR) & 0x20) >> 5;
@@ -53854,7 +53855,7 @@ void Z80_ins_FDCB_46_BIT_o_irr_r(regs& regs, pins& pins)
             pins.RD = 0; pins.MRQ = 0;
             u32 z = (regs.TR) & (1 << 0);
             regs.F.N = 0;
-            regs.F.V = parity(z);
+            regs.F.PV = parity(z);
             regs.F.H = 1;
             regs.F.X = ((regs.TR) & 8) >> 3;
             regs.F.Y = ((regs.TR) & 0x20) >> 5;
@@ -53899,7 +53900,7 @@ void Z80_ins_FDCB_47_BIT_o_irr_r(regs& regs, pins& pins)
             pins.RD = 0; pins.MRQ = 0;
             u32 z = (regs.TR) & (1 << 0);
             regs.F.N = 0;
-            regs.F.V = parity(z);
+            regs.F.PV = parity(z);
             regs.F.H = 1;
             regs.F.X = ((regs.TR) & 8) >> 3;
             regs.F.Y = ((regs.TR) & 0x20) >> 5;
@@ -53944,7 +53945,7 @@ void Z80_ins_FDCB_48_BIT_o_irr_r(regs& regs, pins& pins)
             pins.RD = 0; pins.MRQ = 0;
             u32 z = (regs.TR) & (1 << 1);
             regs.F.N = 0;
-            regs.F.V = parity(z);
+            regs.F.PV = parity(z);
             regs.F.H = 1;
             regs.F.X = ((regs.TR) & 8) >> 3;
             regs.F.Y = ((regs.TR) & 0x20) >> 5;
@@ -53989,7 +53990,7 @@ void Z80_ins_FDCB_49_BIT_o_irr_r(regs& regs, pins& pins)
             pins.RD = 0; pins.MRQ = 0;
             u32 z = (regs.TR) & (1 << 1);
             regs.F.N = 0;
-            regs.F.V = parity(z);
+            regs.F.PV = parity(z);
             regs.F.H = 1;
             regs.F.X = ((regs.TR) & 8) >> 3;
             regs.F.Y = ((regs.TR) & 0x20) >> 5;
@@ -54034,7 +54035,7 @@ void Z80_ins_FDCB_4A_BIT_o_irr_r(regs& regs, pins& pins)
             pins.RD = 0; pins.MRQ = 0;
             u32 z = (regs.TR) & (1 << 1);
             regs.F.N = 0;
-            regs.F.V = parity(z);
+            regs.F.PV = parity(z);
             regs.F.H = 1;
             regs.F.X = ((regs.TR) & 8) >> 3;
             regs.F.Y = ((regs.TR) & 0x20) >> 5;
@@ -54079,7 +54080,7 @@ void Z80_ins_FDCB_4B_BIT_o_irr_r(regs& regs, pins& pins)
             pins.RD = 0; pins.MRQ = 0;
             u32 z = (regs.TR) & (1 << 1);
             regs.F.N = 0;
-            regs.F.V = parity(z);
+            regs.F.PV = parity(z);
             regs.F.H = 1;
             regs.F.X = ((regs.TR) & 8) >> 3;
             regs.F.Y = ((regs.TR) & 0x20) >> 5;
@@ -54124,7 +54125,7 @@ void Z80_ins_FDCB_4C_BIT_o_irr_r(regs& regs, pins& pins)
             pins.RD = 0; pins.MRQ = 0;
             u32 z = (regs.TR) & (1 << 1);
             regs.F.N = 0;
-            regs.F.V = parity(z);
+            regs.F.PV = parity(z);
             regs.F.H = 1;
             regs.F.X = ((regs.TR) & 8) >> 3;
             regs.F.Y = ((regs.TR) & 0x20) >> 5;
@@ -54169,7 +54170,7 @@ void Z80_ins_FDCB_4D_BIT_o_irr_r(regs& regs, pins& pins)
             pins.RD = 0; pins.MRQ = 0;
             u32 z = (regs.TR) & (1 << 1);
             regs.F.N = 0;
-            regs.F.V = parity(z);
+            regs.F.PV = parity(z);
             regs.F.H = 1;
             regs.F.X = ((regs.TR) & 8) >> 3;
             regs.F.Y = ((regs.TR) & 0x20) >> 5;
@@ -54214,7 +54215,7 @@ void Z80_ins_FDCB_4E_BIT_o_irr_r(regs& regs, pins& pins)
             pins.RD = 0; pins.MRQ = 0;
             u32 z = (regs.TR) & (1 << 1);
             regs.F.N = 0;
-            regs.F.V = parity(z);
+            regs.F.PV = parity(z);
             regs.F.H = 1;
             regs.F.X = ((regs.TR) & 8) >> 3;
             regs.F.Y = ((regs.TR) & 0x20) >> 5;
@@ -54259,7 +54260,7 @@ void Z80_ins_FDCB_4F_BIT_o_irr_r(regs& regs, pins& pins)
             pins.RD = 0; pins.MRQ = 0;
             u32 z = (regs.TR) & (1 << 1);
             regs.F.N = 0;
-            regs.F.V = parity(z);
+            regs.F.PV = parity(z);
             regs.F.H = 1;
             regs.F.X = ((regs.TR) & 8) >> 3;
             regs.F.Y = ((regs.TR) & 0x20) >> 5;
@@ -54304,7 +54305,7 @@ void Z80_ins_FDCB_50_BIT_o_irr_r(regs& regs, pins& pins)
             pins.RD = 0; pins.MRQ = 0;
             u32 z = (regs.TR) & (1 << 2);
             regs.F.N = 0;
-            regs.F.V = parity(z);
+            regs.F.PV = parity(z);
             regs.F.H = 1;
             regs.F.X = ((regs.TR) & 8) >> 3;
             regs.F.Y = ((regs.TR) & 0x20) >> 5;
@@ -54349,7 +54350,7 @@ void Z80_ins_FDCB_51_BIT_o_irr_r(regs& regs, pins& pins)
             pins.RD = 0; pins.MRQ = 0;
             u32 z = (regs.TR) & (1 << 2);
             regs.F.N = 0;
-            regs.F.V = parity(z);
+            regs.F.PV = parity(z);
             regs.F.H = 1;
             regs.F.X = ((regs.TR) & 8) >> 3;
             regs.F.Y = ((regs.TR) & 0x20) >> 5;
@@ -54394,7 +54395,7 @@ void Z80_ins_FDCB_52_BIT_o_irr_r(regs& regs, pins& pins)
             pins.RD = 0; pins.MRQ = 0;
             u32 z = (regs.TR) & (1 << 2);
             regs.F.N = 0;
-            regs.F.V = parity(z);
+            regs.F.PV = parity(z);
             regs.F.H = 1;
             regs.F.X = ((regs.TR) & 8) >> 3;
             regs.F.Y = ((regs.TR) & 0x20) >> 5;
@@ -54439,7 +54440,7 @@ void Z80_ins_FDCB_53_BIT_o_irr_r(regs& regs, pins& pins)
             pins.RD = 0; pins.MRQ = 0;
             u32 z = (regs.TR) & (1 << 2);
             regs.F.N = 0;
-            regs.F.V = parity(z);
+            regs.F.PV = parity(z);
             regs.F.H = 1;
             regs.F.X = ((regs.TR) & 8) >> 3;
             regs.F.Y = ((regs.TR) & 0x20) >> 5;
@@ -54484,7 +54485,7 @@ void Z80_ins_FDCB_54_BIT_o_irr_r(regs& regs, pins& pins)
             pins.RD = 0; pins.MRQ = 0;
             u32 z = (regs.TR) & (1 << 2);
             regs.F.N = 0;
-            regs.F.V = parity(z);
+            regs.F.PV = parity(z);
             regs.F.H = 1;
             regs.F.X = ((regs.TR) & 8) >> 3;
             regs.F.Y = ((regs.TR) & 0x20) >> 5;
@@ -54529,7 +54530,7 @@ void Z80_ins_FDCB_55_BIT_o_irr_r(regs& regs, pins& pins)
             pins.RD = 0; pins.MRQ = 0;
             u32 z = (regs.TR) & (1 << 2);
             regs.F.N = 0;
-            regs.F.V = parity(z);
+            regs.F.PV = parity(z);
             regs.F.H = 1;
             regs.F.X = ((regs.TR) & 8) >> 3;
             regs.F.Y = ((regs.TR) & 0x20) >> 5;
@@ -54574,7 +54575,7 @@ void Z80_ins_FDCB_56_BIT_o_irr_r(regs& regs, pins& pins)
             pins.RD = 0; pins.MRQ = 0;
             u32 z = (regs.TR) & (1 << 2);
             regs.F.N = 0;
-            regs.F.V = parity(z);
+            regs.F.PV = parity(z);
             regs.F.H = 1;
             regs.F.X = ((regs.TR) & 8) >> 3;
             regs.F.Y = ((regs.TR) & 0x20) >> 5;
@@ -54619,7 +54620,7 @@ void Z80_ins_FDCB_57_BIT_o_irr_r(regs& regs, pins& pins)
             pins.RD = 0; pins.MRQ = 0;
             u32 z = (regs.TR) & (1 << 2);
             regs.F.N = 0;
-            regs.F.V = parity(z);
+            regs.F.PV = parity(z);
             regs.F.H = 1;
             regs.F.X = ((regs.TR) & 8) >> 3;
             regs.F.Y = ((regs.TR) & 0x20) >> 5;
@@ -54664,7 +54665,7 @@ void Z80_ins_FDCB_58_BIT_o_irr_r(regs& regs, pins& pins)
             pins.RD = 0; pins.MRQ = 0;
             u32 z = (regs.TR) & (1 << 3);
             regs.F.N = 0;
-            regs.F.V = parity(z);
+            regs.F.PV = parity(z);
             regs.F.H = 1;
             regs.F.X = ((regs.TR) & 8) >> 3;
             regs.F.Y = ((regs.TR) & 0x20) >> 5;
@@ -54709,7 +54710,7 @@ void Z80_ins_FDCB_59_BIT_o_irr_r(regs& regs, pins& pins)
             pins.RD = 0; pins.MRQ = 0;
             u32 z = (regs.TR) & (1 << 3);
             regs.F.N = 0;
-            regs.F.V = parity(z);
+            regs.F.PV = parity(z);
             regs.F.H = 1;
             regs.F.X = ((regs.TR) & 8) >> 3;
             regs.F.Y = ((regs.TR) & 0x20) >> 5;
@@ -54754,7 +54755,7 @@ void Z80_ins_FDCB_5A_BIT_o_irr_r(regs& regs, pins& pins)
             pins.RD = 0; pins.MRQ = 0;
             u32 z = (regs.TR) & (1 << 3);
             regs.F.N = 0;
-            regs.F.V = parity(z);
+            regs.F.PV = parity(z);
             regs.F.H = 1;
             regs.F.X = ((regs.TR) & 8) >> 3;
             regs.F.Y = ((regs.TR) & 0x20) >> 5;
@@ -54799,7 +54800,7 @@ void Z80_ins_FDCB_5B_BIT_o_irr_r(regs& regs, pins& pins)
             pins.RD = 0; pins.MRQ = 0;
             u32 z = (regs.TR) & (1 << 3);
             regs.F.N = 0;
-            regs.F.V = parity(z);
+            regs.F.PV = parity(z);
             regs.F.H = 1;
             regs.F.X = ((regs.TR) & 8) >> 3;
             regs.F.Y = ((regs.TR) & 0x20) >> 5;
@@ -54844,7 +54845,7 @@ void Z80_ins_FDCB_5C_BIT_o_irr_r(regs& regs, pins& pins)
             pins.RD = 0; pins.MRQ = 0;
             u32 z = (regs.TR) & (1 << 3);
             regs.F.N = 0;
-            regs.F.V = parity(z);
+            regs.F.PV = parity(z);
             regs.F.H = 1;
             regs.F.X = ((regs.TR) & 8) >> 3;
             regs.F.Y = ((regs.TR) & 0x20) >> 5;
@@ -54889,7 +54890,7 @@ void Z80_ins_FDCB_5D_BIT_o_irr_r(regs& regs, pins& pins)
             pins.RD = 0; pins.MRQ = 0;
             u32 z = (regs.TR) & (1 << 3);
             regs.F.N = 0;
-            regs.F.V = parity(z);
+            regs.F.PV = parity(z);
             regs.F.H = 1;
             regs.F.X = ((regs.TR) & 8) >> 3;
             regs.F.Y = ((regs.TR) & 0x20) >> 5;
@@ -54934,7 +54935,7 @@ void Z80_ins_FDCB_5E_BIT_o_irr_r(regs& regs, pins& pins)
             pins.RD = 0; pins.MRQ = 0;
             u32 z = (regs.TR) & (1 << 3);
             regs.F.N = 0;
-            regs.F.V = parity(z);
+            regs.F.PV = parity(z);
             regs.F.H = 1;
             regs.F.X = ((regs.TR) & 8) >> 3;
             regs.F.Y = ((regs.TR) & 0x20) >> 5;
@@ -54979,7 +54980,7 @@ void Z80_ins_FDCB_5F_BIT_o_irr_r(regs& regs, pins& pins)
             pins.RD = 0; pins.MRQ = 0;
             u32 z = (regs.TR) & (1 << 3);
             regs.F.N = 0;
-            regs.F.V = parity(z);
+            regs.F.PV = parity(z);
             regs.F.H = 1;
             regs.F.X = ((regs.TR) & 8) >> 3;
             regs.F.Y = ((regs.TR) & 0x20) >> 5;
@@ -55024,7 +55025,7 @@ void Z80_ins_FDCB_60_BIT_o_irr_r(regs& regs, pins& pins)
             pins.RD = 0; pins.MRQ = 0;
             u32 z = (regs.TR) & (1 << 4);
             regs.F.N = 0;
-            regs.F.V = parity(z);
+            regs.F.PV = parity(z);
             regs.F.H = 1;
             regs.F.X = ((regs.TR) & 8) >> 3;
             regs.F.Y = ((regs.TR) & 0x20) >> 5;
@@ -55069,7 +55070,7 @@ void Z80_ins_FDCB_61_BIT_o_irr_r(regs& regs, pins& pins)
             pins.RD = 0; pins.MRQ = 0;
             u32 z = (regs.TR) & (1 << 4);
             regs.F.N = 0;
-            regs.F.V = parity(z);
+            regs.F.PV = parity(z);
             regs.F.H = 1;
             regs.F.X = ((regs.TR) & 8) >> 3;
             regs.F.Y = ((regs.TR) & 0x20) >> 5;
@@ -55114,7 +55115,7 @@ void Z80_ins_FDCB_62_BIT_o_irr_r(regs& regs, pins& pins)
             pins.RD = 0; pins.MRQ = 0;
             u32 z = (regs.TR) & (1 << 4);
             regs.F.N = 0;
-            regs.F.V = parity(z);
+            regs.F.PV = parity(z);
             regs.F.H = 1;
             regs.F.X = ((regs.TR) & 8) >> 3;
             regs.F.Y = ((regs.TR) & 0x20) >> 5;
@@ -55159,7 +55160,7 @@ void Z80_ins_FDCB_63_BIT_o_irr_r(regs& regs, pins& pins)
             pins.RD = 0; pins.MRQ = 0;
             u32 z = (regs.TR) & (1 << 4);
             regs.F.N = 0;
-            regs.F.V = parity(z);
+            regs.F.PV = parity(z);
             regs.F.H = 1;
             regs.F.X = ((regs.TR) & 8) >> 3;
             regs.F.Y = ((regs.TR) & 0x20) >> 5;
@@ -55204,7 +55205,7 @@ void Z80_ins_FDCB_64_BIT_o_irr_r(regs& regs, pins& pins)
             pins.RD = 0; pins.MRQ = 0;
             u32 z = (regs.TR) & (1 << 4);
             regs.F.N = 0;
-            regs.F.V = parity(z);
+            regs.F.PV = parity(z);
             regs.F.H = 1;
             regs.F.X = ((regs.TR) & 8) >> 3;
             regs.F.Y = ((regs.TR) & 0x20) >> 5;
@@ -55249,7 +55250,7 @@ void Z80_ins_FDCB_65_BIT_o_irr_r(regs& regs, pins& pins)
             pins.RD = 0; pins.MRQ = 0;
             u32 z = (regs.TR) & (1 << 4);
             regs.F.N = 0;
-            regs.F.V = parity(z);
+            regs.F.PV = parity(z);
             regs.F.H = 1;
             regs.F.X = ((regs.TR) & 8) >> 3;
             regs.F.Y = ((regs.TR) & 0x20) >> 5;
@@ -55294,7 +55295,7 @@ void Z80_ins_FDCB_66_BIT_o_irr_r(regs& regs, pins& pins)
             pins.RD = 0; pins.MRQ = 0;
             u32 z = (regs.TR) & (1 << 4);
             regs.F.N = 0;
-            regs.F.V = parity(z);
+            regs.F.PV = parity(z);
             regs.F.H = 1;
             regs.F.X = ((regs.TR) & 8) >> 3;
             regs.F.Y = ((regs.TR) & 0x20) >> 5;
@@ -55339,7 +55340,7 @@ void Z80_ins_FDCB_67_BIT_o_irr_r(regs& regs, pins& pins)
             pins.RD = 0; pins.MRQ = 0;
             u32 z = (regs.TR) & (1 << 4);
             regs.F.N = 0;
-            regs.F.V = parity(z);
+            regs.F.PV = parity(z);
             regs.F.H = 1;
             regs.F.X = ((regs.TR) & 8) >> 3;
             regs.F.Y = ((regs.TR) & 0x20) >> 5;
@@ -55384,7 +55385,7 @@ void Z80_ins_FDCB_68_BIT_o_irr_r(regs& regs, pins& pins)
             pins.RD = 0; pins.MRQ = 0;
             u32 z = (regs.TR) & (1 << 5);
             regs.F.N = 0;
-            regs.F.V = parity(z);
+            regs.F.PV = parity(z);
             regs.F.H = 1;
             regs.F.X = ((regs.TR) & 8) >> 3;
             regs.F.Y = ((regs.TR) & 0x20) >> 5;
@@ -55429,7 +55430,7 @@ void Z80_ins_FDCB_69_BIT_o_irr_r(regs& regs, pins& pins)
             pins.RD = 0; pins.MRQ = 0;
             u32 z = (regs.TR) & (1 << 5);
             regs.F.N = 0;
-            regs.F.V = parity(z);
+            regs.F.PV = parity(z);
             regs.F.H = 1;
             regs.F.X = ((regs.TR) & 8) >> 3;
             regs.F.Y = ((regs.TR) & 0x20) >> 5;
@@ -55474,7 +55475,7 @@ void Z80_ins_FDCB_6A_BIT_o_irr_r(regs& regs, pins& pins)
             pins.RD = 0; pins.MRQ = 0;
             u32 z = (regs.TR) & (1 << 5);
             regs.F.N = 0;
-            regs.F.V = parity(z);
+            regs.F.PV = parity(z);
             regs.F.H = 1;
             regs.F.X = ((regs.TR) & 8) >> 3;
             regs.F.Y = ((regs.TR) & 0x20) >> 5;
@@ -55519,7 +55520,7 @@ void Z80_ins_FDCB_6B_BIT_o_irr_r(regs& regs, pins& pins)
             pins.RD = 0; pins.MRQ = 0;
             u32 z = (regs.TR) & (1 << 5);
             regs.F.N = 0;
-            regs.F.V = parity(z);
+            regs.F.PV = parity(z);
             regs.F.H = 1;
             regs.F.X = ((regs.TR) & 8) >> 3;
             regs.F.Y = ((regs.TR) & 0x20) >> 5;
@@ -55564,7 +55565,7 @@ void Z80_ins_FDCB_6C_BIT_o_irr_r(regs& regs, pins& pins)
             pins.RD = 0; pins.MRQ = 0;
             u32 z = (regs.TR) & (1 << 5);
             regs.F.N = 0;
-            regs.F.V = parity(z);
+            regs.F.PV = parity(z);
             regs.F.H = 1;
             regs.F.X = ((regs.TR) & 8) >> 3;
             regs.F.Y = ((regs.TR) & 0x20) >> 5;
@@ -55609,7 +55610,7 @@ void Z80_ins_FDCB_6D_BIT_o_irr_r(regs& regs, pins& pins)
             pins.RD = 0; pins.MRQ = 0;
             u32 z = (regs.TR) & (1 << 5);
             regs.F.N = 0;
-            regs.F.V = parity(z);
+            regs.F.PV = parity(z);
             regs.F.H = 1;
             regs.F.X = ((regs.TR) & 8) >> 3;
             regs.F.Y = ((regs.TR) & 0x20) >> 5;
@@ -55654,7 +55655,7 @@ void Z80_ins_FDCB_6E_BIT_o_irr_r(regs& regs, pins& pins)
             pins.RD = 0; pins.MRQ = 0;
             u32 z = (regs.TR) & (1 << 5);
             regs.F.N = 0;
-            regs.F.V = parity(z);
+            regs.F.PV = parity(z);
             regs.F.H = 1;
             regs.F.X = ((regs.TR) & 8) >> 3;
             regs.F.Y = ((regs.TR) & 0x20) >> 5;
@@ -55699,7 +55700,7 @@ void Z80_ins_FDCB_6F_BIT_o_irr_r(regs& regs, pins& pins)
             pins.RD = 0; pins.MRQ = 0;
             u32 z = (regs.TR) & (1 << 5);
             regs.F.N = 0;
-            regs.F.V = parity(z);
+            regs.F.PV = parity(z);
             regs.F.H = 1;
             regs.F.X = ((regs.TR) & 8) >> 3;
             regs.F.Y = ((regs.TR) & 0x20) >> 5;
@@ -55744,7 +55745,7 @@ void Z80_ins_FDCB_70_BIT_o_irr_r(regs& regs, pins& pins)
             pins.RD = 0; pins.MRQ = 0;
             u32 z = (regs.TR) & (1 << 6);
             regs.F.N = 0;
-            regs.F.V = parity(z);
+            regs.F.PV = parity(z);
             regs.F.H = 1;
             regs.F.X = ((regs.TR) & 8) >> 3;
             regs.F.Y = ((regs.TR) & 0x20) >> 5;
@@ -55789,7 +55790,7 @@ void Z80_ins_FDCB_71_BIT_o_irr_r(regs& regs, pins& pins)
             pins.RD = 0; pins.MRQ = 0;
             u32 z = (regs.TR) & (1 << 6);
             regs.F.N = 0;
-            regs.F.V = parity(z);
+            regs.F.PV = parity(z);
             regs.F.H = 1;
             regs.F.X = ((regs.TR) & 8) >> 3;
             regs.F.Y = ((regs.TR) & 0x20) >> 5;
@@ -55834,7 +55835,7 @@ void Z80_ins_FDCB_72_BIT_o_irr_r(regs& regs, pins& pins)
             pins.RD = 0; pins.MRQ = 0;
             u32 z = (regs.TR) & (1 << 6);
             regs.F.N = 0;
-            regs.F.V = parity(z);
+            regs.F.PV = parity(z);
             regs.F.H = 1;
             regs.F.X = ((regs.TR) & 8) >> 3;
             regs.F.Y = ((regs.TR) & 0x20) >> 5;
@@ -55879,7 +55880,7 @@ void Z80_ins_FDCB_73_BIT_o_irr_r(regs& regs, pins& pins)
             pins.RD = 0; pins.MRQ = 0;
             u32 z = (regs.TR) & (1 << 6);
             regs.F.N = 0;
-            regs.F.V = parity(z);
+            regs.F.PV = parity(z);
             regs.F.H = 1;
             regs.F.X = ((regs.TR) & 8) >> 3;
             regs.F.Y = ((regs.TR) & 0x20) >> 5;
@@ -55924,7 +55925,7 @@ void Z80_ins_FDCB_74_BIT_o_irr_r(regs& regs, pins& pins)
             pins.RD = 0; pins.MRQ = 0;
             u32 z = (regs.TR) & (1 << 6);
             regs.F.N = 0;
-            regs.F.V = parity(z);
+            regs.F.PV = parity(z);
             regs.F.H = 1;
             regs.F.X = ((regs.TR) & 8) >> 3;
             regs.F.Y = ((regs.TR) & 0x20) >> 5;
@@ -55969,7 +55970,7 @@ void Z80_ins_FDCB_75_BIT_o_irr_r(regs& regs, pins& pins)
             pins.RD = 0; pins.MRQ = 0;
             u32 z = (regs.TR) & (1 << 6);
             regs.F.N = 0;
-            regs.F.V = parity(z);
+            regs.F.PV = parity(z);
             regs.F.H = 1;
             regs.F.X = ((regs.TR) & 8) >> 3;
             regs.F.Y = ((regs.TR) & 0x20) >> 5;
@@ -56014,7 +56015,7 @@ void Z80_ins_FDCB_76_BIT_o_irr_r(regs& regs, pins& pins)
             pins.RD = 0; pins.MRQ = 0;
             u32 z = (regs.TR) & (1 << 6);
             regs.F.N = 0;
-            regs.F.V = parity(z);
+            regs.F.PV = parity(z);
             regs.F.H = 1;
             regs.F.X = ((regs.TR) & 8) >> 3;
             regs.F.Y = ((regs.TR) & 0x20) >> 5;
@@ -56059,7 +56060,7 @@ void Z80_ins_FDCB_77_BIT_o_irr_r(regs& regs, pins& pins)
             pins.RD = 0; pins.MRQ = 0;
             u32 z = (regs.TR) & (1 << 6);
             regs.F.N = 0;
-            regs.F.V = parity(z);
+            regs.F.PV = parity(z);
             regs.F.H = 1;
             regs.F.X = ((regs.TR) & 8) >> 3;
             regs.F.Y = ((regs.TR) & 0x20) >> 5;
@@ -56104,7 +56105,7 @@ void Z80_ins_FDCB_78_BIT_o_irr_r(regs& regs, pins& pins)
             pins.RD = 0; pins.MRQ = 0;
             u32 z = (regs.TR) & (1 << 7);
             regs.F.N = 0;
-            regs.F.V = parity(z);
+            regs.F.PV = parity(z);
             regs.F.H = 1;
             regs.F.X = ((regs.TR) & 8) >> 3;
             regs.F.Y = ((regs.TR) & 0x20) >> 5;
@@ -56149,7 +56150,7 @@ void Z80_ins_FDCB_79_BIT_o_irr_r(regs& regs, pins& pins)
             pins.RD = 0; pins.MRQ = 0;
             u32 z = (regs.TR) & (1 << 7);
             regs.F.N = 0;
-            regs.F.V = parity(z);
+            regs.F.PV = parity(z);
             regs.F.H = 1;
             regs.F.X = ((regs.TR) & 8) >> 3;
             regs.F.Y = ((regs.TR) & 0x20) >> 5;
@@ -56194,7 +56195,7 @@ void Z80_ins_FDCB_7A_BIT_o_irr_r(regs& regs, pins& pins)
             pins.RD = 0; pins.MRQ = 0;
             u32 z = (regs.TR) & (1 << 7);
             regs.F.N = 0;
-            regs.F.V = parity(z);
+            regs.F.PV = parity(z);
             regs.F.H = 1;
             regs.F.X = ((regs.TR) & 8) >> 3;
             regs.F.Y = ((regs.TR) & 0x20) >> 5;
@@ -56239,7 +56240,7 @@ void Z80_ins_FDCB_7B_BIT_o_irr_r(regs& regs, pins& pins)
             pins.RD = 0; pins.MRQ = 0;
             u32 z = (regs.TR) & (1 << 7);
             regs.F.N = 0;
-            regs.F.V = parity(z);
+            regs.F.PV = parity(z);
             regs.F.H = 1;
             regs.F.X = ((regs.TR) & 8) >> 3;
             regs.F.Y = ((regs.TR) & 0x20) >> 5;
@@ -56284,7 +56285,7 @@ void Z80_ins_FDCB_7C_BIT_o_irr_r(regs& regs, pins& pins)
             pins.RD = 0; pins.MRQ = 0;
             u32 z = (regs.TR) & (1 << 7);
             regs.F.N = 0;
-            regs.F.V = parity(z);
+            regs.F.PV = parity(z);
             regs.F.H = 1;
             regs.F.X = ((regs.TR) & 8) >> 3;
             regs.F.Y = ((regs.TR) & 0x20) >> 5;
@@ -56329,7 +56330,7 @@ void Z80_ins_FDCB_7D_BIT_o_irr_r(regs& regs, pins& pins)
             pins.RD = 0; pins.MRQ = 0;
             u32 z = (regs.TR) & (1 << 7);
             regs.F.N = 0;
-            regs.F.V = parity(z);
+            regs.F.PV = parity(z);
             regs.F.H = 1;
             regs.F.X = ((regs.TR) & 8) >> 3;
             regs.F.Y = ((regs.TR) & 0x20) >> 5;
@@ -56374,7 +56375,7 @@ void Z80_ins_FDCB_7E_BIT_o_irr_r(regs& regs, pins& pins)
             pins.RD = 0; pins.MRQ = 0;
             u32 z = (regs.TR) & (1 << 7);
             regs.F.N = 0;
-            regs.F.V = parity(z);
+            regs.F.PV = parity(z);
             regs.F.H = 1;
             regs.F.X = ((regs.TR) & 8) >> 3;
             regs.F.Y = ((regs.TR) & 0x20) >> 5;
@@ -56419,7 +56420,7 @@ void Z80_ins_FDCB_7F_BIT_o_irr_r(regs& regs, pins& pins)
             pins.RD = 0; pins.MRQ = 0;
             u32 z = (regs.TR) & (1 << 7);
             regs.F.N = 0;
-            regs.F.V = parity(z);
+            regs.F.PV = parity(z);
             regs.F.H = 1;
             regs.F.X = ((regs.TR) & 8) >> 3;
             regs.F.Y = ((regs.TR) & 0x20) >> 5;

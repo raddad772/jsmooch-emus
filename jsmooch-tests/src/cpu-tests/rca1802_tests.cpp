@@ -390,7 +390,7 @@ static int test_rca1802_automated(rca1802_test_result *out, RCA1802::core *cpu, 
             test->ram[j].val = initial->ram[j].val;
             RAM[test->ram[j].addr & 0xFFFF] = test->ram[j].val;
         }
-        cpu->num_fetches = 0;
+        //cpu->num_fetches = 0;
         cpu->prepare_fetch();
         service_rw(cpu);
         cpu->cycle();
@@ -451,7 +451,8 @@ static u32 test_rca1802_ins(RCA1802::core &cpu, u32 ins)
 
 void test_rca1802()
 {
-    RCA1802::core cpu;
+    u64 blah;
+    RCA1802::core cpu(&blah);
     cpu.reset();
     cpu.pins.clear_wait = RCA1802::pins::RUN;
 

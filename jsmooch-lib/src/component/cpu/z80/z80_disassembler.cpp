@@ -77,7 +77,7 @@ void disassemble_entry(core *th, disassembly_entry* entry)
     entry->ins_size_bytes = PC - entry->addr;
 }
 
-u32 Z80_disassemble(u32 *PC, u32 IR, jsm_debug_read_trace *rt, char *w, size_t sz)
+u32 disassemble(u32 *PC, u32 IR, jsm_debug_read_trace *rt, char *w, size_t sz)
 {
     u32 l = 0;
     u32 opcode = IR;

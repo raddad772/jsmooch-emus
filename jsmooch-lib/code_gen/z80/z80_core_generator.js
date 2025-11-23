@@ -16,7 +16,6 @@ function Z80replace_for_C(whatr) {
     whatr = whatr.replaceAll('Z80P.', 'Z80::regs::P_')
     //whatr = whatr.replaceAll('pins.', 'pins->') // Reference to pointer
     //whatr = whatr.replaceAll('regs.', 'regs->') // Reference to pointer
-    whatr = whatr.replaceAll('F.PV', 'F.P'); // Translate >>> to >>
     whatr = whatr.replaceAll('>>>', '>>'); // Translate >>> to >>
     whatr = whatr.replaceAll('===', '=='); // === becomes ==
     whatr = whatr.replaceAll('!==', '!=');
@@ -275,16 +274,16 @@ class Z80_switchgen {
         this.addl('regs.F.Y = (regs.PC >>> 13) & 1;');
         this.addl('if (regs.F.C) {');
         this.addl('    if (regs.data & 0x80) {')
-        this.addl('        regs.F.P ^= parity((regs.B - 1) & 7) ^ 1;');
+        this.addl('        regs.F.PV ^= parity((regs.B - 1) & 7) ^ 1;');
         this.addl('        regs.F.H = +((regs.B & 0x0F) ' + GENEQO + ' 0);');
         this.addl('    }')
         this.addl('    else {')
-        this.addl('        regs.F.P ^= parity((regs.B + 1) & 7) ^ 1;');
+        this.addl('        regs.F.PV ^= parity((regs.B + 1) & 7) ^ 1;');
         this.addl('        regs.F.H = +((regs.B & 0x0F) ' + GENEQO + ' 0x0F);');
         this.addl('    }');
         this.addl('}');
         this.addl('else {');
-        this.addl('    regs.F.P ^= parity(regs.B & 7) ^ 1;');
+        this.addl('    regs.F.PV ^= parity(regs.B & 7) ^ 1;');
         this.addl('}');
     }
 
@@ -714,7 +713,7 @@ class Z80_switchgen {
         }
         this.addl('regs.F.C = +(z > 0xFF);')
         this.addl('regs.F.N = 0;');
-        this.addl('regs.F.V = ((((x ^ y) ^ 0xFF) & (x ^ z)) & 0x80) >>> 7;');
+        this.addl('regs.F.PV = ((((x ^ y) ^ 0xFF) & (x ^ z)) & 0x80) >>> 7;');
         this.setX('z');
         this.addl('regs.F.H = ((x ^ y ^ z) & 0x10) >>> 4;');
         this.setY('z');
@@ -766,7 +765,7 @@ class Z80_switchgen {
 
         this.addl('regs.F.C = +(z < 0);');
         this.addl('regs.F.N = 1;');
-        this.addl('regs.F.V = (((x ^ y) & (x ^ z)) & 0x80) >>> 7;');
+        this.addl('regs.F.PV = (((x ^ y) & (x ^ z)) & 0x80) >>> 7;');
         this.setXY('y');
         this.addl('regs.F.H = ((x ^ y ^ z) & 0x10) >>> 4;');
         this.addl('regs.F.Z = +((z & 0xFF) ' + GENEQO + ' 0);');
@@ -785,7 +784,7 @@ class Z80_switchgen {
         this.addl('regs.C = regs.TA & 0xFF;');
         this.addl('let n = regs.A - regs.TR;');
         this.addl('regs.F.N = 1;');
-        this.addl('regs.F.V = +(regs.TA !== 0);');
+        this.addl('regs.F.PV = +(regs.TA !== 0);');
         this.addl('regs.F.H = ((regs.A ^ regs.TR ^ n) & 0x10) >>> 4;');
         this.addl('regs.F.X = ((n - regs.F.H) & 8) >>> 3;');
         this.addl('regs.F.Y = ((n - regs.F.H) & 2) >>> 1;');
@@ -808,9 +807,9 @@ class Z80_switchgen {
         this.addl('regs.F.N = 1;');
         this.addl('regs.TA = (((regs.B << 8) | regs.C) - 1) & 0xFFFF;');
         if (!this.is_C)
-            this.addl('regs.F.V = +(regs.TA !== 0);');
+            this.addl('regs.F.PV = +(regs.TA !== 0);');
         else
-            this.addl('regs.F.V = regs.TA != 0;');
+            this.addl('regs.F.PV = regs.TA != 0;');
         this.addl('regs.F.H = ((regs.A ^ regs.TR ^ n) & 0x10) >>> 4;');
         this.addl('regs.B = (regs.TA & 0xFF00) >>> 8;');
         this.addl('regs.C = regs.TA & 0xFF;');
@@ -824,7 +823,7 @@ class Z80_switchgen {
     DEC(what) {
         this.addl('regs.TR = ((' + what + ') - 1) & 0xFF;');
         this.addl('regs.F.N = 1;');
-        this.addl('regs.F.V = +(regs.TR ' + GENEQO + ' 0x7F);');
+        this.addl('regs.F.PV = +(regs.TR ' + GENEQO + ' 0x7F);');
         this.setXY('regs.TR');
         this.addl('regs.F.H = +((regs.TR & 0x0F) ' + GENEQO + ' 0x0F);');
         this.setZ('regs.TR');
@@ -842,7 +841,7 @@ class Z80_switchgen {
     INC(x) {
         this.addl('regs.TR = ((' + x + ') + 1) & 0xFF;');
         this.addl('regs.F.N = 0;');
-        this.addl('regs.F.V = +(regs.TR ' + GENEQO + ' 0x80);');
+        this.addl('regs.F.PV = +(regs.TR ' + GENEQO + ' 0x80);');
         this.setXY('regs.TR');
         this.addl('regs.F.H = +((regs.TR & 0x0F) ' + GENEQO + ' 0);');
         this.addl('regs.F.Z = +(regs.TR ' + GENEQO + ' 0);');
@@ -910,7 +909,7 @@ class Z80_switchgen {
         this.addl('regs.F.N = regs.F.H = 0;');
         this.addl('regs.TA = (((regs.B << 8) | regs.C) - 1) & 0xFFFF;');
         this.writereg('BC', 'regs.TA');
-        this.addl('regs.F.V = +(regs.TA !== 0);');
+        this.addl('regs.F.PV = +(regs.TA !== 0);');
         this.addl('regs.TA = (regs.A + regs.TR) & 0xFF;');
         this.addl('regs.F.X = (regs.TA & 8) >>> 3;');
         this.addl('regs.F.Y = (regs.TA & 2) >>> 1;');
@@ -932,7 +931,7 @@ class Z80_switchgen {
         this.addl('regs.F.Y = (regs.TA & 2) >>> 1;');
         this.addl('regs.TA = (((regs.B << 8) | regs.C) - 1) & 0xFFFF;');
         this.writereg('BC', 'regs.TA');
-        this.addl('regs.F.V = +(regs.TA !== 0);');
+        this.addl('regs.F.PV = +(regs.TA !== 0);');
     }
 
     OR(x, y, out=null) {
@@ -1150,7 +1149,7 @@ class Z80_switchgen {
         }
         this.addl('regs.F.C = (z & 0x100) >>> 8;');
         this.addl('regs.F.N = 1;');
-        this.addl('regs.F.V = (((x ^ y) & (x ^ z)) & 0x80) >>> 7;');
+        this.addl('regs.F.PV = (((x ^ y) & (x ^ z)) & 0x80) >>> 7;');
         this.setXY('z');
         this.addl('regs.F.H = ((x ^ y ^ z) & 0x10) >>> 4;');
         this.addl('regs.F.Z = +((z & 0xFF) ' + GENEQO + ' 0);')
@@ -1178,7 +1177,7 @@ class Z80_switchgen {
     }
 
     setP(what) {
-        this.addl('regs.F.V = parity(' + what + ');');
+        this.addl('regs.F.PV = parity(' + what + ');');
     }
 
     setZ(what) {
@@ -1430,12 +1429,12 @@ function Z80_generate_instruction_function(indent, opcode_info, sub, CMOS, as=fa
                     ag.addl('regs.WZ = (((regs.H << 8) | regs.L) + 1) & 0xFFFF;');
                     break;
             }
-            ag.addl('regs.t[0] = regs.F.P; regs.t[1] = regs.F.Z; regs.t[2] = regs.F.S;');
+            ag.addl('regs.t[0] = regs.F.PV; regs.t[1] = regs.F.Z; regs.t[2] = regs.F.S;');
             ag.addcycles(4);
             ag.ADD(HLL, argL, '0', 'regs.t[4]', false);
             ag.addcycles(3);
             ag.ADD(HLH, argH, 'regs.F.C', 'regs.t[5]', false);
-            ag.addl('regs.F.P = regs.t[0]; regs.F.Z = regs.t[1]; regs.F.S = regs.t[2];');
+            ag.addl('regs.F.PV = regs.t[0]; regs.F.Z = regs.t[1]; regs.F.S = regs.t[2];');
             switch(sub) {
                 case 'IX':
                     ag.addl('regs.IX = (regs.t[5] << 8) | regs.t[4];');
@@ -1568,7 +1567,7 @@ function Z80_generate_instruction_function(indent, opcode_info, sub, CMOS, as=fa
             ag.addl('if (regs.F.C || (regs.A > 0x99)) { regs.A = (regs.A + (regs.F.N ? -0x60: 0x60)) & 0xFF; regs.F.C = 1; }')
             ag.addl('if (regs.F.H || ((regs.A & 0x0F) > 0x09)) { regs.A = (regs.A + (regs.F.N ? -6 : 6)) & 0xFF; }');
 
-            ag.addl('regs.F.P = parity(regs.A);');
+            ag.addl('regs.F.PV = parity(regs.A);');
             ag.setXY('regs.A');
             ag.addl('regs.F.H = ((a ^ regs.A) & 0x10) >>> 4;');
             ag.addl('regs.F.Z = +(regs.A ' + GENEQO + ' 0);');
@@ -1881,7 +1880,7 @@ function Z80_generate_instruction_function(indent, opcode_info, sub, CMOS, as=fa
             ag.writereg(arg1, ag.readreg(arg2));
             ag.addl('regs.F.N = regs.F.H = 0;');
             ag.setXY('x');
-            ag.addl('regs.F.P = regs.IFF2;');
+            ag.addl('regs.F.PV = regs.IFF2;');
             ag.setZ('x');
             ag.setS8('x');
             if (!CMOS) ag.addl('regs.P = 1;');
