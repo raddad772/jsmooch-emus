@@ -3,7 +3,7 @@
 //
 
 
-#include "stdio.h"
+#include <cstdio>
 #include <cstring>
 
 #include "sms_gg_mapper_sega.h"

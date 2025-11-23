@@ -14,7 +14,7 @@
 
 #include "audiowrap.h"
 
-#include "stdio.h"
+#include <cstdio>
 #include "assert.h"
 
 

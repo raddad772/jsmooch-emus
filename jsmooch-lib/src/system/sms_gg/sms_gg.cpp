@@ -5,7 +5,7 @@
 #include "assert.h"
 #include "stdlib.h"
 #include <cstring>
-#include "stdio.h"
+#include <cstdio>
 
 #include "fail"
 #include "sms_gg.h"

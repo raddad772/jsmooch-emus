@@ -3,7 +3,7 @@
 //
 
 #include "assert.h"
-#include "stdio.h"
+#include <cstdio>
 #include "sms_gg_io.h"
 #include "sms_gg.h"
 #include "component/controller/sms/sms_gamepad.h"

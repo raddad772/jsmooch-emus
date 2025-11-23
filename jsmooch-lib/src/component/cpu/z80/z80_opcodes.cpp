@@ -138,7 +138,6 @@ void Z80_ins_00_04_INC_r(regs& regs, pins& pins)
             regs.F.Z = +(regs.TR == 0);
             regs.F.S = ((regs.TR) & 0x80) >> 7;
             regs.B = regs.TR;
-            printf("\nB: %02x", regs.B);
             // Following is auto-generated code for instruction finish
             pins.Addr = regs.PC;
             regs.PC = (regs.PC + 1) & 0xFFFF;

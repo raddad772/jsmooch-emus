@@ -56,7 +56,6 @@ void SMSGG_mapper_sega_init(SMSGG_mapper_sega*, enum jsm::systems variant);
 void SMSGG_mapper_sega_delete(SMSGG_mapper_sega*);
 void SMSGG_mapper_sega_set_BIOS(SMSGG_mapper_sega*, u32 to);
 void SMSGG_mapper_sega_reset(SMSGG_mapper_sega*);
-struct SMSGG;
 u8 SMSGG_bus_read(SMSGG* bus, u16 addr, u32 has_effect);
 void SMSGG_bus_write(SMSGG* bus, u16 addr, u8 val);
 void SMSGG_mapper_load_BIOS_from_RAM(SMSGG_mapper_sega*, buf *BIOS);

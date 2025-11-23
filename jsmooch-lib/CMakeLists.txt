@@ -4,8 +4,22 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 #set(CMAKE_C_FLAGS "$CMAKE_C_FLAGS -Wincompatible-pointer-types")
 
 set(SOURCE_LIST
-        "src/component/audio/nes_apu/nes_apu.cpp"
-        "src/component/audio/nes_apu/nes_apu.h"
+        "src/component/controller/sms/sms_gamepad.cpp"
+        "src/component/controller/sms/sms_gamepad.cpp"
+        "src/system/sms_gg/sms_gg.cpp"
+        "src/system/sms_gg/sms_gg.h"
+        "src/system/sms_gg/sms_gg_clock.cpp"
+        "src/system/sms_gg/sms_gg_clock.h"
+        "src/system/sms_gg/sms_gg_io.cpp"
+        "src/system/sms_gg/sms_gg_io.h"
+        "src/system/sms_gg/sms_gg_mapper_sega.cpp"
+        "src/system/sms_gg/sms_gg_mapper_sega.h"
+        "src/system/sms_gg/sms_gg_serialize.cpp"
+        "src/system/sms_gg/sms_gg_serialize.h"
+        "src/system/sms_gg/sms_gg_vdp.h"
+        "src/system/sms_gg/sms_gg_vdp.cpp"
+        "src/system/sms_gg/smsgg_debugger.h"
+        "src/system/sms_gg/smsgg_debugger.cpp"
         "src/component/controller/nes/nes_joypad.cpp"
         "src/component/controller/nes/nes_joypad.h"
         "src/component/controller/snes/snes_joypad.cpp"
@@ -39,6 +53,8 @@ set(SOURCE_LIST
         "src/system/nes/nes_clock.h"
         "src/system/nes/nes_ppu.cpp"
         "src/system/nes/nes_ppu.h"
+        "src/component/audio/nes_apu/nes_apu.cpp"
+        "src/component/audio/nes_apu/nes_apu.h"
         "src/system/nes/nes_cart.cpp"
         "src/system/nes/nes_cart.h"
         "src/system/nes/nes_cpu.cpp"
@@ -175,6 +191,8 @@ set(SOURCE_LIST
         src/system/cosmac_vip/vip_serialize.h
         src/system/cosmac_vip/vip_debugger.cpp
         src/system/cosmac_vip/vip_debugger.h
+        src/system/sms_gg/sms_gg_bus.cpp
+        src/system/sms_gg/sms_gg_bus.h
 )
 
 # TODO: Fix elf-parser repo for windows

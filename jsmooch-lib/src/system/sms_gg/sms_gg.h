@@ -30,25 +30,25 @@ enum SMSGGSS_kinds {
     SMSGGSS_mapper
 };
 
-void SMSGG_new(jsm_system* jsm, enum jsm::systems variant, enum jsm_regions region);
+void SMSGG_new(jsm_system* jsm, jsm::systems variant, jsm_regions region);
 void SMSGG_delete(jsm_system* jsm);
 
-struct SMSGG {
-    struct SMSGG_clock clock;
-    enum jsm::systems variant;
-    enum jsm_regions region;
-    struct Z80 cpu;
-    struct SMSGG_mapper_sega mapper;
-    struct SMSGG_VDP vdp;
-    struct SN76489 sn76489;
+struct core {
+    SMSGG_clock clock;
+    jsm::systems variant;
+    jsm_regions region;
+    Z80 cpu;
+    SMSGG_mapper_sega mapper;
+    SMSGG_VDP vdp;
+    SN76489 sn76489;
 
     struct {
         double master_cycles_per_audio_sample;
         double next_sample_cycle;
-        struct audiobuf *buf;
+        audiobuf *buf;
     } audio;
 
-    struct cvec* IOs;
+    cvec* IOs;
 
     u32 described_inputs;
     u32 last_frame;
@@ -57,11 +57,11 @@ struct SMSGG {
     void (*cpu_out)(SMSGG*, u32, u32);
 
     struct {
-        struct SMSGG_gamepad controllerA;
-        struct SMSGG_gamepad controllerB;
-        struct SMSGG_controller_port portA;
-        struct SMSGG_controller_port portB;
-        struct HID_digital_button *pause_button;
+        SMSGG_gamepad controllerA;
+        SMSGG_gamepad controllerB;
+        SMSGG_controller_port portA;
+        SMSGG_controller_port portB;
+        HID_digital_button *pause_button;
         u32 disable;
         u32 gg_start;
         u32 GGreg;
