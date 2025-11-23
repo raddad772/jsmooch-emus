@@ -164,7 +164,7 @@ struct jsm_debug_read_trace {
 extern jsm_debug_struct dbg;
 #endif
 
-int dbg_printf(char *format, ...);
+int dbg_printf(const char *format, ...);
 void dbg_seek_in_line(u32 pos);
 void dbg_flush();
 void dbg_clear_msg();

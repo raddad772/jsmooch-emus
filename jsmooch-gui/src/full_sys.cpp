@@ -727,7 +727,8 @@ void full_system::load_default_ROM()
             //worked = grab_ROM(&ROMs, which, "3-corax+.ch8", nullptr);
             //worked = grab_ROM(&ROMs, which, "4-flags.ch8", nullptr);
             //worked = grab_ROM(&ROMs, which, "5-quirks.ch8", nullptr);
-            worked = grab_ROM(&ROMs, which, "6-keypad.ch8", nullptr);
+            //worked = grab_ROM(&ROMs, which, "6-keypad.ch8", nullptr);
+            worked = grab_ROM(&ROMs, which, "danm8ku.ch8", nullptr);
             //worked = grab_ROM(&ROMs, which, "Android Signboard Demo.cos", nullptr);
             //worked = grab_ROM(&ROMs, which, "Dr"a"gon.cos", nullptr);
             //worked = grab_ROM(&ROMs, which, "Cosmac Demo.bin", nullptr);

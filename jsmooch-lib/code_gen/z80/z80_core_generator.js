@@ -9,21 +9,20 @@
 const Z80_matrix_size = Z80_MAX_OPCODE * Z80_prefixes.length;
 
 function Z80replace_for_C(whatr) {
-    whatr = whatr.replaceAll('regs.exchange_shadow_af()', 'Z80_regs_exchange_shadow_af(regs)')
-    whatr = whatr.replaceAll('regs.exchange_shadow()', 'Z80_regs_exchange_shadow(regs)');
-    whatr = whatr.replaceAll('regs.exchange_de_hl()', 'Z80_regs_exchange_de_hl(regs)')
-    whatr = whatr.replaceAll('regs.exchange_shadow_af()', 'Z80_regs_exchange_shadow_af(regs)')
-    whatr = whatr.replaceAll('Z80P.', 'Z80P_')
-    whatr = whatr.replaceAll('regs.F.setbyte(', 'Z80_regs_F_setbyte(&regs->F, ');
-    whatr = whatr.replaceAll('regs.F.getbyte()', 'Z80_regs_F_getbyte(&regs->F)');
-    whatr = whatr.replaceAll('pins.', 'pins->') // Reference to pointer
-    whatr = whatr.replaceAll('regs.', 'regs->') // Reference to pointer
+    //whatr = whatr.replaceAll('regs.exchange_shadow_af()', 'Z80_regs_exchange_shadow_af(regs)')
+    //whatr = whatr.replaceAll('regs.exchange_shadow()', 'Z80_regs_exchange_shadow(regs)');
+    //whatr = whatr.replaceAll('regs.exchange_de_hl()', 'Z80_regs_exchange_de_hl(regs)')
+    //whatr = whatr.replaceAll('regs.exchange_shadow_af()', 'Z80_regs_exchange_shadow_af(regs)')
+    whatr = whatr.replaceAll('Z80P.', 'Z80::regs::P_')
+    //whatr = whatr.replaceAll('pins.', 'pins->') // Reference to pointer
+    //whatr = whatr.replaceAll('regs.', 'regs->') // Reference to pointer
+    whatr = whatr.replaceAll('F.PV', 'F.P'); // Translate >>> to >>
     whatr = whatr.replaceAll('>>>', '>>'); // Translate >>> to >>
     whatr = whatr.replaceAll('===', '=='); // === becomes ==
     whatr = whatr.replaceAll('!==', '!=');
     whatr = whatr.replaceAll('let ', 'u32 '); // Inline variable declarations
-    whatr = whatr.replaceAll('true', 'TRUE');
-    whatr = whatr.replaceAll('false', 'FALSE');
+    //whatr = whatr.replaceAll('true', 'TRUE');
+    //whatr = whatr.replaceAll('false', 'FALSE');
     //what = what.replaceAll('mksigned8(regs->TA)', '(i32)(i8)regs->TA')
     //what = what.replaceAll('mksigned8(regs->TR)', '(i32)(i8)regs->TR')
     return whatr;
@@ -101,7 +100,7 @@ class Z80_switchgen {
         if (!is_C)
             this.outstr = this.indent1 + 'switch(regs.TCU) {\n';
         else
-            this.outstr = this.indent1 + 'switch(regs->TCU) {\n';
+            this.outstr = this.indent1 + 'switch(regs.TCU) {\n';
         this.has_cycle = false;
         this.on_cycle = [];
         this.is_C = is_C;
@@ -219,7 +218,7 @@ class Z80_switchgen {
         this.addl('regs.P = 0;');
         this.addl('regs.prefix = 0x00;');
         this.addl('regs.rprefix = Z80P.HL;');
-        this.addl('regs.IR = Z80_S_DECODE;');
+        this.addl('regs.IR = S_DECODE;');
         if (this.do_irq) this.addl('regs.poll_IRQ = true;');
         this.addl('break;');
     }
@@ -276,16 +275,16 @@ class Z80_switchgen {
         this.addl('regs.F.Y = (regs.PC >>> 13) & 1;');
         this.addl('if (regs.F.C) {');
         this.addl('    if (regs.data & 0x80) {')
-        this.addl('        regs.F.PV ^= Z80_parity((regs.B - 1) & 7) ^ 1;');
+        this.addl('        regs.F.P ^= parity((regs.B - 1) & 7) ^ 1;');
         this.addl('        regs.F.H = +((regs.B & 0x0F) ' + GENEQO + ' 0);');
         this.addl('    }')
         this.addl('    else {')
-        this.addl('        regs.F.PV ^= Z80_parity((regs.B + 1) & 7) ^ 1;');
+        this.addl('        regs.F.P ^= parity((regs.B + 1) & 7) ^ 1;');
         this.addl('        regs.F.H = +((regs.B & 0x0F) ' + GENEQO + ' 0x0F);');
         this.addl('    }');
         this.addl('}');
         this.addl('else {');
-        this.addl('    regs.F.PV ^= Z80_parity(regs.B & 7) ^ 1;');
+        this.addl('    regs.F.P ^= parity(regs.B & 7) ^ 1;');
         this.addl('}');
     }
 
@@ -472,7 +471,7 @@ class Z80_switchgen {
             case 'HL':
                 return 'regs.L';
             case 'AF':
-                return 'regs.F.getbyte()';
+                return 'regs.F.u';
             case 'BC':
                 return 'regs.C';
             case 'DE':
@@ -514,7 +513,7 @@ class Z80_switchgen {
             case 'F':
                 return 'regs.F';
             case 'AF':
-                return '(regs.A << 8) | regs.F.getbyte()';
+                return '(regs.A << 8) | regs.F.u';
             case 'BC':
                 return '(regs.B << 8) | regs.C';
             case 'DE':
@@ -579,7 +578,7 @@ class Z80_switchgen {
                 this.addl('regs.E = ' + val + ';');
                 break;
             case 'F':
-                this.addl('regs.F.setbyte(' + val + ');');
+                this.addl('regs.F.u = ' + val + ';');
                 break;
             case '_H':
             case 'H':
@@ -591,7 +590,7 @@ class Z80_switchgen {
                 break;
             case 'AF':
                 this.addl('regs.A = ((' + val + ') & 0xFF00) >>> 8;');
-                this.addl('regs.F.setbyte((' + val + ') & 0xFF);');
+                this.addl('regs.F.u = (' + val + ') & 0xFF;');
                 break;
             case 'BC':
                 this.addl('regs.B = ((' + val + ') & 0xFF00) >>> 8;');
@@ -650,7 +649,7 @@ class Z80_switchgen {
                 this.addl('regs.L = (' + val + ');');
                 break;
             case 'AF':
-                this.addl('regs.F.setbyte(' + val + ');');
+                this.addl('regs.F.u = ' + val + ';');
                 break;
             case 'BC':
                 this.addl('regs.C = (' + val + ');');
@@ -715,7 +714,7 @@ class Z80_switchgen {
         }
         this.addl('regs.F.C = +(z > 0xFF);')
         this.addl('regs.F.N = 0;');
-        this.addl('regs.F.PV = ((((x ^ y) ^ 0xFF) & (x ^ z)) & 0x80) >>> 7;');
+        this.addl('regs.F.V = ((((x ^ y) ^ 0xFF) & (x ^ z)) & 0x80) >>> 7;');
         this.setX('z');
         this.addl('regs.F.H = ((x ^ y ^ z) & 0x10) >>> 4;');
         this.setY('z');
@@ -767,7 +766,7 @@ class Z80_switchgen {
 
         this.addl('regs.F.C = +(z < 0);');
         this.addl('regs.F.N = 1;');
-        this.addl('regs.F.PV = (((x ^ y) & (x ^ z)) & 0x80) >>> 7;');
+        this.addl('regs.F.V = (((x ^ y) & (x ^ z)) & 0x80) >>> 7;');
         this.setXY('y');
         this.addl('regs.F.H = ((x ^ y ^ z) & 0x10) >>> 4;');
         this.addl('regs.F.Z = +((z & 0xFF) ' + GENEQO + ' 0);');
@@ -786,7 +785,7 @@ class Z80_switchgen {
         this.addl('regs.C = regs.TA & 0xFF;');
         this.addl('let n = regs.A - regs.TR;');
         this.addl('regs.F.N = 1;');
-        this.addl('regs.F.PV = +(regs.TA !== 0);');
+        this.addl('regs.F.V = +(regs.TA !== 0);');
         this.addl('regs.F.H = ((regs.A ^ regs.TR ^ n) & 0x10) >>> 4;');
         this.addl('regs.F.X = ((n - regs.F.H) & 8) >>> 3;');
         this.addl('regs.F.Y = ((n - regs.F.H) & 2) >>> 1;');
@@ -809,9 +808,9 @@ class Z80_switchgen {
         this.addl('regs.F.N = 1;');
         this.addl('regs.TA = (((regs.B << 8) | regs.C) - 1) & 0xFFFF;');
         if (!this.is_C)
-            this.addl('regs.F.PV = +(regs.TA !== 0);');
+            this.addl('regs.F.V = +(regs.TA !== 0);');
         else
-            this.addl('regs.F.PV = regs.TA != 0;');
+            this.addl('regs.F.V = regs.TA != 0;');
         this.addl('regs.F.H = ((regs.A ^ regs.TR ^ n) & 0x10) >>> 4;');
         this.addl('regs.B = (regs.TA & 0xFF00) >>> 8;');
         this.addl('regs.C = regs.TA & 0xFF;');
@@ -825,7 +824,7 @@ class Z80_switchgen {
     DEC(what) {
         this.addl('regs.TR = ((' + what + ') - 1) & 0xFF;');
         this.addl('regs.F.N = 1;');
-        this.addl('regs.F.PV = +(regs.TR ' + GENEQO + ' 0x7F);');
+        this.addl('regs.F.V = +(regs.TR ' + GENEQO + ' 0x7F);');
         this.setXY('regs.TR');
         this.addl('regs.F.H = +((regs.TR & 0x0F) ' + GENEQO + ' 0x0F);');
         this.setZ('regs.TR');
@@ -843,7 +842,7 @@ class Z80_switchgen {
     INC(x) {
         this.addl('regs.TR = ((' + x + ') + 1) & 0xFF;');
         this.addl('regs.F.N = 0;');
-        this.addl('regs.F.PV = +(regs.TR ' + GENEQO + ' 0x80);');
+        this.addl('regs.F.V = +(regs.TR ' + GENEQO + ' 0x80);');
         this.setXY('regs.TR');
         this.addl('regs.F.H = +((regs.TR & 0x0F) ' + GENEQO + ' 0);');
         this.addl('regs.F.Z = +(regs.TR ' + GENEQO + ' 0);');
@@ -911,7 +910,7 @@ class Z80_switchgen {
         this.addl('regs.F.N = regs.F.H = 0;');
         this.addl('regs.TA = (((regs.B << 8) | regs.C) - 1) & 0xFFFF;');
         this.writereg('BC', 'regs.TA');
-        this.addl('regs.F.PV = +(regs.TA !== 0);');
+        this.addl('regs.F.V = +(regs.TA !== 0);');
         this.addl('regs.TA = (regs.A + regs.TR) & 0xFF;');
         this.addl('regs.F.X = (regs.TA & 8) >>> 3;');
         this.addl('regs.F.Y = (regs.TA & 2) >>> 1;');
@@ -933,7 +932,7 @@ class Z80_switchgen {
         this.addl('regs.F.Y = (regs.TA & 2) >>> 1;');
         this.addl('regs.TA = (((regs.B << 8) | regs.C) - 1) & 0xFFFF;');
         this.writereg('BC', 'regs.TA');
-        this.addl('regs.F.PV = +(regs.TA !== 0);');
+        this.addl('regs.F.V = +(regs.TA !== 0);');
     }
 
     OR(x, y, out=null) {
@@ -1151,7 +1150,7 @@ class Z80_switchgen {
         }
         this.addl('regs.F.C = (z & 0x100) >>> 8;');
         this.addl('regs.F.N = 1;');
-        this.addl('regs.F.PV = (((x ^ y) & (x ^ z)) & 0x80) >>> 7;');
+        this.addl('regs.F.V = (((x ^ y) & (x ^ z)) & 0x80) >>> 7;');
         this.setXY('z');
         this.addl('regs.F.H = ((x ^ y ^ z) & 0x10) >>> 4;');
         this.addl('regs.F.Z = +((z & 0xFF) ' + GENEQO + ' 0);')
@@ -1179,7 +1178,7 @@ class Z80_switchgen {
     }
 
     setP(what) {
-        this.addl('regs.F.PV = Z80_parity(' + what + ');');
+        this.addl('regs.F.V = parity(' + what + ');');
     }
 
     setZ(what) {
@@ -1217,7 +1216,7 @@ function Z80_replace_arg(arg, sub) {
 }
 
 function generate_z80_c(is_C=true) {
-    save_js('z80_opcodes.c', generate_z80_core_c());
+    save_js('z80_opcodes.cpp', generate_z80_core_c());
 }
 
 /**
@@ -1288,7 +1287,7 @@ function Z80_generate_instruction_function(indent, opcode_info, sub, CMOS, as=fa
             ag.RWMIO(0, 0, 0, 0);
 
             // Now we decide what to do.
-            ag.addl('regs.t[1] = pins->IRQ_maskable ? regs->IM : 1;');
+            ag.addl('regs.t[1] = pins.IRQ_maskable ? regs.IM : 1;');
             ag.addl('if (regs.t[1] === 0) {');
             ag.addl('    printf("\\nOH NO PANIC!!!!");');
             ag.addl('    return;');
@@ -1343,7 +1342,7 @@ function Z80_generate_instruction_function(indent, opcode_info, sub, CMOS, as=fa
             ag.addl('}')
             ag.addl('regs.IRQ_vec = 0;');
             ag.addl('regs.IFF1 = 0;');
-            ag.addl('if (pins->IRQ_maskable) regs.IFF2 = 0;');
+            ag.addl('if (pins.IRQ_maskable) regs.IFF2 = 0;');
             break;
         case Z80_MN.RESET:
             // disables the maskable interrupt, selects interrupt mode 0, zeroes registers I & R and zeroes the program counter (PC)
@@ -1431,12 +1430,12 @@ function Z80_generate_instruction_function(indent, opcode_info, sub, CMOS, as=fa
                     ag.addl('regs.WZ = (((regs.H << 8) | regs.L) + 1) & 0xFFFF;');
                     break;
             }
-            ag.addl('regs.t[0] = regs.F.PV; regs.t[1] = regs.F.Z; regs.t[2] = regs.F.S;');
+            ag.addl('regs.t[0] = regs.F.P; regs.t[1] = regs.F.Z; regs.t[2] = regs.F.S;');
             ag.addcycles(4);
             ag.ADD(HLL, argL, '0', 'regs.t[4]', false);
             ag.addcycles(3);
             ag.ADD(HLH, argH, 'regs.F.C', 'regs.t[5]', false);
-            ag.addl('regs.F.PV = regs.t[0]; regs.F.Z = regs.t[1]; regs.F.S = regs.t[2];');
+            ag.addl('regs.F.P = regs.t[0]; regs.F.Z = regs.t[1]; regs.F.S = regs.t[2];');
             switch(sub) {
                 case 'IX':
                     ag.addl('regs.IX = (regs.t[5] << 8) | regs.t[4];');
@@ -1569,7 +1568,7 @@ function Z80_generate_instruction_function(indent, opcode_info, sub, CMOS, as=fa
             ag.addl('if (regs.F.C || (regs.A > 0x99)) { regs.A = (regs.A + (regs.F.N ? -0x60: 0x60)) & 0xFF; regs.F.C = 1; }')
             ag.addl('if (regs.F.H || ((regs.A & 0x0F) > 0x09)) { regs.A = (regs.A + (regs.F.N ? -6 : 6)) & 0xFF; }');
 
-            ag.addl('regs.F.PV = Z80_parity(regs.A);');
+            ag.addl('regs.F.P = parity(regs.A);');
             ag.setXY('regs.A');
             ag.addl('regs.F.H = ((a ^ regs.A) & 0x10) >>> 4;');
             ag.addl('regs.F.Z = +(regs.A ' + GENEQO + ' 0);');
@@ -1882,7 +1881,7 @@ function Z80_generate_instruction_function(indent, opcode_info, sub, CMOS, as=fa
             ag.writereg(arg1, ag.readreg(arg2));
             ag.addl('regs.F.N = regs.F.H = 0;');
             ag.setXY('x');
-            ag.addl('regs.F.PV = regs.IFF2;');
+            ag.addl('regs.F.P = regs.IFF2;');
             ag.setZ('x');
             ag.setS8('x');
             if (!CMOS) ag.addl('regs.P = 1;');
@@ -2456,7 +2455,7 @@ function Z80_get_matrix_by_prefix_as(prfx, i) {
 
 function generate_z80_core_as(CMOS) {
     let output_name = 'z80_decoded_opcodes';
-    let outstr = 'import {Z80_opcode_functions, Z80_opcode_matrix, Z80_CB_opcode_matrix, Z80_CBd_opcode_matrix, Z80_ED_opcode_matrix, Z80_MAX_OPCODE, Z80_S_DECODE, Z80_parity} from "./z80_opcodes"\n' +
+    let outstr = 'import {Z80_opcode_functions, Z80_opcode_matrix, Z80_CB_opcode_matrix, Z80_CBd_opcode_matrix, Z80_ED_opcode_matrix, MAX_OPCODE, S_DECODE, parity} from "./z80_opcodes"\n' +
     'import {z80_pins, z80_regs, Z80P} from "./z80"\n'
     outstr += 'import {mksigned8} from "../../../helpers/helpers"\n'
     outstr += '\nexport var ' + output_name + ': Array<Z80_opcode_functions> = new Array<Z80_opcode_functions>(((Z80_MAX_OPCODE+1)*7));';
@@ -2542,7 +2541,7 @@ function Z80_C_func_name(opc, prefix, r)
 
 function Z80_C_func_signature(opc, prefix, r)
 {
-    return 'void ' + Z80_C_func_name(opc, prefix, r) + '(Z80_regs* regs, Z80_pins* pins)';
+    return 'void ' + Z80_C_func_name(opc, prefix, r) + '(regs& regs, pins& pins)';
 }
 
 function Z80_C_func_dec(opc, prefix, r) {
@@ -2558,14 +2557,14 @@ function generate_z80_core_h(CMOS) {
         '\n' +
         '// This file mostly generated by sm83_opcodes.js in JSMoo\n' +
         '\n' +
-        'extern Z80_ins_func Z80_decoded_opcodes[1806];\n'
+        'extern ins_func decoded_opcodes[1806];\n'
 
     return header + '\n#endif\n';
 }
 //console.log(generate_z80_core_h());
 
 function generate_z80_opcode_table(CMOS) {
-    let o2 = 'Z80_ins_func Z80_decoded_opcodes[' + ((Z80_MAX_OPCODE+1)*7).toString() + '] = {\n';
+    let o2 = 'ins_func decoded_opcodes[' + ((Z80_MAX_OPCODE+1)*7).toString() + '] = {\n';
     let perline = 0;
     for (let p in Z80_prefixes) {
         let prfx = Z80_prefixes[p];
@@ -2595,8 +2594,9 @@ function generate_z80_opcode_table(CMOS) {
 function generate_z80_core_c(CMOS) {
     let outstr = '#include "helpers/int.h"\n' +
         '#include "z80.h"\n' +
+        '\n // This file auto-generated by z80_core_generator.js\\n\' +' +
         '\n' +
-        '// This file auto-generated by z80_core_generator.js in JSMoo\n' +
+        '\nnamespace Z80 {' +
         '\n';
     let indent = '';
     let firstin = false;
@@ -2625,7 +2625,7 @@ function generate_z80_core_c(CMOS) {
             outstr += mystr;
         }
     }
-    outstr += '\n' + generate_z80_opcode_table();
+    outstr += '\n' + generate_z80_opcode_table() + '\n\n}';
     return outstr;
 }
 

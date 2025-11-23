@@ -9,9 +9,10 @@
 #include "helpers/debug.h"
 #include "helpers/debugger/debugger.h"
 
-struct Z80;
-
-u32 Z80_disassemble(u32 *PC, u32 IR, jsm_debug_read_trace *rt, char *w, size_t sz);
-void Z80_disassemble_entry(Z80*, disassembly_entry* entry);
+namespace Z80 {
+struct core;
+u32 disassemble(u32 *PC, u32 IR, jsm_debug_read_trace *rt, char *w, size_t sz);
+void disassemble_entry(core*, disassembly_entry* entry);
+}
 
 #endif //JSMOOCH_EMUS_Z80_DISASSEMBLER_H

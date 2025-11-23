@@ -49,5 +49,5 @@ struct memory_view;
 #define DBG_EVENT_VIEW_ONLY struct { struct { cvec_ptr view{}; } events{}; } dbg{}
 #define DBG_EVENT_VIEW_ONLY_IDS_START struct { struct { cvec_ptr view{}; u32
 #define DBG_EVENT_VIEW_ONLY_IDS_END ; } events{}; } dbg{};
-#define DBG_TRACE_VIEW_INIT this->dbg.tvptr = NULL
+#define DBG_TRACE_VIEW_INIT this->dbg.tvptr = nullptr
 

@@ -1,9 +1,7 @@
 //
 // Created by Dave on 2/7/2024.
 //
-
-#ifndef JSMOOCH_EMUS_Z80_H
-#define JSMOOCH_EMUS_Z80_H
+#pragma once
 
 #include "helpers/cvec.h"
 #include "helpers/int.h"
@@ -11,138 +9,157 @@
 #include "helpers/debugger/debuggerdefs.h"
 #include "helpers/serialize/serialize.h"
 
-#define Z80_S_IRQ 0x100
-#define Z80_S_RESET 0x101
-#define Z80_S_DECODE 0x102
-#define Z80_MAX_OPCODE 0x101
+namespace Z80 {
+constexpr u32 S_IRQ = 0x100;
+constexpr u32 S_RESET = 0x101;
+constexpr u32 S_DECODE = 0x102;
+constexpr u32 MAX_OPCODE = 0x101;
 
-struct Z80_regs_F {
-    u32 S, Z, Y, H, X, PV, N, C;
+struct regs_F {
+    union {
+        struct {
+            u8 C : 1{};
+            u8 N : 1{};
+            union {
+                u8 P: 1{};
+                u8 V: 1;
+            };
+            u8 Y : 1{};
+            u8 H : 1{};
+            u8 X : 1{};
+            u8 Z : 1{};
+            u8 S : 1{};
+        };
+        u8 u;
+    };
 };
 
-void Z80_regs_F_init(Z80_regs_F*);
-void Z80_regs_F_setbyte(Z80_regs_F*, u32 val);
-u32 Z80_regs_F_getbyte(Z80_regs_F*);
+struct regs {
+    void serialize(serialized_state &state);
+    void deserialize(serialized_state &state);
+    u16 reset_vector{};
+    u32 IR{}; // Instruction Register
+    u8 TCU{}; // Internal instruction cycle timer register (not on real Z80 under this name)
 
-enum Z80P {
-  Z80P_HL,
-  Z80P_IX,
-  Z80P_IY
-};
-
-struct Z80_regs {
-    u16 reset_vector;
-    u32 IR; // Instruction Register
-    u32 TCU; // Internal instruction cycle timer register (not on real Z80 under this name)
-
-    u32 A;
-    u32 B;
-    u32 C;
-    u32 D;
-    u32 E;
-    u32 H;
-    u32 L;
-    struct Z80_regs_F F;
-    u32 I; // Iforget
-    u32 R; // Refresh counter
+    u16 A{};
+    u16 B{};
+    u16 C{};
+    u16 D{};
+    u16 E{};
+    u16 H{};
+    u16 L{};
+    regs_F F;
+    u32 I{}; // Iforget
+    u32 R{}; // Refresh counter
 
     // Shadow registers
-    u32 AF_;
-    u32 BC_;
-    u32 DE_;
-    u32 HL_;
+    u16 AF_{};
+    u16 BC_{};
+    u16 DE_{};
+    u16 HL_{};
 
     // Junk calculations
-    u32 TR, TA;
+    u32 TR{}, TA{};
 
     // Temps for register swapping
-    u32 AFt;
-    u32 BCt;
-    u32 DEt;
-    u32 HLt;
-    u32 Ht;
-    u32 Lt;
+    u32 AFt{};
+    u32 BCt{};
+    u32 DEt{};
+    u32 HLt{};
+    u32 Ht{};
+    u32 Lt{};
 
     // 16-bit registers
-    u32 PC;
-    u32 SP;
-    u32 IX;
-    u32 IY;
+    u16 PC{};
+    u16 SP{};
+    u16 IX{};
+    u16 IY{};
 
-    u32 t[10];
-    u32 WZ;
-    u32 EI;
-    u32 P;
-    u32 Q;
-    u32 IFF1;
-    u32 IFF2;
-    u32 IM;
-    u32 HALT;
+    u32 t[10]{};
+    u16 WZ{};
+    u16 EI{};
+    u8 P{};
+    u8 Q{};
+    u8 IFF1{};
+    u8 IFF2{};
+    u8 IM{};
+    u8 HALT{};
 
-    u32 data;
+    u32 data{};
+    enum prefix {
+        P_HL,
+        P_IX,
+        P_IY
+      };
 
-    i32 IRQ_vec;
-    enum Z80P rprefix;
-    u32 prefix;
+    i32 IRQ_vec{};
+    prefix rprefix=P_HL;
+    u32 prefix{};
 
-    u32 poll_IRQ;
+    u32 poll_IRQ{};
+    void exchange_shadow_af();
+    void exchange_de_hl();
+    void exchange_shadow();
+    void inc_R();
 };
 
-void Z80_regs_init(Z80_regs*);
-void Z80_regs_exchange_shadow_af(Z80_regs*);
-void Z80_regs_exchange_de_hl(Z80_regs*);
-void Z80_regs_exchange_shadow(Z80_regs*);
+struct pins {
+    void serialize(serialized_state &state);
+    void deserialize(serialized_state &state);
+    u16 Addr{};
+    u8 D{};
 
-struct Z80_pins {
-    u32 Addr;
-    u32 D;
+    u8 IRQ_maskable{1};
+    u8 RD{}, WR{}, IO{}, MRQ{};
 
-    u32 IRQ_maskable;
-    u32 RD, WR, IO, MRQ;
-
-    u32 M1, WAIT; // M1 pin
+    u8 M1{}, WAIT{}; // M1 pin
 };
 
-void Z80_pins_init(Z80_pins*);
+typedef void (*ins_func)(regs&, pins&);
 
-typedef void (*Z80_ins_func)(Z80_regs*, Z80_pins*);
+struct core {
+    void serialize(serialized_state &state);
+    void deserialize(serialized_state &state);
+    void notify_IRQ(bool level);
+    void notify_NMI(bool level);
+    explicit core(bool CMOS);
+    static ins_func fetch_decoded(u32 opcode, u32 prefix);
+    void setup_tracing(jsm_debug_read_trace* dbg_read_trace, u64 *trace_cycle_pointer);
+    void reset();
+    void set_pins_opcode();
+    void set_pins_nothing();
+    void set_instruction(u32 to);
+    void ins_cycles();
+    void cycle();
+    void lycoder_print();
+    void printf_trace();
+    void trace_format();
 
-struct Z80 {
-    struct Z80_regs regs;
-    struct Z80_pins pins;
-    u32 CMOS;
-    u32 IRQ_pending;
-    u32 NMI_pending;
-    u32 NMI_ack;
+    regs regs{};
+    pins pins{};
+    bool CMOS{};
+    bool IRQ_pending{};
+    bool NMI_pending{};
+    bool NMI_ack{};
 
     struct {
         u32 ok;
         u64 *cycles;
         u64 last_cycle;
         u64 my_cycles;
-    } trace;
+    } trace{};
 
-    Z80_ins_func current_instruction;
+    ins_func current_instruction{};
 
-    struct jsm_debug_read_trace read_trace;
+    jsm_debug_read_trace read_trace;
 
     DBG_EVENT_VIEW_ONLY_START
     IRQ, NMI
     DBG_EVENT_VIEW_ONLY_END
 
-    u32 PCO;
+    u32 PCO{};
 };
 
-void Z80_init(Z80*, u32 CMOS);
-u32 Z80_parity(u32 val);
-void Z80_reset(Z80*);
-void Z80_cycle(Z80*);
-void Z80_notify_NMI(Z80*, u32 level);
-void Z80_notify_IRQ(Z80*, u32 level);
-void Z80_setup_tracing(Z80*, jsm_debug_read_trace* dbg_read_trace, u64 *trace_cycle_pointer);
-void Z80_serialize(Z80*, serialized_state *state);
-void Z80_deserialize(Z80*, serialized_state *state);
-void Z80_trace_format(Z80 *);
-void Z80_printf_trace(Z80* this);
+u32 parity(u32 val);
 
-#endif //JSMOOCH_EMUS_Z80_H
+}

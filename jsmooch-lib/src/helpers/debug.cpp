@@ -69,7 +69,7 @@ void DFT(char *format, ...)
         fflush(DFTf);
 }
 
-int dbg_printf(char *format, ...)
+int dbg_printf(const char *format, ...)
 {
     if (!dbg.trace_on) return 0;
     jsm_string *th = &dbg.msg;

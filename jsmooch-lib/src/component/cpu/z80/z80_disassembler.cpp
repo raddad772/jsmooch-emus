@@ -2,12 +2,10 @@
 // Created by RadDad772 on 2/25/24.
 //
 
-#include <cstdio>
-#include <cstring>
 #include "helpers/debug.h"
 #include "z80_disassembler.h"
 #include "z80.h"
-
+namespace Z80 {
 static const char *Z80D_tabl_r[] = {"B", "C", "D", "E", "H", "L", "(HL)", "A"};
 static const char *Z80D_tabl_rp[] = {"BC", "DE", "HL", "SP"};
 static const char *Z80D_tabl_rp2[] = {"BC", "DE", "HL", "AF"};
@@ -54,7 +52,7 @@ static u32 fetch(u32 *PC, jsm_debug_read_trace *rt) {
 }
 
 static u32 sread8(u32 *PC, jsm_debug_read_trace *rt) {
-    u32 r = (u32)((i32)(i8)rt->read_trace(rt->ptr, *PC));
+    u32 r = static_cast<u32>(static_cast<i32>(static_cast<i8>(rt->read_trace(rt->ptr, *PC))));
     *PC = ((*PC) + 1) & 0xFFFF;
     return ((*PC) + r) & 0xFFFF;
 }
@@ -66,16 +64,16 @@ static u32 read16(u32* PC, jsm_debug_read_trace *rt) {
 }
 
 
-void Z80_disassemble_entry(Z80*this, disassembly_entry* entry)
+void disassemble_entry(core *th, disassembly_entry* entry)
 {
-    jsm_string_quickempty(&entry->dasm);
-    jsm_string_quickempty(&entry->context);
+    entry->dasm.quickempty();
+    entry->context.quickempty();
     u32 PC = entry->addr;
-    u32 IR = this->read_trace.read_trace(this->read_trace.ptr, PC);
+    u32 IR = th->read_trace.read_trace(th->read_trace.ptr, PC);
     char buf[100];
     buf[0] = 0;
-    Z80_disassemble(&PC, IR, &this->read_trace, buf, sizeof(buf));
-    jsm_string_sprintf(&entry->dasm, "%s", buf);
+    disassemble(&PC, IR, &th->read_trace, buf, sizeof(buf));
+    entry->dasm.sprintf("%s", buf);
     entry->ins_size_bytes = PC - entry->addr;
 }
 
@@ -84,13 +82,13 @@ u32 Z80_disassemble(u32 *PC, u32 IR, jsm_debug_read_trace *rt, char *w, size_t s
     u32 l = 0;
     u32 opcode = IR;
     *PC = ((*PC) + 1) & 0xFFFF;
-    if (IR == Z80_S_DECODE) {
+    if (IR == S_DECODE) {
         return snprintf(w, sz, "DECODE");
     }
-    else if (IR == Z80_S_RESET) {
+    else if (IR == S_RESET) {
         return snprintf(w, sz, "RESET");
     }
-    else if (IR == Z80_S_IRQ) {
+    else if (IR == S_IRQ) {
         return snprintf(w, sz, "IRQ");
     }
 
@@ -252,14 +250,14 @@ u32 Z80_disassemble(u32 *PC, u32 IR, jsm_debug_read_trace *rt, char *w, size_t s
                                 l += snprintf(w, sz, "DEC ");
                                 l += repl0(PC, HL, H, L, rt, Z80D_tabl_r[y], w+4, sz - l);
                                 break;
-                            case 6:
+                            case 6: {
                                 l += snprintf(w, sz, "LD ");
                                 w += 3;
                                 u32 a = repl0(PC, HL, H, L, rt, Z80D_tabl_r[y], w, sz - l);
                                 l += a;
                                 w += a;
                                 l += snprintf(w, sz, ", %02x", read8(PC, rt));
-                                break;
+                                break; }
                             case 7: {
                                 const char *att[] = {"RLCA", "RRCA", "RLA", "RRA", "DAA", "CPL", "SCF", "CCF"};
                                 l += snprintf(w, sz, "%s", att[y]);
@@ -370,6 +368,7 @@ u32 Z80_disassemble(u32 *PC, u32 IR, jsm_debug_read_trace *rt, char *w, size_t s
                                 l += snprintf(w, sz, "RST %02x", y * 8);
                                 break;
                         }
+                    default: ;
                 }
                 break;
             case 0xCB: // prefix 0xCB
@@ -477,4 +476,5 @@ u32 Z80_disassemble(u32 *PC, u32 IR, jsm_debug_read_trace *rt, char *w, size_t s
         decoded_bytes++;
     }
     return l;
+}
 }
