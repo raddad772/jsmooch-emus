@@ -30,8 +30,8 @@ private:
     void map(u16 sms_start_addr, u16 sms_end_addr, mem_kinds kind, u32 offset);
     void refresh_nomapper();
     void refresh_sega_mapper();
-    void refresh_mapping();
 public:
+    void refresh_mapping();
     void write_registers(u16 addr, u8 val);
     explicit mapper_sega(jsm::systems in_variant);
     void load_BIOS_from_RAM(buf &BIOS);

@@ -19,14 +19,14 @@
 
 #define SMSGG_DISPLAY_DRAW_SZ (256 * 240 * 2)
 namespace SMSGG {
-enum SMSGGSS_kinds {
-    SMSGGSS_console,
-    SMSGGSS_debug,
-    SMSGGSS_vdp,
-    SMSGGSS_sn76489,
-    SMSGGSS_z80,
-    SMSGGSS_clock,
-    SMSGGSS_mapper
+enum SS_kinds {
+    console,
+    debug,
+    vdp_k,
+    sn76489_k,
+    z80,
+    clock_k,
+    mapper_k
 };
 
 
@@ -45,7 +45,21 @@ struct core : jsm_system{
     SN76489 sn76489;
 
 private:
-    public:
+    void serialize_core(serialized_state &state);
+    void serialize_debug(serialized_state &state);
+    void serialize_z80(serialized_state &state);
+    void serialize_clock(serialized_state &state);
+    void serialize_vdp(serialized_state &state);
+    void serialize_mapper(serialized_state &state);
+    void serialize_sn76489(serialized_state &state);
+    void deserialize_core(serialized_state &state);
+    void deserialize_debug(serialized_state &state);
+    void deserialize_z80(serialized_state &state);
+    void deserialize_clock(serialized_state &state);
+    void deserialize_vdp(serialized_state &state);
+    void deserialize_mapper(serialized_state &state);
+    void deserialize_sn76489(serialized_state &state);
+public:
     u8 main_bus_read(u16 addr, u32 has_effect);
     void main_bus_write(u16 addr, u8 val);
     u32 cpu_in_sms1(u32 addr, u32 val, u32 has_effect);
@@ -100,6 +114,24 @@ private:
 
     } dbg_data;
 
+
+    void play() final;
+    void pause() final;
+    void stop() final;
+    void get_framevars(framevars& out) final;
+    void reset() final;
+    void killall();
+    u32 finish_frame() final;
+    u32 finish_scanline() final;
+    u32 step_master(u32 howmany) final;
+    //void load_BIOS(multi_file_set& mfs) final;
+    void enable_tracing();
+    void disable_tracing();
+    void describe_io() final;
+    void save_state(serialized_state &state) final;
+    void load_state(serialized_state &state, deserialize_ret &ret) final;
+    void set_audiobuf(audiobuf *ab) final;
+    void setup_debugger_interface(debugger_interface &intf) final;
 };
 
 }

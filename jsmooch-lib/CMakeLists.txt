@@ -55,6 +55,8 @@ set(SOURCE_LIST
         "src/system/nes/nes_ppu.h"
         "src/component/audio/nes_apu/nes_apu.cpp"
         "src/component/audio/nes_apu/nes_apu.h"
+        "src/component/audio/sn76489/sn76489.cpp"
+        "src/component/audio/sn76489/sn76489.h"
         "src/system/nes/nes_cart.cpp"
         "src/system/nes/nes_cart.h"
         "src/system/nes/nes_cpu.cpp"
