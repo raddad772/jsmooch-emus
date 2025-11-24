@@ -4,39 +4,10 @@
 
 #include "sms_gg_clock.h"
 
-void SMSGG_clock_init(SMSGG_clock* this, enum jsm::systems variant, enum jsm_regions region)
-{
-    *this = (SMSGG_clock) {
-        .variant = variant,
-        .region = region,
-        .master_cycles = 0,
-
-        .cpu_master_clock = 0,
-        .vdp_master_clock = 0,
-        .apu_master_clock = 0,
-        .frames_since_restart = 0,
-
-        .cpu_divisor = 3,
-        .vdp_divisor = 2,
-        .apu_divisor = 48, // 50 too low, 46 a little too high,
-        .trace_cycles = 0,
-        .cpu_frame_cycle = 0,
-        .ccounter = 0,
-        .hpos = 0,
-        .vpos = 0,
-        .line_counter = 0,
-        .timing = (SMSGG_clock_timing) {
-            .fps = 60,
-            .frame_lines = 262, // PAL 313
-            .cc_line = 260, // PAL 311
-            .bottom_rendered_line = 191,
-            .rendered_lines = 192,
-            .vblank_start = 192 // maybe?
-        }
-    };
-    this->timing.region = ((this->region == REGION_USA) || (this->region == REGION_JAPAN)) ? NTSC : PAL;
-    if (this->timing.region == PAL) {
-        this->timing.frame_lines = 313;
-        this->timing.cc_line = 311;
+SMSGG::clock::clock(jsm::systems in_variant, jsm::regions in_region) : variant(in_variant), region(in_region) {
+    timing.region = ((region == jsm::regions::USA) || (region == jsm::regions::JAPAN)) ? jsm::display_standards::NTSC : jsm::display_standards::PAL;
+    if (timing.region == jsm::display_standards::PAL) {
+        timing.frame_lines = 313;
+        timing.cc_line = 311;
     }
 }
