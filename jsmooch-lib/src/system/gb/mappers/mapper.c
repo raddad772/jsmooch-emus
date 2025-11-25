@@ -1,6 +1,6 @@
-#include "stdlib.h"
+#include <cstdlib>
 #include <cstdio>
-#include "assert.h"
+#include <cassert>
 
 #include "mapper.h"
 #include "no_mapper.h"

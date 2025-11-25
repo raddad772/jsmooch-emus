@@ -9,6 +9,8 @@
 #include "helpers/debugger/debuggerdefs.h"
 #include "helpers/serialize/serialize.h"
 
+struct dbglog_view;
+
 namespace Z80 {
 constexpr u32 S_IRQ = 0x100;
 constexpr u32 S_RESET = 0x101;
@@ -134,6 +136,9 @@ struct core {
     void lycoder_print();
     void printf_trace();
     void trace_format();
+private:
+    void pprint_context(jsm_string &out);
+public:
 
     regs regs{};
     pins pins{};
@@ -143,21 +148,24 @@ struct core {
     bool NMI_ack{};
 
     struct {
-        u32 ok;
-        u64 *cycles;
-        u64 last_cycle;
-        u64 my_cycles;
+        jsm_debug_read_trace strct;
+        u32 ok{};
+        u64 *cycles{};
+        u64 last_cycle{};
+        u64 my_cycles{};
+        jsm_string str{1000}, str2{200};
+        struct {
+            dbglog_view *view{};
+            u32 id{};
+        } dbglog{};
+        u32 ins_PC;
     } trace{};
 
     ins_func current_instruction{};
 
-    jsm_debug_read_trace read_trace;
-
     DBG_EVENT_VIEW_ONLY_START
     IRQ, NMI
     DBG_EVENT_VIEW_ONLY_END
-
-    u32 PCO{};
 };
 
 u32 parity(u32 val);

@@ -29,9 +29,12 @@ enum SS_kinds {
     mapper_k
 };
 
-
 struct core : jsm_system{
-    explicit core(jsm::systems in_variant, jsm::regions in_region) : clock(in_variant, in_region), variant(in_variant), region(in_region), vdp(this, in_variant), cpu(false) {}
+    explicit core(jsm::systems in_variant, jsm::regions in_region) : clock(in_variant, in_region), variant(in_variant), region(in_region), cpu(false), mapper(in_variant), vdp(this, in_variant), io(this) {
+        has.save_state = true;
+        has.load_BIOS = true;
+        has.set_audiobuf = true;
+    }
     clock clock;
     u32 read_reg_ioport1(u32 val);
     u32 read_reg_ioport2(u32 val);
@@ -43,6 +46,8 @@ struct core : jsm_system{
     mapper_sega mapper;
     VDP vdp;
     SN76489 sn76489;
+    void cpu_out_sms1(u32 addr, u32 val);
+    u32 cpu_in_gg(u32 addr, u32 val, u32 has_effect);
 
 private:
     void serialize_core(serialized_state &state);
@@ -59,7 +64,13 @@ private:
     void deserialize_vdp(serialized_state &state);
     void deserialize_mapper(serialized_state &state);
     void deserialize_sn76489(serialized_state &state);
+    void cpu_cycle();
+    void poll_pause();
+    void sample_audio();
+    void debug_audio();
 public:
+    void notify_NMI(bool level);
+    void notify_IRQ(bool level);
     u8 main_bus_read(u16 addr, u32 has_effect);
     void main_bus_write(u16 addr, u8 val);
     u32 cpu_in_sms1(u32 addr, u32 val, u32 has_effect);
@@ -68,17 +79,18 @@ public:
         double master_cycles_per_audio_sample;
         double next_sample_cycle;
         audiobuf *buf;
-    } audio;
+    } audio{};
 
-    u32 described_inputs;
-    u32 last_frame;
+    u32 described_inputs{};
+    u32 last_frame{};
 
-    u32 (core::*cpu_in)(u32, u32, u32);
-    void (core::*cpu_out)(u32, u32);
+    u32 (core::*cpu_in)(u32, u32, u32){};
+    void (core::*cpu_out)(u32, u32){};
 
-    struct {
-        SMSGG_gamepad controllerA;
-        SMSGG_gamepad controllerB;
+    struct SMSGGIO {
+        explicit SMSGGIO(core *parent) : portA(parent), portB(parent) {}
+        SMSGG_gamepad controllerA{};
+        SMSGG_gamepad controllerB{};
         controller_port portA;
         controller_port portB;
         HID_digital_button *pause_button{};
@@ -95,9 +107,10 @@ public:
             DBG_WAVEFORM_MAIN
             DBG_WAVEFORM_CHANS(4)
         DBG_WAVEFORM_END1
+        DBG_LOG_VIEW
     DBG_END
 
-    struct {
+    struct SMSDBGDATA {
         struct DBGSMSGGROW {
             struct {
                 u32 hscroll, vscroll;
@@ -112,21 +125,21 @@ public:
             } io;
         } rows[240];
 
-    } dbg_data;
+    } dbg_data{};
 
 
-    void play() final;
-    void pause() final;
-    void stop() final;
+    void play() final {};
+    void pause() final {};
+    void stop() final {};
     void get_framevars(framevars& out) final;
     void reset() final;
     void killall();
     u32 finish_frame() final;
     u32 finish_scanline() final;
     u32 step_master(u32 howmany) final;
-    //void load_BIOS(multi_file_set& mfs) final;
-    void enable_tracing();
-    void disable_tracing();
+    void load_BIOS(multi_file_set& mfs) final;
+    void enable_tracing() {};
+    void disable_tracing() {};
     void describe_io() final;
     void save_state(serialized_state &state) final;
     void load_state(serialized_state &state, deserialize_ret &ret) final;

@@ -71,12 +71,12 @@ core::core(bool in_CMOS) : CMOS(in_CMOS)
     trace.my_cycles = 0;
     current_instruction = nullptr;
 
-    PCO = 0;
+    trace.ins_PC = 0;
 }
 
 void core::setup_tracing(jsm_debug_read_trace* dbg_read_trace, u64 *trace_cycle_pointer)
 {
-    jsm_copy_read_trace(&read_trace, dbg_read_trace);
+    jsm_copy_read_trace(&trace.strct, dbg_read_trace);
     trace.cycles = trace_cycle_pointer;
     trace.ok = 1;
 }
@@ -131,12 +131,12 @@ void core::reset()
 }
 
 void core::notify_IRQ(bool level) {
-    IRQ_pending = !level;
+    IRQ_pending = level;
 }
 
 void core::notify_NMI(bool level) {
-    if ((!level) && NMI_ack) { NMI_ack = false; }
-    NMI_pending = NMI_pending || (level > 0);
+    NMI_ack &= level;
+    NMI_pending = NMI_pending || level;
 }
 
 void core::set_pins_opcode()
@@ -310,39 +310,76 @@ void core::ins_cycles()
     }
 }
 
+void core::pprint_context(jsm_string &out) {
+    out.sprintf("PC:%04X A:%02X B:%02X C:%02X D:%02X E:%02X H:%02X L:%02X SP:%04X IX:%04X IY:%04X I:%02X R:%02X WZ:%04X F:%02X TCU:%d" DBGC_RST,
+        trace.ins_PC, regs.A, regs.B, regs.C, regs.D, regs.E,
+        regs.H, regs.L, regs.SP, regs.IX, regs.IY, regs.I, regs.R,
+        regs.WZ, regs.F.u, regs.TCU);
+}
+
 
 void core::printf_trace() {
-    char t[250];
-    t[0] = 0;
-    u32 b = read_trace.read_trace(read_trace.ptr, PCO);
-    u32 mPC = PCO;
-    disassemble(&mPC, b, &read_trace, t, sizeof(t));
-    printf(DBGC_Z80 "\nZ80   (%06llu)     %04x  %s   ", *trace.cycles, PCO, t);
+    //char t[250];
+    //t[0] = 0;
+    u32 b = trace.strct.read_trace(trace.strct.ptr, trace.ins_PC);
+    u32 mPC = trace.ins_PC;
+    struct jsm_string out{250};
+    disassemble(mPC, b, trace.strct, out);
+    printf(DBGC_Z80 "\nZ80   (%06llu)     %04x  %s   ", *trace.cycles, trace.ins_PC, out.ptr);
     //dbg_seek_in_line(TRACE_BRK_POS);
     printf("PC:%04X A:%02X B:%02X C:%02X D:%02X E:%02X H:%02X L:%02X SP:%04X IX:%04X IY:%04X I:%02X R:%02X WZ:%04X F:%02X TCU:%d" DBGC_RST,
-           PCO, regs.A, regs.B, regs.C, regs.D, regs.E,
+           trace.ins_PC, regs.A, regs.B, regs.C, regs.D, regs.E,
            regs.H, regs.L, regs.SP, regs.IX, regs.IY, regs.I, regs.R,
            regs.WZ, regs.F.u, regs.TCU);
 }
 
 void core::trace_format()
 {
-    char t[250];
-    t[0] = 0;
-    if (regs.IR == 0x101) {
-        dbg_printf(DBGC_Z80 "\nZ80    (%06llu)           RESET" DBGC_RST, *trace.cycles);
-        return;
+    if (trace.dbglog.view && trace.dbglog.view->ids_enabled[trace.dbglog.id]) {
+        char t[250];
+        t[0] = 0;
+        trace.str.quickempty();
+        trace.str2.quickempty();
+        dbglog_view *dv = trace.dbglog.view;
+        u64 tc;
+        if (!trace.cycles) tc = 0;
+        else tc = *trace.cycles;
+
+        if (regs.IR > 255) {
+            switch (regs.IR) {
+                case Z80::S_IRQ:
+                    trace.str.sprintf("IRQ");
+                    break;
+                case Z80::S_RESET:
+                    trace.str.sprintf("RESET");
+                    break;
+                case Z80::S_DECODE:
+                    trace.str.sprintf("\nDECODE? OOPS!");
+                    break;
+            }
+            dv->add_printf(trace.dbglog.id, tc, DBGLS_TRACE, "%s", trace.str.ptr);
+            dv->extra_printf("%s", trace.str2.ptr);
+            return;
+        }
+        u32 ins_PC = trace.ins_PC;
+        disassemble(ins_PC, regs.IR, trace.strct, trace.str);
+        pprint_context(trace.str2);
+
+        dv->add_printf(trace.dbglog.id, tc, DBGLS_TRACE, "%04x  %s", trace.ins_PC, trace.str.ptr);
+        dv->extra_printf("%s", trace.str2.ptr);
+
+        //Z80(   931)    008C  LDIR          TCU:1 PC:008E  A:00 B:1F C:F5 D:C0 E:0B H:C0 L:0A SP:DFF0 IX:0000 IY:0000 I:00 R:5E WZ:008D F:sZyhxPnc
+        /*u32 b = trace.strct.read_trace(trace.strct.ptr, PCO);
+        u32 mPC = PCO;
+        disassemble(&mPC, b, &read_trace, t, sizeof(t));*/
+        //dbg_printf(DBGC_Z80 "\nZ80   (%06llu)     %04x  %s", *trace.cycles, PCO, t);
+        //dbg_seek_in_line(TRACE_BRK_POS);
+        /*dbg_printf("PC:%04X A:%02X B:%02X C:%02X D:%02X E:%02X H:%02X L:%02X SP:%04X IX:%04X IY:%04X I:%02X R:%02X WZ:%04X F:%02X TCU:%d" DBGC_RST,
+                   PCO, regs.A, regs.B, regs.C, regs.D, regs.E,
+                   regs.H, regs.L, regs.SP, regs.IX, regs.IY, regs.I, regs.R,
+                   regs.WZ, regs.F.u, regs.TCU);*/
     }
-    //Z80(   931)    008C  LDIR          TCU:1 PC:008E  A:00 B:1F C:F5 D:C0 E:0B H:C0 L:0A SP:DFF0 IX:0000 IY:0000 I:00 R:5E WZ:008D F:sZyhxPnc
-    u32 b = read_trace.read_trace(read_trace.ptr, PCO);
-    u32 mPC = PCO;
-    disassemble(&mPC, b, &read_trace, t, sizeof(t));
-    dbg_printf(DBGC_Z80 "\nZ80   (%06llu)     %04x  %s", *trace.cycles, PCO, t);
-    dbg_seek_in_line(TRACE_BRK_POS);
-    dbg_printf("PC:%04X A:%02X B:%02X C:%02X D:%02X E:%02X H:%02X L:%02X SP:%04X IX:%04X IY:%04X I:%02X R:%02X WZ:%04X F:%02X TCU:%d" DBGC_RST,
-               PCO, regs.A, regs.B, regs.C, regs.D, regs.E,
-               regs.H, regs.L, regs.SP, regs.IX, regs.IY, regs.I, regs.R,
-               regs.WZ, regs.F.u, regs.TCU);
+
 }
 
 void core::lycoder_print()
@@ -364,7 +401,7 @@ void core::cycle()
 #endif
     if (regs.IR == S_DECODE) {
         // Long logic to decode opcodes and decide what to do
-        if ((regs.TCU == 1) && (regs.prefix == 0)) PCO = pins.Addr;
+        if ((regs.TCU == 1) && (regs.prefix == 0)) trace.ins_PC = pins.Addr;
         ins_cycles();
     } else {
 #ifdef Z80_DBG_SUPPORT
@@ -374,8 +411,8 @@ void core::cycle()
             Z80_lycoder_print();
         }
 #else
-        if (::dbg.trace_on && regs.TCU == 1 && ::dbg.traces.z80.instruction) {
-            trace.last_cycle = PCO;
+        if (regs.TCU == 1) {
+            trace.last_cycle = trace.ins_PC;
             trace_format();
         }
 #endif // LYCODER
@@ -464,7 +501,7 @@ void core::serialize(serialized_state &state)
     S(NMI_pending);
     S(NMI_ack);
 
-    S(PCO);
+    S(trace.ins_PC);
 }
 #undef S
 
@@ -540,7 +577,7 @@ void core::deserialize(serialized_state &state)
     L(NMI_pending);
     L(NMI_ack);
 
-    L(PCO);
+    L(trace.ins_PC);
     current_instruction = fetch_decoded(regs.IR, regs.prefix);
 }
 #undef L

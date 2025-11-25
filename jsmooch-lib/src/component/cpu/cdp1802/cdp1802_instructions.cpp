@@ -2,10 +2,10 @@
 // Created by . on 11/18/25.
 //
 
-#include "rca1802_instructions.h"
-#include "rca1802.h"
+#include "cdp1802_instructions.h"
+#include "cdp1802.h"
 
-namespace RCA1802 {
+namespace CDP1802 {
 
 #define I(name) void ins_##name(core *core)
 

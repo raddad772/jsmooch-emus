@@ -3,9 +3,9 @@
 //
 
 #include <cstring>
-#include "stdlib.h"
+#include <cstdlib>
 #include "stdio.h"
-#include "assert.h"
+#include <cassert>
 
 #include "cvec.h"
 

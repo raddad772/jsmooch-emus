@@ -12,13 +12,6 @@ namespace SMSGG{
 struct core;
 
 struct controller_port {
-private:
-    u32 read_reg_ioport1(u32 val);
-    u32 read_reg_ioport2(u32 val);
-public:
-
-    void write_reg_memory_ctrl(u32 val);
-    void write_reg_io_ctrl(u32 val);
     core *bus;
     explicit controller_port(core* bus_in) : bus(bus_in) {}
     void reset();

@@ -2,7 +2,7 @@
 
 #include "helpers/int.h"
 
-namespace RCA1802 {
+namespace CDP1802 {
 struct core;
 
 #define I(name) void ins_##name(core *core);

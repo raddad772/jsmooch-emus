@@ -14,8 +14,8 @@
 
 #include "helpers/int.h"
 #include "helpers/user.h"
-#include "component/cpu/rca1802/rca1802.h"
-#include "rca1802_tests.h"
+#include "component/cpu/cdp1802/cdp1802.h"
+#include "cdp1802_tests.h"
 
 // IDLE
 static constexpr int skip_tests[] = {
@@ -61,7 +61,7 @@ struct jsontest {
     u32 num_cycles;
 };
 
-struct rca1802_test_result
+struct cdp1802_test_result
 {
     u32 passed;
     u32 mycycles;
@@ -257,7 +257,7 @@ static void parse_and_fill_out(read_file_buf *infile)
     free(root);
 }
 
-static void copy_state_to_cpu(test_state *state, RCA1802::core *cpu)
+static void copy_state_to_cpu(test_state *state, CDP1802::core *cpu)
 {
 #define set(c, s) cpu->regs. c = state->regs. s;
     set(D, D);
@@ -283,7 +283,7 @@ static int is_3cycle(u32 opc) {
     return 0;
 }
 
-static void pprint_regs(RCA1802::core &cpu, test_cpu_regs *test_regs, u32 last_pc, u32 only_print_diff) {
+static void pprint_regs(CDP1802::core &cpu, test_cpu_regs *test_regs, u32 last_pc, u32 only_print_diff) {
     printf("\nREG  CPU    TEST");
     printf("\n----------------");
 
@@ -321,7 +321,7 @@ printf("\n" strname "  %1x      %1x", cpu.cpuname, test_regs->testname);
 }
 
 
-static u32 testregs(RCA1802::core &cpu, test_state *final, u32 last_pc, u32 testnum, char *nm, u32 opc) {
+static u32 testregs(CDP1802::core &cpu, test_state *final, u32 last_pc, u32 testnum, char *nm, u32 opc) {
     u32 passed = 1;
     // u32 A X Y P SP PC
 #define set(c, s) passed &= cpu.regs.c == final->regs. s;
@@ -349,7 +349,7 @@ static u32 testregs(RCA1802::core &cpu, test_state *final, u32 last_pc, u32 test
     return passed;
 }
 
-static void service_rw(RCA1802::core *cpu) {
+static void service_rw(CDP1802::core *cpu) {
     if (cpu->pins.MRD) {
         cpu->pins.D = RAM[cpu->pins.Addr];
         //printf("\nREAD %02x FROM %04x", cpu->pins.D, cpu->pins.Addr);
@@ -361,7 +361,7 @@ static void service_rw(RCA1802::core *cpu) {
 }
 
 
-static int test_rca1802_automated(rca1802_test_result *out, RCA1802::core *cpu, u32 opc) {
+static int test_cdp1802_automated(cdp1802_test_result *out, CDP1802::core *cpu, u32 opc) {
     out->passed = 0;
     out->mycycles = 0;
     snprintf(out->msg, sizeof(out->msg), "");
@@ -424,7 +424,7 @@ static int test_rca1802_automated(rca1802_test_result *out, RCA1802::core *cpu, 
 }
 
 
-static u32 test_rca1802_ins(RCA1802::core &cpu, u32 ins)
+static u32 test_cdp1802_ins(CDP1802::core &cpu, u32 ins)
 {
     printf("\n\nTesting instruction %02x", ins);
     char path[500];
@@ -438,9 +438,9 @@ static u32 test_rca1802_ins(RCA1802::core &cpu, u32 ins)
 
     parse_and_fill_out(&infile);
 
-    rca1802_test_result result{};
+    cdp1802_test_result result{};
 
-    test_rca1802_automated(&result, &cpu, ins);
+    test_cdp1802_automated(&result, &cpu, ins);
     if (!result.passed) {
         printf("\nFAILED INSTRUCTION!");
     }
@@ -449,18 +449,18 @@ static u32 test_rca1802_ins(RCA1802::core &cpu, u32 ins)
 }
 
 
-void test_rca1802()
+void test_cdp1802()
 {
     u64 blah;
-    RCA1802::core cpu(&blah);
+    CDP1802::core cpu(&blah);
     cpu.reset();
-    cpu.pins.clear_wait = RCA1802::pins::RUN;
+    cpu.pins.clear_wait = CDP1802::pins::RUN;
 
     u32 total_fail = 0;
     u32 start_test = 0;
     for (u32 i = start_test; i < 0x100; i++) {
         if (skip_test(i)) continue;
-        u32 result = test_rca1802_ins(cpu, i);
+        u32 result = test_cdp1802_ins(cpu, i);
         if (!result) {
             total_fail = 1;
             break;

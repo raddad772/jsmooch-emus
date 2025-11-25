@@ -9,7 +9,6 @@
 #include "helpers/sys_interface.h"
 #include "helpers/cvec.h"
 #include "helpers/debugger/debuggerdefs.h"
-#include "sms_gg_bus.h"
 #include "sms_gg.h"
 
 namespace SMSGG {
@@ -23,10 +22,12 @@ struct VDP_object {
     u32 x, y, pattern, color;
 };
 
+struct core;
+
 struct VDP {
     explicit VDP(core* parent, jsm::systems in_variant);
     jsm::systems variant{};
-    core* bus{};
+    core* bus;
     u8 VRAM[16384]{};
     u16 CRAM[32]{};
     VDP_modes mode{};
@@ -38,13 +39,12 @@ struct VDP {
     u32 read_vcounter();
     u32 read_status();
     void write_control(u32 val);
+    void set_scanline_kind(u32 vpos);
 
 private:
     void register_write(u32 addr, u32 val);
-    void set_scanline_kind(u32 vpos);
     void new_scanline();
     void new_frame();
-    void update_videomode();
     void update_irqs();
     void sprite_setup();
     u32 dac_palette(u32 index);
@@ -53,6 +53,7 @@ private:
     void scanline_visible();
 
 public:
+    void update_videomode();
     void bg_gfx1();
     void bg_gfx2();
     void bg_gfx3();

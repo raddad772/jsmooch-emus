@@ -9,7 +9,7 @@
 #pragma STDC FENV_ACCESS ON
 #endif
 
-#include "assert.h"
+#include <cassert>
 #include "stdio.h"
 #include <cstring>
 #include "stdarg.h"

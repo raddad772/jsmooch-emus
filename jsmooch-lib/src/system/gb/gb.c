@@ -1,5 +1,5 @@
-#include "assert.h"
-#include "stdlib.h"
+#include <cassert>
+#include <cstdlib>
 #include <cstdio>
 
 #include "helpers/sys_interface.h"

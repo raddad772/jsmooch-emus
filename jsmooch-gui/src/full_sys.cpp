@@ -666,8 +666,8 @@ void full_system::load_default_ROM()
         case jsm::systems::SMS2:
             //worked = grab_ROM(&ROMs, which, "sinister.sms", nullptr);
             //worked = grab_ROM(&ROMs, which, "outrun.sms", nullptr);
-            //worked = grab_ROM(&ROMs, which, "sonic.sms", nullptr);
-            worked = grab_ROM(&ROMs, which, "space_harrier.sms", nullptr);
+            worked = grab_ROM(&ROMs, which, "sonic.sms", nullptr);
+            //worked = grab_ROM(&ROMs, which, "space_harrier.sms", nullptr);
             break;
         case jsm::systems::GG:
             worked = grab_ROM(&ROMs, which, "megaman.gg", nullptr);

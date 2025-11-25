@@ -2,8 +2,8 @@
 // Created by Dave on 4/14/24.
 //
 
-#include "assert.h"
-#include "stdlib.h"
+#include <cassert>
+#include <cstdlib>
 #include <cstdio>
 #include "helpers/sys_interface.h"
 #include "fail"

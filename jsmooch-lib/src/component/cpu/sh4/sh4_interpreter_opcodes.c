@@ -4,7 +4,7 @@
 
 #include "math.h"
 #include <cstring>
-#include "assert.h"
+#include <cassert>
 #include "stdio.h"
 
 #include "fsca.h"

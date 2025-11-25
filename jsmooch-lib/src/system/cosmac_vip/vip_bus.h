@@ -5,7 +5,7 @@
 #include "helpers/scheduler.h"
 #include "helpers/sys_interface.h"
 
-#include "component/cpu/rca1802/rca1802.h"
+#include "component/cpu/cdp1802/cdp1802.h"
 #include "component/gpu/cdp1861/cdp1861.h"
 #include "vip_clock.h"
 
@@ -14,7 +14,7 @@ struct core : jsm_system {
     explicit core(jsm::systems in_kind);
     clock clock{};
     jsm::systems kind;
-    RCA1802::core cpu;
+    CDP1802::core cpu;
     CDP1861::core pixie{};
 
     scheduler_t scheduler;

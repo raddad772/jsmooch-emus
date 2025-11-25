@@ -1,6 +1,6 @@
 #include <cassert>
 #include <cstdio>
-#include "stdlib.h"
+#include <cstdlib>
 #include "helpers/int.h"
 #include "cart.h"
 #include "system/gb/gb_clock.h"

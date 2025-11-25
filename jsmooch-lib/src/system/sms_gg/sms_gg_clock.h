@@ -41,7 +41,7 @@ struct clock {
         u32 rendered_lines{192};
         u32 vblank_start{192};
 
-        jsm::display_standards region;
+        jsm::display_standards region{};
     } timing{};
 };
 

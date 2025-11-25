@@ -10,7 +10,7 @@
 
 #define JSM jsm_system* jsm
 
-u32 read_trace_rca1802(void *ptr, u32 addr) {
+u32 read_trace_cdp1802(void *ptr, u32 addr) {
     return static_cast<VIP::core *>(ptr)->read_main_bus(addr, 0, 0);
 }
 
@@ -23,7 +23,7 @@ jsm_system *VIP_new(jsm::systems in_kind)
     snprintf(th->label, sizeof(th->label), "Cosmac VIP %dk", in_kind == jsm::systems::COSMAC_VIP_2k ? 2 : 4);
 
     jsm_debug_read_trace dt;
-    dt.read_trace = &read_trace_rca1802;
+    dt.read_trace = &read_trace_cdp1802;
     dt.ptr = static_cast<void *>(th);
     th->cpu.setup_tracing(&dt, &th->clock.master_cycle_count);
     return th;

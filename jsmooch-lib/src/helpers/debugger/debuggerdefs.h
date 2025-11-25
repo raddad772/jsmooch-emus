@@ -35,7 +35,7 @@ struct memory_view;
 
 #define DBG_TRACE_VIEW struct trace_view *tvptr{};
 #define DBG_LOG_VIEW struct dbglog_view *dvptr{}; u32 dv_id{};
-#define DBG_IMAGE_VIEW(name) struct { cvec_ptr name{}; } image_views{};
+#define DBG_IMAGE_VIEW(name) struct { cvec_ptr<debugger_view> name{}; } image_views{};
 
 #define DBG_IMAGE_VIEWS_START struct {
 #define MDBG_IMAGE_VIEW(name) cvec_ptr<debugger_view> name{};

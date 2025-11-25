@@ -140,7 +140,7 @@ u8 core::read_main_bus(u16 addr, u8 old, bool has_effect) {
 void core::reset() {
     u6b = 0x8000;
     cpu.reset();
-    cpu.pins.clear_wait = RCA1802::pins::RUN;
+    cpu.pins.clear_wait = CDP1802::pins::RUN;
     cpu.pins.D = read_main_bus(cpu.pins.Addr, 0, 1);
     pixie.reset();
     scheduler.clear();

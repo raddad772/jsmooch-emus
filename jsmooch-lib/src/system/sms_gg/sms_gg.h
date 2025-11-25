@@ -3,7 +3,10 @@
 //
 
 #pragma once
-void SMSGG_new(jsm_system* jsm, jsm::systems variant, jsm_regions region);
+
+#include "helpers/sys_interface.h"
+
+jsm_system *SMSGG_new(jsm::systems variant, jsm::regions region);
 void SMSGG_delete(jsm_system* jsm);
 
 

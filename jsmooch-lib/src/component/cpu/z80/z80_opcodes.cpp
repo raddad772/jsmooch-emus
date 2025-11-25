@@ -8429,6 +8429,7 @@ void Z80_ins_00_100_IRQ(regs& regs, pins& pins)
         case 1: { // IRQ processing idle cycle!
             break; }
         case 2: { // Start IACK read
+            //printf("\nZ80 IRQ START!");
             regs.R = (regs.R + 1) & 0x7F;
             pins.RD = 0; pins.WR = 0; pins.MRQ = 0; pins.IO = 0;
             break; }
@@ -8511,6 +8512,7 @@ void Z80_ins_00_100_IRQ(regs& regs, pins& pins)
             regs.IFF1 = 0;
             if (pins.IRQ_maskable) regs.IFF2 = 0;
             // Following is auto-generated code for instruction finish
+            //printf("\nZ80 IRQ END! %04x", regs.PC);
             pins.Addr = regs.PC;
             regs.PC = (regs.PC + 1) & 0xFFFF;
             pins.RD = 0; pins.MRQ = 0;

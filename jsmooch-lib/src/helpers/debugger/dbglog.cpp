@@ -14,6 +14,7 @@ dbglog_category_node &dbglog_view::get_category_root()
 
 dbglog_category_node &dbglog_category_node::add_node(dbglog_view &dv, const char *inname, const char *inshort_name, u32 id, u32 color)
 {
+    printf("\nAdd %s with ID %d", inname, id);
     dbglog_category_node &d = children.emplace_back();
     snprintf(d.name, sizeof(d.name), "%s", inname);
     if (inshort_name)
@@ -21,12 +22,12 @@ dbglog_category_node &dbglog_category_node::add_node(dbglog_view &dv, const char
     d.category_id = id;
     dv.id_to_category[id] = &d;
     dv.id_to_color[id] = color;
-    printf("\nAdd %s (%s) with cat_id:%d", d.name, d.short_name, d.category_id);
     return d;
 }
 
 void dbglog_view::add_item(u32 id, u64 timecode, dbglog_severity severity, const char *txt)
 {
+    printf("\nLog ID %d", id);
     if (!this->ids_enabled[id]) return;
     if (this->items.len >= MAX_DBGLOG_LINES) {
         // Move first entry forward

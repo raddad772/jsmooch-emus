@@ -3,7 +3,7 @@
 //
 
 #include <cstring>
-#include "assert.h"
+#include <cassert>
 #include "stdio.h"
 #include "dreamcast.h"
 #include "gdrom.h"

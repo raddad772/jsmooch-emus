@@ -10,8 +10,8 @@
 #endif
 #include "sm83-tests.h"
 #include "stdio.h"
-#include "stdlib.h"
-#include "assert.h"
+#include <cstdlib>
+#include <cassert>
 #include <cstring>
 
 #include "helpers/int.h"

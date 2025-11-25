@@ -6,7 +6,7 @@
 
 struct jsm_debug_read_trace;
 
-namespace RCA1802 {
+namespace CDP1802 {
 
 struct core;
 union ctxt {

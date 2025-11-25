@@ -127,7 +127,9 @@ mapper_sega::mapper_sega(jsm::systems in_variant) : variant(in_variant)
 
 void mapper_sega::reset()
 {
-    io.bios_enabled = has_bios;
+    //io.bios_enabled = has_bios;
+    io.bios_enabled = false;
+    io.cart_enabled = true;
     refresh_mapping();
 }
 

@@ -175,12 +175,12 @@ set(SOURCE_LIST
         src/system/nes/nes_bus.h
         src/system/snes/snes_serialize.cpp
         src/system/snes/snes_serialize.h
-        src/component/cpu/rca1802/rca1802.cpp
-        src/component/cpu/rca1802/rca1802.h
-        src/component/cpu/rca1802/rca1802_instructions.cpp
-        src/component/cpu/rca1802/rca1802_instructions.h
-        src/component/cpu/rca1802/rca1802_disassembler.cpp
-        src/component/cpu/rca1802/rca1802_disassembler.h
+        src/component/cpu/cdp1802/cdp1802.cpp
+        src/component/cpu/cdp1802/cdp1802.h
+        src/component/cpu/cdp1802/cdp1802_instructions.cpp
+        src/component/cpu/cdp1802/cdp1802_instructions.h
+        src/component/cpu/cdp1802/cdp1802_disassembler.cpp
+        src/component/cpu/cdp1802/cdp1802_disassembler.h
         src/system/cosmac_vip/cosmac_vip.cpp
         src/system/cosmac_vip/cosmac_vip.h
         src/system/cosmac_vip/vip_bus.cpp

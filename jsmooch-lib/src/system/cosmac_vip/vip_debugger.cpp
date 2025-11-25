@@ -8,7 +8,7 @@
 
 #include "vip_debugger.h"
 #include "vip_bus.h"
-#include "component/cpu/rca1802/rca1802_disassembler.h"
+#include "component/cpu/cdp1802/cdp1802_disassembler.h"
 
 
 namespace VIP {
@@ -176,7 +176,7 @@ static int print_dasm_addr(void *coreptr, u32 addr, char *out, size_t out_sz) {
 static void get_disassembly(void *coreptr, disassembly_view &dview, disassembly_entry &entry)
 {
     core* th = static_cast<core *>(coreptr);
-    RCA1802::disassemble_entry(&th->cpu, entry);
+    CDP1802::disassemble_entry(&th->cpu, entry);
 }
 
 static disassembly_vars get_disassembly_vars(void *coreptr, disassembly_view &dv)

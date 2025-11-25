@@ -8,7 +8,7 @@
 //#include "system/nds/nds.h"
 #include "system/cosmac_vip/cosmac_vip.h"
 #include "system/snes/snes.h"
-//#include "system/sms_gg/sms_gg.h"
+#include "system/sms_gg/sms_gg.h"
 //#include "system/dreamcast/dreamcast.h"
 //#include "system/ps1/ps1.h"
 //#include "system/atari2600/atari2600.h"
@@ -70,14 +70,14 @@ jsm_system* new_system(jsm::systems which)
             break;
         /*case jsm::systems::PS1:
             PS1_new(out);
-            break;
+            break;*/
         case jsm::systems::SG1000:
         case jsm::systems::SMS1:
         case jsm::systems::SMS2:
         case jsm::systems::GG:
-            SMSGG_new(out, which, REGION_USA);
+            out = SMSGG_new(which, jsm::regions::USA);
             break;
-        case jsm::systems::DREAMCAST:
+        /*case jsm::systems::DREAMCAST:
             DC_new(out);
             break;
         case jsm::systems::APPLEIIe:

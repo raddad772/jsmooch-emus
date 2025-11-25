@@ -2,9 +2,9 @@
 // Created by RadDad772 on 3/13/24.
 //
 
-#include "assert.h"
+#include <cassert>
 #include "stdio.h"
-#include "stdlib.h" // abort()
+#include <cstdlib> // abort()
 #include "dreamcast.h"
 #include "holly.h"
 #include "maple.h"

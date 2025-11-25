@@ -2,11 +2,11 @@
 // Created by Dave on 2/6/2024.
 //
 
-#include "assert.h"
+#include <cassert>
 #include <cstdio>
 #include "file_exists.h"
 #include <cstring>
-#include "stdlib.h"
+#include <cstdlib>
 
 #include "buf.h"
 

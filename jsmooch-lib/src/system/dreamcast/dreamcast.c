@@ -2,9 +2,9 @@
 // Created by Dave on 2/11/2024.
 //
 
-#include "assert.h"
+#include <cassert>
 #include "stdio.h"
-#include "stdlib.h"
+#include <cstdlib>
 #include <cstring>
 
 #include "gdi.h"

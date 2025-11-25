@@ -9,9 +9,9 @@
 
 
 #include <cstring>
-#include "assert.h"
+#include <cassert>
 #include "stdio.h"
-#include "stdlib.h"
+#include <cstdlib>
 #include "helpers/debug.h"
 #include "dreamcast.h"
 #include "holly.h"

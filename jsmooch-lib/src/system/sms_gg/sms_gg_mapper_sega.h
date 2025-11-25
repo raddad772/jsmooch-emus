@@ -59,8 +59,8 @@ public:
         } cart_ram{};
 
         u32 bank_shift{};
-        bool bios_enabled{};
-        bool cart_enabled{};
+        bool bios_enabled{false};
+        bool cart_enabled{true};
     } io{};
 };
 

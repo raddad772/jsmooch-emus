@@ -15,7 +15,7 @@
 #include "audiowrap.h"
 
 #include <cstdio>
-#include "assert.h"
+#include <cassert>
 
 
 static ClownResampler_Precomputed precomputed;

@@ -2,7 +2,7 @@
 // Created by RadDad772 on 3/8/24.
 //
 
-#include "stdlib.h"
+#include <cstdlib>
 #include "tmu.h"
 #include "sh4_interpreter.h"
 #include "sh4_interrupts.h"

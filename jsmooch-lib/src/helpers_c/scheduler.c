@@ -4,8 +4,8 @@
 
 #include <cstring>
 #include "stdio.h"
-#include "assert.h"
-#include "stdlib.h"
+#include <cassert>
+#include <cstdlib>
 #include "scheduler.h"
 #include "helpers/debug.h"
 

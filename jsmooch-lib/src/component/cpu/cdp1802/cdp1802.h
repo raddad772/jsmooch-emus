@@ -13,13 +13,13 @@
 /*
  *In order for IO/DMA to work properly, you need to do
  *
- * RCA1802_cycle()
+ * CDP1802_cycle()
  * check_and_service_reads()
  * devices here
  * check_and_service_writes()
 */
 
-namespace RCA1802 {
+namespace CDP1802 {
 
 struct pins {
     enum SC {

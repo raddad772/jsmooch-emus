@@ -8,7 +8,7 @@
 //
 
 #include <time.h>
-#include "assert.h"
+#include <cassert>
 #include "stdio.h"
 #include "dc_mem.h"
 #include "holly.h"

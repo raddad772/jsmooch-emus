@@ -2,10 +2,10 @@
 // Created by . on 11/20/25.
 //
 
-#include "rca1802_disassembler.h"
-#include "rca1802.h"
+#include "cdp1802_disassembler.h"
+#include "cdp1802.h"
 
-namespace RCA1802 {
+namespace CDP1802 {
 static u8 dbg_read(jsm_debug_read_trace &trace, u16 &PC)
 {
     u16 v = trace.read_trace(trace.ptr, PC);

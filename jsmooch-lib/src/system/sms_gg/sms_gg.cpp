@@ -2,51 +2,31 @@
 // Created by Dave on 2/7/2024.
 //
 
-#include "assert.h"
-#include "stdlib.h"
+#include <cassert>
+#include <cstdlib>
 #include <cstring>
 #include <cstdio>
 
-#include "fail"
 #include "sms_gg.h"
 #include "sms_gg_clock.h"
 #include "sms_gg_io.h"
+#include "sms_gg_bus.h"
 #include "sms_gg_mapper_sega.h"
 #include "sms_gg_vdp.h"
 #include "smsgg_debugger.h"
 #include "sms_gg_serialize.h"
 
-#define JTHIS struct SMSGG* this = (SMSGG*)jsm->ptr
-#define JSM struct jsm_system* jsm
-
-#define THIS struct SMSGG* this
+#define JSM jsm_system* jsm
 
 static float i16_to_float(i16 val)
 {
-    return ((((float)(((i32)val) + 32768)) / 65535.0f) * 2.0f) - 1.0f;
+    return ((static_cast<float>(static_cast<i32>(val) + 32768) / 65535.0f) * 2.0f) - 1.0f;
 }
-
-void SMSGGJ_play(JSM) {}
-void SMSGGJ_pause(JSM) {}
-void SMSGGJ_stop(JSM) {}
-void SMSGGJ_get_framevars(JSM, framevars* out);
-void SMSGGJ_reset(JSM);
-void SMSGGJ_killall(JSM);
-u32 SMSGGJ_finish_frame(JSM);
-u32 SMSGGJ_finish_scanline(JSM);
-u32 SMSGGJ_step_master(JSM, u32 howmany);
-void SMSGGJ_load_BIOS(JSM, multi_file_set* mfs);
-void SMSGGJ_enable_tracing(JSM);
-void SMSGGJ_disable_tracing(JSM);
-void SMSGGJ_describe_io(JSM, cvec *IOs);
-static void SMSGGIO_unload_cart(JSM);
-static void SMSGGIO_load_cart(JSM, multi_file_set *mfs, physical_io_device *pio);
-
 
 u32 SMSGG_CPU_read_trace(void *ptr, u32 addr)
 {
-    struct SMSGG* this = (SMSGG*)ptr;
-    return SMSGG_bus_read(this, addr, 0);
+    auto* th = static_cast<SMSGG::core *>(ptr);
+    return th->main_bus_read(addr, 0);
 }
 
 #define MASTER_CYCLES_PER_FRAME 179208
@@ -54,126 +34,89 @@ static void setup_debug_waveform(debug_waveform *dw)
 {
     if (dw->samples_requested == 0) return;
     dw->samples_rendered = dw->samples_requested;
-    dw->user.cycle_stride = ((float)MASTER_CYCLES_PER_FRAME / (float)dw->samples_requested);
+    dw->user.cycle_stride = (static_cast<float>(MASTER_CYCLES_PER_FRAME) / static_cast<float>(dw->samples_requested));
     dw->user.buf_pos = 0;
 }
 
-void SMSGGJ_set_audiobuf(jsm_system* jsm, audiobuf *ab)
+void SMSGG::core::set_audiobuf(audiobuf *ab)
 {
-    JTHIS;
-    this->audio.buf = ab;
-    if (this->audio.master_cycles_per_audio_sample == 0) {
-        this->audio.master_cycles_per_audio_sample = ((float)MASTER_CYCLES_PER_FRAME / (float)ab->samples_len);
-        this->audio.next_sample_cycle = 0;
-        struct debug_waveform *wf = (debug_waveform *)cpg(this->dbg.waveforms.main);
-        this->sn76489.ext_enable = wf->ch_output_enabled;
+    audio.buf = ab;
+    if (audio.master_cycles_per_audio_sample == 0) {
+        audio.master_cycles_per_audio_sample = (static_cast<float>(MASTER_CYCLES_PER_FRAME) / static_cast<float>(ab->samples_len));
+        audio.next_sample_cycle = 0;
+        auto *wf = &dbg.waveforms.main.get();
+        sn76489.ext_enable = wf->ch_output_enabled;
     }
-    struct debug_waveform *wf = cpg(this->dbg.waveforms.main);
+    debug_waveform *wf = &dbg.waveforms.main.get();
     setup_debug_waveform(wf);
     if (wf->clock_divider == 0) wf->clock_divider = wf->default_clock_divider;
-    this->clock.apu_divisor = wf->clock_divider;
+    clock.apu_divisor = wf->clock_divider;
     for (u32 i = 0; i < 4; i++) {
-        wf = (debug_waveform *)cpg(this->dbg.waveforms.chan[i]);
+        wf = &dbg.waveforms.chan[i].get();
         setup_debug_waveform(wf);
         if (i < 3) {
-            this->sn76489.sw[i].ext_enable = wf->ch_output_enabled;
+            sn76489.sw[i].ext_enable = wf->ch_output_enabled;
         }
         else
-            this->sn76489.noise.ext_enable = wf->ch_output_enabled;
+            sn76489.noise.ext_enable = wf->ch_output_enabled;
     }
 }
 
-void SMSGG_new(jsm_system* jsm, enum jsm::systems variant, enum jsm_regions region) {
-    struct SMSGG* this = (SMSGG*)malloc(sizeof(SMSGG));
-    memset(this, 0, sizeof(SMSGG));
-    SMSGG_clock_init(&this->clock, variant, region);
-    SMSGG_VDP_init(&this->vdp, this, variant);
-    SMSGG_mapper_sega_init(&this->mapper, variant);
-    SMSGG_io_init(this);
-    Z80_init(&this->cpu, 0);
+jsm_system *SMSGG_new(jsm::systems variant, jsm::regions region) {
+    auto* th = new SMSGG::core(variant, region);
 
     // setup tracing reads
-    struct jsm_debug_read_trace a;
-    a.ptr = (void *)this;
+    jsm_debug_read_trace a;
+    a.ptr = static_cast<void *>(th);
     a.read_trace = &SMSGG_CPU_read_trace;
-    Z80_setup_tracing(&this->cpu, &a, &this->clock.master_cycles);
+    th->cpu.setup_tracing(&a, &th->clock.master_cycles);
 
     // bus init
-    SMSGG_gamepad_init(&this->io.controllerA, variant, 1);
-    SMSGG_controller_port_init(&this->io.portA, variant, 1);
-    SMSGG_controller_port_init(&this->io.portB, variant, 2);
-    this->io.portA.attached_device = (void *)&this->io.controllerA;
+    th->io.portA.init(variant, 1);
+    th->io.portB.init(variant, 2);
+    th->io.portA.attached_device = &th->io.controllerA;
 
-    this->io.disable = 0;
-    this->io.gg_start = 0;
+    th->io.disable = 0;
+    th->io.gg_start = 0;
 
     switch(variant) {
         case jsm::systems::SG1000:
-            this->cpu_in = &SMSGG_bus_cpu_in_sms1;
-            this->cpu_out = &SMSGG_bus_cpu_out_sms1;
-            snprintf(jsm->label, sizeof(jsm->label), "Sega Game 1000");
+            th->cpu_in = &SMSGG::core::cpu_in_sms1;
+            th->cpu_out = &SMSGG::core::cpu_out_sms1;
+            snprintf(th->label, sizeof(th->label), "Sega Game 1000");
             break;
         case jsm::systems::SMS1:
-            this->cpu_in = &SMSGG_bus_cpu_in_sms1;
-            this->cpu_out = &SMSGG_bus_cpu_out_sms1;
-            snprintf(jsm->label, sizeof(jsm->label), "Sega Master System");
+            th->cpu_in = &SMSGG::core::cpu_in_sms1;
+            th->cpu_out = &SMSGG::core::cpu_out_sms1;
+            snprintf(th->label, sizeof(th->label), "Sega Master System");
             break;
         case jsm::systems::SMS2:
-            this->cpu_in = &SMSGG_bus_cpu_in_sms1;
-            this->cpu_out = &SMSGG_bus_cpu_out_sms1;
-            snprintf(jsm->label, sizeof(jsm->label), "Sega Master System II");
+            th->cpu_in = &SMSGG::core::cpu_in_sms1;
+            th->cpu_out = &SMSGG::core::cpu_out_sms1;
+            snprintf(th->label, sizeof(th->label), "Sega Master System II");
             break;
         case jsm::systems::GG:
-            this->cpu_in = &SMSGG_bus_cpu_in_gg;
-            this->cpu_out = &SMSGG_bus_cpu_out_sms1;
-            snprintf(jsm->label, sizeof(jsm->label), "Sega Game Gear");
+            th->cpu_in = &SMSGG::core::cpu_in_gg;
+            th->cpu_out = &SMSGG::core::cpu_out_sms1;
+            snprintf(th->label, sizeof(th->label), "Sega Game Gear");
             break;
         default:
             assert(1!=0);
-            return;
+            return nullptr;
     }
 
     // bus init done
-    this->last_frame = 0;
+    th->last_frame = 0;
 
-    this->audio.buf = NULL;
+    th->audio.buf = nullptr;
 
-    SMSGG_VDP_reset(&this->vdp);
-    SN76489_reset(&this->sn76489);
+    th->vdp.reset();
+    th->sn76489.reset();
 
-    this->described_inputs = 0;
+    th->described_inputs = 0;
 
-    jsm->ptr = (void*)this;
-
-    jsm->finish_frame = &SMSGGJ_finish_frame;
-    jsm->finish_scanline = &SMSGGJ_finish_scanline;
-    jsm->step_master = &SMSGGJ_step_master;
-    jsm->reset = &SMSGGJ_reset;
-    jsm->load_BIOS = &SMSGGJ_load_BIOS;
-    jsm->get_framevars = &SMSGGJ_get_framevars;
-    jsm->play = &SMSGGJ_play;
-    jsm->pause = &SMSGGJ_pause;
-    jsm->stop = &SMSGGJ_stop;
-    jsm->describe_io = &SMSGGJ_describe_io;
-    jsm->sideload = NULL;
-    jsm->set_audiobuf = &SMSGGJ_set_audiobuf;
-    jsm->setup_debugger_interface = &SMSGGJ_setup_debugger_interface;
-    jsm->save_state = &SMSGGJ_save_state;
-    jsm->load_state = &SMSGGJ_load_state;
-    //SMSGGJ_reset(jsm);
+    return th;
 }
-
-static void new_button(JSM_CONTROLLER* cnt, const char* name, enum JKEYS common_id)
-{
-    struct HID_digital_button *b = cvec_push_back(&cnt->digital_buttons);
-    snprintf(b->name, sizeof(b->name), "%s", name);
-    b->state = 0;
-    b->id = 0;
-    b->kind = DBK_BUTTON;
-    b->common_id = common_id;
-}
-
-
 
 static void setup_crt_sms(JSM_DISPLAY *d)
 {
@@ -230,241 +173,228 @@ void setup_lcd_gg(JSM_DISPLAY *d)
     d->pixelometry.overscan.top = d->pixelometry.overscan.bottom = 24;
 }
 
-static void setup_audio(cvec* IOs)
+static void setup_audio(std::vector<physical_io_device> &inIOs)
 {
-    struct physical_io_device *pio = cvec_push_back(IOs);
-    pio->kind = HID_AUDIO_CHANNEL;
-    struct JSM_AUDIO_CHANNEL *chan = &pio->audio_channel;
+    physical_io_device &pio = inIOs.emplace_back();
+    pio.kind = HID_AUDIO_CHANNEL;
+    JSM_AUDIO_CHANNEL *chan = &pio.audio_channel;
     chan->sample_rate = (MASTER_CYCLES_PER_FRAME * 60) / 48;
     chan->low_pass_filter = 16000;
 }
 
-void SMSGGJ_describe_io(JSM, cvec *IOs)
-{
-    JTHIS;
-    if (this->described_inputs) return;
-    this->described_inputs = 1;
+static void SMSGGIO_unload_cart(JSM);
+static void SMSGGIO_load_cart(JSM, multi_file_set &mfs, physical_io_device &pio);
 
-    this->IOs = IOs;
+void SMSGG::core::describe_io()
+{
+    if (described_inputs) return;
+    described_inputs = 1;
 
     // controllers
-    struct physical_io_device *d = cvec_push_back(this->IOs);
-    SMSGG_gamepad_setup_pio(d, 0, "Player A", 1, 1);
-    this->io.controllerA.device_ptr = make_cvec_ptr(IOs, cvec_len(IOs)-1);
-    if (this->variant != jsm::systems::GG) {
-        d = cvec_push_back(this->IOs);
-        SMSGG_gamepad_setup_pio(d, 1, "Player B", 0, 0);
-        this->io.controllerB.device_ptr = make_cvec_ptr(IOs, cvec_len(IOs)-1);
+    physical_io_device *d =  &IOs.emplace_back();
+    SMSGG_gamepad::setup_pio(*d, 0, "Player A", 1, 1);
+    io.controllerA.device_ptr.make(IOs, IOs.size()-1);
+    if (variant != jsm::systems::GG) {
+        d = &IOs.emplace_back();
+        SMSGG_gamepad::setup_pio(*d, 1, "Player B", 0, 0);
+        io.controllerB.device_ptr.make(IOs, IOs.size()-1);
     }
 
     // power, reset, and pause buttons
-    struct physical_io_device* chassis = cvec_push_back(IOs);
-    physical_io_device_init(chassis, HID_CHASSIS, 1, 1, 1, 1);
-    struct HID_digital_button* b;
-    b = cvec_push_back(&chassis->chassis.digital_buttons);
+    physical_io_device* chassis = &IOs.emplace_back();
+    chassis->init(HID_CHASSIS, 1, 1, 1, 1);
+    HID_digital_button* b = &chassis->chassis.digital_buttons.emplace_back();;
     snprintf(b->name, sizeof(b->name), "Power");
     b->state = 1;
     b->common_id = DBCID_ch_power;
 
-    if (this->variant != jsm::systems::GG) {
-        b = cvec_push_back(&chassis->chassis.digital_buttons);
+    if (variant != jsm::systems::GG) {
+        b = &chassis->chassis.digital_buttons.emplace_back();
         b->common_id = DBCID_ch_reset;
         snprintf(b->name, sizeof(b->name), "Reset");
         b->state = 0;
     }
 
-    this->io.pause_button = NULL;
+    io.pause_button = nullptr;
 
-    if (this->variant != jsm::systems::GG) {
-        b = cvec_push_back(&chassis->chassis.digital_buttons);
+    if (variant != jsm::systems::GG) {
+        b = &chassis->chassis.digital_buttons.emplace_back();
         b->common_id = DBCID_ch_pause;
         snprintf(b->name, sizeof(b->name), "Pause");
         b->state = 0;
 
-        this->io.pause_button = b;
+        io.pause_button = b;
     }
 
     // cartridge port
-    d = cvec_push_back(IOs);
-    physical_io_device_init(d, HID_CART_PORT, 1, 1, 1, 0);
+    d = &IOs.emplace_back();
+    d->init(HID_CART_PORT, 1, 1, 1, 0);
     d->cartridge_port.load_cart = &SMSGGIO_load_cart;
     d->cartridge_port.unload_cart = &SMSGGIO_unload_cart;
 
     // screen
-    d = cvec_push_back(IOs);
-    physical_io_device_init(d, HID_DISPLAY, 1, 1, 0, 1);
+    d = &IOs.emplace_back();
+    d->init(HID_DISPLAY, 1, 1, 0, 1);
     d->display.output[0] = malloc(SMSGG_DISPLAY_DRAW_SZ);
     d->display.output[1] = malloc(SMSGG_DISPLAY_DRAW_SZ);
-    d->display.output_debug_metadata[0] = NULL;
-    d->display.output_debug_metadata[1] = NULL;
-    this->vdp.display_ptr = make_cvec_ptr(IOs, cvec_len(IOs)-1);
-    if (this->variant == jsm::systems::GG)
+    d->display.output_debug_metadata[0] = nullptr;
+    d->display.output_debug_metadata[1] = nullptr;
+    vdp.display_ptr.make(IOs, IOs.size()-1);
+    if (variant == jsm::systems::GG)
         setup_lcd_gg(&d->display);
     else
         setup_crt_sms(&d->display);
 
-    this->vdp.display = NULL;
-    this->vdp.cur_output = (u16 *)d->display.output[0];
+    vdp.display = nullptr;
+    vdp.cur_output = static_cast<u16 *>(d->display.output[0]);
     d->display.last_written = 1;
     //d->display.last_displayed = 1;
 
     // Audio
     setup_audio(IOs);
 
-    struct physical_io_device *pio = cpg(this->vdp.display_ptr);
-    this->vdp.display = &pio->display;
+    physical_io_device *pio = &vdp.display_ptr.get();
+    vdp.display = &pio->display;
 }
 
-void SMSGG_delete(jsm_system* jsm)
+void SMSGG::core::get_framevars(framevars &out)
 {
-    JTHIS;
-    SMSGG_mapper_sega_delete(&this->mapper);
-
-    free(jsm->ptr);
-    jsm->ptr = NULL;
-
-    jsm_clearfuncs(jsm);
+    out.master_frame = clock.frames_since_restart;
+    out.x = clock.hpos;
+    out.scanline = clock.vpos;
 }
 
-void SMSGGJ_get_framevars(JSM, framevars* out)
+void SMSGG::core::reset()
 {
-    JTHIS;
-    out->master_frame = this->clock.frames_since_restart;
-    out->x = this->clock.hpos;
-    out->scanline = this->clock.vpos;
+    cpu.reset();
+    vdp.reset();
+    mapper.reset();
+    sn76489.reset();
+    last_frame = 0;
 }
 
-void SMSGGJ_reset(JSM)
-{
-    JTHIS;
-    Z80_reset(&this->cpu);
-    SMSGG_VDP_reset(&this->vdp);
-    SMSGG_mapper_sega_reset(&this->mapper);
-    SN76489_reset(&this->sn76489);
-    this->last_frame = 0;
-}
-
-void SMSGGJ_killall(JSM)
+void SMSGG::core::killall()
 {
 }
 
-u32 SMSGGJ_finish_frame(JSM)
+u32 SMSGG::core::finish_frame()
 {
-    JTHIS;
-    u32 current_frame = this->clock.frames_since_restart;
+    u32 current_frame = clock.frames_since_restart;
     u32 scanlines_done = 0;
-    this->clock.cpu_frame_cycle = 0;
-    while(current_frame == this->clock.frames_since_restart) {
+    clock.cpu_frame_cycle = 0;
+    while(current_frame == clock.frames_since_restart) {
         scanlines_done++;
-        SMSGGJ_finish_scanline(jsm);
-        if (dbg.do_break) return this->vdp.display->last_written;
+        finish_scanline();
+        if (::dbg.do_break) return vdp.display->last_written;
     }
-    return this->vdp.display->last_written;
+    return vdp.display->last_written;
 }
 
-u32 SMSGGJ_finish_scanline(JSM)
+u32 SMSGG::core::finish_scanline()
 {
-    JTHIS;
-    u32 cycles_left = 684 - (this->clock.hpos * 2);
-    SMSGGJ_step_master(jsm, cycles_left);
+    u32 cycles_left = 684 - (clock.hpos * 2);
+    step_master(cycles_left);
     return 0;
 }
 
-static void cpu_cycle(SMSGG* this)
+void SMSGG::core::cpu_cycle()
 {
-    if (this->cpu.pins.RD) {
-        if (this->cpu.pins.MRQ) {// read ROM/RAM
-            this->cpu.pins.D = SMSGG_bus_read(this, this->cpu.pins.Addr, 1);
+    if (cpu.pins.RD) {
+        if (cpu.pins.MRQ) {// read ROM/RAM
+            cpu.pins.D = main_bus_read(cpu.pins.Addr, 1);
 #ifndef LYCODER
-            if (dbg.trace_on) {
+
                 // Z80(    25)r   0006   $18     TCU:1
-                dbg_printf(DBGC_Z80 "\nSMS(%06llu)r   %04x   $%02x         TCU:%d" DBGC_RST, *this->cpu.trace.cycles, this->cpu.pins.Addr, this->cpu.pins.D, this->cpu.regs.TCU);
-                //dbg.traces.add(D_RESOURCE_TYPES.Z80, this->cpu.trace_cycles, trace_format_read('Z80', Z80_COLOR, this->cpu.trace_cycles, this->cpu.pins.Addr, this->cpu.pins.D, null, this->cpu.regs.TCU));
-            }
+                //dbg_printf(DBGC_Z80 "\nSMS(%06llu)r   %04x   $%02x         TCU:%d" DBGC_RST, *cpu.trace.cycles, cpu.pins.Addr, cpu.pins.D, cpu.regs.TCU);
+                //dbg.traces.add(D_RESOURCE_TYPES.Z80, cpu.trace_cycles, trace_format_read('Z80', Z80_COLOR, cpu.trace_cycles, cpu.pins.Addr, cpu.pins.D, null, cpu.regs.TCU));
+            dbgloglog(this, SMSGG_CAT_CPU_READ, DBGLS_INFO, "%04x   (read)  %02x", cpu.pins.Addr, cpu.pins.D);
 #endif
-        } else if (this->cpu.pins.IO && (this->cpu.pins.M1 == 0)) { // read IO port
+        } else if (cpu.pins.IO && (cpu.pins.M1 == 0)) { // read IO port
             //RD=1, IO=1, M1=1 means "IRQ ack" so we ignore that here
-            this->cpu.pins.D = this->cpu_in(this, this->cpu.pins.Addr, this->cpu.pins.D, 1);
+            cpu.pins.D = (this->*cpu_in)(cpu.pins.Addr, cpu.pins.D, 1);
 #ifndef LYCODER
-            if (dbg.trace_on)
-                dbg_printf(DBGC_Z80 "\nSMS(%06llu)in  %04x   $%02x         TCU:%d" DBGC_RST, *this->cpu.trace.cycles, this->cpu.pins.Addr, this->cpu.pins.D, this->cpu.regs.TCU);
+            //if (::dbg.trace_on)
+                //dbg_printf(DBGC_Z80 "\nSMS(%06llu)in  %04x   $%02x         TCU:%d" DBGC_RST, *cpu.trace.cycles, cpu.pins.Addr, cpu.pins.D, cpu.regs.TCU);
+            dbgloglog(this, SMSGG_CAT_CPU_IN, DBGLS_INFO, "%04x   (in)    %02x", cpu.pins.Addr, cpu.pins.D);
 #endif
         }
     }
-    if (this->cpu.pins.WR) {
-        if (this->cpu.pins.MRQ) { // write RAM
-            if (dbg.trace_on && (this->cpu.trace.last_cycle != *this->cpu.trace.cycles)) {
-                //dbg.traces.add(D_RESOURCE_TYPES.Z80, this->cpu.trace_cycles, trace_format_write('Z80', Z80_COLOR, this->cpu.trace_cycles, this->cpu.pins.Addr, this->cpu.pins.D));
-                this->cpu.trace.last_cycle = *this->cpu.trace.cycles;
+    if (cpu.pins.WR) {
+        if (cpu.pins.MRQ) { // write RAM
+            if (cpu.trace.last_cycle != *cpu.trace.cycles) {
+                //dbg.traces.add(D_RESOURCE_TYPES.Z80, cpu.trace_cycles, trace_format_write('Z80', Z80_COLOR, cpu.trace_cycles, cpu.pins.Addr, cpu.pins.D));
+                cpu.trace.last_cycle = *cpu.trace.cycles;
 #ifndef LYCODER
-                dbg_printf(DBGC_Z80 "\nSMS(%06llu)wr  %04x   $%02x         TCU:%d" DBGC_RST, *this->cpu.trace.cycles, this->cpu.pins.Addr, this->cpu.pins.D, this->cpu.regs.TCU);
+                //dbg_printf(DBGC_Z80 "\nSMS(%06llu)wr  %04x   $%02x         TCU:%d" DBGC_RST, *cpu.trace.cycles, cpu.pins.Addr, cpu.pins.D, cpu.regs.TCU);
+                dbgloglog(this, SMSGG_CAT_CPU_WRITE, DBGLS_INFO, "%04x   (write) %02x", cpu.pins.Addr, cpu.pins.D);
 #endif
             }
-            SMSGG_bus_write(this, this->cpu.pins.Addr, this->cpu.pins.D);
-        } else if (this->cpu.pins.IO) {
-            this->cpu_out(this, this->cpu.pins.Addr, this->cpu.pins.D);
+            main_bus_write(cpu.pins.Addr, cpu.pins.D);
+        } else if (cpu.pins.IO) {
+            (this->*cpu_out)(cpu.pins.Addr, cpu.pins.D);
 #ifndef LYCODER
-            if (dbg.trace_on)
-                dbg_printf(DBGC_Z80 "\nSMS(%06llu)out %04x   $%02x         TCU:%d" DBGC_RST, *this->cpu.trace.cycles, this->cpu.pins.Addr, this->cpu.pins.D, this->cpu.regs.TCU);
+            //if (::dbg.trace_on)
+                //dbg_printf(DBGC_Z80 "\nSMS(%06llu)out %04x   $%02x         TCU:%d" DBGC_RST, *cpu.trace.cycles, cpu.pins.Addr, cpu.pins.D, cpu.regs.TCU);
+            dbgloglog(this, SMSGG_CAT_CPU_WRITE, DBGLS_INFO, "%04x   (out)   %02x", cpu.pins.Addr, cpu.pins.D);
 #endif
         }
     }
-    Z80_cycle(&this->cpu);
-    this->clock.cpu_frame_cycle += this->clock.cpu_divisor;
+    cpu.cycle();
+    clock.cpu_frame_cycle += clock.cpu_divisor;
 }
 
-static void SMSGG_notify_NMI(SMSGG* this, u32 level)
+void SMSGG::core::notify_NMI(bool level)
 {
-    Z80_notify_NMI(&this->cpu, level);
+    cpu.notify_NMI(level);
 }
 
-void SMSGG_bus_notify_IRQ(SMSGG* this, u32 level)
+void SMSGG::core::notify_IRQ(bool level)
 {
-    Z80_notify_IRQ(&this->cpu, level);
+    cpu.notify_IRQ(level);
 }
 
-static void poll_pause(SMSGG* this)
+void SMSGG::core::poll_pause()
 {
-    if (this->variant != jsm::systems::GG)
-        SMSGG_notify_NMI(this, this->io.pause_button->state);
+    if (variant != jsm::systems::GG)
+        notify_NMI(io.pause_button->state);
 }
 
-static void sample_audio(SMSGG* this)
+void SMSGG::core::sample_audio()
 {
-    if (this->audio.buf && (this->clock.master_cycles >= (u64)this->audio.next_sample_cycle)) {
-        this->audio.next_sample_cycle += this->audio.master_cycles_per_audio_sample;
-        float *sptr = ((float *)this->audio.buf->ptr) + (this->audio.buf->upos);
-        //assert(this->audio.buf->upos < this->audio.buf->samples_len);
-        if (this->audio.buf->upos >= this->audio.buf->samples_len) {
-            this->audio.buf->upos++;
+    if (audio.buf && (clock.master_cycles >= static_cast<u64>(audio.next_sample_cycle))) {
+        audio.next_sample_cycle += audio.master_cycles_per_audio_sample;
+        float *sptr = static_cast<float *>(audio.buf->ptr) + (audio.buf->upos);
+        //assert(audio.buf->upos < audio.buf->samples_len);
+        if (audio.buf->upos >= audio.buf->samples_len) {
+            audio.buf->upos++;
         }
         else {
-            *sptr = i16_to_float(SN76489_mix_sample(&this->sn76489, 0));
-            this->audio.buf->upos++;
+            *sptr = i16_to_float(sn76489.mix_sample(false));
+            audio.buf->upos++;
         }
     }
 }
 
-static void debug_audio(SMSGG* this)
+void SMSGG::core::debug_audio()
 {
-    struct debug_waveform *dw = cpg(this->dbg.waveforms.main);
-    if (this->clock.master_cycles >= dw->user.next_sample_cycle) {
+    debug_waveform *dw = &dbg.waveforms.main.get();
+    if (clock.master_cycles >= dw->user.next_sample_cycle) {
         if (dw->user.buf_pos < dw->samples_requested) {
-            //printf("\nSAMPLE AT %lld next:%f stride:%f", this->clock.master_cycles, dw->user.next_sample_cycle, dw->user.cycle_stride);
+            //printf("\nSAMPLE AT %lld next:%f stride:%f", clock.master_cycles, dw->user.next_sample_cycle, dw->user.cycle_stride);
             dw->user.next_sample_cycle += dw->user.cycle_stride;
-            ((float *) dw->buf.ptr)[dw->user.buf_pos] = i16_to_float(SN76489_mix_sample(&this->sn76489, 1));
+            static_cast<float *>(dw->buf.ptr)[dw->user.buf_pos] = i16_to_float(sn76489.mix_sample(true));
             dw->user.buf_pos++;
         }
     }
 
-    dw = cpg(this->dbg.waveforms.chan[0]);
-    if (this->clock.master_cycles >= dw->user.next_sample_cycle) {
+    dw = &dbg.waveforms.chan[0].get();
+    if (clock.master_cycles >= dw->user.next_sample_cycle) {
         for (int j = 0; j < 4; j++) {
-            dw = cpg(this->dbg.waveforms.chan[j]);
+            dw = &dbg.waveforms.chan[j].get();
             if (dw->user.buf_pos < dw->samples_requested) {
                 dw->user.next_sample_cycle += dw->user.cycle_stride;
-                i16 sv = SN76489_sample_channel(&this->sn76489, j);
-                ((float *) dw->buf.ptr)[dw->user.buf_pos] = i16_to_float(sv * 4);
+                i16 sv = sn76489.sample_channel(j);
+                static_cast<float *>(dw->buf.ptr)[dw->user.buf_pos] = i16_to_float(sv * 4);
                 dw->user.buf_pos++;
                 assert(dw->user.buf_pos < 410);
             }
@@ -472,44 +402,43 @@ static void debug_audio(SMSGG* this)
     }
 }
 
-u32 SMSGGJ_step_master(JSM, u32 howmany) {
-    JTHIS;
+u32 SMSGG::core::step_master(u32 howmany) {
 #ifdef LYCODER
     do {
 #else
         for (u32 i = 0; i < howmany; i++) {
 #endif
-        if (this->clock.frames_since_restart != this->last_frame) {
-            this->last_frame = this->clock.frames_since_restart;
-            poll_pause(this);
+        if (clock.frames_since_restart != last_frame) {
+            last_frame = clock.frames_since_restart;
+            poll_pause();
         }
-        this->clock.cpu_master_clock++;
-        this->clock.vdp_master_clock++;
-        this->clock.apu_master_clock += 1;
-        if (this->clock.cpu_master_clock > this->clock.cpu_divisor) {
-            cpu_cycle(this);
-            this->clock.cpu_master_clock -= this->clock.cpu_divisor;
+        clock.cpu_master_clock++;
+        clock.vdp_master_clock++;
+        clock.apu_master_clock += 1;
+        if (clock.cpu_master_clock > clock.cpu_divisor) {
+            cpu_cycle();
+            clock.cpu_master_clock -= clock.cpu_divisor;
         }
-        if (this->clock.vdp_master_clock > this->clock.vdp_divisor) {
-            SMSGG_VDP_cycle(&this->vdp);
-            this->clock.vdp_master_clock -= this->clock.vdp_divisor;
+        if (clock.vdp_master_clock > clock.vdp_divisor) {
+            vdp.cycle();
+            clock.vdp_master_clock -= clock.vdp_divisor;
         }
-        if (this->clock.apu_master_clock > this->clock.apu_divisor) {
-            SN76489_cycle(&this->sn76489);
-            this->clock.apu_master_clock -= this->clock.apu_divisor;
+        if (clock.apu_master_clock > clock.apu_divisor) {
+            sn76489.cycle();
+            clock.apu_master_clock -= clock.apu_divisor;
         }
-        if (this->clock.frames_since_restart != this->last_frame) {
-            this->last_frame = this->clock.frames_since_restart;
-            poll_pause(this);
+        if (clock.frames_since_restart != last_frame) {
+            last_frame = clock.frames_since_restart;
+            poll_pause();
         }
 #ifdef LYCODER
-        if (*this->cpu.trace.cycles > 8000000) break;
+        if (*cpu.trace.cycles > 8000000) break;
 #endif
-        this->clock.master_cycles++;
+        clock.master_cycles++;
 
-        sample_audio(this);
-        debug_audio(this);
-        if (dbg.do_break) break;
+        sample_audio();
+        debug_audio();
+        if (::dbg.do_break) break;
 #ifdef LYCODER
     } while (true);
 #else
@@ -518,9 +447,8 @@ u32 SMSGGJ_step_master(JSM, u32 howmany) {
     return 0;
 }
 
-void SMSGGJ_load_BIOS(JSM, multi_file_set* mfs) {
-    JTHIS;
-    SMSGG_mapper_load_BIOS_from_RAM(&this->mapper, &mfs->files[0].buf);
+void SMSGG::core::load_BIOS(multi_file_set& mfs) {
+    mapper.load_BIOS_from_RAM(mfs.files[0].buf);
 }
 
 static void SMSGGIO_unload_cart(JSM)
@@ -528,9 +456,8 @@ static void SMSGGIO_unload_cart(JSM)
 
 }
 
-static void SMSGGIO_load_cart(JSM, multi_file_set *mfs, physical_io_device *pio) {
-    JTHIS;
-    struct buf *b = &mfs->files[0].buf;
-    SMSGG_mapper_load_ROM_from_RAM(&this->mapper, b);
-    SMSGGJ_reset(jsm);
+static void SMSGGIO_load_cart(JSM, multi_file_set &mfs, physical_io_device &pio) {
+    auto *th = dynamic_cast<SMSGG::core *>(jsm);
+    th->mapper.load_ROM_from_RAM(mfs.files[0].buf);
+    th->reset();
 }

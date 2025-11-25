@@ -4,11 +4,11 @@
 
 #include <cassert>
 
-#include "rca1802.h"
-#include "rca1802_instructions.h"
-#include "rca1802_disassembler.h"
+#include "cdp1802.h"
+#include "cdp1802_instructions.h"
+#include "cdp1802_disassembler.h"
 
-namespace RCA1802 {
+namespace CDP1802 {
 
 void core::reset() {
     regs.D = 0;

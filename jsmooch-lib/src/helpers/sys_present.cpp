@@ -503,7 +503,7 @@ void genesis_present(physical_io_device &device, void *out_buf, u32 out_width, u
 
 void SMS_present(physical_io_device &device, void *out_buf, u32 x_offset, u32 y_offset, u32 out_width, u32 out_height)
 {
-    u16 *smso = (u16 *)device.display.output[device.display.last_written];
+    u16 *smso = static_cast<u16 *>(device.display.output[device.display.last_written]);
 
     u32* img32 = calc_start_pos(out_buf, x_offset, y_offset, out_width);
     u32 stride = calc_stride(out_width, 256);
@@ -518,7 +518,7 @@ void SMS_present(physical_io_device &device, void *out_buf, u32 x_offset, u32 y_
             g = ((color >> 2) & 3) * 0x55;
             r = (color & 3) * 0x55;
 
-            u8 *img8 = (u8 *)img32;
+            u8 *img8 = reinterpret_cast<u8 *>(img32);
             img8[0] = r;
             img8[1] = g;
             img8[2] = b;

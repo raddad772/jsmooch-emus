@@ -8,6 +8,7 @@
 #include "sms_gg_clock.h"
 #include "sms_gg_io.h"
 #include "sms_gg_mapper_sega.h"
+#include "sms_gg_bus.h"
 #include "sms_gg_vdp.h"
 
 #include "sms_gg_serialize.h"
@@ -108,7 +109,7 @@ void core::serialize_mapper(serialized_state &state)
 void core::serialize_vdp(serialized_state &state)
 {
     state.new_section("vdp", SMSGG::vdp_k, 1);
-#define S(x) Sadd(&vdp. x, sizeof(vdp. x))
+#define S(x) Sadd(state, &vdp. x, sizeof(vdp. x))
     S(VRAM);
     S(CRAM);
     S(mode);
@@ -235,7 +236,7 @@ void core::deserialize_debug(serialized_state &state)
 
 void core::deserialize_vdp(serialized_state &state)
 {
-#define L(x) Sload(&(vdp. x), sizeof(vdp. x))
+#define L(x) Sload(state, &(vdp. x), sizeof(vdp. x))
     L(VRAM);
     L(CRAM);
     L(mode);
@@ -296,7 +297,7 @@ void core::deserialize_vdp(serialized_state &state)
     //// Now serialize the currently-being-rendered frame...
     //Sload(&vdp.cur_output, SMSGG_DISPLAY_DRAW_SZ);
 
-    vdp.update_videmode();
+    vdp.update_videomode();
 #undef L
 }
 

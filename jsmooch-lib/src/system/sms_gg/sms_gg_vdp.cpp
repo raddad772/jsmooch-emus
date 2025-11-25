@@ -7,6 +7,7 @@
 
 #include "sms_gg_vdp.h"
 #include "sms_gg.h"
+#include "sms_gg_bus.h"
 #include "smsgg_debugger.h"
 namespace SMSGG {
 
@@ -225,7 +226,8 @@ void VDP::update_irqs()
         //io.irq_line_pending = 0;
     }
     SMSGG_bus_notify_IRQ(bus, level);*/
-    bus->notify_IRQ(((io.irq_frame_pending && io.irq_frame_enabled) || (io.irq_line_pending && io.irq_line_enabled)));
+    bool level = ((io.irq_frame_pending && io.irq_frame_enabled) || (io.irq_line_pending && io.irq_line_enabled));
+    bus->notify_IRQ(level);
 }
 
 void VDP::sprite_setup()
@@ -342,7 +344,7 @@ void VDP::dac_gfx()
         }
     }
 
-    cur_output[doi] = (u16)color;
+    cur_output[doi] = static_cast<u16>(color);
     doi++;
 }
 
