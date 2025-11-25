@@ -7,6 +7,7 @@
 #include "helpers/int.h"
 #include "helpers/debugger/debugger.h"
 
-struct M6502;
-void M6502_disassemble_entry(M6502*, disassembly_entry& entry);
+namespace M6502 {
+void disassemble_entry(core*, disassembly_entry& entry);
+}
 

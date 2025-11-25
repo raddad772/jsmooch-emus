@@ -2,12 +2,10 @@
 // Created by Dave on 2/4/2024.
 //
 
-#ifndef JSMOOCH_EMUS_M6502_MISC_H
-#define JSMOOCH_EMUS_M6502_MISC_H
+#pragma once
+namespace M6502 {
+struct regs;
+struct pins;
 
-struct M6502_regs;
-struct M6502_pins;
-
-typedef void (*M6502_ins_func)(M6502_regs*, M6502_pins*);
-
-#endif //JSMOOCH_EMUS_M6502_MISC_H
+typedef void (*ins_func)(regs&, pins&);
+}

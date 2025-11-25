@@ -1053,7 +1053,7 @@ int imgui_jsmooch_app::do_setup_before_mainloop()
     //which = jsm::systems::APPLEIIe;
     //which = jsm::systems::DMG;
     //which = jsm::systems::PS1;
-    which = jsm::systems::SMS2;
+    //which = jsm::systems::SMS2;
     //which = jsm::systems::GG;
     //which = jsm::systems::ZX_SPECTRUM_48K;
     //which = jsm::systems::ZX_SPECTRUM_128K;
@@ -1068,7 +1068,7 @@ int imgui_jsmooch_app::do_setup_before_mainloop()
     //which = jsm::systems::MEGADRIVE_PAL;
     //which = jsm::systems::NDS;
     //which = jsm::systems::TURBOGRAFX16;
-    //which = jsm::systems::NES;
+    which = jsm::systems::NES;
     //which = jsm::systems::GALAKSIJA;
     //dbg_enable_trace();
 #endif

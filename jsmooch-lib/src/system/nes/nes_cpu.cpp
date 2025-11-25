@@ -32,7 +32,7 @@ void NES_controllerport::latch(u32 what) const {
     }
 }
 
-r2A03::r2A03(NES* nes) : cpu(nesM6502_decoded_opcodes), nes(nes)
+r2A03::r2A03(NES* nes) : cpu(M6502::nesdecoded_opcodes), nes(nes)
 {
     tracing = 0;
 

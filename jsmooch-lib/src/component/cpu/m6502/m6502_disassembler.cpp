@@ -5,6 +5,7 @@
 #include "m6502_disassembler.h"
 
 #include "helpers/debugger/debugger.h"
+namespace M6502 {
 
 static u16 dbg_read(jsm_debug_read_trace &trace, u32 *PC)
 {
@@ -276,9 +277,11 @@ void M6502_disassemble(u32 *PC, jsm_debug_read_trace &trace, jsm_string &outstr)
 #undef op
 }
 
-void M6502_disassemble_entry(M6502 *cpu, disassembly_entry &entry)
+void disassemble_entry(core *cpu, disassembly_entry &entry)
 {
     u32 PC = entry.addr;
     M6502_disassemble(&PC, cpu->trace.strct, entry.dasm);
     entry.ins_size_bytes = PC - entry.addr;
+}
+
 }

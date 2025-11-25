@@ -23,7 +23,7 @@ static int print_dasm_addr(void *nesptr, u32 addr, char *out, size_t out_sz) {
 static void get_disassembly(void *nesptr, disassembly_view &dview, disassembly_entry &entry)
 {
     NES* th = static_cast<NES *>(nesptr);
-    M6502_disassemble_entry(&th->cpu.cpu, entry);
+    M6502::disassemble_entry(&th->cpu.cpu, entry);
 }
 
 
@@ -31,7 +31,7 @@ static disassembly_vars get_disassembly_vars(void *nesptr, disassembly_view &dv)
 {
     NES* th = static_cast<NES *>(nesptr);
     disassembly_vars dvar;
-    dvar.address_of_executing_instruction = th->cpu.cpu.PCO;
+    dvar.address_of_executing_instruction = th->cpu.cpu.trace.ins_PC;
     dvar.current_clock_cycle = th->clock.trace_cycles;
     return dvar;
 }

@@ -11,19 +11,27 @@
 #include "helpers/serialize/serialize.h"
 #include "m6502_misc.h"
 
-struct M6502_P {
-    u8 C{};
-    u8 Z{};
-    u8 I{};
-    u8 D{};
-    u8 B{};
-    u8 V{};
-    u8 N{};
+namespace M6502 {
+union M6502_P {
+    struct {
+        u8 C : 1;
+        u8 Z : 1;
+        u8 I : 1;
+        u8 D : 1;
+        u8 B : 1;
+        u8 _ : 1;
+        u8 V : 1;
+        u8 N : 1;
+    };
+    u8 u{};
     void setbyte(u8 val);
-    u8 getbyte() const;
+
+    u8 getbyte();
+
+    [[nodiscard]] u8 getbyte() const;
 };
 
-struct M6502_regs {
+struct regs {
     u32 A{}, X{}, Y{};
     u32 PC{}, S{};
     M6502_P P{};
@@ -42,7 +50,7 @@ struct M6502_regs {
     void deserialize(serialized_state &state);
 };
 
-struct M6502_pins {
+struct pins {
     u32 Addr{};
     u32 D{};
     u32 RW{};
@@ -57,9 +65,8 @@ struct M6502_pins {
     void deserialize(serialized_state &state);
 };
 
-struct M6502 {
-
-    explicit M6502(M6502_ins_func *opcode_table);
+struct core {
+    explicit core(ins_func *opcode_table);
 
     void power_on();
     void reset();
@@ -67,12 +74,9 @@ struct M6502 {
     void setup_tracing(jsm_debug_read_trace *strct, u64 *trace_cycle_pointer);
     void serialize(serialized_state &state);
     void deserialize(serialized_state &state);
-    void disassemble_entry(disassembly_entry* entry);
 
-
-    M6502_regs regs{};
-    M6502_pins pins{};
-    u32 PCO{};
+    regs regs{};
+    pins pins{};
 
     DBG_EVENT_VIEW_ONLY_START
     IRQ, NMI
@@ -83,15 +87,15 @@ struct M6502 {
         u64 *cycles{};
         u64 my_cycles{};
         jsm_debug_read_trace strct{};
+        u32 ins_PC{};
     } trace{};
 
     u32 first_reset=1;
 
-    M6502_ins_func current_instruction{};
-    M6502_ins_func *opcode_table{};
+    ins_func current_instruction{};
+    ins_func *opcode_table{};
 };
 
-void M6502_poll_IRQs(M6502_regs *regs, M6502_pins *pins);
-void M6502_poll_NMI_only(M6502_regs *regs, M6502_pins *pins);
-
-struct serialized_state;
+void poll_IRQs(regs &regs, pins &pins);
+void poll_NMI_only(regs &regs, pins &pins);
+}

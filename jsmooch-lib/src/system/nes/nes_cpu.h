@@ -24,7 +24,7 @@ struct NES_controllerport {
 
 struct r2A03 {
     explicit r2A03(NES *nes);
-    M6502 cpu;
+    M6502::core cpu;
     NES *nes;
 
     void reset();

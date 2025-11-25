@@ -1121,11 +1121,11 @@ function M6502_C_func_name(mo, func_prefix) {
     if ((M6502_MN_R[mo.ins] === 'undefined') || (typeof M6502_MN_R[mo.ins] == 'undefined') || (!M6502_MN_R.hasOwnProperty(mo.ins))) {
         console.log('NO MN R FOR ', mo);
     }
-    return func_prefix + 'M6502_ins_' + hex2(mo.opcode) + '_' + M6502_MN_R[mo.ins];
+    return func_prefix + 'ins_' + hex2(mo.opcode) + '_' + M6502_MN_R[mo.ins];
 }
 
 function M6502_C_func_signature(mo, func_prefix) {
-    return 'static void ' + M6502_C_func_name(mo, func_prefix) + '(M6502_regs *regs, M6502_pins *pins)';
+    return 'static void ' + M6502_C_func_name(mo, func_prefix) + '(regs &regs, pins &pins)';
 }
 
 function M6502_C_func_dec(mo, func_prefix) {

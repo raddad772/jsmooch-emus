@@ -17,16 +17,10 @@ List of differences between original NMOS 6502 and CMOS version
 
 
 function replace_for_C(whatr) {
-    if (whatr.includes('getbyte()')) {
-        console.log('ARGH1!!!', whatr);
-    }
-    whatr = whatr.replaceAll('regs.P.setbyte(', 'M6502_regs_P_setbyte(&(regs->P), ');
-    whatr = whatr.replaceAll('regs.P.getbyte()', 'M6502_regs_P_getbyte(&regs.P)');
-    if (whatr.includes('regs.P.getbyte()')) {
-        console.log('ARGH2!!!', whatr);
-    }
-    whatr = whatr.replaceAll('pins.', 'pins->') // Reference to pointer
-    whatr = whatr.replaceAll('regs.', 'regs->') // Reference to pointer
+    //whatr = whatr.replaceAll('regs.P.setbyte(', 'M6502_regs_P_setbyte(&(regs->P), ');
+    //whatr = whatr.replaceAll('regs.P.getbyte()', 'M6502_regs_P_getbyte(&regs.P)');
+    //whatr = whatr.replaceAll('pins.', 'pins->') // Reference to pointer
+    //whatr = whatr.replaceAll('regs.', 'regs->') // Reference to pointer
     whatr = whatr.replaceAll('>>>', '>>'); // Translate >>> to >>
     whatr = whatr.replaceAll('===', '=='); // === becomes ==
     whatr = whatr.replaceAll('!==', '!=');
@@ -34,8 +28,8 @@ function replace_for_C(whatr) {
     whatr = whatr.replaceAll('true', 'TRUE');
     whatr = whatr.replaceAll('false', 'FALSE');
     //what = what.replaceAll('mksigned8(regs->TA)', '(i32)(i8)regs->TA')
-    whatr = whatr.replaceAll('M6502_regs_P_getbyte(&regs->P)', 'regs->P.getbyte()');
-    whatr = whatr.replaceAll('M6502_regs_P_setbyte(&regs->P, ', 'regs->P.setbyte(');
+    //whatr = whatr.replaceAll('M6502_regs_P_getbyte(&regs->P)', 'regs->P.getbyte()');
+    //whatr = whatr.replaceAll('M6502_regs_P_setbyte(&regs->P, ', 'regs->P.setbyte(');
     //what = what.replaceAll('mksigned8(regs->TR)', '(i32)(i8)regs->TR')
     return whatr;
 }
@@ -174,7 +168,7 @@ class m6502_switchgen {
         if (!this.is_C)
             this.outstr = this.indent1 + 'switch(regs.TCU) {\n';
         else
-            this.outstr = this.indent1 + 'switch(regs->TCU) {\n';
+            this.outstr = this.indent1 + 'switch(regs.TCU) {\n';
         this.old_rw = 0;
     }
 
@@ -210,9 +204,6 @@ class m6502_switchgen {
             this.outstr += this.indent3 + what + '\n';
         else {
             what = replace_for_C(what);
-            if (what.includes("regs.P.getbyte()")) {
-                console.log("HA!", what, replace_for_C(what));
-            }
             this.outstr += this.indent3 + what + '\n';
         }
     }
@@ -224,11 +215,11 @@ class m6502_switchgen {
     }
 
     poll_IRQs() {
-        this.addl('M6502_poll_IRQs(regs, pins);')
+        this.addl('poll_IRQs(regs, pins);')
     }
 
     override_IRQ_do() {
-        this.addl('M6502_poll_NMI_only(regs, pins);');
+        this.addl('poll_NMI_only(regs, pins);');
     }
 
     regular_end() {
@@ -358,10 +349,7 @@ class m6502_switchgen {
 
         this.addcycle();
         this.addr_to_S_then_dec();
-        if (!this.is_C)
-            this.addl('pins.D = regs.P.getbyte();');
-        else
-            this.addl('pins->D = M6502_regs_P_getbyte(&regs.P);');
+        this.addl('pins.D = regs.P.getbyte();');
         this.RW(1);
 
         this.addcycle();
@@ -395,10 +383,7 @@ class m6502_switchgen {
 
         this.addcycle();
         this.addr_to_S_then_dec();
-        if (!this.is_C)
-            this.addl('pins.D = regs.P.getbyte() | 0x20;');
-        else
-            this.addl('pins->D = M6502_regs_P_getbyte(&regs.P) | 0x20;');
+        this.addl('pins.D = regs.P.getbyte();');
         this.addl('regs.P.I = 1;');
 
         this.addcycle();
@@ -481,10 +466,7 @@ class m6502_switchgen {
         this.addcycle();
         this.addl('pins.Addr = regs.S | 0x100;');
         this.cleanup();
-        if (!this.is_C)
-            this.addl('regs.P.setbyte(pins.D);');
-        else
-            this.addl('M6502_regs_P_setbyte(&regs.P, pins.D);');
+        this.addl('regs.P.setbyte(pins.D);');
     }
 
     PushP() {
@@ -492,10 +474,7 @@ class m6502_switchgen {
         this.addl('pins.Addr = regs.PC;');
         this.addcycle();
         this.addr_to_S_then_dec();
-        if (!this.is_C)
-            this.addl('pins.D = regs.P.getbyte() | 0x30;');
-        else
-            this.addl('pins->D = M6502_regs_P_getbyte(&regs.P) | 0x30;');
+        this.addl('pins.D = regs.P.getbyte() | 0x30;');
         this.RW(1);
     }
 
@@ -510,10 +489,7 @@ class m6502_switchgen {
         this.addr_to_S_after_inc();
 
         this.addcycle('Read PCL');
-        if (!this.is_C)
-            this.addl('regs.P.setbyte(pins.D);');
-        else
-            this.addl('M6502_regs_P_setbyte(&regs.P, pins.D);');
+        this.addl('regs.P.setbyte(pins.D);');
         this.addr_to_S_after_inc();
 
         this.addcycle('read PCH');
@@ -823,7 +799,7 @@ class m6502_switchgen {
         if (!this.is_C)
             this.addl('regs.TA = (regs.PC + mksigned8(' + w + ')) & 0xFFFF;');
         else
-            this.addl('regs->TA = (((i32)regs->PC) + ((i32)(i8)' + w + ')) & 0xFFFF;')
+            this.addl("regs.TA = (static_cast<i32>(regs.PC) + static_cast<i32>(static_cast<i8>(" + w + "))) & 0xFFFF;");
     }
 
     BRAA() { // Always branch
@@ -2073,11 +2049,12 @@ function generate_6502_core_c(variant_list, final_variant, output_name, BCD_SUPP
         '#include "helpers/int.h"\n' +
         '#include "' + func_prefix + 'm6502_opcodes.h"\n' +
         '#include "m6502.h"\n' +
+        'namespace M6502 {' +
         '\n' +
         '// This file auto-generated by m6502_core_generator.js in JSMooCh\n' +
 
         '\n' +
-        'static void ' + func_prefix + 'M6502_ins_NONE(M6502_regs *regs, M6502_pins *pins)\n' +
+        'static void ' + func_prefix + 'ins_NONE(regs &regs, pins &pins)\n' +
         '{\n' +
         '    assert(1==0);\n' +
         '}\n';
@@ -2096,11 +2073,11 @@ function generate_6502_core_c(variant_list, final_variant, output_name, BCD_SUPP
         outstr += mystr;
     }
     outstr += '\n';
-    let fvr = '\nM6502_ins_func ' + func_prefix + 'M6502_decoded_opcodes[0x103] = {\n' + get_decodes(opc_matrix, '&M6502_ins_NONE', func_prefix) + '\n};\n';
+    let fvr = '\nins_func ' + func_prefix + 'decoded_opcodes[0x103] = {\n' + get_decodes(opc_matrix, '&ins_NONE', func_prefix) + '\n};\n';
     if (func_prefix.length > 0) {
-        fvr = fvr.replaceAll('&M6502', '&' + func_prefix + 'M6502')
+        fvr = fvr.replaceAll('&M6502', '&' + func_prefix)
     }
-    return outstr + fvr;
+    return outstr + fvr + "\n}\n";
 }
 
 
@@ -2157,15 +2134,15 @@ function M6502_opcode_func_gen_c(variant_list, final_variant, output_name, BCD_S
     let indent = '    ';
     let firstin = false;*/
     let opc_matrix = final_m6502_opcode_matrix(variant_list);
-    let o = 'void M6502_ins_NONE(M6502_regs *regs, M6502_pins *pins);\n';
-    let o2 = "M6502_ins_func M6502_decoded_opcodes[0x103] = {\n";
+    let o = 'void ins_NONE(regs &regs, pins &pins);\n';
+    let o2 = "ins_func decoded_opcodes[0x103] = {\n";
     let perline = 0;
     let last_i = 0;
     for (let i in opc_matrix) {
         let mo = opc_matrix[i];
         let mystr='';
         if (mo.ins === M6502_MN.NONE) {
-            o2 += '  &M6502_ins_NONE,';
+            o2 += '  &ins_NONE,';
         }
         else {
             mystr = M6502_C_func_dec(mo);
