@@ -9,19 +9,22 @@
 #include "helpers/debugger/debugger.h"
 #include "helpers/debug.h"
 
+namespace WDC65816 {
 
-#define WDC65816_OP_RESET 0x100
-#define WDC65816_OP_NMI 0x103
-#define WDC65816_OP_IRQ 0x102
-#define WDC65816_OP_ABORT 0x101
+enum OP {
+    RESET = 0x100,
+    ABORT = 0x101,
+    IRQ = 0x102,
+    NMI = 0x103
+};
 
-struct WDC65816_ctxt {
+struct ctxt {
     u32 regs; // bits 0-15: regs 0-15. bit 16: CPSR, etc...
 };
 
-struct WDC65816_regs;
-struct WDC65816_pins;
-typedef void (*WDC65816_ins_func)(WDC65816_regs*, WDC65816_pins*);
+struct regs;
+struct pins;
+typedef void (*ins_func)(regs&, pins&);
 
 union WDC65816_P {
     struct {
@@ -37,7 +40,7 @@ union WDC65816_P {
     u8 v{};
 };
 
-struct WDC65816_regs {
+struct regs {
     // Hidden registers used internally to track state
     u32 RES_pending{};
     u16 IR{}; // Instruction register. Holds opcode.
@@ -69,7 +72,7 @@ struct WDC65816_regs {
     i32 NMI_old{};
 };
 
-struct WDC65816_pins {
+struct pins {
     u8 VPB{}; // Output. Vector Pull, gets folded into PDV
     u8 ABORT{}; // Input. Abort. Not sure if emulated?
     u8 IRQ{}; // in. IRQ
@@ -88,10 +91,10 @@ struct WDC65816_pins {
     u8 PDV{}; // combined program, data, vector pin, to simplify.
 };
 
-struct WDC65816 {
-    explicit WDC65816(u64 *m_clock);
-    WDC65816_pins pins{};
-    WDC65816_regs regs{};
+struct core {
+    explicit core(u64 *m_clock);
+    pins pins{};
+    regs regs{};
     void set_IRQ_level(u32 level);
     void set_NMI_level(u32 level);
     void pprint_context(jsm_string *out);
@@ -100,7 +103,7 @@ struct WDC65816 {
 
 private:
     void eval_WAI();
-    WDC65816_ins_func get_decoded_opcode();
+    ins_func get_decoded_opcode();
     void trace_format();
     void irqdump(u32 nmi);
 
@@ -125,7 +128,7 @@ public:
 
     } trace{};
 
-    WDC65816_ins_func ins{};
+    ins_func ins{};
 
     DBG_START
         DBG_EVENT_VIEW_START
@@ -136,3 +139,4 @@ public:
 
 };
 
+}

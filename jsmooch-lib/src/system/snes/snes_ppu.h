@@ -9,7 +9,11 @@
 #include "helpers/cvec.h"
 #include "snes_mem.h"
 
-union SNES_PPU_px {
+namespace SNES {
+struct core;
+namespace PPU {
+
+union px {
     struct {
         u64 color : 16;
         u64 has : 1;
@@ -23,7 +27,55 @@ union SNES_PPU_px {
     u64 v;
 };
 
-struct SNES_PPU_sprite {
+
+struct BG {
+    px line[256]{};
+
+    u32 enabled{};
+    u32 bpp{};
+
+    u32 screen_x{};
+
+    u32 cols{}, rows{}, col_mask{}, row_mask{};
+    u32 tile_px{}, tile_px_mask{};
+    u32 scroll_shift{};
+    u32 pixels_h{}, pixels_v{};
+    u32 pixels_h_mask{}, pixels_v_mask{};
+    u32 tiledata_index{};
+
+    u32 palette_offset{}, palette_base{}, palette_shift{}, palette_mask{};
+    u32 num_planes{};
+    u32 tile_bytes{}, tile_row_bytes{};
+
+    struct {
+        u32 enable{}, counter{}, size{};
+    } mosaic{};
+
+    struct {
+        u32 tile_size{};
+        u32 screen_size{}, screen_addr{};
+        u32 tiledata_addr{};
+        u32 hoffset{}, voffset{};
+    } io{};
+
+    struct {
+        u32 main_enable{}, sub_enable{};
+        u32 enable[2]{}, invert[2]{};
+        u32 mask{};
+    } window{};
+    u32 main_enable{}, sub_enable{};
+
+    enum SNES_PPU_TILE_MODE {
+        BPP2,
+        BPP4,
+        BPP8,
+        inactive,
+        mode7
+    } tile_mode{};
+    u32 priority[2]{};
+};
+
+struct sprite {
     i32 x{}, y{};
     u32 tile_num{};
     u32 name_select{}, name_select_add{};
@@ -32,11 +84,10 @@ struct SNES_PPU_sprite {
     u32 size{};
 };
 
-struct SNES_PPU {
-    explicit SNES_PPU(SNES *parent) : snes(parent) {};
+struct core {
+    explicit core(SNES::core *parent) : snes(parent) {};
     void reset();
     u32 read_oam(u32 addr);
-    struct SNES_PPU_BG;
 
 private:
     u32 mode7_mul();
@@ -44,21 +95,21 @@ private:
     void draw_bg_line_mode7(u32 source, i32 y);
     u32 get_addr_by_map();
     void update_video_mode();
-    u32 get_tile(SNES_PPU_BG *bg, i32 hoffset, i32 voffset);
+    u32 get_tile(BG *bg, i32 hoffset, i32 voffset);
     void draw_bg_line(u32 source, u32 y);
     void write_VRAM(u32 addr, u32 val);
-    void do_color_math(SNES_PPU_px *main, SNES_PPU_px *sub);
+    void do_color_math(px *main, px *sub);
     void draw_sprite_line(i32 ppu_y);
 
 public:
-    void write(u32 addr, u32 val, SNES_memmap_block *bl);
-    u32 read(u32 addr, u32 old, u32 has_effect, SNES_memmap_block *bl);
+    void write(u32 addr, u32 val, memmap_block *bl);
+    u32 read(u32 addr, u32 old, u32 has_effect, memmap_block *bl);
     void latch_counters();
     void draw_line();
     void new_scanline(u64 cur_clock);
     void schedule_first();
 
-    SNES *snes;
+    SNES::core *snes;
 
     u16 *cur_output{};
     cvec_ptr<physical_io_device> display_ptr{};
@@ -82,9 +133,9 @@ public:
         u32 main_enable{}, sub_enable{};
         u32 priority[4]{};
         u32 range_overflow{}, time_overflow{};
-        SNES_PPU_px line[256]{};
+        px line[256]{};
 
-        SNES_PPU_sprite items[128]{};
+        sprite items[128]{};
     } obj{};
 
     struct {
@@ -100,52 +151,7 @@ public:
 
     } color_math{};
 
-    struct SNES_PPU_BG {
-        SNES_PPU_px line[256]{};
-
-        u32 enabled{};
-        u32 bpp{};
-
-        u32 screen_x{};
-
-        u32 cols{}, rows{}, col_mask{}, row_mask{};
-        u32 tile_px{}, tile_px_mask{};
-        u32 scroll_shift{};
-        u32 pixels_h{}, pixels_v{};
-        u32 pixels_h_mask{}, pixels_v_mask{};
-        u32 tiledata_index{};
-
-        u32 palette_offset{}, palette_base{}, palette_shift{}, palette_mask{};
-        u32 num_planes{};
-        u32 tile_bytes{}, tile_row_bytes{};
-
-        struct {
-            u32 enable{}, counter{}, size{};
-        } mosaic{};
-
-        struct {
-            u32 tile_size{};
-            u32 screen_size{}, screen_addr{};
-            u32 tiledata_addr{};
-            u32 hoffset{}, voffset{};
-        } io{};
-
-        struct {
-            u32 main_enable{}, sub_enable{};
-            u32 enable[2]{}, invert[2]{};
-            u32 mask{};
-        } window{};
-        u32 main_enable{}, sub_enable{};
-
-        enum SNES_PPU_TILE_MODE {
-            BPP2,
-            BPP4,
-            BPP8,
-            inactive,
-            mode7
-        } tile_mode{};
-        u32 priority[2]{};
-    } pbg[4]{};
+    SNES::PPU::BG pbg[4]{};
 
     struct {
         u32 vram{}, hcounter{}, vcounter{}, counters{};
@@ -205,3 +211,5 @@ public:
 
 };
 
+}
+}

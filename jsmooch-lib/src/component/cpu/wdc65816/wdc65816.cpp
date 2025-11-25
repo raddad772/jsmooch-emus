@@ -17,15 +17,15 @@ to an IRQB input.
  NMIB is edge-sensitive
  *
  */
+namespace WDC65816 {
+extern ins_func decoded_opcodes[5][0x104];
 
-extern WDC65816_ins_func wdc65816_decoded_opcodes[5][0x104];
-
-void WDC65816::eval_WAI()
+void core::eval_WAI()
 {
     if (regs.interrupt_pending) regs.WAI = 0;
 }
 
-void WDC65816::set_IRQ_level(u32 level)
+void core::set_IRQ_level(u32 level)
 {
     regs.IRQ_pending = level;
     if (level)
@@ -35,7 +35,7 @@ void WDC65816::set_IRQ_level(u32 level)
     eval_WAI();
 }
 
-void WDC65816::set_NMI_level(u32 level)
+void core::set_NMI_level(u32 level)
 {
     if ((regs.NMI_old == 0) && level) { // 0->1
         regs.NMI_pending = 1;
@@ -45,19 +45,19 @@ void WDC65816::set_NMI_level(u32 level)
     eval_WAI();
 }
 
-WDC65816_ins_func WDC65816::get_decoded_opcode()
+ins_func core::get_decoded_opcode()
 {
     if (regs.E) {
-        return wdc65816_decoded_opcodes[4][regs.IR];
+        return decoded_opcodes[4][regs.IR];
     }
     u32 flag = (regs.P.M) | (regs.P.X << 1);
 
-    WDC65816_ins_func ret = wdc65816_decoded_opcodes[flag][regs.IR];
-    if (ret == nullptr) ret = wdc65816_decoded_opcodes[0][regs.IR];
+    ins_func ret = decoded_opcodes[flag][regs.IR];
+    if (ret == nullptr) ret = decoded_opcodes[0][regs.IR];
     return ret;
 }
 
-void WDC65816::pprint_context(jsm_string *out)
+void core::pprint_context(jsm_string *out)
 {
     out->sprintf("%c%c  A:%04x  D:%04x  X:%04x  Y:%04x  DBR:%02x  PBR:%02x  S:%04x, P:%c%c%c%c%c%c",
         regs.P.M ? 'M' : 'm',
@@ -75,7 +75,7 @@ void WDC65816::pprint_context(jsm_string *out)
         );
 }
 
-void WDC65816::trace_format()
+void core::trace_format()
 {
     if (trace.dbglog.view && trace.dbglog.view->ids_enabled[trace.dbglog.id]) {
         // addr, regs, e, m, x, rt, out
@@ -89,13 +89,13 @@ void WDC65816::trace_format()
 
         if (regs.IR > 255) {
             switch(regs.IR) {
-                case WDC65816_OP_RESET:
+                case OP::RESET:
                     trace.str.sprintf("RESET");
                     break;
-                case WDC65816_OP_IRQ:
+                case OP::IRQ:
                     trace.str.sprintf("IRQ");
                     break;
-                case WDC65816_OP_NMI:
+                case OP::NMI:
                     trace.str.sprintf("NMI");
                     break;
                 default:
@@ -107,8 +107,8 @@ void WDC65816::trace_format()
             dv->extra_printf("%s", trace.str2.ptr);
             return;
         }
-        WDC65816_ctxt ct;
-        WDC65816_disassemble(trace.ins_PC, regs, regs.E, regs.P.M, regs.P.X, trace.strct, trace.str, &ct);
+        ctxt ct;
+        disassemble(trace.ins_PC, regs, regs.E, regs.P.M, regs.P.X, trace.strct, trace.str, &ct);
         pprint_context(&trace.str2);
 
         dv->add_printf(trace.dbglog.id, tc, DBGLS_TRACE, "%06x  %s", trace.ins_PC, trace.str.ptr);
@@ -116,12 +116,12 @@ void WDC65816::trace_format()
     }
 }
 
-void WDC65816::irqdump(u32 nmi)
+void core::irqdump(u32 nmi)
 {
     printf("\nAT %s. PC:%06x  D:%04x  X:%04x  Y:%04x  S:%04x  E:%d  WAI:%d  cyc:%lld", nmi ? "NMI" : "IRQ", (regs.PBR << 16) | regs.PC, regs.D, regs.X, regs.Y, regs.S, regs.E, regs.WAI, *master_clock);
 }
 
-void WDC65816::cycle()
+void core::cycle()
 {
     int_clock++;
     if (regs.STP) return;
@@ -131,12 +131,12 @@ void WDC65816::cycle()
         if (regs.NMI_pending || (regs.IRQ_pending && !regs.P.I)) {
             if (regs.NMI_pending) {
                 regs.NMI_pending = 0;
-                regs.IR = WDC65816_OP_NMI;
+                regs.IR = OP::NMI;
                 DBG_EVENT(dbg.events.NMI);
                 regs.interrupt_pending = regs.IRQ_pending;
             }
             else if (regs.IRQ_pending) {
-                regs.IR = WDC65816_OP_IRQ;
+                regs.IR = OP::IRQ;
                 DBG_EVENT(dbg.events.IRQ);
             }
             regs.WAI = 0;
@@ -157,16 +157,16 @@ void WDC65816::cycle()
         trace_format();
     }
 
-    ins(&regs, &pins);
+    ins(regs, pins);
 }
 
-WDC65816::WDC65816(u64 *m_clock) : master_clock(m_clock) {
+core::core(u64 *m_clock) : master_clock(m_clock) {
     dbg.events.IRQ = -1;
     dbg.events.NMI = -1;
     regs.S = 0x1FF;
 }
 
-void WDC65816::reset()
+void core::reset()
 {
     pins.RES = 0;
     regs.RES_pending = 0;
@@ -175,12 +175,13 @@ void WDC65816::reset()
         regs.STP = 0;
     }
     else {
-        pins.D = WDC65816_OP_RESET;
+        pins.D = OP::RESET;
     }
 }
 
-void WDC65816::setup_tracing(jsm_debug_read_trace *strct)
+void core::setup_tracing(jsm_debug_read_trace *strct)
 {
     jsm_copy_read_trace(&trace.strct, strct);;
     trace.ok = 1;
+}
 }

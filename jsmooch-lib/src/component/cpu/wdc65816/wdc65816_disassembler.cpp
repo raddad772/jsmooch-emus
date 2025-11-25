@@ -4,7 +4,7 @@
 
 #include "wdc65816_disassembler.h"
 
-
+namespace WDC65816 {
 enum  {
     RA_lo = 1,
     RA_hi = 2,
@@ -61,7 +61,7 @@ static u32 read_op_long(u32 addr, jsm_debug_read_trace *rt) {
     return data | (read_op_word(addr, rt) << 8);
 }
 
-#define ARGS char *buf, u32 addr, u32 e, u32 m, u32 x, WDC65816_regs *r, jsm_debug_read_trace *rt, u32 *ins_len, u32 *rp
+#define ARGS char *buf, u32 addr, u32 e, u32 m, u32 x, regs *r, jsm_debug_read_trace *rt, u32 *ins_len, u32 *rp
 
 static i32 do_absolute(ARGS)
 {
@@ -291,7 +291,7 @@ static i32 do_stack_indirect(ARGS) {
     return static_cast<i32>((r->DBR << 16) + read_word((n + r->S) & 0xFFFF, rt) + r->Y);
 }
 
-u32 WDC65816_disassemble(u32 addr, WDC65816_regs &r, u32 e, u32 m, u32 x, jsm_debug_read_trace &rt, jsm_string &out, WDC65816_ctxt *ct)
+u32 disassemble(u32 addr, regs &r, u32 e, u32 m, u32 x, jsm_debug_read_trace &rt, jsm_string &out, ctxt *ct)
 {
     char buf[50];
     const char *mnemonic;
@@ -577,4 +577,5 @@ u32 WDC65816_disassemble(u32 addr, WDC65816_regs &r, u32 e, u32 m, u32 x, jsm_de
     }
     
     return ins_len;
+}
 }

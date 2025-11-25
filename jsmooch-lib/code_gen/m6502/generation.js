@@ -73,7 +73,7 @@ function set_gentarget(to) {
 
 function generate_wdc65816_js() {
     set_gentarget('js');
-	save_js('wdc65816_generated_opcodes.js', '"use strict";\n\nconst wdc65816_decoded_opcodes = Object.freeze(\n' + decode_opcodes() + ');');
+	save_js('wdc65816_generated_opcodes.js', '"use strict";\n\nconst decoded_opcodes = Object.freeze(\n' + decode_opcodes() + ');');
 }
 
 function generate_spc700_js() {

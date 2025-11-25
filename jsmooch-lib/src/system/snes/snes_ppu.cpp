@@ -8,6 +8,7 @@
 #include "snes_bus.h"
 #include "snes_debugger.h"
 
+namespace SNES::PPU {
 #define PPU_src_BG1 0
 #define PPU_src_BG2 1
 #define PPU_src_BG3 2
@@ -16,13 +17,13 @@
 #define PPU_src_OBJ2 5
 #define PPU_src_COL 6
 
-void SNES_PPU::reset()
+void core::reset()
 {
     mode7.a = mode7.d = 0x100;
     mode7.b = mode7.c = 0;
 }
 
-u32 SNES_PPU::read_oam(u32 addr)
+u32 core::read_oam(u32 addr)
 {
     u32 n;
     if (!(addr & 0x200)) {
@@ -51,7 +52,7 @@ u32 SNES_PPU::read_oam(u32 addr)
     }
 }
 
-void SNES_PPU::write_oam(u32 addr, u32 val) {
+void core::write_oam(u32 addr, u32 val) {
     if (!snes->clock.ppu.vblank_active && !io.force_blank) {
         printf("\nWARN OAM BAD WRITE TIME");
         return;
@@ -59,7 +60,7 @@ void SNES_PPU::write_oam(u32 addr, u32 val) {
     if (addr < 0x200) { // 0-0x1FF
         u32 n = addr >> 2;
         if (n < 128) {
-            SNES_PPU_sprite *sp = &obj.items[n];
+            sprite *sp = &obj.items[n];
             switch (addr & 3) {
                 case 0:
                     sp->x = (sp->x & 0x100) | val;
@@ -99,7 +100,7 @@ void SNES_PPU::write_oam(u32 addr, u32 val) {
     }
 }
 
-u32 SNES_PPU::get_addr_by_map()
+u32 core::get_addr_by_map()
 {
     u32 addr = io.vram.addr;
     switch(io.vram.mapping) {
@@ -115,17 +116,17 @@ u32 SNES_PPU::get_addr_by_map()
     return 0x8000;
 }
 
-void SNES_PPU::update_video_mode()
+void core::update_video_mode()
 {
 		//snes->clock.scanline.bottom_scanline = overscan ? 240 : 225;
 #define BGP(num, lo, hi) pbg[num-1].priority[0] = lo; pbg[num-1].priority[1] = hi
 #define OBP(n0, n1, n2, n3) obj.priority[0] = n0; obj.priority[1] = n1; obj.priority[2] = n2; obj.priority[3] = n3
 		switch(io.bg_mode) {
 			case 0:
-				pbg[0].tile_mode = SNES_PPU_BG::BPP2;
-				pbg[1].tile_mode = SNES_PPU_BG::BPP2;
-				pbg[2].tile_mode = SNES_PPU_BG::BPP2;
-				pbg[3].tile_mode = SNES_PPU_BG::BPP2;
+				pbg[0].tile_mode = BG::BPP2;
+				pbg[1].tile_mode = BG::BPP2;
+				pbg[2].tile_mode = BG::BPP2;
+				pbg[3].tile_mode = BG::BPP2;
 				BGP(1, 5, 2);
 				BGP(2, 6, 3);
 				BGP(3, 11, 8);
@@ -133,10 +134,10 @@ void SNES_PPU::update_video_mode()
 				OBP(10, 7, 4, 1);
 				break;
 			case 1:
-				pbg[0].tile_mode = SNES_PPU_BG::BPP4;
-				pbg[1].tile_mode = SNES_PPU_BG::BPP4;
-				pbg[2].tile_mode = SNES_PPU_BG::BPP2;
-				pbg[3].tile_mode = SNES_PPU_BG::inactive;
+				pbg[0].tile_mode = BG::BPP4;
+				pbg[1].tile_mode = BG::BPP4;
+				pbg[2].tile_mode = BG::BPP2;
+				pbg[3].tile_mode = BG::inactive;
                 BGP(1, 5, 2);
                 BGP(2, 6, 3);
                 OBP(10, 7, 4, 1);
@@ -147,54 +148,54 @@ void SNES_PPU::update_video_mode()
 				}
 				break;
 			case 2:
-				pbg[0].tile_mode = SNES_PPU_BG::BPP4;
-				pbg[1].tile_mode = SNES_PPU_BG::BPP4;
-				pbg[2].tile_mode = SNES_PPU_BG::inactive;
-				pbg[3].tile_mode = SNES_PPU_BG::inactive;
+				pbg[0].tile_mode = BG::BPP4;
+				pbg[1].tile_mode = BG::BPP4;
+				pbg[2].tile_mode = BG::inactive;
+				pbg[3].tile_mode = BG::inactive;
 				BGP(1, 8, 2);
 				BGP(2, 11, 5);
 				OBP(10, 7, 4, 1);
 				break;
 			case 3:
-				pbg[0].tile_mode = SNES_PPU_BG::BPP8;
-				pbg[1].tile_mode = SNES_PPU_BG::BPP4;
-				pbg[2].tile_mode = SNES_PPU_BG::inactive;
-				pbg[3].tile_mode = SNES_PPU_BG::inactive;
+				pbg[0].tile_mode = BG::BPP8;
+				pbg[1].tile_mode = BG::BPP4;
+				pbg[2].tile_mode = BG::inactive;
+				pbg[3].tile_mode = BG::inactive;
 				BGP(1, 8, 2);
 				BGP(2, 11, 5);
                 OBP(10, 7, 4, 1);
 				break;
 			case 4:
-				pbg[0].tile_mode = SNES_PPU_BG::BPP8;
-				pbg[1].tile_mode = SNES_PPU_BG::BPP2;
-				pbg[2].tile_mode = SNES_PPU_BG::inactive;
-				pbg[3].tile_mode = SNES_PPU_BG::inactive;
+				pbg[0].tile_mode = BG::BPP8;
+				pbg[1].tile_mode = BG::BPP2;
+				pbg[2].tile_mode = BG::inactive;
+				pbg[3].tile_mode = BG::inactive;
                 BGP(1, 8, 2);
                 BGP(2, 11, 5);
                 OBP(10, 7, 4, 1);
 				break;
 			case 5:
-				pbg[0].tile_mode = SNES_PPU_BG::BPP4;
-				pbg[1].tile_mode = SNES_PPU_BG::BPP2;
-				pbg[2].tile_mode = SNES_PPU_BG::inactive;
-				pbg[3].tile_mode = SNES_PPU_BG::inactive;
+				pbg[0].tile_mode = BG::BPP4;
+				pbg[1].tile_mode = BG::BPP2;
+				pbg[2].tile_mode = BG::inactive;
+				pbg[3].tile_mode = BG::inactive;
                 BGP(1, 8, 2);
                 BGP(2, 11, 5);
                 OBP(10, 7, 4, 1);
 				break;
 			case 6:
-				pbg[0].tile_mode = SNES_PPU_BG::BPP4;
-				pbg[1].tile_mode = SNES_PPU_BG::inactive;
-				pbg[2].tile_mode = SNES_PPU_BG::inactive;
-				pbg[3].tile_mode = SNES_PPU_BG::inactive;
+				pbg[0].tile_mode = BG::BPP4;
+				pbg[1].tile_mode = BG::inactive;
+				pbg[2].tile_mode = BG::inactive;
+				pbg[3].tile_mode = BG::inactive;
                 BGP(1, 8, 2);
                 OBP(10, 7, 4, 1);
 				break;
 			case 7:
-                pbg[0].tile_mode = SNES_PPU_BG::mode7;
-                pbg[1].tile_mode = io.extbg ? SNES_PPU_BG::mode7 : SNES_PPU_BG::inactive;
-                pbg[2].tile_mode = SNES_PPU_BG::inactive;
-                pbg[3].tile_mode = SNES_PPU_BG::inactive;
+                pbg[0].tile_mode = BG::mode7;
+                pbg[1].tile_mode = io.extbg ? BG::mode7 : BG::inactive;
+                pbg[2].tile_mode = BG::inactive;
+                pbg[3].tile_mode = BG::inactive;
                 BGP(1, 8, 8);
                 BGP(2, 5, 11);
                 OBP(10, 7, 4, 1);
@@ -206,7 +207,7 @@ void SNES_PPU::update_video_mode()
         for (u32 bgnum = 0; bgnum < 4; bgnum++) {
             constexpr u32 theight[4] = { 32, 32, 64, 64 };
             constexpr u32 twidth[4] = { 32, 64, 32, 64};
-            SNES_PPU_BG *bg = &pbg[bgnum];
+            BG *bg = &pbg[bgnum];
             bg->cols = twidth[bg->io.screen_size];
             bg->rows = theight[bg->io.screen_size];
             bg->col_mask = bg->cols - 1;
@@ -222,7 +223,7 @@ void SNES_PPU::update_video_mode()
 
             bg->palette_offset = 0;
             switch(bg->tile_mode) {
-                case SNES_PPU_BG::BPP2:
+                case BG::BPP2:
                     bg->palette_offset = 0;
                     if (io.bg_mode == 0) {
                         bg->palette_offset = 0x20 * bgnum;
@@ -233,23 +234,23 @@ void SNES_PPU::update_video_mode()
                     bg->tile_bytes = 0x10;
                     bg->tile_row_bytes = 2;
                     break;
-                case SNES_PPU_BG::BPP4:
+                case BG::BPP4:
                     bg->palette_shift = 4; // * 16
                     bg->palette_mask = 7;
                     bg->num_planes = 2;
                     bg->tile_bytes = 0x20;
                     bg->tile_row_bytes = 4;
                     break;
-                case SNES_PPU_BG::BPP8:
+                case BG::BPP8:
                     bg->palette_shift = 0; //
                     bg->palette_mask = 0xFF;
                     bg->num_planes = 4;
                     bg->tile_bytes = 0x40;
                     bg->tile_row_bytes = 8;
                     break;
-                case SNES_PPU_BG::inactive:
+                case BG::inactive:
                     break;
-                case SNES_PPU_BG::mode7:
+                case BG::mode7:
                     bg->palette_shift = 0;
                     bg->palette_mask = 0xFF;
                     bg->num_planes = 1;
@@ -258,7 +259,7 @@ void SNES_PPU::update_video_mode()
         }
 }
 
-void SNES_PPU::write_VRAM(u32 addr, u32 val)
+void core::write_VRAM(u32 addr, u32 val)
 {
     addr &= 0x7FFF;
     DBG_EVENT(DBG_SNES_EVENT_WRITE_VRAM);
@@ -266,7 +267,7 @@ void SNES_PPU::write_VRAM(u32 addr, u32 val)
     VRAM[addr] = val;
 }
 
-void SNES_PPU::write(u32 addr, u32 val, SNES_memmap_block *bl) {
+void core::write(u32 addr, u32 val, memmap_block *bl) {
     addr &= 0xFFFF;
     u32 addre;
     if (addr >= 0x2140 && addr < 0x217F) { return snes->apu.write(addr, val); }
@@ -335,7 +336,7 @@ void SNES_PPU::write(u32 addr, u32 val, SNES_memmap_block *bl) {
         case 0x2109: // BG3SC
         case 0x210A: { // BG4SC
             u32 bgnum = addr - 0x2107;
-            SNES_PPU_BG *bg = &pbg[bgnum];
+            BG *bg = &pbg[bgnum];
             bg->io.screen_size = val & 3;
             bg->io.screen_addr = (val << 8) & 0x7C00;
             update_video_mode();
@@ -606,18 +607,18 @@ void SNES_PPU::write(u32 addr, u32 val, SNES_memmap_block *bl) {
     }
 }
 
-u32 SNES_PPU::mode7_mul()
+u32 core::mode7_mul()
 {
     return static_cast<u32>((mode7.a) * static_cast<i32>(static_cast<i8>(mode7.b >> 8)));
 }
 
-void SNES_PPU::latch_counters() {
+void core::latch_counters() {
     snes->ppu.io.vcounter = snes->clock.ppu.y;
     snes->ppu.io.hcounter = (snes->clock.master_cycle_count - snes->clock.ppu.scanline_start) >> 2;
     snes->ppu.latch.counters = 1;
 }
 
-u32 SNES_PPU::read(u32 addr, u32 old, u32 has_effect, SNES_memmap_block *bl)
+u32 core::read(u32 addr, u32 old, u32 has_effect, memmap_block *bl)
 {
     addr &= 0xFFFF;
     if (addr >= 0x2140 && addr < 0x217F) { return snes->apu.read(addr, old, has_effect); }
@@ -707,7 +708,7 @@ u32 SNES_PPU::read(u32 addr, u32 old, u32 has_effect, SNES_memmap_block *bl)
 // Two states: regular, or paused for RAM refresh.
 // I think I'll just use a "ram_refresh" kinda function that just advances the clock!? Maybe?
 
-void SNES_PPU::new_scanline(u64 cur_clock)
+void core::new_scanline(u64 cur_clock)
 {
     // TODO: this
     // TODO: hblank exit here too
@@ -721,12 +722,12 @@ void SNES_PPU::new_scanline(u64 cur_clock)
 
 void dram_refresh(void *ptr, u64 key, u64 clock, u32 jitter)
 {
-    SNES *snes = static_cast<SNES *>(ptr);
+    auto *snes = static_cast<SNES::core *>(ptr);
     snes->scheduler.from_event_adjust_master_clock(40);
 }
 
 struct slice {
-    SNES_PPU_px px[16];
+    px px[16];
     u32 priority;
 };
 
@@ -737,7 +738,7 @@ static inline u32 direct_color(u32 palette_index, u32 palette_color)
            ((palette_color << 7) & 0x6000) + ((palette_index << 10) & 0x1000);
 }
 
-static inline void setpx(SNES_PPU_px *px, u32 source, u32 priority, u32 color, u32 bpp, u32 dbg_priority)
+static inline void setpx(px *px, u32 source, u32 priority, u32 color, u32 bpp, u32 dbg_priority)
 {
     px->has = 1;
     px->source = source;
@@ -747,9 +748,9 @@ static inline void setpx(SNES_PPU_px *px, u32 source, u32 priority, u32 color, u
     px->dbg_priority = dbg_priority;
 }
 
-void SNES_PPU::draw_bg_line_mode7(u32 source, i32 y)
+void core::draw_bg_line_mode7(u32 source, i32 y)
 {
-    SNES_PPU_BG *mbg = &pbg[source];
+    BG *mbg = &pbg[source];
 
     y = mode7.vflip ? 255 - y : y;
     u32 dbp;
@@ -812,7 +813,7 @@ void SNES_PPU::draw_bg_line_mode7(u32 source, i32 y)
     }
 }
 
-u32 SNES_PPU::get_tile(SNES_PPU_BG *bg, i32 hoffset, i32 voffset)
+u32 core::get_tile(BG *bg, i32 hoffset, i32 voffset)
 {
     const u32 hires = io.bg_mode == 5 || io.bg_mode == 6;
     const u32 tile_height = 3 + bg->io.tile_size;
@@ -828,19 +829,19 @@ u32 SNES_PPU::get_tile(SNES_PPU_BG *bg, i32 hoffset, i32 voffset)
     return VRAM[addr];
 }
 
-void SNES_PPU::draw_bg_line(u32 source, u32 y)
+void core::draw_bg_line(u32 source, u32 y)
 {
-    SNES_PPU_BG *bg = &pbg[source];
+    BG *bg = &pbg[source];
     memset(bg->line, 0, sizeof(bg->line));
-    if ((bg->tile_mode == SNES_PPU_BG::inactive) || (!bg->main_enable && !bg->sub_enable)) {
+    if ((bg->tile_mode == BG::inactive) || (!bg->main_enable && !bg->sub_enable)) {
         return;
     }
-    if (bg->tile_mode == SNES_PPU_BG::mode7) {
+    if (bg->tile_mode == BG::mode7) {
         return draw_bg_line_mode7(source, y);
     }
     u32 bpp = BPP_4;
-    if (bg->tile_mode == SNES_PPU_BG::BPP2) bpp = BPP_2;
-    if (bg->tile_mode == SNES_PPU_BG::BPP8) bpp = BPP_8;
+    if (bg->tile_mode == BG::BPP2) bpp = BPP_2;
+    if (bg->tile_mode == BG::BPP8) bpp = BPP_8;
 
     u32 hires = io.bg_mode == 5 || io.bg_mode == 6;
     u32 offset_per_tile_mode = io.bg_mode == 2 || io.bg_mode == 4 || io.bg_mode == 6;
@@ -937,11 +938,11 @@ void SNES_PPU::draw_bg_line(u32 source, u32 y)
                     color = (datalo >> shift) & 1;
                     color += (datalo >> (shift + 7)) & 2; // 0-2 + 7-9
                 }
-                if (bg->tile_mode >= SNES_PPU_BG::BPP4) {
+                if (bg->tile_mode >= BG::BPP4) {
                     color += (datalo >> (shift + 14)) & 4; // bits 16-24
                     color += (datalo >> (shift + 21)) & 8; // bits 24-31
                 }
-                if (bg->tile_mode >= SNES_PPU_BG::BPP8) {
+                if (bg->tile_mode >= BG::BPP8) {
                     color += (datamid >> (shift + 12)) & 16;
                     color += (datamid >> (shift + 19)) & 32;
                     color += (datahi >> (shift + 10)) & 64;
@@ -976,7 +977,7 @@ void SNES_PPU::draw_bg_line(u32 source, u32 y)
     }
 }
 
-void SNES_PPU::do_color_math(SNES_PPU_px *main, SNES_PPU_px *sub)
+void core::do_color_math(px *main, px *sub)
 {
     main->color_math_flags = 1;
     i32 mr = main->color & 0x1F;
@@ -1013,7 +1014,7 @@ void SNES_PPU::do_color_math(SNES_PPU_px *main, SNES_PPU_px *sub)
     main->color = mr | (mg << 5) | (mb << 10);
 }
 
-void SNES_PPU::draw_sprite_line(i32 ppu_y)
+void core::draw_sprite_line(i32 ppu_y)
 {
     memset(obj.line, 0, sizeof(obj.line));
 
@@ -1044,7 +1045,7 @@ void SNES_PPU::draw_sprite_line(i32 ppu_y)
         if ((item_limit < 1) || (tile_limit < 1)) return;
         u32 sn = (mbn + obj.first) & 0x7F;
 
-        SNES_PPU_sprite *sp = &obj.items[sn];
+        sprite *sp = &obj.items[sn];
 
         i32 height = spheight[io.obj.sz][sp->size];
         i32 width = spwidth[io.obj.sz][sp->size];
@@ -1095,7 +1096,7 @@ void SNES_PPU::draw_sprite_line(i32 ppu_y)
                     color += (data >> (mpx + 14)) & 4;
                     color += (data >> (mpx + 21)) & 8;
                     if (color != 0) {
-                        SNES_PPU_px *px = &obj.line[rx];
+                        px *px = &obj.line[rx];
                         px->has = 1;
                         px->source = 4; // OBJ = 4
                         px->priority = obj.priority[sp->priority];
@@ -1119,7 +1120,7 @@ void SNES_PPU::draw_sprite_line(i32 ppu_y)
 #define SRC_OBJ_PAL47 5
 #define SRC_BACK 6
 
-void SNES_PPU::draw_line()
+void core::draw_line()
 {
     // Draw sprite line
     //printf("\nDraw line %d", snes->clock.ppu.y);
@@ -1135,8 +1136,8 @@ void SNES_PPU::draw_line()
     memcpy(snes->dbg_info.line[snes->clock.ppu.y].sprite_px, obj.line, sizeof(obj.line));
     u16 *line_output = cur_output + (snes->clock.ppu.y * 512);
     for (u32 x = 0; x < 256; x++) {
-        SNES_PPU_px main_px = {.source=SRC_BACK};
-        SNES_PPU_px sub_px = {.source=SRC_BACK};
+        px main_px = {.source=SRC_BACK};
+        px sub_px = {.source=SRC_BACK};
         sub_px.priority = 15;
         sub_px.color = color_math.fixed_color;
         sub_px.has = 0;
@@ -1146,8 +1147,8 @@ void SNES_PPU::draw_line()
 #define MAINPRIO 0
 #define SUBPRIO 1
         for (u32 bgnum = 0; bgnum < 4; bgnum++) {
-            SNES_PPU_BG *bg = &pbg[bgnum];
-            SNES_PPU_px *cmp = &bg->line[x];
+            BG *bg = &pbg[bgnum];
+            px *cmp = &bg->line[x];
             if (bg->main_enable && cmp->has && (main_px.priority > cmp->priority)) {
                 main_px.color = cmp->color;
                 main_px.has = 1;
@@ -1162,7 +1163,7 @@ void SNES_PPU::draw_line()
                 sub_px.source = bgnum;
             }
         }
-        SNES_PPU_px *cmp = &obj.line[x];
+        px *cmp = &obj.line[x];
         if (obj.main_enable && cmp->has && (main_px.priority > cmp->priority)) {
             main_px.color = cmp->color;
             main_px.has = 1;
@@ -1202,7 +1203,7 @@ void SNES_PPU::draw_line()
 
 void hblank(void *ptr, u64 key, u64 clock, u32 jitter)
 {
-    SNES *snes = static_cast<SNES *>(ptr);
+    auto *snes = static_cast<SNES::core *>(ptr);
     snes->clock.ppu.hblank_active = key;
 
     snes->r5a22.hblank(key);
@@ -1225,7 +1226,7 @@ void hblank(void *ptr, u64 key, u64 clock, u32 jitter)
 
 void hdma_setup(void *ptr, u64 key, u64 clock, u32 jitter)
 {
-    SNES *snes = static_cast<SNES *>(ptr);
+    auto *snes = static_cast<SNES::core *>(ptr);
     u32 cn = 8;
     for (u32 n = 0; n < 8; n++) {
         cn += snes->r5a22.dma.channels[n].hdma_setup();
@@ -1235,7 +1236,7 @@ void hdma_setup(void *ptr, u64 key, u64 clock, u32 jitter)
 
 void hdma(void *ptr, u64 key, u64 clock, u32 jitter)
 {
-    SNES *snes = static_cast<SNES *>(ptr);
+    auto *snes = static_cast<SNES::core *>(ptr);
     if (snes->r5a22.hdma_is_enabled()) {
         snes->r5a22.status.dma_running = 1;
     }
@@ -1243,8 +1244,8 @@ void hdma(void *ptr, u64 key, u64 clock, u32 jitter)
 
 void assert_hirq(void *ptr, u64 key, u64 clock, u32 jitter)
 {
-    SNES *snes = static_cast<SNES *>(ptr);
-    R5A22 *th = &snes->r5a22;
+    auto *snes = static_cast<SNES::core *>(ptr);
+    R5A22::core *th = &snes->r5a22;
     th->status.hirq_line = key;
     snes->r5a22.update_irq();
     if (key) DBG_EVENT(DBG_SNES_EVENT_HIRQ);
@@ -1252,7 +1253,7 @@ void assert_hirq(void *ptr, u64 key, u64 clock, u32 jitter)
 
 static void schedule_scanline(void *ptr, u64 key, u64 clock, u32 jitter)
 {
-    SNES *snes = static_cast<SNES *>(ptr);
+    auto *snes = static_cast<SNES::core *>(ptr);
     u64 cur = clock - jitter;
     u32 vblank = snes->clock.ppu.y >= 224;
     snes->ppu.new_scanline(cur);
@@ -1292,7 +1293,7 @@ static void schedule_scanline(void *ptr, u64 key, u64 clock, u32 jitter)
 
 void vblank(void *ptr, u64 key, u64 cur_clock, u32 jitter)
 {
-    SNES *snes = static_cast<SNES *>(ptr);
+    auto *snes = static_cast<SNES::core *>(ptr);
     snes->clock.ppu.vblank_active = key;
     snes->r5a22.status.nmi_flag = key;
     if (!key) { // VBLANK off at start of frame
@@ -1309,7 +1310,7 @@ void new_frame(void* ptr, u64 key, u64 cur_clock, u32 jitter)
 {
     u64 cur = cur_clock - jitter;
     //printf("\nNEW FRAME @%lld", cur);
-    SNES* snes = static_cast<SNES *>(ptr);
+    auto* snes = static_cast<SNES::core *>(ptr);
 
     if (snes->dbg.events.view.vec) {
         debugger_report_frame(snes->dbg.interface);
@@ -1341,8 +1342,9 @@ void new_frame(void* ptr, u64 key, u64 cur_clock, u32 jitter)
     snes->scheduler.only_add_abs_w_tag(cur + snes->clock.timing.frame.master_cycles, 0, snes, &new_frame, nullptr, 2);
 }
 
-void SNES_PPU::schedule_first()
+void core::schedule_first()
 {
     schedule_scanline(snes, 0, 0, 0);
     snes->scheduler.only_add_abs_w_tag(snes->clock.timing.frame.master_cycles, 0, snes, &new_frame, nullptr, 2);
+}
 }

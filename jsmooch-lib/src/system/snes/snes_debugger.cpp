@@ -19,7 +19,7 @@
 #define PAL_BOX_SIZE_W_BORDER 11
 
 static void render_image_view_tilemaps(debugger_interface *dbgr, debugger_view *dview, void *ptr, u32 out_width) {
-    SNES *th = static_cast<SNES *>(ptr);
+    auto *th = static_cast<SNES::core *>(ptr);
     if (th->clock.master_frame == 0) return;
     debugger_widget_radiogroup *layernum = &dview->options.at(0).radiogroup;
     u32 ln = layernum->value;
@@ -32,10 +32,10 @@ static void render_image_view_tilemaps(debugger_interface *dbgr, debugger_view *
     }
 }
 
-static void print_layer_info(SNES *th, u32 bgnum, debugger_widget_textbox *tb)
+static void print_layer_info(SNES::core *th, u32 bgnum, debugger_widget_textbox *tb)
 {
     if (bgnum < 4) {
-        SNES_PPU::SNES_PPU_BG *bg = &th->ppu.pbg[bgnum];
+        SNES::PPU::BG *bg = &th->ppu.pbg[bgnum];
         tb->sprintf("\n-BG%d:  bgmode:%d  ", bgnum, th->ppu.io.bg_mode);
         //if (th->ppu.io.bg_mode == 7) {
             tb->sprintf("  dc:%d  ", th->ppu.color_math.direct_color);
@@ -47,19 +47,19 @@ static void print_layer_info(SNES *th, u32 bgnum, debugger_widget_textbox *tb)
 
         tb->sprintf("  bpp:");
         switch(bg->tile_mode) {
-            case SNES_PPU::SNES_PPU_BG::BPP2:
+            case SNES::PPU::BG::BPP2:
                 tb->sprintf("2  ");
                 break;
-            case SNES_PPU::SNES_PPU_BG::BPP4:
+            case SNES::PPU::BG::BPP4:
                 tb->sprintf("4  ");
                 break;
-            case SNES_PPU::SNES_PPU_BG::BPP8:
+            case SNES::PPU::BG::BPP8:
                 tb->sprintf("8  ");
                 break;
-            case SNES_PPU::SNES_PPU_BG::mode7:
+            case SNES::PPU::BG::mode7:
                 tb->sprintf("m7 ");
                 break;
-            case SNES_PPU::SNES_PPU_BG::inactive:
+            case SNES::PPU::BG::inactive:
                 tb->sprintf("inactive ");
                 break;
         }
@@ -72,7 +72,7 @@ static void print_layer_info(SNES *th, u32 bgnum, debugger_widget_textbox *tb)
 }
 
 static void render_image_view_obj_tiles(debugger_interface *dbgr, debugger_view *dview, void *ptr, u32 out_width) {
-    SNES *th = static_cast<SNES *>(ptr);
+    auto *th = static_cast<SNES::core *>(ptr);
     if (th->clock.master_frame == 0) return;
 
     image_view *iv = &dview->image;
@@ -119,8 +119,8 @@ static void render_image_view_obj_tiles(debugger_interface *dbgr, debugger_view 
                                     }}
                                     FALLTHROUGH;
                                 case 0: {// B&W
-                                    float r = ((float)c / 15.0f) * 255.0f;
-                                    c = (u32)r;
+                                    float r = (static_cast<float>(c) / 15.0f) * 255.0f;
+                                    c = static_cast<u32>(r);
                                     if (c > 0xFF) c = 0xFF;
                                     color = (c << 16) | (c << 8) | c;
                                     break; }
@@ -153,7 +153,7 @@ static void render_image_view_obj_tiles(debugger_interface *dbgr, debugger_view 
 }
 
 static void render_image_view_ppu_layers(debugger_interface *dbgr, debugger_view *dview, void *ptr, u32 out_width) {
-    SNES *th = (SNES *) ptr;
+    auto *th = static_cast<SNES::core *>(ptr);
     if (th->clock.master_frame == 0) return;
     debugger_widget_radiogroup *layernum = &dview->options.at(0).radiogroup;
 
@@ -208,7 +208,7 @@ static void render_image_view_ppu_layers(debugger_interface *dbgr, debugger_view
 
     for (u32 y = 0; y < 224; y++) {
         u32 *out_line = outbuf + (y * out_width);
-        SNES_PPU_px *px_line;
+        SNES::PPU::px *px_line;
         if (layernum->value < 4) {
             px_line = th->dbg_info.line[y].bg[layernum->value].px;
         }
@@ -256,7 +256,7 @@ static void render_image_view_ppu_layers(debugger_interface *dbgr, debugger_view
 }
 
 static void render_image_view_palette(debugger_interface *dbgr, debugger_view *dview, void *ptr, u32 out_width) {
-    SNES *th = static_cast<SNES *>(ptr);
+    auto *th = static_cast<SNES::core *>(ptr);
     if (th->clock.master_frame == 0) return;
     image_view *iv = &dview->image;
     iv->draw_which_buf ^= 1;
@@ -283,7 +283,7 @@ static void render_image_view_palette(debugger_interface *dbgr, debugger_view *d
 }
 
 
-static void setup_image_view_palettes(SNES& th, debugger_interface &dbgr)
+static void setup_image_view_palettes(SNES::core& th, debugger_interface &dbgr)
 {
     th.dbg.image_views.palettes = dbgr.make_view(dview_image);
     debugger_view *dview = &th.dbg.image_views.palettes.get();
@@ -302,7 +302,7 @@ static void setup_image_view_palettes(SNES& th, debugger_interface &dbgr)
     snprintf(iv->label, sizeof(iv->label), "Palettes Viewer");
 }
 
-static void setup_dbglog(SNES &th, debugger_interface &dbgr)
+static void setup_dbglog(SNES::core &th, debugger_interface &dbgr)
 {
     cvec_ptr p = dbgr.make_view(dview_dbglog);
     debugger_view *dview = &p.get();
@@ -340,7 +340,7 @@ static void setup_dbglog(SNES &th, debugger_interface &dbgr)
     ppu.add_node(dv, "VRAM Write", "PPU", SNES_CAT_PPU_VRAM_WRITE, ppu_color);
 }
 
-static void setup_image_view_ppu_obj_tiles(SNES &th, debugger_interface &dbgr) {
+static void setup_image_view_ppu_obj_tiles(SNES::core &th, debugger_interface &dbgr) {
     th.dbg.image_views.ppu_layers = dbgr.make_view(dview_image);
     debugger_view *dview = &th.dbg.image_views.ppu_layers.get();
     image_view *iv = &dview->image;
@@ -370,7 +370,7 @@ static void setup_image_view_ppu_obj_tiles(SNES &th, debugger_interface &dbgr) {
 
 }
 
-static void setup_image_view_ppu_tilemaps(SNES&th, debugger_interface &dbgr)
+static void setup_image_view_ppu_tilemaps(SNES::core &th, debugger_interface &dbgr)
 {
     th.dbg.image_views.ppu_layers = dbgr.make_view(dview_image);
     debugger_view *dview = &th.dbg.image_views.ppu_layers.get();
@@ -394,7 +394,7 @@ static void setup_image_view_ppu_tilemaps(SNES&th, debugger_interface &dbgr)
     rg.add_button("BG4", 3, 1);
 }
 
-static void setup_image_view_ppu_layers(SNES &th, debugger_interface &dbgr)
+static void setup_image_view_ppu_layers(SNES::core &th, debugger_interface &dbgr)
 {
     th.dbg.image_views.ppu_layers = dbgr.make_view(dview_image);
     debugger_view *dview = &th.dbg.image_views.ppu_layers.get();
@@ -429,7 +429,7 @@ static void setup_image_view_ppu_layers(SNES &th, debugger_interface &dbgr)
 }
 
 
-static void setup_waveforms(SNES& th, debugger_interface *dbgr)
+static void setup_waveforms(SNES::core& th, debugger_interface *dbgr)
 {
     th.dbg.waveforms.view = dbgr->make_view(dview_waveforms);
     debugger_view &dview = th.dbg.waveforms.view.get();
@@ -497,7 +497,7 @@ static void readcpumem(void *ptr, u32 addr, void *dest)
 {
     // Read 16 bytes from addr into dest
     u8 *out = static_cast<u8 *>(dest);
-    SNES *snes = static_cast<SNES *>(ptr);
+    auto *snes = static_cast<SNES::core *>(ptr);
     for (u32 i = 0; i < 16; i++) {
         *out = snes->mem.read_bus_A((addr + i) & 0xFFFFFF, 0, 0);
         out++;
@@ -520,7 +520,7 @@ static void readvram(void *ptr, u32 addr, void *dest)
     }
 }
 
-static void setup_memory_view(SNES& th, debugger_interface &dbgr) {
+static void setup_memory_view(SNES::core& th, debugger_interface &dbgr) {
     th.dbg.memory = dbgr.make_view(dview_memory);
     debugger_view *dview = &th.dbg.memory.get();
     memory_view *mv = &dview->memory;
@@ -528,7 +528,7 @@ static void setup_memory_view(SNES& th, debugger_interface &dbgr) {
     mv->add_module("VRAM", 1, 4, 0, 0xFFFF, &th.ppu.VRAM, &readvram);
 }
 
-static void setup_events_view(SNES& th, debugger_interface &dbgr) {
+static void setup_events_view(SNES::core& th, debugger_interface &dbgr) {
     // Setup events view
     th.dbg.events.view = dbgr.make_view(dview_events);
     debugger_view *dview = &th.dbg.events.view.get();
@@ -569,7 +569,7 @@ static void setup_events_view(SNES& th, debugger_interface &dbgr) {
     debugger_report_frame(th.dbg.interface);
 }
 
-void SNES::setup_debugger_interface(debugger_interface &intf) {
+void SNES::core::setup_debugger_interface(debugger_interface &intf) {
     dbg.interface = &intf;
     auto *dbgr = dbg.interface;
 

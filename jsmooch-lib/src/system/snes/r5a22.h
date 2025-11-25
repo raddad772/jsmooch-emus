@@ -6,13 +6,17 @@
 #include "helpers/int.h"
 #include "component/cpu/wdc65816/wdc65816.h"
 #include "snes_controller_port.h"
+#include "snes_bus.h"
 
-struct SNES;
+namespace SNES {
+struct core;
 
-struct R5A22_DMA_CHANNEL {
-    SNES *snes{};
-    u32 hdma_is_finished() const;
-    u32 hdma_is_active() const;
+namespace R5A22 {
+
+struct DMA_CHANNEL {
+    SNES::core *snes{};
+    bool hdma_is_finished() const;
+    bool hdma_is_active() const;
     u32 hdma_reload();
     u32 hdma_setup();
     u32 dma_run();
@@ -25,17 +29,17 @@ struct R5A22_DMA_CHANNEL {
     u32 source_bank{}, transfer_size{}, indirect_bank{}, indirect_address{};
     u32 hdma_address{}, line_counter{}, hdma_completed{}, hdma_do_transfer{};
     u32 took_cycles{}, index{}, unknown_byte{};
-    R5A22_DMA_CHANNEL *next{};
+    DMA_CHANNEL *next{};
     u32 num{};
 };
 
-struct R5A22 {
-    explicit R5A22(SNES *parent, u64 *master_clock);
+struct core {
+    explicit core(SNES::core *parent, u64 *master_clock);
     void reset();
     void setup_tracing(jsm_debug_read_trace *strct);
     void hblank(u32 which);
-    u32 reg_read(u32 addr, u32 old, u32 has_effect, SNES_memmap_block *bl);
-    void reg_write(u32 addr, u32 val, SNES_memmap_block *bl);
+    u32 reg_read(u32 addr, u32 old, u32 has_effect, memmap_block *bl);
+    void reg_write(u32 addr, u32 val, memmap_block *bl);
     void cycle_cpu();
     void cycle_alu();
     u32 dma_run();
@@ -52,9 +56,9 @@ public:
     void update_irq();
     void update_nmi();
 
-    SNES *snes;
-    WDC65816 cpu;
-    SNES_controller_port controller_port1{}, controller_port2{};
+    SNES::core *snes;
+    WDC65816::core cpu;
+    controller::port controller_port1{}, controller_port2{};
     u32 ROMspeed{};
 
     struct {
@@ -96,7 +100,7 @@ public:
     } alu{};
 
     struct {
-        R5A22_DMA_CHANNEL channels[8]{};
+        DMA_CHANNEL channels[8]{};
         u32 hdma_enabled{};
 
         struct {
@@ -108,4 +112,7 @@ public:
 };
 
 
-void R5A22_cycle(void *ptr, u64 key, u64 clock, u32 jitter);
+void cycle(void *ptr, u64 key, u64 clock, u32 jitter);
+
+}
+}

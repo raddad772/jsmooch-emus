@@ -6,27 +6,28 @@
 #include "snes_cart.h"
 #include "snes_bus.h"
 #include "snes_mem.h"
+namespace SNES {
 
-void SNES_cart::read_ver1_header()
+void cart::read_ver1_header()
 {
-    u8 *rom = (u8 *)ROM.ptr;
+    auto *rom = static_cast<u8 *>(ROM.ptr);
     header.sram_sizebit = rom[header.offset + 0x28];
     header.rom_sizebit = rom[header.offset + 0x27];
     memset(header.internal_name, 0, sizeof(header.internal_name));
     memcpy(header.internal_name, rom+header.offset+0x10, 20);
 }
 
-void SNES_cart::read_ver2_header()
+void cart::read_ver2_header()
 {
     read_ver1_header();
 }
 
-void SNES_cart::read_ver3_header()
+void cart::read_ver3_header()
 {
     read_ver1_header();
     //  FFBCh  Expansion FLASH Size (1 SHL n) Kbytes (used in JRA PAT)
     //  FFBDh  Expansion RAM Size (1 SHL n) Kbytes (in GSUn games) (without battery?
-    u8 *rom = static_cast<u8 *>(ROM.ptr);
+    auto *rom = static_cast<u8 *>(ROM.ptr);
     u32 sl = rom[header.offset + 0x1C];
     if (sl > 0) {
         const u32 expansion_flash_size = 1 << sl;
@@ -57,7 +58,7 @@ static const u32 terrible_opcodes[NUM_TERRIBLE] = {
         0x00, 0x02, 0xDB, 0x42, 0xFF
 };
 
-i32 SNES_cart::score_header(const u32 addr) const
+i32 cart::score_header(const u32 addr) const
 {
     /*
      * The main ideas behind this detection are from Ares.
@@ -97,7 +98,7 @@ i32 SNES_cart::score_header(const u32 addr) const
     return score > 0 ? score : 0;
 }
 
-u32 SNES_cart::find_cart_header()
+u32 cart::find_cart_header()
 {
     u32 first_offset = 0x7F00;
     const i32 lorom = score_header(0x7FB0);
@@ -120,7 +121,7 @@ u32 SNES_cart::find_cart_header()
     return header_addr;
 }
 
-u32 SNES_cart::load_ROM_from_RAM(char* fil, u64 fil_sz, physical_io_device &pio)
+u32 cart::load_ROM_from_RAM(char* fil, u64 fil_sz, physical_io_device &pio)
 {
     const u32 SMCheader_size = fil_sz % 1024;
     if (SMCheader_size != 0) {
@@ -185,4 +186,5 @@ u32 SNES_cart::load_ROM_from_RAM(char* fil, u64 fil_sz, physical_io_device &pio)
     snes->mem.cart_inserted();
 
     return 0;
+}
 }

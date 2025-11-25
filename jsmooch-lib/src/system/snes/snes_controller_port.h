@@ -5,20 +5,20 @@
 #pragma once
 
 #include "helpers/int.h"
-
-enum SNES_controller_kinds {
-    SNES_CK_none,
-    SNES_CK_standard
+namespace SNES::controller {
+enum kinds {
+    none,
+    standard
 };
 
-struct SNES;
+struct core;
 
-struct SNES_controller_port {
-    void latch(u32 val);
-    u32 data();
-    void connect(SNES_controller_kinds in_kind, void *in_ptr);;
+struct port {
+    void latch(u8 val);
+    u8 data();
+    void connect(kinds in_kind, void *in_ptr);;
 
     void *ptr{};
-    SNES_controller_kinds kind = SNES_CK_none;
-
+    kinds kind = kinds::none;
 };
+}

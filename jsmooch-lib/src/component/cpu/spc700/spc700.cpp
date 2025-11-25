@@ -5,9 +5,10 @@
 #include "spc700_boot_rom.h"
 #include "spc700_disassembler.h"
 
-extern SPC700_ins_func spc700_decoded_opcodes[0x100];
+namespace SPC700 {
+extern ins_func decoded_opcodes[0x100];
 
-void SPC700::reset()
+void core::reset()
 {
     io.ROM_readable = 1;
     for (auto & timer : timers) {
@@ -25,12 +26,12 @@ void SPC700::reset()
 }
 
 
-static SPC700_ins_func get_decoded_opcode(u32 opcode)
+static ins_func get_decoded_opcode(u32 opcode)
 {
-    return spc700_decoded_opcodes[opcode];
+    return decoded_opcodes[opcode];
 }
 
-void SPC700::advance_timers(i32 num_cycles)
+void core::advance_timers(i32 num_cycles)
 {
     timers[0].divider += num_cycles;
     timers[1].divider += num_cycles;
@@ -76,7 +77,7 @@ void SPC700::advance_timers(i32 num_cycles)
     }
 }
 
-void SPC700::trace_format()
+void core::trace_format()
 {
     //dbg.traces.add(TRACERS.SPC, this.clock.apu_has, this.trace_format(.disassemble(), (.regs.PC - 1) & 0xFFFF));
     u32 do_dbglog = 0;
@@ -84,7 +85,7 @@ void SPC700::trace_format()
         trace.str.quickempty();
         trace.str2.quickempty();
         // PC, read, out, p_p
-        SPC700_disassemble(regs.PC, trace.strct, trace.str, regs.P.P);
+        disassemble(regs.PC, trace.strct, trace.str, regs.P.P);
         trace.str2.sprintf("A:%02x  X:%02x  Y:%02x  SP:%04x  P:%c%c%c%c%c%c%c%c",
                            regs.A,
                            regs.X, regs.Y,
@@ -109,7 +110,7 @@ void SPC700::trace_format()
     }
 }
 
-void SPC700::cycle(i64 how_many) {
+void core::cycle(i64 how_many) {
     cycles += how_many;
     while(cycles > 0) {
         regs.opc_cycles = 0;
@@ -128,8 +129,8 @@ void SPC700::cycle(i64 how_many) {
         trace_format();
 
         regs.PC = (regs.PC + 1) & 0xFFFF;
-        SPC700_ins_func fptr = get_decoded_opcode(regs.IR);
-        fptr(this);
+        ins_func fptr = get_decoded_opcode(regs.IR);
+        fptr(*this);
         (*clock) += regs.opc_cycles;
         cycles -= regs.opc_cycles;
         int_clock += regs.opc_cycles;
@@ -137,7 +138,7 @@ void SPC700::cycle(i64 how_many) {
     }
 }
 
-u8 SPC700::readIO(u32 addr)
+u8 core::readIO(u32 addr)
 {
     u32 val;
     switch(addr) {
@@ -187,7 +188,7 @@ u8 SPC700::readIO(u32 addr)
     }
 }
 
-void SPC700::writeIO(u32 addr, u32 val)
+void core::writeIO(u32 addr, u32 val)
 {
     switch(addr) {
         case 0xF0: // TEST register, should not be written
@@ -238,7 +239,7 @@ void SPC700::writeIO(u32 addr, u32 val)
     }
 }
 
-void SPC700::log_write(u32 addr, u32 val)
+void core::log_write(u32 addr, u32 val)
 {
     if (trace.dbglog.view && trace.dbglog.view->ids_enabled[trace.dbglog.id_write]) {
         u64 tc;
@@ -266,7 +267,7 @@ void SPC700::log_write(u32 addr, u32 val)
 }
 
 
-void SPC700::log_read(u32 addr, u32 val)
+void core::log_read(u32 addr, u32 val)
 {
     if (trace.dbglog.view && trace.dbglog.view->ids_enabled[trace.dbglog.id_read]) {
         u64 tc;
@@ -288,10 +289,10 @@ void SPC700::log_read(u32 addr, u32 val)
     }
 }
 
-u8 SPC700::read8(u32 addr)
+u8 core::read8(u32 addr)
 {
     u8 r;
-    if constexpr (SPC700_TEST) {
+    if constexpr (TEST) {
         r = RAM[addr & 0xFFFF];
     }
     else {
@@ -305,14 +306,14 @@ u8 SPC700::read8(u32 addr)
     return r;
 }
 
-u8 SPC700::read8D(u32 addr)
+u8 core::read8D(u32 addr)
 {
     return read8((addr & 0xFF) + regs.P.DO);
 }
 
-void SPC700::write8(u32 addr, u32 val)
+void core::write8(u32 addr, u32 val)
 {
-    if constexpr (SPC700_TEST) {
+    if constexpr (TEST) {
         RAM[addr & 0xFFFF] = val;
     }
     else {
@@ -323,14 +324,14 @@ void SPC700::write8(u32 addr, u32 val)
     }
 }
 
-void SPC700::write8D(u32 addr, u32 val)
+void core::write8D(u32 addr, u32 val)
 {
     write8((addr & 0xFF) + regs.P.DO, val);
 }
 
 static u32 read_trace(void *ptr, u32 addr)
 {
-    auto *th = static_cast<SPC700 *>(ptr);
+    auto *th = static_cast<core *>(ptr);
     u8 r;
     if ((addr >= 0x00F1) && (addr <= 0x00FF)) r = th->readIO(addr);
     else if ((addr >= 0xFFC0) && th->io.ROM_readable) r = SPC700_boot_rom[addr - 0xFFC0];
@@ -339,10 +340,11 @@ static u32 read_trace(void *ptr, u32 addr)
     return r;
 }
 
-void SPC700::setup_tracing(jsm_debug_read_trace *strct)
+void core::setup_tracing(jsm_debug_read_trace *strct)
 {
     trace.strct.ptr = this;
     trace.strct.read_trace = &read_trace;
     trace.ok = 1;
 }
 
+}

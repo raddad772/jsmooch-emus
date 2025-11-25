@@ -22,29 +22,29 @@
 #include "r5a22.h"
 #include "snes_apu.h"
 
-struct snesched_item;
-struct SNES;
-typedef void (*snesched_callback)(SNES *, snesched_item *);
+namespace SNES {
+struct sched_item;
+struct core;
+typedef void (*ched_callback)(core *, sched_item *);
 
 #define NUM_SNESCHED 12
 
 // >> 2 = 1,2,3
 
-struct SNES : jsm_system {
-    SNES();
-    SNES_clock clock{};
-    R5A22 r5a22;
-    SNES_APU apu;
+struct core : jsm_system {
+    core();
+    clock clock{};
+    R5A22::core r5a22;
+    APU::core apu;
     scheduler_t scheduler;
-    SNES_cart cart;
-    SNES_PPU ppu;
+    cart cart;
+    PPU::core ppu;
+    mem mem;
 
 private:
     void schedule_first();
 public:
     SNES_joypad controller1{}, controller2{};
-
-    SNES_mem mem;
 
     i32 block_cycles_to_run{};
 
@@ -89,10 +89,10 @@ public:
     struct {
         struct SNES_DBG_LINE {
             struct SNES_DBG_line_bg {
-                SNES_PPU_px px[256]{};
+                PPU::px px[256]{};
                 u32 enabled{}, mode{}, bpp8{};
             } bg[4]{};
-            SNES_PPU_px sprite_px[256]{};
+            PPU::px sprite_px[256]{};
         } line[224]{};
     } dbg_info{};
 
@@ -115,3 +115,4 @@ public:
     void setup_debugger_interface(debugger_interface &intf) final;
 
 };
+}

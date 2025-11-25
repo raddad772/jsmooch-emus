@@ -5,13 +5,13 @@
 #include "snes_controller_port.h"
 #include "snes_bus.h"
 #include "component/controller/snes/snes_joypad.h"
-
-void SNES_controller_port::latch(u32 val)
+namespace SNES::controller {
+void port::latch(u8 val)
 {
     switch(kind) {
-        case SNES_CK_none:
+        case kinds::none:
             return;
-        case SNES_CK_standard: {
+        case kinds::standard: {
             SNES_joypad *jp = static_cast<SNES_joypad *>(ptr);
             return jp->latch(val); }
         default:
@@ -20,12 +20,12 @@ void SNES_controller_port::latch(u32 val)
         }
 }
 
-u32 SNES_controller_port::data()
+u8 port::data()
 {
     switch(kind) {
-        case SNES_CK_none:
+        case kinds::none:
             return 0;
-        case SNES_CK_standard: {
+        case kinds::standard: {
             SNES_joypad *jp = static_cast<SNES_joypad *>(ptr);
             return jp->data(); }
         default:
@@ -34,8 +34,9 @@ u32 SNES_controller_port::data()
     }
 }
 
-void SNES_controller_port::connect(SNES_controller_kinds in_kind, void *in_ptr)
+void port::connect(kinds in_kind, void *in_ptr)
 {
     kind = in_kind;
     ptr = in_ptr;
+}
 }

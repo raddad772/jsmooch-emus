@@ -8,12 +8,13 @@
 #include "helpers/buf.h"
 #include "helpers/physical_io.h"
 
-struct SNES;
+namespace SNES {
+struct core;
 
-struct SNES_cart {
-    explicit SNES_cart(SNES *parent) : snes(parent) {}
+struct cart {
+    explicit cart(core *parent) : snes(parent) {}
     u32 load_ROM_from_RAM(char* fil, u64 fil_sz, physical_io_device &pio);
-    SNES *snes;
+    core *snes;
     buf ROM{};
     struct SNES_cart_header {
         u32 mapping_mode{};
@@ -35,3 +36,4 @@ private:
     i32 score_header(u32 addr) const;
     u32 find_cart_header();
 };
+}

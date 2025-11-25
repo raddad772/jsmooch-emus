@@ -8,4 +8,6 @@
 #include "helpers/debug.h"
 #include "helpers/jsm_string.h"
 
-u32 SPC700_disassemble(u32 PC, jsm_debug_read_trace &rt, jsm_string &out, u32 p_p);
+namespace SPC700 {
+u32 disassemble(u32 PC, jsm_debug_read_trace &rt, jsm_string &out, u32 p_p);
+}

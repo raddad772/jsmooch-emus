@@ -19,17 +19,17 @@
 
 #define JSM jsm_system* jsm
 
-SNES::SNES() : r5a22(this, &this->clock.master_cycle_count), apu(this, &clock.master_cycle_count), scheduler(&clock.master_cycle_count), cart(this), ppu(this), mem(this) {
+SNES::core::core() : r5a22(this, &this->clock.master_cycle_count), apu(this, &clock.master_cycle_count), scheduler(&clock.master_cycle_count), cart(this), ppu(this), mem(this) {
     has.save_state = false;
     has.load_BIOS = false;
     has.set_audiobuf = true;
 }
 
 u32 read_trace_wdc65816(void *ptr, u32 addr) {
-    return static_cast<SNES *>(ptr)->mem.read_bus_A(addr, 0, 0);
+    return static_cast<SNES::core *>(ptr)->mem.read_bus_A(addr, 0, 0);
 }
 
-static void setup_debug_waveform(const SNES *snes, debug_waveform &dw)
+static void setup_debug_waveform(const SNES::core *snes, debug_waveform &dw)
 {
     if (dw.samples_requested == 0) return;
     dw.samples_rendered = dw.samples_requested;
@@ -37,7 +37,7 @@ static void setup_debug_waveform(const SNES *snes, debug_waveform &dw)
     dw.user.buf_pos = 0;
 }
 
-void SNES::set_audiobuf(audiobuf *ab)
+void SNES::core::set_audiobuf(audiobuf *ab)
 {
     audio.buf = ab;
     if (audio.master_cycles_per_audio_sample == 0) {
@@ -63,9 +63,10 @@ void SNES::set_audiobuf(audiobuf *ab)
 
 static void run_block(void *ptr, u64 key, u64 clock, u32 jitter)
 {
-    SNES *th = static_cast<SNES *>(ptr);
+    auto *th = static_cast<SNES::core *>(ptr);
 
-    R5A22_cycle(th, 0, 0, 0);
+
+    SNES::R5A22::cycle(th, 0, 0, 0);
 }
 
 static inline float i16_to_float(i16 val)
@@ -76,7 +77,7 @@ static inline float i16_to_float(i16 val)
 
 static void sample_audio(void *ptr, u64 key, u64 clock, u32 jitter)
 {
-    SNES* th = static_cast<SNES *>(ptr);
+    auto* th = static_cast<SNES::core *>(ptr);
     // TODO: make th stereo!
     // TODO: make debug waveform also stereo
     if (th->audio.buf) {
@@ -91,7 +92,7 @@ static void sample_audio(void *ptr, u64 key, u64 clock, u32 jitter)
 
 jsm_system *SNES_new()
 {
-    SNES* th = new SNES();
+    auto* th = new SNES::core();
 
     th->scheduler.max_block_size = 20;
     th->scheduler.run.func = &run_block;
@@ -108,11 +109,11 @@ jsm_system *SNES_new()
     th->r5a22.setup_tracing(&dt);
 
     th->apu.cpu.setup_tracing(&dt);
-    return th;
+    return dynamic_cast<jsm_system *>(th);
 }
 
 void SNES_delete(JSM) {
-    SNES *snes = dynamic_cast<SNES *>(jsm);
+    SNES::core *snes = dynamic_cast<SNES::core *>(jsm);
 
     for (physical_io_device &pio : snes->IOs) {
         if (pio.kind == HID_CART_PORT) {
@@ -126,7 +127,7 @@ void SNES_delete(JSM) {
 
 static void sample_audio_debug_max(void *ptr, u64 key, u64 clock, u32 jitter)
 {
-    SNES *th = static_cast<SNES *>(ptr);
+    auto *th = static_cast<SNES::core *>(ptr);
 
     debug_waveform *dw = &th->dbg.waveforms.main.get();
     if (dw->user.buf_pos < dw->samples_requested) {
@@ -141,7 +142,7 @@ static void sample_audio_debug_max(void *ptr, u64 key, u64 clock, u32 jitter)
 
 static void sample_audio_debug_min(void *ptr, u64 key, u64 clock, u32 jitter)
 {
-    SNES *th = static_cast<SNES *>(ptr);
+    auto *th = static_cast<SNES::core *>(ptr);
 
     // PSG
     debug_waveform *dw = &th->dbg.waveforms.chan[0].get();
@@ -159,7 +160,7 @@ static void sample_audio_debug_min(void *ptr, u64 key, u64 clock, u32 jitter)
 }
 
 
-void SNES::schedule_first()
+void SNES::core::schedule_first()
 {
     scheduler.only_add_abs(static_cast<i64>(audio.next_sample_cycle_max), 0, this, &sample_audio_debug_max, nullptr);
     scheduler.only_add_abs(static_cast<i64>(audio.next_sample_cycle_min), 0, this, &sample_audio_debug_min, nullptr);
@@ -172,7 +173,7 @@ void SNES::schedule_first()
 
 static void SNESIO_load_cart(JSM, multi_file_set &mfs, physical_io_device &which_pio)
 {
-    SNES *snes = dynamic_cast<SNES *>(jsm);
+    auto *snes = dynamic_cast<SNES::core *>(jsm);
     buf* b = &mfs.files[0].buf;
 
     snes->cart.load_ROM_from_RAM(static_cast<char *>(b->ptr), b->size, which_pio);
@@ -222,7 +223,7 @@ static void setup_audio(std::vector<physical_io_device> &inIOs)
     chan->low_pass_filter = 16000;
 }
 
-void SNES::describe_io()
+void SNES::core::describe_io()
 {
     if (jsm.described_inputs) return;
     jsm.described_inputs = 1;
@@ -274,23 +275,23 @@ void SNES::describe_io()
     setup_audio(IOs);
 
     ppu.display = &ppu.display_ptr.get().display;
-    r5a22.controller_port1.connect(SNES_CK_standard, &controller1);
-    //r5a22.controller_port2.connect(SNES_CK_standard, &controller2);
+    r5a22.controller_port1.connect(controller::kinds::standard, &controller1);
+    //r5a22.controller_port2.connect(controller_kinds::standard, &controller2);
 }
 
-void SNES::play()
+void SNES::core::play()
 {
 }
 
-void SNES::pause()
+void SNES::core::pause()
 {
 }
 
-void SNES::stop()
+void SNES::core::stop()
 {
 }
 
-void SNES::get_framevars(framevars& out)
+void SNES::core::get_framevars(framevars& out)
 {
     
     out.master_frame = clock.master_frame;
@@ -299,7 +300,7 @@ void SNES::get_framevars(framevars& out)
     out.master_cycle = clock.master_cycle_count;
 }
 
-void SNES::reset()
+void SNES::core::reset()
 {
     r5a22.reset();
     apu.reset();
@@ -312,7 +313,7 @@ void SNES::reset()
 
 //#define DO_STATS
 
-u32 SNES::finish_frame()
+u32 SNES::core::finish_frame()
 {
     
 #ifdef DO_STATS
@@ -333,7 +334,7 @@ u32 SNES::finish_frame()
     return ppu.display->last_written;
 }
 
-u32 SNES::finish_scanline()
+u32 SNES::core::finish_scanline()
 {
     //read_opts(jsm, th);
     scheduler.run_til_tag(TAG_SCANLINE);
@@ -341,7 +342,7 @@ u32 SNES::finish_scanline()
     return ppu.display->last_written;
 }
 
-u32 SNES::step_master(u32 howmany)
+u32 SNES::core::step_master(u32 howmany)
 {
     //read_opts(jsm, th);
     //printf("\nRUN FOR %d CYCLES:", howmany);

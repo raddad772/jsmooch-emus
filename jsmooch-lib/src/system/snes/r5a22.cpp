@@ -6,24 +6,27 @@
 #include "snes_bus.h"
 #include "r5a22.h"
 #include "snes_debugger.h"
+namespace SNES {
+namespace R5A22{
 
-u32 R5A22_DMA_CHANNEL::hdma_is_active() const
+
+bool DMA_CHANNEL::hdma_is_active() const
 {
     return hdma_enable && !hdma_completed;
 }
 
-u32 R5A22_DMA_CHANNEL::hdma_is_finished() const
+bool DMA_CHANNEL::hdma_is_finished() const
 {
-    R5A22_DMA_CHANNEL *ch = next;
+    DMA_CHANNEL *ch = next;
     while(ch != nullptr) {
-        if (ch->hdma_is_active()) return 0;
+        if (ch->hdma_is_active()) return false;
         ch = ch->next;
     }
     return true;
 
 }
 
-u32 R5A22_DMA_CHANNEL::hdma_reload()
+u32 DMA_CHANNEL::hdma_reload()
 {
     u32 cn = 8;
     u32 data = snes->mem.read_bus_A(source_bank << 16 | hdma_address, 0, 1);
@@ -51,14 +54,14 @@ u32 R5A22_DMA_CHANNEL::hdma_reload()
     return cn;
 }
 
-u32 R5A22::hdma_is_enabled() const {
+u32 core::hdma_is_enabled() const {
     for (const auto & ch : dma.channels) {
         if (ch.hdma_enable) return 1;
     }
     return 0;
 }
 
-u32 R5A22_DMA_CHANNEL::hdma_setup()
+u32 DMA_CHANNEL::hdma_setup()
 {
     hdma_do_transfer = 1;
     if (!hdma_enable) return 0;
@@ -69,7 +72,7 @@ u32 R5A22_DMA_CHANNEL::hdma_setup()
     return hdma_reload();
 }
 
-u32 R5A22_DMA_CHANNEL::dma_run()
+u32 DMA_CHANNEL::dma_run()
 {
     u32 nc = 0;
     if (transfer_size > 0) {
@@ -100,7 +103,7 @@ u32 R5A22_DMA_CHANNEL::dma_run()
 }
 
 
-R5A22::R5A22(SNES *parent, u64 *master_clock) : snes(parent), cpu(master_clock) {
+core::core(SNES::core *parent, u64 *master_clock) : snes(parent), cpu(master_clock) {
     for (u32 i = 0; i < 8; i++) {
         dma.channels[i].num = i;
         dma.channels[i].snes = parent;
@@ -109,10 +112,10 @@ R5A22::R5A22(SNES *parent, u64 *master_clock) : snes(parent), cpu(master_clock) 
 
 }
 
-void R5A22_DMA_CHANNEL::clear_values() {
+void DMA_CHANNEL::clear_values() {
     u32 saved_num = num;
-    SNES* saved_snes = snes;
-    R5A22_DMA_CHANNEL* saved_next = next;
+    SNES::core* saved_snes = snes;
+    DMA_CHANNEL* saved_next = next;
 
     std::memset(this, 0, sizeof(*this));
 
@@ -122,7 +125,7 @@ void R5A22_DMA_CHANNEL::clear_values() {
 }
 
 
-void R5A22::dma_reset() {
+void core::dma_reset() {
     for (u32 i = 0; i < 8; i++) {
         dma.channels[i].clear_values();
         dma.channels[i].num = i;
@@ -130,11 +133,11 @@ void R5A22::dma_reset() {
     }
 }
 
-void R5A22::reset()
+void core::reset()
 {
     cpu.reset();
     cpu.regs.TCU = 0;
-    cpu.pins.D = WDC65816_OP_RESET;
+    cpu.pins.D = WDC65816::OP::RESET;
     dma_reset();
     ROMspeed = 8;
     status.auto_joypad.counter = 33;
@@ -150,9 +153,9 @@ void R5A22::reset()
     io.vtime = 0x1FF; // VIRQ time
 }
 
-u32 R5A22::dma_reg_read(u32 addr, u32 old, u32 has_effect)
+u32 core::dma_reg_read(u32 addr, u32 old, u32 has_effect)
 {
-    R5A22_DMA_CHANNEL &ch = dma.channels[(addr >> 4) & 7];
+    DMA_CHANNEL &ch = dma.channels[(addr >> 4) & 7];
     switch(addr & 0xFF8F) {
         case 0x4300: // DMAPx
             return (ch.transfer_mode) | (ch.fixed_transfer << 3) | (ch.reverse_transfer << 4) | (ch.unused << 5) | (ch.indirect << 6) || (ch.direction << 7);
@@ -180,16 +183,16 @@ u32 R5A22::dma_reg_read(u32 addr, u32 old, u32 has_effect)
         case 0x430f:
             return ch.unknown_byte;
         default:
-        
+
     }
     return old;
 }
 
 
-void R5A22::dma_reg_write(u32 addr, u32 val)
+void core::dma_reg_write(u32 addr, u32 val)
 {
     u32 cnum = (addr >> 4) & 7;
-    R5A22_DMA_CHANNEL &ch = dma.channels[cnum];
+    DMA_CHANNEL &ch = dma.channels[cnum];
     switch(addr & 0xFF8F) {
         case 0x4300: // DMAPx various controls
             ch.transfer_mode = val & 7;
@@ -237,7 +240,7 @@ void R5A22::dma_reg_write(u32 addr, u32 val)
     }
 }
 
-void R5A22::update_irq() {
+void core::update_irq() {
     // HIRQs are handled in a
     u32 old_h_irq = status.hirq_status;
     u32 old_v_irq = status.virq_status;
@@ -265,15 +268,15 @@ void R5A22::update_irq() {
     cpu.set_IRQ_level(status.irq_line);
 }
 
-void R5A22::update_nmi()
+void core::update_nmi()
 {
     cpu.set_NMI_level(io.nmi_enable && status.nmi_flag);
 }
 
-void R5A22::dma_start()
+void core::dma_start()
 {
     for (u32 n = 0; n < 8; n++) {
-        R5A22_DMA_CHANNEL *ch = &dma.channels[n];
+        DMA_CHANNEL *ch = &dma.channels[n];
         if (ch->dma_enable) {
             dbgloglog(snes, SNES_CAT_DMA_START, DBGLS_INFO, "DMA%d start. size:%d line:%d addrA:%06x addrB:%04x vram_addr:%04x", n, ch->transfer_size, snes->clock.ppu.y, (ch->source_bank << 16) | ch->source_address, 0x2100 | ch->target_address,  snes->ppu.io.vram.addr);
         }
@@ -283,8 +286,8 @@ void R5A22::dma_start()
 
 static void dma_pending_setup(void *ptr, u64 key, u64 clock, u32 jitter)
 {
-    SNES *snes = static_cast<SNES *>(ptr);
-    R5A22 *th = &snes->r5a22;
+    auto *snes = static_cast<SNES::core *>(ptr);
+    core *th = &snes->r5a22;
 
     if (!th->status.dma_running) {
         th->dma_start();
@@ -295,8 +298,8 @@ static void dma_pending_setup(void *ptr, u64 key, u64 clock, u32 jitter)
 
 static void auto_joypad_edge(void *ptr, u64 key, u64 clock, u32 jitter)
 {
-    SNES *snes = static_cast<SNES *>(ptr);
-    R5A22 *th = &snes->r5a22;
+    auto *snes = static_cast<SNES::core *>(ptr);
+    core *th = &snes->r5a22;
 
     if (!th->io.auto_joypad_poll) return;
     u64 cur = clock - jitter;
@@ -333,7 +336,7 @@ static void auto_joypad_edge(void *ptr, u64 key, u64 clock, u32 jitter)
 
 }
 
-void R5A22::reg_write(u32 addr, u32 val, SNES_memmap_block *bl)
+void core::reg_write(u32 addr, u32 val, memmap_block *bl)
 {
     addr &= 0xFFFF;
     if ((addr >= 0x4300) && (addr <= 0x43FF)) { return dma_reg_write(addr, val); }
@@ -411,7 +414,7 @@ void R5A22::reg_write(u32 addr, u32 val, SNES_memmap_block *bl)
             return;
         case 0x420B:
             for (u32 n = 0; n < 8; n++) {
-                R5A22_DMA_CHANNEL *ch = &dma.channels[n];
+                DMA_CHANNEL *ch = &dma.channels[n];
                 ch->dma_enable = (val >> n) & 1;
                 //if (dma.channels[n].dma_enable)
             }
@@ -437,7 +440,7 @@ void R5A22::reg_write(u32 addr, u32 val, SNES_memmap_block *bl)
     printf("\nR5A22 MISS WRITE TO %04x %02x", addr, val);
 }
 
-void R5A22::hblank(const u32 which)
+void core::hblank(const u32 which)
 {
     // evaluate hblank dma
     if (which) {
@@ -445,7 +448,7 @@ void R5A22::hblank(const u32 which)
     }
 }
 
-u32 R5A22::reg_read(u32 addr, u32 old, u32 has_effect, SNES_memmap_block *bl)
+u32 core::reg_read(u32 addr, u32 old, u32 has_effect, memmap_block *bl)
 {
     addr &= 0xFFFF;
     if ((addr >= 0x4300) && (addr <= 0x43FF)) return dma_reg_read(addr, old, has_effect );
@@ -510,7 +513,7 @@ u32 R5A22::reg_read(u32 addr, u32 old, u32 has_effect, SNES_memmap_block *bl)
     return 0;
 }
 
-void R5A22::setup_tracing(jsm_debug_read_trace *strct)
+void core::setup_tracing(jsm_debug_read_trace *strct)
 {
     cpu.setup_tracing(strct);
 }
@@ -532,7 +535,7 @@ static u32 mem_timing(u32 addr, u32 ROMspeed) {
     return 12;
 }
 
-void R5A22::cycle_alu()
+void core::cycle_alu()
 {
     if (!alu.mpyctr  && !alu.divctr) return;
     if (alu.mpyctr) {
@@ -553,7 +556,7 @@ void R5A22::cycle_alu()
     }
 }
 
-void R5A22::cycle_cpu()
+void core::cycle_cpu()
 {
     cpu.cycle();
     u32 cpu_addr = (cpu.pins.BA << 16) | cpu.pins.Addr;
@@ -588,28 +591,28 @@ static inline u32 validA(const u32 addr)
     return (addr & 0x40FF80) != 0x4300;
 }
 
-static inline u32 dma_readA(SNES *snes, u32 addr) {
+static inline u32 dma_readA(SNES::core *snes, u32 addr) {
     //snes->scheduler.from_event_adjust_master_clock(8);
     return validA(addr) ? snes->mem.read_bus_A(addr, 0, 1) : 0;
 }
 
-static inline u32 dma_readB(SNES *snes, u32 addr, u32 valid) {
+static inline u32 dma_readB(SNES::core *snes, u32 addr, u32 valid) {
     //snes->scheduler.from_event_adjust_master_clock(8);
     return valid ? snes->mem.read_bus_A(0x2100 | addr, 0, 1) : 0;
 }
 
-static inline void dma_writeA(SNES *snes, u32 addr, u32 val) {
+static inline void dma_writeA(SNES::core *snes, u32 addr, u32 val) {
     if (validA(addr)) {
         snes->mem.write_bus_A(addr, val);
     }
 }
 
-static inline void dma_writeB(SNES *snes, u32 addr, u32 val, u32 valid)
+static inline void dma_writeB(SNES::core *snes, u32 addr, u32 val, u32 valid)
 {
     if (valid) snes->mem.write_bus_A(0x2100 | addr, val);
 }
 
-void R5A22_DMA_CHANNEL::dma_transfer(u32 addrA, u32 iindex, u32 hdma_mode)
+void DMA_CHANNEL::dma_transfer(u32 addrA, u32 iindex, u32 hdma_mode)
 {
     u32 addrB = target_address;
     switch(transfer_mode) {
@@ -662,7 +665,7 @@ void R5A22_DMA_CHANNEL::dma_transfer(u32 addrA, u32 iindex, u32 hdma_mode)
     }
 }
 
-void R5A22_DMA_CHANNEL::hdma_transfer()
+void DMA_CHANNEL::hdma_transfer()
 {
     constexpr int HDMA_LENGTHS[8] = {1, 2, 2, 4, 4, 4, 2, 4};
     dma_enable = 0;
@@ -683,7 +686,7 @@ void R5A22_DMA_CHANNEL::hdma_transfer()
     }
 }
 
-void R5A22_DMA_CHANNEL::hdma_advance()
+void DMA_CHANNEL::hdma_advance()
 {
     if (!(hdma_enable && !hdma_completed)) return;
     line_counter--;
@@ -691,7 +694,7 @@ void R5A22_DMA_CHANNEL::hdma_advance()
     hdma_reload();
 }
 
-u32 R5A22::dma_run()
+u32 core::dma_run()
 {
     u32 any_going = 0;
     for (auto & ch : dma.channels) {
@@ -710,10 +713,10 @@ u32 R5A22::dma_run()
     return 0;
 }
 
-void R5A22_cycle(void *ptr, u64 key, u64 clock, u32 jitter)
+void cycle(void *ptr, u64 key, u64 clock, u32 jitter)
 {
-    SNES *snes = static_cast<SNES *>(ptr);
-    R5A22 *th = &snes->r5a22;
+    auto *snes = static_cast<SNES::core *>(ptr);
+    core *th = &snes->r5a22;
     //u64 cur = clock - jitter;
     //snes->scheduler.only_add_abs(cur + snes->clock.cpu.divider, 0, snes, &R5A22_cycle, NULL);
     if (th->status.dma_running) {
@@ -730,7 +733,8 @@ void R5A22_cycle(void *ptr, u64 key, u64 clock, u32 jitter)
 
 }
 
-void R5A22::schedule_first()
+void core::schedule_first()
 {
     //snes->r5a22.status.auto_joypad.sch_id = snes->scheduler.only_add_abs(128, 0, snes, &auto_joypad_edge, &snes->r5a22.status.auto_joypad.still_sched);
 }
+}}

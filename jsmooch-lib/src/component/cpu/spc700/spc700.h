@@ -10,9 +10,11 @@
 #include "helpers/debugger/debugger.h"
 #include "helpers/debug.h"
 
-constexpr bool SPC700_TEST{false};
+namespace SPC700 {
+   
+constexpr bool TEST{false};
 
-union SPC700_regs_P {
+union regs_P {
     struct {
         u32 C : 1;
         u32 Z : 1;
@@ -25,21 +27,22 @@ union SPC700_regs_P {
         u32 DO : 16;
     };
     u32 v;
+    u8 getbyte();
+    void setbyte(u8 val);
 };
 
-static inline u8 SPC700_P_getbyte(union SPC700_regs_P *P)
-{
-    return P->v & 0xFF;
+inline u8 regs_P::getbyte() {
+    return v & 0xFF;
 }
 
-static inline void SPC700_P_setbyte(union SPC700_regs_P *P, u8 val)
+inline void regs_P::setbyte(u8 val)
 {
-    P->v = val;
-    P->DO = P->P << 8;
+    v = val;
+    DO = P << 8;
 }
 
-struct SPC700_regs {
-    SPC700_regs_P P{};
+struct regs {
+    regs_P P{};
 
     u32 IR{};
     i32 TR{}, TA{}, TA2{};
@@ -50,9 +53,9 @@ struct SPC700_regs {
     u16 SP{}, PC{};
 };
 
-struct SPC700 {
-    explicit SPC700(u64 *clock_ptr) : clock(clock_ptr) { }
-    SPC700_regs regs{};
+struct core {
+    explicit core(u64 *clock_ptr) : clock(clock_ptr) { }
+    regs regs{};
     void reset();
     void cycle(i64 how_many);
     void setup_tracing(jsm_debug_read_trace *strct);
@@ -124,4 +127,5 @@ public:
 
 };
 
-typedef void (*SPC700_ins_func)(SPC700 *);
+typedef void (*ins_func)(core &);
+}

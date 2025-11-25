@@ -6,8 +6,9 @@
 
 #include <helpers/int.h>
 
-struct SNES_clock {
-    SNES_clock();
+namespace SNES {
+struct clock {
+    clock();
     void fill_timing_ntsc();
 
     u64 master_cycle_count{};
@@ -38,7 +39,7 @@ struct SNES_clock {
         } sample{};
 
         struct {
-            long double next, stride{};
+            long double next{}, stride{};
         } cycle{};
 
         struct {
@@ -67,3 +68,4 @@ struct SNES_clock {
 
     } timing{};
 };
+}

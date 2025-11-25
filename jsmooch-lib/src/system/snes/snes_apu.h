@@ -6,9 +6,11 @@
 
 #include "component/cpu/spc700/spc700.h"
 
-struct SNES;
+namespace SNES {
+struct core;
 
-struct SNES_APU_sample {
+namespace APU {
+struct sample {
     i16 decoded[2][16];
     u32 cur_decode_buf;
     u8 pos;
@@ -20,13 +22,13 @@ struct SNES_APU_sample {
     u16 next_read_addr;
 };
 
-struct SNES_APU_filter {
+struct filter {
     i16 prev[2];
 };
 
-struct SNES_APU;
+struct core;
 
-struct SNES_APU_ch {
+struct ch {
     u32 calc_env_rate() const;
     void update_env();
     void change_envelope(u32 rate);
@@ -38,7 +40,7 @@ struct SNES_APU_ch {
     void update_sample();
     i16 gaussian_me_up() const;
 
-    SNES_APU *apu;
+    SNES::APU::core *apu{};
 
     u32 num{}, ext_enable{};
 
@@ -113,20 +115,20 @@ struct SNES_APU_ch {
         u32 counter{};
     } env{};
 
-    SNES_APU_sample sample_data{};
-    SNES_APU_filter filter{};
+    sample sample_data{};
+    filter filter{};
 
     u8 ended{};
 };
 
-struct SNES_APU_DSP {
-    explicit SNES_APU_DSP(SNES_APU *apu_in);
+struct DSP {
+    explicit DSP(APU::core *apu_in);
     void update_noise();
-    SNES_APU *apu;
-    //SNES *snes;
+    APU::core *apu;
+    //core *snes;
 
     u32 ext_enable{};
-    SNES_APU_ch channel[8];
+    ch channel[8];
 
     struct {
         i16 level{};
@@ -168,12 +170,12 @@ struct SNES_APU_DSP {
 };
 
 
-struct SNES_APU {
-    explicit SNES_APU(SNES *parent, u64 *clock_ptr);
+struct core {
+    explicit core(SNES::core *parent, u64 *clock_ptr);
     void schedule_first();
     void reset();
     void mix_sample();
-    SNES *snes;
+    SNES::core *snes;
     void calculate_sample_addrs();
 
     u32 read(u32 addr, u32 old, u32 has_effect) const;
@@ -181,7 +183,9 @@ struct SNES_APU {
 
 public:
 
-    SPC700 cpu;
-    SNES_APU_DSP dsp;
+    SPC700::core cpu;
+    DSP dsp;
 };
 
+}
+}

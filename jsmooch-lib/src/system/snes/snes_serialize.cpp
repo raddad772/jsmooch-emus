@@ -5,10 +5,12 @@
 #include "snes_serialize.h"
 #include "snes_bus.h"
 
-void SNES::save_state(serialized_state &state) {
+namespace SNES {
+void core::save_state(serialized_state &state) {
 
 }
 
-void SNES::load_state(serialized_state &state, deserialize_ret &ret) {
+void core::load_state(serialized_state &state, deserialize_ret &ret) {
 
+}
 }
