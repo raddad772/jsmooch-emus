@@ -28,7 +28,8 @@ namespace jsm {
 		GALAKSIJA,
 		TURBOGRAFX16,
 		COSMAC_VIP_2k,
-		COSMAC_VIP_4k
+		COSMAC_VIP_4k,
+		COMMODORE_64
 	};
 
 	enum regions {

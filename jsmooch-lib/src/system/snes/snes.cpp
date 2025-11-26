@@ -64,8 +64,6 @@ void SNES::core::set_audiobuf(audiobuf *ab)
 static void run_block(void *ptr, u64 key, u64 clock, u32 jitter)
 {
     auto *th = static_cast<SNES::core *>(ptr);
-
-
     SNES::R5A22::cycle(th, 0, 0, 0);
 }
 

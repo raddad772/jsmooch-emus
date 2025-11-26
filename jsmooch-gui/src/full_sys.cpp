@@ -121,6 +121,19 @@ u32 grab_BIOSes(multi_file_set* BIOSes, jsm::systems which)
             snprintf(BIOS_PATH, sizeof(BIOS_PATH), "%s/zx_spectrum", BASE_PATH);
             BIOSes->add("zx48.rom", BIOS_PATH);
             break;
+        case jsm::systems::COMMODORE_64:
+            has_bios = 1;
+            snprintf(BIOS_PATH, sizeof(BIOS_PATH), "%s/commodore64", BASE_PATH);
+            //BIOSes->add("64c.251913-01.bin", BIOS_PATH);
+            /*
+            *u3 = basic
+            u4 = kernal
+            u5 = chargen*/
+            //TODO: get commodore BIOS
+            BIOSes->add("901226-01 (USA, Europe) (R2).u3", BIOS_PATH);
+            BIOSes->add("901226-01 (USA, Europe) (R2).u4", BIOS_PATH);
+            BIOSes->add("901226-01 (USA, Europe) (R2).u5", BIOS_PATH);
+            break;
         case jsm::systems::ZX_SPECTRUM_128K:
             has_bios = 1;
             snprintf(BIOS_PATH, sizeof(BIOS_PATH), "%s/zx_spectrum", BASE_PATH);
@@ -264,6 +277,10 @@ void GET_HOME_BASE_SYS(char *out, size_t out_sz, jsm::systems which, const char*
             break;
         case jsm::systems::SNES:
             snprintf(out, out_sz, "%s/snes", BASER_PATH);
+            *worked = 1;
+            break;
+        case jsm::systems::COMMODORE_64:
+            snprintf(out, out_sz, "%s/commodore64", BASER_PATH);
             *worked = 1;
             break;
         case jsm::systems::TURBOGRAFX16:
@@ -718,6 +735,9 @@ void full_system::load_default_ROM()
             worked = grab_ROM(&ROMs, which, "fd1.image", nullptr);
             break;
         case jsm::systems::GALAKSIJA:
+            worked = 1;
+            break;
+        case jsm::systems::COMMODORE_64:
             worked = 1;
             break;
         case jsm::systems::COSMAC_VIP_2k:

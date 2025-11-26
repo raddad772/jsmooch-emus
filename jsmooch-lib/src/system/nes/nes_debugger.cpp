@@ -110,7 +110,7 @@ static void create_and_bind_registers(NES &th, disassembly_view &dv)
 #undef BIND
 }
 
-static void setup_disassembly_view( NES& th, debugger_interface *dbgr)
+static void setup_disassembly_view(NES& th, debugger_interface *dbgr)
 {
     cvec_ptr<debugger_view> p = dbgr->make_view(dview_disassembly);
 

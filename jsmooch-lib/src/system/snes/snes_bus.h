@@ -23,9 +23,6 @@
 #include "snes_apu.h"
 
 namespace SNES {
-struct sched_item;
-struct core;
-typedef void (*ched_callback)(core *, sched_item *);
 
 #define NUM_SNESCHED 12
 

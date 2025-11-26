@@ -88,6 +88,12 @@ struct core {
         u64 my_cycles{};
         jsm_debug_read_trace strct{};
         u32 ins_PC{};
+        jsm_string str{1000}, str2{200};
+        struct {
+            dbglog_view *view{};
+            u32 id{};
+        } dbglog{};
+
     } trace{};
 
     u32 first_reset=1;

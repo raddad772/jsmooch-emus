@@ -1,0 +1,90 @@
+//
+// Created by . on 11/25/25.
+//
+
+#pragma once
+
+#include "helpers/int.h"
+#include "helpers/debug.h"
+#include "helpers/physical_io.h"
+#include "helpers/cvec.h"
+#include "helpers/sys_interface.h"
+
+#include "component/cpu/m6502/m6502.h"
+#include "component/cpu/m6502/m6502_opcodes.h"
+#include "component/cpu/m6502/m6502_disassembler.h"
+#include "component/audio/m6581/m6581.h"
+
+#include "c64_clock.h"
+#include "c64_mem.h"
+#include "vic2.h"
+
+
+namespace C64 {
+
+struct core : jsm_system {
+    explicit core(jsm::regions in_region);
+    //clock clock{};
+    mem mem;
+    M6581 sid;
+    VIC2::core vic2;
+    M6502::core cpu{M6502::decoded_opcodes};
+    scheduler_t scheduler;
+
+    void run_block();
+    void run_cpu();
+
+    u8 open_bus{};
+    jsm::systems kind{};
+    jsm::regions region{};
+    jsm::display_standards display_standard{};
+    u64 master_clock{};
+
+    u8 read_cia1(u8 addr, u8 old, bool has_effect);
+    u8 read_cia2(u8 addr, u8 old, bool has_effect);
+    u8 read_io1(u8 addr, u8 old, bool has_effect);
+    u8 read_io2(u8 addr, u8 old, bool has_effect);
+
+    void write_cia1(u8 addr, u8 val);
+    void write_cia2(u8 addr, u8 val);
+    void write_io1(u8 addr, u8 val);
+    void write_io2(u8 addr, u8 val);
+    void schedule_first();
+
+    DBG_START
+        DBG_CPU_REG_START1 *A, *X, *Y, *P, *S, *PC DBG_CPU_REG_END1
+        DBG_MEMORY_VIEW
+
+        DBG_EVENT_VIEW
+        DBG_LOG_VIEW
+    DBG_END
+
+    struct {
+        double master_cycles_per_audio_sample{},  master_cycles_per_max_sample{};
+        double next_sample_cycle_max{}, next_sample_cycle{};
+        audiobuf *buf{};
+        u64 cycles{};
+    } audio{};
+
+    void play() final;
+    void pause() final;
+    void stop() final;
+    void get_framevars(framevars& out) final;
+    void reset() final;
+    void killall();
+    u32 finish_frame() final;
+    u32 finish_scanline() final;
+    u32 step_master(u32 howmany) final;
+    void load_BIOS(multi_file_set& mfs) final;
+    void enable_tracing();
+    void disable_tracing();
+    void describe_io() final;
+    void save_state(serialized_state &state) final;
+    void load_state(serialized_state &state, deserialize_ret &ret) final;
+    void set_audiobuf(audiobuf *ab) final;
+    void setup_debugger_interface(debugger_interface &intf) final;
+    void sideload(multi_file_set& mfs) final;
+};
+
+}
+

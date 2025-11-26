@@ -197,6 +197,22 @@ set(SOURCE_LIST
         src/system/cosmac_vip/vip_debugger.h
         src/system/sms_gg/sms_gg_bus.cpp
         src/system/sms_gg/sms_gg_bus.h
+        src/system/commodore64/commodore64.cpp
+        src/system/commodore64/commodore64.h
+        src/system/commodore64/c64_bus.cpp
+        src/system/commodore64/c64_bus.h
+        src/system/commodore64/vic2.cpp
+        src/system/commodore64/vic2.h
+        src/system/commodore64/c64_clock.cpp
+        src/system/commodore64/c64_clock.h
+        src/system/commodore64/c64_debugger.cpp
+        src/system/commodore64/c64_debugger.h
+        src/system/commodore64/c64_mem.cpp
+        src/system/commodore64/c64_mem.h
+        src/system/commodore64/c64_vic2_color.cpp
+        src/system/commodore64/c64_vic2_color.h
+        src/component/audio/m6581/m6581.cpp
+        src/component/audio/m6581/m6581.h
 )
 
 # TODO: Fix elf-parser repo for windows

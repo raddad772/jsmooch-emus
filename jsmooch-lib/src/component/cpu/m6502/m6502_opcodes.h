@@ -6,6 +6,6 @@
 #include "m6502_misc.h"
 
 namespace M6502 {
-extern ins_func M6502_decoded_opcodes[0x103];
+extern ins_func decoded_opcodes[0x103];
 }
 

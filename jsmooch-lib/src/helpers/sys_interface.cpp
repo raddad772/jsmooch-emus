@@ -9,6 +9,7 @@
 #include "system/cosmac_vip/cosmac_vip.h"
 #include "system/snes/snes.h"
 #include "system/sms_gg/sms_gg.h"
+#include "system/commodore64/commodore64.h"
 //#include "system/dreamcast/dreamcast.h"
 //#include "system/ps1/ps1.h"
 //#include "system/atari2600/atari2600.h"
@@ -32,6 +33,9 @@ jsm_system* new_system(jsm::systems which)
         case jsm::systems::NDS:
             NDS_new(out);
             break;*/
+        case jsm::systems::COMMODORE_64:
+            out = Commodore64_new(which);
+            break;
         case jsm::systems::SNES:
             out = SNES_new();
             break;
