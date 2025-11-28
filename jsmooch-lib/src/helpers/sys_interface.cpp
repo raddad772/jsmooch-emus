@@ -33,7 +33,7 @@ jsm_system* new_system(jsm::systems which)
         case jsm::systems::NDS:
             NDS_new(out);
             break;*/
-        case jsm::systems::COMMODORE_64:
+        case jsm::systems::COMMODORE64:
             out = Commodore64_new(which);
             break;
         case jsm::systems::SNES:

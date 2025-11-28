@@ -623,7 +623,7 @@ void jsm_present(jsm::systems which, physical_io_device &display, void *out_buf,
         case jsm::systems::NDS:
             NDS_present(display, out_buf, out_width, out_height, is_event_view_present);
             break;
-        case jsm::systems::COMMODORE_64:
+        case jsm::systems::COMMODORE64:
             c64_present(display, out_buf, out_width, out_height, is_event_view_present);
             break;
         case jsm::systems::SNES:

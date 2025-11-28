@@ -153,7 +153,7 @@ static void setup_dbglog(core &th, debugger_interface &dbgr)
     static constexpr u32 cpu_color = 0x8080FF;
 
     dbglog_category_node &root = dv.get_category_root();
-    dbglog_category_node &cpucat = root.add_node(dv, "CDP1802", nullptr, 0, 0);
+    dbglog_category_node &cpucat = root.add_node(dv, "M6502", nullptr, 0, 0);
     cpucat.add_node(dv, "Instruction Trace", "cpu", C64_CAT_CPU_INSTRUCTION, cpu_color);
     th.cpu.trace.dbglog.view = &dv;
     th.cpu.trace.dbglog.id = C64_CAT_CPU_INSTRUCTION;
@@ -167,6 +167,39 @@ static void setup_memory_view(core& th, debugger_interface &dbgr) {
     mv->add_module("CPU Memory", 0, 4, 0, 0x7FFF, &th, &readcpumem);
 }
 
+static void setup_waveforms(core& th, debugger_interface *dbgr)
+{
+    th.dbg.waveforms.view = dbgr->make_view(dview_waveforms);
+    debugger_view &dview = th.dbg.waveforms.view.get();
+    waveform_view &wv = dview.waveform;
+    snprintf(wv.name, sizeof(wv.name), "SID");
+
+    debug_waveform *dw = &wv.waveforms.emplace_back();
+    th.dbg.waveforms.main.make(wv.waveforms, wv.waveforms.size()-1);
+    snprintf(dw->name, sizeof(dw->name), "Output");
+    dw->kind = dwk_main;
+    dw->samples_requested = 400;
+
+    dw->default_clock_divider = 1;
+
+    dw = &wv.waveforms.emplace_back();
+    th.dbg.waveforms.chan[0].make(wv.waveforms, wv.waveforms.size()-1);
+    snprintf(dw->name, sizeof(dw->name), "Voice 1");
+    dw->kind = dwk_channel;
+    dw->samples_requested = 200;
+
+    dw = &wv.waveforms.emplace_back();
+    th.dbg.waveforms.chan[1].make(wv.waveforms, wv.waveforms.size()-1);
+    snprintf(dw->name, sizeof(dw->name), "Voice 2");
+    dw->kind = dwk_channel;
+    dw->samples_requested = 200;
+
+    dw = &wv.waveforms.emplace_back();
+    th.dbg.waveforms.chan[2].make(wv.waveforms, wv.waveforms.size()-1);
+    snprintf(dw->name, sizeof(dw->name), "Voice 3");
+    dw->kind = dwk_channel;
+    dw->samples_requested = 200;
+}
 
 void core::setup_debugger_interface(debugger_interface &intf) {
     dbg.interface = &intf;
@@ -179,5 +212,6 @@ void core::setup_debugger_interface(debugger_interface &intf) {
     setup_dbglog(*this, *dbgr);
     setup_disassembly_view(*this, dbgr);
     setup_memory_view(*this, *dbgr);
+    setup_waveforms(*this, dbgr);
 }
 }

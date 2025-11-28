@@ -47,8 +47,7 @@ u32 read_trace_m6502(void *ptr, u32 addr) {
 static void run_block(void *ptr, u64 key, u64 clock, u32 jitter)
 {
     auto *th = static_cast<C64::core *>(ptr);
-    th->run_cpu();
-    th->vic2.cycle();
+    th->run_block();
 }
 
 jsm_system *Commodore64_new(jsm::systems in_kind)
@@ -327,6 +326,8 @@ void C64::core::load_BIOS(multi_file_set& mfs) {
     }
     else {
         if (mfs.files.size() >= 2) {
+            printf("\n%ld %ld", mfs.files[0].buf.size, mfs.files[1].buf.size);
+            fflush(stdout);
             assert(mfs.files[0].buf.size == 0x2000);
             assert(mfs.files[1].buf.size == 0x2000);
             mem.load_BASIC(mfs.files[0].buf, 0);

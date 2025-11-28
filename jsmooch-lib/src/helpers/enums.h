@@ -29,7 +29,7 @@ namespace jsm {
 		TURBOGRAFX16,
 		COSMAC_VIP_2k,
 		COSMAC_VIP_4k,
-		COMMODORE_64
+		COMMODORE64
 	};
 
 	enum regions {

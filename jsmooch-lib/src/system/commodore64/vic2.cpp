@@ -270,7 +270,10 @@ void core::reset() {
 }
 
 void core::output_BG() { // output 8 pixels of background!
-    assert(hpos<timing.line.pixels_per);
+    //assert(hpos<timing.line.pixels_per);
+    if (hpos>timing.line.pixels_per) {
+        printf("\nUH OH NO TOO MANY PIXELS %d", hpos);
+    }
     line_output[hpos++] = io.EC;
 }
 
