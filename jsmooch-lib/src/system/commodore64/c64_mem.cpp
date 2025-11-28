@@ -28,7 +28,7 @@ u8 mem::read_IO(u16 addr, u8 old, bool has_effect) {
         case 0xD900:
         case 0xDA00:
         case 0xDB00:
-            return read_color_ram(addr, old, has_effect);
+            return bus->vic2.read_color_ram(addr, old, has_effect);
         case 0xDC00:
             return bus->read_cia1(addr, old, has_effect);
         case 0xDD00:
@@ -42,24 +42,6 @@ u8 mem::read_IO(u16 addr, u8 old, bool has_effect) {
             return 0;
     }
 }
-
-u8 mem::read_color_ram(u16 addr, u8 old, bool has_effect) {
-    addr &= 0x3FF;
-    if (addr < 1000) return COLOR[addr];
-    printf("\nILLEGAL CRAM READ AT %04x!", addr | 0xDB00);
-    return old;
-}
-
-void mem::write_color_ram(u16 addr, u8 val) {
-    addr &= 0x3FF;
-    if (addr < 1000) {
-        COLOR[addr] = val;
-        return;
-    }
-    printf("\nILLEGAL CRAM WRITE TO %04x: %02x!", addr | 0xDB00, val);
-
-}
-
 
 void mem::write_IO(u16 addr, u8 val) {
     switch (addr & 0xDF00) {
@@ -77,7 +59,7 @@ void mem::write_IO(u16 addr, u8 val) {
         case 0xD900:
         case 0xDA00:
         case 0xDB00:
-            return write_color_ram(addr, val);
+            return bus->vic2.write_color_ram(addr, val);
         case 0xDC00:
             return bus->write_cia1(addr, val);
         case 0xDD00:
@@ -87,8 +69,8 @@ void mem::write_IO(u16 addr, u8 val) {
         case 0xDF00:
             return bus->write_io2(addr, val);
         default:
-            printf("\nSOMEHOW READ UNMAPPED IO %04x", addr);
-            return 0;
+            printf("\nSOMEHOW WROTE UNMAPPED IO %04x", addr);
+            return;
     }
 }
 
@@ -132,8 +114,8 @@ static u8 read_zp(void *ptr, u16 addr, u8 old, bool has_effect) {
 
 static void write_zp(void *ptr, u16 addr, u8 val) {
     auto *mem = static_cast<C64::mem *>(ptr);
-    if (addr > 1) { mem->RAM[addr & 0xFF] = val; return; }
-    mem->write_IO(addr, val);
+    mem->RAM[addr & 0xFF] = val;
+    if (addr > 1) mem->write_IO(addr, val);
 }
 
 static u8 read_ram(void *ptr, u16 addr, u8 old, bool has_effect) {
@@ -239,7 +221,6 @@ static void write_io(void *ptr, u16 addr, u8 val) {
 static u8 read_io(void *ptr, u16 addr, u8 old, bool has_effect) {
     auto *mem = static_cast<C64::mem *>(ptr);
     return mem->read_IO(addr, old, has_effect);
-
 }
 
 static u8 read_chargen(void *ptr, u16 addr, u8 old, bool has_effect) {

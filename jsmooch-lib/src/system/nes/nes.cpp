@@ -112,7 +112,7 @@ static void NESIO_unload_cart(JSM)
 
 static void setup_crt(JSM_DISPLAY *d)
 {
-    d->standard = JSS_NTSC;
+    d->kind = jsm::display_kinds::CRT;
     d->enabled = 1;
 
     d->fps = 60.1;

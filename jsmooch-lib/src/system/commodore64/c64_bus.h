@@ -26,7 +26,7 @@ struct core : jsm_system {
     explicit core(jsm::regions in_region);
     //clock clock{};
     mem mem;
-    M6581 sid;
+    M6581::core sid;
     VIC2::core vic2;
     M6502::core cpu{M6502::decoded_opcodes};
     scheduler_t scheduler;
@@ -57,15 +57,27 @@ struct core : jsm_system {
 
         DBG_EVENT_VIEW
         DBG_LOG_VIEW
+
+        DBG_WAVEFORM_START1
+            DBG_WAVEFORM_CHANS(3)
+            DBG_WAVEFORM_MAIN
+        DBG_WAVEFORM_END1
     DBG_END
 
     struct {
-        double master_cycles_per_audio_sample{},  master_cycles_per_max_sample{};
-        double next_sample_cycle_max{}, next_sample_cycle{};
+        double master_cycles_per_audio_sample{},  master_cycles_per_max_sample{}, master_cycles_per_min_sample{};
+        double next_sample_cycle_max{}, next_sample_cycle_min{}, next_sample_cycle{};
         audiobuf *buf{};
         u64 cycles{};
     } audio{};
 
+    struct {
+        bool described_inputs{false};
+    } jsm{};
+
+    void setup_crt(JSM_DISPLAY &d);
+    void setup_audio(std::vector<physical_io_device> &inIOs);
+    void setup_keyboard();
     void play() final;
     void pause() final;
     void stop() final;
@@ -83,7 +95,7 @@ struct core : jsm_system {
     void load_state(serialized_state &state, deserialize_ret &ret) final;
     void set_audiobuf(audiobuf *ab) final;
     void setup_debugger_interface(debugger_interface &intf) final;
-    void sideload(multi_file_set& mfs) final;
+    //void sideload(multi_file_set& mfs) final;
 };
 
 }

@@ -58,7 +58,6 @@ void SNES::core::set_audiobuf(audiobuf *ab)
         setup_debug_waveform(this, *wf);
         apu.dsp.channel[i].ext_enable = wf->ch_output_enabled;
     }
-
 }
 
 static void run_block(void *ptr, u64 key, u64 clock, u32 jitter)
@@ -107,7 +106,7 @@ jsm_system *SNES_new()
     th->r5a22.setup_tracing(&dt);
 
     th->apu.cpu.setup_tracing(&dt);
-    return dynamic_cast<jsm_system *>(th);
+    return th;
 }
 
 void SNES_delete(JSM) {
@@ -184,7 +183,7 @@ static void SNESIO_unload_cart(JSM)
 
 static void setup_crt(JSM_DISPLAY *d)
 {
-    d->standard = JSS_NTSC;
+    d->kind = jsm::display_kinds::CRT;
     d->enabled = 1;
 
     d->fps = 60.0988;

@@ -213,6 +213,8 @@ set(SOURCE_LIST
         src/system/commodore64/c64_vic2_color.h
         src/component/audio/m6581/m6581.cpp
         src/component/audio/m6581/m6581.h
+        src/system/commodore64/c64_serialize.cpp
+        src/system/commodore64/c64_serialize.h
 )
 
 # TODO: Fix elf-parser repo for windows

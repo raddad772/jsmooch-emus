@@ -110,6 +110,7 @@ void core::cycle()
 
 void poll_NMI_only(regs &regs, pins &pins)
 {
+    if (pins.RDY) return;
     if (regs.NMI_level_detected) {
         regs.do_NMI = 1;
         regs.NMI_level_detected = 0;
@@ -119,6 +120,7 @@ void poll_NMI_only(regs &regs, pins &pins)
 // Poll during second-to-last cycle
 void poll_IRQs(regs &regs, pins &pins)
 {
+    if (pins.RDY) return;
     if (regs.NMI_level_detected) {
         regs.do_NMI = 1;
         regs.NMI_level_detected = 0;

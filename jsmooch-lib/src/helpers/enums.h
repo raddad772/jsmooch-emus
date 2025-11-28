@@ -38,6 +38,10 @@ namespace jsm {
 		EUROPE
 	};
 
+	enum display_kinds {
+		LCD,
+		CRT
+	};
 	enum display_standards {
 		NTSC,
 		PAL,

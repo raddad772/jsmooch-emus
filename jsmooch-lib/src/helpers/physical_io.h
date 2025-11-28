@@ -5,7 +5,7 @@
 #pragma once
 
 #include <vector>
-
+#include "enums.h"
 #include "helpers/sram.h"
 #include "helpers/int.h"
 #include "helpers/buf.h"
@@ -202,14 +202,6 @@ struct JSM_KEYBOARD {
 };
 
 
-enum JSM_DISPLAY_STANDARDS {
-    JSS_CRT,
-    JSS_NTSC,
-    JSS_PAL,
-    JSS_SECAM,
-    JSS_LCD
-};
-
 
 struct JSM_DISPLAY_PIXELOMETRY {
     struct {
@@ -248,7 +240,7 @@ struct JSM_DISPLAY_GEOMETRY {
 
 
 struct JSM_DISPLAY {
-    JSM_DISPLAY_STANDARDS standard{};
+    jsm::display_kinds kind{};
     u32 enabled{};
     double fps{};
     u32 fps_override_hint{}; // Is it OK to go to a close value near this

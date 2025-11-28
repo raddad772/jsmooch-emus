@@ -8,6 +8,7 @@
 #include "sys_present.h"
 #include "helpers/color.h"
 #include "helpers/debugger/debugger.h"
+#include "system/commodore64/c64_vic2_color.h"
 //#include "component/gpu/huc6260/huc6260.h"
 
 static u32 calc_stride(u32 out_width, u32 in_width)
@@ -326,6 +327,32 @@ void NES_present(physical_io_device &device, void *out_buf, u32 x_offset, u32 y_
             img32++;
         }
         img32 += stride;
+    }
+}
+
+void c64_present(physical_io_device &device, void *out_buf, u32 out_width, u32 out_height, u32 is_event_view_present) {
+    u8 *c64o = static_cast<u8 *>(device.display.output[device.display.last_written ^ 1]);
+    u32 *img32 = static_cast<u32 *>(out_buf);
+
+    u32 xsize = device.display.pixelometry.cols.max_visible;
+    u32 ysize = device.display.pixelometry.rows.max_visible;
+    u32 palette[16];
+    for (u32 i = 0; i < 16; i++) {
+        palette[i] = VIC2::color::calculate_color(i, 1, 50, 100, 1);
+    }
+
+    for (u32 ry = 0; ry < ysize; ry++) {
+        u32 y = ry;
+        u32 *line_out_ptr = img32 + (ry * out_width);
+        for (u32 rx = 0; rx < xsize; rx++) {
+            u32 x = rx;
+            u32 di = ((y * xsize) + x);
+            u8 c = c64o[di];
+            //if (c == 0xBBE) printf("\nTO SCREEN: %08x", nds_to_screen(c));
+
+            *(line_out_ptr++) = palette[c & 15];
+            //*(line_out_ptr++) = 0xFF808080;
+        }
     }
 }
 

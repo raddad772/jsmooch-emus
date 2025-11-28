@@ -120,7 +120,7 @@ jsm_system *SMSGG_new(jsm::systems variant, jsm::regions region) {
 
 static void setup_crt_sms(JSM_DISPLAY *d)
 {
-    d->standard = JSS_NTSC;
+    d->kind = jsm::display_kinds::CRT;
     d->enabled = 1;
 
     d->fps = 59.922743;
@@ -147,7 +147,7 @@ static void setup_crt_sms(JSM_DISPLAY *d)
 
 void setup_lcd_gg(JSM_DISPLAY *d)
 {
-    d->standard = JSS_LCD;
+    d->kind = jsm::display_kinds::LCD;
     d->enabled = 1;
 
     d->fps = 59.922751;

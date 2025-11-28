@@ -47,7 +47,7 @@ static void readcpumem(void *ptr, u32 addr, void *dest)
     auto *out = static_cast<u8 *>(dest);
     auto *th = static_cast<core *>(ptr);
     for (u32 i = 0; i < 16; i++) {
-        *out = th->read_main_bus((addr + i) & 0x7FFF, 0, false);
+        *out = th->mem.read_main_bus((addr + i) & 0x7FFF, 0, false);
         out++;
     }
 }

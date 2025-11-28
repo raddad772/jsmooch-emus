@@ -38,7 +38,6 @@ struct mem {
     u8 BASIC[0x2000]{};
     u8 CHARGEN[0x1000]{};
     u8 RAM[0x10000]{};
-    u8 COLOR[1000]{};
 
     mem_map map[0x100]{};
 
@@ -70,7 +69,5 @@ private:
     void map_d000();
     void map_rom_a000();
     void map_rom_e000();
-    u8 read_color_ram(u16 addr, u8 old, bool has_effect);
-    void write_color_ram(u16 addr, u8 val);
 };
 }
