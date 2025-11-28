@@ -74,42 +74,42 @@ core::core(jsm::regions in_region) : mem(this), vic2(this), region(in_region) {
 }
 
 u8 core::read_cia1(u8 addr, u8 old, bool has_effect) {
-    printf("\nREAD CIA1 %02x", addr);
+    //printf("\nREAD CIA1 %02x", addr);
     return 0xFF;
 }
 
 u8 core::read_cia2(u8 addr, u8 old, bool has_effect) {
-    printf("\nREAD CIA2 %02x", addr);
+    //printf("\nREAD CIA2 %02x", addr);
     return 0xFF;
 }
 
 u8 core::read_io1(u8 addr, u8 old, bool has_effect) {
-    printf("\nREAD IO1 %02x", addr);
+    //printf("\nREAD IO1 %02x", addr);
     return 0xFF;
 }
 
 u8 core::read_io2(u8 addr, u8 old, bool has_effect)
 {
-    printf("\nREAD IO2 %02x", addr);
+    //printf("\nREAD IO2 %02x", addr);
     return 0xFF;
 }
 
 void core::write_cia1(u8 addr, u8 val) {
-    printf("\nWRITE CIA1 %02x:%02x", addr, val);
+    //printf("\nWRITE CIA1 %02x:%02x", addr, val);
 }
 
 void core::write_cia2(u8 addr, u8 val) {
-    printf("\nWRITE CIA2 %02x:%02x", addr, val);
+    //printf("\nWRITE CIA2 %02x:%02x", addr, val);
 
 }
 
 void core::write_io1(u8 addr, u8 val) {
-    printf("\nWRITE IO1 %02x:%02x", addr, val);
+    //printf("\nWRITE IO1 %02x:%02x", addr, val);
 
 }
 
 void core::write_io2(u8 addr, u8 val) {
-    printf("\nWRITE IO2 %02x:%02x", addr, val);
+    //printf("\nWRITE IO2 %02x:%02x", addr, val);
 }
 
 

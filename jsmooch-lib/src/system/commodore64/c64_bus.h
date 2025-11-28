@@ -59,6 +59,10 @@ struct core : jsm_system {
         DBG_EVENT_VIEW
         DBG_LOG_VIEW
 
+        DBG_IMAGE_VIEWS_START
+            MDBG_IMAGE_VIEW(sysinfo)
+        DBG_IMAGE_VIEWS_END
+
         DBG_WAVEFORM_START1
             DBG_WAVEFORM_CHANS(3)
             DBG_WAVEFORM_MAIN

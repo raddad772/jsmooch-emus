@@ -6,9 +6,45 @@
 #include "c64_bus.h"
 namespace C64 {
 
-static disassembly_vars get_disassembly_vars(void *nesptr, disassembly_view &dv)
+static void render_image_view_sys_info(debugger_interface *dbgr, debugger_view *dview, void *ptr, u32 out_width) {
+    auto *th = static_cast<core *>(ptr);
+    //memset(ptr, 0, out_width * 4 * 10);
+    debugger_widget_textbox &tb = dview->options[0].textbox;
+    tb.clear();
+    tb.sprintf("VIC II\n~~~~~~");
+    tb.sprintf("\nECM/BMM/MCM = %d/%d/%d: ", th->vic2.io.CR1.ECM, th->vic2.io.CR1.BMM, th->vic2.io.CR2.MCM);
+    u32 mode = (th->vic2.io.CR1.ECM << 2) | (th->vic2.io.CR1.BMM << 1) | th->vic2.io.CR2.MCM;
+    switch(mode) {
+        case 0b000:
+            tb.sprintf("standard text mode");
+            break;
+        case 0b001:
+            tb.sprintf("multi-color text mode");
+            break;
+        case 0b010:
+            tb.sprintf("standard bitmap mode");
+            break;
+        case 0b011:
+            tb.sprintf("multi-color bitmap mode");
+            break;
+        case 0b100:
+            tb.sprintf("ECM text mode");
+            break;
+        case 0b101:
+            tb.sprintf("invalid text mode");
+            break;
+        case 0b110:
+            tb.sprintf("invalid bitmap mode 1");
+            break;
+        case 0b111:
+            tb.sprintf("invalid bitmap mode 2");
+            break;
+    }
+}
+
+static disassembly_vars get_disassembly_vars(void *ptr, disassembly_view &dv)
 {
-    auto *th = static_cast<core *>(nesptr);
+    auto *th = static_cast<core *>(ptr);
     disassembly_vars dvar;
     dvar.address_of_executing_instruction = th->cpu.trace.ins_PC;
     dvar.current_clock_cycle = th->master_clock;
@@ -201,6 +237,28 @@ static void setup_waveforms(core& th, debugger_interface *dbgr)
     dw->samples_requested = 200;
 }
 
+static void setup_image_view_sys_info(core &th, debugger_interface &dbgr) {
+
+    th.dbg.image_views.sysinfo = dbgr.make_view(dview_image);
+    debugger_view &dview = th.dbg.image_views.sysinfo.get();
+    image_view &iv = dview.image;
+
+    iv.width = 10;
+    iv.height = 10;
+    iv.viewport.exists = 1;
+    iv.viewport.enabled = 1;
+    iv.viewport.p[0] = (ivec2){ 0, 0 };
+    iv.viewport.p[1] = (ivec2){ 10, 10 };
+
+    iv.update_func.ptr = &th;
+    iv.update_func.func = &render_image_view_sys_info;
+
+    snprintf(iv.label, sizeof(iv.label), "Sys Info View");
+
+    debugger_widgets_add_textbox(dview.options, "blah!", 1);
+
+}
+
 void core::setup_debugger_interface(debugger_interface &intf) {
     dbg.interface = &intf;
     auto *dbgr = dbg.interface;
@@ -213,5 +271,6 @@ void core::setup_debugger_interface(debugger_interface &intf) {
     setup_disassembly_view(*this, dbgr);
     setup_memory_view(*this, *dbgr);
     setup_waveforms(*this, dbgr);
+    setup_image_view_sys_info(*this, *dbgr);
 }
 }

@@ -173,12 +173,12 @@ void core::write_IO(u16 addr, u8 val) {
         case 0xD016:
             io.CR2.u = val;
             if (io.CR2.CSEL) {
-                timing.line.first_col = 24;
-                timing.line.last_col = 343;
+                timing.line.first_col = 24 + (13*8);
+                timing.line.last_col = 343 + (13*8);
             }
             else {
-                timing.line.first_col = 31;
-                timing.line.last_col = 334;
+                timing.line.first_col = 31 + (13*8);
+                timing.line.last_col = 334 + (13*8);
             }
             return;
         case 0xD017:
@@ -278,6 +278,8 @@ void core::do_g_access() {
     // if ECM is set, address lines 9 and 10 are held low
     u16 addr = rc | ((mtx & 0xFF) << 3) | io.ptr.CB;
     if (io.CR1.ECM) addr &= ~0b11000000000;
+    if (bad_line)
+        printf("\nV:%d X:%d addr:%04x", vpos, hpos, addr);
     g_access = open_bus = read_mem(read_mem_ptr, addr);
 }
 
@@ -286,6 +288,8 @@ void core::mem_access() {
     g_access = 0;
     if ((lcyc >= 16) && (lcyc <= 55) && state == displaying) {
         do_g_access();
+        vmli++;
+        vc++;
     }
     else {
         g_access = 0;
@@ -297,16 +301,20 @@ void core::mem_access() {
         signals.AEC = signals.BA;
         u16 addr = vc | io.ptr.VM;
         if (io.CR1.ECM) addr &= ~0b11000000000;
+        if (bad_line) printf ("\nC V:%d X:%d addr:%04x", vpos, hpos, addr);
         SCREEN_MTX[vmli] = open_bus = read_mem(read_mem_ptr, addr);
     }
     mtx = SCREEN_MTX[vmli] | (COLOR[vc] << 8);
 
-    vmli++;
-    vc++;
 }
 
 void core::reload_shifter() {
-    px_shifter |= g_access << shift_size;
+    u32 reverse = 0;
+    for (u32 i = 0; i < 8; i++) {
+        u8 bit = (g_access >> i) & 1;
+        reverse |= bit << (7 - i);
+    }
+    px_shifter |= reverse << shift_size;
     shift_size += 8;
     assert(shift_size < 32);
 }
@@ -314,9 +322,10 @@ void core::reload_shifter() {
 u8 core::get_color() {
     u8 out;
     if (io.CR1.BMM == io.CR1.ECM == io.CR2.MCM == 0) {
-        bg_collide = out = px_shifter & 1;
+        bg_collide = px_shifter & 1;
         px_shifter >>= 1;
         shift_size = (shift_size > 0) ? shift_size - 1 : 0;
+        out = bg_collide ? (mtx >> 8) : io.BC[0];
     }
     else if ((io.CR1.ECM == io.CR1.BMM == 0) && (io.CR2.MCM == 1)) {
         bg_collide = px_shifter & 1;
@@ -325,6 +334,7 @@ u8 core::get_color() {
             if (!(hpos & 1)) {
                 old_color = px_shifter & 3;
                 if (old_color == 3) old_color = (mtx >> 8) & 7;
+                else old_color = io.BC[old_color];
                 px_shifter >>= 2;
                 shift_size = (shift_size > 1) ? shift_size - 2 : 0;
             }
@@ -357,7 +367,9 @@ void core::output_px() {
     }
     else {
         // TODO: add in color data?
-        line_output[hpos++] = get_color();
+        line_output[hpos] = get_color();
+        //line_output[hpos] = state == displaying ? 15 : 9;
+        hpos++;
     }
 
 }
@@ -386,7 +398,7 @@ void core::cycle() {
             break;
         case 57:
             if (rc == 7) {
-                vc = vcbase;
+                vcbase = vc;
                 if (bad_line) {
                     state = displaying;
                 }
@@ -489,7 +501,7 @@ void core::new_scanline() {
     if (vpos == 0x30) {
         io.latch.DEN = io.CR1.DEN;
     }
-    bad_line = ((vpos >= 30) && (vpos <= 0xF7) && ((vpos & 7) == io.CR1.YSCROLL));
+    bad_line = ((vpos >= 0x30) && (vpos <= 0xF7) && ((vpos & 7) == io.CR1.YSCROLL));
     if (bad_line) state = displaying;
     if (vpos >= timing.frame.lines_per) new_frame();
 }

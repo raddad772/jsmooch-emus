@@ -42,9 +42,9 @@ static void compose(int index, int revision, float brightness, float contrast, f
     constexpr float screen = 1.0f/5.0f;
 
     // normalize
-    brightness -=  50.0f;
-    contrast   /= 100.0f;
-    saturation *=   1.0f - screen;
+    brightness -= 50.0f;
+    contrast /= 100.0f;
+    saturation *= 1.0f - screen;
 
     // construct
     components[0] = components[1] = 0.0f;
@@ -98,9 +98,9 @@ u32 calculate_color(int index, int revision, float brightness, float contrast, f
     float acolor[3];
     compose(index, revision, brightness, contrast, saturation, components);
     yuv_to_rgb(components, acolor);
-    color |= static_cast<u32>(acolor[2]) << 16;
+    color |= static_cast<u32>(acolor[2]) << 0;
     color |= static_cast<u32>(acolor[1]) << 8;
-    color |= static_cast<u32>(acolor[0]) << 0;
+    color |= static_cast<u32>(acolor[0]) << 16;
     return color;
 }
 

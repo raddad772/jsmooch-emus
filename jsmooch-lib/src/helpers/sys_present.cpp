@@ -338,7 +338,7 @@ void c64_present(physical_io_device &device, void *out_buf, u32 out_width, u32 o
     u32 ysize = device.display.pixelometry.rows.max_visible;
     u32 palette[16];
     for (u32 i = 0; i < 16; i++) {
-        palette[i] = VIC2::color::calculate_color(i, 1, 50, 100, 1);
+        palette[i] = VIC2::color::calculate_color(i, 1, 50, 100, 50);
     }
 
     for (u32 ry = 0; ry < ysize; ry++) {
