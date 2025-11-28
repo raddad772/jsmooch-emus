@@ -25,8 +25,8 @@ void core::run_cpu() {
 }
 
 void core::run_block() {
-    run_cpu();
     vic2.cycle();
+    run_cpu();
     master_clock++;
 }
 
@@ -36,8 +36,8 @@ void core::reset() {
     sid.reset();
     cpu.reset();
 
-    scheduler.clear();
-    schedule_first();
+    //scheduler.clear();
+    //schedule_first();
 }
 
 static u8 read_vic2(void *ptr, u16 addr) {
@@ -55,7 +55,8 @@ static u8 read_vic2(void *ptr, u16 addr) {
 
 
 
-core::core(jsm::regions in_region) : mem(this), vic2(this), scheduler(&this->master_clock), region(in_region) {
+//scheduler(&this->master_clock),
+core::core(jsm::regions in_region) : mem(this), vic2(this), region(in_region) {
     has.load_BIOS = true;
     has.save_state = false;
     has.set_audiobuf = true;

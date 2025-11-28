@@ -9,6 +9,13 @@ namespace C64 {
 
 mem::mem(core *parent) : bus(parent)
 {
+    for (u32 i = 0; i < 256; i++) {
+        map[i].empty = true;
+        map[i].read = &bad_read_func;
+        map[i].write = &bad_write_func;
+        map[i].read_ptr = nullptr;
+        map[i].write_ptr = nullptr;
+    }
     first_map();
 }
 
@@ -106,16 +113,40 @@ void mem::write_main_bus(u16 addr, u8 val) {
     map[addr >> 8].write(map[addr >> 8].write_ptr, addr, val);
 }
 
+u8 mem::read_cpu_IO(u16 addr, u8 old, bool has_effect) {
+    switch(addr) {
+        case 0x0000:
+            return io.cpu.dir;
+        case 0x0001:
+            return io.cpu.u;
+    }
+    assert(1==2);
+    return 0xFF;
+}
+
+void mem::write_cpu_IO(u16 addr, u8 val) {
+    switch(addr) {
+        case 0x0000:
+            io.cpu.dir = val & 0x3F;
+            return;
+        case 0x0001:
+            io.cpu.u &= ~io.cpu.dir;
+            io.cpu.u |=val & io.cpu.dir & 0x3F;
+            return;
+    }
+    assert(1==2);
+}
+
 static u8 read_zp(void *ptr, u16 addr, u8 old, bool has_effect) {
     auto *mem = static_cast<C64::mem *>(ptr);
     if (addr > 1) return mem->RAM[addr & 0xFF];
-    return mem->read_IO(addr, old, has_effect);;
+    return mem->read_cpu_IO(addr, old, has_effect);;
 }
 
 static void write_zp(void *ptr, u16 addr, u8 val) {
     auto *mem = static_cast<C64::mem *>(ptr);
     mem->RAM[addr & 0xFF] = val;
-    if (addr > 1) mem->write_IO(addr, val);
+    if (addr < 2) mem->write_cpu_IO(addr, val);
 }
 
 static u8 read_ram(void *ptr, u16 addr, u8 old, bool has_effect) {
@@ -128,6 +159,7 @@ static void write_ram(void *ptr, u16 addr, u8 val) {
 
 void mem::map_reads(u32 addr_start, u32 addr_end, void *ptr, read_func func) {
     for (u32 addr = addr_start; addr < addr_end; addr += 0x0100) {
+        //printf("\nMAP READ %02x", addr);
         auto &blk = map[addr >> 8];
         blk.read_ptr = static_cast<u8 *>(ptr) + addr;
         blk.read = func;
@@ -137,6 +169,7 @@ void mem::map_reads(u32 addr_start, u32 addr_end, void *ptr, read_func func) {
 
 void mem::map_reads_baseptr(u32 addr_start, u32 addr_end, void *ptr, read_func func) {
     for (u32 addr = addr_start; addr < addr_end; addr += 0x0100) {
+        //printf("\nMAP READ BASEPTR %02x", addr);
         auto &blk = map[addr >> 8];
         blk.read_ptr = ptr;
         blk.read = func;
@@ -147,6 +180,7 @@ void mem::map_reads_baseptr(u32 addr_start, u32 addr_end, void *ptr, read_func f
 
 void mem::map_writes(u32 addr_start, u32 addr_end, void *ptr, write_func func) {
     for (u32 addr = addr_start; addr < addr_end; addr += 0x0100) {
+        //printf("\nMAP WRITE %02x", addr);
         auto &blk = map[addr >> 8];
         blk.write_ptr = static_cast<u8 *>(ptr) + addr;
         blk.write = func;
@@ -156,6 +190,7 @@ void mem::map_writes(u32 addr_start, u32 addr_end, void *ptr, write_func func) {
 
 void mem::map_writes_baseptr(u32 addr_start, u32 addr_end, void *ptr, write_func func) {
     for (u32 addr = addr_start; addr < addr_end; addr += 0x0100) {
+        //printf("\nMAP WRITE BASEPTR %02x", addr);
         auto &blk = map[addr >> 8];
         blk.write_ptr = ptr;
         blk.write = func;
@@ -186,7 +221,8 @@ void mem::first_map() {
 
     // RAM is always readable at 0100-7FFF, C000-CFFF
     map_reads(0x0100, 0x7FFF, RAM, &read_ram);
-    map_reads(0xE000, 0xFFFF, RAM, &read_ram);
+    map_writes(0xC000, 0xCFFF, RAM, &write_ram);
+    map_reads(0xC000, 0xCFFF, RAM, &read_ram);
 }
 
 

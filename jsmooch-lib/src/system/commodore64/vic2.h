@@ -37,6 +37,7 @@ struct core {
     void reset();
     void do_raster_compare();
     void new_scanline();
+    void new_frame();
     u8 read_IO(u16 addr, u8 old, bool has_effect);
     void write_IO(u16 addr, u8 val);
     u8 read_color_ram(u16 addr, u8 old, bool has_effect);

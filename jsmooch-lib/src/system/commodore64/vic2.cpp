@@ -266,7 +266,9 @@ u8 core::read_color_ram(u16 addr, u8 old, bool has_effect) {
 }
 
 void core::reset() {
-    hpos = vpos = 0;
+    hpos = 0;
+    vpos = -1;
+    new_frame();
 }
 
 void core::output_BG() { // output 8 pixels of background!
@@ -326,6 +328,7 @@ void core::output_px() {
         output_BG();
         return;
     }
+    hpos++;
 
 }
 
@@ -355,7 +358,7 @@ void core::cycle() {
     // So during active 65 cycles,
     // BA=1 3 cycles before AEC=1
     // BA=0 1 cycle before AEC=0
-
+    if (hpos >= timing.line.pixels_per) new_scanline();
 }
 
 static void schedule_scanline(void *ptr, u64 key, u64 clock, u32 jitter) {
@@ -363,29 +366,26 @@ static void schedule_scanline(void *ptr, u64 key, u64 clock, u32 jitter) {
     clock -= jitter;
     v->new_scanline();
 
-    v->bus->scheduler.only_add_abs_w_tag(clock + v->timing.frame.cycles_per, 0, v, &schedule_scanline, nullptr, 2);
+    //v->bus->scheduler.only_add_abs_w_tag(clock + v->timing.frame.cycles_per, 0, v, &schedule_scanline, nullptr, 2);
 }
 
-void new_frame(void *ptr, u64 key, u64 cur_clock, u32 jitter) {
-    cur_clock -= jitter;
+void core::new_frame() {
+    master_frame++;
+    //printf("\nNEW FRAME %lld", master_frame);
+    vpos = 0;
 
-    auto *v = static_cast<VIC2::core *>(ptr);
-    v->master_frame++;
-
-    if (v->bus->dbg.events.view.vec) {
-        debugger_report_frame(v->bus->dbg.interface);
+    if (bus->dbg.events.view.vec) {
+        debugger_report_frame(bus->dbg.interface);
     }
-    v->cur_output = static_cast<u8 *>(v->display->output[v->display->last_written ^ 1]);
-    v->line_output = v->cur_output;
-    memset(v->cur_output, 0, v->timing.frame.num_pixels);
-    v->display->last_written ^= 1;
+    cur_output = static_cast<u8 *>(display->output[display->last_written ^ 1]);
+    line_output = cur_output;
+    memset(cur_output, 0, timing.frame.num_pixels);
+    display->last_written ^= 1;
 
-    v->field ^= 1;
-    v->vpos = -1;
+    field ^= 1;
+    //v->vpos = -1;
 
-    //vblank(v, 0, cur_clock, 0);
-
-    v->bus->scheduler.only_add_abs_w_tag(cur_clock + v->timing.line.cycles_per, 0, v, &new_frame, nullptr, 2);
+    //v->bus->scheduler.only_add_abs_w_tag(cur_clock + v->timing.line.cycles_per, 0, v, &new_frame, nullptr, 2);
 }
 
 void core::update_raster_compare(u16 val) {
@@ -408,10 +408,12 @@ void core::do_raster_compare() {
 
 void core::new_scanline() {
     //timing.scanline_start = cur_clock;
+    hpos = 0;
     io.raster_compare_protect = io.IF.RST;
+    update_vpos(vpos+1);
+    //printf("\nNEW SCANLINE %d", vpos);
     if ((vpos == timing.frame.first_line) && io.CR1.DEN) vborder_on = false;
     if (vpos == timing.frame.last_line) vborder_on = true;
-    update_vpos(vpos+1);
     if (bus->dbg.events.view.vec) {
         debugger_report_line(bus->dbg.interface, vpos);
     }
@@ -425,11 +427,12 @@ void core::new_scanline() {
         io.latch.DEN = io.CR1.DEN;
     }
     bad_line = ((vpos >= 30) && (vpos <= 0xF7) && ((vpos & 7) == io.CR1.YSCROLL));
+    if (vpos >= timing.frame.lines_per) new_frame();
 }
 
 void core::schedule_first() {
     schedule_scanline(this, 0, 0, 0);
-    bus->scheduler.only_add_abs_w_tag(timing.frame.cycles_per, 0, this, &new_frame, nullptr, 2);
+    //bus->scheduler.only_add_abs_w_tag(timing.frame.cycles_per, 0, this, &new_frame, nullptr, 2);
     // TODO: schedule drawing...
 
 }

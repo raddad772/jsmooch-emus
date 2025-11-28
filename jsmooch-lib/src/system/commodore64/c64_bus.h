@@ -29,7 +29,8 @@ struct core : jsm_system {
     M6581::core sid;
     VIC2::core vic2;
     M6502::core cpu{M6502::decoded_opcodes};
-    scheduler_t scheduler;
+    //scheduler_t scheduler;
+    i64 cycles_deficit{};
 
     void run_block();
     void run_cpu();

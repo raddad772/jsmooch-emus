@@ -67,6 +67,7 @@ struct pins {
 
 struct core {
     explicit core(ins_func *opcode_table);
+    void trace_format();
 
     void power_on();
     void reset();
@@ -74,6 +75,7 @@ struct core {
     void setup_tracing(jsm_debug_read_trace *strct, u64 *trace_cycle_pointer);
     void serialize(serialized_state &state);
     void deserialize(serialized_state &state);
+    void pprint_context(jsm_string &out);
 
     regs regs{};
     pins pins{};

@@ -54,9 +54,9 @@ jsm_system *Commodore64_new(jsm::systems in_kind)
 {
     auto* th = new C64::core(jsm::regions::USA);
 
-    th->scheduler.max_block_size = 1;
-    th->scheduler.run.func = &run_block;
-    th->scheduler.run.ptr = th;
+    //th->scheduler.max_block_size = 1;
+    //th->scheduler.run.func = &run_block;
+    //th->scheduler.run.ptr = th;
 
     snprintf(th->label, sizeof(th->label), "Commodore54");
 
@@ -88,7 +88,7 @@ static void sample_audio_debug_max(void *ptr, u64 key, u64 clock, u32 jitter)
     }
 
     th->audio.next_sample_cycle_max += th->audio.master_cycles_per_max_sample;
-    th->scheduler.only_add_abs(static_cast<i64>(th->audio.next_sample_cycle_max), 0, th, &sample_audio_debug_max, nullptr);
+    //th->scheduler.only_add_abs(static_cast<i64>(th->audio.next_sample_cycle_max), 0, th, &sample_audio_debug_max, nullptr);
 }
 
 static void sample_audio_debug_min(void *ptr, u64 key, u64 clock, u32 jitter)
@@ -106,14 +106,14 @@ static void sample_audio_debug_min(void *ptr, u64 key, u64 clock, u32 jitter)
     }
 
     th->audio.next_sample_cycle_min += th->audio.master_cycles_per_min_sample;
-    th->scheduler.only_add_abs(static_cast<i64>(th->audio.next_sample_cycle_min), 0, th, &sample_audio_debug_min, nullptr);
+    //th->scheduler.only_add_abs(static_cast<i64>(th->audio.next_sample_cycle_min), 0, th, &sample_audio_debug_min, nullptr);
 }
 
 void C64::core::schedule_first()
 {
-    scheduler.only_add_abs(static_cast<i64>(audio.next_sample_cycle_max), 0, this, &sample_audio_debug_max, nullptr);
-    scheduler.only_add_abs(static_cast<i64>(audio.next_sample_cycle_min), 0, this, &sample_audio_debug_min, nullptr);
-    vic2.schedule_first();
+    //scheduler.only_add_abs(static_cast<i64>(audio.next_sample_cycle_max), 0, this, &sample_audio_debug_max, nullptr);
+    //scheduler.only_add_abs(static_cast<i64>(audio.next_sample_cycle_min), 0, this, &sample_audio_debug_min, nullptr);
+    //vic2.schedule_first();
     // We just do this in the SID chip basically
     //scheduler_only_add_abs((i64)audio.next_sample_cycle, 0, th, &sample_audio, nullptr);
 
@@ -282,39 +282,34 @@ void C64::core::get_framevars(framevars& out)
 u32 C64::core::finish_frame()
 {
     
-#ifdef DO_STATS
-    u64 spc_start = apu.cpu.int_clock;
-    u64 wdc_start = r5a22.cpu.int_clock;
-#endif
-    scheduler.run_til_tag(TAG_FRAME);
-#ifdef DO_STATS
-    u64 spc_num_cycles = (apu.cpu.int_clock - spc_start) * 60;
-    u64 wdc_num_cycles = (r5a22.cpu.int_clock - wdc_start) * 60;
-    double spc_div = (double)vic2.timing.frame.cycles_per / (double)spc_num_cycles;
-    double wdc_div = (double)vic2.timing.frame.cycles_per / (double)wdc_num_cycles;
-    printf("\nSCANLINE:%d FRAME:%lld", clock.ppu.y, clock.master_frame);
-    printf("\n\nEFFECTIVE 65816 FREQ IS %lld. RUNNING AT SPEED",wdc_num_cycles);
-    printf("\nEFFECTIVE SPC700 FREQ IS %lld. RUNNING AT SPEED", spc_num_cycles);
-
-#endif
+    u64 start_frame = vic2.master_frame;
+    while (vic2.master_frame == start_frame) {
+        finish_scanline();
+        if (::dbg.do_break) break;
+    }
     return vic2.display->last_written;
 }
 u32 C64::core::finish_scanline()
 {
     //read_opts(jsm, th);
-    scheduler.run_til_tag(TAG_SCANLINE);
+    i32 start_y = vic2.vpos;
+    while (vic2.vpos == start_y) {
+        run_block();
+        //this->clock.master_cycle_count += 8;
+        if (::dbg.do_break) break;
+    }
 
     return vic2.display->last_written;
 }
 
 u32 C64::core::step_master(u32 howmany)
 {
-    //read_opts(jsm, th);
-    //printf("\nRUN FOR %d CYCLES:", howmany);
-    //u64 cur = clock.master_cycle_count;
-    scheduler.run_for_cycles(howmany);
-    //u64 dif = clock.master_cycle_count - cur;
-    //printf("\nRAN %lld CYCLES", dif);
+    cycles_deficit += howmany;
+    while (cycles_deficit > 0) {
+        run_block();
+        cycles_deficit--;
+        if (::dbg.do_break) break;
+    }
     return 0;
 }
 

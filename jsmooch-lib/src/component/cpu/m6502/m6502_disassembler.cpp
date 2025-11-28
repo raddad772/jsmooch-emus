@@ -83,7 +83,7 @@ static void zero_page_y(SARG)
     outstr.sprintf("%s$%02x,y", ins, dbg_read(trace, PC));
 }
 
-void M6502_disassemble(u32 *PC, jsm_debug_read_trace &trace, jsm_string &outstr)
+void disassemble(u32 *PC, jsm_debug_read_trace &trace, jsm_string &outstr)
 {
 #define SPCS "   "
 #define dasm(id, prefix, mode) case id: mode(prefix SPCS, trace, PC, outstr); break;
@@ -280,7 +280,7 @@ void M6502_disassemble(u32 *PC, jsm_debug_read_trace &trace, jsm_string &outstr)
 void disassemble_entry(core *cpu, disassembly_entry &entry)
 {
     u32 PC = entry.addr;
-    M6502_disassemble(&PC, cpu->trace.strct, entry.dasm);
+    disassemble(&PC, cpu->trace.strct, entry.dasm);
     entry.ins_size_bytes = PC - entry.addr;
 }
 

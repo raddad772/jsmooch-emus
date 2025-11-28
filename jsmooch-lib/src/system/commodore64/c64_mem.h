@@ -43,6 +43,8 @@ struct mem {
 
     u8 read_IO(u16 addr, u8 old, bool has_effect);
     void write_IO(u16 addr, u8 val);
+    u8 read_cpu_IO(u16 addr, u8 old, bool has_effect);
+    void write_cpu_IO(u16 addr, u8 val);
     void reset();
 
     struct {

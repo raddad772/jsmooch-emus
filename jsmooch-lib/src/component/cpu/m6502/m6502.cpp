@@ -82,6 +82,7 @@ void core::cycle()
     regs.TCU++;
     if (regs.TCU == 1) { // T0, instruction decode
         trace.ins_PC = pins.Addr; // Capture PC before it runs away
+        trace_format();
         regs.IR = pins.D;
         if (regs.do_NMI) {
             regs.do_NMI = false;
@@ -189,6 +190,33 @@ void regs::deserialize(serialized_state &state) {
     L(NMI_old);
     L(NMI_level_detected);
     L(do_NMI);
+}
+
+void core::pprint_context(jsm_string &out) {
+    out.sprintf("A:%02x  X:%02x  Y:%02x  S:%02x  P:%c%c%c%c%c-%c%c  PC:%04x",
+        regs.A, regs.X, regs.Y, regs.S,
+        regs.P.C ? 'C' : 'c', regs.P.Z ? 'Z' : 'z',
+        regs.P.I ? 'I' : 'i', regs.P.D ? 'D' : 'd',
+        regs.P.B ? 'B' : 'b', regs.P.V ? 'V' : 'v',
+        regs.P.N ? 'N' : 'n',
+        regs.PC);
+}
+
+void core::trace_format() {
+    if (trace.dbglog.view && trace.dbglog.view->ids_enabled[trace.dbglog.id]) {
+        // addr, regs, e, m, x, rt, out
+        trace.str.quickempty();
+        trace.str2.quickempty();
+        u64 tc = *trace.cycles;
+        dbglog_view *dv = trace.dbglog.view;
+
+        u32 PC = trace.ins_PC;
+        disassemble(&PC, trace.strct, trace.str);
+        pprint_context(trace.str2);
+
+        dv->add_printf(trace.dbglog.id, tc, DBGLS_TRACE, "%04x  %s", trace.ins_PC, trace.str.ptr);
+        dv->extra_printf("%s", trace.str2.ptr);
+    }
 }
 
 void pins::deserialize(serialized_state &state) {
