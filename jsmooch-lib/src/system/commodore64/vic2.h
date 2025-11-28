@@ -43,13 +43,22 @@ struct core {
     u8 read_color_ram(u16 addr, u8 old, bool has_effect);
     void write_color_ram(u16 addr, u8 val);
     void cycle();
-    void output_BG();
+    void reload_shifter();
+    void do_g_access();
+    u8 get_color();
 
+    u8 bg_collide;
     model model;
     u32 palette[16]{};
     u8 COLOR[1000]{}; // 4bit
     u16 SCREEN_MTX[40]; // 12-bit. lower 8 from RAM, upper 4 from CRAM
-    u8 open_bus;
+    u8 open_bus{};
+    u16 g_access{};
+    u32 px_shifter{};
+    u8 shift_size{};
+    u8 old_color;
+    u8 xorit = 0;
+    u16 mtx;
     sprite sprites[8];
 
     read_mem_func read_mem;
@@ -97,6 +106,10 @@ struct core {
     } state{};
 
     u64 master_frame{};
+    i32 vmli{};
+    i32 vcbase{};
+    i32 vc{};
+    i32 rc{};
     u32 field{};
     bool bad_line;
     C64::core *bus;

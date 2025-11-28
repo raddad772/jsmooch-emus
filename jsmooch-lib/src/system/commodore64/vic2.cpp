@@ -271,81 +271,141 @@ void core::reset() {
     new_frame();
 }
 
-void core::output_BG() { // output 8 pixels of background!
-    //assert(hpos<timing.line.pixels_per);
-    if (hpos>timing.line.pixels_per) {
-        printf("\nUH OH NO TOO MANY PIXELS %d", hpos);
-    }
-    line_output[hpos++] = io.EC;
+void core::do_g_access() {
+    // Address generator has 3 modes
+    // BMM=0 character generator
+    // BMM=1 bitmap access
+    // if ECM is set, address lines 9 and 10 are held low
+    u16 addr = rc | ((mtx & 0xFF) << 3) | io.ptr.CB;
+    if (io.CR1.ECM) addr &= ~0b11000000000;
+    g_access = open_bus = read_mem(read_mem_ptr, addr);
 }
 
 void core::mem_access() {
-    // If nothing else, we do an idle access
-    read_mem(read_mem_ptr, 0x3FFF);
-    read_mem(read_mem_ptr, 0x3FFF);
+    u32 lcyc = hpos >> 3;
+    g_access = 0;
+    if ((lcyc >= 16) && (lcyc <= 55) && state == displaying) {
+        do_g_access();
+    }
+    else {
+        g_access = 0;
+        // If nothing else, we do an idle access
+        read_mem(read_mem_ptr, 0x3FFF);
+    }
+    if ((lcyc >= 14) && (lcyc <= 53)) {
+        // do read of matrtix
+        signals.AEC = signals.BA;
+        u16 addr = vc | io.ptr.VM;
+        if (io.CR1.ECM) addr &= ~0b11000000000;
+        SCREEN_MTX[vmli] = open_bus = read_mem(read_mem_ptr, addr);
+    }
+    mtx = SCREEN_MTX[vmli] | (COLOR[vc] << 8);
+
+    vmli++;
+    vc++;
 }
+
+void core::reload_shifter() {
+    px_shifter |= g_access << shift_size;
+    shift_size += 8;
+    assert(shift_size < 32);
+}
+
+u8 core::get_color() {
+    u8 out;
+    if (io.CR1.BMM == io.CR1.ECM == io.CR2.MCM == 0) {
+        bg_collide = out = px_shifter & 1;
+        px_shifter >>= 1;
+        shift_size = (shift_size > 0) ? shift_size - 1 : 0;
+    }
+    else if ((io.CR1.ECM == io.CR1.BMM == 0) && (io.CR2.MCM == 1)) {
+        bg_collide = px_shifter & 1;
+        // How to interpret this depends on bit 11 of color date
+        if (mtx & 0x800) { // MC flag=1 2-bit colors
+            if (!(hpos & 1)) {
+                old_color = px_shifter & 3;
+                if (old_color == 3) old_color = (mtx >> 8) & 7;
+                px_shifter >>= 2;
+                shift_size = (shift_size > 1) ? shift_size - 2 : 0;
+            }
+            out = old_color;
+        }
+        else { // MC flag=0
+            out = px_shifter & 1;
+            if (out) out = (mtx >> 8) & 7;
+            px_shifter >>= 2;
+            shift_size = (shift_size > 0) ? shift_size - 1 : 0;
+        }
+    }
+    else {
+        out = 15;
+    }
+    return out;
+}
+
 
 void core::output_px() {
     if (hpos == timing.line.first_col) hborder_on = false;
     if (hpos == timing.line.last_col) hborder_on = true;
-
-/*
- *0-63
- *56 idle
- *57 idle
- *58 idle
- *59 idle
- *60 0s
- *61 ss
- *62 1s
- *63 ss
- *64 2s
- *65 ss
- *1 3s
- *2 ss
- *3 4s
- *4 ss
- *5 5s
- *6 ss
- *7 6s
- *8 ss
- *9 7s
- *10 ss
- *11 r_
- *12 r_
- *13 r_  x=000,
- *14 r_
- *15
- *16
- *17
- *18
- *19
- *20
- */
-    mem_access(); // Do our first memory access/DRAM refresh/etc.
-
-    if (vborder_on || hborder_on) {
-        output_BG();
-        return;
+    if (hpos>timing.line.pixels_per) {
+        printf("\nUH OH NO TOO MANY PIXELS %d", hpos);
     }
-    hpos++;
+    if (vborder_on || hborder_on) {
+        line_output[hpos++] = io.EC;
+        px_shifter >>= 1;
+        shift_size = (shift_size > 0) ? shift_size - 1 : 0;
+    }
+    else {
+        // TODO: add in color data?
+        line_output[hpos++] = get_color();
+    }
 
 }
 
 void core::cycle() {
-    // 65-5 read accesses go to DRAM refresh
-    // = 60
 
     // either in display state or not
     // regardless of display state, chargen/bitmap reads happen
     // only display state do badlinematrix/color RAM reads happen
     //
+    mem_access();
 
-   for (u32 i = 0; i < 8; i++) {
+    u32 lcyc = hpos >> 3;
+    switch (lcyc) {
+        case 11:
+            if (bad_line) signals.BA = true;
+            break;
+        case 13:
+            vc = vcbase;
+            vmli = 0;
+            if (bad_line) rc = 0;
+            break;
+        case 53:
+            signals.BA = false;
+            signals.AEC = false;
+            break;
+        case 57:
+            if (rc == 7) {
+                vc = vcbase;
+                if (bad_line) {
+                    state = displaying;
+                }
+                else {
+                    state = idle;
+                }
+            }
+            if (state == displaying) {
+                rc = (rc + 1) & 7;
+            }
+            break;
+    }
+
+    reload_shifter();
+
+    for (u32 i = 0; i < 8; i++) {
         output_px();
     }
     // Generate border
-
 
     /* so we have 4 data...
      * register, RAM, screen matrix, color RAM
@@ -373,7 +433,8 @@ void core::new_frame() {
     master_frame++;
     //printf("\nNEW FRAME %lld", master_frame);
     vpos = 0;
-
+    vcbase = 0;
+    state = idle;
     if (bus->dbg.events.view.vec) {
         debugger_report_frame(bus->dbg.interface);
     }
@@ -409,6 +470,8 @@ void core::do_raster_compare() {
 void core::new_scanline() {
     //timing.scanline_start = cur_clock;
     hpos = 0;
+    px_shifter = 0;
+    shift_size = io.CR2.XSCROLL;
     io.raster_compare_protect = io.IF.RST;
     update_vpos(vpos+1);
     //printf("\nNEW SCANLINE %d", vpos);
@@ -427,6 +490,7 @@ void core::new_scanline() {
         io.latch.DEN = io.CR1.DEN;
     }
     bad_line = ((vpos >= 30) && (vpos <= 0xF7) && ((vpos & 7) == io.CR1.YSCROLL));
+    if (bad_line) state = displaying;
     if (vpos >= timing.frame.lines_per) new_frame();
 }
 
