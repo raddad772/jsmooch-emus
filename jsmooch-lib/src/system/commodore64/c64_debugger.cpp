@@ -40,6 +40,20 @@ static void render_image_view_sys_info(debugger_interface *dbgr, debugger_view *
             tb.sprintf("invalid bitmap mode 2");
             break;
     }
+
+    tb.sprintf("\n\n           CIA1      CIA2");
+      tb.sprintf("\n           ~~~~      ~~~~");
+      tb.sprintf("\nTA.on         %d        %d", th->cia1.regs.CRA.START, th->cia2.regs.CRA.START);
+      tb.sprintf("\nTA.latch   %04x      %04x", th->cia1.timerA.latch, th->cia2.timerA.latch);
+      tb.sprintf("\nTA.count   %04x      %04x", th->cia1.timerA.count, th->cia2.timerB.count);
+      tb.sprintf("\nTA.contin.    %d        %d", th->cia1.regs.CRA.RUNMODE ^ 1, th->cia2.regs.CRA.RUNMODE ^ 1);
+      tb.sprintf("\nTA.inmode     %d        %d", th->cia1.regs.CRA.INMODE, th->cia2.regs.CRA.INMODE);;
+    tb.sprintf("\n\nTB.on         %d        %d", th->cia1.regs.CRB.START, th->cia2.regs.CRB.START);
+      tb.sprintf("\nTB.latch   %04x      %04x", th->cia1.timerB.latch, th->cia2.timerB.latch);
+      tb.sprintf("\nTB.count   %04x      %04x", th->cia1.timerB.count, th->cia2.timerB.count);
+      tb.sprintf("\nTB.contin.    %d        %d", th->cia1.regs.CRB.RUNMODE ^ 1, th->cia2.regs.CRB.RUNMODE ^ 1);
+      tb.sprintf("\nTB.inmode     %d        %d", th->cia1.regs.CRB.INMODE, th->cia2.regs.CRB.INMODE);;
+
 }
 
 static disassembly_vars get_disassembly_vars(void *ptr, disassembly_view &dv)

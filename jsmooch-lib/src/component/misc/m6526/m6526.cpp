@@ -235,6 +235,7 @@ void core::cycle() {
     old_FLAG = pins.FLAG;
 
     bool cnt_happened = pins.CNT && !old_CNT;
+    old_CNT = pins.CNT;
     if (cnt_happened && !regs.CRA.SPMODE) { // clock in a bit to SDR
         regs.serial_data <<= 1;
         regs.serial_data |= pins.SP;
@@ -247,13 +248,11 @@ void core::cycle() {
             update_IRQs();
         }
     }
-    old_CNT = pins.CNT;
 
     if (regs.CRA.START) {
         // Determine if clock pulse should happen depending on mode
-        bool do_tick = regs.CRA.INMODE ? true : cnt_happened;
         // then do it
-        if (do_tick) tick_A();
+        if (regs.CRA.INMODE ? cnt_happened : true) tick_A();
     }
     if (regs.CRB.START) {
         // Determine if clock pulse should happen depending on mode
@@ -274,7 +273,6 @@ void core::cycle() {
     if (!regs.CRB.OUTMODE) {
         timerB.out &= timerB.out_count--;
     }
-
 }
 
 }

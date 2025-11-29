@@ -21,6 +21,11 @@ static void setup_debug_waveform(const C64::core *c64, debug_waveform &dw)
 void C64::core::update_IRQ(u32 device_num, u8 level) {
     const u32 msk = 1 << device_num;
     u32 old = IRQ_F;
+    static int a = 0;
+    if (level && a!=device_num) {
+        printf("\nIRQ UP %d", device_num);
+    }
+    a = device_num;
     if (level) IRQ_F |= msk;
     else IRQ_F &= ~msk;
     if (old != IRQ_F) {

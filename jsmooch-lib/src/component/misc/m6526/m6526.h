@@ -22,7 +22,6 @@ union pins {
 struct timer {
     u16 latch{};
     u16 count{};
-    bool enable{};
     u8 out{};
     u8 out_count{};
 };
@@ -65,7 +64,7 @@ struct core {
                 u8 PBON : 1; // TimerA output on PortB 6
                 u8 OUTMODE : 1; // 1=Toggle or 0=pulse output for timer
                 u8 RUNMODE: 1; // 0=CONTINUOUS, 1=1 SHOT
-                u8 LOAD : 1; // 1=FOCE LOAD (strobe input, bit 4 reads back 0 always)
+                u8 LOAD : 1; // 1=FORCE LOAD (strobe input, bit 4 reads back 0 always)
                 u8 INMODE : 1; // 0=timerA counts positive CNT transitions, 0=phi2 pulses
                 u8 SPMODE : 1; // 1= serial port out (CNT clocks), 0 = serial port in (external shift clock required)
                 u8 TODIN : 1; // 1=50Hz clock, 0=60Hz for Today clock
@@ -97,8 +96,8 @@ struct core {
     void set_IRQ_pin(u8 val);
 
     struct {
-        void *ptr;
-        u32 device_num;
+        void *ptr{};
+        u32 device_num{};
         void (*func)(void *ptr, u32 device_num, u8 lvl);
     } update_irq{};
 
