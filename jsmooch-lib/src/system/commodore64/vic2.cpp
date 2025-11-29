@@ -278,8 +278,7 @@ void core::do_g_access() {
     // if ECM is set, address lines 9 and 10 are held low
     u16 addr = rc | ((mtx & 0xFF) << 3) | io.ptr.CB;
     if (io.CR1.ECM) addr &= ~0b11000000000;
-    if (bad_line)
-        printf("\nV:%d X:%d addr:%04x", vpos, hpos, addr);
+    //if (bad_line) printf("\nV:%d X:%d addr:%04x", vpos, hpos, addr);
     g_access = open_bus = read_mem(read_mem_ptr, addr);
 }
 
@@ -296,12 +295,12 @@ void core::mem_access() {
         // If nothing else, we do an idle access
         read_mem(read_mem_ptr, 0x3FFF);
     }
-    if ((lcyc >= 14) && (lcyc <= 53)) {
+    if ((lcyc >= 15) && (lcyc <= 54)) {
         // do read of matrtix
         signals.AEC = signals.BA;
         u16 addr = vc | io.ptr.VM;
         if (io.CR1.ECM) addr &= ~0b11000000000;
-        if (bad_line) printf ("\nC V:%d X:%d addr:%04x", vpos, hpos, addr);
+        //if (bad_line) printf ("\nC V:%d X:%d addr:%04x", vpos, hpos, addr);
         SCREEN_MTX[vmli] = open_bus = read_mem(read_mem_ptr, addr);
     }
     mtx = SCREEN_MTX[vmli] | (COLOR[vc] << 8);
@@ -514,7 +513,7 @@ void core::schedule_first() {
 }
 
 void core::setup_timing() {
-    printf("\nDISPLAY STANDARD %d", bus->display_standard);
+    //printf("\nDISPLAY STANDARD %d", bus->display_standard);
     switch (bus->display_standard) {
         case jsm::NTSC: {
             timing.line.cycles_per = 65;
