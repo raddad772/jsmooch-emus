@@ -18,6 +18,27 @@ static void setup_debug_waveform(const C64::core *c64, debug_waveform &dw)
     dw.user.buf_pos = 0;
 }
 
+void C64::core::update_IRQ(u32 device_num, u8 level) {
+    const u32 msk = 1 << device_num;
+    u32 old = IRQ_F;
+    if (level) IRQ_F |= msk;
+    else IRQ_F &= ~msk;
+    if (old != IRQ_F) {
+        cpu.pins.IRQ = IRQ_F != 0;
+    }
+}
+
+void C64::core::update_NMI(u32 device_num, u8 level) {
+    const u32 msk = 1 << device_num;
+    u32 old = NMI_F;
+    if (level) NMI_F |= msk;
+    else NMI_F &= ~msk;
+    if (old != NMI_F) {
+        cpu.pins.NMI = NMI_F != 0;
+    }
+
+}
+
 void C64::core::set_audiobuf(audiobuf *ab) {
     audio.buf = ab;
     if (audio.master_cycles_per_audio_sample == 0) {
@@ -200,28 +221,6 @@ void C64::core::setup_audio(std::vector<physical_io_device> &inIOs)
 };*/
 
 
-void C64::core::setup_keyboard() {
-    /*physical_io_device &d = IOs.emplace_back();
-    d.init(HID_KEYBOARD, 0, 0, 1, 1);
-
-    d.id = 0;
-    d.kind = HID_KEYBOARD;
-    d.connected = 1;
-    d.enabled = 1;
-
-    JSM_KEYBOARD &kbd = d.keyboard;
-    memset(&kbd, 0, sizeof(JSM_KEYBOARD));
-    kbd.num_keys = 66;
-
-    for (u32 i = 0; i < 66; i++) {
-        kbd.key_defs[i] = ZXSpectrum_keyboard_keymap[i];
-        if (ZXSpectrum_keyboard_keymap[i] == JK_SPACE) {
-            printf("\nSPAE SETUP AT %d", i);
-        }
-    }
-    */
-}
-
 static void C64IO_load_cart(JSM, multi_file_set &mfs, physical_io_device &which_pio)
 {
     printf("\nWARN NOT SUPPORT CART YET");
@@ -245,7 +244,7 @@ void C64::core::describe_io()
     IOs.reserve(15);
 
     // controllers
-    setup_keyboard();
+    keyboard.setup(IOs);
 
     // power and reset buttons
     physical_io_device* chassis = &IOs.emplace_back();
@@ -309,7 +308,7 @@ void C64::core::get_framevars(framevars& out)
 
 u32 C64::core::finish_frame()
 {
-    
+    keyboard.new_data = true;
     u64 start_frame = vic2.master_frame;
     while (vic2.master_frame == start_frame) {
         finish_scanline();
@@ -317,8 +316,10 @@ u32 C64::core::finish_frame()
     }
     return vic2.display->last_written;
 }
+
 u32 C64::core::finish_scanline()
 {
+    keyboard.new_data = true;
     //read_opts(jsm, th);
     i32 start_y = vic2.vpos;
     while (vic2.vpos == start_y) {
@@ -332,6 +333,7 @@ u32 C64::core::finish_scanline()
 
 u32 C64::core::step_master(u32 howmany)
 {
+    keyboard.new_data = true;
     cycles_deficit += howmany;
     while (cycles_deficit > 0) {
         run_block();

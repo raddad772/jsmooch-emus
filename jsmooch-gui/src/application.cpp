@@ -135,6 +135,7 @@ static void update_input(full_system* fsys, u32 *hotkeys, ImGuiIO& io) {
             if (pio.connected && pio.enabled) {
                 JSM_KEYBOARD *kbd = &pio.keyboard;
                 for (u32 i = 0; i < kbd->num_keys; i++) {
+                    if (kbd->key_defs[i] == JK_NONE) continue;
                     kbd->key_states[i] = ImGui::IsKeyDown(jk_to_imgui(kbd->key_defs[i]));
                 }
             }

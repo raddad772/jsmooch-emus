@@ -70,7 +70,9 @@ void mem::write_IO(u16 addr, u8 val) {
         case 0xDC00:
             return bus->cia1.write(addr, val);
         case 0xDD00:
-            return bus->cia2.write(addr, val);
+            bus->cia2.write(addr, val);
+            bus->cia2.pins.PRA_in = bus->keyboard.read_cols(bus->cia2.read_PRB(true));
+            return;
         case 0xDE00:
             return bus->write_io1(addr, val);
         case 0xDF00:

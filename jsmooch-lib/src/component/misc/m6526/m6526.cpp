@@ -110,7 +110,7 @@ u8 core::read_ICR(bool has_effect) {
     u8 v = regs.ICR_DATA.u;
     if (has_effect) {
         regs.ICR_DATA.u = 0;
-        pins.IRQ = 0;
+        set_IRQ_pin(0);
     }
     return v;
 }
@@ -136,7 +136,6 @@ void core::write_ICR(u8 val) {
     }
     update_IRQs();
 }
-
 
 void core::write_PRA(u8 val) {
     pins.PRA_out = val;
@@ -215,7 +214,13 @@ void core::tick_B() {
 
 void core::update_IRQs() {
     if (regs.ICR_DATA.u & regs.ICR_MASK.u & 0x1F) regs.ICR_DATA.IR = 1;
-    pins.IRQ = regs.ICR_DATA.IR;
+    set_IRQ_pin(regs.ICR_DATA.IR);
+}
+
+void core::set_IRQ_pin(u8 val) {
+    u8 old = pins.IRQ;
+    pins.IRQ = val;
+    if (old != val && update_irq.func) update_irq.func(update_irq.ptr, update_irq.device_num, val);
 }
 
 void core::cycle() {

@@ -92,7 +92,15 @@ struct core {
     u8 read(u8 addr, u8 old, bool has_effect);
     void write(u8 addr, u8 val);
     u8 read_PRA();
+    //u8 read_PRA_3();
     u8 read_PRB(bool has_effect);
+    void set_IRQ_pin(u8 val);
+
+    struct {
+        void *ptr;
+        u32 device_num;
+        void (*func)(void *ptr, u32 device_num, u8 lvl);
+    } update_irq{};
 
 private:
     int PC_count{};

@@ -16,6 +16,7 @@
 #include "component/audio/m6581/m6581.h"
 #include "component/misc/m6526/m6526.h"
 
+#include "c64_keyboard.h"
 #include "c64_clock.h"
 #include "c64_mem.h"
 #include "vic2.h"
@@ -33,9 +34,16 @@ struct core : jsm_system {
     //scheduler_t scheduler;
     i64 cycles_deficit{};
     M6526::core cia1{}, cia2{};
+    keyboard keyboard;
+
+    void update_IRQ(u32 device_num, u8 level);
+    void update_NMI(u32 device_num, u8 level);
 
     void run_block();
     void run_cpu();
+
+    u32 IRQ_F{};
+    u32 NMI_F{};
 
     u8 open_bus{};
     jsm::systems kind{};

@@ -125,6 +125,14 @@ enum ImGuiKey jk_to_imgui(enum JKEYS key_id) {
             return ImGuiKey_F2;
         case JK_F3:
             return ImGuiKey_F3;
+        case JK_F4:
+            return ImGuiKey_F4;
+        case JK_F5:
+            return ImGuiKey_F5;
+        case JK_F6:
+            return ImGuiKey_F6;
+        case JK_F7:
+            return ImGuiKey_F7;
         case JK_QUOTE:
             return ImGuiKey_Apostrophe;
         case JK_ENTER:

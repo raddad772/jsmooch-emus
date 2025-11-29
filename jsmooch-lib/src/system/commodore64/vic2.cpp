@@ -21,7 +21,7 @@ core::core(C64::core *parent) : bus(parent) {
 
 void core::update_IRQs() {
     io.IF.IRQ = ((io.IF.u & io.IE.u) > 0) ^ 1;
-    bus->cpu.pins.IRQ = !io.IF.IRQ;
+    bus->update_IRQ(1, !io.IF.IRQ);
 }
 
 u8 core::read_IO(u16 addr, u8 old, bool has_effect) {

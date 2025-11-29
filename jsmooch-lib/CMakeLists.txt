@@ -217,6 +217,8 @@ set(SOURCE_LIST
         src/system/commodore64/c64_serialize.h
         src/component/misc/m6526/m6526.cpp
         src/component/misc/m6526/m6526.h
+        src/system/commodore64/c64_keyboard.cpp
+        src/system/commodore64/c64_keyboard.h
 )
 
 # TODO: Fix elf-parser repo for windows
