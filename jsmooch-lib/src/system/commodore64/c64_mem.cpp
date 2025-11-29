@@ -37,9 +37,9 @@ u8 mem::read_IO(u16 addr, u8 old, bool has_effect) {
         case 0xDB00:
             return bus->vic2.read_color_ram(addr, old, has_effect);
         case 0xDC00:
-            return bus->read_cia1(addr, old, has_effect);
+            return bus->cia1.read(addr, old, has_effect);
         case 0xDD00:
-            return bus->read_cia2(addr, old, has_effect);
+            return bus->cia2.read(addr, old, has_effect);
         case 0xDE00:
             return bus->read_io1(addr, old, has_effect);
         case 0xDF00:
@@ -68,9 +68,9 @@ void mem::write_IO(u16 addr, u8 val) {
         case 0xDB00:
             return bus->vic2.write_color_ram(addr, val);
         case 0xDC00:
-            return bus->write_cia1(addr, val);
+            return bus->cia1.write(addr, val);
         case 0xDD00:
-            return bus->write_cia2(addr, val);
+            return bus->cia2.write(addr, val);
         case 0xDE00:
             return bus->write_io1(addr, val);
         case 0xDF00:

@@ -215,6 +215,8 @@ set(SOURCE_LIST
         src/component/audio/m6581/m6581.h
         src/system/commodore64/c64_serialize.cpp
         src/system/commodore64/c64_serialize.h
+        src/component/misc/m6526/m6526.cpp
+        src/component/misc/m6526/m6526.h
 )
 
 # TODO: Fix elf-parser repo for windows

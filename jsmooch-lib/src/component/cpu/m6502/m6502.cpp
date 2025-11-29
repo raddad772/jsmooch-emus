@@ -109,6 +109,14 @@ void core::cycle()
     trace.my_cycles++;
 }
 
+void core::force_jump(u16 addr) {
+    regs.PC = addr;
+    regs.TCU = 0;
+    pins.RW = 0;
+    pins.Addr = regs.PC;
+    regs.PC = (regs.PC + 1) & 0xFFFF;
+}
+
 void poll_NMI_only(regs &regs, pins &pins)
 {
     if (pins.RDY) return;

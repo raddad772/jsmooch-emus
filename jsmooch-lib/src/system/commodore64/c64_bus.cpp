@@ -35,6 +35,10 @@ void core::reset() {
     mem.reset();
     sid.reset();
     cpu.reset();
+    if (reset_PC_to != -1) {
+        cpu.force_jump(reset_PC_to);
+        printf("\nIMPL RESET_PC_TO!");
+    }
 
     //scheduler.clear();
     //schedule_first();
@@ -42,8 +46,7 @@ void core::reset() {
 
 static u8 read_vic2(void *ptr, u16 addr) {
     auto *core = static_cast<C64::core *>(ptr);
-    // TODO: when cia2 is working
-    //addr |= ((core->cia2.portA & 3) ^ 3) << 14;
+    addr |= ((core->cia2.regs.PRA & 3) ^ 3) << 14;
     // $1000-1FFF 0001  or $9000-9FFFF 1001
     const u32 upper = (addr >> 12) & 0b1111;
     if ((upper == 0b1001) || (upper == 0b0001)) {
@@ -73,18 +76,7 @@ core::core(jsm::regions in_region) : mem(this), vic2(this), region(in_region) {
     vic2.read_mem = &read_vic2;
 }
 
-u8 core::read_cia1(u8 addr, u8 old, bool has_effect) {
-    //printf("\nREAD CIA1 %02x", addr);
-    return 0xFF;
-}
-
-u8 core::read_cia2(u8 addr, u8 old, bool has_effect) {
-    //printf("\nREAD CIA2 %02x", addr);
-    return 0xFF;
-}
-
 u8 core::read_io1(u8 addr, u8 old, bool has_effect) {
-    //printf("\nREAD IO1 %02x", addr);
     return 0xFF;
 }
 
@@ -92,15 +84,6 @@ u8 core::read_io2(u8 addr, u8 old, bool has_effect)
 {
     //printf("\nREAD IO2 %02x", addr);
     return 0xFF;
-}
-
-void core::write_cia1(u8 addr, u8 val) {
-    //printf("\nWRITE CIA1 %02x:%02x", addr, val);
-}
-
-void core::write_cia2(u8 addr, u8 val) {
-    //printf("\nWRITE CIA2 %02x:%02x", addr, val);
-
 }
 
 void core::write_io1(u8 addr, u8 val) {

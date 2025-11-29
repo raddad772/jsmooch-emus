@@ -14,6 +14,7 @@
 #include "component/cpu/m6502/m6502_opcodes.h"
 #include "component/cpu/m6502/m6502_disassembler.h"
 #include "component/audio/m6581/m6581.h"
+#include "component/misc/m6526/m6526.h"
 
 #include "c64_clock.h"
 #include "c64_mem.h"
@@ -31,6 +32,7 @@ struct core : jsm_system {
     M6502::core cpu{M6502::decoded_opcodes};
     //scheduler_t scheduler;
     i64 cycles_deficit{};
+    M6526::core cia1{}, cia2{};
 
     void run_block();
     void run_cpu();
@@ -41,17 +43,19 @@ struct core : jsm_system {
     jsm::display_standards display_standard{};
     u64 master_clock{};
 
-    u8 read_cia1(u8 addr, u8 old, bool has_effect);
-    u8 read_cia2(u8 addr, u8 old, bool has_effect);
     u8 read_io1(u8 addr, u8 old, bool has_effect);
     u8 read_io2(u8 addr, u8 old, bool has_effect);
 
-    void write_cia1(u8 addr, u8 val);
-    void write_cia2(u8 addr, u8 val);
     void write_io1(u8 addr, u8 val);
     void write_io2(u8 addr, u8 val);
     void schedule_first();
+    i32 reset_PC_to{-1};
 
+private:
+    void load_prg(multi_file_set &mfs);
+public:
+
+    // Debug/glue code
     DBG_START
         DBG_CPU_REG_START1 *A, *X, *Y, *P, *S, *PC DBG_CPU_REG_END1
         DBG_MEMORY_VIEW
@@ -100,7 +104,7 @@ struct core : jsm_system {
     void load_state(serialized_state &state, deserialize_ret &ret) final;
     void set_audiobuf(audiobuf *ab) final;
     void setup_debugger_interface(debugger_interface &intf) final;
-    //void sideload(multi_file_set& mfs) final;
+    void sideload(multi_file_set& mfs) final;
 };
 
 }

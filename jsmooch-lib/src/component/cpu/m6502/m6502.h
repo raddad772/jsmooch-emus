@@ -69,6 +69,9 @@ struct core {
     explicit core(ins_func *opcode_table);
     void trace_format();
 
+    // Forcefully jumps to address
+    void force_jump(u16 addr);
+
     void power_on();
     void reset();
     void cycle();

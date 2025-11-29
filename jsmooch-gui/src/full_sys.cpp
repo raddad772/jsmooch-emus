@@ -738,7 +738,7 @@ void full_system::load_default_ROM()
             worked = 1;
             break;
         case jsm::systems::COMMODORE64:
-            worked = 1;
+            worked = grab_ROM(&ROMs, which, "capture_tester.prg", nullptr);
             break;
         case jsm::systems::COSMAC_VIP_2k:
         case jsm::systems::COSMAC_VIP_4k:
@@ -1106,6 +1106,7 @@ void full_system::load_default_ROM()
         case jsm::systems::PS1:
         case jsm::systems::COSMAC_VIP_2k:
         case jsm::systems::COSMAC_VIP_4k:
+        case jsm::systems::COMMODORE64:
             sys->sideload(ROMs);
             break;
         default: {

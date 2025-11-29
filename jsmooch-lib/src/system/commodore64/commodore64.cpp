@@ -40,6 +40,34 @@ void C64::core::set_audiobuf(audiobuf *ab) {
     }
 }
 
+void C64::core::load_prg(multi_file_set &mfs) {
+    auto &buf = mfs.files[0].buf;
+    auto ptr = static_cast<u8 *>(buf.ptr);
+    assert(buf.size > 3);
+    u32 addr = static_cast<u32>(ptr[1]);
+    addr |= static_cast<u16>(ptr[1]) << 8;
+    assert((addr+(buf.size-2)) < 65536);
+    ptr += 2;
+    memcpy(mem.RAM+addr, ptr, buf.size-2);
+    printf("\nSideloading PRG file to %04x (%ld bytes)", addr, buf.size-2);
+    reset_PC_to = addr;
+}
+
+void C64::core::sideload(multi_file_set& mfs) {
+    // if ends with .prg,
+    // 2 little-endian bytes indicating address, then the program load
+    // don't skip boot!?!?
+return;
+    char *s = mfs.files[0].name;
+    if (ends_with(s, ".prg")) {
+        load_prg(mfs);
+    }
+    else {
+        assert(1==2);
+    }
+
+}
+
 u32 read_trace_m6502(void *ptr, u32 addr) {
     return static_cast<C64::core *>(ptr)->mem.read_main_bus(addr, 0, 0);
 }
