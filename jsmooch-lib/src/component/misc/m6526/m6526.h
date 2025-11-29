@@ -10,10 +10,11 @@ union pins {
         u64 PRB_in : 8;
         u64 PRA_out : 8;
         u64 PRB_out : 8;
-        u64 PC : 1;
-        u64 FLAG : 1;
-        u64 CNT : 1;
+        u64 PC : 1; // read/write of portB
+        u64 FLAG : 1; // "IRQ FLAG
+        u64 CNT : 1; // "control"
         u64 IRQ : 1;
+        u64 SP : 1; // serial data
     };
     u64 u;
 };
@@ -33,7 +34,7 @@ struct core {
         u8 DDRA{}, DDRB{}; // Data Direction regs
         u8 TOD10{}, TODSEC{}, TODMIN{}, TODHR{}; // Today time
         u8 ALARM10{}, ALARMSEC{}, ALARMMIN{}, ALARMHR{};
-        u8 SDR{}; // Serial data
+        u8 SDR{}, serial_data{}, serial_data_count{}, serial_data_ready{}; // Serial data
         union {
             struct {
                 u8 TA : 1;
@@ -106,6 +107,7 @@ private:
     void write_CRB(u8 val);
     u8 read_ICR(bool has_effect);
     void write_ICR(u8 val);
+    void write_SDR(u8 val);
 
     void tick_A();
     void tick_B();

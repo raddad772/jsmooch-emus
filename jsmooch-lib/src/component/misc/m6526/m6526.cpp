@@ -82,7 +82,7 @@ void core::write(u8 addr, u8 val) {
             if (regs.CRB.ALARM) regs.ALARMHR = val;
             else regs.TODHR = val;
             return;
-        case 0b1100: regs.SDR = val; return;
+        case 0b1100: write_SDR(val); return;
         case 0b1101: write_ICR(val); return;
         case 0b1110: write_CRA(val); return;
         case 0b1111: write_CRB(val); return;
@@ -115,6 +115,15 @@ u8 core::read_ICR(bool has_effect) {
     return v;
 }
 
+void core::write_SDR(u8 val) {
+    regs.SDR = val;
+    if (regs.serial_data_count == 0 || !regs.CRA.SPMODE) {
+        // If there's no data there, or we're in input mode, load up the output register
+        regs.serial_data_count = 8;
+        regs.serial_data = val;
+    }
+}
+
 void core::write_ICR(u8 val) {
     // write MASK
     if (!(val & 0x80)) {
@@ -140,11 +149,11 @@ void core::write_PRB(u8 val) {
 }
 
 void core::write_DDRA(u8 val) {
-
+    regs.DDRA = val;
 }
 
 void core::write_DDRB(u8 val) {
-
+    regs.DDRB = val;
 }
 
 
@@ -155,11 +164,30 @@ void core::reset() {
 void core::tick_A() {
     if (!timerA.count--) {
         timerA.count = timerA.latch;
+        u8 old_out= timerA.out;
         if (regs.CRA.OUTMODE) // toggle mode
             timerA.out ^= 1;
         else { // pulse mode
             timerA.out = 1;
             timerA.out_count = 1;
+        }
+        if (regs.CRA.SPMODE) {
+            if (regs.serial_data_count) pins.CNT = timerA.out;
+            else pins.CNT = 0;
+            if (!old_out && timerA.out && regs.serial_data_count) {
+                pins.SP = (regs.serial_data & 0x80) >> 7;
+                regs.serial_data <<= 1;
+                regs.serial_data_count--;
+                if (regs.serial_data_count == 0) {
+                    regs.ICR_DATA.SP = 1;
+                    update_IRQs();
+                    if (regs.serial_data_ready) {
+                        regs.serial_data_count = 8;
+                        regs.serial_data = regs.SDR;
+                        regs.serial_data_ready = 0;
+                    }
+                }
+            }
         }
         regs.ICR_DATA.TA = 1;
         update_IRQs();
@@ -202,6 +230,18 @@ void core::cycle() {
     old_FLAG = pins.FLAG;
 
     bool cnt_happened = pins.CNT && !old_CNT;
+    if (cnt_happened && !regs.CRA.SPMODE) { // clock in a bit to SDR
+        regs.serial_data <<= 1;
+        regs.serial_data |= pins.SP;
+        regs.serial_data_count++;
+        if (regs.serial_data_count == 8) {
+            regs.serial_data_count = 0;
+            regs.serial_data = 0;
+            regs.SDR = regs.serial_data;
+            regs.ICR_DATA.SP = 1;
+            update_IRQs();
+        }
+    }
     old_CNT = pins.CNT;
 
     if (regs.CRA.START) {
