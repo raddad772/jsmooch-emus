@@ -133,23 +133,23 @@ struct m68k_test_struct {
 static u32 had_ea_with_predec(struct M68k* this)
 {
     switch(this->ins->operand_mode) {
-        case M68k_OM_qimm:
-        case M68k_OM_qimm_r:
-        case M68k_OM_imm16:
-        case M68k_OM_qimm_qimm:
-        case M68k_OM_none:
-        case M68k_OM_r:
-        case M68k_OM_r_r:
+        case OM_qimm:
+        case OM_qimm_r:
+        case OM_imm16:
+        case OM_qimm_qimm:
+        case OM_none:
+        case OM_r:
+        case OM_r_r:
             return 0;
-        case M68k_OM_ea_r:
-        case M68k_OM_ea:
-            return this->ins->ea[0].kind == M68k_AM_address_register_indirect_with_predecrement;
-        case M68k_OM_qimm_ea:
-        case M68k_OM_r_ea:
-            return this->ins->ea[1].kind == M68k_AM_address_register_indirect_with_predecrement;
-        case M68k_OM_ea_ea:
-            return this->ins->ea[0].kind == M68k_AM_address_register_indirect_with_predecrement ||
-                   this->ins->ea[1].kind == M68k_AM_address_register_indirect_with_predecrement;
+        case OM_ea_r:
+        case OM_ea:
+            return this->ins->ea[0].kind == AM_address_register_indirect_with_predecrement;
+        case OM_qimm_ea:
+        case OM_r_ea:
+            return this->ins->ea[1].kind == AM_address_register_indirect_with_predecrement;
+        case OM_ea_ea:
+            return this->ins->ea[0].kind == AM_address_register_indirect_with_predecrement ||
+                   this->ins->ea[1].kind == AM_address_register_indirect_with_predecrement;
         default:
             assert(1==0);
 			return 0;
@@ -851,31 +851,31 @@ static void pprint_transactions(struct m68k_test_transactions *ts, m68k_test_tra
 
 static void eval_thing(struct M68k_ins_t *ins, u32 opnum, u32 *kind, u32* has_prefetch, u32 *has_read)
 {
-    struct M68k_EA *ea = &ins->ea[opnum];
+    EA *ea = &ins->ea[opnum];
     *has_prefetch = *has_read = 0;
     *kind = ea->kind;
     switch(*kind) {
-        case M68k_AM_data_register_direct:
-        case M68k_AM_address_register_direct:
+        case AM_data_register_direct:
+        case AM_address_register_direct:
             break;
-        case M68k_AM_address_register_indirect:
-        case M68k_AM_address_register_indirect_with_postincrement:
-        case M68k_AM_address_register_indirect_with_predecrement:
+        case AM_address_register_indirect:
+        case AM_address_register_indirect_with_postincrement:
+        case AM_address_register_indirect_with_predecrement:
             *has_read = 1;
             break;
-        case M68k_AM_address_register_indirect_with_displacement:
-        case M68k_AM_address_register_indirect_with_index:
-        case M68k_AM_absolute_short_data:
-        case M68k_AM_program_counter_with_displacement:
-        case M68k_AM_program_counter_with_index:
+        case AM_address_register_indirect_with_displacement:
+        case AM_address_register_indirect_with_index:
+        case AM_absolute_short_data:
+        case AM_program_counter_with_displacement:
+        case AM_program_counter_with_index:
             *has_prefetch = 1;
             *has_read = 1;
             break;
-        case M68k_AM_absolute_long_data:
+        case AM_absolute_long_data:
             *has_prefetch = 2;
             *has_read = 1;
             break;
-        case M68k_AM_immediate:
+        case AM_immediate:
             *has_prefetch = 1;
             *has_read = 0;
             break;
@@ -933,10 +933,10 @@ static void analyze_test(struct m68k_test_struct *ts, const char*file, const cha
 
         // First decode instruction
         switch (ins->operand_mode) {
-            case M68k_OM_r_r:
-            case M68k_OM_r_ea:
-            case M68k_OM_ea_r:
-            case M68k_OM_ea_ea:
+            case OM_r_r:
+            case OM_r_ea:
+            case OM_ea_r:
+            case OM_ea_ea:
                 has_op[0] = has_op[1] = 1;
                 break;
             default:
@@ -1039,7 +1039,7 @@ static u32 do_test(struct m68k_test_struct *ts, const char*file, const char *fna
 
         copy_state_to_cpu(&ts->cpu, &ts->test.initial);
         copy_state_to_RAM(&ts->test.initial);
-        ts->cpu.state.current = M68kS_decode;
+        ts->cpu.state.current = S_decode;
         ts->test.failed = 0;
         ts->test.failed_w = 0;
         ts->trace_cycles = 0;
@@ -1057,10 +1057,10 @@ static u32 do_test(struct m68k_test_struct *ts, const char*file, const char *fna
             else {
                 if (ts->cpu.ins_decoded) break;
             }
-            if ((ts->cpu.state.current == M68kS_exc_group0) && (ts->had_group0 == -1)) {
+            if ((ts->cpu.state.current == S_exc_group0) && (ts->had_group0 == -1)) {
                 ts->had_group0 = (i64)ts->trace_cycles;
             }
-            if ((ts->cpu.state.current == M68kS_exc_group12) && (ts->had_group2 == -1)) ts->had_group2 = (i64)ts->trace_cycles;
+            if ((ts->cpu.state.current == S_exc_group12) && (ts->had_group2 == -1)) ts->had_group2 = (i64)ts->trace_cycles;
             //if (ts->test.failed) break;
         }
         ts->trace_cycles--;

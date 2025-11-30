@@ -38,6 +38,16 @@ set(SOURCE_LIST
         "src/component/cpu/spc700/spc700_disassembler.cpp"
         "src/component/cpu/spc700/spc700_disassembler.h"
         "src/component/cpu/spc700/spc700_generated_opcodes.cpp"
+        "src/component/cpu/m68000/m68000.cpp"
+        "src/component/cpu/m68000/m68000.h"
+        "src/component/cpu/m68000/m68000_disassembler.cpp"
+        "src/component/cpu/m68000/m68000_disassembler.h"
+        "src/component/cpu/m68000/m68000_instructions.cpp"
+        "src/component/cpu/m68000/m68000_instructions.h"
+        "src/component/cpu/m68000/m68000_internal.cpp"
+        "src/component/cpu/m68000/m68000_internal.h"
+
+
         "src/component/cpu/z80/z80.cpp"
         "src/component/cpu/z80/z80.h"
         "src/component/cpu/z80/z80_disassembler.cpp"

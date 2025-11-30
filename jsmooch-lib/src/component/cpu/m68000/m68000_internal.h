@@ -2,89 +2,51 @@
 // Created by . on 5/15/24.
 //
 
-#ifndef JSMOOCH_EMUS_M68000_INTERNAL_H
-#define JSMOOCH_EMUS_M68000_INTERNAL_H
-
+#pragma once
 #include "helpers/int.h"
 
-enum M68k_address_modes {
-    M68k_AM_data_register_direct = 0,
-    M68k_AM_address_register_direct = 1,
-    M68k_AM_address_register_indirect = 2,
-    M68k_AM_address_register_indirect_with_postincrement = 3,
-    M68k_AM_address_register_indirect_with_predecrement = 4,
-    M68k_AM_address_register_indirect_with_displacement = 5,
-    M68k_AM_address_register_indirect_with_index = 6,
-    M68k_AM_absolute_short_data = 7,
-    M68k_AM_absolute_long_data = 8,
-    M68k_AM_program_counter_with_displacement = 9,
-    M68k_AM_program_counter_with_index = 10,
-    M68k_AM_quick_immediate = 11,
-    M68k_AM_imm16 = 51,
-    M68k_AM_imm32 = 52,
-    M68k_AM_immediate = 53,
+namespace M68k {
+
+enum address_modes {
+    AM_data_register_direct = 0,
+    AM_address_register_direct = 1,
+    AM_address_register_indirect = 2,
+    AM_address_register_indirect_with_postincrement = 3,
+    AM_address_register_indirect_with_predecrement = 4,
+    AM_address_register_indirect_with_displacement = 5,
+    AM_address_register_indirect_with_index = 6,
+    AM_absolute_short_data = 7,
+    AM_absolute_long_data = 8,
+    AM_program_counter_with_displacement = 9,
+    AM_program_counter_with_index = 10,
+    AM_quick_immediate = 11,
+    AM_imm16 = 51,
+    AM_imm32 = 52,
+    AM_immediate = 53,
 };
 
-enum M68k_operand_modes {
-    M68k_OM_none = 0,
-    M68k_OM_r = 1,
-    M68k_OM_r_r = 2,
-    M68k_OM_ea_r = 3,
-    M68k_OM_r_ea = 4,
-    M68k_OM_ea = 5,
-    M68k_OM_ea_ea = 6,
-    M68k_OM_qimm = 7,
-    M68k_OM_qimm_qimm = 8,
-    M68k_OM_qimm_r = 9,
-    M68k_OM_qimm_ea = 10,
-    M68k_OM_imm16 = 11
+enum operand_modes {
+    OM_none = 0,
+    OM_r = 1,
+    OM_r_r = 2,
+    OM_ea_r = 3,
+    OM_r_ea = 4,
+    OM_ea = 5,
+    OM_ea_ea = 6,
+    OM_qimm = 7,
+    OM_qimm_qimm = 8,
+    OM_qimm_r = 9,
+    OM_qimm_ea = 10,
+    OM_imm16 = 11
 };
 
-struct M68k_EA {
-    enum M68k_address_modes kind;
+struct EA {
+    address_modes kind;
     u32 reg;
 };
 
 #define M68K_RW_ORDER_NORMAL 0
 #define M68K_RW_ORDER_REVERSE 1
 
-struct M68k;
-void M68k_start_read(M68k*, u32 addr, u32 sz, u32 FC, u32 reversed, u32 next_state);
-void M68k_start_write(M68k*, u32 addr, u32 val, u32 sz, u32 FC, u32 reversed, u32 next_state);
-void M68k_start_prefetch(M68k*, u32 num, u32 is_program, u32 next_state);
-void M68k_start_read_operands(M68k*, u32 fast, u32 sz, u32 next_state, u32 wait_states, u32 hold, u32 allow_reverse, u32 read_fc);
-void M68k_start_read_operand_for_ea(M68k*, u32 fast, u32 sz, u32 next_state, u32 wait_states, u32 hold, u32 allow_reverse);
-void M68k_start_write_operand(M68k*, u32 commit, u32 op_num, u32 next_state, u32 allow_reverse, u32 force_reverse);
-u32 M68k_AM_ext_words(enum M68k_address_modes am, u32 sz);
-void M68k_start_wait(M68k*, u32 num, u32 state_after);
-u32 M68k_read_ea_addr(M68k*, uint32 opnum, u32 sz, u32 hold, u32 prefetch);
-void M68k_start_group0_exception(M68k*, u32 vector_number, i32 wait_cycles, u32 was_in_group0_or_1, u32 addr);
-void M68k_start_group1_exception(M68k*, u32 vector_number, i32 wait_cycles, u32 PC);
-void M68k_start_group2_exception(M68k*, u32 vector_number, i32 wait_cycles, u32 PC);
-u32 M68k_inc_SSP(M68k*, u32 num);
-u32 M68k_dec_SSP(M68k*, u32 num);
-u32 M68k_get_SSP(M68k*);
-void M68k_set_SSP(M68k*, u32 to);
-void M68k_set_ar(M68k*, u32 num, u32 result, u32 sz);
-void M68k_set_dr(M68k*, u32 num, u32 result, u32 sz);
-void M68k_swap_ASP(M68k*);
-void M68k_exc_interrupt(M68k*);
-void M68k_exc_group12(M68k*);
-void M68k_exc_group0(M68k*);
-void M68k_prefetch(M68k*);
-void M68k_read_operands_read(M68k*, u32 opnum, u32 commit);
-void M68k_read_operands(M68k*);
-u32 M68k_get_r(M68k*, M68k_EA *ea, u32 sz);
-void M68k_set_r(M68k*, M68k_EA *ea, u32 val, u32 sz);
-void M68k_finalize_ea(M68k*, u32 opnum);
-void M68k_read_operands_prefetch(M68k*, u32 opnum);
-void M68k_adjust_IPC(M68k*, u32 opnum, u32 sz);
-void M68k_bus_cycle_iaq(M68k*);
-void M68k_sample_interrupts(M68k*);
-u32 M68k_serialize_func(M68k*);
-void M68k_deserialize_func(M68k*, u32 v);
-
 #define MAKE_FC(is_program) ((this->regs.SR.S ? 4 : 0) | ((is_program) ? 2 : 1))
-
-
-#endif //JSMOOCH_EMUS_M68000_INTERNAL_H
+}

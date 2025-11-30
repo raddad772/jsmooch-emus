@@ -201,7 +201,7 @@ class instruction_block:
 
         o += 'bind_opcode("'
         o += (self.make_W_string(val) + '", ' + str(
-            sz) + ', &M68k_ins_' + self.name + ', &M68k_disasm_' + self.name + ', ' + self.outshifts + ', ')
+            sz) + ', &ins_' + self.name + ', &disasm_' + self.name + ', ' + self.outshifts + ', ')
         if self.op1 is not None:
             o += '&op1, '
         else:
@@ -211,7 +211,7 @@ class instruction_block:
             o += '&op2'
         else:
             o += 'NULL'
-        o += ', ' + str(variant) + ', M68k_OM_' + ops_str + ')'
+        o += ', ' + str(variant) + ', OM_' + ops_str + ')'
         return o
 
     def make_outshifts(self) -> None:
@@ -283,43 +283,43 @@ class instruction_block:
         if self.template == 'ea1':
             o = self.template_output_1op('m, r', variant, 'ea')
         elif self.template == 'trap':
-            o = self.template_output_1op('M68k_AM_immediate, v', variant, 'qimm')
+            o = self.template_output_1op('AM_immediate, v', variant, 'qimm')
         elif self.template == 'ea_ar':
-            o = self.template_output_2op('m, r', 'M68k_AM_address_register_direct, a', variant, 'ea_r')
+            o = self.template_output_2op('m, r', 'AM_address_register_direct, a', variant, 'ea_r')
         elif self.template == 'ea_ar2':
-            o = self.template_output_2op2('m, r', 'M68k_AM_address_register_direct, a', variant, 'ea_r')
+            o = self.template_output_2op2('m, r', 'AM_address_register_direct, a', variant, 'ea_r')
         elif self.template == 'ea_dr':
-            o = self.template_output_2op('m, r', 'M68k_AM_data_register_direct, d', variant, 'ea_r')
+            o = self.template_output_2op('m, r', 'AM_data_register_direct, d', variant, 'ea_r')
         elif self.template == 'dr':
-            o = self.template_output_1op('M68k_AM_data_register_direct, d', variant, 'r')
+            o = self.template_output_1op('AM_data_register_direct, d', variant, 'r')
         elif self.template == 'dr_ea':
-            o = self.template_output_2op('M68k_AM_data_register_direct, d', 'm, r', variant, 'r_ea')
+            o = self.template_output_2op('AM_data_register_direct, d', 'm, r', variant, 'r_ea')
         elif self.template == 'dr_dr':
-            o = self.template_output_2op('M68k_AM_data_register_direct, s', 'M68k_AM_data_register_direct, d', variant,
+            o = self.template_output_2op('AM_data_register_direct, s', 'AM_data_register_direct, d', variant,
                                          'r_r')
         elif self.template == 'ar':
-            o = self.template_output_1op('M68k_AM_address_register_direct, a', variant, 'r')
+            o = self.template_output_1op('AM_address_register_direct, a', variant, 'r')
         elif self.template == 'ar_ar':  # using s and d where s is operand 1 and d is operand 2
-            o = self.template_output_2op('M68k_AM_address_register_direct, s', 'M68k_AM_address_register_direct, d',
+            o = self.template_output_2op('AM_address_register_direct, s', 'AM_address_register_direct, d',
                                          variant, 'r_r')
         elif self.template == 'ar_dr':  # using s and d where s is operand 1 and d is operand 2
-            o = self.template_output_2op('M68k_AM_address_register_direct, d', 'M68k_AM_data_register_direct, s',
+            o = self.template_output_2op('AM_address_register_direct, d', 'AM_data_register_direct, s',
                                          variant, 'r_r')
         elif self.template == '_A':
-            o = self.template_output_2op('m, r', 'M68k_AM_address_register_direct, a', variant, 'ea_r')
+            o = self.template_output_2op('m, r', 'AM_address_register_direct, a', variant, 'ea_r')
         elif self.template == '_M':
-            o = self.template_output_2op('M68k_AM_address_register_indirect_with_postincrement, y',
-                                         'M68k_AM_address_register_indirect_with_postincrement, x', variant, 'ea_ea')
+            o = self.template_output_2op('AM_address_register_indirect_with_postincrement, y',
+                                         'AM_address_register_indirect_with_postincrement, x', variant, 'ea_ea')
         elif self.template == 'imm256_dr':  # imm, data
-            o = self.template_output_2op('M68k_AM_immediate, i', 'M68k_AM_data_register_direct, d', variant, 'qimm_r')
+            o = self.template_output_2op('AM_immediate, i', 'AM_data_register_direct, d', variant, 'qimm_r')
         elif self.template == 'imm_dr':
-            o = self.template_output_2op('M68k_AM_immediate, i ? i : 8', 'M68k_AM_data_register_direct, d', variant,
+            o = self.template_output_2op('AM_immediate, i ? i : 8', 'AM_data_register_direct, d', variant,
                                          'qimm_r')
         elif self.template == 'imm_ea':
-            o = self.template_output_2op('M68k_AM_immediate, i ? i : 8', 'M68k_AM_data_register_direct, d', variant,
+            o = self.template_output_2op('AM_immediate, i ? i : 8', 'AM_data_register_direct, d', variant,
                                          'qimm_r')
         elif self.template == 'displacement':
-            o = self.template_output_1op('M68k_AM_immediate, d', variant, 'qimm')
+            o = self.template_output_1op('AM_immediate, d', variant, 'qimm')
         elif self.template == 'ADDQ':
             o = self.template_ADDQ(variant)
         elif self.template == 'B1':
@@ -327,11 +327,11 @@ class instruction_block:
         elif self.template == 'B2':
             o = self.template_B2(variant)
         elif self.template == 'test_displace_jump':
-            o = self.template_output_2op('M68k_AM_immediate, t', 'M68k_AM_immediate, d', variant, 'qimm_qimm')
+            o = self.template_output_2op('AM_immediate, t', 'AM_immediate, d', variant, 'qimm_qimm')
         elif self.template == 'test_ea':
-            o = self.template_output_2op('M68k_AM_immediate, t', 'm, r', variant, 'qimm_ea')
+            o = self.template_output_2op('AM_immediate, t', 'm, r', variant, 'qimm_ea')
         elif self.template == 'DBCC':
-            o = self.template_output_2op('M68k_AM_immediate, c', 'M68k_AM_data_register_direct, d', variant, 'qimm_r')
+            o = self.template_output_2op('AM_immediate, c', 'AM_data_register_direct, d', variant, 'qimm_r')
         elif self.template == 'X':
             o = self.template_X(variant)
         elif self.template == 'dr_sea_S':
@@ -341,7 +341,7 @@ class instruction_block:
         elif self.template == 'dreg_to_ea_S':
             o = self.template_dreg_to_ea_S(variant)
         elif self.template == 'imm16':
-            o = self.template_output_1op('M68k_AM_imm16, 0', variant, 'ea')
+            o = self.template_output_1op('AM_imm16, 0', variant, 'ea')
         elif self.template == 'LINE':
             o = self.template_output_line()
 
@@ -353,7 +353,7 @@ class instruction_block:
         return o
 
     def mk_op(self, n, v):
-        #         out += ls + 'op2 = mk_ea(M68k_AM_data_register_direct, d);'
+        #         out += ls + 'op2 = mk_ea(AM_data_register_direct, d);'
         if n == 1:
             self.op1 = 1
         else:
@@ -396,7 +396,7 @@ class instruction_block:
         out = self.open_fors()
         ls = '\n' + self.indent
         out += self.loop_skip_if(ls)
-        out += ls + self.mk_op(1, 'M68k_AM_data_register_direct, d')
+        out += ls + self.mk_op(1, 'AM_data_register_direct, d')
         out += ls + self.mk_op(2, 'm, r')
         out += ls + 'if (m == 0) ' + self.bind_str(4, 0, variant, 'r_ea') + ';'
         out += ls + 'else        ' + self.bind_str(1, 0, variant, 'r_ea') + ';'
@@ -429,12 +429,12 @@ class instruction_block:
         ls = '\n' + self.indent
         out += self.loop_skip_if(ls)
         # S=0, EA is first. S=1, EA is second. other is dreg
-        out += '\n' + ls + self.mk_op(1, 'M68k_AM_address_register_indirect_with_displacement, r')
-        out += ls + self.mk_op(2, 'M68k_AM_data_register_direct, d')
+        out += '\n' + ls + self.mk_op(1, 'AM_address_register_indirect_with_displacement, r')
+        out += ls + self.mk_op(2, 'AM_data_register_direct, d')
         out += self.bind_data_sizes(ls, variant, 'ea_r')
 
-        out += '\n' + ls + self.mk_op(1, 'M68k_AM_data_register_direct, d')
-        out += ls + self.mk_op(2, 'M68k_AM_address_register_indirect_with_displacement, r')
+        out += '\n' + ls + self.mk_op(1, 'AM_data_register_direct, d')
+        out += ls + self.mk_op(2, 'AM_address_register_indirect_with_displacement, r')
         if len(self.outshifts) == 1:
             self.outshifts = '0x80'
         else:
@@ -451,7 +451,7 @@ class instruction_block:
         out += '\n' + ls + 'if (!(' + self.skipS0 + ')) {'
 
         out += ls + '    ' + self.mk_op(1, 'm, r')
-        out += ls + '    ' + self.mk_op(2, 'M68k_AM_data_register_direct, d')
+        out += ls + '    ' + self.mk_op(2, 'AM_data_register_direct, d')
         pstr = ''
         if self.SKIPM1:
             pstr = 'if (m != 1) '
@@ -460,7 +460,7 @@ class instruction_block:
         out += ls + '    ' + self.bind_str(4, 2, variant, 'ea_r') + ';'
         out += ls + '}'
         out += ls + 'if (!(' + self.skipS1 + ')) {'
-        out += ls + '    ' + self.mk_op(1, 'M68k_AM_data_register_direct, d')
+        out += ls + '    ' + self.mk_op(1, 'AM_data_register_direct, d')
         out += ls + '    ' + self.mk_op(2, 'm, r')
         if len(self.outshifts) == 1:
             self.outshifts = '0x100'
@@ -478,12 +478,12 @@ class instruction_block:
         ls = '\n' + self.indent
         out += self.loop_skip_if(ls)
 
-        out += '\n' + ls + self.mk_op(1, 'M68k_AM_data_register_direct, y')
-        out += ls + self.mk_op(2, 'M68k_AM_data_register_direct, x')
+        out += '\n' + ls + self.mk_op(1, 'AM_data_register_direct, y')
+        out += ls + self.mk_op(2, 'AM_data_register_direct, x')
         out += self.bind_data_sizes(ls, variant, 'r_r')
 
-        out += '\n' + ls + self.mk_op(1, 'M68k_AM_address_register_indirect_with_predecrement, y')
-        out += ls + self.mk_op(2, 'M68k_AM_address_register_indirect_with_predecrement, x')
+        out += '\n' + ls + self.mk_op(1, 'AM_address_register_indirect_with_predecrement, y')
+        out += ls + self.mk_op(2, 'AM_address_register_indirect_with_predecrement, x')
         if len(self.outshifts) == 1:
             self.outshifts = '8'
         else:
@@ -501,9 +501,9 @@ class instruction_block:
         n1 = self.name
         self.name = n1 + '_ar'
 
-        out += ls + self.mk_op(1, 'M68k_AM_quick_immediate, d ? d : 8')
+        out += ls + self.mk_op(1, 'AM_quick_immediate, d ? d : 8')
         out += ls + 'if (m == 1) {'
-        out += ls + '    op2 = mk_ea(M68k_AM_address_register_direct, r);'
+        out += ls + '    op2 = mk_ea(AM_address_register_direct, r);'
         out += ls + '    ' + self.bind_str(2, 1, variant, 'qimm_r') + ';'
         out += ls + '    ' + self.bind_str(4, 2, variant, 'qimm_r') + ';'
         out += ls + '}'
@@ -570,25 +570,25 @@ def main():
         for r in rls:
             lines.append(r + '\n')
 
-    write_file(M68k_PATH + '/generated_decodes.c', lines)
+    write_file(M68k_PATH + '/generated_decodes.cpp', lines)
 
     disasm_funcs = ['BADINS']
     for code_block in code_blocks:
         code_block: instruction_block
         disasm_funcs.append(code_block.name)
 
-    lines = ['#ifndef JSMOOCH_EMUS_M68k_DISASM_FUNCS_H\n',
-             '#define JSMOOCH_EMUS_M68k_DISASM_FUNCS_H\n',
+    lines = ['#pragma once\n',
              '\n',
              '#include "helpers/int.h"\n',
              '#include "helpers/debug.h"\n',
              '#include "helpers/jsm_string.h"\n',
              '#include "component/cpu/m68000/m68000.h"\n',
              '\n'
+             'namespace M68k {\n'
              ]
 
     def fn(o) -> str:
-        return 'void M68k_disasm_' + o + '(M68k_ins_t *ins, u32 *PC, jsm_debug_read_trace *rt, jsm_string *out)'
+        return 'void disasm_' + o + '(ins_t *ins, u32 *PC, jsm_debug_read_trace *rt, jsm_string *out)'
 
     disasm_funcs.append('SUBQ_ar')
     disasm_funcs.append('ADDQ_ar')
@@ -596,7 +596,6 @@ def main():
         out_name = fn(func_name) + ';\n'
         lines.append(out_name)
     lines.append('\n')
-    lines.append('#endif //JSMOOCH_EMUS_M68k_DISASM_FUNCS_H\n')
     write_file(M68k_PATH + '/generated_disasm.h', lines)
 
     def unimplemented_template(lines):
@@ -613,7 +612,7 @@ def main():
         lines.append(fn(func_name) + '\n')
         unimplemented_template(lines)
 
-    write_file(M68k_PATH + '/generated_disasm.c', lines)
+    write_file(M68k_PATH + '/generated_disasm.cpp', lines)
 
     return
     for ins_name in sorted(list(ins_names)):

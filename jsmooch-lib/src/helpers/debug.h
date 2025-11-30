@@ -197,7 +197,7 @@ void LT_endline(last_traces_t *);
 void LT_seek_in_line(last_traces_t *, u32 where);
 void LT_dump_to_dbg(last_traces_t *);
 
-void DFT(char *format, ...);
+void DFT(const char *format, ...);
 
 void dbg_init();
 

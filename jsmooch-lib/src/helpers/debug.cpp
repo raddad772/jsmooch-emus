@@ -54,7 +54,7 @@ static char DFT_buf[4096];
 
 static FILE* DFTf = nullptr;
 
-void DFT(char *format, ...)
+void DFT(const char *format, ...)
 {
     if (DFTf == nullptr) {
         DFTf = fopen(DFT_file, "w");

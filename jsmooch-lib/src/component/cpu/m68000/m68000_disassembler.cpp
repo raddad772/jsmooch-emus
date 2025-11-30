@@ -10,7 +10,7 @@
 #include "generated/generated_disasm.h"
 
 #define jss(...) jsm_string_sprintf(out, __VA_ARGS__)
-
+namespace M68k {
 static const char conditions[16][3] = {
         "t ", "f ", "hi", "ls", "cc", "cs", "ne", "eq",
         "vc", "vs", "pl", "mi", "ge", "lt", "gt", "le",
@@ -76,7 +76,7 @@ void ins_suffix(const char* ins, u32 sz, jsm_string *out, char *spaces)
 }
 
 
-static void dodea(M68k_EA *ea, u32 IR, jsm_string *out, u32 sz, u32 *PC, jsm_debug_read_trace *rt)
+static void dodea(EA *ea, u32 IR, jsm_string *out, u32 sz, u32 *PC, jsm_debug_read_trace *rt)
 {
     u32 v;
     switch(ea->kind) {
@@ -119,7 +119,7 @@ static void dodea(M68k_EA *ea, u32 IR, jsm_string *out, u32 sz, u32 *PC, jsm_deb
         case 11: {// AM quick immediate
             jss("%d", ea->reg);
             return; }
-        case M68k_AM_immediate: {// other immediates
+        case AM_immediate: {// other immediates
             //1 or two words depending on size
             u32 n;
             switch(sz) {
@@ -905,4 +905,6 @@ void M68k_disassemble(u32 PC, u16 IR, jsm_debug_read_trace *rt, jsm_string *out)
     struct M68k_ins_t *ins = &M68k_decoded[opcode];
     u32 mPC = (PC+2)&0xFFFFFF;
     ins->disasm(ins, &mPC, rt, out);
+}
+
 }
