@@ -6,7 +6,7 @@
 
 constexpr u32 C64_keyboard_keymap[64] = {
     /*row 0*/ JK_BACKSPACE, JK_ENTER, JK_RIGHT, JK_F7, JK_F1, JK_F3, JK_F5, JK_DOWN,
-    /*row 1*/ JK_3, JK_W, JK_A, JK_4, JK_Z, JK_S, JK_E,
+    /*row 1*/ JK_3, JK_W, JK_A, JK_4, JK_Z, JK_S, JK_E, JK_SHIFT,
     /*row 2*/ JK_5, JK_R, JK_D, JK_6, JK_C, JK_F, JK_T, JK_X,
     /*row 3*/ JK_7, JK_Y, JK_G, JK_8, JK_B, JK_H, JK_U, JK_V,
     /*row 4*/ JK_9, JK_I, JK_J, JK_0, JK_M, JK_K, JK_O, JK_N,
@@ -36,6 +36,7 @@ void keyboard::setup(std::vector<physical_io_device> &IOs) {
 }
 
 u8 keyboard::read_cols(u8 val) {
+    val ^= 0xFF;
     if ((last_val == val) && !new_data) return last_out;
     //printf("\nACTUAL READ COLS %02x", val);
     new_data = false;
