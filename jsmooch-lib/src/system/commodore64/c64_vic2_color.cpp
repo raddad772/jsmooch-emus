@@ -1,107 +1,115 @@
-//
-// Created by . on 11/26/25.
-//
-
+#include <cstdio>
 #include <cmath>
+
+#include "helpers/int.h"
 #include "c64_vic2_color.h"
+namespace VIC2::color::pepto {
 
-namespace VIC2::color {
+typedef struct {
+    float u, v, y;
+} components;
 
-constexpr float levels[2][16] =
-{
-    {
-        0.0f, 32.0f, 8.0f, 24.0f,
-        16.0f, 16.0f, 8.0f, 24.0f,
-        16.0f, 8.0f, 16.0f, 8.0f,
-        16.0f, 24.0f, 16.0f, 24.0f
-    },
-    {
-        0.0f, 32.0f, 10.0f, 20.0f, // 0-3
-        12.0f, 16.0f, 8.0f, 24.0f, // 4-7
-        12.0f, 8.0f, 16.0f, 10.0f, // 8-b
-        15.0f, 24.0f, 15.0f, 20.0f
-    }
+static constexpr int levels[2][16] = {
+    { 0, 32, 10, 20, 12, 16, 8, 24, 12, 8, 16, 10, 15, 24, 15, 20 },
+    { 0, 32, 8, 24, 16, 16, 8, 8, 16, 8, 16, 8, 16, 24, 16, 24 }
 };
 
-constexpr float angles[] = {
-    0.0f, 0.0f, 4.0f, 12.0f,
-    2.0f, 10.0f, 15.0f, 7.0f,
-    5.0f, 6.0f, 4.0f, 0.0f,
-    0.0f, 10.0f, 15.0f, 0.0f
+static constexpr int angles[16] = {
+    0,      /* 0x0 black/none */
+    0,      /* 0x1 white */
+    4,      /* 0x2 red */
+    4 + 8,  /* 0x3 cyan */
+    2,      /* 0x4 purple */
+    2 + 8,  /* 0x5 green */
+    7 + 8,  /* 0x6 blue */
+    7,      /* 0x7 yellow */
+    5,      /* 0x8 orange */
+    6,      /* 0x9 brown */
+    4,      /* 0xa light red */
+    4,      /* 0xb dark grey */
+    0,      /* 0xc mid grey */
+    2 + 8,  /* 0xd light green */
+    7 + 8,  /* 0xe light blue */
+    0       /* 0xf light grey / cyan pair */
 };
 
-#define Y 0
-#define U 1
-#define V 2
-static void compose(int index, int revision, float brightness, float contrast, float saturation, float components[3])
-{
-    // constants
-    constexpr float sector = 27.0f; // 360.0/16
-    constexpr float origin = sector/2;
-    constexpr float radian = M_PI/180.0f;
-    constexpr float screen = 1.0f/5.0f;
+void compose(int index, int revision_select, float brightness, float contrast_percent, float saturation_percent, components &c) {
+    float constexpr screen = 1.0f / 5.0f;
+    /* Copy levels based on revision */
+    int level = levels[revision_select][index];
 
-    // normalize
-    brightness -= 50.0f;
-    contrast /= 100.0f;
-    saturation *= 1.0f - screen;
+    /* normalize inputs like the JS model */
+    brightness -= 50.0f;              /* JS: brightness -= 50 */
+    float contrast = contrast_percent / 100.0f; /* JS: contrast /= 100 */
+    float saturation = saturation_percent * (1.0f - screen); /* JS: saturation *= 1 - screen */
 
-    // construct
-    components[0] = components[1] = 0.0f;
-
-    if (angles[index] != 0.0f) {
-        float angle = (origin + angles[index] * sector) * radian;
-
-        components[U] = cosf(angle) * saturation;
-        components[V] = sinf(angle) * saturation;
+    /* if we have chroma angle for this index */
+    int ang = angles[index];
+    if (ang) {
+        float sector = 360.0f / 16.0f;
+        float origin = sector / 2.0f;
+        float angle_deg = (origin + ang * sector);
+        float angle = angle_deg * (M_PI / 180.0f);
+        c.u = cos(angle) * saturation;
+        c.v = sin(angle) * saturation;
+    } else {
+        c.u = 0.0f;
+        c.v = 0.0f;
     }
 
-    components[Y] = 8.0f * levels[revision][index] + brightness;
+    c.y = 8.0f * static_cast<float>(level) + brightness;
 
-    for (u32 i = 0; i < 3; i++)
-    {
-        components[i] *= contrast + screen;
+    /* multiply each component by (contrast + screen) as the JS does */
+    float factor = contrast + screen;
+    c.u *= factor;
+    c.v *= factor;
+    c.y *= factor;
+}
+
+void convert_yuv_to_rgb(const components &comp, u32 &out_r, u32 &out_g, u32 &out_b) {
+    float r = comp.y + 1.140f * comp.v;
+    float g = comp.y - 0.396f * comp.u - 0.581f * comp.v;
+    float b = comp.y + 2.029f * comp.u;
+
+    /* clamp to [0,255] before gamma ops like JS */
+    if (r < 0.0f) r = 0.0f;
+    if (r > 255.0f) r = 255.0f;
+    if (g < 0.0f) r = 0.0f;
+    if (g > 255.0f) r = 255.0f;
+    if (b < 0.0f) r = 0.0f;
+    if (b > 255.0f) r = 255.0f;
+
+    float vals[3] = {r, g, b};
+
+    const float source = 2.8; /* PAL gamma in Pepto code, also works for NTSC */
+    const float target = 2.2; /* sRGB gamma */
+
+    for (int i = 0; i < 3; ++i) {
+        /* replicate: Math.pow(255,1 - source) * Math.pow(color[i], source) */
+        float v1 = pow(255.0f, 1.0f - source) * pow(vals[i], source);
+        /* then Math.pow(255,1 - 1/target) * Math.pow(v1, 1/target) */
+        float v2 = pow(255.0f, 1.0f - 1.0f / target) * pow(v1, 1.0f / target);
+        /* clamp again and round */
+        if (v2 < 0.0f) v2 = 0.0f;
+        if (v2 > 255.0f) v2 = 255.0f;
+        vals[i] = v2;
     }
+
+    out_r = static_cast<u32>(lrint(vals[0]));
+    out_g = static_cast<u32>(lrint(vals[1]));
+    out_b = static_cast<u32>(lrint(vals[2]));
 }
 
-static float max(float a, float b) {
-    return a > b ? a : b;
-}
-
-static float min(float a, float b) {
-    return a < b ? a : b;
-}
-
-static void yuv_to_rgb(float components[3], float color[3]) {
-    // matrix transformation
-    color[0] = components[Y] + 1.140f * components[V];
-    color[1] = components[Y] - 0.396f * components[U] - 0.581f * components[V];
-    color[2] = components[Y] + 2.029f * components[U];
-
-    // gamma correction
-    float source = 2.8f;
-    float target = 2.2f; // Source says this is for PAL but it hols true for NTSC as well
-
-    for (int i = 0; i < 3; i++) {
-        color[i] = max(min(color[i], 255.0f), 0.0f);
-
-        color[i] = powf(255.0f, 1.0f - source) * powf(color[i], source);
-        color[i] = powf(255.0f, 1.0f - 1.0f/target) * powf(color[i], 1.0f/target);
-
-        color[i] = roundf(color[i]);
-    }
-}
-
-u32 calculate_color(int index, int revision, float brightness, float contrast, float saturation) {
-    u32 color = 0xFF000000;
-    float components[3];
-    float acolor[3];
-    compose(index, revision, brightness, contrast, saturation, components);
-    yuv_to_rgb(components, acolor);
-    color |= static_cast<u32>(acolor[2]) << 0;
-    color |= static_cast<u32>(acolor[1]) << 8;
-    color |= static_cast<u32>(acolor[0]) << 16;
-    return color;
+u32 get_abgr(int index, int revision, float brightness, float contrast, float saturation) {
+    components c;
+    compose(index, revision, brightness, contrast, saturation, c);
+    u32 r,g,b;
+    convert_yuv_to_rgb(c, r, g, b);
+    u32 o = 0xFF000000;
+    o |= b << 16;
+    o |= g << 8;
+    o |= r << 0;
+    return o;
 }
 
 }

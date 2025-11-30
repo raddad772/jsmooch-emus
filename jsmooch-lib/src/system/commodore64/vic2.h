@@ -51,7 +51,7 @@ struct core {
     model model;
     u32 palette[16]{};
     u8 COLOR[1000]{}; // 4bit
-    u16 SCREEN_MTX[40]; // 12-bit. lower 8 from RAM, upper 4 from CRAM
+    u8 SCREEN_MTX[40]{}; // 8 bit COLOR MTX
     u8 open_bus{};
     u16 g_access{};
     u32 px_shifter{};

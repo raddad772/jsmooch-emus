@@ -204,12 +204,14 @@ static void setup_dbglog(core &th, debugger_interface &dbgr)
 
     dbglog_category_node &root = dv.get_category_root();
     dbglog_category_node &cpucat = root.add_node(dv, "M6502", nullptr, 0, 0);
+    cpucat.children.reserve(15);
     cpucat.add_node(dv, "Instruction Trace", "cpu", C64_CAT_CPU_INSTRUCTION, cpu_color);
     th.cpu.trace.dbglog.view = &dv;
     th.cpu.trace.dbglog.id = C64_CAT_CPU_INSTRUCTION;
     cpucat.add_node(dv, "Reads", "cpu.read", C64_CAT_CPU_READ, cpu_color);
     cpucat.add_node(dv, "Writes", "cpu.write", C64_CAT_CPU_WRITE, cpu_color);
 }
+    
 static void setup_memory_view(core& th, debugger_interface &dbgr) {
     th.dbg.memory = dbgr.make_view(dview_memory);
     debugger_view *dview = &th.dbg.memory.get();

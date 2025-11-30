@@ -14,7 +14,7 @@ dbglog_category_node &dbglog_view::get_category_root()
 
 dbglog_category_node &dbglog_category_node::add_node(dbglog_view &dv, const char *inname, const char *inshort_name, u32 id, u32 color)
 {
-    printf("\nAdd %s with ID %d", inname, id);
+    //printf("\nAdd %s with ID %d", inname, id);
     dbglog_category_node &d = children.emplace_back();
     snprintf(d.name, sizeof(d.name), "%s", inname);
     if (inshort_name)

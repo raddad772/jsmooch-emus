@@ -15,7 +15,7 @@ namespace VIC2 {
 core::core(C64::core *parent) : bus(parent) {
     setup_timing();
     for (u32 i = 0; i < 16; i++) {
-        palette[i] = color::calculate_color(i, 1, 50.0f, 100.0f, 1.0f);
+        palette[i] = color::pepto::get_abgr(i, 1, 50.0f, 100.0f, 100.0f);
     }
 }
 
@@ -250,6 +250,7 @@ void core::write_IO(u16 addr, u8 val) {
 }
 
 void core::write_color_ram(u16 addr, u8 val) {
+    addr &= 0x3FF;
     if (addr < 1000) COLOR[addr] = val & 15;
 }
 
@@ -304,7 +305,7 @@ void core::mem_access() {
         SCREEN_MTX[vmli] = open_bus = read_mem(read_mem_ptr, addr);
     }
     mtx = SCREEN_MTX[vmli] | (COLOR[vc] << 8);
-
+    //if (vc == 50) mtx = SCREEN_MTX[vmli] | (10 << 8);
 }
 
 void core::reload_shifter() {
@@ -324,6 +325,7 @@ u8 core::get_color() {
         bg_collide = px_shifter & 1;
         px_shifter >>= 1;
         shift_size = (shift_size > 0) ? shift_size - 1 : 0;
+        //out = bg_collide ? (mtx >> 8) : io.BC[0];
         out = bg_collide ? (mtx >> 8) : io.BC[0];
     }
     else if ((io.CR1.ECM == io.CR1.BMM == 0) && (io.CR2.MCM == 1)) {
