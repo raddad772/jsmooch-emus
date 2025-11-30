@@ -12,16 +12,18 @@ void core::run_cpu() {
     if (vic2.signals.AEC) return;
 
     // BA only stomps on CPU if it does a read
+    cpu.pins.RDY = vic2.signals.BA;
+    if (!cpu.pins.RW) { // Read cycle
+        if (cpu.pins.RDY) return;
+        cpu.pins.D = open_bus = mem.read_main_bus(cpu.pins.Addr, open_bus, true);
+        dbgloglog(this, C64_CAT_CPU_READ, DBGLS_INFO, "%04x   (read)  %02x", cpu.pins.Addr, cpu.pins.D);
+    }
+    cpu.cycle(); // Write cycle
     if (cpu.pins.RW) {
         mem.write_main_bus(cpu.pins.Addr, cpu.pins.D);
         dbgloglog(this, C64_CAT_CPU_WRITE, DBGLS_INFO, "%04x   (write) %02x", cpu.pins.Addr, cpu.pins.D);
     }
-    if (!vic2.signals.BA || cpu.pins.RW) // If BA is off, or we're in a write cycle, GO!
-        cpu.cycle();
-    if (!cpu.pins.RW) {
-        cpu.pins.D = open_bus = mem.read_main_bus(cpu.pins.Addr, open_bus, true);
-        dbgloglog(this, C64_CAT_CPU_READ, DBGLS_INFO, "%04x   (read)  %02x", cpu.pins.Addr, cpu.pins.D);
-    }
+
 }
 
 void core::run_block() {

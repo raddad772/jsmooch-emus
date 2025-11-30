@@ -13,7 +13,7 @@ namespace M6502 {
 enum OP {
     RESET = 0x100,
     NMI = 0x101,
-    IRQ = 0x10
+    IRQ = 0x102
 };
 
 void M6502_P::setbyte(u8 val) {
@@ -58,7 +58,11 @@ void core::reset() {
     if (first_reset) power_on();
     first_reset = 0;
     pins.RW = 0;
-    pins.D = OP::RESET;
+    regs.TCU = 1;
+    pins.RW = 0;
+    pins.Addr = regs.S | 0x100;
+    regs.S = (regs.S - 1) & 0xFF;
+    current_instruction = opcode_table[OP::RESET];
 }
 
 void core::setup_tracing(jsm_debug_read_trace *strct, u64 *trace_cycle_pointer)
@@ -72,6 +76,7 @@ void core::cycle()
 {
     // Perform 1 processor cycle
     if (regs.HLT || regs.STP) return;
+    if ((!pins.RW) && pins.RDY) return; // If we're on a read cycle and RDY is high, don't do anything
 
     // Edge-sensitive 0->1
     if (pins.NMI != regs.NMI_old) {
@@ -101,7 +106,7 @@ void core::cycle()
         }
         current_instruction = opcode_table[regs.IR];
         if (current_instruction == opcode_table[2]) { // TODO: this doesn't work with illegal opcodes or m65c02
-            printf("\nINVALID Oins_PCDE %02x", regs.IR);
+            printf("\nINVALID OPCDE %02x", regs.IR);
         }
     }
 

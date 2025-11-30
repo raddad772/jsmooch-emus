@@ -37,6 +37,7 @@ void keyboard::setup(std::vector<physical_io_device> &IOs) {
 
 u8 keyboard::read_cols(u8 val) {
     if ((last_val == val) && !new_data) return last_out;
+    //printf("\nACTUAL READ COLS %02x", val);
     new_data = false;
     u8 out = 0;
     last_val = val;
@@ -49,14 +50,19 @@ u8 keyboard::read_cols(u8 val) {
 }
 
 u8 keyboard::scan_col(u32 num) {
-    printf("\nSCAN COL %d", num);
+    // PRA is writing...
+    //printf("\nSCAN COL %d", num);
     auto &pio = kbd_ptr.get();
     auto &kbd = pio.keyboard;
     u8 out = 0;
     u8 hi3 = num << 3;
     for (u32 i = 0; i < 8; i++) {
         u32 n = hi3 | i;
-        if (kbd.key_states[n]) out |= (1 << i);
+        if (kbd.key_states[n]) {
+            printf("\nKEY IS PRESSED!");
+            out |= (1 << i);
+        }
+
     }
     return out;
 }

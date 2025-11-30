@@ -67,12 +67,14 @@ void mem::write_IO(u16 addr, u8 val) {
         case 0xDA00:
         case 0xDB00:
             return bus->vic2.write_color_ram(addr, val);
-        case 0xDC00:
-            return bus->cia1.write(addr, val);
-        case 0xDD00:
+        case 0xDC00: {
+            bus->cia1.write(addr, val);
+            u8 v = bus->cia1.read_PRA();
+            bus->cia1.pins.PRB_in = bus->keyboard.read_cols(v);
+            return; }
+        case 0xDD00: {
             bus->cia2.write(addr, val);
-            bus->cia2.pins.PRA_in = bus->keyboard.read_cols(bus->cia2.read_PRB(true));
-            return;
+            return; }
         case 0xDE00:
             return bus->write_io1(addr, val);
         case 0xDF00:

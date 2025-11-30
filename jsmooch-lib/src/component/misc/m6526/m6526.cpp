@@ -2,6 +2,8 @@
 // Created by . on 11/29/25.
 //
 
+#include <cstdio>
+
 #include "m6526.h"
 
 namespace M6526 {
@@ -117,8 +119,8 @@ u8 core::read_ICR(bool has_effect) {
 
 void core::write_SDR(u8 val) {
     regs.SDR = val;
-    if (regs.serial_data_count == 0 || !regs.CRA.SPMODE) {
-        // If there's no data there, or we're in input mode, load up the output register
+    if (regs.serial_data_count == 0 && regs.CRA.SPMODE) {
+        // If there's no data there and we're in input mode, load up the output register
         regs.serial_data_count = 8;
         regs.serial_data = val;
     }
@@ -157,6 +159,7 @@ void core::write_DDRB(u8 val) {
 
 
 void core::reset() {
+    pins.SP = 1;
 
 }
 
@@ -238,7 +241,8 @@ void core::cycle() {
     old_CNT = pins.CNT;
     if (cnt_happened && !regs.CRA.SPMODE) { // clock in a bit to SDR
         regs.serial_data <<= 1;
-        regs.serial_data |= pins.SP;
+        //regs.serial_data |= pins.SP;
+        regs.serial_data |= 1;
         regs.serial_data_count++;
         if (regs.serial_data_count == 8) {
             regs.serial_data_count = 0;
