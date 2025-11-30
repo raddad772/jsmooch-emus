@@ -12,7 +12,7 @@ constexpr u32 C64_keyboard_keymap[64] = {
     /*row 4*/ JK_9, JK_I, JK_J, JK_0, JK_M, JK_K, JK_O, JK_N,
     /*row 5*/ JK_EQUALS, JK_P, JK_L, JK_MINUS, JK_DOT, JK_SEMICOLON, 0, JK_COMMA,
     /*row 6*/ 0, JK_F6, JK_SEMICOLON, JK_NUM_CLEAR, JK_RSHIFT, JK_EQUALS, JK_UP, JK_SLASH_FW,
-    /*row 7*/ JK_1, JK_LEFT, JK_CTRL, JK_2, JK_SPACE, JK_CMD, JK_Q, 0
+    /*row 7*/ JK_1, JK_LEFT, JK_CTRL, JK_2, JK_SPACE, JK_CMD, JK_Q, JK_ESC
 };
 
 namespace C64 {
@@ -60,7 +60,6 @@ u8 keyboard::scan_col(u32 num) {
     for (u32 i = 0; i < 8; i++) {
         u32 n = hi3 | i;
         if (kbd.key_states[n]) {
-            printf("\nKEY IS PRESSED!");
             out |= (1 << i);
         }
 

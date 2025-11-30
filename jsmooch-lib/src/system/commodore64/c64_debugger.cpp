@@ -211,7 +211,7 @@ static void setup_dbglog(core &th, debugger_interface &dbgr)
     cpucat.add_node(dv, "Reads", "cpu.read", C64_CAT_CPU_READ, cpu_color);
     cpucat.add_node(dv, "Writes", "cpu.write", C64_CAT_CPU_WRITE, cpu_color);
 }
-    
+
 static void setup_memory_view(core& th, debugger_interface &dbgr) {
     th.dbg.memory = dbgr.make_view(dview_memory);
     debugger_view *dview = &th.dbg.memory.get();

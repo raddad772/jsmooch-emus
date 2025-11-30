@@ -67,23 +67,24 @@ void C64::core::set_audiobuf(audiobuf *ab) {
 }
 
 void C64::core::load_prg(multi_file_set &mfs) {
+    sideload_data.present = true;
     auto &buf = mfs.files[0].buf;
     auto ptr = static_cast<u8 *>(buf.ptr);
     assert(buf.size > 3);
-    u32 addr = static_cast<u32>(ptr[1]);
-    addr |= static_cast<u16>(ptr[1]) << 8;
-    assert((addr+(buf.size-2)) < 65536);
+    sideload_data.addr = static_cast<u16>(ptr[0]);
+    sideload_data.addr |= static_cast<u16>(ptr[1]) << 8;
+    assert((sideload_data.addr+(buf.size-2)) < 65536);
+    sideload_data.buf.allocate(buf.size-2);
     ptr += 2;
-    memcpy(mem.RAM+addr, ptr, buf.size-2);
-    printf("\nSideloading PRG file to %04x (%ld bytes)", addr, buf.size-2);
-    reset_PC_to = addr;
+    memcpy(sideload_data.buf.ptr, ptr, buf.size-2);
+
+    printf("\nPRG file to %04x (%ld bytes) prepared", sideload_data.addr, buf.size-2);
 }
 
 void C64::core::sideload(multi_file_set& mfs) {
     // if ends with .prg,
     // 2 little-endian bytes indicating address, then the program load
     // don't skip boot!?!?
-return;
     char *s = mfs.files[0].name;
     if (ends_with(s, ".prg")) {
         load_prg(mfs);
@@ -104,10 +105,28 @@ static void run_block(void *ptr, u64 key, u64 clock, u32 jitter)
     th->run_block();
 }
 
+static void populate_opts(C64::core *th) {
+    debugger_widgets_add_button(th->opts, "Load selected file", 1, 0);
+}
+
+void C64::core::complete_sideload() {
+    if (sideload_data.present) {
+        memcpy(mem.RAM+sideload_data.addr, sideload_data.buf.ptr, sideload_data.buf.size);
+        printf("\nSIDELOAD COMPLETE!");
+    }
+}
+
+static void read_opts(C64::core *th)
+{
+    debugger_widget &w = th->opts.at(0);
+    if (w.button.value) th->complete_sideload();
+}
+
+
 jsm_system *Commodore64_new(jsm::systems in_kind)
 {
     auto* th = new C64::core(jsm::regions::USA);
-
+    populate_opts(th);
     //th->scheduler.max_block_size = 1;
     //th->scheduler.run.func = &run_block;
     //th->scheduler.run.ptr = th;
@@ -315,6 +334,7 @@ u32 C64::core::finish_frame()
 {
     keyboard.new_data = true;
     u64 start_frame = vic2.master_frame;
+    read_opts(this);
     while (vic2.master_frame == start_frame) {
         finish_scanline();
         if (::dbg.do_break) break;
@@ -325,7 +345,6 @@ u32 C64::core::finish_frame()
 u32 C64::core::finish_scanline()
 {
     keyboard.new_data = true;
-    //read_opts(jsm, th);
     i32 start_y = vic2.vpos;
     while (vic2.vpos == start_y) {
         run_block();

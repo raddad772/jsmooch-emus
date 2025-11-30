@@ -130,6 +130,7 @@ public:
     std::vector<TVIEW> trace_views;
     std::vector<CVIEW> console_views;
     bool screenshot;
+    bool signal;
     system_io inputs;
     std::vector<JSM_AUDIO_CHANNEL *> audiochans;
     bool has_played_once{};

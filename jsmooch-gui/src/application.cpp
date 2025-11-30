@@ -761,6 +761,18 @@ static void render_colorkey(debugger_widget &widget)
     }
 }
 
+static void render_button(debugger_widget &widget)
+{
+    bool mval = false;
+    bool disabled = widget.enabled ? false : true;
+    if (widget.same_line) ImGui::SameLine();
+    ImGui::BeginDisabled(disabled);
+    mval = ImGui::Button(widget.button.text);
+    ImGui::EndDisabled();
+    widget.button.value = mval ? 1 : 0;
+}
+
+
 static void render_checkbox(debugger_widget &widget)
 {
     bool mval = widget.checkbox.value ? true : false;
@@ -791,6 +803,9 @@ static void render_debugger_post_widget(debugger_widget &widget)
 static void render_debugger_widget(debugger_widget &widget)
 {
     switch(widget.kind) {
+        case JSMD_button: {
+            render_button(widget);
+            break; }
         case JSMD_checkbox: {
             render_checkbox(widget);
             break; }
@@ -1196,6 +1211,8 @@ void imgui_jsmooch_app::mainloop(ImGuiIO& io) {
             if (screenshot) {
 
             }
+            fsys.signal = ImGui::Button("Signal");
+
         }
         ImGui::EndChild(); // end sub-window
         ImGui::PopStyleVar();

@@ -130,6 +130,9 @@ void debugger_widget::move_from(debugger_widget&& other) noexcept {
 
     // Move construct the active member
     switch (kind) {
+        case JSMD_button:
+            new (&button) debugger_widget_button(std::move(other.button));
+            break;
         case JSMD_checkbox:
             new (&checkbox) debugger_widget_checkbox(std::move(other.checkbox));
             break;
@@ -152,6 +155,9 @@ void debugger_widget::make(JSMD_widgets mkind)
     destroy_active();
     kind = mkind;
     switch(mkind) {
+        case JSMD_button:
+            new (&button) debugger_widget_button();
+            break;
         case JSMD_checkbox:
             new (&checkbox) debugger_widget_checkbox();
             break;
@@ -172,6 +178,9 @@ void debugger_widget::make(JSMD_widgets mkind)
 void debugger_widget::destroy_active() {
     switch(kind) {
         case JSMD_none:
+            break;
+        case JSMD_button:
+            button.~debugger_widget_button();
             break;
         case JSMD_colorkey:
             colorkey.~debugger_widget_colorkey();
@@ -219,6 +228,18 @@ int debugger_widget_textbox::sprintf(const char *format, ...)
     va_end(va);
     return num;
 }
+
+void debugger_widgets_add_button(std::vector<debugger_widget> &widgets, const char *text, u32 enabled, u32 same_line)
+{
+    debugger_widget &w = widgets.emplace_back();
+    w.make(JSMD_button);
+    w.same_line = same_line;
+    snprintf(w.button.text, sizeof(w.button.text), "%s", text);
+    w.enabled = enabled;
+    w.button.value = 0;
+    w.visible = 1;
+}
+
 
 void debugger_widgets_add_checkbox(std::vector<debugger_widget> &widgets, const char *text, u32 enabled, u32 default_value, u32 same_line)
 {

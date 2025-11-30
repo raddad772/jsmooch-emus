@@ -442,8 +442,16 @@ enum JSMD_widgets {
     JSMD_checkbox,
     JSMD_radiogroup,
     JSMD_textbox,
-    JSMD_colorkey
+    JSMD_colorkey,
+    JSMD_button
 };
+
+struct debugger_widget_button
+{
+    char text[100]{};
+    u32 value{};
+};
+
 
 struct debugger_widget_checkbox
 {
@@ -506,6 +514,7 @@ struct debugger_widget {
     u32 same_line{}, enabled{}, visible{};
 
     union {
+        debugger_widget_button button;
         debugger_widget_checkbox checkbox{};
         debugger_widget_radiogroup radiogroup;
         debugger_widget_textbox textbox;
@@ -574,8 +583,10 @@ void debugger_report_frame(debugger_interface *dbgr);
 void debugger_report_line(debugger_interface *dbgr, i32 line_num);
 void debugger_interface_dirty_mem(debugger_interface *dbgr, u32 mem_bus, u32 addr_start, u32 addr_end);
 debugger_widget &debugger_widgets_add_radiogroup(std::vector<debugger_widget> &widgets, const char *text, u32 enabled, u32 default_value, u32 same_line);
-void memory_view_get_line(memory_view_module *mm, u32 addr, char *out);
 void debugger_widgets_add_textbox(std::vector<debugger_widget> &widgets, const char *text, u32 same_line);
+void debugger_widgets_add_button(std::vector<debugger_widget> &widgets, const char *text, u32 enabled, u32 same_line);
+void debugger_widgets_add_checkbox(std::vector<debugger_widget> &widgets, const char *text, u32 enabled, u32 default_value, u32 same_line);
+void memory_view_get_line(memory_view_module *mm, u32 addr, char *out);
 debugger_widget &debugger_widgets_add_color_key(std::vector<debugger_widget> &widgets, const char *default_text, u32 default_visible);
 
 #define DEBUG_REGISTER_EVENT_CATEGORY(name, id) ev.add_category(name, 0, id)

@@ -45,6 +45,12 @@ struct core : jsm_system {
     u32 IRQ_F{};
     u32 NMI_F{};
 
+    struct {
+        buf buf{};
+        u16 addr{};
+        bool present;
+    } sideload_data{};
+
     u8 open_bus{};
     jsm::systems kind{};
     jsm::regions region{};
@@ -58,8 +64,10 @@ struct core : jsm_system {
     void write_io2(u8 addr, u8 val);
     void schedule_first();
     i32 reset_PC_to{-1};
+    void complete_sideload();
 
 private:
+
     void load_prg(multi_file_set &mfs);
 public:
 
