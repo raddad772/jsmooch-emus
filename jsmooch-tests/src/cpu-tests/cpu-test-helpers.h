@@ -1,6 +1,6 @@
-#ifndef JSMOOCH_EMUS_M68000_TESTS_H
-#define JSMOOCH_EMUS_M68000_TESTS_H
+#pragma once
+#include "helpers/int.h"
+#include <cstddef>
 
-char *construct_cpu_test_path(char* w, const char* cpu_test_folder, const char* who);
+char *construct_cpu_test_path(char* w, const char* cpu_test_folder, const char* who, size_t sz);
 
-#endif //JSMOOCH_EMUS_M68000_TESTS_H

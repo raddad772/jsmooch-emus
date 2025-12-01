@@ -14,9 +14,9 @@
 #include "cpu-tests/z80-tests.h"
 /*#include "cpu-test-generators/sh4_test_generator.h"
 #include "cpu-tests/sh4-tests.h"
-#include "cpu-tests/m6502_tests.h"
+#include "cpu-tests/m6502_tests.h"*/
 #include "cpu-tests/m68000-tests.h"
-#include "helper-tests/dasm-range-tests.h"
+/*#include "helper-tests/dasm-range-tests.h"
 #include "cpu-tests/wdc65816_tests.h"
 #include "helper-tests/scheduler-tests.h"
 #include "cpu-tests/arm7tdmi_tests.h"*/
@@ -98,11 +98,11 @@ int main()
     //z80_drag_race();
     //test_scheduler();
     //test_sm83();
-    test_z80();
+    //test_z80();
     //generate_sh4();
     //generate_sh4_tests(); // NOTE: reicast tests superceded these
     //test_sh4();
-    //test_m68000();
+    test_m68000();
     //test_bitbuf();
     //test_dasm_ranges();
     //test_nesm6502();

@@ -201,7 +201,7 @@ class instruction_block:
 
         o += 'bind_opcode("'
         o += (self.make_W_string(val) + '", ' + str(
-            sz) + ', &ins_' + self.name + ', &disasm_' + self.name + ', ' + self.outshifts + ', ')
+            sz) + ', &core::ins_' + self.name + ', &disasm_' + self.name + ', ' + self.outshifts + ', ')
         if self.op1 is not None:
             o += '&op1, '
         else:
@@ -348,7 +348,7 @@ class instruction_block:
         if o is not None:
             TEMPLATES_DONE.add(self.template)
         else:
-            o = 'BAD TEMPLATE'
+            o = 'BAD TEMPLATE: ' + self.template
 
         return o
 
@@ -588,7 +588,7 @@ def main():
              ]
 
     def fn(o) -> str:
-        return 'void disasm_' + o + '(ins_t *ins, u32 *PC, jsm_debug_read_trace *rt, jsm_string *out)'
+        return 'void disasm_' + o + '(ins_t &ins, u32 &PC, jsm_debug_read_trace &rt, jsm_string &out)'
 
     disasm_funcs.append('SUBQ_ar')
     disasm_funcs.append('ADDQ_ar')
@@ -596,21 +596,26 @@ def main():
         out_name = fn(func_name) + ';\n'
         lines.append(out_name)
     lines.append('\n')
+    lines.append('\n}\n')
     write_file(M68k_PATH + '/generated_disasm.h', lines)
 
     def unimplemented_template(lines):
         lines.append('{\n')
-        lines.append('    printf("\\nERROR UNIMPLEMENTED DISASSEMBLY %04x", ins->opcode);\n')
-        lines.append('    jsm_string_sprintf(out, "UNIMPLEMENTED DISASSEMBLY %s", __func__);\n')
+        lines.append('    printf("\\nERROR UNIMPLEMENTED DISASSEMBLY %04x", ins.opcode);\n')
+        lines.append('    out.sprintf("UNIMPLEMENTED DISASSEMBLY %s", __func__);\n')
         lines.append('}\n')
         lines.append('\n')
 
     lines = ['#include <stdio.h>\n',
              '#include "generated_disasm.h"\n',
-             '\n']
+             '\n',
+             'namespace M68k {',
+             '\n'
+             ]
     for func_name in disasm_funcs:
         lines.append(fn(func_name) + '\n')
         unimplemented_template(lines)
+    lines.append('\n}\n')
 
     write_file(M68k_PATH + '/generated_disasm.cpp', lines)
 

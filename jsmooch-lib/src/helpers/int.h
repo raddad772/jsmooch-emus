@@ -164,6 +164,8 @@ union UN16 {
 #endif
 #endif
 
+#define nodefault default: NOGOHERE
+
 #if defined(_MSC_VER)
 #define FALLTHROUGH // #TODO: Is there a way to do this in MSVC?
 #else

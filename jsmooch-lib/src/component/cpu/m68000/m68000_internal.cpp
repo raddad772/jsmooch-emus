@@ -13,11 +13,11 @@
 #define ADDRAND1 { pins.LDS = (state.bus_cycle.addr & 1); pins.UDS = pins.LDS ^ 1; }
 #define ALLOW_REVERSE 1
 #define NO_REVERSE 0
+
 namespace M68k {
 static constexpr u32 clip32[5] = { 0, 0xFF, 0xFFFF, 0, 0xFFFFFFFF};
 
-u32 core::get_dr(u32 num, u32 sz)
-{
+u32 core::get_dr(u32 num, u32 sz) const {
     return regs.D[num] & clip32[sz];
 }
 
@@ -25,7 +25,7 @@ void core::adjust_IPC(u32 opnum, u32 sz)
 {
     u32 ex_words = state.op[opnum].ext_words;
     u32 kind0 = ins->ea[0].kind;
-    u32 kind1 = ins->ea[1].kind;
+    //u32 kind1 = ins->ea[1].kind;
     u32 kk = ins->ea[opnum].kind;
     switch(ins->operand_mode) {
         case OM_none:
@@ -70,6 +70,7 @@ void core::adjust_IPC(u32 opnum, u32 sz)
                     case AM_absolute_long_data:
                         regs.IPC += 2;
                         break;
+                    default:
                 }
             }
             break;
@@ -91,7 +92,6 @@ void core::adjust_IPC(u32 opnum, u32 sz)
                         if (ins->sz == 4) regs.IPC -= 2;
                         break;
                     default:
-                        break;
                 }
             }
             else {
@@ -106,19 +106,15 @@ void core::adjust_IPC(u32 opnum, u32 sz)
                     case AM_program_counter_with_index:
                         regs.IPC -= 2; break;
                     default:
-                        break;
                 }
             }
             break;
         case OM_ea_ea: {
-            u32 mk = opnum == 0 ? kind0 : kind1;
-            switch(kk) {
-                //case AM_address_register_indirect_with_predecrement:
-                case AM_address_register_indirect_with_postincrement:
-                    regs.IPC -= 2;
-                default:
-                    regs.IPC += ex_words << 1;
-            }
+            //u32 mk = opnum == 0 ? kind0 : kind1;
+            if (kk == AM_address_register_indirect_with_postincrement)
+                regs.IPC -= 2;
+            else
+                regs.IPC += ex_words << 1;
             break; }
         default:
             regs.IPC += ex_words << 1;
@@ -126,8 +122,7 @@ void core::adjust_IPC(u32 opnum, u32 sz)
     }
 }
 
-u32 core::get_ar(u32 num, u32 sz)
-{
+u32 core::get_ar(u32 num, u32 sz) const {
     u32 v = regs.A[num];
     switch(sz) {
         case 1:
@@ -136,12 +131,11 @@ u32 core::get_ar(u32 num, u32 sz)
             return static_cast<u32>(static_cast<i32>(static_cast<i16>(v)));
         case 4:
             return static_cast<u32>(static_cast<i32>(v));
+        nodefault
     }
-    assert(1==0);
-    return 0;
 }
 
-bool core::am_in_group0_or_1() {
+bool core::am_in_group0_or_1() const {
     // TODO: detect group 1?
     return state.bus_cycle.next_state == S_exc_group0;
 }
@@ -236,6 +230,7 @@ void core::bus_cycle_read()
                 state.current = state.bus_cycle.next_state;
             }
             break;
+        nodefault
     }
     state.bus_cycle.TCU++;
 }
@@ -317,6 +312,7 @@ void core::bus_cycle_iaq()
             pins.VMA = 0;
             state.current = S_exc_interrupt;
             break;
+        nodefault
     }
     state.bus_cycle_iaq.TCU++;
 }
@@ -425,6 +421,7 @@ void core::bus_cycle_write()
                 state.current = state.bus_cycle.next_state;
             }
             break; }
+        nodefault
     }
     state.bus_cycle.TCU++;
 }
@@ -450,8 +447,7 @@ void core::start_read(u32 addr, u32 sz, u32 FC, u32 reversed, states next_state)
         case 4:
             state.current = S_read32;
             break;
-        default:
-            assert(1==0);
+        nodefault
     }
     state.bus_cycle.reversed = reversed;
     state.bus_cycle.TCU = 0;
@@ -475,8 +471,7 @@ void core::start_write(u32 addr, u32 val, u32 sz, u32 FC, u32 reversed, states n
         case 4:
             state.current = S_write32;
             break;
-        default:
-            assert(1==0);
+        nodefault
     }
     state.bus_cycle.TCU = 0;
     state.bus_cycle.original_addr = addr;
@@ -502,8 +497,7 @@ void core::set_dr(u32 num, u32 result, u32 sz)
         case 4:
             regs.D[num] = result;
             return;
-        default:
-            assert(1==0);
+        nodefault
     }
 }
 
@@ -519,6 +513,7 @@ void core::set_ar(u32 num, u32 result, u32 sz)
         case 4:
             regs.A[num] = result;
             return;
+        nodefault
     }
 }
 
@@ -578,13 +573,11 @@ u32 core::read_ea_addr(uint32 opnum, u32 sz, bool hold, u32 prefetch)
             if (!(prefetch & 0x800))
                 b = static_cast<u32>(static_cast<i32>(static_cast<i16>(b & 0xFFFF)));
             return ((v + a + b) - 4) & 0xFFFFFFFF;
-        default:
-            assert(1==0);
-            return 0;
+        nodefault
     }
 }
 
-u32 core::write_ea_addr(EA *ea, u32 sz, bool commit, u32 opnum)
+u32 core::write_ea_addr(const EA *ea, const bool commit, const u32 opnum)
 {
     switch(ea->kind) {
         case AM_address_register_indirect_with_postincrement:
@@ -600,10 +593,8 @@ u32 core::write_ea_addr(EA *ea, u32 sz, bool commit, u32 opnum)
         case AM_program_counter_with_displacement:
         case AM_program_counter_with_index:
             return state.op[opnum].addr;
-        default:
-            assert(1==0);
+        nodefault
     }
-    return 0;
 }
 
 void core::start_write_operand(u32 commit, u32 op_num, states next_state, bool allow_reverse, bool force_reverse)
@@ -613,27 +604,20 @@ void core::start_write_operand(u32 commit, u32 op_num, states next_state, bool a
     EA *ea = (op_num == 0) ? &ins->ea[0] : &ins->ea[1];
     state.operands.ea = ea;
     state.current = S_write_operand;
-    bool no_work = false;
-    u32 addr;
     switch(state.operands.ea->kind) {
         case AM_data_register_direct:
             set_dr(ea->reg, state.instruction.result, ins->sz);
-            no_work = true;
             break;
         case AM_address_register_direct:
             set_ar(ea->reg, state.instruction.result, ins->sz);
-            no_work = true;
             break;
-        default:
-            addr = write_ea_addr((op_num==0) ? &ins->ea[0] : &ins->ea[1], ins->sz, commit, op_num);
-            break;
+        default: {
+            const u32 addr = write_ea_addr((op_num==0) ? &ins->ea[0] : &ins->ea[1], commit, op_num);
+            const u32 reverse = force_reverse ? 1 : state.op[op_num].reversed & allow_reverse;
+            start_write(addr, state.instruction.result, ins->sz, MAKE_FC(0), reverse, next_state);
+            return; }
     }
-    if (no_work) {
-        state.current = next_state;
-        return;
-    }
-    u32 reverse = force_reverse ? 1 : state.op[op_num].reversed & allow_reverse;
-    start_write(addr, state.instruction.result, ins->sz, MAKE_FC(0), reverse, next_state);
+    state.current = next_state;
 }
 
 u32 AM_ext_words(address_modes am, u32 sz)
@@ -657,11 +641,8 @@ u32 AM_ext_words(address_modes am, u32 sz)
             return 2;
         case AM_immediate:
             return (sz >> 1) ? sz >> 1 : 1;
-        default:
-            assert(1==0);
+        nodefault
     }
-    NOGOHERE;
-    return 0;
 }
 
 void core::eval_ea_wait(u32 num_ea, u32 opnum, u32 sz)
@@ -713,15 +694,14 @@ static u32 is_immediate(address_modes am)
     }
 }
 
-void core::start_read_operand_for_ea(u32 fast, u32 sz, states next_state, u32 wait_states, bool hold, bool allow_reverse)
+void core::start_read_operand_for_ea(const u32 fast, const u32 sz, const states next_state, const u32 wait_states, const bool hold, const bool allow_reverse)
 {
     start_read_operands(fast, sz, next_state, wait_states, hold, allow_reverse, MAKE_FC(0));
     state.operands.state[OS_read1] = state.operands.state[OS_read2] = 0;
 }
 
 
-u32 core::get_r(EA *ea, u32 sz)
-{
+u32 core::get_r(const EA *ea, const u32 sz) const {
     u32 v;
     switch(ea->kind) {
         case AM_data_register_direct:
@@ -734,9 +714,7 @@ u32 core::get_r(EA *ea, u32 sz)
         case AM_immediate:
             v = ea->reg;
             break;
-        default:
-            assert(1==0);
-            break;
+        nodefault
     }
     switch(sz) {
         case 1:
@@ -745,10 +723,8 @@ u32 core::get_r(EA *ea, u32 sz)
             return v & 0xFFFF;
         case 4:
             return v;
-        default:
-            assert(1==0);
+        nodefault
     }
-    return 0;
 }
 
 void core::start_read_operands(u32 fast, u32 sz, states next_state, u32 wait_states, bool hold, bool allow_reverse, bool read_fc)
@@ -849,8 +825,7 @@ void core::start_read_operands(u32 fast, u32 sz, states next_state, u32 wait_sta
             state.operands.state[OS_read1] = 0;
             state.operands.state[OS_prefetch1] = 1;
             eval_ea_wait(1, 0, sz);
-        default:
-            assert(1==0);
+        nodefault
     }
     if (no_fetches) {
         if (!wait_states) state.current = next_state;
@@ -879,9 +854,8 @@ u32 core::dec_SSP(u32 num) {
     return *r;
 }
 
-u32 core::get_SSP() {
-    if (regs.SR.S) return regs.A[7];
-    return regs.ASP;
+u32 core::get_SSP() const {
+    return regs.SR.S ? regs.A[7] : regs.ASP;
 }
 
 void core::set_SSP(u32 to) {
@@ -915,8 +889,7 @@ void core::finalize_ea(u32 opnum)
         case AM_address_register_indirect_with_postincrement:
             regs.A[ea->reg] = state.op[opnum].new_val;
             break;
-        default:
-            assert(1==0);
+        nodefault
     }
     state.op[opnum].held = 0;
 }
@@ -927,7 +900,7 @@ void core::read_operands_prefetch(u32 opnum)
     // move them into
     if (state.operands.TCU == 1) {
         u32 v;
-        u32 snum = opnum == 0 ? OS_read1 : OS_read2;
+        //u32 snum = opnum == 0 ? OS_read1 : OS_read2;
         finalize_ea(opnum);
 
         if (state.op[opnum].ext_words) regs.PC += (state.op[opnum].ext_words << 1); // Add to PC
@@ -1012,8 +985,7 @@ void core::read_operands() {
             state.operands.state[r] = 0;
             start_wait(2, S_read_operands);
             return;
-        default:
-            assert(1==0);
+        nodefault
     }
 }
 
@@ -1076,12 +1048,12 @@ void core::exc_interrupt()
         case 9: // Final prefetch before start executing
             start_prefetch(1, 1, S_decode);
             break;
+        nodefault;
     }
     state.exception.interrupt.TCU++;
 }
 
-void core::exc_group12()
-{
+void core::exc_group12() {
     switch(state.exception.group12.TCU) {
         case 0: {
             // SR
@@ -1092,7 +1064,7 @@ void core::exc_group12()
             state.exception.group12.SR = get_SR();
             set_SR((state.exception.group12.SR & 0x5FFF) | 0x2000, 1);
             start_write(state.exception.group12.base_addr + 4, state.exception.group12.PC & 0xFFFF, 2, MAKE_FC(0), M68K_RW_ORDER_NORMAL, S_exc_group12);
-            break;
+            break; }
         case 1:
             start_write(state.exception.group12.base_addr, state.exception.group12.SR, 2, MAKE_FC(0), M68K_RW_ORDER_NORMAL, S_exc_group12);
             break;
@@ -1112,8 +1084,8 @@ void core::exc_group12()
         case 6:
             start_prefetch(1, 1, S_decode);
             break;
+            nodefault
         }
-    }
     state.exception.group12.TCU++;
 }
 
@@ -1175,6 +1147,7 @@ void core::exc_group0()
         case 11:
             start_prefetch(1, 1, S_decode);
             break;
+        default: NOGOHERE;
     }
     state.exception.group0.TCU++;
 }
@@ -1187,12 +1160,12 @@ static i32 sgn32(u32 num, u32 sz) {
             return static_cast<i16>(num);
         case 4:
             return static_cast<i32>(num);
+        default:
+            NOGOHERE;
     }
-    assert(1==0);
-    return 0;
 }
 
-void core::set_r(EA *ea, u32 val, u32 sz)
+void core::set_r(const EA *ea, const u32 val, const u32 sz)
 {
     u32 v;
     switch(ea->kind) {
@@ -1208,13 +1181,11 @@ void core::set_r(EA *ea, u32 val, u32 sz)
         case AM_immediate:
             //v = ea->reg;
             //break;
-        default:
-            assert(1==0);
-            break;
+        nodefault
     }
 }
 
-u32 core::serialize_func()
+u32 core::serialize_func() const
 {
     if (state.bus_cycle.func == &core::bus_cycle_read)
         return 1;

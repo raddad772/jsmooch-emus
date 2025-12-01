@@ -17,19 +17,20 @@
 //#define BREAKPOINT 0x40016e
 
 namespace M68k {
-void M68k_disasm_RESET_POWER(ins_t *ins, u32 *PC, jsm_debug_read_trace *rt, jsm_string *out);
+void disasm_RESET_POWER(ins_t &ins, u32 &PC, jsm_debug_read_trace &rt, jsm_string &out);
+void do_decode();
 
 core::core(bool megadrive_bug_in) : megadrive_bug(megadrive_bug_in) {
-    do_M68k_decode();
+    do_decode();
     SPEC_RESET.sz = 4;
     SPEC_RESET.operand_mode = OM_none;
-    SPEC_RESET.disasm = &M68k_disasm_RESET_POWER;
-    SPEC_RESET.exec = &M68k_ins_RESET_POWER;
+    SPEC_RESET.disasm = &disasm_RESET_POWER;
+    SPEC_RESET.exec = &core::ins_RESET_POWER;
     //regs.D[0] = regs.A[0] = 0xFFFFFFFF;
     iack_handlers.reserve(2);
 }
 
-void core::setup_tracing(jsm_debug_read_trace *strct, u64 *trace_cycle_pointer)
+void core::setup_tracing(const jsm_debug_read_trace *strct, u64 *trace_cycle_pointer)
 {
     trace.strct.read_trace_m68k = strct->read_trace_m68k;
     trace.strct.ptr = strct->ptr;
@@ -50,7 +51,7 @@ void core::decode()
     }
 #endif
     last_decode = IRD & 0xFFFF;
-    ins_t *m_ins = &M68k_decoded[IRD & 0xFFFF];
+    ins_t *m_ins = &decoded[IRD & 0xFFFF];
     state.instruction.TCU = 0;
     ins = m_ins;
     state.instruction.done = 0;
@@ -74,8 +75,7 @@ void core::set_SR(u32 val, u32 immediate_t)
     if (immediate_t || (regs.next_SR_T == 0)) regs.SR.T = regs.next_SR_T;
 }
 
-void core::pprint_ea(ins_t &m_ins, u32 opnum, jsm_string *outstr)
-{
+void core::pprint_ea(ins_t &m_ins, u32 opnum, jsm_string *outstr) const {
     EA *ea = &m_ins.ea[opnum];
     u32 kind = 0; // 0 = NONE, 1 = addr reg, 2 = data reg, 3 = EA
     if (opnum == 0) {
@@ -164,6 +164,7 @@ void core::pprint_ea(ins_t &m_ins, u32 opnum, jsm_string *outstr)
             if (outstr) outstr->sprintf("D%d:%08x", ea->reg, regs.D[ea->reg]);
             else dbg_printf("D%d:%08x", ea->reg, regs.D[ea->reg]);
             break;
+        nodefault
     }
     if ((kind != 0) && (opnum == 0)) {
         if (outstr) outstr->sprintf("  ");
@@ -174,7 +175,7 @@ void core::pprint_ea(ins_t &m_ins, u32 opnum, jsm_string *outstr)
 void core::trace_format()
 {
     trace.str.quickempty();
-    disassemble(regs.PC-2, regs.IR, &trace.strct, &trace.str);
+    disassemble(regs.PC-2, regs.IR, trace.strct, trace.str);
     u64 tc;
     if (!trace.cycles) tc = 0;
     else tc = *trace.cycles;
@@ -184,8 +185,8 @@ void core::trace_format()
     dbg_printf(DBGC_M68K "\nM68k  (%04llu)   %06x  %s", tc, regs.PC-4, trace.str.ptr);
     dbg_seek_in_line(TRACE_BRK_POS);
     dbg_printf("SR:%04x  ", regs.SR.u);
-    pprint_ea(*ins, 0, NULL);
-    pprint_ea(*ins, 1, NULL);
+    pprint_ea(*ins, 0, nullptr);
+    pprint_ea(*ins, 1, nullptr);
     dbg_printf(DBGC_RST);
 #endif
 }
@@ -226,8 +227,7 @@ u32 core::process_interrupts()
     return 0;
 }
 
-void core::lycoder_pprint2()
-{
+void core::lycoder_pprint2() const {
     // d:FFFFFFFF FFFFFFFF B6DB6DB6 DB6DB6DB 6DB6DB6D 00000000 00000000 00000000
     dbg_printf(" d:%08X %08X %08X %08X %08X %08X %08X %08X",
                regs.D[0], regs.D[1], regs.D[2], regs.D[3],
@@ -294,10 +294,9 @@ void core::cycle()
 #endif
                 break; }
             case S_exec: {
-                ins->exec(ins);
-                if (state.instruction.done) {
+                (this->*ins->exec)();
+                if (state.instruction.done)
                     state.current = S_decode;
-                }
                 break; }
             case S_prefetch: {
                 prefetch();
@@ -345,7 +344,7 @@ void core::unstop()
         state.current = state.stopped.next_state;
 }
 
-u32 core::get_SR() {
+u32 core::get_SR() const {
     return regs.SR.u;
 }
 
@@ -368,11 +367,11 @@ void core::disassemble_entry(disassembly_entry& entry)
     u16 opcode = IR;
     entry.dasm.quickempty();
     entry.context.quickempty();
-    ins_t *ins = &M68k_decoded[opcode];
+    ins_t &m_ins = decoded[opcode];
     u32 mPC = entry.addr+2;
-    ins->disasm(ins, &mPC, &trace.strct, &entry.dasm);
+    ins->disasm(m_ins, mPC, trace.strct, entry.dasm);
     entry.ins_size_bytes = mPC - entry.addr;
-    ins_t &t =  M68k_decoded[IR & 0xFFFF];
+    ins_t &t =  decoded[IR & 0xFFFF];
     pprint_ea(t, 0, &entry.context);
     pprint_ea(t, 1, &entry.context);
 }
@@ -479,12 +478,10 @@ void core::deserialize(serialized_state &m_state)
     L(debug);
     L(state);
     L(last_decode);
-    ins_t *ins;
     if (last_decode == 0x50000)
         ins = &SPEC_RESET;
     else
-        ins = &M68k_decoded[last_decode];
-    ins = ins;
+        ins = &decoded[last_decode];
 
     // state.bus_cycle.func
     // state.operands.ea,

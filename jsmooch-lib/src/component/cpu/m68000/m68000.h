@@ -10,12 +10,12 @@
 #include "m68000_instructions.h"
 
 #define M68K_E_CLOCK
-//#define M68K_TESTING
+#define M68K_TESTING
 struct disassembly_entry;
-
+struct serialized_state;
 namespace M68k {
 
-enum M68kOS {
+enum OS {
     OS_pause1 = 0,
     OS_prefetch1 = 1,
     OS_pause2 = 2,
@@ -24,7 +24,7 @@ enum M68kOS {
     OS_read2 = 5,
 };
 
-enum M68k_interrupt_vectors {
+enum interrupt_vectors {
     IV_reset = 0,
     IV_bus_error = 2,
     IV_address_error = 3,
@@ -51,7 +51,7 @@ enum M68k_interrupt_vectors {
 };
 
 
-enum M68k_function_codes {
+enum function_codes {
     FC_user_data = 1,
     FC_user_program = 2,
     FC_supervisor_data = 5,
@@ -146,7 +146,7 @@ struct iack_handler {
 
 struct core {
     explicit core(bool megadrive_bug_in);
-    void setup_tracing(jsm_debug_read_trace *strct, u64 *trace_cycle_pointer);
+    void setup_tracing(const jsm_debug_read_trace *strct, u64 *trace_cycle_pointer);
     regs regs{};
     pins pins{};
 
@@ -309,7 +309,7 @@ private:
     void trace_format();
     u32 process_interrupts();
     void lycoder_pprint1();
-    void lycoder_pprint2();
+    void lycoder_pprint2() const;
     void prefetch();
     void sample_interrupts();
     void read_operands();
@@ -318,12 +318,12 @@ private:
     void exc_interrupt();
     void exc_group0();
     void exc_group12();
-    u32 serialize_func();
+    u32 serialize_func() const;
     void deserialize_func(u32 fn);
-    u32 get_dr(u32 num, u32 sz);
-    u32 get_ar(u32 num, u32 sz);
+    u32 get_dr(u32 num, u32 sz) const;
+    u32 get_ar(u32 num, u32 sz) const;
     void adjust_IPC(u32 opnum, u32 sz);
-    bool am_in_group0_or_1();
+    bool am_in_group0_or_1() const;
     void bus_cycle_read();
     void start_group0_exception(u32 vector_number, i32 wait_cycles, bool was_in_group0_or_1, u32 addr);
     void start_group12_exception(u32 vector_number, i32 wait_cycles, u32 PC, u32 groupnum);
@@ -337,23 +337,167 @@ private:
     void set_dr(u32 num, u32 result, u32 sz);
     void set_ar(u32 num, u32 result, u32 sz);
     u32 read_ea_addr(uint32 opnum, u32 sz, bool hold, u32 prefetch);
-    u32 write_ea_addr(EA *ea, u32 sz, bool commit, u32 opnum);
+    u32 write_ea_addr(const EA *ea, bool commit, u32 opnum);
     void start_write_operand(u32 commit, u32 op_num, states next_state, bool allow_reverse, bool force_reverse);
     void eval_ea_wait(u32 num_ea, u32 opnum, u32 sz);
     void start_read_operand_for_ea(u32 fast, u32 sz, states next_state, u32 wait_states, bool hold, bool allow_reverse);
-    u32 get_r(EA *ea, u32 sz);
+    u32 get_r(const EA *ea, u32 sz) const;
     void start_read_operands(u32 fast, u32 sz, states next_state, u32 wait_states, bool hold, bool allow_reverse, bool read_fc);
     u32 inc_SSP(u32 num);
     u32 dec_SSP(u32 num);
-    u32 get_SSP();
+    u32 get_SSP() const;
     void set_SSP(u32 to);
     void finalize_ea(u32 opnum);
     void read_operands_prefetch(u32 opnum);
     void read_operands_read(u32 opnum, bool commit);
-    void set_r(EA *ea, u32 val, u32 sz);
-    void deserialize_func(u32 v);
+    void set_r(const EA *ea, u32 val, u32 sz);
+    void start_push(u32 val, u32 sz, states next_state, u32 reverse);
+    void start_pop(u32 sz, u32 FC, states next_state);
+    u32 ADD(u32 op1, u32 op2, u32 sz, u32 extend);
+    u32 AND(u32 source, u32 target, u32 sz);
+    u32 ASL(u32 result, u32 shift, u32 sz);
+    u32 ASR(u32 result, u32 shift, u32 sz);
+    u32 CMP(u32 source, u32 target, u32 sz);
+    u32 ROL(u32 result, u32 shift, u32 sz);
+    u32 ROR(u32 result, u32 shift, u32 sz);
+    u32 ROXL(u32 result, u32 shift, u32 sz);
+    u32 ROXR(u32 result, u32 shift, u32 sz);
+    u32 SUB(u32 op1, u32 op2, u32 sz, u32 extend, u32 change_x);
+    u32 LSL(u32 result, u32 shift, u32 sz);
+    u32 LSR(u32 result, u32 shift, u32 sz);
+    u32 EOR(u32 source, u32 target, u32 sz);
+    u32 OR(u32 source, u32 target, u32 sz);
+    u32 condition(u32 condition) const;
+    void set_IPC();
+    void correct_IPC_MOVE_l_pf0(u32 opnum);
 
 public:
+#define INS(x) void ins_##x()
+    INS(RESET_POWER);
+    INS(ALINE);
+    INS(FLINE);
+    INS(TAS);
+    INS(ABCD);
+    INS(ADD);
+    INS(ADDA);
+    INS(ADDI);
+    INS(ADDQ_ar);
+    INS(ADDQ);
+    INS(ADDX_sz4_predec);
+    INS(ADDX_sz4_nopredec);
+    INS(ADDX_sz1_2);
+    INS(ADDX);
+    INS(AND);
+    INS(ANDI);
+    INS(ANDI_TO_CCR);
+    INS(ANDI_TO_SR);
+    INS(ASL_qimm_dr);
+    INS(ASL_dr_dr);
+    INS(ASL_ea);
+    INS(ASR_qimm_dr);
+    INS(ASR_dr_dr);
+    INS(ASR_ea);
+    INS(BCC);
+    INS(BCHG_dr_ea);
+    INS(BCHG_ea);
+    INS(BCLR_dr_ea);
+    INS(BCLR_ea);
+    INS(BRA);
+    INS(BSET_dr_ea);
+    INS(BSET_ea);
+    INS(BSR);
+    INS(BTST_dr_ea);
+    INS(BTST_ea);
+    INS(CHK);
+    INS(CLR);
+    INS(CMP);
+    INS(CMPA);
+    INS(CMPI);
+    INS(CMPM);
+    INS(DBCC);
+    INS(DIVS);
+    INS(DIVU);
+    INS(EOR);
+    INS(EORI);
+    INS(EORI_TO_CCR);
+    INS(EORI_TO_SR);
+    INS(EXG);
+    INS(EXT);
+    INS(ILLEGAL);
+    INS(JMP);
+    INS(JSR);
+    INS(LEA);
+    INS(LINK);
+    INS(LSL_qimm_dr);
+    INS(LSL_dr_dr);
+    INS(LSL_ea);
+    INS(LSR_qimm_dr);
+    INS(LSR_dr_dr);
+    INS(LSR_ea);
+    INS(MOVE);
+    INS(MOVEA);
+    INS(MOVEM_TO_MEM);
+    INS(MOVEM_TO_REG);
+    INS(MOVEP_dr_ea);
+    INS(MOVEP_ea_dr);
+    INS(MOVEP);
+    INS(MOVEQ);
+    INS(MOVE_FROM_SR);
+    INS(MOVE_FROM_USP);
+    INS(MOVE_TO_CCR);
+    INS(MOVE_TO_SR);
+    INS(MOVE_TO_USP);
+    INS(MULS);
+    INS(MULU);
+    INS(NBCD);
+    INS(NEG);
+    INS(NEGX);
+    INS(NOP);
+    INS(NOT);
+    INS(OR);
+    INS(ORI);
+    INS(ORI_TO_CCR);
+    INS(ORI_TO_SR);
+    INS(PEA);
+    INS(RESET);
+    INS(ROL_qimm_dr);
+    INS(ROL_dr_dr);
+    INS(ROL_ea);
+    INS(ROR_qimm_dr);
+    INS(ROR_dr_dr);
+    INS(ROR_ea);
+    INS(ROXL_qimm_dr);
+    INS(ROXL_dr_dr);
+    INS(ROXL_ea);
+    INS(ROXR_qimm_dr);
+    INS(ROXR_dr_dr);
+    INS(ROXR_ea);
+    INS(RTE);
+    INS(RTR);
+    INS(RTS);
+    INS(SBCD);
+    INS(SCC);
+    INS(STOP);
+    INS(SUB);
+    INS(SUBA);
+    INS(SUBI_21);
+    INS(SUBI);
+    INS(SUBQ);
+    INS(SUBQ_ar);
+    INS(SUBX_sz4_predec);
+    INS(SUBX_sz4_nopredec);
+    INS(SUBX_sz1_2);
+    INS(SUBX);
+    INS(SWAP);
+    INS(TRAP);
+    INS(TRAPV);
+    INS(TST);
+    INS(UNLK);
+    INS(NOINS);
+    INS();
+
+#undef INS
+
     void serialize(serialized_state &m_state);
     void deserialize(serialized_state &m_state);
 
@@ -361,8 +505,8 @@ public:
     void reset();
     void cycle();
     void set_SR(u32 val, u32 immediate_t);
-    u32 get_SR();
-    void pprint_ea(ins_t &ins, u32 opnum, jsm_string *outstr);
+    u32 get_SR() const;
+    void pprint_ea(ins_t &ins, u32 opnum, jsm_string *outstr) const;
     void register_iack_handler(void *ptr, void (*handler)(void*));
     void set_interrupt_level(u32 val);
     void disassemble_entry(disassembly_entry& entry);

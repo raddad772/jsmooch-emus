@@ -49,4 +49,5 @@ struct EA {
 #define M68K_RW_ORDER_REVERSE 1
 
 #define MAKE_FC(is_program) ((this->regs.SR.S ? 4 : 0) | ((is_program) ? 2 : 1))
+u32 AM_ext_words(address_modes am, u32 sz);
 }

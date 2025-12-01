@@ -229,19 +229,19 @@ static void parse_and_fill_out(read_file_buf *infile)
     free(root);
 }
 
-static void copy_state_to_cpu(test_state *state, core *cpu)
+static void copy_state_to_cpu(test_state *state, SPC700::core *cpu)
 {
     // u32 A, X, Y, P, SP, PC
     cpu->regs.A = state->regs.A;
     cpu->regs.X = state->regs.X;
     cpu->regs.Y = state->regs.Y;
-    SPC700_P_setbyte(&cpu->regs.P, state->regs.P);
+    cpu->regs.P.setbyte(state->regs.P);
     cpu->regs.SP = state->regs.SP;
     cpu->regs.PC = state->regs.PC;
 
 }
 
-static void pprint_regs(SPC700_regs *cpu_regs, test_cpu_regs *test_regs, u32 last_pc, u32 only_print_diff) {
+static void pprint_regs(SPC700::regs *cpu_regs, test_cpu_regs *test_regs, u32 last_pc, u32 only_print_diff) {
     printf("\nREG  CPU    TEST");
     printf("\n----------------");
 #define TREG4(cpuname, testname, strname) if ((only_print_diff && (cpu_regs->cpuname != test_regs->testname)) || (!only_print_diff))\
@@ -259,7 +259,7 @@ static void pprint_regs(SPC700_regs *cpu_regs, test_cpu_regs *test_regs, u32 las
 #undef TREG4
 }
 
-static u32 testregs(core *cpu, test_state *final, u32 last_pc) {
+static u32 testregs(SPC700::core *cpu, test_state *final, u32 last_pc) {
     u32 passed = 1;
     // u32 A X Y P SP PC
     passed &= ((cpu->regs.PC & 0xFFFF) == final->regs.PC) || (last_pc == final->regs.PC);
@@ -294,7 +294,7 @@ static void pprint_P(u32 r) {
 #pragma warning(disable: 4700) // warning C4700: uninitialized local variable 'last_pc' used
 #endif
 
-static int test_spc700_automated(spc700_test_result *out, core *cpu, u32 opc) {
+static int test_spc700_automated(spc700_test_result *out, SPC700::core *cpu, u32 opc) {
     out->passed = 0;
     out->mycycles = 0;
     snprintf(out->msg, sizeof(out->msg), "");
@@ -361,7 +361,7 @@ static int test_spc700_automated(spc700_test_result *out, core *cpu, u32 opc) {
 #pragma warning(pop)
 #endif
 
-static u32 test_spc700_ins(core *cpu, u32 ins)
+static u32 test_spc700_ins(SPC700::core *cpu, u32 ins)
 {
     printf("\n\nTesting instruction %02x", ins);
     char path[500];
@@ -388,7 +388,7 @@ static u32 test_spc700_ins(core *cpu, u32 ins)
 
 void test_spc700()
 {
-    SPC700 cpu(&cycle_ptr);
+    SPC700::core cpu(&cycle_ptr);
 
     u32 total_fail = 0;
     u32 start_test = 0;

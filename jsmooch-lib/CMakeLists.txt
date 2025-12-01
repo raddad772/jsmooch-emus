@@ -180,7 +180,6 @@ set(SOURCE_LIST
         "src/helpers/debugger/trace.h"
         "src/helpers/debugger/waveform.cpp"
         "src/helpers/debugger/waveform.h"
-
         "src/helpers/cvec.cpp"
         "src/helpers/cvec.h"
         src/system/nes/nes_bus.cpp

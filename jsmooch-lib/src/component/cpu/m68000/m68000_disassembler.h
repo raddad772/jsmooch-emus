@@ -10,6 +10,6 @@
 
 namespace M68k {
 
-void disassemble(u32 PC, u16 IR, jsm_debug_read_trace *rt, jsm_string *out);
+void disassemble(u32 PC, u16 IR, jsm_debug_read_trace &rt, jsm_string &out);
 
 }

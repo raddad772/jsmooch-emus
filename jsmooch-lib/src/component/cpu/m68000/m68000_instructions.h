@@ -12,8 +12,8 @@ namespace M68k {
 struct core;
 struct ins_t;
 
-typedef void (*M68k_ins_func)(core*, ins_t *ins);
-typedef void (*M68k_disassemble_t)(ins_t *ins, u32 *PC, jsm_debug_read_trace *rt, jsm_string *out);
+typedef void (core::*ins_func)();
+typedef void (*disassemble_t)(ins_t &ins, u32 &PC, jsm_debug_read_trace &rt, jsm_string &out);
 
 struct ins_t {
     u16 opcode;
@@ -25,11 +25,6 @@ struct ins_t {
     EA ea[2];
 };
 
-void do_M68k_decode(); // call this before using core
+extern ins_t decoded[65536];
 
-extern struct ins_t M68k_decoded[65536];
-void M68k_ins_RESET_POWER(core*, ins_t *ins);
-void M68k_ins_DIVU(core*, ins_t *ins);
-void M68k_ins_MOVEM_TO_REG(core*, ins_t *ins);
-void M68k_ins_MOVE(core*, ins_t *ins);
 }
