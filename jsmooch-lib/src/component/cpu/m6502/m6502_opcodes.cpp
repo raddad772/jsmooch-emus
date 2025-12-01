@@ -2999,19 +2999,24 @@ static void ins_61_ADC(regs &regs, pins &pins)
             i32 o;
             i32 i = pins.D;
             if (regs.P.D) {
+                regs.P.Z = ((regs.A + i + regs.P.C) & 0xFF) == 0;
                 o = (regs.A & 0x0F) + (i & 0x0F) + (regs.P.C);
                 if (o > 0x09) o += 0x06;
                 regs.P.C = +(o > 0x0F);
                 o = (regs.A & 0xF0) + (i & 0xF0) + (regs.P.C << 4) + (o & 0x0F);
+                regs.P.N = (o >> 7) & 1;
+                regs.P.V = ((~(regs.A ^ i)) & (regs.A ^ o) & 0x80) >> 7;
                 if (o > 0x9F) o += 0x60;
+                regs.A = o & 0xFF;
+                regs.P.C = o > 0xFF;
             } else {
                 o = i + regs.A + regs.P.C;
                 regs.P.V = ((~(regs.A ^ i)) & (regs.A ^ o) & 0x80) >> 7;
+                regs.P.C = o > 0xFF;
+                regs.A = o & 0xFF;
+                regs.P.Z = regs.A == 0;
+                regs.P.N = (regs.A & 0x80) >> 7;
             }
-            regs.P.C = +(o > 0xFF);
-            regs.A = o & 0xFF;
-            regs.P.Z = +((regs.A) == 0);
-            regs.P.N = ((regs.A) & 0x80) >> 7;
             // Following is auto-generated code for instruction finish
             pins.Addr = regs.PC;
             regs.PC = (regs.PC + 1) & 0xFFFF;
@@ -3073,19 +3078,24 @@ static void ins_63_RRA(regs &regs, pins &pins)
             i32 o;
             i32 i = pins.D;
             if (regs.P.D) {
+                regs.P.Z = ((regs.A + i + regs.P.C) & 0xFF) == 0;
                 o = (regs.A & 0x0F) + (i & 0x0F) + (regs.P.C);
                 if (o > 0x09) o += 0x06;
                 regs.P.C = +(o > 0x0F);
                 o = (regs.A & 0xF0) + (i & 0xF0) + (regs.P.C << 4) + (o & 0x0F);
+                regs.P.N = (o >> 7) & 1;
+                regs.P.V = ((~(regs.A ^ i)) & (regs.A ^ o) & 0x80) >> 7;
                 if (o > 0x9F) o += 0x60;
+                regs.A = o & 0xFF;
+                regs.P.C = o > 0xFF;
             } else {
                 o = i + regs.A + regs.P.C;
                 regs.P.V = ((~(regs.A ^ i)) & (regs.A ^ o) & 0x80) >> 7;
+                regs.P.C = o > 0xFF;
+                regs.A = o & 0xFF;
+                regs.P.Z = regs.A == 0;
+                regs.P.N = (regs.A & 0x80) >> 7;
             }
-            regs.P.C = +(o > 0xFF);
-            regs.A = o & 0xFF;
-            regs.P.Z = +((regs.A) == 0);
-            regs.P.N = ((regs.A) & 0x80) >> 7;
             // Following is auto-generated code for instruction finish
             break; }
         case 8: { //cleanup
@@ -3132,19 +3142,24 @@ static void ins_65_ADC(regs &regs, pins &pins)
             i32 o;
             i32 i = pins.D;
             if (regs.P.D) {
+                regs.P.Z = ((regs.A + i + regs.P.C) & 0xFF) == 0;
                 o = (regs.A & 0x0F) + (i & 0x0F) + (regs.P.C);
                 if (o > 0x09) o += 0x06;
                 regs.P.C = +(o > 0x0F);
                 o = (regs.A & 0xF0) + (i & 0xF0) + (regs.P.C << 4) + (o & 0x0F);
+                regs.P.N = (o >> 7) & 1;
+                regs.P.V = ((~(regs.A ^ i)) & (regs.A ^ o) & 0x80) >> 7;
                 if (o > 0x9F) o += 0x60;
+                regs.A = o & 0xFF;
+                regs.P.C = o > 0xFF;
             } else {
                 o = i + regs.A + regs.P.C;
                 regs.P.V = ((~(regs.A ^ i)) & (regs.A ^ o) & 0x80) >> 7;
+                regs.P.C = o > 0xFF;
+                regs.A = o & 0xFF;
+                regs.P.Z = regs.A == 0;
+                regs.P.N = (regs.A & 0x80) >> 7;
             }
-            regs.P.C = +(o > 0xFF);
-            regs.A = o & 0xFF;
-            regs.P.Z = +((regs.A) == 0);
-            regs.P.N = ((regs.A) & 0x80) >> 7;
             // Following is auto-generated code for instruction finish
             pins.Addr = regs.PC;
             regs.PC = (regs.PC + 1) & 0xFFFF;
@@ -3207,19 +3222,24 @@ static void ins_67_RRA(regs &regs, pins &pins)
             i32 o;
             i32 i = pins.D;
             if (regs.P.D) {
+                regs.P.Z = ((regs.A + i + regs.P.C) & 0xFF) == 0;
                 o = (regs.A & 0x0F) + (i & 0x0F) + (regs.P.C);
                 if (o > 0x09) o += 0x06;
                 regs.P.C = +(o > 0x0F);
                 o = (regs.A & 0xF0) + (i & 0xF0) + (regs.P.C << 4) + (o & 0x0F);
+                regs.P.N = (o >> 7) & 1;
+                regs.P.V = ((~(regs.A ^ i)) & (regs.A ^ o) & 0x80) >> 7;
                 if (o > 0x9F) o += 0x60;
+                regs.A = o & 0xFF;
+                regs.P.C = o > 0xFF;
             } else {
                 o = i + regs.A + regs.P.C;
                 regs.P.V = ((~(regs.A ^ i)) & (regs.A ^ o) & 0x80) >> 7;
+                regs.P.C = o > 0xFF;
+                regs.A = o & 0xFF;
+                regs.P.Z = regs.A == 0;
+                regs.P.N = (regs.A & 0x80) >> 7;
             }
-            regs.P.C = +(o > 0xFF);
-            regs.A = o & 0xFF;
-            regs.P.Z = +((regs.A) == 0);
-            regs.P.N = ((regs.A) & 0x80) >> 7;
             // Following is auto-generated code for instruction finish
             break; }
         case 5: { //cleanup
@@ -3269,19 +3289,24 @@ static void ins_69_ADC(regs &regs, pins &pins)
             i32 o;
             i32 i = pins.D;
             if (regs.P.D) {
+                regs.P.Z = ((regs.A + i + regs.P.C) & 0xFF) == 0;
                 o = (regs.A & 0x0F) + (i & 0x0F) + (regs.P.C);
                 if (o > 0x09) o += 0x06;
                 regs.P.C = +(o > 0x0F);
                 o = (regs.A & 0xF0) + (i & 0xF0) + (regs.P.C << 4) + (o & 0x0F);
+                regs.P.N = (o >> 7) & 1;
+                regs.P.V = ((~(regs.A ^ i)) & (regs.A ^ o) & 0x80) >> 7;
                 if (o > 0x9F) o += 0x60;
+                regs.A = o & 0xFF;
+                regs.P.C = o > 0xFF;
             } else {
                 o = i + regs.A + regs.P.C;
                 regs.P.V = ((~(regs.A ^ i)) & (regs.A ^ o) & 0x80) >> 7;
+                regs.P.C = o > 0xFF;
+                regs.A = o & 0xFF;
+                regs.P.Z = regs.A == 0;
+                regs.P.N = (regs.A & 0x80) >> 7;
             }
-            regs.P.C = +(o > 0xFF);
-            regs.A = o & 0xFF;
-            regs.P.Z = +((regs.A) == 0);
-            regs.P.N = ((regs.A) & 0x80) >> 7;
             // Following is auto-generated code for instruction finish
             pins.Addr = regs.PC;
             regs.PC = (regs.PC + 1) & 0xFFFF;
@@ -3320,16 +3345,25 @@ static void ins_6B_ARR(regs &regs, pins &pins)
             regs.PC = (regs.PC + 1) & 0xFFFF;
             break; }
         case 2: { //cleanup_custom
-            regs.A &= pins.D;
-            regs.P.Z = +((regs.A) == 0);
-            regs.P.N = ((regs.A) & 0x80) >> 7;
-            u32 c = regs.P.C;
-            regs.P.C = regs.A & 1;
-            regs.A = (c << 7) | (regs.A >> 1);
-            regs.P.Z = +((regs.A) == 0);
-            regs.P.N = ((regs.A) & 0x80) >> 7;
-            regs.P.C = (regs.A >> 6) & 1;
-            regs.P.V = ((regs.A >> 6) ^ (regs.A >> 5) & 1);
+            if (regs.P.D) {
+                regs.A &= pins.D;
+                u8 unshifted_A = regs.A;
+                regs.A = (regs.P.C << 7) | (regs.A >> 1) & 0xFF;
+                regs.P.Z = regs.A == 0;
+                regs.P.N = ((regs.A) & 0x80) >> 7;
+                regs.P.V = (regs.A >> 6) ^ (regs.A >> 5) & 1;
+                if ((unshifted_A & 15) + (unshifted_A&1) > 5) regs.A = ((regs.A + 6) & 15) | (regs.A & 0xF0) & 0xFF;
+                regs.P.C = ((unshifted_A & 0xF0) + (unshifted_A & 0x10) > 0x50) ? 1 : 0;
+                if (regs.P.C) regs.A = (regs.A + 0x60) & 0xFF;
+            }
+            else {
+                regs.A &= pins.D;
+                regs.A = (regs.A >> 1) | (regs.P.C << 7);
+                regs.P.Z = regs.A == 0;
+                regs.P.N = ((regs.A) & 0x80) >> 7;
+                regs.P.C = (regs.A >> 6) & 1;
+                regs.P.V = (regs.A >> 6) ^ (regs.A >> 5) & 1;
+            }
             // Following is auto-generated code for instruction finish
             pins.Addr = regs.PC;
             regs.PC = (regs.PC + 1) & 0xFFFF;
@@ -3388,19 +3422,24 @@ static void ins_6D_ADC(regs &regs, pins &pins)
             i32 o;
             i32 i = pins.D;
             if (regs.P.D) {
+                regs.P.Z = ((regs.A + i + regs.P.C) & 0xFF) == 0;
                 o = (regs.A & 0x0F) + (i & 0x0F) + (regs.P.C);
                 if (o > 0x09) o += 0x06;
                 regs.P.C = +(o > 0x0F);
                 o = (regs.A & 0xF0) + (i & 0xF0) + (regs.P.C << 4) + (o & 0x0F);
+                regs.P.N = (o >> 7) & 1;
+                regs.P.V = ((~(regs.A ^ i)) & (regs.A ^ o) & 0x80) >> 7;
                 if (o > 0x9F) o += 0x60;
+                regs.A = o & 0xFF;
+                regs.P.C = o > 0xFF;
             } else {
                 o = i + regs.A + regs.P.C;
                 regs.P.V = ((~(regs.A ^ i)) & (regs.A ^ o) & 0x80) >> 7;
+                regs.P.C = o > 0xFF;
+                regs.A = o & 0xFF;
+                regs.P.Z = regs.A == 0;
+                regs.P.N = (regs.A & 0x80) >> 7;
             }
-            regs.P.C = +(o > 0xFF);
-            regs.A = o & 0xFF;
-            regs.P.Z = +((regs.A) == 0);
-            regs.P.N = ((regs.A) & 0x80) >> 7;
             // Following is auto-generated code for instruction finish
             pins.Addr = regs.PC;
             regs.PC = (regs.PC + 1) & 0xFFFF;
@@ -3473,19 +3512,24 @@ static void ins_6F_RRA(regs &regs, pins &pins)
             i32 o;
             i32 i = pins.D;
             if (regs.P.D) {
+                regs.P.Z = ((regs.A + i + regs.P.C) & 0xFF) == 0;
                 o = (regs.A & 0x0F) + (i & 0x0F) + (regs.P.C);
                 if (o > 0x09) o += 0x06;
                 regs.P.C = +(o > 0x0F);
                 o = (regs.A & 0xF0) + (i & 0xF0) + (regs.P.C << 4) + (o & 0x0F);
+                regs.P.N = (o >> 7) & 1;
+                regs.P.V = ((~(regs.A ^ i)) & (regs.A ^ o) & 0x80) >> 7;
                 if (o > 0x9F) o += 0x60;
+                regs.A = o & 0xFF;
+                regs.P.C = o > 0xFF;
             } else {
                 o = i + regs.A + regs.P.C;
                 regs.P.V = ((~(regs.A ^ i)) & (regs.A ^ o) & 0x80) >> 7;
+                regs.P.C = o > 0xFF;
+                regs.A = o & 0xFF;
+                regs.P.Z = regs.A == 0;
+                regs.P.N = (regs.A & 0x80) >> 7;
             }
-            regs.P.C = +(o > 0xFF);
-            regs.A = o & 0xFF;
-            regs.P.Z = +((regs.A) == 0);
-            regs.P.N = ((regs.A) & 0x80) >> 7;
             // Following is auto-generated code for instruction finish
             break; }
         case 6: { //cleanup
@@ -3554,19 +3598,24 @@ static void ins_71_ADC(regs &regs, pins &pins)
             i32 o;
             i32 i = pins.D;
             if (regs.P.D) {
+                regs.P.Z = ((regs.A + i + regs.P.C) & 0xFF) == 0;
                 o = (regs.A & 0x0F) + (i & 0x0F) + (regs.P.C);
                 if (o > 0x09) o += 0x06;
                 regs.P.C = +(o > 0x0F);
                 o = (regs.A & 0xF0) + (i & 0xF0) + (regs.P.C << 4) + (o & 0x0F);
+                regs.P.N = (o >> 7) & 1;
+                regs.P.V = ((~(regs.A ^ i)) & (regs.A ^ o) & 0x80) >> 7;
                 if (o > 0x9F) o += 0x60;
+                regs.A = o & 0xFF;
+                regs.P.C = o > 0xFF;
             } else {
                 o = i + regs.A + regs.P.C;
                 regs.P.V = ((~(regs.A ^ i)) & (regs.A ^ o) & 0x80) >> 7;
+                regs.P.C = o > 0xFF;
+                regs.A = o & 0xFF;
+                regs.P.Z = regs.A == 0;
+                regs.P.N = (regs.A & 0x80) >> 7;
             }
-            regs.P.C = +(o > 0xFF);
-            regs.A = o & 0xFF;
-            regs.P.Z = +((regs.A) == 0);
-            regs.P.N = ((regs.A) & 0x80) >> 7;
             // Following is auto-generated code for instruction finish
             pins.Addr = regs.PC;
             regs.PC = (regs.PC + 1) & 0xFFFF;
@@ -3631,19 +3680,24 @@ static void ins_73_RRA(regs &regs, pins &pins)
             i32 o;
             i32 i = pins.D;
             if (regs.P.D) {
+                regs.P.Z = ((regs.A + i + regs.P.C) & 0xFF) == 0;
                 o = (regs.A & 0x0F) + (i & 0x0F) + (regs.P.C);
                 if (o > 0x09) o += 0x06;
                 regs.P.C = +(o > 0x0F);
                 o = (regs.A & 0xF0) + (i & 0xF0) + (regs.P.C << 4) + (o & 0x0F);
+                regs.P.N = (o >> 7) & 1;
+                regs.P.V = ((~(regs.A ^ i)) & (regs.A ^ o) & 0x80) >> 7;
                 if (o > 0x9F) o += 0x60;
+                regs.A = o & 0xFF;
+                regs.P.C = o > 0xFF;
             } else {
                 o = i + regs.A + regs.P.C;
                 regs.P.V = ((~(regs.A ^ i)) & (regs.A ^ o) & 0x80) >> 7;
+                regs.P.C = o > 0xFF;
+                regs.A = o & 0xFF;
+                regs.P.Z = regs.A == 0;
+                regs.P.N = (regs.A & 0x80) >> 7;
             }
-            regs.P.C = +(o > 0xFF);
-            regs.A = o & 0xFF;
-            regs.P.Z = +((regs.A) == 0);
-            regs.P.N = ((regs.A) & 0x80) >> 7;
             // Following is auto-generated code for instruction finish
             break; }
         case 8: { //cleanup
@@ -3698,19 +3752,24 @@ static void ins_75_ADC(regs &regs, pins &pins)
             i32 o;
             i32 i = pins.D;
             if (regs.P.D) {
+                regs.P.Z = ((regs.A + i + regs.P.C) & 0xFF) == 0;
                 o = (regs.A & 0x0F) + (i & 0x0F) + (regs.P.C);
                 if (o > 0x09) o += 0x06;
                 regs.P.C = +(o > 0x0F);
                 o = (regs.A & 0xF0) + (i & 0xF0) + (regs.P.C << 4) + (o & 0x0F);
+                regs.P.N = (o >> 7) & 1;
+                regs.P.V = ((~(regs.A ^ i)) & (regs.A ^ o) & 0x80) >> 7;
                 if (o > 0x9F) o += 0x60;
+                regs.A = o & 0xFF;
+                regs.P.C = o > 0xFF;
             } else {
                 o = i + regs.A + regs.P.C;
                 regs.P.V = ((~(regs.A ^ i)) & (regs.A ^ o) & 0x80) >> 7;
+                regs.P.C = o > 0xFF;
+                regs.A = o & 0xFF;
+                regs.P.Z = regs.A == 0;
+                regs.P.N = (regs.A & 0x80) >> 7;
             }
-            regs.P.C = +(o > 0xFF);
-            regs.A = o & 0xFF;
-            regs.P.Z = +((regs.A) == 0);
-            regs.P.N = ((regs.A) & 0x80) >> 7;
             // Following is auto-generated code for instruction finish
             pins.Addr = regs.PC;
             regs.PC = (regs.PC + 1) & 0xFFFF;
@@ -3782,19 +3841,24 @@ static void ins_77_RRA(regs &regs, pins &pins)
             i32 o;
             i32 i = regs.TR;
             if (regs.P.D) {
+                regs.P.Z = ((regs.A + i + regs.P.C) & 0xFF) == 0;
                 o = (regs.A & 0x0F) + (i & 0x0F) + (regs.P.C);
                 if (o > 0x09) o += 0x06;
                 regs.P.C = +(o > 0x0F);
                 o = (regs.A & 0xF0) + (i & 0xF0) + (regs.P.C << 4) + (o & 0x0F);
+                regs.P.N = (o >> 7) & 1;
+                regs.P.V = ((~(regs.A ^ i)) & (regs.A ^ o) & 0x80) >> 7;
                 if (o > 0x9F) o += 0x60;
+                regs.A = o & 0xFF;
+                regs.P.C = o > 0xFF;
             } else {
                 o = i + regs.A + regs.P.C;
                 regs.P.V = ((~(regs.A ^ i)) & (regs.A ^ o) & 0x80) >> 7;
+                regs.P.C = o > 0xFF;
+                regs.A = o & 0xFF;
+                regs.P.Z = regs.A == 0;
+                regs.P.N = (regs.A & 0x80) >> 7;
             }
-            regs.P.C = +(o > 0xFF);
-            regs.A = o & 0xFF;
-            regs.P.Z = +((regs.A) == 0);
-            regs.P.N = ((regs.A) & 0x80) >> 7;
             break; }
         case 5: {
             pins.D = regs.TR;
@@ -3852,19 +3916,24 @@ static void ins_79_ADC(regs &regs, pins &pins)
             i32 o;
             i32 i = pins.D;
             if (regs.P.D) {
+                regs.P.Z = ((regs.A + i + regs.P.C) & 0xFF) == 0;
                 o = (regs.A & 0x0F) + (i & 0x0F) + (regs.P.C);
                 if (o > 0x09) o += 0x06;
                 regs.P.C = +(o > 0x0F);
                 o = (regs.A & 0xF0) + (i & 0xF0) + (regs.P.C << 4) + (o & 0x0F);
+                regs.P.N = (o >> 7) & 1;
+                regs.P.V = ((~(regs.A ^ i)) & (regs.A ^ o) & 0x80) >> 7;
                 if (o > 0x9F) o += 0x60;
+                regs.A = o & 0xFF;
+                regs.P.C = o > 0xFF;
             } else {
                 o = i + regs.A + regs.P.C;
                 regs.P.V = ((~(regs.A ^ i)) & (regs.A ^ o) & 0x80) >> 7;
+                regs.P.C = o > 0xFF;
+                regs.A = o & 0xFF;
+                regs.P.Z = regs.A == 0;
+                regs.P.N = (regs.A & 0x80) >> 7;
             }
-            regs.P.C = +(o > 0xFF);
-            regs.A = o & 0xFF;
-            regs.P.Z = +((regs.A) == 0);
-            regs.P.N = ((regs.A) & 0x80) >> 7;
             // Following is auto-generated code for instruction finish
             pins.Addr = regs.PC;
             regs.PC = (regs.PC + 1) & 0xFFFF;
@@ -3922,19 +3991,24 @@ static void ins_7B_RRA(regs &regs, pins &pins)
             i32 o;
             i32 i = regs.TR;
             if (regs.P.D) {
+                regs.P.Z = ((regs.A + i + regs.P.C) & 0xFF) == 0;
                 o = (regs.A & 0x0F) + (i & 0x0F) + (regs.P.C);
                 if (o > 0x09) o += 0x06;
                 regs.P.C = +(o > 0x0F);
                 o = (regs.A & 0xF0) + (i & 0xF0) + (regs.P.C << 4) + (o & 0x0F);
+                regs.P.N = (o >> 7) & 1;
+                regs.P.V = ((~(regs.A ^ i)) & (regs.A ^ o) & 0x80) >> 7;
                 if (o > 0x9F) o += 0x60;
+                regs.A = o & 0xFF;
+                regs.P.C = o > 0xFF;
             } else {
                 o = i + regs.A + regs.P.C;
                 regs.P.V = ((~(regs.A ^ i)) & (regs.A ^ o) & 0x80) >> 7;
+                regs.P.C = o > 0xFF;
+                regs.A = o & 0xFF;
+                regs.P.Z = regs.A == 0;
+                regs.P.N = (regs.A & 0x80) >> 7;
             }
-            regs.P.C = +(o > 0xFF);
-            regs.A = o & 0xFF;
-            regs.P.Z = +((regs.A) == 0);
-            regs.P.N = ((regs.A) & 0x80) >> 7;
             pins.D = regs.TR;
             // Following is auto-generated code for instruction finish
             break; }
@@ -4004,19 +4078,24 @@ static void ins_7D_ADC(regs &regs, pins &pins)
             i32 o;
             i32 i = pins.D;
             if (regs.P.D) {
+                regs.P.Z = ((regs.A + i + regs.P.C) & 0xFF) == 0;
                 o = (regs.A & 0x0F) + (i & 0x0F) + (regs.P.C);
                 if (o > 0x09) o += 0x06;
                 regs.P.C = +(o > 0x0F);
                 o = (regs.A & 0xF0) + (i & 0xF0) + (regs.P.C << 4) + (o & 0x0F);
+                regs.P.N = (o >> 7) & 1;
+                regs.P.V = ((~(regs.A ^ i)) & (regs.A ^ o) & 0x80) >> 7;
                 if (o > 0x9F) o += 0x60;
+                regs.A = o & 0xFF;
+                regs.P.C = o > 0xFF;
             } else {
                 o = i + regs.A + regs.P.C;
                 regs.P.V = ((~(regs.A ^ i)) & (regs.A ^ o) & 0x80) >> 7;
+                regs.P.C = o > 0xFF;
+                regs.A = o & 0xFF;
+                regs.P.Z = regs.A == 0;
+                regs.P.N = (regs.A & 0x80) >> 7;
             }
-            regs.P.C = +(o > 0xFF);
-            regs.A = o & 0xFF;
-            regs.P.Z = +((regs.A) == 0);
-            regs.P.N = ((regs.A) & 0x80) >> 7;
             // Following is auto-generated code for instruction finish
             pins.Addr = regs.PC;
             regs.PC = (regs.PC + 1) & 0xFFFF;
@@ -4100,19 +4179,24 @@ static void ins_7F_RRA(regs &regs, pins &pins)
             i32 o;
             i32 i = regs.TR;
             if (regs.P.D) {
+                regs.P.Z = ((regs.A + i + regs.P.C) & 0xFF) == 0;
                 o = (regs.A & 0x0F) + (i & 0x0F) + (regs.P.C);
                 if (o > 0x09) o += 0x06;
                 regs.P.C = +(o > 0x0F);
                 o = (regs.A & 0xF0) + (i & 0xF0) + (regs.P.C << 4) + (o & 0x0F);
+                regs.P.N = (o >> 7) & 1;
+                regs.P.V = ((~(regs.A ^ i)) & (regs.A ^ o) & 0x80) >> 7;
                 if (o > 0x9F) o += 0x60;
+                regs.A = o & 0xFF;
+                regs.P.C = o > 0xFF;
             } else {
                 o = i + regs.A + regs.P.C;
                 regs.P.V = ((~(regs.A ^ i)) & (regs.A ^ o) & 0x80) >> 7;
+                regs.P.C = o > 0xFF;
+                regs.A = o & 0xFF;
+                regs.P.Z = regs.A == 0;
+                regs.P.N = (regs.A & 0x80) >> 7;
             }
-            regs.P.C = +(o > 0xFF);
-            regs.A = o & 0xFF;
-            regs.P.Z = +((regs.A) == 0);
-            regs.P.N = ((regs.A) & 0x80) >> 7;
             pins.D = regs.TR;
             // Following is auto-generated code for instruction finish
             break; }
@@ -6877,22 +6961,26 @@ static void ins_E1_SBC(regs &regs, pins &pins)
             pins.Addr = regs.TA | (pins.D << 8);
             break; }
         case 6: { //cleanup_custom
-            i32 o;
-            i32 i = pins.D ^ 0xFF;
+            u32 r;
+            u32 i = pins.D ^ 0xFF;
             if (regs.P.D) {
-                o = (regs.A & 0x0F) + (i & 0x0F) + regs.P.C;
-                if (o <= 0x0F) o -= 0x06;
-                regs.P.C = +(o > 0x0F);
-                o = (regs.A & 0xF0) + (i & 0xF0) + (regs.P.C << 4) + (o & 0x0F);
-                if (o <= 0xFF) o -= 0x60;
+                r = regs.A + i + regs.P.C;
+                regs.P.Z = (r & 0xFF) == 0;
+                regs.P.C = r > 0xFF;
+                regs.P.N = (r >> 7) & 1;
+                regs.P.V = ((r ^ regs.A) & (r ^ i) & 0x80) >> 7;
+                if (!((regs.A ^ r ^ i) & 0x10)) r = (r & 0xF0) | ((r + 0xFA) & 0xF);
+                r &= 0xFF;
+                if (!regs.P.C) r += 0xA0;
+                regs.A = r & 0xFF;
             } else {
-                o = regs.A + i + regs.P.C;
-                regs.P.V = ((~(regs.A ^ i)) & (regs.A ^ o) & 0x80) >> 7;
+                r = i + regs.A + regs.P.C;
+                regs.P.V = ((~(regs.A ^ i)) & (regs.A ^ r) & 0x80) >> 7;
+                regs.P.C = r > 0xFF;
+                regs.A = r & 0xFF;
+                regs.P.Z = +((regs.A) == 0);
+                regs.P.N = ((regs.A) & 0x80) >> 7;
             }
-            regs.P.C = +(o > 0xFF);
-            regs.A = o & 0xFF;
-            regs.P.Z = +((regs.A) == 0);
-            regs.P.N = ((regs.A) & 0x80) >> 7;
             // Following is auto-generated code for instruction finish
             pins.Addr = regs.PC;
             regs.PC = (regs.PC + 1) & 0xFFFF;
@@ -6947,22 +7035,26 @@ static void ins_E3_ISC(regs &regs, pins &pins)
             pins.D = (pins.D + 1) & 0xFF;
             regs.P.Z = +((pins.D) == 0);
             regs.P.N = ((pins.D) & 0x80) >> 7;
-            i32 o;
-            i32 i = pins.D ^ 0xFF;
+            u32 r;
+            u32 i = pins.D ^ 0xFF;
             if (regs.P.D) {
-                o = (regs.A & 0x0F) + (i & 0x0F) + regs.P.C;
-                if (o <= 0x0F) o -= 0x06;
-                regs.P.C = +(o > 0x0F);
-                o = (regs.A & 0xF0) + (i & 0xF0) + (regs.P.C << 4) + (o & 0x0F);
-                if (o <= 0xFF) o -= 0x60;
+                r = regs.A + i + regs.P.C;
+                regs.P.Z = (r & 0xFF) == 0;
+                regs.P.C = r > 0xFF;
+                regs.P.N = (r >> 7) & 1;
+                regs.P.V = ((r ^ regs.A) & (r ^ i) & 0x80) >> 7;
+                if (!((regs.A ^ r ^ i) & 0x10)) r = (r & 0xF0) | ((r + 0xFA) & 0xF);
+                r &= 0xFF;
+                if (!regs.P.C) r += 0xA0;
+                regs.A = r & 0xFF;
             } else {
-                o = regs.A + i + regs.P.C;
-                regs.P.V = ((~(regs.A ^ i)) & (regs.A ^ o) & 0x80) >> 7;
+                r = i + regs.A + regs.P.C;
+                regs.P.V = ((~(regs.A ^ i)) & (regs.A ^ r) & 0x80) >> 7;
+                regs.P.C = r > 0xFF;
+                regs.A = r & 0xFF;
+                regs.P.Z = +((regs.A) == 0);
+                regs.P.N = ((regs.A) & 0x80) >> 7;
             }
-            regs.P.C = +(o > 0xFF);
-            regs.A = o & 0xFF;
-            regs.P.Z = +((regs.A) == 0);
-            regs.P.N = ((regs.A) & 0x80) >> 7;
             // Following is auto-generated code for instruction finish
             break; }
         case 8: { //cleanup
@@ -7010,22 +7102,26 @@ static void ins_E5_SBC(regs &regs, pins &pins)
             pins.Addr = pins.D;
             break; }
         case 3: { //cleanup_custom
-            i32 o;
-            i32 i = pins.D ^ 0xFF;
+            u32 r;
+            u32 i = pins.D ^ 0xFF;
             if (regs.P.D) {
-                o = (regs.A & 0x0F) + (i & 0x0F) + regs.P.C;
-                if (o <= 0x0F) o -= 0x06;
-                regs.P.C = +(o > 0x0F);
-                o = (regs.A & 0xF0) + (i & 0xF0) + (regs.P.C << 4) + (o & 0x0F);
-                if (o <= 0xFF) o -= 0x60;
+                r = regs.A + i + regs.P.C;
+                regs.P.Z = (r & 0xFF) == 0;
+                regs.P.C = r > 0xFF;
+                regs.P.N = (r >> 7) & 1;
+                regs.P.V = ((r ^ regs.A) & (r ^ i) & 0x80) >> 7;
+                if (!((regs.A ^ r ^ i) & 0x10)) r = (r & 0xF0) | ((r + 0xFA) & 0xF);
+                r &= 0xFF;
+                if (!regs.P.C) r += 0xA0;
+                regs.A = r & 0xFF;
             } else {
-                o = regs.A + i + regs.P.C;
-                regs.P.V = ((~(regs.A ^ i)) & (regs.A ^ o) & 0x80) >> 7;
+                r = i + regs.A + regs.P.C;
+                regs.P.V = ((~(regs.A ^ i)) & (regs.A ^ r) & 0x80) >> 7;
+                regs.P.C = r > 0xFF;
+                regs.A = r & 0xFF;
+                regs.P.Z = +((regs.A) == 0);
+                regs.P.N = ((regs.A) & 0x80) >> 7;
             }
-            regs.P.C = +(o > 0xFF);
-            regs.A = o & 0xFF;
-            regs.P.Z = +((regs.A) == 0);
-            regs.P.N = ((regs.A) & 0x80) >> 7;
             // Following is auto-generated code for instruction finish
             pins.Addr = regs.PC;
             regs.PC = (regs.PC + 1) & 0xFFFF;
@@ -7081,22 +7177,26 @@ static void ins_E7_ISC(regs &regs, pins &pins)
             pins.D = (pins.D + 1) & 0xFF;
             regs.P.Z = +((pins.D) == 0);
             regs.P.N = ((pins.D) & 0x80) >> 7;
-            i32 o;
-            i32 i = pins.D ^ 0xFF;
+            u32 r;
+            u32 i = pins.D ^ 0xFF;
             if (regs.P.D) {
-                o = (regs.A & 0x0F) + (i & 0x0F) + regs.P.C;
-                if (o <= 0x0F) o -= 0x06;
-                regs.P.C = +(o > 0x0F);
-                o = (regs.A & 0xF0) + (i & 0xF0) + (regs.P.C << 4) + (o & 0x0F);
-                if (o <= 0xFF) o -= 0x60;
+                r = regs.A + i + regs.P.C;
+                regs.P.Z = (r & 0xFF) == 0;
+                regs.P.C = r > 0xFF;
+                regs.P.N = (r >> 7) & 1;
+                regs.P.V = ((r ^ regs.A) & (r ^ i) & 0x80) >> 7;
+                if (!((regs.A ^ r ^ i) & 0x10)) r = (r & 0xF0) | ((r + 0xFA) & 0xF);
+                r &= 0xFF;
+                if (!regs.P.C) r += 0xA0;
+                regs.A = r & 0xFF;
             } else {
-                o = regs.A + i + regs.P.C;
-                regs.P.V = ((~(regs.A ^ i)) & (regs.A ^ o) & 0x80) >> 7;
+                r = i + regs.A + regs.P.C;
+                regs.P.V = ((~(regs.A ^ i)) & (regs.A ^ r) & 0x80) >> 7;
+                regs.P.C = r > 0xFF;
+                regs.A = r & 0xFF;
+                regs.P.Z = +((regs.A) == 0);
+                regs.P.N = ((regs.A) & 0x80) >> 7;
             }
-            regs.P.C = +(o > 0xFF);
-            regs.A = o & 0xFF;
-            regs.P.Z = +((regs.A) == 0);
-            regs.P.N = ((regs.A) & 0x80) >> 7;
             // Following is auto-generated code for instruction finish
             break; }
         case 5: { //cleanup
@@ -7136,22 +7236,26 @@ static void ins_E9_SBC(regs &regs, pins &pins)
             regs.PC = (regs.PC + 1) & 0xFFFF;
             break; }
         case 2: { //cleanup_custom
-            i32 o;
-            i32 i = pins.D ^ 0xFF;
+            u32 r;
+            u32 i = pins.D ^ 0xFF;
             if (regs.P.D) {
-                o = (regs.A & 0x0F) + (i & 0x0F) + regs.P.C;
-                if (o <= 0x0F) o -= 0x06;
-                regs.P.C = +(o > 0x0F);
-                o = (regs.A & 0xF0) + (i & 0xF0) + (regs.P.C << 4) + (o & 0x0F);
-                if (o <= 0xFF) o -= 0x60;
+                r = regs.A + i + regs.P.C;
+                regs.P.Z = (r & 0xFF) == 0;
+                regs.P.C = r > 0xFF;
+                regs.P.N = (r >> 7) & 1;
+                regs.P.V = ((r ^ regs.A) & (r ^ i) & 0x80) >> 7;
+                if (!((regs.A ^ r ^ i) & 0x10)) r = (r & 0xF0) | ((r + 0xFA) & 0xF);
+                r &= 0xFF;
+                if (!regs.P.C) r += 0xA0;
+                regs.A = r & 0xFF;
             } else {
-                o = regs.A + i + regs.P.C;
-                regs.P.V = ((~(regs.A ^ i)) & (regs.A ^ o) & 0x80) >> 7;
+                r = i + regs.A + regs.P.C;
+                regs.P.V = ((~(regs.A ^ i)) & (regs.A ^ r) & 0x80) >> 7;
+                regs.P.C = r > 0xFF;
+                regs.A = r & 0xFF;
+                regs.P.Z = +((regs.A) == 0);
+                regs.P.N = ((regs.A) & 0x80) >> 7;
             }
-            regs.P.C = +(o > 0xFF);
-            regs.A = o & 0xFF;
-            regs.P.Z = +((regs.A) == 0);
-            regs.P.N = ((regs.A) & 0x80) >> 7;
             // Following is auto-generated code for instruction finish
             pins.Addr = regs.PC;
             regs.PC = (regs.PC + 1) & 0xFFFF;
@@ -7185,22 +7289,26 @@ static void ins_EB_SBC(regs &regs, pins &pins)
             regs.PC = (regs.PC + 1) & 0xFFFF;
             break; }
         case 2: { //cleanup_custom
-            i32 o;
-            i32 i = pins.D ^ 0xFF;
+            u32 r;
+            u32 i = pins.D ^ 0xFF;
             if (regs.P.D) {
-                o = (regs.A & 0x0F) + (i & 0x0F) + regs.P.C;
-                if (o <= 0x0F) o -= 0x06;
-                regs.P.C = +(o > 0x0F);
-                o = (regs.A & 0xF0) + (i & 0xF0) + (regs.P.C << 4) + (o & 0x0F);
-                if (o <= 0xFF) o -= 0x60;
+                r = regs.A + i + regs.P.C;
+                regs.P.Z = (r & 0xFF) == 0;
+                regs.P.C = r > 0xFF;
+                regs.P.N = (r >> 7) & 1;
+                regs.P.V = ((r ^ regs.A) & (r ^ i) & 0x80) >> 7;
+                if (!((regs.A ^ r ^ i) & 0x10)) r = (r & 0xF0) | ((r + 0xFA) & 0xF);
+                r &= 0xFF;
+                if (!regs.P.C) r += 0xA0;
+                regs.A = r & 0xFF;
             } else {
-                o = regs.A + i + regs.P.C;
-                regs.P.V = ((~(regs.A ^ i)) & (regs.A ^ o) & 0x80) >> 7;
+                r = i + regs.A + regs.P.C;
+                regs.P.V = ((~(regs.A ^ i)) & (regs.A ^ r) & 0x80) >> 7;
+                regs.P.C = r > 0xFF;
+                regs.A = r & 0xFF;
+                regs.P.Z = +((regs.A) == 0);
+                regs.P.N = ((regs.A) & 0x80) >> 7;
             }
-            regs.P.C = +(o > 0xFF);
-            regs.A = o & 0xFF;
-            regs.P.Z = +((regs.A) == 0);
-            regs.P.N = ((regs.A) & 0x80) >> 7;
             // Following is auto-generated code for instruction finish
             pins.Addr = regs.PC;
             regs.PC = (regs.PC + 1) & 0xFFFF;
@@ -7255,22 +7363,26 @@ static void ins_ED_SBC(regs &regs, pins &pins)
             pins.Addr = regs.TA | (pins.D << 8);
             break; }
         case 4: { //cleanup_custom
-            i32 o;
-            i32 i = pins.D ^ 0xFF;
+            u32 r;
+            u32 i = pins.D ^ 0xFF;
             if (regs.P.D) {
-                o = (regs.A & 0x0F) + (i & 0x0F) + regs.P.C;
-                if (o <= 0x0F) o -= 0x06;
-                regs.P.C = +(o > 0x0F);
-                o = (regs.A & 0xF0) + (i & 0xF0) + (regs.P.C << 4) + (o & 0x0F);
-                if (o <= 0xFF) o -= 0x60;
+                r = regs.A + i + regs.P.C;
+                regs.P.Z = (r & 0xFF) == 0;
+                regs.P.C = r > 0xFF;
+                regs.P.N = (r >> 7) & 1;
+                regs.P.V = ((r ^ regs.A) & (r ^ i) & 0x80) >> 7;
+                if (!((regs.A ^ r ^ i) & 0x10)) r = (r & 0xF0) | ((r + 0xFA) & 0xF);
+                r &= 0xFF;
+                if (!regs.P.C) r += 0xA0;
+                regs.A = r & 0xFF;
             } else {
-                o = regs.A + i + regs.P.C;
-                regs.P.V = ((~(regs.A ^ i)) & (regs.A ^ o) & 0x80) >> 7;
+                r = i + regs.A + regs.P.C;
+                regs.P.V = ((~(regs.A ^ i)) & (regs.A ^ r) & 0x80) >> 7;
+                regs.P.C = r > 0xFF;
+                regs.A = r & 0xFF;
+                regs.P.Z = +((regs.A) == 0);
+                regs.P.N = ((regs.A) & 0x80) >> 7;
             }
-            regs.P.C = +(o > 0xFF);
-            regs.A = o & 0xFF;
-            regs.P.Z = +((regs.A) == 0);
-            regs.P.N = ((regs.A) & 0x80) >> 7;
             // Following is auto-generated code for instruction finish
             pins.Addr = regs.PC;
             regs.PC = (regs.PC + 1) & 0xFFFF;
@@ -7336,22 +7448,26 @@ static void ins_EF_ISC(regs &regs, pins &pins)
             pins.D = (pins.D + 1) & 0xFF;
             regs.P.Z = +((pins.D) == 0);
             regs.P.N = ((pins.D) & 0x80) >> 7;
-            i32 o;
-            i32 i = pins.D ^ 0xFF;
+            u32 r;
+            u32 i = pins.D ^ 0xFF;
             if (regs.P.D) {
-                o = (regs.A & 0x0F) + (i & 0x0F) + regs.P.C;
-                if (o <= 0x0F) o -= 0x06;
-                regs.P.C = +(o > 0x0F);
-                o = (regs.A & 0xF0) + (i & 0xF0) + (regs.P.C << 4) + (o & 0x0F);
-                if (o <= 0xFF) o -= 0x60;
+                r = regs.A + i + regs.P.C;
+                regs.P.Z = (r & 0xFF) == 0;
+                regs.P.C = r > 0xFF;
+                regs.P.N = (r >> 7) & 1;
+                regs.P.V = ((r ^ regs.A) & (r ^ i) & 0x80) >> 7;
+                if (!((regs.A ^ r ^ i) & 0x10)) r = (r & 0xF0) | ((r + 0xFA) & 0xF);
+                r &= 0xFF;
+                if (!regs.P.C) r += 0xA0;
+                regs.A = r & 0xFF;
             } else {
-                o = regs.A + i + regs.P.C;
-                regs.P.V = ((~(regs.A ^ i)) & (regs.A ^ o) & 0x80) >> 7;
+                r = i + regs.A + regs.P.C;
+                regs.P.V = ((~(regs.A ^ i)) & (regs.A ^ r) & 0x80) >> 7;
+                regs.P.C = r > 0xFF;
+                regs.A = r & 0xFF;
+                regs.P.Z = +((regs.A) == 0);
+                regs.P.N = ((regs.A) & 0x80) >> 7;
             }
-            regs.P.C = +(o > 0xFF);
-            regs.A = o & 0xFF;
-            regs.P.Z = +((regs.A) == 0);
-            regs.P.N = ((regs.A) & 0x80) >> 7;
             // Following is auto-generated code for instruction finish
             break; }
         case 6: { //cleanup
@@ -7417,22 +7533,26 @@ static void ins_F1_SBC(regs &regs, pins &pins)
             pins.Addr = regs.TA;
             break; }
         case 6: { //cleanup_custom
-            i32 o;
-            i32 i = pins.D ^ 0xFF;
+            u32 r;
+            u32 i = pins.D ^ 0xFF;
             if (regs.P.D) {
-                o = (regs.A & 0x0F) + (i & 0x0F) + regs.P.C;
-                if (o <= 0x0F) o -= 0x06;
-                regs.P.C = +(o > 0x0F);
-                o = (regs.A & 0xF0) + (i & 0xF0) + (regs.P.C << 4) + (o & 0x0F);
-                if (o <= 0xFF) o -= 0x60;
+                r = regs.A + i + regs.P.C;
+                regs.P.Z = (r & 0xFF) == 0;
+                regs.P.C = r > 0xFF;
+                regs.P.N = (r >> 7) & 1;
+                regs.P.V = ((r ^ regs.A) & (r ^ i) & 0x80) >> 7;
+                if (!((regs.A ^ r ^ i) & 0x10)) r = (r & 0xF0) | ((r + 0xFA) & 0xF);
+                r &= 0xFF;
+                if (!regs.P.C) r += 0xA0;
+                regs.A = r & 0xFF;
             } else {
-                o = regs.A + i + regs.P.C;
-                regs.P.V = ((~(regs.A ^ i)) & (regs.A ^ o) & 0x80) >> 7;
+                r = i + regs.A + regs.P.C;
+                regs.P.V = ((~(regs.A ^ i)) & (regs.A ^ r) & 0x80) >> 7;
+                regs.P.C = r > 0xFF;
+                regs.A = r & 0xFF;
+                regs.P.Z = +((regs.A) == 0);
+                regs.P.N = ((regs.A) & 0x80) >> 7;
             }
-            regs.P.C = +(o > 0xFF);
-            regs.A = o & 0xFF;
-            regs.P.Z = +((regs.A) == 0);
-            regs.P.N = ((regs.A) & 0x80) >> 7;
             // Following is auto-generated code for instruction finish
             pins.Addr = regs.PC;
             regs.PC = (regs.PC + 1) & 0xFFFF;
@@ -7492,22 +7612,26 @@ static void ins_F3_ISC(regs &regs, pins &pins)
             pins.D = (pins.D + 1) & 0xFF;
             regs.P.Z = +((pins.D) == 0);
             regs.P.N = ((pins.D) & 0x80) >> 7;
-            i32 o;
-            i32 i = pins.D ^ 0xFF;
+            u32 r;
+            u32 i = pins.D ^ 0xFF;
             if (regs.P.D) {
-                o = (regs.A & 0x0F) + (i & 0x0F) + regs.P.C;
-                if (o <= 0x0F) o -= 0x06;
-                regs.P.C = +(o > 0x0F);
-                o = (regs.A & 0xF0) + (i & 0xF0) + (regs.P.C << 4) + (o & 0x0F);
-                if (o <= 0xFF) o -= 0x60;
+                r = regs.A + i + regs.P.C;
+                regs.P.Z = (r & 0xFF) == 0;
+                regs.P.C = r > 0xFF;
+                regs.P.N = (r >> 7) & 1;
+                regs.P.V = ((r ^ regs.A) & (r ^ i) & 0x80) >> 7;
+                if (!((regs.A ^ r ^ i) & 0x10)) r = (r & 0xF0) | ((r + 0xFA) & 0xF);
+                r &= 0xFF;
+                if (!regs.P.C) r += 0xA0;
+                regs.A = r & 0xFF;
             } else {
-                o = regs.A + i + regs.P.C;
-                regs.P.V = ((~(regs.A ^ i)) & (regs.A ^ o) & 0x80) >> 7;
+                r = i + regs.A + regs.P.C;
+                regs.P.V = ((~(regs.A ^ i)) & (regs.A ^ r) & 0x80) >> 7;
+                regs.P.C = r > 0xFF;
+                regs.A = r & 0xFF;
+                regs.P.Z = +((regs.A) == 0);
+                regs.P.N = ((regs.A) & 0x80) >> 7;
             }
-            regs.P.C = +(o > 0xFF);
-            regs.A = o & 0xFF;
-            regs.P.Z = +((regs.A) == 0);
-            regs.P.N = ((regs.A) & 0x80) >> 7;
             // Following is auto-generated code for instruction finish
             break; }
         case 8: { //cleanup
@@ -7559,22 +7683,26 @@ static void ins_F5_SBC(regs &regs, pins &pins)
             pins.Addr = regs.TA;
             break; }
         case 4: { //cleanup_custom
-            i32 o;
-            i32 i = pins.D ^ 0xFF;
+            u32 r;
+            u32 i = pins.D ^ 0xFF;
             if (regs.P.D) {
-                o = (regs.A & 0x0F) + (i & 0x0F) + regs.P.C;
-                if (o <= 0x0F) o -= 0x06;
-                regs.P.C = +(o > 0x0F);
-                o = (regs.A & 0xF0) + (i & 0xF0) + (regs.P.C << 4) + (o & 0x0F);
-                if (o <= 0xFF) o -= 0x60;
+                r = regs.A + i + regs.P.C;
+                regs.P.Z = (r & 0xFF) == 0;
+                regs.P.C = r > 0xFF;
+                regs.P.N = (r >> 7) & 1;
+                regs.P.V = ((r ^ regs.A) & (r ^ i) & 0x80) >> 7;
+                if (!((regs.A ^ r ^ i) & 0x10)) r = (r & 0xF0) | ((r + 0xFA) & 0xF);
+                r &= 0xFF;
+                if (!regs.P.C) r += 0xA0;
+                regs.A = r & 0xFF;
             } else {
-                o = regs.A + i + regs.P.C;
-                regs.P.V = ((~(regs.A ^ i)) & (regs.A ^ o) & 0x80) >> 7;
+                r = i + regs.A + regs.P.C;
+                regs.P.V = ((~(regs.A ^ i)) & (regs.A ^ r) & 0x80) >> 7;
+                regs.P.C = r > 0xFF;
+                regs.A = r & 0xFF;
+                regs.P.Z = +((regs.A) == 0);
+                regs.P.N = ((regs.A) & 0x80) >> 7;
             }
-            regs.P.C = +(o > 0xFF);
-            regs.A = o & 0xFF;
-            regs.P.Z = +((regs.A) == 0);
-            regs.P.N = ((regs.A) & 0x80) >> 7;
             // Following is auto-generated code for instruction finish
             pins.Addr = regs.PC;
             regs.PC = (regs.PC + 1) & 0xFFFF;
@@ -7639,22 +7767,26 @@ static void ins_F7_ISC(regs &regs, pins &pins)
             regs.TR = (regs.TR + 1) & 0xFF;
             regs.P.Z = +((regs.TR) == 0);
             regs.P.N = ((regs.TR) & 0x80) >> 7;
-            i32 o;
-            i32 i = regs.TR ^ 0xFF;
+            u32 r;
+            u32 i = regs.TR ^ 0xFF;
             if (regs.P.D) {
-                o = (regs.A & 0x0F) + (i & 0x0F) + regs.P.C;
-                if (o <= 0x0F) o -= 0x06;
-                regs.P.C = +(o > 0x0F);
-                o = (regs.A & 0xF0) + (i & 0xF0) + (regs.P.C << 4) + (o & 0x0F);
-                if (o <= 0xFF) o -= 0x60;
+                r = regs.A + i + regs.P.C;
+                regs.P.Z = (r & 0xFF) == 0;
+                regs.P.C = r > 0xFF;
+                regs.P.N = (r >> 7) & 1;
+                regs.P.V = ((r ^ regs.A) & (r ^ i) & 0x80) >> 7;
+                if (!((regs.A ^ r ^ i) & 0x10)) r = (r & 0xF0) | ((r + 0xFA) & 0xF);
+                r &= 0xFF;
+                if (!regs.P.C) r += 0xA0;
+                regs.A = r & 0xFF;
             } else {
-                o = regs.A + i + regs.P.C;
-                regs.P.V = ((~(regs.A ^ i)) & (regs.A ^ o) & 0x80) >> 7;
+                r = i + regs.A + regs.P.C;
+                regs.P.V = ((~(regs.A ^ i)) & (regs.A ^ r) & 0x80) >> 7;
+                regs.P.C = r > 0xFF;
+                regs.A = r & 0xFF;
+                regs.P.Z = +((regs.A) == 0);
+                regs.P.N = ((regs.A) & 0x80) >> 7;
             }
-            regs.P.C = +(o > 0xFF);
-            regs.A = o & 0xFF;
-            regs.P.Z = +((regs.A) == 0);
-            regs.P.N = ((regs.A) & 0x80) >> 7;
             break; }
         case 5: {
             pins.D = regs.TR;
@@ -7709,22 +7841,26 @@ static void ins_F9_SBC(regs &regs, pins &pins)
             pins.Addr = regs.TA;
             break; }
         case 5: { //cleanup_custom
-            i32 o;
-            i32 i = pins.D ^ 0xFF;
+            u32 r;
+            u32 i = pins.D ^ 0xFF;
             if (regs.P.D) {
-                o = (regs.A & 0x0F) + (i & 0x0F) + regs.P.C;
-                if (o <= 0x0F) o -= 0x06;
-                regs.P.C = +(o > 0x0F);
-                o = (regs.A & 0xF0) + (i & 0xF0) + (regs.P.C << 4) + (o & 0x0F);
-                if (o <= 0xFF) o -= 0x60;
+                r = regs.A + i + regs.P.C;
+                regs.P.Z = (r & 0xFF) == 0;
+                regs.P.C = r > 0xFF;
+                regs.P.N = (r >> 7) & 1;
+                regs.P.V = ((r ^ regs.A) & (r ^ i) & 0x80) >> 7;
+                if (!((regs.A ^ r ^ i) & 0x10)) r = (r & 0xF0) | ((r + 0xFA) & 0xF);
+                r &= 0xFF;
+                if (!regs.P.C) r += 0xA0;
+                regs.A = r & 0xFF;
             } else {
-                o = regs.A + i + regs.P.C;
-                regs.P.V = ((~(regs.A ^ i)) & (regs.A ^ o) & 0x80) >> 7;
+                r = i + regs.A + regs.P.C;
+                regs.P.V = ((~(regs.A ^ i)) & (regs.A ^ r) & 0x80) >> 7;
+                regs.P.C = r > 0xFF;
+                regs.A = r & 0xFF;
+                regs.P.Z = +((regs.A) == 0);
+                regs.P.N = ((regs.A) & 0x80) >> 7;
             }
-            regs.P.C = +(o > 0xFF);
-            regs.A = o & 0xFF;
-            regs.P.Z = +((regs.A) == 0);
-            regs.P.N = ((regs.A) & 0x80) >> 7;
             // Following is auto-generated code for instruction finish
             pins.Addr = regs.PC;
             regs.PC = (regs.PC + 1) & 0xFFFF;
@@ -7777,22 +7913,26 @@ static void ins_FB_ISC(regs &regs, pins &pins)
             regs.TR = (regs.TR + 1) & 0xFF;
             regs.P.Z = +((regs.TR) == 0);
             regs.P.N = ((regs.TR) & 0x80) >> 7;
-            i32 o;
-            i32 i = regs.TR ^ 0xFF;
+            u32 r;
+            u32 i = regs.TR ^ 0xFF;
             if (regs.P.D) {
-                o = (regs.A & 0x0F) + (i & 0x0F) + regs.P.C;
-                if (o <= 0x0F) o -= 0x06;
-                regs.P.C = +(o > 0x0F);
-                o = (regs.A & 0xF0) + (i & 0xF0) + (regs.P.C << 4) + (o & 0x0F);
-                if (o <= 0xFF) o -= 0x60;
+                r = regs.A + i + regs.P.C;
+                regs.P.Z = (r & 0xFF) == 0;
+                regs.P.C = r > 0xFF;
+                regs.P.N = (r >> 7) & 1;
+                regs.P.V = ((r ^ regs.A) & (r ^ i) & 0x80) >> 7;
+                if (!((regs.A ^ r ^ i) & 0x10)) r = (r & 0xF0) | ((r + 0xFA) & 0xF);
+                r &= 0xFF;
+                if (!regs.P.C) r += 0xA0;
+                regs.A = r & 0xFF;
             } else {
-                o = regs.A + i + regs.P.C;
-                regs.P.V = ((~(regs.A ^ i)) & (regs.A ^ o) & 0x80) >> 7;
+                r = i + regs.A + regs.P.C;
+                regs.P.V = ((~(regs.A ^ i)) & (regs.A ^ r) & 0x80) >> 7;
+                regs.P.C = r > 0xFF;
+                regs.A = r & 0xFF;
+                regs.P.Z = +((regs.A) == 0);
+                regs.P.N = ((regs.A) & 0x80) >> 7;
             }
-            regs.P.C = +(o > 0xFF);
-            regs.A = o & 0xFF;
-            regs.P.Z = +((regs.A) == 0);
-            regs.P.N = ((regs.A) & 0x80) >> 7;
             pins.D = regs.TR;
             // Following is auto-generated code for instruction finish
             break; }
@@ -7859,22 +7999,26 @@ static void ins_FD_SBC(regs &regs, pins &pins)
             pins.Addr = regs.TA;
             break; }
         case 5: { //cleanup_custom
-            i32 o;
-            i32 i = pins.D ^ 0xFF;
+            u32 r;
+            u32 i = pins.D ^ 0xFF;
             if (regs.P.D) {
-                o = (regs.A & 0x0F) + (i & 0x0F) + regs.P.C;
-                if (o <= 0x0F) o -= 0x06;
-                regs.P.C = +(o > 0x0F);
-                o = (regs.A & 0xF0) + (i & 0xF0) + (regs.P.C << 4) + (o & 0x0F);
-                if (o <= 0xFF) o -= 0x60;
+                r = regs.A + i + regs.P.C;
+                regs.P.Z = (r & 0xFF) == 0;
+                regs.P.C = r > 0xFF;
+                regs.P.N = (r >> 7) & 1;
+                regs.P.V = ((r ^ regs.A) & (r ^ i) & 0x80) >> 7;
+                if (!((regs.A ^ r ^ i) & 0x10)) r = (r & 0xF0) | ((r + 0xFA) & 0xF);
+                r &= 0xFF;
+                if (!regs.P.C) r += 0xA0;
+                regs.A = r & 0xFF;
             } else {
-                o = regs.A + i + regs.P.C;
-                regs.P.V = ((~(regs.A ^ i)) & (regs.A ^ o) & 0x80) >> 7;
+                r = i + regs.A + regs.P.C;
+                regs.P.V = ((~(regs.A ^ i)) & (regs.A ^ r) & 0x80) >> 7;
+                regs.P.C = r > 0xFF;
+                regs.A = r & 0xFF;
+                regs.P.Z = +((regs.A) == 0);
+                regs.P.N = ((regs.A) & 0x80) >> 7;
             }
-            regs.P.C = +(o > 0xFF);
-            regs.A = o & 0xFF;
-            regs.P.Z = +((regs.A) == 0);
-            regs.P.N = ((regs.A) & 0x80) >> 7;
             // Following is auto-generated code for instruction finish
             pins.Addr = regs.PC;
             regs.PC = (regs.PC + 1) & 0xFFFF;
@@ -7951,22 +8095,26 @@ static void ins_FF_ISC(regs &regs, pins &pins)
             regs.TR = (regs.TR + 1) & 0xFF;
             regs.P.Z = +((regs.TR) == 0);
             regs.P.N = ((regs.TR) & 0x80) >> 7;
-            i32 o;
-            i32 i = regs.TR ^ 0xFF;
+            u32 r;
+            u32 i = regs.TR ^ 0xFF;
             if (regs.P.D) {
-                o = (regs.A & 0x0F) + (i & 0x0F) + regs.P.C;
-                if (o <= 0x0F) o -= 0x06;
-                regs.P.C = +(o > 0x0F);
-                o = (regs.A & 0xF0) + (i & 0xF0) + (regs.P.C << 4) + (o & 0x0F);
-                if (o <= 0xFF) o -= 0x60;
+                r = regs.A + i + regs.P.C;
+                regs.P.Z = (r & 0xFF) == 0;
+                regs.P.C = r > 0xFF;
+                regs.P.N = (r >> 7) & 1;
+                regs.P.V = ((r ^ regs.A) & (r ^ i) & 0x80) >> 7;
+                if (!((regs.A ^ r ^ i) & 0x10)) r = (r & 0xF0) | ((r + 0xFA) & 0xF);
+                r &= 0xFF;
+                if (!regs.P.C) r += 0xA0;
+                regs.A = r & 0xFF;
             } else {
-                o = regs.A + i + regs.P.C;
-                regs.P.V = ((~(regs.A ^ i)) & (regs.A ^ o) & 0x80) >> 7;
+                r = i + regs.A + regs.P.C;
+                regs.P.V = ((~(regs.A ^ i)) & (regs.A ^ r) & 0x80) >> 7;
+                regs.P.C = r > 0xFF;
+                regs.A = r & 0xFF;
+                regs.P.Z = +((regs.A) == 0);
+                regs.P.N = ((regs.A) & 0x80) >> 7;
             }
-            regs.P.C = +(o > 0xFF);
-            regs.A = o & 0xFF;
-            regs.P.Z = +((regs.A) == 0);
-            regs.P.N = ((regs.A) & 0x80) >> 7;
             pins.D = regs.TR;
             // Following is auto-generated code for instruction finish
             break; }

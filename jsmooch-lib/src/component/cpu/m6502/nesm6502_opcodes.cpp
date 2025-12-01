@@ -3281,15 +3281,11 @@ static void nesins_6B_ARR(regs &regs, pins &pins)
             break; }
         case 2: { //cleanup_custom
             regs.A &= pins.D;
-            regs.P.Z = +((regs.A) == 0);
-            regs.P.N = ((regs.A) & 0x80) >> 7;
-            u32 c = regs.P.C;
-            regs.P.C = regs.A & 1;
-            regs.A = (c << 7) | (regs.A >> 1);
-            regs.P.Z = +((regs.A) == 0);
+            regs.A = (regs.A >> 1) | (regs.P.C << 7);
+            regs.P.Z = regs.A == 0;
             regs.P.N = ((regs.A) & 0x80) >> 7;
             regs.P.C = (regs.A >> 6) & 1;
-            regs.P.V = ((regs.A >> 6) ^ (regs.A >> 5) & 1);
+            regs.P.V = (regs.A >> 6) ^ (regs.A >> 5) & 1;
             // Following is auto-generated code for instruction finish
             pins.Addr = regs.PC;
             regs.PC = (regs.PC + 1) & 0xFFFF;
@@ -6757,12 +6753,12 @@ static void nesins_E1_SBC(regs &regs, pins &pins)
             pins.Addr = regs.TA | (pins.D << 8);
             break; }
         case 6: { //cleanup_custom
-            i32 o;
-            i32 i = pins.D ^ 0xFF;
-            o = regs.A + i + regs.P.C;
-            regs.P.V = ((~(regs.A ^ i)) & (regs.A ^ o) & 0x80) >> 7;
-            regs.P.C = +(o > 0xFF);
-            regs.A = o & 0xFF;
+            u32 r;
+            u32 i = pins.D ^ 0xFF;
+            r = regs.A + i + regs.P.C;
+            regs.P.V = ((~(regs.A ^ i)) & (regs.A ^ r) & 0x80) >> 7;
+            regs.P.C = r > 0xFF;
+            regs.A = r & 0xFF;
             regs.P.Z = +((regs.A) == 0);
             regs.P.N = ((regs.A) & 0x80) >> 7;
             // Following is auto-generated code for instruction finish
@@ -6819,12 +6815,12 @@ static void nesins_E3_ISC(regs &regs, pins &pins)
             pins.D = (pins.D + 1) & 0xFF;
             regs.P.Z = +((pins.D) == 0);
             regs.P.N = ((pins.D) & 0x80) >> 7;
-            i32 o;
-            i32 i = pins.D ^ 0xFF;
-            o = regs.A + i + regs.P.C;
-            regs.P.V = ((~(regs.A ^ i)) & (regs.A ^ o) & 0x80) >> 7;
-            regs.P.C = +(o > 0xFF);
-            regs.A = o & 0xFF;
+            u32 r;
+            u32 i = pins.D ^ 0xFF;
+            r = regs.A + i + regs.P.C;
+            regs.P.V = ((~(regs.A ^ i)) & (regs.A ^ r) & 0x80) >> 7;
+            regs.P.C = r > 0xFF;
+            regs.A = r & 0xFF;
             regs.P.Z = +((regs.A) == 0);
             regs.P.N = ((regs.A) & 0x80) >> 7;
             // Following is auto-generated code for instruction finish
@@ -6874,12 +6870,12 @@ static void nesins_E5_SBC(regs &regs, pins &pins)
             pins.Addr = pins.D;
             break; }
         case 3: { //cleanup_custom
-            i32 o;
-            i32 i = pins.D ^ 0xFF;
-            o = regs.A + i + regs.P.C;
-            regs.P.V = ((~(regs.A ^ i)) & (regs.A ^ o) & 0x80) >> 7;
-            regs.P.C = +(o > 0xFF);
-            regs.A = o & 0xFF;
+            u32 r;
+            u32 i = pins.D ^ 0xFF;
+            r = regs.A + i + regs.P.C;
+            regs.P.V = ((~(regs.A ^ i)) & (regs.A ^ r) & 0x80) >> 7;
+            regs.P.C = r > 0xFF;
+            regs.A = r & 0xFF;
             regs.P.Z = +((regs.A) == 0);
             regs.P.N = ((regs.A) & 0x80) >> 7;
             // Following is auto-generated code for instruction finish
@@ -6937,12 +6933,12 @@ static void nesins_E7_ISC(regs &regs, pins &pins)
             pins.D = (pins.D + 1) & 0xFF;
             regs.P.Z = +((pins.D) == 0);
             regs.P.N = ((pins.D) & 0x80) >> 7;
-            i32 o;
-            i32 i = pins.D ^ 0xFF;
-            o = regs.A + i + regs.P.C;
-            regs.P.V = ((~(regs.A ^ i)) & (regs.A ^ o) & 0x80) >> 7;
-            regs.P.C = +(o > 0xFF);
-            regs.A = o & 0xFF;
+            u32 r;
+            u32 i = pins.D ^ 0xFF;
+            r = regs.A + i + regs.P.C;
+            regs.P.V = ((~(regs.A ^ i)) & (regs.A ^ r) & 0x80) >> 7;
+            regs.P.C = r > 0xFF;
+            regs.A = r & 0xFF;
             regs.P.Z = +((regs.A) == 0);
             regs.P.N = ((regs.A) & 0x80) >> 7;
             // Following is auto-generated code for instruction finish
@@ -6984,12 +6980,12 @@ static void nesins_E9_SBC(regs &regs, pins &pins)
             regs.PC = (regs.PC + 1) & 0xFFFF;
             break; }
         case 2: { //cleanup_custom
-            i32 o;
-            i32 i = pins.D ^ 0xFF;
-            o = regs.A + i + regs.P.C;
-            regs.P.V = ((~(regs.A ^ i)) & (regs.A ^ o) & 0x80) >> 7;
-            regs.P.C = +(o > 0xFF);
-            regs.A = o & 0xFF;
+            u32 r;
+            u32 i = pins.D ^ 0xFF;
+            r = regs.A + i + regs.P.C;
+            regs.P.V = ((~(regs.A ^ i)) & (regs.A ^ r) & 0x80) >> 7;
+            regs.P.C = r > 0xFF;
+            regs.A = r & 0xFF;
             regs.P.Z = +((regs.A) == 0);
             regs.P.N = ((regs.A) & 0x80) >> 7;
             // Following is auto-generated code for instruction finish
@@ -7025,12 +7021,12 @@ static void nesins_EB_SBC(regs &regs, pins &pins)
             regs.PC = (regs.PC + 1) & 0xFFFF;
             break; }
         case 2: { //cleanup_custom
-            i32 o;
-            i32 i = pins.D ^ 0xFF;
-            o = regs.A + i + regs.P.C;
-            regs.P.V = ((~(regs.A ^ i)) & (regs.A ^ o) & 0x80) >> 7;
-            regs.P.C = +(o > 0xFF);
-            regs.A = o & 0xFF;
+            u32 r;
+            u32 i = pins.D ^ 0xFF;
+            r = regs.A + i + regs.P.C;
+            regs.P.V = ((~(regs.A ^ i)) & (regs.A ^ r) & 0x80) >> 7;
+            regs.P.C = r > 0xFF;
+            regs.A = r & 0xFF;
             regs.P.Z = +((regs.A) == 0);
             regs.P.N = ((regs.A) & 0x80) >> 7;
             // Following is auto-generated code for instruction finish
@@ -7087,12 +7083,12 @@ static void nesins_ED_SBC(regs &regs, pins &pins)
             pins.Addr = regs.TA | (pins.D << 8);
             break; }
         case 4: { //cleanup_custom
-            i32 o;
-            i32 i = pins.D ^ 0xFF;
-            o = regs.A + i + regs.P.C;
-            regs.P.V = ((~(regs.A ^ i)) & (regs.A ^ o) & 0x80) >> 7;
-            regs.P.C = +(o > 0xFF);
-            regs.A = o & 0xFF;
+            u32 r;
+            u32 i = pins.D ^ 0xFF;
+            r = regs.A + i + regs.P.C;
+            regs.P.V = ((~(regs.A ^ i)) & (regs.A ^ r) & 0x80) >> 7;
+            regs.P.C = r > 0xFF;
+            regs.A = r & 0xFF;
             regs.P.Z = +((regs.A) == 0);
             regs.P.N = ((regs.A) & 0x80) >> 7;
             // Following is auto-generated code for instruction finish
@@ -7160,12 +7156,12 @@ static void nesins_EF_ISC(regs &regs, pins &pins)
             pins.D = (pins.D + 1) & 0xFF;
             regs.P.Z = +((pins.D) == 0);
             regs.P.N = ((pins.D) & 0x80) >> 7;
-            i32 o;
-            i32 i = pins.D ^ 0xFF;
-            o = regs.A + i + regs.P.C;
-            regs.P.V = ((~(regs.A ^ i)) & (regs.A ^ o) & 0x80) >> 7;
-            regs.P.C = +(o > 0xFF);
-            regs.A = o & 0xFF;
+            u32 r;
+            u32 i = pins.D ^ 0xFF;
+            r = regs.A + i + regs.P.C;
+            regs.P.V = ((~(regs.A ^ i)) & (regs.A ^ r) & 0x80) >> 7;
+            regs.P.C = r > 0xFF;
+            regs.A = r & 0xFF;
             regs.P.Z = +((regs.A) == 0);
             regs.P.N = ((regs.A) & 0x80) >> 7;
             // Following is auto-generated code for instruction finish
@@ -7233,12 +7229,12 @@ static void nesins_F1_SBC(regs &regs, pins &pins)
             pins.Addr = regs.TA;
             break; }
         case 6: { //cleanup_custom
-            i32 o;
-            i32 i = pins.D ^ 0xFF;
-            o = regs.A + i + regs.P.C;
-            regs.P.V = ((~(regs.A ^ i)) & (regs.A ^ o) & 0x80) >> 7;
-            regs.P.C = +(o > 0xFF);
-            regs.A = o & 0xFF;
+            u32 r;
+            u32 i = pins.D ^ 0xFF;
+            r = regs.A + i + regs.P.C;
+            regs.P.V = ((~(regs.A ^ i)) & (regs.A ^ r) & 0x80) >> 7;
+            regs.P.C = r > 0xFF;
+            regs.A = r & 0xFF;
             regs.P.Z = +((regs.A) == 0);
             regs.P.N = ((regs.A) & 0x80) >> 7;
             // Following is auto-generated code for instruction finish
@@ -7300,12 +7296,12 @@ static void nesins_F3_ISC(regs &regs, pins &pins)
             pins.D = (pins.D + 1) & 0xFF;
             regs.P.Z = +((pins.D) == 0);
             regs.P.N = ((pins.D) & 0x80) >> 7;
-            i32 o;
-            i32 i = pins.D ^ 0xFF;
-            o = regs.A + i + regs.P.C;
-            regs.P.V = ((~(regs.A ^ i)) & (regs.A ^ o) & 0x80) >> 7;
-            regs.P.C = +(o > 0xFF);
-            regs.A = o & 0xFF;
+            u32 r;
+            u32 i = pins.D ^ 0xFF;
+            r = regs.A + i + regs.P.C;
+            regs.P.V = ((~(regs.A ^ i)) & (regs.A ^ r) & 0x80) >> 7;
+            regs.P.C = r > 0xFF;
+            regs.A = r & 0xFF;
             regs.P.Z = +((regs.A) == 0);
             regs.P.N = ((regs.A) & 0x80) >> 7;
             // Following is auto-generated code for instruction finish
@@ -7359,12 +7355,12 @@ static void nesins_F5_SBC(regs &regs, pins &pins)
             pins.Addr = regs.TA;
             break; }
         case 4: { //cleanup_custom
-            i32 o;
-            i32 i = pins.D ^ 0xFF;
-            o = regs.A + i + regs.P.C;
-            regs.P.V = ((~(regs.A ^ i)) & (regs.A ^ o) & 0x80) >> 7;
-            regs.P.C = +(o > 0xFF);
-            regs.A = o & 0xFF;
+            u32 r;
+            u32 i = pins.D ^ 0xFF;
+            r = regs.A + i + regs.P.C;
+            regs.P.V = ((~(regs.A ^ i)) & (regs.A ^ r) & 0x80) >> 7;
+            regs.P.C = r > 0xFF;
+            regs.A = r & 0xFF;
             regs.P.Z = +((regs.A) == 0);
             regs.P.N = ((regs.A) & 0x80) >> 7;
             // Following is auto-generated code for instruction finish
@@ -7431,12 +7427,12 @@ static void nesins_F7_ISC(regs &regs, pins &pins)
             regs.TR = (regs.TR + 1) & 0xFF;
             regs.P.Z = +((regs.TR) == 0);
             regs.P.N = ((regs.TR) & 0x80) >> 7;
-            i32 o;
-            i32 i = regs.TR ^ 0xFF;
-            o = regs.A + i + regs.P.C;
-            regs.P.V = ((~(regs.A ^ i)) & (regs.A ^ o) & 0x80) >> 7;
-            regs.P.C = +(o > 0xFF);
-            regs.A = o & 0xFF;
+            u32 r;
+            u32 i = regs.TR ^ 0xFF;
+            r = regs.A + i + regs.P.C;
+            regs.P.V = ((~(regs.A ^ i)) & (regs.A ^ r) & 0x80) >> 7;
+            regs.P.C = r > 0xFF;
+            regs.A = r & 0xFF;
             regs.P.Z = +((regs.A) == 0);
             regs.P.N = ((regs.A) & 0x80) >> 7;
             break; }
@@ -7493,12 +7489,12 @@ static void nesins_F9_SBC(regs &regs, pins &pins)
             pins.Addr = regs.TA;
             break; }
         case 5: { //cleanup_custom
-            i32 o;
-            i32 i = pins.D ^ 0xFF;
-            o = regs.A + i + regs.P.C;
-            regs.P.V = ((~(regs.A ^ i)) & (regs.A ^ o) & 0x80) >> 7;
-            regs.P.C = +(o > 0xFF);
-            regs.A = o & 0xFF;
+            u32 r;
+            u32 i = pins.D ^ 0xFF;
+            r = regs.A + i + regs.P.C;
+            regs.P.V = ((~(regs.A ^ i)) & (regs.A ^ r) & 0x80) >> 7;
+            regs.P.C = r > 0xFF;
+            regs.A = r & 0xFF;
             regs.P.Z = +((regs.A) == 0);
             regs.P.N = ((regs.A) & 0x80) >> 7;
             // Following is auto-generated code for instruction finish
@@ -7553,12 +7549,12 @@ static void nesins_FB_ISC(regs &regs, pins &pins)
             regs.TR = (regs.TR + 1) & 0xFF;
             regs.P.Z = +((regs.TR) == 0);
             regs.P.N = ((regs.TR) & 0x80) >> 7;
-            i32 o;
-            i32 i = regs.TR ^ 0xFF;
-            o = regs.A + i + regs.P.C;
-            regs.P.V = ((~(regs.A ^ i)) & (regs.A ^ o) & 0x80) >> 7;
-            regs.P.C = +(o > 0xFF);
-            regs.A = o & 0xFF;
+            u32 r;
+            u32 i = regs.TR ^ 0xFF;
+            r = regs.A + i + regs.P.C;
+            regs.P.V = ((~(regs.A ^ i)) & (regs.A ^ r) & 0x80) >> 7;
+            regs.P.C = r > 0xFF;
+            regs.A = r & 0xFF;
             regs.P.Z = +((regs.A) == 0);
             regs.P.N = ((regs.A) & 0x80) >> 7;
             pins.D = regs.TR;
@@ -7627,12 +7623,12 @@ static void nesins_FD_SBC(regs &regs, pins &pins)
             pins.Addr = regs.TA;
             break; }
         case 5: { //cleanup_custom
-            i32 o;
-            i32 i = pins.D ^ 0xFF;
-            o = regs.A + i + regs.P.C;
-            regs.P.V = ((~(regs.A ^ i)) & (regs.A ^ o) & 0x80) >> 7;
-            regs.P.C = +(o > 0xFF);
-            regs.A = o & 0xFF;
+            u32 r;
+            u32 i = pins.D ^ 0xFF;
+            r = regs.A + i + regs.P.C;
+            regs.P.V = ((~(regs.A ^ i)) & (regs.A ^ r) & 0x80) >> 7;
+            regs.P.C = r > 0xFF;
+            regs.A = r & 0xFF;
             regs.P.Z = +((regs.A) == 0);
             regs.P.N = ((regs.A) & 0x80) >> 7;
             // Following is auto-generated code for instruction finish
@@ -7711,12 +7707,12 @@ static void nesins_FF_ISC(regs &regs, pins &pins)
             regs.TR = (regs.TR + 1) & 0xFF;
             regs.P.Z = +((regs.TR) == 0);
             regs.P.N = ((regs.TR) & 0x80) >> 7;
-            i32 o;
-            i32 i = regs.TR ^ 0xFF;
-            o = regs.A + i + regs.P.C;
-            regs.P.V = ((~(regs.A ^ i)) & (regs.A ^ o) & 0x80) >> 7;
-            regs.P.C = +(o > 0xFF);
-            regs.A = o & 0xFF;
+            u32 r;
+            u32 i = regs.TR ^ 0xFF;
+            r = regs.A + i + regs.P.C;
+            regs.P.V = ((~(regs.A ^ i)) & (regs.A ^ r) & 0x80) >> 7;
+            regs.P.C = r > 0xFF;
+            regs.A = r & 0xFF;
             regs.P.Z = +((regs.A) == 0);
             regs.P.N = ((regs.A) & 0x80) >> 7;
             pins.D = regs.TR;

@@ -56,7 +56,7 @@ int read_file_buf::read(const char *fname, const char *fpath)
         strncpy(path, fpath, 255);
     }
     if (!file_exists(OUTPATH)) {
-        printf("\nFILE %s NOT FOUND", OUTPATH);
+        printf("\nFILE \"%s\" NOT FOUND", OUTPATH);
         return 0;
     }
 

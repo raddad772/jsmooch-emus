@@ -614,10 +614,36 @@ class m6502_switchgen {
 
     ARR(what = 'regs.TR') {
         // AND #i then ROR A, except C is bit 6 and and V is bit 6 xor bit 5
-        this.AND(what);
-        this.ROR('regs.A');
-        this.addl('regs.P.C = (regs.A >>> 6) & 1;');
-        this.addl('regs.P.V = ((regs.A >>> 6) ^ (regs.A >>> 5) & 1);');
+
+        if (this.BCD_support) {
+            this.addl('if (regs.P.D) {');
+            this.addl('    regs.A &= pins.D;');
+            this.addl('    u8 unshifted_A = regs.A;');
+            this.addl('    regs.A = (regs.P.C << 7) | (regs.A >> 1) & 0xFF;');
+            this.addl('    regs.P.Z = regs.A == 0;');
+            this.addl('    regs.P.N = ((regs.A) & 0x80) >> 7;');
+            this.addl('    regs.P.V = (regs.A >> 6) ^ (regs.A >> 5) & 1;');
+            this.addl('    if ((unshifted_A & 15) + (unshifted_A&1) > 5) regs.A = ((regs.A + 6) & 15) | (regs.A & 0xF0) & 0xFF;');
+            this.addl('    regs.P.C = ((unshifted_A & 0xF0) + (unshifted_A & 0x10) > 0x50) ? 1 : 0;');
+            this.addl('    if (regs.P.C) regs.A = (regs.A + 0x60) & 0xFF;');
+            this.addl('}');
+            this.addl('else {');
+            this.addl('    regs.A &= pins.D;');
+            this.addl('    regs.A = (regs.A >> 1) | (regs.P.C << 7);');
+            this.addl('    regs.P.Z = regs.A == 0;');
+            this.addl('    regs.P.N = ((regs.A) & 0x80) >> 7;');
+            this.addl('    regs.P.C = (regs.A >> 6) & 1;');
+            this.addl('    regs.P.V = (regs.A >> 6) ^ (regs.A >> 5) & 1;');
+            this.addl('}');
+        }
+        else {
+            this.addl('regs.A &= pins.D;');
+            this.addl('regs.A = (regs.A >> 1) | (regs.P.C << 7);');
+            this.addl('regs.P.Z = regs.A == 0;');
+            this.addl('regs.P.N = ((regs.A) & 0x80) >> 7;');
+            this.addl('regs.P.C = (regs.A >> 6) & 1;');
+            this.addl('regs.P.V = (regs.A >> 6) ^ (regs.A >> 5) & 1;');
+        }
     }
 
     SBX(what = 'regs.TR') {
@@ -673,23 +699,32 @@ class m6502_switchgen {
         }
         if (this.BCD_support) {
             this.addl('if (regs.P.D) {');
-            this.addl('    o = (regs.A & 0x0F) + (i & 0x0F) + (regs.P.C);');
-            this.addl('    if (o > 0x09) o += 0x06;');
-            this.addl('    regs.P.C = +(o > 0x0F);');
-            this.addl('    o = (regs.A & 0xF0) + (i & 0xF0) + (regs.P.C << 4) + (o & 0x0F);');
-            this.addl('    if (o > 0x9F) o += 0x60;');
+                this.addl('    regs.P.Z = ((regs.A + i + regs.P.C) & 0xFF) == 0;');
+                this.addl('    o = (regs.A & 0x0F) + (i & 0x0F) + (regs.P.C);');
+                this.addl('    if (o > 0x09) o += 0x06;');
+                this.addl('    regs.P.C = +(o > 0x0F);');
+                this.addl('    o = (regs.A & 0xF0) + (i & 0xF0) + (regs.P.C << 4) + (o & 0x0F);');
+                this.addl('    regs.P.N = (o >> 7) & 1;');
+                this.addl('    regs.P.V = ((~(regs.A ^ i)) & (regs.A ^ o) & 0x80) >> 7;');
+                this.addl('    if (o > 0x9F) o += 0x60;');
+                this.addl('    regs.A = o & 0xFF;');
+                this.addl('    regs.P.C = o > 0xFF;');
             this.addl('} else {');
-            this.addl('    o = i + regs.A + regs.P.C;');
-            this.addl('    regs.P.V = ((~(regs.A ^ i)) & (regs.A ^ o) & 0x80) >>> 7;');
+                this.addl('    o = i + regs.A + regs.P.C;');
+                this.addl('    regs.P.V = ((~(regs.A ^ i)) & (regs.A ^ o) & 0x80) >> 7;');
+                this.addl('    regs.P.C = o > 0xFF;');
+                this.addl('    regs.A = o & 0xFF;');
+                this.addl('    regs.P.Z = regs.A == 0;');
+                this.addl('    regs.P.N = (regs.A & 0x80) >> 7;');
             this.addl('}');
         } else {
             this.addl('o = i + regs.A + regs.P.C;');
             this.addl('regs.P.V = ((~(regs.A ^ i)) & (regs.A ^ o) & 0x80) >>> 7;');
+            this.addl('regs.P.C = +(o > 0xFF);');
+            this.addl('regs.A = o & 0xFF;');
+            this.setz('regs.A');
+            this.setn('regs.A');
         }
-        this.addl('regs.P.C = +(o > 0xFF);');
-        this.addl('regs.A = o & 0xFF;');
-        this.setz('regs.A');
-        this.setn('regs.A');
     }
 
     AND(what='regs.TR') {
@@ -880,29 +915,37 @@ class m6502_switchgen {
             this.addl('let i = ' + what + ' ^ 0xFF;');
         }
         else if (GENTARGET === 'c') {
-            this.addl('i32 o;');
-            this.addl('i32 i = ' + what + ' ^ 0xFF;');
+            this.addl('u32 r;');
+            this.addl('u32 i = ' + what + ' ^ 0xFF;');
         }
 
         if (this.BCD_support) {
             this.addl('if (regs.P.D) {');
-            this.addl('    o = (regs.A & 0x0F) + (i & 0x0F) + regs.P.C;');
-            this.addl('    if (o <= 0x0F) o -= 0x06;');
-            this.addl('    regs.P.C = +(o > 0x0F);');
-            this.addl('    o = (regs.A & 0xF0) + (i & 0xF0) + (regs.P.C << 4) + (o & 0x0F);');
-            this.addl('    if (o <= 0xFF) o -= 0x60;');
+                this.addl('    r = regs.A + i + regs.P.C;');
+                this.addl('    regs.P.Z = (r & 0xFF) == 0;');
+                this.addl('    regs.P.C = r > 0xFF;');
+                this.addl('    regs.P.N = (r >> 7) & 1;');
+                this.addl('    regs.P.V = ((r ^ regs.A) & (r ^ i) & 0x80) >> 7;');
+                this.addl('    if (!((regs.A ^ r ^ i) & 0x10)) r = (r & 0xF0) | ((r + 0xFA) & 0xF);');
+                this.addl('    r &= 0xFF;');
+                this.addl('    if (!regs.P.C) r += 0xA0;');
+                this.addl('    regs.A = r & 0xFF;');
             this.addl('} else {');
-            this.addl('    o = regs.A + i + regs.P.C;');
-            this.addl('    regs.P.V = ((~(regs.A ^ i)) & (regs.A ^ o) & 0x80) >>> 7;');
+                this.addl('    r = i + regs.A + regs.P.C;');
+                this.addl('    regs.P.V = ((~(regs.A ^ i)) & (regs.A ^ r) & 0x80) >> 7;');
+                this.addl('    regs.P.C = r > 0xFF;');
+                this.addl('    regs.A = r & 0xFF;');
+                this.addl('    regs.P.Z = +((regs.A) == 0);');
+                this.addl('    regs.P.N = ((regs.A) & 0x80) >> 7;');
             this.addl('}');
         } else {
-            this.addl('o = regs.A + i + regs.P.C;');
-            this.addl('regs.P.V = ((~(regs.A ^ i)) & (regs.A ^ o) & 0x80) >>> 7;');
+            this.addl('r = regs.A + i + regs.P.C;');
+            this.addl('regs.P.V = ((~(regs.A ^ i)) & (regs.A ^ r) & 0x80) >>> 7;');
+            this.addl('regs.P.C = r > 0xFF;');
+            this.addl('regs.A = r & 0xFF;');
+            this.setz('regs.A');
+            this.setn('regs.A');
         }
-        this.addl('regs.P.C = +(o > 0xFF);');
-        this.addl('regs.A = o & 0xFF;');
-        this.setz('regs.A');
-        this.setn('regs.A');
     }
 
     // Clear bit bnum in reg

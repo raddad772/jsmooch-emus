@@ -51,9 +51,9 @@ struct regs {
 };
 
 struct pins {
-    u32 Addr{};
-    u32 D{};
-    u32 RW{};
+    u16 Addr{};
+    u8 D{};
+    u8 RW{};
 
     u8 IRQ{};
     u8 NMI{};
