@@ -115,8 +115,8 @@ void disasm_TRAP(ins_t &ins, u32 &PC, jsm_debug_read_trace &rt, jsm_string &out)
 void disasm_TRAPV(ins_t &ins, u32 &PC, jsm_debug_read_trace &rt, jsm_string &out);
 void disasm_TST(ins_t &ins, u32 &PC, jsm_debug_read_trace &rt, jsm_string &out);
 void disasm_UNLK(ins_t &ins, u32 &PC, jsm_debug_read_trace &rt, jsm_string &out);
-void disasm_ILLEGALS(ins_t &ins, u32 &PC, jsm_debug_read_trace &rt, jsm_string &out);
 void disasm_ALINE(ins_t &ins, u32 &PC, jsm_debug_read_trace &rt, jsm_string &out);
+void disasm_FLINE(ins_t &ins, u32 &PC, jsm_debug_read_trace &rt, jsm_string &out);
 void disasm_SUBQ_ar(ins_t &ins, u32 &PC, jsm_debug_read_trace &rt, jsm_string &out);
 void disasm_ADDQ_ar(ins_t &ins, u32 &PC, jsm_debug_read_trace &rt, jsm_string &out);
 

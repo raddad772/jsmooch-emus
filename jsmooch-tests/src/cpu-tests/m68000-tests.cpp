@@ -459,24 +459,24 @@ static void copy_state_to_RAM(m68k_test_state *s)
     }
 }
 
-static void copy_state_to_cpu(M68k::core* cpu, m68k_test_state *s)
+static void copy_state_to_cpu(M68k::core& cpu, m68k_test_state &s)
 {
-    cpu->set_SR(s->sr, 1);
+    cpu.set_SR(s.sr, 1);
     for (u32 i = 0; i < 8; i++) {
-        cpu->regs.D[i] = s->d[i];
-        if (i < 7) cpu->regs.A[i] = s->a[i];
+        cpu.regs.D[i] = s.d[i];
+        if (i < 7) cpu.regs.A[i] = s.a[i];
     }
-    cpu->regs.PC = s->pc;
-    cpu->regs.IRC = s->prefetch[1];
-    cpu->regs.IR = s->prefetch[0];
-    cpu->regs.IRD = s->prefetch[0];
-    if (cpu->regs.SR.S) { // supervisor mode!
-        cpu->regs.A[7] = s->ssp;
-        cpu->regs.ASP = s->usp;
+    cpu.regs.PC = s.pc;
+    cpu.regs.IRC = s.prefetch[1];
+    cpu.regs.IR = s.prefetch[0];
+    cpu.regs.IRD = s.prefetch[0];
+    if (cpu.regs.SR.S) { // supervisor mode!
+        cpu.regs.A[7] = s.ssp;
+        cpu.regs.ASP = s.usp;
     }
     else {
-        cpu->regs.A[7] = s->usp;
-        cpu->regs.ASP = s->ssp;
+        cpu.regs.A[7] = s.usp;
+        cpu.regs.ASP = s.ssp;
     }
 }
 
@@ -489,15 +489,15 @@ static u32 do_test_read_trace(void *ptr, u32 addr, u32 UDS, u32 LDS)
     return v;
 }
 
-static transaction* find_transaction(m68k_test_struct *ts, transaction_kind tk, u32 addr, u32 UDS, u32 LDS, u32 sz)
+static transaction* find_transaction(m68k_test_struct &ts, transaction_kind tk, u32 addr, u32 UDS, u32 LDS, u32 sz)
 {
     //u32 mask = 0xFFFFFE;
     //if (sz == 1) mask = 0xFFFFFF;
     u32 tk2 = tk;
     u32 mask = 0xFFFFFE;
     transaction* t = nullptr;
-    for (i32 i = 0; i < ts->test.transactions.num_transactions; i++) {
-        t = &ts->test.transactions.items[i];
+    for (i32 i = 0; i < ts.test.transactions.num_transactions; i++) {
+        t = &ts.test.transactions.items[i];
         if (((t->addr_bus & mask) == addr) && ((t->kind == tk) || (t->kind == tk2)) && (t->visited == 0) && (t->UDS == UDS) && (t->LDS == LDS)) {
             return t;
         }
@@ -508,18 +508,18 @@ static transaction* find_transaction(m68k_test_struct *ts, transaction_kind tk, 
     return nullptr;
 }
 
-static u32 do_test_read(m68k_test_struct *ts, u32 addr, u32 UDS, u32 LDS, u32 fc)
+static u32 do_test_read(m68k_test_struct &ts, u32 addr, u32 UDS, u32 LDS, u32 fc)
 {
     // happens on cycle 1 of transactions
     assert(addr<0x01000000);
-    u32 addr_error = (((UDS + LDS) == 2) && (ts->cpu.state.bus_cycle.addr & 1));
+    u32 addr_error = (((UDS + LDS) == 2) && (ts.cpu.state.bus_cycle.addr & 1));
     u32 v = 0;
     if (UDS) v |= tmem[addr] << 8;
     if (LDS) v |= tmem[addr|1];
-    ts->cpu.pins.DTACK = 1;
-    transaction *m = &ts->my_transactions.items[ts->my_transactions.num_transactions++];
+    ts.cpu.pins.DTACK = 1;
+    transaction *m = &ts.my_transactions.items[ts.my_transactions.num_transactions++];
     m->kind = addr_error ? tk_read_addr_error : tk_read;
-    m->start_cycle = my_read_cycle(ts->trace_cycles);
+    m->start_cycle = my_read_cycle(ts.trace_cycles);
     m->addr_bus = addr;
     m->data_bus = v;
     m->visited = 1;
@@ -530,8 +530,8 @@ static u32 do_test_read(m68k_test_struct *ts, u32 addr, u32 UDS, u32 LDS, u32 fc
 
     transaction *t = find_transaction(ts, m->kind, addr & 0xFFFFFE, UDS, LDS, m->sz);
     if (t == 0) {
-        printf("\nNo read found from address %06x cycle:%lld", addr, ts->trace_cycles);
-        ts->test.failed = 5;
+        printf("\nNo read found from address %06x cycle:%lld", addr, ts.trace_cycles);
+        ts.test.failed = 5;
         return 0;
     }
     u32 sz = UDS + LDS;
@@ -539,28 +539,28 @@ static u32 do_test_read(m68k_test_struct *ts, u32 addr, u32 UDS, u32 LDS, u32 fc
 
     if (t->fc != fc) {
         printf("\nMISMATCH FC THEIRS:%d MINE:%d", t->fc, fc);
-        ts->test.failed = 50;
+        ts.test.failed = 50;
         return v;
     }
-    if (t->start_cycle != my_read_cycle(ts->trace_cycles)) {
-        //if (dbg.trace_on) printf("\nMISMATCH READ %06x their cycle:%d    mine:%lld", addr, t->start_cycle, ts->trace_cycles);
-        ts->test.failed = 6;
+    if (t->start_cycle != my_read_cycle(ts.trace_cycles)) {
+        //if (dbg.trace_on) printf("\nMISMATCH READ %06x their cycle:%d    mine:%lld", addr, t->start_cycle, ts.trace_cycles);
+        ts.test.failed = 6;
     }
 
     return v;
 }
 
-static void do_test_write(m68k_test_struct *ts, u32 addr, u32 UDS, u32 LDS, u32 val, u32 fc)
+static void do_test_write(m68k_test_struct &ts, u32 addr, u32 UDS, u32 LDS, u32 val, u32 fc)
 {
     //printf("\nWRITE! %06x %d %d %04x", addr, UDS, LDS, val);
     assert(addr<0x01000000);
-    u32 addr_error = (((UDS + LDS) == 2) && (ts->cpu.state.bus_cycle.addr & 1));
+    u32 addr_error = (((UDS + LDS) == 2) && (ts.cpu.state.bus_cycle.addr & 1));
     if (UDS) tmem[addr] = (val >> 8) & 0xFF;
     if (LDS) tmem[addr|1] = val & 0xFF;
-    ts->cpu.pins.DTACK = 1;
-    transaction *m = &ts->my_transactions.items[ts->my_transactions.num_transactions++];
+    ts.cpu.pins.DTACK = 1;
+    transaction *m = &ts.my_transactions.items[ts.my_transactions.num_transactions++];
     m->kind = addr_error ? tk_write_addr_error : tk_write;
-    m->start_cycle = my_write_cycle(ts->trace_cycles);
+    m->start_cycle = my_write_cycle(ts.trace_cycles);
     m->addr_bus = addr;
     m->data_bus = val;
     m->visited = 1;
@@ -571,15 +571,15 @@ static void do_test_write(m68k_test_struct *ts, u32 addr, u32 UDS, u32 LDS, u32 
 
     transaction* t = find_transaction(ts, m->kind, addr & 0xFFFFFE, UDS, LDS, m->sz);
     if (t == nullptr) {
-        printf("\nWarning bad write not found addr:%06x val:%08x cyc:%lld", addr, val, ts->trace_cycles);
-        ts->test.failed = 1;
+        printf("\nWarning bad write not found addr:%06x val:%08x cyc:%lld", addr, val, ts.trace_cycles);
+        ts.test.failed = 1;
         return;
     }
     u32 sz = UDS + LDS;
     t->visited = 1;
     if (sz != t->sz) {
         printf("\nFailed wrong size. Mine: %d  theirs: %d", sz, t->sz);
-        ts->test.failed = 2;
+        ts.test.failed = 2;
         return;
     }
     u32 v = 0;
@@ -588,15 +588,15 @@ static void do_test_write(m68k_test_struct *ts, u32 addr, u32 UDS, u32 LDS, u32 
     else v = val & 0x00FF;
     if (t->fc != fc) {
         printf("\nFC mismatch. theirs:%d mine:%d", t->fc, fc);
-        ts->test.failed = 40;
+        ts.test.failed = 40;
     }
-    if (t->start_cycle != my_write_cycle(ts->trace_cycles)) {
-        //if (dbg.trace_on) printf("\nMISMATCH WRITE %06x their cycle:%d    mine:%lld", addr, t->start_cycle, ts->trace_cycles);
-        ts->test.failed = 3;
+    if (t->start_cycle != my_write_cycle(ts.trace_cycles)) {
+        //if (dbg.trace_on) printf("\nMISMATCH WRITE %06x their cycle:%d    mine:%lld", addr, t->start_cycle, ts.trace_cycles);
+        ts.test.failed = 3;
     }
     if (t->data_bus != v) {
         //printf("\nWrong value write (correct addr):%06x val: %04x mine:%04x", addr, t->data_bus, val);
-        ts->test.failed_w = 1;
+        ts.test.failed_w = 1;
         return;
     }
 }
@@ -734,16 +734,16 @@ static u32 compare_state_to_cpu(m68k_test_struct*ts, m68k_test_state *final, m68
     return all_passed;
 }
 
-static void cycle_cpu(m68k_test_struct*ts)
+static void cycle_cpu(m68k_test_struct &ts)
 {
-    ts->cpu.cycle();
-    ts->trace_cycles++;
-    if ((ts->cpu.pins.AS) && (!ts->cpu.pins.DTACK)) { // CPU is trying to read or write
-        if (ts->cpu.pins.RW) { // Write!
-            do_test_write(ts, ts->cpu.pins.Addr, ts->cpu.pins.UDS, ts->cpu.pins.LDS, ts->cpu.pins.D, ts->cpu.pins.FC);
+    ts.cpu.cycle();
+    ts.trace_cycles++;
+    if ((ts.cpu.pins.AS) && (!ts.cpu.pins.DTACK)) { // CPU is trying to read or write
+        if (ts.cpu.pins.RW) { // Write!
+            do_test_write(ts, ts.cpu.pins.Addr, ts.cpu.pins.UDS, ts.cpu.pins.LDS, ts.cpu.pins.D, ts.cpu.pins.FC);
         }
         else {
-            ts->cpu.pins.D = do_test_read(ts, ts->cpu.pins.Addr, ts->cpu.pins.UDS, ts->cpu.pins.LDS, ts->cpu.pins.FC);
+            ts.cpu.pins.D = do_test_read(ts, ts.cpu.pins.Addr, ts.cpu.pins.UDS, ts.cpu.pins.LDS, ts.cpu.pins.FC);
         }
     }
 }
@@ -783,7 +783,7 @@ static void pprint_transactions(m68k_test_transactions *ts, m68k_test_transactio
             }
         }
         char *ptr = buf;
-        memset(ptr, 0, 100);
+        memset(ptr, 0, 500);
         if ((t1 != nullptr) && (t2 != nullptr)) {
             u32 c = t2->data_bus;
             if (((t2->UDS + t2->LDS) == 1) && (t2->UDS)) c >>= 8;
@@ -801,10 +801,10 @@ static void pprint_transactions(m68k_test_transactions *ts, m68k_test_transactio
             ptr += snprintf(ptr,  500-(ptr-buf), "                       ");
         }
         else {
-            ptr += dopppt(ptr, t1, ptr-buf);
+            ptr += dopppt(ptr, t1, 500-(ptr-buf));
         }
         if (t2 != nullptr) {
-            ptr += dopppt(ptr, t2, ptr-buf);
+            ptr += dopppt(ptr, t2, 500-(ptr-buf));
             if (test->had_group2 != -1) {
                 u32 my_addr = t2->addr_bus & 0xFFFFFE;
                 u32 g0_min = test->cpu.state.exception.group12.base_addr;
@@ -1037,7 +1037,7 @@ static u32 do_test(m68k_test_struct*ts, const char*file, const char *fname)
         ptr = decode_test(ptr, &ts->test);
         if (is_movew && (i == 3)) continue;
 
-        copy_state_to_cpu(&ts->cpu, &ts->test.initial);
+        copy_state_to_cpu(ts->cpu, ts->test.initial);
         copy_state_to_RAM(&ts->test.initial);
         ts->cpu.state.current = M68k::S_decode;
         ts->test.failed = 0;
@@ -1050,7 +1050,7 @@ static u32 do_test(m68k_test_struct*ts, const char*file, const char *fname)
         fflush(stdout);
 
         for (u32 j = 0; j < 160; j++) {
-            cycle_cpu(ts);
+            cycle_cpu(*ts);
             if (j == 0) {
                 ts->cpu.ins_decoded = 0;
             }
@@ -1058,7 +1058,7 @@ static u32 do_test(m68k_test_struct*ts, const char*file, const char *fname)
                 if (ts->cpu.ins_decoded) break;
             }
             if ((ts->cpu.state.current == M68k::S_exc_group0) && (ts->had_group0 == -1)) {
-                ts->had_group0 = (i64)ts->trace_cycles;
+                ts->had_group0 = static_cast<i64>(ts->trace_cycles);
             }
             if ((ts->cpu.state.current == M68k::S_exc_group12) && (ts->had_group2 == -1)) ts->had_group2 = (i64)ts->trace_cycles;
             //if (ts->test.failed) break;
@@ -1105,7 +1105,7 @@ void test_m68000()
     jsm_debug_read_trace rt;
     rt.read_trace_m68k = &do_test_read_trace;
 
-    m68k_test_struct ts;
+    m68k_test_struct ts{};
     rt.ptr = static_cast<void *>(&ts);
 
     ts.cpu.setup_tracing(&rt, &ts.trace_cycles);
@@ -1175,7 +1175,7 @@ void test_m68000()
     tmem = static_cast<u8 *>(malloc(0x1000000)); // 24 MB RAM allocate
 
     u32 completed_tests = 0;
-    u32 nn = 52; // out of 123
+    u32 nn = 123; // out of 123
     //dbg_enable_trace();
     for (u32 i = 0; i < num_files; i++) {
         u32 skip = 0;

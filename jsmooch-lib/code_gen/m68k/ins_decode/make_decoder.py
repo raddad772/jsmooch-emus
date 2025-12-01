@@ -553,6 +553,7 @@ def main():
         if line[0] == '.':
             if code_block is not None:
                 code_block.finalize()
+                print('ADD ' + code_block.name)
                 ins_names.add(code_block.name)
                 if code_block.template is not None:
                     template_names.add(code_block.template)
@@ -567,6 +568,8 @@ def main():
     ins_variant = dict()
     for code_block in code_blocks:
         rls = code_block.out_code(ins_variant).split('\n')
+        print("YO " + str(code_block.template))
+
         for r in rls:
             lines.append(r + '\n')
 

@@ -1000,8 +1000,11 @@
         op1 = mk_ea(AM_address_register_direct, a);
         bind_opcode("0100 1110 0101 1...", 4, &core::ins_UNLK, &disasm_UNLK, a, &op1, NULL, 0, OM_r);
     }
-//BAD TEMPLATE: ILLEGALS
 
     for (u32 d = 0; d < 4096; d++) {
         bind_opcode("1010 .... .... ....", 4, &core::ins_ALINE, &disasm_ALINE, d, NULL, NULL, 0, OM_none);
+    }
+
+    for (u32 d = 0; d < 4096; d++) {
+        bind_opcode("1111 .... .... ....", 4, &core::ins_FLINE, &disasm_FLINE, d, NULL, NULL, 0, OM_none);
     }

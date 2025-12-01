@@ -656,13 +656,13 @@ void disasm_UNLK(ins_t &ins, u32 &PC, jsm_debug_read_trace &rt, jsm_string &out)
     out.sprintf("UNIMPLEMENTED DISASSEMBLY %s", __func__);
 }
 
-void disasm_ILLEGALS(ins_t &ins, u32 &PC, jsm_debug_read_trace &rt, jsm_string &out)
+void disasm_ALINE(ins_t &ins, u32 &PC, jsm_debug_read_trace &rt, jsm_string &out)
 {
     printf("\nERROR UNIMPLEMENTED DISASSEMBLY %04x", ins.opcode);
     out.sprintf("UNIMPLEMENTED DISASSEMBLY %s", __func__);
 }
 
-void disasm_ALINE(ins_t &ins, u32 &PC, jsm_debug_read_trace &rt, jsm_string &out)
+void disasm_FLINE(ins_t &ins, u32 &PC, jsm_debug_read_trace &rt, jsm_string &out)
 {
     printf("\nERROR UNIMPLEMENTED DISASSEMBLY %04x", ins.opcode);
     out.sprintf("UNIMPLEMENTED DISASSEMBLY %s", __func__);

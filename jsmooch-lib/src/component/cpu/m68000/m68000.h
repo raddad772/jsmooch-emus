@@ -103,7 +103,7 @@ struct pins {
     void serialize(serialized_state &state);
     void deserialize(serialized_state &state);
     u8 FC{}; // Function codes
-    u16 Addr{};
+    u32 Addr{};
     u16 D{};
     u8 DTACK{}; // Data ack. set externally
     u8 VPA{}; // VPA valid peripheral address, for autovectored interrupts and old peripherals for 6800 processors
@@ -367,7 +367,7 @@ private:
     u32 LSR(u32 result, u32 shift, u32 sz);
     u32 EOR(u32 source, u32 target, u32 sz);
     u32 OR(u32 source, u32 target, u32 sz);
-    u32 condition(u32 condition) const;
+    [[nodiscard]] u32 condition(u32 condition) const;
     void set_IPC();
     void correct_IPC_MOVE_l_pf0(u32 opnum);
 
@@ -494,8 +494,6 @@ public:
     INS(TST);
     INS(UNLK);
     INS(NOINS);
-    INS();
-
 #undef INS
 
     void serialize(serialized_state &m_state);
@@ -505,7 +503,7 @@ public:
     void reset();
     void cycle();
     void set_SR(u32 val, u32 immediate_t);
-    u32 get_SR() const;
+    [[nodiscard]] u32 get_SR() const;
     void pprint_ea(ins_t &ins, u32 opnum, jsm_string *outstr) const;
     void register_iack_handler(void *ptr, void (*handler)(void*));
     void set_interrupt_level(u32 val);
