@@ -56,31 +56,31 @@ static void create_and_bind_registers_z80(genesis* this, disassembly_view *dv)
     snprintf(rg->name, sizeof(rg->name), "A");
     rg->kind = RK_int8;
     rg->index = tkindex++;
-    rg->custom_render = NULL;
+    rg->custom_render = nullptr;
 
     rg = cvec_push_back(&dv->cpu.regs);
     snprintf(rg->name, sizeof(rg->name), "B");
     rg->kind = RK_int8;
     rg->index = tkindex++;
-    rg->custom_render = NULL;
+    rg->custom_render = nullptr;
 
     rg = cvec_push_back(&dv->cpu.regs);
     snprintf(rg->name, sizeof(rg->name), "C");
     rg->kind = RK_int8;
     rg->index = tkindex++;
-    rg->custom_render = NULL;
+    rg->custom_render = nullptr;
 
     rg = cvec_push_back(&dv->cpu.regs);
     snprintf(rg->name, sizeof(rg->name), "D");
     rg->kind = RK_int8;
     rg->index = tkindex++;
-    rg->custom_render = NULL;
+    rg->custom_render = nullptr;
 
     rg = cvec_push_back(&dv->cpu.regs);
     snprintf(rg->name, sizeof(rg->name), "E");
     rg->kind = RK_int8;
     rg->index = tkindex++;
-    rg->custom_render = NULL;
+    rg->custom_render = nullptr;
 
     rg = cvec_push_back(&dv->cpu.regs);
     snprintf(rg->name, sizeof(rg->name), "F");
@@ -92,73 +92,73 @@ static void create_and_bind_registers_z80(genesis* this, disassembly_view *dv)
     snprintf(rg->name, sizeof(rg->name), "HL");
     rg->kind = RK_int16;
     rg->index = tkindex++;
-    rg->custom_render = NULL;
+    rg->custom_render = nullptr;
 
     rg = cvec_push_back(&dv->cpu.regs);
     snprintf(rg->name, sizeof(rg->name), "PC");
     rg->kind = RK_int16;
     rg->index = tkindex++;
-    rg->custom_render = NULL;
+    rg->custom_render = nullptr;
 
     rg = cvec_push_back(&dv->cpu.regs);
     snprintf(rg->name, sizeof(rg->name), "SP");
     rg->kind = RK_int16;
     rg->index = tkindex++;
-    rg->custom_render = NULL;
+    rg->custom_render = nullptr;
 
     rg = cvec_push_back(&dv->cpu.regs);
     snprintf(rg->name, sizeof(rg->name), "IX");
     rg->kind = RK_int16;
     rg->index = tkindex++;
-    rg->custom_render = NULL;
+    rg->custom_render = nullptr;
 
     rg = cvec_push_back(&dv->cpu.regs);
     snprintf(rg->name, sizeof(rg->name), "IY");
     rg->kind = RK_int16;
     rg->index = tkindex++;
-    rg->custom_render = NULL;
+    rg->custom_render = nullptr;
 
     rg = cvec_push_back(&dv->cpu.regs);
     snprintf(rg->name, sizeof(rg->name), "EI");
     rg->kind = RK_bool;
     rg->index = tkindex++;
-    rg->custom_render = NULL;
+    rg->custom_render = nullptr;
 
     rg = cvec_push_back(&dv->cpu.regs);
     snprintf(rg->name, sizeof(rg->name), "HALT");
     rg->kind = RK_bool;
     rg->index = tkindex++;
-    rg->custom_render = NULL;
+    rg->custom_render = nullptr;
 
     rg = cvec_push_back(&dv->cpu.regs);
     snprintf(rg->name, sizeof(rg->name), "AF_");
     rg->kind = RK_int16;
     rg->index = tkindex++;
-    rg->custom_render = NULL;
+    rg->custom_render = nullptr;
 
     rg = cvec_push_back(&dv->cpu.regs);
     snprintf(rg->name, sizeof(rg->name), "BC_");
     rg->kind = RK_int16;
     rg->index = tkindex++;
-    rg->custom_render = NULL;
+    rg->custom_render = nullptr;
 
     rg = cvec_push_back(&dv->cpu.regs);
     snprintf(rg->name, sizeof(rg->name), "DE_");
     rg->kind = RK_int16;
     rg->index = tkindex++;
-    rg->custom_render = NULL;
+    rg->custom_render = nullptr;
 
     rg = cvec_push_back(&dv->cpu.regs);
     snprintf(rg->name, sizeof(rg->name), "HL_");
     rg->kind = RK_int16;
     rg->index = tkindex++;
-    rg->custom_render = NULL;
+    rg->custom_render = nullptr;
 
     rg = cvec_push_back(&dv->cpu.regs);
     snprintf(rg->name, sizeof(rg->name), "CxI");
     rg->kind = RK_int16;
     rg->index = tkindex++;
-    rg->custom_render = NULL;
+    rg->custom_render = nullptr;
 
 #define BIND(dn, index) this->dbg.dasm_z80. dn = cvec_get(&dv->cpu.regs, index)
     BIND(A, 0);
@@ -190,50 +190,50 @@ static void create_and_bind_registers_m68k(genesis* this, disassembly_view *dv)
         struct cpu_reg_context *rg = cvec_push_back(&dv->cpu.regs);
         snprintf(rg->name, sizeof(rg->name), "D%d", i);
         rg->kind = RK_int32;
-        rg->custom_render = NULL;
+        rg->custom_render = nullptr;
         rg->index = tkindex++;
     }
     for (u32 i = 0; i < 7; i++) {
         struct cpu_reg_context *rg = cvec_push_back(&dv->cpu.regs);
         snprintf(rg->name, sizeof(rg->name), "A%d", i);
         rg->kind = RK_int32;
-        rg->custom_render = NULL;
+        rg->custom_render = nullptr;
         rg->index = tkindex++;
     }
     struct cpu_reg_context *rg = cvec_push_back(&dv->cpu.regs);
     snprintf(rg->name, sizeof(rg->name), "PC");
     rg->kind = RK_int32;
-    rg->custom_render = NULL;
+    rg->custom_render = nullptr;
     rg->index = tkindex++;
 
     rg = cvec_push_back(&dv->cpu.regs);
     snprintf(rg->name, sizeof(rg->name), "USP");
     rg->kind = RK_int32;
-    rg->custom_render = NULL;
+    rg->custom_render = nullptr;
     rg->index = tkindex++;
 
     rg = cvec_push_back(&dv->cpu.regs);
     snprintf(rg->name, sizeof(rg->name), "SSP");
     rg->kind = RK_int32;
-    rg->custom_render = NULL;
+    rg->custom_render = nullptr;
     rg->index = tkindex++;
 
     rg = cvec_push_back(&dv->cpu.regs);
     snprintf(rg->name, sizeof(rg->name), "SR");
     rg->kind = RK_int32;
-    rg->custom_render = NULL;
+    rg->custom_render = nullptr;
     rg->index = tkindex++;
 
     rg = cvec_push_back(&dv->cpu.regs);
     snprintf(rg->name, sizeof(rg->name), "supervisor");
     rg->kind = RK_bool;
-    rg->custom_render = NULL;
+    rg->custom_render = nullptr;
     rg->index = tkindex++;
 
     rg = cvec_push_back(&dv->cpu.regs);
     snprintf(rg->name, sizeof(rg->name), "trace");
     rg->kind = RK_bool;
-    rg->custom_render = NULL;
+    rg->custom_render = nullptr;
     rg->index = tkindex++;
 
     rg = cvec_push_back(&dv->cpu.regs);
@@ -251,13 +251,13 @@ static void create_and_bind_registers_m68k(genesis* this, disassembly_view *dv)
     rg = cvec_push_back(&dv->cpu.regs);
     snprintf(rg->name, sizeof(rg->name), "IR");
     rg->kind = RK_bool;
-    rg->custom_render = NULL;
+    rg->custom_render = nullptr;
     rg->index = tkindex++;
 
     rg = cvec_push_back(&dv->cpu.regs);
     snprintf(rg->name, sizeof(rg->name), "IRC");
     rg->kind = RK_bool;
-    rg->custom_render = NULL;
+    rg->custom_render = nullptr;
     rg->index = tkindex++;
 
 #define BIND(dn, index) this->dbg.dasm_m68k. dn = cvec_get(&dv->cpu.regs, index)
@@ -555,10 +555,10 @@ static void render_image_view_plane(debugger_interface *dbgr, debugger_view *dvi
 
     u32 nametable_addr;
 
-    struct debugger_widget_checkbox *shade_priorities_cb = NULL;
-    struct debugger_widget_checkbox *draw_box_cb = NULL;
-    struct debugger_widget_radiogroup *shade_by_rg = NULL;
-    struct debugger_widget_radiogroup *shade_kind_rg = NULL;
+    struct debugger_widget_checkbox *shade_priorities_cb = nullptr;
+    struct debugger_widget_checkbox *draw_box_cb = nullptr;
+    struct debugger_widget_radiogroup *shade_by_rg = nullptr;
+    struct debugger_widget_radiogroup *shade_kind_rg = nullptr;
     enum shade_by_e {
         SB_NONE = 0,
         SB_INSIDE = 1,
@@ -1323,7 +1323,7 @@ static void setup_events_view(genesis* this, debugger_interface *dbgr)
         ev->display[i].width = 424; // 320 pixels + 104 hblank
         ev->display[i].height = 262; // 262 pixels high
 
-        ev->display[i].buf = NULL;
+        ev->display[i].buf = nullptr;
         ev->display[i].frame_num = 0;
     }
 

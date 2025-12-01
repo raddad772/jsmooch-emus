@@ -102,7 +102,7 @@ void genesis_mainbus_write_a1k(genesis* this, u32 addr, u16 val, u16 mask)
 }
 
 // Write A10000-A1FFFF
-u16 genesis_mainbus_read_a1k(genesis* this, u32 addr, u16 old, u16 mask, u32 has_effect)
+u16 genesis_mainbus_read_a1k(genesis* this, u32 addr, u16 old, u16 mask, bool has_effect)
 {
     switch(addr) {
         case 0xA10000: // Version register
@@ -137,7 +137,7 @@ u16 genesis_mainbus_read_a1k(genesis* this, u32 addr, u16 old, u16 mask, u32 has
     return old;
 }
 
-u16 genesis_mainbus_read(genesis* this, u32 addr, u32 UDS, u32 LDS, u16 old, u32 has_effect)
+u16 genesis_mainbus_read(genesis* this, u32 addr, u32 UDS, u32 LDS, u16 old, bool has_effect)
 {
     u32 mask = UDSMASK;
     u16 v = 0;
@@ -188,7 +188,7 @@ void genesis_mainbus_write(genesis* this, u32 addr, u32 UDS, u32 LDS, u16 val) {
         this->io.SRAM_enabled = val & 1;
     }
 
-    if (this->cart.kind == sega_cart_ssf) {
+    if (this->cart.kind == sc_ssf) {
         switch(addr) {
             case 0xA130F2:
                 this->cart.bank_offset[1] = (val & 0xFF) << 19;
@@ -240,7 +240,7 @@ static void genesis_z80_mainbus_write(genesis* this, u32 addr, u8 val)
     printf("\nZ80 attempted write to mainbus at %06x on cycle %lld BAR:%08x", addr, this->clock.master_cycle_count, this->io.z80.bank_address_register);
 }
 
-static u8 genesis_z80_mainbus_read(genesis* this, u32 addr, u8 old, u32 has_effect)
+static u8 genesis_z80_mainbus_read(genesis* this, u32 addr, u8 old, bool has_effect)
 {
     addr = (addr & 0x7FFF) | (this->io.z80.bank_address_register << 15);
     u8 data = 0xFF;
@@ -254,11 +254,11 @@ static u8 genesis_z80_mainbus_read(genesis* this, u32 addr, u8 old, u32 has_effe
     return data;
 }
 
-static u8 genesis_z80_ym2612_read(genesis* this, u32 addr, u8 old, u32 has_effect) {
+static u8 genesis_z80_ym2612_read(genesis* this, u32 addr, u8 old, bool has_effect) {
     return ym2612_read(&this->ym2612, addr & 3, old, has_effect);
 }
 
-u8 genesis_z80_bus_read(genesis* this, u16 addr, u8 old, u32 has_effect)
+u8 genesis_z80_bus_read(genesis* this, u16 addr, u8 old, bool has_effect)
 {
     if (addr < 0x2000)
         return this->ARAM[addr];
@@ -314,7 +314,7 @@ static struct SYMDO *get_at_addr(genesis* this, u32 addr)
     for (u32 i = 0; i < this->debugging.num_symbols; i++) {
         if (this->debugging.symbols[i].addr == addr) return &this->debugging.symbols[i];
     }
-    return NULL;
+    return nullptr;
 }
 
 void genesis_cycle_m68k(genesis* this)

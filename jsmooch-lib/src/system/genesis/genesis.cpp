@@ -20,22 +20,7 @@
 #define TAG_SCANLINE 1
 #define TAG_FRAME 2
 
-#define JTHIS struct genesis* this = (genesis*)jsm->ptr
-#define JSM struct jsm_system* jsm
-
-#define THIS struct genesis* this
-
-static void genesisJ_play(JSM);
-static void genesisJ_pause(JSM);
-static void genesisJ_stop(JSM);
-static void genesisJ_get_framevars(JSM, framevars* out);
-static void genesisJ_reset(JSM);
-static u32 genesisJ_finish_frame(JSM);
-static u32 genesisJ_finish_scanline(JSM);
-static u32 genesisJ_step_master(JSM, u32 howmany);
-static void genesisJ_load_BIOS(JSM, multi_file_set* mfs);
-static void genesisJ_describe_io(JSM, cvec* IOs);
-
+namespace genesis {
 
 u32 read_trace_z80(void *ptr, u32 addr) {
     struct genesis* this = (genesis*)ptr;
@@ -286,36 +271,38 @@ static void block_step(void *ptr, u64 key, u64 clock, u32 jitter)
     }
 }*/
 
-void genesis_new(JSM, enum jsm::systems kind)
+core::core(jsm::systems in_kind) :
+    vdp(this),
+    scheduler(&clock.master_cycle_count),
+    ym2612(YM2612::OPN2V_ym2612, &this->clock.master_cycle_count, 32 * 7 * 6)
 {
-    struct genesis* this = (genesis*)malloc(sizeof(genesis));
-    memset(this, 0, sizeof(*this));
-    populate_opts(jsm);
-    create_scheduling_lookup_table(this);
-    scheduler_init(&this->scheduler, &this->clock.master_cycle_count, &this->clock.waitstates);
-    this->scheduler.max_block_size = 20;
-    this->scheduler.run.func = &block_step;
-    this->scheduler.run.ptr = this;
 
-    this->PAL = kind == jsm::systems::MEGADRIVE_PAL;
-    Z80_init(&this->z80, 0);
-    M68k_init(&this->m68k, 1);
-    genesis_clock_init(&this->clock, kind);
-    genesis_cart_init(&this->cart);
-    genesis_VDP_init(this); // must be after m68k init
-    ym2612_init(&this->ym2612, OPN2V_ym2612, &this->clock.master_cycle_count, 32 * 7 * 6);
-    SN76489_init(&this->psg);
+}
+
+jsm_system *genesis_new(jsm::systems kind)
+{
+    auto* th = new genesis::core(kind);
+
+    th->populate_opts(jsm);
+    th->create_scheduling_lookup_table();
+    th->scheduler.max_block_size = 20;
+    th->scheduler.run.func = &block_step;
+    th->scheduler.run.ptr = this;
+
+    th->PAL = kind == jsm::systems::MEGADRIVE_PAL;
+    ym2612_init(&th->ym2612, );
+    SN76489_init(&th->psg);
     snprintf(jsm->label, sizeof(jsm->label), "Sega Genesis");
 
     struct jsm_debug_read_trace dt;
     dt.read_trace = &read_trace_z80;
     dt.read_trace_m68k = &read_trace_m68k;
     dt.ptr = (void*)this;
-    M68k_setup_tracing(&this->m68k, &dt, &this->clock.master_cycle_count);
-    Z80_setup_tracing(&this->z80, &dt, &this->clock.master_cycle_count);
+    M68k_setup_tracing(&th->m68k, &dt, &th->clock.master_cycle_count);
+    Z80_setup_tracing(&th->z80, &dt, &th->clock.master_cycle_count);
 
-    this->jsm.described_inputs = 0;
-    this->jsm.IOs = NULL;
+    th->jsm.described_inputs = 0;
+    th->jsm.IOs = nullptr;
 
     jsm->ptr = (void*)this;
 
@@ -330,7 +317,7 @@ void genesis_new(JSM, enum jsm::systems kind)
     jsm->stop = &genesisJ_stop;
     jsm->describe_io = &genesisJ_describe_io;
     jsm->set_audiobuf = &genesisJ_set_audiobuf;
-    jsm->sideload = NULL;
+    jsm->sideload = nullptr;
     jsm->setup_debugger_interface = &genesisJ_setup_debugger_interface;
     jsm->save_state = genesisJ_save_state;
     jsm->load_state = genesisJ_load_state;
@@ -352,7 +339,7 @@ void genesis_delete(JSM) {
     }
 
     free(jsm->ptr);
-    jsm->ptr = NULL;
+    jsm->ptr = nullptr;
 
     jsm_clearfuncs(jsm);
 }
@@ -364,7 +351,7 @@ static void load_symbols(genesis* this) {
     this->debugging.num_symbols = 0;
     while (fgets(buf, sizeof(buf), f)) {
         char *num = strtok(buf, "=");
-        char *name = strtok(NULL, "\n");
+        char *name = strtok(nullptr, "\n");
         u32 addr = atoi(num);
         this->debugging.symbols[this->debugging.num_symbols].addr = addr;
         snprintf(this->debugging.symbols[this->debugging.num_symbols].name, 50, "%s", name);
@@ -386,7 +373,7 @@ static void run_ym2612(void *ptr, u64 key, u64 clock, u32 jitter)
     struct genesis* this = (genesis *)ptr;
     this->timing.ym2612_cycles++;
     u64 cur = clock - jitter;
-    scheduler_only_add_abs(&this->scheduler, cur+this->clock.ym2612.clock_divisor, 0, this, &run_ym2612, NULL);
+    scheduler_only_add_abs(&this->scheduler, cur+this->clock.ym2612.clock_divisor, 0, this, &run_ym2612, nullptr);
     ym2612_cycle(&this->ym2612);
 }
 
@@ -395,7 +382,7 @@ static void run_psg(void *ptr, u64 key, u64 clock, u32 jitter)
     struct genesis* this = (genesis *)ptr;
     this->timing.psg_cycles++;
     u64 cur = clock - jitter;
-    scheduler_only_add_abs(&this->scheduler, cur+this->clock.psg.clock_divisor, 0, this, &run_psg, NULL);
+    scheduler_only_add_abs(&this->scheduler, cur+this->clock.psg.clock_divisor, 0, this, &run_psg, nullptr);
     SN76489_cycle(&this->psg);
 }
 
@@ -405,7 +392,7 @@ static void sample_audio(void *ptr, u64 key, u64 clock, u32 jitter)
     if (this->audio.buf) {
         this->audio.cycles++;
         this->audio.next_sample_cycle += this->audio.master_cycles_per_audio_sample;
-        scheduler_only_add_abs(&this->scheduler, (i64)this->audio.next_sample_cycle, 0, this, &sample_audio, NULL);
+        scheduler_only_add_abs(&this->scheduler, (i64)this->audio.next_sample_cycle, 0, this, &sample_audio, nullptr);
         if (this->audio.buf->upos < (this->audio.buf->samples_len << 1)) {
             i32 l = 0, r = 0;
             if (this->psg.ext_enable) {
@@ -440,7 +427,7 @@ static void sample_audio_debug_max(void *ptr, u64 key, u64 clock, u32 jitter)
         dw->user.buf_pos++;
     }
     this->audio.next_sample_cycle_max += this->audio.master_cycles_per_max_sample;
-    scheduler_only_add_abs(&this->scheduler, (i64)this->audio.next_sample_cycle_max, 0, this, &sample_audio_debug_max, NULL);
+    scheduler_only_add_abs(&this->scheduler, (i64)this->audio.next_sample_cycle_max, 0, this, &sample_audio_debug_max, nullptr);
 }
 
 static void sample_audio_debug_min(void *ptr, u64 key, u64 clock, u32 jitter)
@@ -469,17 +456,17 @@ static void sample_audio_debug_min(void *ptr, u64 key, u64 clock, u32 jitter)
         }
     }
     this->audio.next_sample_cycle_min += this->audio.master_cycles_per_min_sample;
-    scheduler_only_add_abs(&this->scheduler, (i64)this->audio.next_sample_cycle_min, 0, this, &sample_audio_debug_min, NULL);
+    scheduler_only_add_abs(&this->scheduler, (i64)this->audio.next_sample_cycle_min, 0, this, &sample_audio_debug_min, nullptr);
 }
 
 
 static void schedule_first(genesis *this)
 {
-    scheduler_only_add_abs(&this->scheduler, (i64)this->audio.next_sample_cycle_max, 0, this, &sample_audio_debug_max, NULL);
-    scheduler_only_add_abs(&this->scheduler, (i64)this->audio.next_sample_cycle_min, 0, this, &sample_audio_debug_min, NULL);
-    scheduler_only_add_abs(&this->scheduler, (i64)this->audio.next_sample_cycle, 0, this, &sample_audio, NULL);
-    scheduler_only_add_abs(&this->scheduler, (i64)this->clock.ym2612.clock_divisor, 0, this, &run_ym2612, NULL);
-    scheduler_only_add_abs(&this->scheduler, this->clock.psg.clock_divisor, 0, this, &run_psg, NULL);
+    scheduler_only_add_abs(&this->scheduler, (i64)this->audio.next_sample_cycle_max, 0, this, &sample_audio_debug_max, nullptr);
+    scheduler_only_add_abs(&this->scheduler, (i64)this->audio.next_sample_cycle_min, 0, this, &sample_audio_debug_min, nullptr);
+    scheduler_only_add_abs(&this->scheduler, (i64)this->audio.next_sample_cycle, 0, this, &sample_audio, nullptr);
+    scheduler_only_add_abs(&this->scheduler, (i64)this->clock.ym2612.clock_divisor, 0, this, &run_ym2612, nullptr);
+    scheduler_only_add_abs(&this->scheduler, this->clock.psg.clock_divisor, 0, this, &run_psg, nullptr);
     genesis_VDP_schedule_first(this);
 }
 
@@ -558,7 +545,7 @@ void genesisJ_describe_io(JSM, cvec *IOs)
     // controllers
     struct physical_io_device *c1 = cvec_push_back(this->jsm.IOs);
     struct physical_io_device *c2 = cvec_push_back(this->jsm.IOs);
-    genesis_controller_6button_init(&this->controller1, &this->clock.master_cycle_count);
+    controller_6button_init(&this->controller1, &this->clock.master_cycle_count);
     genesis6_setup_pio(c1, 0, "Player 1", 1);
     genesis3_setup_pio(c2, 1, "Player 2", 0);
     this->controller1.pio = c1;
@@ -590,8 +577,8 @@ void genesisJ_describe_io(JSM, cvec *IOs)
     physical_io_device_init(d, HID_DISPLAY, 1, 1, 0, 1);
     d->display.output[0] = malloc(1280 * 480 * 2);
     d->display.output[1] = malloc(1280 * 480 * 2);
-    d->display.output_debug_metadata[0] = NULL;
-    d->display.output_debug_metadata[1] = NULL;
+    d->display.output_debug_metadata[0] = nullptr;
+    d->display.output_debug_metadata[1] = nullptr;
     setup_crt(this, &d->display);
     this->vdp.display_ptr = make_cvec_ptr(IOs, cvec_len(IOs)-1);
     d->display.last_written = 1;
@@ -602,8 +589,8 @@ void genesisJ_describe_io(JSM, cvec *IOs)
     setup_audio(this, IOs);
 
     this->vdp.display = &((physical_io_device *)cpg(this->vdp.display_ptr))->display;
-    genesis_controllerport_connect(&this->io.controller_port1, genesis_controller_6button, &this->controller1);
-    //genesis_controllerport_connect(&this->io.controller_port2, genesis_controller_3button, &this->controller2);
+    genesis_controllerport_connect(&this->io.controller_port1, controller_6button, &this->controller1);
+    //genesis_controllerport_connect(&this->io.controller_port2, controller_3button, &this->controller2);
 }
 
 void genesisJ_play(JSM)
@@ -721,3 +708,4 @@ void genesisJ_load_BIOS(JSM, multi_file_set* mfs)
     printf("\nSega Genesis doesn't have a BIOS...?");
 }
 
+}

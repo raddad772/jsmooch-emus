@@ -2,102 +2,107 @@
 // Created by . on 6/1/24.
 //
 
-#ifndef JSMOOCH_EMUS_GENESIS_CART_H
-#define JSMOOCH_EMUS_GENESIS_CART_H
-
+#pragma once
 #include "helpers/int.h"
 #include "helpers/buf.h"
 
-enum genesis_cart_kinds {
-    sega_cart_invalid,
-    sega_cart_genesis,
-    sega_cart_32x,
-    sega_cart_everdrive,
-    sega_cart_ssf,
-    sega_cart_megawifi,
-    sega_cart_pico,
-    sega_cart_tera68k,
-    sega_cart_tera286,
+namespace genesis {
+
+enum cart_kinds {
+    sc_invalid,
+    sc_genesis,
+    sc_32x,
+    sc_everdrive,
+    sc_ssf,
+    sc_megawifi,
+    sc_pico,
+    sc_tera68k,
+    sc_tera286,
 };
 
-enum sega_cart_devices_supported {
-    sega_cart_device_cnt_3button,
-    sega_cart_device_cnt_6button,
-    sega_cart_device_cnt_master_system,
-    sega_cart_device_analog_joystick,
-    sega_cart_device_multitap,
-    sega_cart_device_lightgun,
-    sega_cart_device_activator,
-    sega_cart_device_mouse,
-    sega_cart_device_trackball,
-    sega_cart_device_tablet,
-    sega_cart_device_paddle,
-    sega_cart_device_keyboard_or_keypad,
-    sega_cart_device_rs_232,
-    sega_cart_device_printer,
-    sega_cart_device_segacd,
-    sega_cart_device_floppy,
-    sega_cart_device_download,
-    sega_cart_device_none,
+enum cart_devices_supported {
+    scd_cnt_3button,
+    scd_cnt_6button,
+    scd_cnt_master_system,
+    scd_analog_joystick,
+    scd_multitap,
+    scd_lightgun,
+    scd_activator,
+    scd_mouse,
+    scd_trackball,
+    scd_tablet,
+    scd_paddle,
+    scd_keyboard_or_keypad,
+    scd_rs_232,
+    scd_printer,
+    scd_segacd,
+    scd_floppy,
+    scd_download,
+    scd_none,
 };
 
-
-enum sega_cart_extra_RAM_kind {
-    sega_cart_exram_none,
-    sega_cart_exram_16bit,
-    sega_cart_exram_8bit_even,
-    sega_cart_exram_8bit_odd,
+enum cart_extra_RAM_kind {
+    sce_none,
+    sce_16bit,
+    sce_8bit_even,
+    sce_8bit_odd,
 };
 
-struct genesis_cart {
-    struct buf ROM;
+struct cart {
+    cart();
+    buf ROM{};
 
-    u32 RAM_mask;
-    u32 RAM_present;
-    u32 RAM_always_on;
-    u32 RAM_size;
-    u32 RAM_persists;
+private:
+    void write_RAM8(u32 addr, u32 val);
+    void write_RAM16(u32 addr, u32 val);
+    u8 read_RAM8(u32 addr);
+    u16 read_RAM16(u32 addr);
+    char *eval_cart_RAM(char *tptr);
+
+public:
+    u32 RAM_mask{};
+    u32 RAM_present{};
+    u32 RAM_always_on{};
+    u32 RAM_size{};
+    u32 RAM_persists{};
 
     struct {
-        char copyright[17];
-        char title_domestic[49];
-        char title_overseas[49];
-        char serial_number[15];
+        char copyright[17]{};
+        char title_domestic[49]{};
+        char title_overseas[49]{};
+        char serial_number[15]{};
 
-        u16 rom_checksum;
+        u16 rom_checksum{};
 
-        u32 num_devices_supported;
-        enum sega_cart_devices_supported devices_supported[16];
+        u32 num_devices_supported{};
+        cart_devices_supported devices_supported[16]{};
 
-        u32 rom_addr_start;
-        u32 rom_addr_end;
+        u32 rom_addr_start{};
+        u32 rom_addr_end{};
 
-        u32 ram_addr_start;
-        u32 ram_addr_end;
+        u32 ram_addr_start{};
+        u32 ram_addr_end{};
 
-        u32 extra_ram_addr_start;
-        u32 extra_ram_addr_end;
-        u32 extra_ram_is_eeprom;
-        enum sega_cart_extra_RAM_kind extra_ram_kind;
+        u32 extra_ram_addr_start{};
+        u32 extra_ram_addr_end{};
+        u32 extra_ram_is_eeprom{};
+        cart_extra_RAM_kind extra_ram_kind{};
 
-        u32 region_japan;
-        u32 region_europe;
-        u32 region_usa;
-    } header;
+        u32 region_japan{};
+        u32 region_europe{};
+        u32 region_usa{};
+    } header{};
 
-    u32 bank_offset[8];
+    u32 bank_offset[8]{};
 
-    enum genesis_cart_kinds kind;
+    cart_kinds kind{};
 
-    struct persistent_store *SRAM;
+    persistent_store *SRAM{};
+
+    u16 read(u32 addr, u32 mask, bool has_effect, bool SRAM_enable);
+    void write(u32 addr, u32 mask, u32 val, bool SRAM_enable);
+    bool load_ROM_from_RAM(char *fil, size_t fil_sz, physical_io_device *pio, bool *SRAM_enable);
 };
 
 
-void genesis_cart_init(genesis_cart*);
-void genesis_cart_delete(genesis_cart *);
-u16 genesis_cart_read(genesis_cart *, u32 addr, u32 mask, u32 has_effect, u32 SRAM_enable);
-void genesis_cart_write(genesis_cart *, u32 addr, u32 mask, u32 val, u32 SRAM_enable);
-
-u32 genesis_cart_load_ROM_from_RAM(genesis_cart* this, char* fil, u64 fil_sz, physical_io_device *pio, u32 *SRAM_enable);
-
-#endif //JSMOOCH_EMUS_GENESIS_CART_H
+}

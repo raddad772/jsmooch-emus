@@ -2,26 +2,15 @@
 // Created by . on 6/1/24.
 //
 
-#include <cstdlib>
-#include <cstdio>
-
 #include "genesis3.h"
 
-void genesis_controller_3button_init(genesis_controller_3button* this)
-{
-    this->pio = NULL;
-}
+namespace genesis {
 
-void genesis_controller_3button_delete(genesis_controller_3button* this)
+void c3button::latch()
 {
-    this->pio = NULL;
-}
-
-void genesis_controller_3button_latch(genesis_controller_3button* this)
-{
-    struct cvec* bl = &this->pio->controller.digital_buttons;
-    struct HID_digital_button *b;
-#define B_GET(button, num) { b = cvec_get(bl, num); this->input_buffer. button = b->state; }
+    auto &bl = pio->controller.digital_buttons;
+    HID_digital_button *b;
+#define B_GET(button, num) { b = &bl.at(num); input_buffer. button = b->state; }
     B_GET(up, 0);
     B_GET(down, 1);
     B_GET(left, 2);
@@ -33,9 +22,9 @@ void genesis_controller_3button_latch(genesis_controller_3button* this)
 #undef B_GET
 }
 
-void genesis3_setup_pio(physical_io_device *d, u32 num, const char*name, u32 connected)
+void c3button::setup_pio(physical_io_device *d, u32 num, const char*name, u32 connected)
 {
-    physical_io_device_init(d, HID_CONTROLLER, 0, 0, 1, 1);
+    d->init(HID_CONTROLLER, 0, 0, 1, 1);
 
     snprintf(d->controller.name, sizeof(d->controller.name), "%s", name);
     d->id = num;
@@ -43,7 +32,7 @@ void genesis3_setup_pio(physical_io_device *d, u32 num, const char*name, u32 con
     d->connected = connected;
     d->enabled = connected;
 
-    struct JSM_CONTROLLER* cnt = &d->controller;
+    JSM_CONTROLLER* cnt = &d->controller;
 
     // up down left right a b start select. in that order
     pio_new_button(cnt, "up", DBCID_co_up);
@@ -54,14 +43,15 @@ void genesis3_setup_pio(physical_io_device *d, u32 num, const char*name, u32 con
     pio_new_button(cnt, "b", DBCID_co_fire2);
     pio_new_button(cnt, "c", DBCID_co_fire3);
     pio_new_button(cnt, "start", DBCID_co_start);
+    pio = d;
 }
 
-u8 genesis3_read_data(genesis_controller_3button *this)
+u8 c3button::read_data() const
 {
     u8 out = 0;
-    if (this->pio == NULL) return 0;
-#define B_GET(name, shift) out |= this->input_buffer. name << shift
-    if (!this->select) {
+    if (pio == nullptr) return 0;
+#define B_GET(name, shift) out |= input_buffer. name << shift
+    if (!select) {
         B_GET(up, 0); // up
         B_GET(down, 1); // down
         out |= 0b1100;
@@ -82,7 +72,8 @@ u8 genesis3_read_data(genesis_controller_3button *this)
     return out ^ 0x3F;
 }
 
-void genesis3_write_data(genesis_controller_3button *this, u8 val)
+void c3button::write_data(u8 val)
 {
-    this->select = (val >> 6) & 1;
+    select = (val >> 6) & 1;
+}
 }

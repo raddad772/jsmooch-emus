@@ -24,7 +24,7 @@ struct persistent_store {
     u32 fill_value{}; // Fill value to initialize with
     u64 requested_size{};
     u32 ready_to_use{}; // Set by host
-    u32 dirty{}; // Set by guest on dirtying it
+    bool dirty{}; // Set by guest on dirtying it
     u32 persistent{};
 
     // Internal to UI

@@ -7,20 +7,11 @@
 
 #include "genesis6.h"
 
-void genesis_controller_6button_init(genesis_controller_6button* this, u64 *master_clock)
-{
-    memset(this, 0, sizeof(*this));
-    this->master_clock = master_clock;
-}
+namespace genesis {
 
-void genesis_controller_6button_delete(genesis_controller_6button* this)
+void c6button::setup_pio(physical_io_device *d, u32 num, const char*name, u32 connected)
 {
-    this->pio = NULL;
-}
-
-void genesis6_setup_pio(physical_io_device *d, u32 num, const char*name, u32 connected)
-{
-    physical_io_device_init(d, HID_CONTROLLER, 0, 0, 1, 1);
+    d->init(HID_CONTROLLER, 0, 0, 1, 1);
 
     snprintf(d->controller.name, sizeof(d->controller.name), "%s", name);
     d->id = num;
@@ -28,7 +19,7 @@ void genesis6_setup_pio(physical_io_device *d, u32 num, const char*name, u32 con
     d->connected = connected;
     d->enabled = connected;
 
-    struct JSM_CONTROLLER* cnt = &d->controller;
+    JSM_CONTROLLER* cnt = &d->controller;
 
     // up down left right a b start select. in that order
     pio_new_button(cnt, "up", DBCID_co_up);
@@ -43,13 +34,14 @@ void genesis6_setup_pio(physical_io_device *d, u32 num, const char*name, u32 con
     pio_new_button(cnt, "z", DBCID_co_fire6);
     pio_new_button(cnt, "start", DBCID_co_start);
     pio_new_button(cnt, "mode", DBCID_co_select);
+    pio = d;
 }
 
-void genesis_controller_6button_latch(genesis_controller_6button* this)
+void c6button::latch()
 {
-    struct cvec* bl = &this->pio->controller.digital_buttons;
-    struct HID_digital_button *b;
-#define B_GET(button, num) { b = cvec_get(bl, num); this->input_buffer. button = b->state; }
+    auto& bl = pio->controller.digital_buttons;
+    HID_digital_button *b;
+#define B_GET(button, num) { b = &bl.at(num); input_buffer. button = b->state; }
     B_GET(up, 0);
     B_GET(down, 1);
     B_GET(left, 2);
@@ -65,13 +57,13 @@ void genesis_controller_6button_latch(genesis_controller_6button* this)
 #undef B_GET
 }
 
-u8 genesis6_read_data(genesis_controller_6button *this) {
-    if ((*this->master_clock) >= this->timeout_at) this->counter = 0;
+u8 c6button::read_data() {
+    if ((*master_clock) >= timeout_at) counter = 0;
     u8 out = 0;
-#define B_GET(name, shift) out |= this->input_buffer. name << shift
+#define B_GET(name, shift) out |= input_buffer. name << shift
 
-    if (this->select == 0) {
-        switch(this->counter) {
+    if (select == 0) {
+        switch(counter) {
             case 0:
             case 1:
             case 4:
@@ -88,7 +80,7 @@ u8 genesis6_read_data(genesis_controller_6button *this) {
         B_GET(a, 4);
         B_GET(start, 5);
     } else {
-        switch(this->counter) {
+        switch(counter) {
             case 0:
             case 1:
             case 2:
@@ -113,15 +105,15 @@ u8 genesis6_read_data(genesis_controller_6button *this) {
 
 #define MCLOCK_1_6ms 86019
 
-void genesis6_write_data(genesis_controller_6button *this, u8 val)
+void c6button::write_data(u8 val)
 {
-    if ((*this->master_clock) >= this->timeout_at) this->counter = 0;
+    if ((*master_clock) >= timeout_at) counter = 0;
 
-    if(!this->select && ((val >> 6) & 1)) {
-        if(this->counter < 4) this->counter = (this->counter + 1) & 7;
-        this->timeout_at = (*this->master_clock) + MCLOCK_1_6ms;
+    if(!select && ((val >> 6) & 1)) {
+        if(counter < 4) counter = (counter + 1) & 7;
+        timeout_at = (*master_clock) + MCLOCK_1_6ms;
     }
 
-    this->select = (val >> 6) & 1;
-
+    select = (val >> 6) & 1;
+}
 }
