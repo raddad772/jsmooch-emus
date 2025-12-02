@@ -23,7 +23,7 @@ enum envelope_state{
     EP_decay = 1,
     EP_sustain = 2,
     EP_release = 3,
-} state{};
+} ;
 
 
 struct CHANNEL;

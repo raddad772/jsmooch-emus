@@ -1022,7 +1022,7 @@ void full_system::load_default_ROM()
             //worked = grab_ROM(&ROMs, which, "castlevania_b.md", nullptr); // works!
             //worked = grab_ROM(&ROMs, which, "contra_hc_jp.md", nullptr); // works great!
             //worked = grab_ROM(&ROMs, which, "sor2.md", nullptr); // works fine
-            //worked = grab_ROM(&ROMs, which, "s1built.bin", nullptr); // works!
+            worked = grab_ROM(&ROMs, which, "s1built.bin", nullptr); // works!
             //worked = grab_ROM(&ROMs, which, "batman.md", nullptr); // works!
             //worked = grab_ROM(&ROMs, which, "gen_test_ym.bin", nullptr); // works!
             //worked = grab_ROM(&ROMs, which, "outrun2019.bin", nullptr); // works!
@@ -1032,7 +1032,7 @@ void full_system::load_default_ROM()
             //worked = grab_ROM(&ROMs, which, "crusader_centy.md", nullptr); // works!
             //worked = grab_ROM(&ROMs, which, "xmen2.md", nullptr); // works!
             //worked = grab_ROM(&ROMs, which, "roadrash2.bin", nullptr); // works fine
-            worked = grab_ROM(&ROMs, which, "roadrash.md", nullptr); // works
+            //worked = grab_ROM(&ROMs, which, "roadrash.md", nullptr); // works
 
             //worked = grab_ROM(&ROMs, which, "240p.bin", nullptr);
             //worked = grab_ROM(&ROMs, which, "240p_emu.bin", nullptr);

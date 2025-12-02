@@ -18,6 +18,20 @@
 #define TAG_SCANLINE 1
 #define TAG_FRAME 2
 
+jsm_system *genesis_new(jsm::systems kind)
+{
+    return new genesis::core(kind);
+}
+
+void genesis_delete(jsm_system *sys) {
+    auto *th = dynamic_cast<genesis::core *>(sys);
+    for (auto &pio : th->IOs) {
+        if (pio.kind == HID_CART_PORT) {
+            if (pio.cartridge_port.unload_cart) pio.cartridge_port.unload_cart(sys);
+        }
+    }
+}
+
 namespace genesis {
 
 u32 read_trace_z80(void *ptr, u32 addr) {
@@ -273,6 +287,9 @@ core::core(jsm::systems in_kind) :
     ym2612(YM2612::OPN2V_ym2612, &clock.master_cycle_count, 32 * 7 * 6),
     vdp(this)
 {
+    has.set_audiobuf = true;
+    has.load_BIOS = false;
+    has.save_state = true;
     create_scheduling_lookup_table();
     populate_opts();
     scheduler.max_block_size = 20;
@@ -289,20 +306,6 @@ core::core(jsm::systems in_kind) :
     m68k.setup_tracing(&dt, &clock.master_cycle_count);
     z80.setup_tracing(&dt, &clock.master_cycle_count);
     jsm.described_inputs = false;
-}
-
-jsm_system *genesis_new(jsm::systems kind)
-{
-    return new genesis::core(kind);
-}
-
-void genesis_delete(jsm_system *sys) {
-    auto *th = dynamic_cast<core *>(sys);
-    for (auto &pio : th->IOs) {
-        if (pio.kind == HID_CART_PORT) {
-            if (pio.cartridge_port.unload_cart) pio.cartridge_port.unload_cart(sys);
-        }
-    }
 }
 
 void core::load_symbols() {
