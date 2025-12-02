@@ -400,95 +400,95 @@ static void setup_z80_disassembly(debugger_interface *dbgr, core* th)
 
 }
 
-static void setup_waveforms_ym2612(core* th, debugger_interface *dbgr)
+static void setup_waveforms_ym2612(core& th, debugger_interface *dbgr)
 {
-    th->dbg.waveforms_ym2612.view = dbgr->make_view(dview_waveforms);
-    auto *dview = &th->dbg.waveforms_ym2612.view.get();
+    th.dbg.waveforms_ym2612.view = dbgr->make_view(dview_waveforms);
+    auto *dview = &th.dbg.waveforms_ym2612.view.get();
     waveform_view *wv = (waveform_view *)&dview->waveform;
     snprintf(wv->name, sizeof(wv->name), "YM2612");
     wv->waveforms.reserve(8);
 
     debug_waveform *dw = &wv->waveforms.emplace_back();
-    th->dbg.waveforms_ym2612.main.make(wv->waveforms, wv->waveforms.size()-1);
+    th.dbg.waveforms_ym2612.main.make(wv->waveforms, wv->waveforms.size()-1);
     snprintf(dw->name, sizeof(dw->name), "Output");
     dw->kind = dwk_main;
     dw->samples_requested = 400;
     dw->default_clock_divider = 1008;
 
     dw = &wv->waveforms.emplace_back();
-    th->dbg.waveforms_ym2612.chan[0].make(wv->waveforms, wv->waveforms.size()-1);
+    th.dbg.waveforms_ym2612.chan[0].make(wv->waveforms, wv->waveforms.size()-1);
     snprintf(dw->name, sizeof(dw->name), "CH1");
     dw->kind = dwk_channel;
     dw->samples_requested = 200;
 
     dw = &wv->waveforms.emplace_back();
-    th->dbg.waveforms_ym2612.chan[1].make(wv->waveforms, wv->waveforms.size()-1);
+    th.dbg.waveforms_ym2612.chan[1].make(wv->waveforms, wv->waveforms.size()-1);
     snprintf(dw->name, sizeof(dw->name), "CH2");
     dw->kind = dwk_channel;
     dw->samples_requested = 200;
 
     dw = &wv->waveforms.emplace_back();
-    th->dbg.waveforms_ym2612.chan[2].make(wv->waveforms, wv->waveforms.size()-1);
+    th.dbg.waveforms_ym2612.chan[2].make(wv->waveforms, wv->waveforms.size()-1);
     snprintf(dw->name, sizeof(dw->name), "CH3");
     dw->kind = dwk_channel;
     dw->samples_requested = 200;
 
     dw = &wv->waveforms.emplace_back();
-    th->dbg.waveforms_ym2612.chan[3].make(wv->waveforms, wv->waveforms.size()-1);
+    th.dbg.waveforms_ym2612.chan[3].make(wv->waveforms, wv->waveforms.size()-1);
     snprintf(dw->name, sizeof(dw->name), "CH4");
     dw->kind = dwk_channel;
     dw->samples_requested = 200;
 
     dw = &wv->waveforms.emplace_back();
-    th->dbg.waveforms_ym2612.chan[4].make(wv->waveforms, wv->waveforms.size()-1);
+    th.dbg.waveforms_ym2612.chan[4].make(wv->waveforms, wv->waveforms.size()-1);
     snprintf(dw->name, sizeof(dw->name), "CH5");
     dw->kind = dwk_channel;
     dw->samples_requested = 200;
 
     dw = &wv->waveforms.emplace_back();
-    th->dbg.waveforms_ym2612.chan[5].make(wv->waveforms, wv->waveforms.size()-1);
+    th.dbg.waveforms_ym2612.chan[5].make(wv->waveforms, wv->waveforms.size()-1);
     snprintf(dw->name, sizeof(dw->name), "CH6/PCM");
     dw->kind = dwk_channel;
     dw->samples_requested = 200;
 }
 
 
-static void setup_waveforms_psg(core* th, debugger_interface *dbgr)
+static void setup_waveforms_psg(core& th, debugger_interface *dbgr)
 {
-    th->dbg.waveforms_psg.view = dbgr->make_view(dview_waveforms);
-    auto *dview = &th->dbg.waveforms_psg.view.get();
+    th.dbg.waveforms_psg.view = dbgr->make_view(dview_waveforms);
+    auto *dview = &th.dbg.waveforms_psg.view.get();
     auto *wv = &dview->waveform;
     snprintf(wv->name, sizeof(wv->name), "SN76489");
 
     wv->waveforms.reserve(7);
 
     debug_waveform *dw = &wv->waveforms.emplace_back();
-    th->dbg.waveforms_psg.main.make(wv->waveforms, wv->waveforms.size()-1);
+    th.dbg.waveforms_psg.main.make(wv->waveforms, wv->waveforms.size()-1);
     snprintf(dw->name, sizeof(dw->name), "Output");
     dw->kind = dwk_main;
     dw->samples_requested = 400;
     dw->default_clock_divider = 240;
 
     dw = &wv->waveforms.emplace_back();
-    th->dbg.waveforms_psg.chan[0].make(wv->waveforms, wv->waveforms.size()-1);
+    th.dbg.waveforms_psg.chan[0].make(wv->waveforms, wv->waveforms.size()-1);
     snprintf(dw->name, sizeof(dw->name), "Square 0");
     dw->kind = dwk_channel;
     dw->samples_requested = 200;
 
     dw = &wv->waveforms.emplace_back();
-    th->dbg.waveforms_psg.chan[1].make(wv->waveforms, wv->waveforms.size()-1);
+    th.dbg.waveforms_psg.chan[1].make(wv->waveforms, wv->waveforms.size()-1);
     snprintf(dw->name, sizeof(dw->name), "Square 1");
     dw->kind = dwk_channel;
     dw->samples_requested = 200;
 
     dw = &wv->waveforms.emplace_back();
-    th->dbg.waveforms_psg.chan[2].make(wv->waveforms, wv->waveforms.size()-1);
+    th.dbg.waveforms_psg.chan[2].make(wv->waveforms, wv->waveforms.size()-1);
     snprintf(dw->name, sizeof(dw->name), "Square 2");
     dw->kind = dwk_channel;
     dw->samples_requested = 200;
 
     dw = &wv->waveforms.emplace_back();
-    th->dbg.waveforms_psg.chan[3].make(wv->waveforms, wv->waveforms.size()-1);
+    th.dbg.waveforms_psg.chan[3].make(wv->waveforms, wv->waveforms.size()-1);
     snprintf(dw->name, sizeof(dw->name), "Noise");
     dw->kind = dwk_channel;
     dw->samples_requested = 200;
@@ -1374,13 +1374,14 @@ static void setup_image_view_ym_info(core *th, debugger_interface *dbgr)
 void core::setup_debugger_interface(debugger_interface &dbgr)
 {
     dbg.interface = &dbgr;
+    dbgr.views.reserve(15);
 
     dbgr.supported_by_core = 1;
     dbgr.smallest_step = 20;
     setup_m68k_disassembly(&dbgr, this);
     setup_z80_disassembly(&dbgr, this);
-    setup_waveforms_psg(this, &dbgr);
-    setup_waveforms_ym2612(this, &dbgr);
+    setup_waveforms_psg(*this, &dbgr);
+    setup_waveforms_ym2612(*this, &dbgr);
     setup_events_view(*this, &dbgr);
     setup_image_view_tilemap(this, &dbgr);
     setup_image_view_palette(this, &dbgr);

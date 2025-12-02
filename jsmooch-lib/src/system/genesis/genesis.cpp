@@ -509,6 +509,8 @@ void core::describe_io()
     physical_io_device *c2 = &IOs.emplace_back();
     controller1.setup_pio(c1, 0, "Player 1", 1);
     controller2.setup_pio(c2, 1, "Player 2", 0);
+    controller1.master_clock = &clock.master_cycle_count;
+    controller2.master_clock = &clock.master_cycle_count;
 
     // power and reset buttons
     physical_io_device* chassis = &IOs.emplace_back();

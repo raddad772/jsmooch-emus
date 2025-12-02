@@ -14,12 +14,12 @@ struct c6button_inputs {
 };
 
 struct c6button {
-    physical_io_device *pio;
-    u32 select;
+    physical_io_device *pio{};
+    u32 select{};
 
-    u64 timeout_at, counter;
-    u64 *master_clock;
-    c6button_inputs input_buffer;
+    u64 timeout_at{}, counter{};
+    u64 *master_clock{};
+    c6button_inputs input_buffer{};
 
     void latch();
     void setup_pio(physical_io_device *d, u32 num, const char*name, u32 connected);
