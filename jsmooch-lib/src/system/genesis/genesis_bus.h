@@ -193,6 +193,25 @@ private:
     void setup_crt(JSM_DISPLAY &d);
     void setup_audio();
 
+    void serialize_console(serialized_state &state);
+    void serialize_z80(serialized_state &state);
+    void serialize_m68k(serialized_state &state);
+    void serialize_debug(serialized_state &state);
+    void serialize_clock(serialized_state &state);
+    void serialize_vdp(serialized_state &state);
+    void serialize_cartridge(serialized_state &state);
+    void serialize_ym2612(serialized_state &state);
+    void serialize_sn76489(serialized_state &state);
+    void deserialize_console(serialized_state &state);
+    void deserialize_z80(serialized_state &state);
+    void deserialize_m68k(serialized_state &state);
+    void deserialize_debug(serialized_state &state);
+    void deserialize_clock(serialized_state &state);
+    void deserialize_vdp(serialized_state &state);
+    void deserialize_cartridge(serialized_state &state);
+    void deserialize_ym2612(serialized_state &state);
+    void deserialize_sn76489(serialized_state &state);
+
 public:
     void play() final;
     void pause() final;

@@ -2,17 +2,19 @@
 // Created by . on 11/29/24.
 //
 
+#include <cassert>
 #include <cstdlib>
 #include "genesis_serialize.h"
 #include "genesis_bus.h"
 #include "helpers/sys_present.h"
 #include "helpers/debug.h"
 #include "helpers/serialize/serialize.h"
+namespace genesis {
 
-static void serialize_console(genesis *this, serialized_state *state)
+void core::serialize_console(serialized_state &state)
 {
-    serialized_state_new_section(state, "console", genesisSS_console, 1);
-#define S(x) Sadd(state, &(this-> x), sizeof(this-> x))
+    state.new_section("console", SS_console, 1);
+#define S(x) Sadd(state, &( x), sizeof( x))
     S(RAM);
     S(ARAM);
     S(io.z80.reset_line);
@@ -28,34 +30,34 @@ static void serialize_console(genesis *this, serialized_state *state)
 
     S(io.SRAM_enabled);
 
-    S(opts.vdp.enable_A);
-    S(opts.vdp.enable_B);
-    S(opts.vdp.enable_sprites);
-    S(opts.vdp.ex_trace);
-    S(opts.JP);
+    S(v_opts.vdp.enable_A);
+    S(v_opts.vdp.enable_B);
+    S(v_opts.vdp.enable_sprites);
+    S(v_opts.vdp.ex_trace);
+    S(v_opts.JP);
 #undef S
 }
 
-static void serialize_z80(genesis *this, serialized_state *state)
+void core::serialize_z80(serialized_state &state)
 {
-    serialized_state_new_section(state, "z80", genesisSS_z80, 1);
-    Z80_serialize(&this->z80, state);
+    state.new_section("z80", SS_z80, 1);
+    z80.serialize(state);
 }
 
-static void serialize_m68k(genesis *this, serialized_state *state)
+void core::serialize_m68k(serialized_state &state)
 {
-    serialized_state_new_section(state, "m68k", genesisSS_m68k, 1);
-    M68k_serialize(&this->m68k, state);
+    state.new_section("m68k", SS_m68k, 1);
+    m68k.serialize(state);
 }
 
-static void serialize_debug(genesis *this, serialized_state *state)
+void core::serialize_debug(serialized_state &state)
 {
-    serialized_state_new_section(state, "debug", genesisSS_debug, 1);
+    state.new_section("debug", SS_debug, 1);
 }
 
-static void serialize_clock(genesis *this, serialized_state *state) {
-    serialized_state_new_section(state, "clock", genesisSS_clock, 1);
-#define S(x) Sadd(state, &this->clock. x, sizeof(this->clock. x))
+void core::serialize_clock(serialized_state &state) {
+    state.new_section("clock", SS_clock, 1);
+#define S(x) Sadd(state, &clock. x, sizeof(clock. x))
     S(master_cycle_count);
     S(master_frame);
     S(frames_since_reset);
@@ -79,9 +81,9 @@ static void serialize_clock(genesis *this, serialized_state *state) {
 #undef S
 }
 
-static void serialize_vdp(genesis *this, serialized_state *state) {
-    serialized_state_new_section(state, "vdp", genesisSS_vdp, 1);
-#define S(x) Sadd(state, &this->vdp. x, sizeof(this->vdp. x))
+void core::serialize_vdp(serialized_state &state) {
+    state.new_section("vdp", SS_vdp, 1);
+#define S(x) Sadd(state, &vdp. x, sizeof(vdp. x))
     S(sprite_line_buf);
     S(cur_pixel);
     S(io);
@@ -101,8 +103,8 @@ static void serialize_vdp(genesis *this, serialized_state *state) {
     S(fifo);
     S(line);
     S(term_out);
-    u64 r = this->vdp.term_out_ptr - this->vdp.term_out;
-    u32 aa = (u32)r;
+    u64 r = vdp.term_out_ptr - vdp.term_out;
+    u32 aa = static_cast<u32>(r);
     Sadd(state, &aa, sizeof(aa));
     S(fetcher);
     S(ringbuf);
@@ -112,11 +114,11 @@ static void serialize_vdp(genesis *this, serialized_state *state) {
 #undef S
 }
 
-static void serialize_cartridge(genesis *this, serialized_state *state) {
-    serialized_state_new_section(state, "cartridge", genesisSS_cartridge, 1);
-#define S(x) Sadd(state, &this->cart. x, sizeof(this->cart. x))
+void core::serialize_cartridge(serialized_state &state) {
+    state.new_section("cartridge", SS_cartridge, 1);
+#define S(x) Sadd(state, &cart. x, sizeof(cart. x))
     //S(ROM.size);
-    //Sadd(state, &this->cart.ROM.ptr, this->cart.ROM.size);
+    //Sadd(state, &cart.ROM.ptr, cart.ROM.size);
     S(RAM_persists);
     S(RAM_mask);
     S(RAM_present);
@@ -125,71 +127,70 @@ static void serialize_cartridge(genesis *this, serialized_state *state) {
     S(header);
     S(kind);
     S(SRAM->requested_size);
-    if (this->cart.SRAM->requested_size > 0) {
-        Sadd(state, this->cart.SRAM->data, this->cart.SRAM->requested_size);
+    if (cart.SRAM->requested_size > 0) {
+        Sadd(state, cart.SRAM->data, cart.SRAM->requested_size);
     }
 #undef S
 }
 
-static void serialize_ym2612(genesis *this, serialized_state *state)
+void core::serialize_ym2612(serialized_state &state)
 {
-    serialized_state_new_section(state, "ym2612", genesisSS_ym2612, 1);
-    ym2612_serialize(&this->ym2612, state);
+    state.new_section("ym2612", SS_ym2612, 1);
+    ym2612.serialize(state);
 }
 
-static void serialize_sn76489(genesis *this, serialized_state *state)
+void core::serialize_sn76489(serialized_state &state)
 {
-    serialized_state_new_section(state, "sn76489", genesisSS_sn76489, 1);
-    SN76489_serialize(&this->psg, state);
+    state.new_section("sn76489", SS_sn76489, 1);
+    psg.serialize(state);
 }
 
 
-void genesisJ_save_state(jsm_system *jsm, serialized_state *state)
+void core::save_state(serialized_state &state)
 {
-    struct genesis* this = (genesis*)jsm->ptr;
     // Basic info
-    state->version = 1;
-    state->opt.len = 0;
+    state.version = 1;
+    state.opt.len = 0;
 
     // Make screenshot
-    state->has_screenshot = 1;
-    jsimg_allocate(&state->screenshot, 1280, 240);
-    jsimg_clear(&state->screenshot);
-    genesis_present(cpg(this->vdp.display_ptr), state->screenshot.data.ptr, 320, 240, 1);
+    state.has_screenshot = 1;
+    state.screenshot.allocate(1280, 240);
+    state.screenshot.clear();
+    genesis_present(vdp.display_ptr.get(), state.screenshot.data.ptr, 320, 240, 1);
 
-    serialize_console(this, state);
-    serialize_debug(this, state);
-    serialize_clock(this, state);
-    serialize_cartridge(this, state);
-    serialize_m68k(this, state);
-    serialize_z80(this, state);
-    serialize_vdp(this, state);
-    serialize_sn76489(this, state);
-    serialize_ym2612(this, state);
+    serialize_console(state);
+    serialize_debug(state);
+    serialize_clock(state);
+    serialize_cartridge(state);
+    serialize_m68k(state);
+    serialize_z80(state);
+    serialize_vdp(state);
+    serialize_sn76489(state);
+    serialize_ym2612(state);
 }
 
-static void deserialize_z80(genesis* this, serialized_state *state)
+void core::deserialize_z80(serialized_state &state)
 {
-    Z80_deserialize(&this->z80, state);
+    z80.deserialize(state);
 }
 
-static void deserialize_m68k(genesis* this, serialized_state *state)
+void core::deserialize_m68k(serialized_state &state)
 {
-    M68k_deserialize(&this->m68k, state);
+    m68k.deserialize(state);
 }
 
-static void deserialize_ym2612(genesis* this, serialized_state *state)
+void core::deserialize_ym2612(serialized_state &state)
 {
-    ym2612_deserialize(&this->ym2612, state);
+    ym2612.deserialize(state);
 }
 
-static void deserialize_sn76489(genesis* this, serialized_state *state)
+void core::deserialize_sn76489(serialized_state &state)
 {
-    SN76489_deserialize(&this->psg, state);
+    psg.deserialize(state);
 }
 
-static void deserialize_console(genesis* this, serialized_state *state) {
-#define L(x) Sload(state, &this-> x, sizeof(this-> x))
+void core::deserialize_console(serialized_state &state) {
+#define L(x) Sload(state, & x, sizeof( x))
     L(RAM);
     L(ARAM);
     L(io.z80.reset_line);
@@ -205,25 +206,25 @@ static void deserialize_console(genesis* this, serialized_state *state) {
 
     L(io.SRAM_enabled);
 
-    L(opts.vdp.enable_A);
-    L(opts.vdp.enable_B);
-    L(opts.vdp.enable_sprites);
-    L(opts.vdp.ex_trace);
-    L(opts.JP);
+    L(v_opts.vdp.enable_A);
+    L(v_opts.vdp.enable_B);
+    L(v_opts.vdp.enable_sprites);
+    L(v_opts.vdp.ex_trace);
+    L(v_opts.JP);
 #undef L
 }
 
-static void deserialize_debug(genesis* this, serialized_state *state) {
-#define L(x) Sload(state, &this->cart. x, sizeof(this->cart. x))
+void core::deserialize_debug(serialized_state &state) {
+#define L(x) Sload(state, &cart. x, sizeof(cart. x))
 #undef L
 }
 
-static void deserialize_cartridge(genesis* this, serialized_state *state) {
-#define L(x) Sload(state, &this->cart. x, sizeof(this->cart. x))
+void core::deserialize_cartridge(serialized_state &state) {
+#define L(x) Sload(state, &cart. x, sizeof(cart. x))
     //u64 sz;
     //Sload(state, &sz, sizeof(sz));
-    //buf_allocate(&this->cart.ROM, sz);
-    //Sload(state, &this->cart.ROM.ptr, sz);
+    //buf_allocate(&cart.ROM, sz);
+    //Sload(state, &cart.ROM.ptr, sz);
     L(RAM_persists);
     L(RAM_mask);
     L(RAM_present);
@@ -232,15 +233,15 @@ static void deserialize_cartridge(genesis* this, serialized_state *state) {
     L(header);
     L(kind);
     L(SRAM->requested_size);
-    if (this->cart.SRAM->requested_size > 0) {
-        Sload(state, this->cart.SRAM->data, this->cart.SRAM->requested_size);
-        this->cart.SRAM->dirty = 1;
+    if (cart.SRAM->requested_size > 0) {
+        Sload(state, cart.SRAM->data, cart.SRAM->requested_size);
+        cart.SRAM->dirty = true;
     }
 #undef L
 }
 
-static void deserialize_vdp(genesis* this, serialized_state *state) {
-#define L(x) Sload(state, &this->vdp. x, sizeof(this->vdp. x))
+void core::deserialize_vdp(serialized_state &state) {
+#define L(x) Sload(state, &vdp. x, sizeof(vdp. x))
     L(sprite_line_buf);
     L(cur_pixel);
     L(io);
@@ -262,8 +263,8 @@ static void deserialize_vdp(genesis* this, serialized_state *state) {
     L(term_out);
     u32 pp;
     Sload(state, &pp, sizeof(pp));
-    assert(pp<sizeof(this->vdp.term_out));
-    this->vdp.term_out_ptr = this->vdp.term_out + pp;
+    assert(pp<sizeof(vdp.term_out));
+    vdp.term_out_ptr = vdp.term_out + pp;
 
     L(fetcher);
     L(ringbuf);
@@ -273,8 +274,8 @@ static void deserialize_vdp(genesis* this, serialized_state *state) {
 #undef L
 }
 
-static void deserialize_clock(genesis* this, serialized_state *state) {
-#define L(x) Sload(state, &this->clock. x, sizeof(this->clock. x))
+void core::deserialize_clock(serialized_state &state) {
+#define L(x) Sload(state, &clock. x, sizeof(clock. x))
     L(master_cycle_count);
     L(master_frame);
     L(frames_since_reset);
@@ -298,44 +299,42 @@ static void deserialize_clock(genesis* this, serialized_state *state) {
 #undef L
 }
 
-void genesisJ_load_state(jsm_system *jsm, serialized_state *state, deserialize_ret *ret) {
-    state->iter.offset = 0;
-    assert(state->version == 1);
+void core::load_state(serialized_state &state, deserialize_ret &ret) {
+    state.iter.offset = 0;
+    assert(state.version == 1);
 
-    struct genesis *this = (genesis *) jsm->ptr;
-
-    for (u32 i = 0; i < cvec_len(&state->sections); i++) {
-        struct serialized_state_section *sec = cvec_get(&state->sections, i);
-        state->iter.offset = sec->offset;
-        switch (sec->kind) {
-            case genesisSS_console:
-                deserialize_console(this, state);
+    for (auto &sec : state.sections) {
+        state.iter.offset = sec.offset;
+        switch (sec.kind) {
+            case SS_console:
+                deserialize_console(state);
                 break;
-            case genesisSS_debug:
-                deserialize_debug(this, state);
+            case SS_debug:
+                deserialize_debug(state);
                 break;
-            case genesisSS_vdp:
-                deserialize_vdp(this, state);
+            case SS_vdp:
+                deserialize_vdp(state);
                 break;
-            case genesisSS_ym2612:
-                deserialize_ym2612(this, state);
+            case SS_ym2612:
+                deserialize_ym2612(state);
                 break;
-            case genesisSS_sn76489:
-                deserialize_sn76489(this, state);
+            case SS_sn76489:
+                deserialize_sn76489(state);
                 break;
-            case genesisSS_z80:
-                deserialize_z80(this, state);
+            case SS_z80:
+                deserialize_z80(state);
                 break;
-            case genesisSS_m68k:
-                deserialize_m68k(this, state);
+            case SS_m68k:
+                deserialize_m68k(state);
                 break;
-            case genesisSS_clock:
-                deserialize_clock(this, state);
+            case SS_clock:
+                deserialize_clock(state);
                 break;
-            case genesisSS_cartridge:
-                deserialize_cartridge(this, state);
+            case SS_cartridge:
+                deserialize_cartridge(state);
                 break;
             default: NOGOHERE;
         }
     }
+}
 }
