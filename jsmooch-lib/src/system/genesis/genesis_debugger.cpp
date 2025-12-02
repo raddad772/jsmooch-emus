@@ -13,10 +13,8 @@
 #include "component/cpu/z80/z80_disassembler.h"
 #include "component/audio/ym2612/ym2612.h"
 
-#define JTHIS struct genesis* this = (genesis*)jsm->ptr
-#define JSM struct jsm_system* jsm
-
-#define THIS struct genesis* this
+#define Jth genesis* th = (genesis*)jsm->ptr
+#define JSM jsm_system* jsm
 
 static int render_imask(cpu_reg_context*ctx, void *outbuf, size_t outbuf_sz)
 {
@@ -49,10 +47,10 @@ static int render_f_z80(cpu_reg_context*ctx, void *outbuf, size_t outbuf_sz)
 }
 
 
-static void create_and_bind_registers_z80(genesis* this, disassembly_view *dv)
+static void create_and_bind_registers_z80(genesis* th, disassembly_view *dv)
 {
     u32 tkindex = 0;
-    struct cpu_reg_context *rg = cvec_push_back(&dv->cpu.regs);
+    cpu_reg_context *rg = cvec_push_back(&dv->cpu.regs);
     snprintf(rg->name, sizeof(rg->name), "A");
     rg->kind = RK_int8;
     rg->index = tkindex++;
@@ -160,7 +158,7 @@ static void create_and_bind_registers_z80(genesis* this, disassembly_view *dv)
     rg->index = tkindex++;
     rg->custom_render = nullptr;
 
-#define BIND(dn, index) this->dbg.dasm_z80. dn = cvec_get(&dv->cpu.regs, index)
+#define BIND(dn, index) th->dbg.dasm_z80. dn = cvec_get(&dv->cpu.regs, index)
     BIND(A, 0);
     BIND(B, 1);
     BIND(C, 2);
@@ -183,24 +181,24 @@ static void create_and_bind_registers_z80(genesis* this, disassembly_view *dv)
 }
 
 
-static void create_and_bind_registers_m68k(genesis* this, disassembly_view *dv)
+static void create_and_bind_registers_m68k(genesis* th, disassembly_view *dv)
 {
     u32 tkindex = 0;
     for (u32 i = 0; i < 8; i++) {
-        struct cpu_reg_context *rg = cvec_push_back(&dv->cpu.regs);
+        cpu_reg_context *rg = cvec_push_back(&dv->cpu.regs);
         snprintf(rg->name, sizeof(rg->name), "D%d", i);
         rg->kind = RK_int32;
         rg->custom_render = nullptr;
         rg->index = tkindex++;
     }
     for (u32 i = 0; i < 7; i++) {
-        struct cpu_reg_context *rg = cvec_push_back(&dv->cpu.regs);
+        cpu_reg_context *rg = cvec_push_back(&dv->cpu.regs);
         snprintf(rg->name, sizeof(rg->name), "A%d", i);
         rg->kind = RK_int32;
         rg->custom_render = nullptr;
         rg->index = tkindex++;
     }
-    struct cpu_reg_context *rg = cvec_push_back(&dv->cpu.regs);
+    cpu_reg_context *rg = cvec_push_back(&dv->cpu.regs);
     snprintf(rg->name, sizeof(rg->name), "PC");
     rg->kind = RK_int32;
     rg->custom_render = nullptr;
@@ -260,7 +258,7 @@ static void create_and_bind_registers_m68k(genesis* this, disassembly_view *dv)
     rg->custom_render = nullptr;
     rg->index = tkindex++;
 
-#define BIND(dn, index) this->dbg.dasm_m68k. dn = cvec_get(&dv->cpu.regs, index)
+#define BIND(dn, index) th->dbg.dasm_m68k. dn = cvec_get(&dv->cpu.regs, index)
     for (u32 i = 0; i < 8; i++) {
         BIND(D[i], i);
     }
@@ -284,112 +282,112 @@ static void create_and_bind_registers_m68k(genesis* this, disassembly_view *dv)
 
 static void fill_disassembly_view(void *macptr, debugger_interface *dbgr, disassembly_view *dview)
 {
-    struct genesis* this = (genesis*)macptr;
+    genesis* th = (genesis*)macptr;
     for (u32 i = 0; i < 8; i++) {
-        this->dbg.dasm_m68k.D[i]->int32_data = this->m68k.regs.D[i];
-        if (i < 7) this->dbg.dasm_m68k.A[i]->int32_data = this->m68k.regs.A[i];
+        th->dbg.dasm_m68k.D[i]->int32_data = th->m68k.regs.D[i];
+        if (i < 7) th->dbg.dasm_m68k.A[i]->int32_data = th->m68k.regs.A[i];
     }
-    this->dbg.dasm_m68k.PC->int32_data = this->m68k.regs.PC;
-    this->dbg.dasm_m68k.SR->int32_data = this->m68k.regs.SR.u;
-    if (this->dbg.dasm_m68k.SR->int32_data & 0x2000) { // supervisor mode
-        this->dbg.dasm_m68k.USP->int32_data = this->m68k.regs.ASP;
-        this->dbg.dasm_m68k.SSP->int32_data = this->m68k.regs.A[7];
+    th->dbg.dasm_m68k.PC->int32_data = th->m68k.regs.PC;
+    th->dbg.dasm_m68k.SR->int32_data = th->m68k.regs.SR.u;
+    if (th->dbg.dasm_m68k.SR->int32_data & 0x2000) { // supervisor mode
+        th->dbg.dasm_m68k.USP->int32_data = th->m68k.regs.ASP;
+        th->dbg.dasm_m68k.SSP->int32_data = th->m68k.regs.A[7];
     }
     else { // user mode
-        this->dbg.dasm_m68k.USP->int32_data = this->m68k.regs.A[7];
-        this->dbg.dasm_m68k.SSP->int32_data = this->m68k.regs.ASP;
+        th->dbg.dasm_m68k.USP->int32_data = th->m68k.regs.A[7];
+        th->dbg.dasm_m68k.SSP->int32_data = th->m68k.regs.ASP;
     }
-    this->dbg.dasm_m68k.supervisor->bool_data = this->m68k.regs.SR.S;
-    this->dbg.dasm_m68k.trace->bool_data = this->m68k.regs.SR.T;
-    this->dbg.dasm_m68k.IMASK->int32_data = this->m68k.regs.SR.I;
-    this->dbg.dasm_m68k.CSR->int32_data = this->m68k.regs.SR.u & 0x1F;
-    this->dbg.dasm_m68k.IR->int32_data = this->m68k.regs.IR;
-    this->dbg.dasm_m68k.IRC->int32_data = this->m68k.regs.IRC;
+    th->dbg.dasm_m68k.supervisor->bool_data = th->m68k.regs.SR.S;
+    th->dbg.dasm_m68k.trace->bool_data = th->m68k.regs.SR.T;
+    th->dbg.dasm_m68k.IMASK->int32_data = th->m68k.regs.SR.I;
+    th->dbg.dasm_m68k.CSR->int32_data = th->m68k.regs.SR.u & 0x1F;
+    th->dbg.dasm_m68k.IR->int32_data = th->m68k.regs.IR;
+    th->dbg.dasm_m68k.IRC->int32_data = th->m68k.regs.IRC;
 }
 
-static struct disassembly_vars get_disassembly_vars_m68k(void *macptr, debugger_interface *dbgr, disassembly_view *dv)
+static disassembly_vars get_disassembly_vars_m68k(void *macptr, debugger_interface *dbgr, disassembly_view *dv)
 {
-    struct genesis* this = (genesis*)macptr;
-    struct disassembly_vars dvar;
-    dvar.address_of_executing_instruction = this->m68k.debug.ins_PC;
-    dvar.current_clock_cycle = this->clock.master_cycle_count;
+    genesis* th = (genesis*)macptr;
+    disassembly_vars dvar;
+    dvar.address_of_executing_instruction = th->m68k.debug.ins_PC;
+    dvar.current_clock_cycle = th->clock.master_cycle_count;
     return dvar;
 }
 
 static void get_disassembly_m68k(void *genptr, debugger_interface *dbgr, disassembly_view *dview, disassembly_entry *entry)
 {
-    struct genesis* this = (genesis*)genptr;
-    M68k_disassemble_entry(&this->m68k, entry);
+    genesis* th = (genesis*)genptr;
+    M68k_disassemble_entry(&th->m68k, entry);
 }
 
-static void setup_m68k_disassembly(debugger_interface *dbgr, genesis* this)
+static void setup_m68k_disassembly(debugger_interface *dbgr, genesis* th)
 {
-    struct cvec_ptr p = debugger_view_new(dbgr, dview_disassembly);
-    struct debugger_view *dview = cpg(p);
-    struct disassembly_view *dv = &dview->disassembly;
+    cvec_ptr p = debugger_view_new(dbgr, dview_disassembly);
+    debugger_view *dview = cpg(p);
+    disassembly_view *dv = &dview->disassembly;
     dv->mem_end = 0xFFFFFF;
     dv->addr_column_size = 6;
     dv->has_context = 1;
     jsm_string_sprintf(&dv->processor_name, "m68000");
 
-    create_and_bind_registers_m68k(this, dv);
-    dv->fill_view.ptr = (void *)this;
+    create_and_bind_registers_m68k(th, dv);
+    dv->fill_view.ptr = (void *)th;
     dv->fill_view.func = &fill_disassembly_view;
 
-    dv->get_disassembly.ptr = (void *)this;
+    dv->get_disassembly.ptr = (void *)th;
     dv->get_disassembly.func = &get_disassembly_m68k;
 
-    dv->get_disassembly_vars.ptr = (void *)this;
+    dv->get_disassembly_vars.ptr = (void *)th;
     dv->get_disassembly_vars.func = &get_disassembly_vars_m68k;
 }
 
 static void get_dissasembly_z80(void *genptr, debugger_interface *dbgr, disassembly_view *dview, disassembly_entry *entry)
 {
-    struct genesis* this = (genesis*)genptr;
-    Z80_disassemble_entry(&this->z80, entry);
+    genesis* th = (genesis*)genptr;
+    Z80_disassemble_entry(&th->z80, entry);
 }
 
-static struct disassembly_vars get_disassembly_vars_z80(void *genptr, debugger_interface *dbgr, disassembly_view *dv)
+static disassembly_vars get_disassembly_vars_z80(void *genptr, debugger_interface *dbgr, disassembly_view *dv)
 {
-    struct genesis* this = (genesis*)genptr;
-    struct disassembly_vars dvar;
-    dvar.address_of_executing_instruction = this->z80.PCO;
-    dvar.current_clock_cycle = this->clock.master_cycle_count;
+    genesis* th = (genesis*)genptr;
+    disassembly_vars dvar;
+    dvar.address_of_executing_instruction = th->z80.PCO;
+    dvar.current_clock_cycle = th->clock.master_cycle_count;
     return dvar;
 }
 
-static void setup_z80_disassembly(debugger_interface *dbgr, genesis* this)
+static void setup_z80_disassembly(debugger_interface *dbgr, genesis* th)
 {
-    struct cvec_ptr p = debugger_view_new(dbgr, dview_disassembly);
-    struct debugger_view *dview = cpg(p);
-    struct disassembly_view *dv = &dview->disassembly;
+    cvec_ptr p = debugger_view_new(dbgr, dview_disassembly);
+    debugger_view *dview = cpg(p);
+    disassembly_view *dv = &dview->disassembly;
     dv->mem_end = 0xFFFF;
     dv->addr_column_size = 4;
     dv->has_context = 0;
     jsm_string_sprintf(&dv->processor_name, "Z80");
 
-    create_and_bind_registers_z80(this, dv);
-    dv->fill_view.ptr = (void *)this;
+    create_and_bind_registers_z80(th, dv);
+    dv->fill_view.ptr = (void *)th;
     dv->fill_view.func = &fill_disassembly_view;
 
-    dv->get_disassembly.ptr = (void *)this;
+    dv->get_disassembly.ptr = (void *)th;
     dv->get_disassembly.func = &get_dissasembly_z80;
 
-    dv->get_disassembly_vars.ptr = (void *)this;
+    dv->get_disassembly_vars.ptr = (void *)th;
     dv->get_disassembly_vars.func = &get_disassembly_vars_z80;
 
 }
 
-static void setup_waveforms_ym2612(genesis* this, debugger_interface *dbgr)
+static void setup_waveforms_ym2612(genesis* th, debugger_interface *dbgr)
 {
-    this->dbg.waveforms_ym2612.view = debugger_view_new(dbgr, dview_waveforms);
-    struct debugger_view *dview = cpg(this->dbg.waveforms_ym2612.view);
-    struct waveform_view *wv = (waveform_view *)&dview->waveform;
+    th->dbg.waveforms_ym2612.view = debugger_view_new(dbgr, dview_waveforms);
+    debugger_view *dview = cpg(th->dbg.waveforms_ym2612.view);
+    waveform_view *wv = (waveform_view *)&dview->waveform;
     snprintf(wv->name, sizeof(wv->name), "YM2612");
 
-    struct debug_waveform *dw = cvec_push_back(&wv->waveforms);
+    debug_waveform *dw = cvec_push_back(&wv->waveforms);
     debug_waveform_init(dw);
-    this->dbg.waveforms_ym2612.main = make_cvec_ptr(&wv->waveforms, cvec_len(&wv->waveforms)-1);
+    th->dbg.waveforms_ym2612.main = make_cvec_ptr(&wv->waveforms, cvec_len(&wv->waveforms)-1);
     snprintf(dw->name, sizeof(dw->name), "Output");
     dw->kind = dwk_main;
     dw->samples_requested = 400;
@@ -397,61 +395,61 @@ static void setup_waveforms_ym2612(genesis* this, debugger_interface *dbgr)
 
     dw = cvec_push_back(&wv->waveforms);
     debug_waveform_init(dw);
-    this->dbg.waveforms_ym2612.chan[0] = make_cvec_ptr(&wv->waveforms, cvec_len(&wv->waveforms)-1);
+    th->dbg.waveforms_ym2612.chan[0] = make_cvec_ptr(&wv->waveforms, cvec_len(&wv->waveforms)-1);
     snprintf(dw->name, sizeof(dw->name), "CH1");
     dw->kind = dwk_channel;
     dw->samples_requested = 200;
 
     dw = cvec_push_back(&wv->waveforms);
     debug_waveform_init(dw);
-    this->dbg.waveforms_ym2612.chan[1] = make_cvec_ptr(&wv->waveforms, cvec_len(&wv->waveforms)-1);
+    th->dbg.waveforms_ym2612.chan[1] = make_cvec_ptr(&wv->waveforms, cvec_len(&wv->waveforms)-1);
     snprintf(dw->name, sizeof(dw->name), "CH2");
     dw->kind = dwk_channel;
     dw->samples_requested = 200;
 
     dw = cvec_push_back(&wv->waveforms);
     debug_waveform_init(dw);
-    this->dbg.waveforms_ym2612.chan[2] = make_cvec_ptr(&wv->waveforms, cvec_len(&wv->waveforms)-1);
+    th->dbg.waveforms_ym2612.chan[2] = make_cvec_ptr(&wv->waveforms, cvec_len(&wv->waveforms)-1);
     snprintf(dw->name, sizeof(dw->name), "CH3");
     dw->kind = dwk_channel;
     dw->samples_requested = 200;
 
     dw = cvec_push_back(&wv->waveforms);
     debug_waveform_init(dw);
-    this->dbg.waveforms_ym2612.chan[3] = make_cvec_ptr(&wv->waveforms, cvec_len(&wv->waveforms)-1);
+    th->dbg.waveforms_ym2612.chan[3] = make_cvec_ptr(&wv->waveforms, cvec_len(&wv->waveforms)-1);
     snprintf(dw->name, sizeof(dw->name), "CH4");
     dw->kind = dwk_channel;
     dw->samples_requested = 200;
 
     dw = cvec_push_back(&wv->waveforms);
     debug_waveform_init(dw);
-    this->dbg.waveforms_ym2612.chan[4] = make_cvec_ptr(&wv->waveforms, cvec_len(&wv->waveforms)-1);
+    th->dbg.waveforms_ym2612.chan[4] = make_cvec_ptr(&wv->waveforms, cvec_len(&wv->waveforms)-1);
     snprintf(dw->name, sizeof(dw->name), "CH5");
     dw->kind = dwk_channel;
     dw->samples_requested = 200;
 
     dw = cvec_push_back(&wv->waveforms);
     debug_waveform_init(dw);
-    this->dbg.waveforms_ym2612.chan[5] = make_cvec_ptr(&wv->waveforms, cvec_len(&wv->waveforms)-1);
+    th->dbg.waveforms_ym2612.chan[5] = make_cvec_ptr(&wv->waveforms, cvec_len(&wv->waveforms)-1);
     snprintf(dw->name, sizeof(dw->name), "CH6/PCM");
     dw->kind = dwk_channel;
     dw->samples_requested = 200;
 }
 
 
-static void setup_waveforms_psg(genesis* this, debugger_interface *dbgr)
+static void setup_waveforms_psg(genesis* th, debugger_interface *dbgr)
 {
-    this->dbg.waveforms_psg.view = debugger_view_new(dbgr, dview_waveforms);
-    struct debugger_view *dview = cpg(this->dbg.waveforms_psg.view);
-    struct waveform_view *wv = (waveform_view *)&dview->waveform;
+    th->dbg.waveforms_psg.view = debugger_view_new(dbgr, dview_waveforms);
+    debugger_view *dview = cpg(th->dbg.waveforms_psg.view);
+    waveform_view *wv = (waveform_view *)&dview->waveform;
     snprintf(wv->name, sizeof(wv->name), "SN76489");
 
     cvec_alloc_atleast(&wv->waveforms, 6);
     cvec_lock_reallocs(&wv->waveforms);
 
-    struct debug_waveform *dw = cvec_push_back(&wv->waveforms);
+    debug_waveform *dw = cvec_push_back(&wv->waveforms);
     debug_waveform_init(dw);
-    this->dbg.waveforms_psg.main = make_cvec_ptr(&wv->waveforms, cvec_len(&wv->waveforms)-1);
+    th->dbg.waveforms_psg.main = make_cvec_ptr(&wv->waveforms, cvec_len(&wv->waveforms)-1);
     snprintf(dw->name, sizeof(dw->name), "Output");
     dw->kind = dwk_main;
     dw->samples_requested = 400;
@@ -459,28 +457,28 @@ static void setup_waveforms_psg(genesis* this, debugger_interface *dbgr)
 
     dw = cvec_push_back(&wv->waveforms);
     debug_waveform_init(dw);
-    this->dbg.waveforms_psg.chan[0] = make_cvec_ptr(&wv->waveforms, cvec_len(&wv->waveforms)-1);
+    th->dbg.waveforms_psg.chan[0] = make_cvec_ptr(&wv->waveforms, cvec_len(&wv->waveforms)-1);
     snprintf(dw->name, sizeof(dw->name), "Square 0");
     dw->kind = dwk_channel;
     dw->samples_requested = 200;
 
     dw = cvec_push_back(&wv->waveforms);
     debug_waveform_init(dw);
-    this->dbg.waveforms_psg.chan[1] = make_cvec_ptr(&wv->waveforms, cvec_len(&wv->waveforms)-1);
+    th->dbg.waveforms_psg.chan[1] = make_cvec_ptr(&wv->waveforms, cvec_len(&wv->waveforms)-1);
     snprintf(dw->name, sizeof(dw->name), "Square 1");
     dw->kind = dwk_channel;
     dw->samples_requested = 200;
 
     dw = cvec_push_back(&wv->waveforms);
     debug_waveform_init(dw);
-    this->dbg.waveforms_psg.chan[2] = make_cvec_ptr(&wv->waveforms, cvec_len(&wv->waveforms)-1);
+    th->dbg.waveforms_psg.chan[2] = make_cvec_ptr(&wv->waveforms, cvec_len(&wv->waveforms)-1);
     snprintf(dw->name, sizeof(dw->name), "Square 2");
     dw->kind = dwk_channel;
     dw->samples_requested = 200;
 
     dw = cvec_push_back(&wv->waveforms);
     debug_waveform_init(dw);
-    this->dbg.waveforms_psg.chan[3] = make_cvec_ptr(&wv->waveforms, cvec_len(&wv->waveforms)-1);
+    th->dbg.waveforms_psg.chan[3] = make_cvec_ptr(&wv->waveforms, cvec_len(&wv->waveforms)-1);
     snprintf(dw->name, sizeof(dw->name), "Noise");
     dw->kind = dwk_channel;
     dw->samples_requested = 200;
@@ -533,15 +531,15 @@ static int fetch_order[4] = { 1, 0, 3, 2 };
 
 static void render_image_view_plane(debugger_interface *dbgr, debugger_view *dview, void *ptr, u32 out_width, int plane_num)
 {
-    struct genesis *this = (genesis *) ptr;
-    if (this->clock.master_frame == 0) return;
+    genesis *th = (genesis *) ptr;
+    if (th->clock.master_frame == 0) return;
 
     // Clear output
-    struct image_view *iv = &dview->image;
+    image_view *iv = &dview->image;
     u32 *outbuf = iv->img_buf[iv->draw_which_buf].ptr;
     memset(outbuf, 0, out_width * 4 * 1024);
-    u32 fw = this->vdp.io.foreground_width * 8;
-    u32 fh = this->vdp.io.foreground_height * 8;
+    u32 fw = th->vdp.io.foreground_width * 8;
+    u32 fh = th->vdp.io.foreground_height * 8;
     for (u32 y = 0; y < fh; y++) {
         u32 *rowptr = outbuf + (y * out_width);
         for (u32 x = 0; x < fh; x++) {
@@ -550,15 +548,15 @@ static void render_image_view_plane(debugger_interface *dbgr, debugger_view *dvi
     }
 
     // Render tilemap
-    u32 num_tiles_x = this->vdp.io.foreground_width;
-    u32 num_tiles_y = this->vdp.io.foreground_height;
+    u32 num_tiles_x = th->vdp.io.foreground_width;
+    u32 num_tiles_y = th->vdp.io.foreground_height;
 
     u32 nametable_addr;
 
-    struct debugger_widget_checkbox *shade_priorities_cb = nullptr;
-    struct debugger_widget_checkbox *draw_box_cb = nullptr;
-    struct debugger_widget_radiogroup *shade_by_rg = nullptr;
-    struct debugger_widget_radiogroup *shade_kind_rg = nullptr;
+    debugger_widget_checkbox *shade_priorities_cb = nullptr;
+    debugger_widget_checkbox *draw_box_cb = nullptr;
+    debugger_widget_radiogroup *shade_by_rg = nullptr;
+    debugger_widget_radiogroup *shade_kind_rg = nullptr;
     enum shade_by_e {
         SB_NONE = 0,
         SB_INSIDE = 1,
@@ -584,28 +582,28 @@ static void render_image_view_plane(debugger_interface *dbgr, debugger_view *dvi
     }
     switch(plane_num) {
         case 0:
-            nametable_addr = this->vdp.io.plane_a_table_addr;
+            nametable_addr = th->vdp.io.plane_a_table_addr;
             break;
         case 1:
-            nametable_addr = this->vdp.io.plane_b_table_addr;
+            nametable_addr = th->vdp.io.plane_b_table_addr;
             break;
         case 2:
-            nametable_addr = this->vdp.io.window_table_addr;
-            if (this->vdp.io.h40)
+            nametable_addr = th->vdp.io.window_table_addr;
+            if (th->vdp.io.h40)
                 nametable_addr &= 0b111110; // Ignore lowest bit in h40
             nametable_addr <<= 10;
-            num_tiles_x = this->vdp.io.h40 ? 64 : 32;
+            num_tiles_x = th->vdp.io.h40 ? 64 : 32;
             num_tiles_y = 32;
             break;
     }
 
     u32 use_screen_palette = 1;
     u32 use_bg = 0 && use_screen_palette;
-    u32 bg_color = this->vdp.CRAM[this->vdp.io.bg_color];
+    u32 bg_color = th->vdp.CRAM[th->vdp.io.bg_color];
 
     // Loop through rows of tiles
     for (u32 screen_ty = 0; screen_ty < num_tiles_y; screen_ty++) {
-        u16 *tile_row_ptr = this->vdp.VRAM + nametable_addr;
+        u16 *tile_row_ptr = th->vdp.VRAM + nametable_addr;
         tile_row_ptr += screen_ty * num_tiles_x;
 
         u32 *screen_ty_ptr = outbuf + (screen_ty * 8 * out_width); // 8 line sdown
@@ -615,7 +613,7 @@ static void render_image_view_plane(debugger_interface *dbgr, debugger_view *dvi
             u32 hflip = (tile_data >> 11) & 1;
             u32 vflip = (tile_data >> 12) & 1;
             u32 palette = ((tile_data >> 13) & 3) << 4;
-            u8 *pattern_start_ptr = (u8*)this->vdp.VRAM + ((tile_data & 0x7FF) << 5);
+            u8 *pattern_start_ptr = (u8*)th->vdp.VRAM + ((tile_data & 0x7FF) << 5);
             u32 priority = (tile_data >> 15) & 1;
 
             u32 *screen_tx_ptr = screen_ty_ptr + (screen_tx * 8); // however many x in
@@ -634,13 +632,13 @@ static void render_image_view_plane(debugger_interface *dbgr, debugger_view *dvi
                     u32 v;
                     v = hflip ? px2 & 15 : px2 >> 4;
                     if ((v == 0) && use_bg) v = bg_color;
-                    else v = (v == 0) ? 0 : this->vdp.CRAM[palette + v];
+                    else v = (v == 0) ? 0 : th->vdp.CRAM[palette + v];
                     *outptr = gen_to_rgb(v, use_screen_palette, priority, shade_priorities);
                     outptr++;
 
                     v = hflip ? px2 >> 4 : px2 & 15;
                     if ((v == 0) && use_bg) v = bg_color;
-                    else v = (v == 0) ? 0 : this->vdp.CRAM[palette + v];
+                    else v = (v == 0) ? 0 : th->vdp.CRAM[palette + v];
                     *outptr = gen_to_rgb(v, use_screen_palette, priority, shade_priorities);
                     outptr++;
                 }
@@ -659,11 +657,11 @@ static void render_image_view_plane(debugger_interface *dbgr, debugger_view *dvi
         // First, we use row #0. We use its hscroll, and then use the individual column v-scrolls to settle stuff
         // But remember, the scrolls may have 0-15 pixels off the left.
 
-        struct genesis_vdp_debug_row *top = &this->vdp.debug.output_rows[0];
-        struct genesis_vdp_debug_row *bottom = &this->vdp.debug.output_rows[0];
+        genesis_vdp_debug_row *top = &th->vdp.debug.output_rows[0];
+        genesis_vdp_debug_row *bottom = &th->vdp.debug.output_rows[0];
 
-        u32 h_mask = (this->vdp.io.foreground_width * 8) - 1;
-        u32 v_mask = (this->vdp.io.foreground_height * 8) - 1;
+        u32 h_mask = (th->vdp.io.foreground_width * 8) - 1;
+        u32 v_mask = (th->vdp.io.foreground_height * 8) - 1;
         u32 top_left = top->hscroll[plane_num] & h_mask;
         u32 mx = top_left;
 
@@ -685,7 +683,7 @@ static void render_image_view_plane(debugger_interface *dbgr, debugger_view *dvi
         for (u32 mline = 1; mline < 239; mline++) {
             u32 y = (mline + vscroll) & v_mask;
             u32 *line_ptr = outbuf + (y * out_width);
-            struct genesis_vdp_debug_row *row = &this->vdp.debug.output_rows[mline];
+            genesis_vdp_debug_row *row = &th->vdp.debug.output_rows[mline];
             u32 left_x = row->hscroll[plane_num] & h_mask;
             u32 right_x = (left_x + (row->h40 ? 319 : 255)) & h_mask;
             line_ptr[left_x] = col_left;
@@ -693,15 +691,15 @@ static void render_image_view_plane(debugger_interface *dbgr, debugger_view *dvi
         }
     }
 
-    u32 front_buffer = this->clock.current_front_buffer;
-    //printf("\nUSING FRONT BUFFER: %d", this->clock.current_front_buffer);
+    u32 front_buffer = th->clock.current_front_buffer;
+    //printf("\nUSING FRONT BUFFER: %d", th->clock.current_front_buffer);
     if (shade_by != SB_NONE) {
         assert(plane_num<2);
         u32 sflip = shade_by == SB_INSIDE ? 0 : 1;
         for (u32 y = 0; y < fh; y++) {
             u32 fetched = 0;
             u32 *px_line = outbuf + (y * out_width);
-            u32 *shaded_ptr_line = this->vdp.debug.px_displayed[front_buffer][plane_num] + (y * 32);
+            u32 *shaded_ptr_line = th->vdp.debug.px_displayed[front_buffer][plane_num] + (y * 32);
             for (u32 x = 0; x < fw; x++) {
                 if ((x & 31) == 0) fetched = shaded_ptr_line[x >> 5];
                 u32 shift = x & 31;
@@ -718,23 +716,23 @@ static void render_image_view_plane(debugger_interface *dbgr, debugger_view *dvi
 }
 
 static void render_image_view_ym_info(debugger_interface *dbgr, debugger_view *dview, void *ptr, u32 out_width) {
-    struct genesis *gen = (genesis *) ptr;
-    struct ym2612 *this = &gen->ym2612;
+    genesis *gen = (genesis *) ptr;
+    ym2612 *th = &gen->ym2612;
     //memset(ptr, 0, out_width * 4 * 10);
-    struct debugger_widget_textbox *tb = &((debugger_widget *) cvec_get(&dview->options, 0))->textbox;
+    debugger_widget_textbox *tb = &((debugger_widget *) cvec_get(&dview->options, 0))->textbox;
     debugger_widgets_textbox_clear(tb);
     ///         debugger_widgets_textbox_sprintf(tb, "eng%c  display_mode:%d  bg_mode:%d  bg_ext_pal:%d", ppun == 0 ? 'A' : 'B', eng->io.display_mode, eng->io.bg_mode, eng->io.bg.extended_palettes);
 #define tbp(...) debugger_widgets_textbox_sprintf(tb, __VA_ARGS__)
 #define YN(x) (x) ? "yes" : "no"
     for (u32 chn = 0; chn < 6; chn++) {
-        struct YM2612_CHANNEL *ch = &this->channel[chn];
+        YM2612_CHANNEL *ch = &th->channel[chn];
         tbp("\nch:%d  mode:", chn+1);
         u32 single = 1;
         if ((ch->num == 2) && (ch->mode == YFM_multiple)) {
             tbp("multi-freq");
             single = 0;
         }
-        else if ((ch->num == 5) && (this->dac.enable))
+        else if ((ch->num == 5) && (th->dac.enable))
             tbp("dac       ");
         else
             tbp("normal    ");
@@ -745,7 +743,7 @@ static void render_image_view_ym_info(debugger_interface *dbgr, debugger_view *d
         }
 
         for (u32 opn = 0; opn < 4; opn++) {
-            struct YM2612_OPERATOR *op = &ch->operator[opn];
+            YM2612_OPERATOR *op = &ch->operator[opn];
             tbp("\n--S%d  out:%04x", opn+1, op->output & 0xFFFF);
             if ((ch->num == 2) && (ch->mode == YFM_multiple)) {
                 tbp("  f_num:%d  octave:%d", op->f_num.value, op->block.value);
@@ -802,25 +800,25 @@ static u32 genesis_color_lookup[4][8] =  {
 };
 
 static void render_image_view_output(debugger_interface *dbgr, debugger_view *dview, void *ptr, u32 out_width) {
-    struct genesis *this = (genesis *) ptr;
-    if (this->clock.master_frame == 0) return;
-    struct image_view *iv = &dview->image;
+    genesis *th = (genesis *) ptr;
+    if (th->clock.master_frame == 0) return;
+    image_view *iv = &dview->image;
     iv->draw_which_buf ^= 1;
     u32 *outbuf = iv->img_buf[iv->draw_which_buf].ptr;
     memset(outbuf, 0, out_width*(4*240)); // Clear out 240 lines
 
-    struct debugger_widget *shade_normal_b_w = (debugger_widget *)cvec_get(&dview->options, 0);
-    struct debugger_widget *shade_shadow_r_w =(debugger_widget *)cvec_get(&dview->options, 1);
-    struct debugger_widget *shade_highlight_g_w = (debugger_widget *)cvec_get(&dview->options, 2);
-    struct debugger_widget *draw_normal_w = (debugger_widget *)cvec_get(&dview->options, 3);
-    struct debugger_widget *draw_shadow_w = (debugger_widget *)cvec_get(&dview->options, 4);
-    struct debugger_widget *draw_highlight_w = (debugger_widget *)cvec_get(&dview->options, 5);
-    struct debugger_widget *apply_shadow_w = (debugger_widget *)cvec_get(&dview->options, 6);
-    struct debugger_widget *apply_highlight_w = (debugger_widget *)cvec_get(&dview->options, 7);
-    struct debugger_widget *highlight_a_w = (debugger_widget *)cvec_get(&dview->options, 8);
-    struct debugger_widget *highlight_b_w = (debugger_widget *)cvec_get(&dview->options, 9);
-    struct debugger_widget *highlight_sp_w = (debugger_widget *)cvec_get(&dview->options, 10);
-    struct debugger_widget *highlight_bg_w = (debugger_widget *)cvec_get(&dview->options, 11);
+    debugger_widget *shade_normal_b_w = (debugger_widget *)cvec_get(&dview->options, 0);
+    debugger_widget *shade_shadow_r_w =(debugger_widget *)cvec_get(&dview->options, 1);
+    debugger_widget *shade_highlight_g_w = (debugger_widget *)cvec_get(&dview->options, 2);
+    debugger_widget *draw_normal_w = (debugger_widget *)cvec_get(&dview->options, 3);
+    debugger_widget *draw_shadow_w = (debugger_widget *)cvec_get(&dview->options, 4);
+    debugger_widget *draw_highlight_w = (debugger_widget *)cvec_get(&dview->options, 5);
+    debugger_widget *apply_shadow_w = (debugger_widget *)cvec_get(&dview->options, 6);
+    debugger_widget *apply_highlight_w = (debugger_widget *)cvec_get(&dview->options, 7);
+    debugger_widget *highlight_a_w = (debugger_widget *)cvec_get(&dview->options, 8);
+    debugger_widget *highlight_b_w = (debugger_widget *)cvec_get(&dview->options, 9);
+    debugger_widget *highlight_sp_w = (debugger_widget *)cvec_get(&dview->options, 10);
+    debugger_widget *highlight_bg_w = (debugger_widget *)cvec_get(&dview->options, 11);
     u32 shade_shadow_r = shade_shadow_r_w->checkbox.value;
     u32 shade_highlight_g = shade_highlight_g_w->checkbox.value;
     u32 shade_normal_b = shade_normal_b_w->checkbox.value;
@@ -833,10 +831,10 @@ static void render_image_view_output(debugger_interface *dbgr, debugger_view *dv
     u32 highlight_b = highlight_b_w->checkbox.value;
     u32 highlight_sp = highlight_sp_w->checkbox.value;
     u32 highlight_bg = highlight_bg_w->checkbox.value;
-    u16 *geno = (u16 *)this->vdp.display->output[this->vdp.display->last_written];
+    u16 *geno = (u16 *)th->vdp.display->output[th->vdp.display->last_written];
 
     for (u32 sy = 0; sy < 240; sy++) {
-        u32 h40 = this->vdp.debug.output_rows[sy].h40;
+        u32 h40 = th->vdp.debug.output_rows[sy].h40;
         u32 sx_max = h40 ? 320 : 256;
         u16 *geno_row_ptr = geno + (sy * 1280);
         u32 *output_row_ptr = outbuf + (sy * out_width);
@@ -908,20 +906,20 @@ static void render_image_view_output(debugger_interface *dbgr, debugger_view *dv
 }
 
 static void render_image_view_sprites(debugger_interface *dbgr, debugger_view *dview, void *ptr, u32 out_width) {
-    struct genesis *this = (genesis *) ptr;
-    if (this->clock.master_frame == 0) return;
-    struct image_view *iv = &dview->image;
+    genesis *th = (genesis *) ptr;
+    if (th->clock.master_frame == 0) return;
+    image_view *iv = &dview->image;
     iv->draw_which_buf ^= 1;
     u32 *outbuf = iv->img_buf[iv->draw_which_buf].ptr;
     memset(outbuf, 0, out_width*(4*512)); // Clear out 512 lines
 
 
-    struct debugger_widget *shade_priorities_w =(debugger_widget *)cvec_get(&dview->options, 0);
-    struct debugger_widget *draw_boxes_only_w =(debugger_widget *)cvec_get(&dview->options, 1);
-    struct debugger_widget *use_palette_w = (debugger_widget *)cvec_get(&dview->options, 2);
-    struct debugger_widget *highlight_shadow_w = (debugger_widget *)cvec_get(&dview->options, 3);
-    struct debugger_widget *highlight_highlight_w = (debugger_widget *)cvec_get(&dview->options, 4);
-    struct debugger_widget *highlight_force_normal_w = (debugger_widget *)cvec_get(&dview->options, 5);
+    debugger_widget *shade_priorities_w =(debugger_widget *)cvec_get(&dview->options, 0);
+    debugger_widget *draw_boxes_only_w =(debugger_widget *)cvec_get(&dview->options, 1);
+    debugger_widget *use_palette_w = (debugger_widget *)cvec_get(&dview->options, 2);
+    debugger_widget *highlight_shadow_w = (debugger_widget *)cvec_get(&dview->options, 3);
+    debugger_widget *highlight_highlight_w = (debugger_widget *)cvec_get(&dview->options, 4);
+    debugger_widget *highlight_force_normal_w = (debugger_widget *)cvec_get(&dview->options, 5);
     u32 shade_priorities = shade_priorities_w->checkbox.value;
     u32 use_palette = use_palette_w->checkbox.value;
     u32 draw_boxes_only = draw_boxes_only_w->checkbox.value;
@@ -938,11 +936,11 @@ static void render_image_view_sprites(debugger_interface *dbgr, debugger_view *d
 
     // We need to paint back to front to preserve order
     // First gather sprite order
-    u32 sprites_total_max = this->vdp.io.h40 ? 80 : 64;
+    u32 sprites_total_max = th->vdp.io.h40 ? 80 : 64;
     u32 num_sprites = 0;
     u32 sprite_order[80] = {};
 
-    u16 *sprite_table_ptr = this->vdp.VRAM + this->vdp.io.sprite_table_addr;
+    u16 *sprite_table_ptr = th->vdp.VRAM + th->vdp.io.sprite_table_addr;
     u16 next_sprite = 0;
     for (u32 i = 0; i < sprites_total_max; i++) {
         u16 *sp = sprite_table_ptr + (4 * next_sprite);
@@ -986,7 +984,7 @@ static void render_image_view_sprites(debugger_interface *dbgr, debugger_view *d
                     }
                 }
                 else { // !draw_boxes_only
-                    u8 *pattern_start_ptr = (u8*)this->vdp.VRAM + (tile_num << 5);
+                    u8 *pattern_start_ptr = (u8*)th->vdp.VRAM + (tile_num << 5);
                     for (u32 tile_y = 0; tile_y < 8; tile_y++) {
                         u32 screeny = tile_y + tile_sy;
                         if (screeny < 511) {
@@ -1020,7 +1018,7 @@ static void render_image_view_sprites(debugger_interface *dbgr, debugger_view *d
                                                 c = 0xFFFFFFFF;
                                             }
                                             else {
-                                                u32 n = use_palette ? this->vdp.CRAM[colo] : v[i];
+                                                u32 n = use_palette ? th->vdp.CRAM[colo] : v[i];
                                                 c = gen_to_rgb(n, use_palette, priority, shade_priorities);
                                             }
                                             *outptr = c;
@@ -1041,7 +1039,7 @@ static void render_image_view_sprites(debugger_interface *dbgr, debugger_view *d
     u32 top = 0x80;
     u32 left = 0x80;
     u32 bottom = top + 240;
-    u32 right = left + (this->vdp.io.h40 ? 320 : 256);
+    u32 right = left + (th->vdp.io.h40 ? 320 : 256);
     u32 *line_ptr = outbuf;
     for (u32 y = 0; y < 511; y++) {
         for (u32 x = 0; x < 511; x++) {
@@ -1062,9 +1060,9 @@ static void render_image_view_sprites(debugger_interface *dbgr, debugger_view *d
 }
 
 static void render_image_view_palette(debugger_interface *dbgr, debugger_view *dview, void *ptr, u32 out_width) {
-    struct genesis *this = (genesis *) ptr;
-    if (this->clock.master_frame == 0) return;
-    struct image_view *iv = &dview->image;
+    genesis *th = (genesis *) ptr;
+    if (th->clock.master_frame == 0) return;
+    image_view *iv = &dview->image;
     iv->draw_which_buf ^= 1;
     u32 *outbuf = iv->img_buf[iv->draw_which_buf].ptr;
     memset(outbuf, 0, out_width*(4*PAL_BOX_SIZE_W_BORDER)*4); // Clear out at least 4 rows worth
@@ -1074,7 +1072,7 @@ static void render_image_view_palette(debugger_interface *dbgr, debugger_view *d
         for (u32 color = 0; color < 16; color++) {
             u32 y_top = palette * PAL_BOX_SIZE_W_BORDER;
             u32 x_left = color * PAL_BOX_SIZE_W_BORDER;
-            u32 c = this->vdp.CRAM[(palette * 16) + color];
+            u32 c = th->vdp.CRAM[(palette * 16) + color];
             //printf("\nP:%d C:%d VAL:%04x", palette, color, c);
             u32 r, g, b;
             b = ((c >> 6) & 7) * 0x24;
@@ -1094,9 +1092,9 @@ static void render_image_view_palette(debugger_interface *dbgr, debugger_view *d
 }
 
 static void render_image_view_tilemap(debugger_interface *dbgr, debugger_view *dview, void *ptr, u32 out_width) {
-    struct genesis *this = (genesis *) ptr;
-    if (this->clock.master_frame == 0) return;
-    struct image_view *iv = &dview->image;
+    genesis *th = (genesis *) ptr;
+    if (th->clock.master_frame == 0) return;
+    image_view *iv = &dview->image;
     iv->draw_which_buf ^= 1;
     u32 *outbuf = iv->img_buf[iv->draw_which_buf].ptr;
 
@@ -1112,7 +1110,7 @@ static void render_image_view_tilemap(debugger_interface *dbgr, debugger_view *d
         u32 *draw_ptr = (outbuf + (out_width * y_row * 8) + (x_col * 8));
 
         for (u32 tile_y = 0; tile_y < 8; tile_y++) {
-            u8 *tile_ptr = ((u8*)this->vdp.VRAM) + (tile_num * 32) + (tile_y * 4);
+            u8 *tile_ptr = ((u8*)th->vdp.VRAM) + (tile_num * 32) + (tile_y * 4);
             for (u32 half = 0; half < 4; half++) {
                 u32 px2 =   tile_ptr[fetch_order[half]];
                 u32 v;
@@ -1134,14 +1132,14 @@ static void render_image_view_tilemap(debugger_interface *dbgr, debugger_view *d
     }
 }
 
-static void setup_image_view_plane(genesis* this, debugger_interface *dbgr, int plane_num)
+static void setup_image_view_plane(genesis* th, debugger_interface *dbgr, int plane_num)
 {
     // 0 = plane A
     // 1 = plane B
     // 2 = window
-    this->dbg.image_views.nametables[plane_num] = debugger_view_new(dbgr, dview_image);
-    struct debugger_view *dview = cpg(this->dbg.image_views.nametables[plane_num]);
-    struct image_view *iv = &dview->image;
+    th->dbg.image_views.nametables[plane_num] = debugger_view_new(dbgr, dview_image);
+    debugger_view *dview = cpg(th->dbg.image_views.nametables[plane_num]);
+    image_view *iv = &dview->image;
 
     switch(plane_num) {
         case 0:
@@ -1152,7 +1150,7 @@ static void setup_image_view_plane(genesis* this, debugger_interface *dbgr, int 
             iv->viewport.p[1] = (ivec2){ 1024, 1024 };
             //debugger_widgets_add_checkbox(&dview->options, "Draw scroll boundary", 1, 0, 1);
             debugger_widgets_add_checkbox(&dview->options, "Shade priorities", 1, 0, 1);
-            struct debugger_widget *rg = debugger_widgets_add_radiogroup(&dview->options, "Shade scroll area", 1, 0, 1);
+            debugger_widget *rg = debugger_widgets_add_radiogroup(&dview->options, "Shade scroll area", 1, 0, 1);
             debugger_widget_radiogroup_add_button(rg, "None", 0, 1);
             debugger_widget_radiogroup_add_button(rg, "Inside", 1, 1);
             debugger_widget_radiogroup_add_button(rg, "Outside", 2, 1);
@@ -1161,7 +1159,7 @@ static void setup_image_view_plane(genesis* this, debugger_interface *dbgr, int 
             debugger_widget_radiogroup_add_button(rg, "Black", 1, 1);
             debugger_widget_radiogroup_add_button(rg, "White", 2, 1);
             /*for (u32 i = 0; i < cvec_len(&rg->radiogroup.buttons); i++) {
-                struct debugger_widget *cb = cvec_get(&rg->radiogroup.buttons, i);
+                debugger_widget *cb = cvec_get(&rg->radiogroup.buttons, i);
             }
             break;*/
             break;
@@ -1180,7 +1178,7 @@ static void setup_image_view_plane(genesis* this, debugger_interface *dbgr, int 
     // Up to 2048 tiles
     // 8x8
     // so, 32x64 tiles.
-    iv->update_func.ptr = this;
+    iv->update_func.ptr = th;
     switch(plane_num) {
         case 0:
             iv->update_func.func = &render_image_view_planea;
@@ -1203,11 +1201,11 @@ static void setup_image_view_plane(genesis* this, debugger_interface *dbgr, int 
 }
 
 
-static void setup_image_view_tilemap(genesis* this, debugger_interface *dbgr)
+static void setup_image_view_tilemap(genesis* th, debugger_interface *dbgr)
 {
-    this->dbg.image_views.tiles = debugger_view_new(dbgr, dview_image);
-    struct debugger_view *dview = cpg(this->dbg.image_views.tiles);
-    struct image_view *iv = &dview->image;
+    th->dbg.image_views.tiles = debugger_view_new(dbgr, dview_image);
+    debugger_view *dview = cpg(th->dbg.image_views.tiles);
+    image_view *iv = &dview->image;
 
     iv->width = 512;
     iv->height = 256;
@@ -1219,17 +1217,17 @@ static void setup_image_view_tilemap(genesis* this, debugger_interface *dbgr)
     // Up to 2048 tiles
     // 8x8
     // so, 64x32 tiles.
-    iv->update_func.ptr = this;
+    iv->update_func.ptr = th;
     iv->update_func.func = &render_image_view_tilemap;
 
     snprintf(iv->label, sizeof(iv->label), "Pattern Table Viewer");
 }
 
-static void setup_image_view_output(genesis* this, debugger_interface *dbgr)
+static void setup_image_view_output(genesis* th, debugger_interface *dbgr)
 {
-    this->dbg.image_views.sprites = debugger_view_new(dbgr, dview_image);
-    struct debugger_view *dview = cpg(this->dbg.image_views.sprites);
-    struct image_view *iv = &dview->image;
+    th->dbg.image_views.sprites = debugger_view_new(dbgr, dview_image);
+    debugger_view *dview = cpg(th->dbg.image_views.sprites);
+    image_view *iv = &dview->image;
 
     iv->width = 1280;
     iv->height = 240;
@@ -1238,7 +1236,7 @@ static void setup_image_view_output(genesis* this, debugger_interface *dbgr)
     iv->viewport.p[0] = (ivec2){ 0, 0 };
     iv->viewport.p[1] = (ivec2){ iv->width, iv->height };
 
-    iv->update_func.ptr = this;
+    iv->update_func.ptr = th;
     iv->update_func.func = &render_image_view_output;
 
     snprintf(iv->label, sizeof(iv->label), "Output Debug");
@@ -1259,11 +1257,11 @@ static void setup_image_view_output(genesis* this, debugger_interface *dbgr)
 
 }
 
-static void setup_image_view_sprites(genesis* this, debugger_interface *dbgr)
+static void setup_image_view_sprites(genesis* th, debugger_interface *dbgr)
 {
-    this->dbg.image_views.sprites = debugger_view_new(dbgr, dview_image);
-    struct debugger_view *dview = cpg(this->dbg.image_views.sprites);
-    struct image_view *iv = &dview->image;
+    th->dbg.image_views.sprites = debugger_view_new(dbgr, dview_image);
+    debugger_view *dview = cpg(th->dbg.image_views.sprites);
+    image_view *iv = &dview->image;
 
     iv->width = 512;
     iv->height = 512;
@@ -1272,7 +1270,7 @@ static void setup_image_view_sprites(genesis* this, debugger_interface *dbgr)
     iv->viewport.p[0] = (ivec2){ 0, 0 };
     iv->viewport.p[1] = (ivec2){ iv->width, iv->height };
 
-    iv->update_func.ptr = this;
+    iv->update_func.ptr = th;
     iv->update_func.func = &render_image_view_sprites;
 
     snprintf(iv->label, sizeof(iv->label), "Sprites Debug");
@@ -1286,11 +1284,11 @@ static void setup_image_view_sprites(genesis* this, debugger_interface *dbgr)
 }
 
 
-static void setup_image_view_palette(genesis* this, debugger_interface *dbgr)
+static void setup_image_view_palette(genesis* th, debugger_interface *dbgr)
 {
-    this->dbg.image_views.palette = debugger_view_new(dbgr, dview_image);
-    struct debugger_view *dview = cpg(this->dbg.image_views.palette);
-    struct image_view *iv = &dview->image;
+    th->dbg.image_views.palette = debugger_view_new(dbgr, dview_image);
+    debugger_view *dview = cpg(th->dbg.image_views.palette);
+    image_view *iv = &dview->image;
 
     iv->width = 16 * PAL_BOX_SIZE_W_BORDER;
     iv->height = 4 * PAL_BOX_SIZE_W_BORDER;
@@ -1302,22 +1300,23 @@ static void setup_image_view_palette(genesis* this, debugger_interface *dbgr)
     // Up to 2048 tiles
     // 8x8
     // so, 32x64 tiles.
-    iv->update_func.ptr = this;
+    iv->update_func.ptr = th;
     iv->update_func.func = &render_image_view_palette;
 
     snprintf(iv->label, sizeof(iv->label), "Palette Viewer");
 }
 
-static void setup_events_view(genesis* this, debugger_interface *dbgr)
+static void setup_events_view(genesis* th, debugger_interface *dbgr)
 {
-    this->dbg.events.view = debugger_view_new(dbgr, dview_events);
-    struct debugger_view *dview = cpg(this->dbg.events.view);
-    struct events_view *ev = &dview->events;
+    th->dbg.events.view = debugger_view_new(dbgr, dview_events);
+    debugger_view *dview = cpg(th->dbg.events.view);
+    events_view *ev = &dview->events;
+    
 
     ev->timing = ev_timing_master_clock;
     ev->master_clocks.per_line = 3420;
     ev->master_clocks.height = 262;
-    ev->master_clocks.ptr = &this->clock.master_cycle_count;
+    ev->master_clocks.ptr = &th->clock.master_cycle_count;
 
     for (u32 i = 0; i < 2; i++) {
         ev->display[i].width = 424; // 320 pixels + 104 hblank
@@ -1327,7 +1326,7 @@ static void setup_events_view(genesis* this, debugger_interface *dbgr)
         ev->display[i].frame_num = 0;
     }
 
-    ev->associated_display = this->vdp.display_ptr;
+    ev->associated_display = th->vdp.display_ptr;
 
     DEBUG_REGISTER_EVENT_CATEGORY("VDP events", DBG_GEN_CATEGORY_VDP);
     DEBUG_REGISTER_EVENT_CATEGORY("CPU events", DBG_GEN_CATEGORY_CPU);
@@ -1343,20 +1342,21 @@ static void setup_events_view(genesis* this, debugger_interface *dbgr)
     DEBUG_REGISTER_EVENT("DMA copy", 0x004090, DBG_GEN_CATEGORY_VDP, DBG_GEN_EVENT_DMA_COPY, 1);
     DEBUG_REGISTER_EVENT("DMA load", 0xFF4090, DBG_GEN_CATEGORY_VDP, DBG_GEN_EVENT_DMA_LOAD, 1);
 
-    SET_EVENT_VIEW(this->z80);
-    SET_EVENT_VIEW(this->m68k);
-    SET_EVENT_VIEW(this->ym2612);
-    SET_EVENT_VIEW(this->psg);
+    SET_EVENT_VIEW(th->vdp);
+    SET_EVENT_VIEW(th->z80);
+    SET_EVENT_VIEW(th->m68k);
+    SET_EVENT_VIEW(th->ym2612);
+    SET_EVENT_VIEW(th->psg);
 
-    debugger_report_frame(this->dbg.interface);
+    debugger_report_frame(th->dbg.interface);
 }
 
-static void setup_image_view_ym_info(genesis *this, debugger_interface *dbgr)
+static void setup_image_view_ym_info(genesis *th, debugger_interface *dbgr)
 {
-    struct debugger_view *dview;
-    this->dbg.image_views.ym_info = debugger_view_new(dbgr, dview_image);
-    dview = cpg(this->dbg.image_views.ym_info);
-    struct image_view *iv = &dview->image;
+    debugger_view *dview;
+    th->dbg.image_views.ym_info = debugger_view_new(dbgr, dview_image);
+    dview = cpg(th->dbg.image_views.ym_info);
+    image_view *iv = &dview->image;
 
     iv->width = 10;
     iv->height = 10;
@@ -1365,7 +1365,7 @@ static void setup_image_view_ym_info(genesis *this, debugger_interface *dbgr)
     iv->viewport.p[0] = (ivec2){ 0, 0 };
     iv->viewport.p[1] = (ivec2){ 10, 10 };
 
-    iv->update_func.ptr = this;
+    iv->update_func.ptr = th;
     iv->update_func.func = &render_image_view_ym_info;
 
     snprintf(iv->label, sizeof(iv->label), "YM2612 Info");
@@ -1375,22 +1375,22 @@ static void setup_image_view_ym_info(genesis *this, debugger_interface *dbgr)
 
 void genesisJ_setup_debugger_interface(JSM, debugger_interface *dbgr)
 {
-    JTHIS;
-    this->dbg.interface = dbgr;
+    Jth;
+    th->dbg.interface = dbgr;
 
     dbgr->supported_by_core = 1;
     dbgr->smallest_step = 2;
-    setup_m68k_disassembly(dbgr, this);
-    setup_z80_disassembly(dbgr, this);
-    setup_waveforms_psg(this, dbgr);
-    setup_waveforms_ym2612(this, dbgr);
-    setup_events_view(this, dbgr);
-    setup_image_view_tilemap(this, dbgr);
-    setup_image_view_palette(this, dbgr);
-    setup_image_view_plane(this, dbgr, 0);
-    setup_image_view_plane(this, dbgr, 1);
-    setup_image_view_plane(this, dbgr, 2);
-    setup_image_view_sprites(this, dbgr);
-    setup_image_view_output(this, dbgr);
-    setup_image_view_ym_info(this, dbgr);
+    setup_m68k_disassembly(dbgr, th);
+    setup_z80_disassembly(dbgr, th);
+    setup_waveforms_psg(th, dbgr);
+    setup_waveforms_ym2612(th, dbgr);
+    setup_events_view(th, dbgr);
+    setup_image_view_tilemap(th, dbgr);
+    setup_image_view_palette(th, dbgr);
+    setup_image_view_plane(th, dbgr, 0);
+    setup_image_view_plane(th, dbgr, 1);
+    setup_image_view_plane(th, dbgr, 2);
+    setup_image_view_sprites(th, dbgr);
+    setup_image_view_output(th, dbgr);
+    setup_image_view_ym_info(th, dbgr);
 }

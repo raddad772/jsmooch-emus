@@ -31,6 +31,11 @@ struct core;
 struct gensched_item;
 typedef void (*gensched_callback)(core*, gensched_item *);
 
+struct SYMDO {
+    char name[50]{};
+    u32 addr{};
+};
+
 struct gensched_item {
     u16 next_index;
     u8 clk_add_z80, clk_add_m68k, clk_add_vdp;
@@ -90,7 +95,7 @@ struct core : jsm_system {
 
         controller_port controller_port1{};
         controller_port controller_port2{};
-        u32 SRAM_enabled{};
+        bool SRAM_enabled{};
     } io{};
 
     c6button controller1{};
@@ -98,10 +103,7 @@ struct core : jsm_system {
 
     struct {
         u32 num_symbols{};
-        struct SYMDO {
-            char name[50]{};
-            u32 addr{};
-        } symbols[20000]{};
+        SYMDO symbols[20000]{};
     } debugging{};
 
     DBG_START
@@ -159,15 +161,58 @@ struct core : jsm_system {
 
         } vdp{};
         u32 JP{};
-    } opts{};
+    } v_opts{};
 
+    void z80_reset_line(bool enabled);
     void cycle_m68k();
     void cycle_z80();
     void test_dbg_break(const char *where);
-    u16 mainbus_read(u32 addr, u32 UDS, u32 LDS, u16 old, bool has_effect);
-    void z80_interrupt(u32 level);
+    u16 mainbus_read(u32 addr, u8 UDS, u8 LDS, u16 old, bool has_effect);
+    void mainbus_write(u32 addr, u8 UDS, u8 LDS, u16 val);
+    void z80_interrupt(bool level);
     u8 z80_bus_read(u16 addr, u8 old, bool has_effect);
+    u16 read_version_register(u32 mask) const;
     void update_irqs();
+
+private:
+    void create_scheduling_lookup_table();
+    void setup_debug_waveform(debug_waveform *dw);
+    u16 mainbus_read_a1k(u32 addr, u16 old, u16 mask, bool has_effect);
+    void mainbus_write_a1k(u32 addr, u16 val, u16 mask);
+    void z80_mainbus_write(u32 addr, u8 val);
+    u8 z80_mainbus_read(u32 addr, u8 old, bool has_effect);
+    u8 z80_ym2612_read(u32 addr, u8 old, bool has_effect);
+    void write_z80_bank_address_register(u32 val);
+    void z80_bus_write(u16 addr, u8 val, bool is_m68k);
+    SYMDO *get_at_addr(u32 addr);
+    void read_opts();
+    void populate_opts();
+    static void block_step(void *ptr, u64 key, u64 clock, u32 jitter);
+    void load_symbols();
+    void schedule_first();
+    void setup_crt(JSM_DISPLAY &d);
+    void setup_audio();
+
+public:
+    void play() final;
+    void pause() final;
+    void stop() final;
+    void get_framevars(framevars& out) final;
+    void reset() final;
+    void killall();
+    u32 finish_frame() final;
+    u32 finish_scanline() final;
+    u32 step_master(u32 howmany) final;
+    void load_BIOS(multi_file_set& mfs) final;
+    void enable_tracing();
+    void disable_tracing();
+    void describe_io() final;
+    void save_state(serialized_state &state) final;
+    void load_state(serialized_state &state, deserialize_ret &ret) final;
+    void set_audiobuf(audiobuf *ab) final;
+    void setup_debugger_interface(debugger_interface &intf) final;
+    //void sideload(multi_file_set& mfs) final;
+
 };
 
 }

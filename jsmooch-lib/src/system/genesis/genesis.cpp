@@ -6,8 +6,6 @@
 #include <cstdio>
 #include <cstring>
 
-#include "fail"
-
 #include "component/controller/genesis3/genesis3.h"
 #include "component/controller/genesis6/genesis6.h"
 #include "genesis.h"
@@ -23,144 +21,143 @@
 namespace genesis {
 
 u32 read_trace_z80(void *ptr, u32 addr) {
-    struct genesis* this = (genesis*)ptr;
-    return genesis_z80_bus_read(this, addr, this->z80.pins.D, 0);
+    auto *th = static_cast<core *>(ptr);
+    return th->z80_bus_read(addr, th->z80.pins.D, false);
 }
 
 u32 read_trace_m68k(void *ptr, u32 addr, u32 UDS, u32 LDS) {
-    struct genesis* this = (genesis*)ptr;
-    return genesis_mainbus_read(this, addr, UDS, LDS, this->io.m68k.open_bus_data, 0);
+    auto *th = static_cast<core *>(ptr);
+    return th->mainbus_read(addr, UDS, LDS, th->io.m68k.open_bus_data, false);
 }
 
-static void setup_debug_waveform(genesis *this, debug_waveform *dw)
+void core::setup_debug_waveform(debug_waveform *dw)
 {
     if (dw->samples_requested == 0) return;
     dw->samples_rendered = dw->samples_requested;
-    dw->user.cycle_stride = ((float)this->clock.timing.frame.cycles_per / (float)dw->samples_requested);
+    dw->user.cycle_stride = (static_cast<float>(clock.timing.frame.cycles_per) / static_cast<float>(dw->samples_requested));
     dw->user.buf_pos = 0;
 }
 
-void genesisJ_set_audiobuf(jsm_system* jsm, audiobuf *ab)
+void core::set_audiobuf(audiobuf *ab)
 {
-    JTHIS;
-    this->audio.buf = ab;
-    if (this->audio.master_cycles_per_audio_sample == 0) {
-        this->audio.master_cycles_per_audio_sample = ((float)this->clock.timing.frame.cycles_per / (float)ab->samples_len);
-        this->audio.next_sample_cycle_max = 0;
-        struct debug_waveform *wf = cpg(this->dbg.waveforms_psg.main);
-        this->audio.master_cycles_per_max_sample = (float)this->clock.timing.frame.cycles_per / (float)wf->samples_requested;
+    audio.buf = ab;
+    if (audio.master_cycles_per_audio_sample == 0) {
+        audio.master_cycles_per_audio_sample = (static_cast<float>(clock.timing.frame.cycles_per) / static_cast<float>(ab->samples_len));
+        audio.next_sample_cycle_max = 0;
+        auto *wf = &dbg.waveforms_psg.main.get();
+        audio.master_cycles_per_max_sample = static_cast<float>(clock.timing.frame.cycles_per) / static_cast<float>(wf->samples_requested);
 
-        wf = (debug_waveform *)cpg(this->dbg.waveforms_psg.chan[0]);
-        this->audio.master_cycles_per_min_sample = (float)this->clock.timing.frame.cycles_per / (float)wf->samples_requested;
+        wf = &dbg.waveforms_psg.chan[0].get();
+        audio.master_cycles_per_min_sample = static_cast<float>(clock.timing.frame.cycles_per) / static_cast<float>(wf->samples_requested);
     }
 
     // PSG
-    struct debug_waveform *wf = cpg(this->dbg.waveforms_psg.main);
-    setup_debug_waveform(this, wf);
-    this->psg.ext_enable = wf->ch_output_enabled;
+    debug_waveform *wf = &dbg.waveforms_psg.main.get();
+    setup_debug_waveform(wf);
+    psg.ext_enable = wf->ch_output_enabled;
     if (wf->clock_divider == 0) wf->clock_divider = wf->default_clock_divider;
-    this->clock.psg.clock_divisor = wf->clock_divider;
+    clock.psg.clock_divisor = wf->clock_divider;
     for (u32 i = 0; i < 4; i++) {
-        wf = (debug_waveform *)cpg(this->dbg.waveforms_psg.chan[i]);
-        setup_debug_waveform(this, wf);
+        wf = &dbg.waveforms_psg.chan[i].get();
+        setup_debug_waveform(wf);
         if (i < 3) {
-            this->psg.sw[i].ext_enable = wf->ch_output_enabled;
+            psg.sw[i].ext_enable = wf->ch_output_enabled;
         }
         else
-            this->psg.noise.ext_enable = wf->ch_output_enabled;
+            psg.noise.ext_enable = wf->ch_output_enabled;
     }
 
     // ym2612
-    wf = cpg(this->dbg.waveforms_ym2612.main);
-    this->ym2612.ext_enable = wf->ch_output_enabled;
-    setup_debug_waveform(this, wf);
+    wf = &dbg.waveforms_ym2612.main.get();
+    ym2612.ext_enable = wf->ch_output_enabled;
+    setup_debug_waveform(wf);
     if (wf->clock_divider == 0) wf->clock_divider = wf->default_clock_divider;
-    this->clock.ym2612.clock_divisor = wf->clock_divider;
+    clock.ym2612.clock_divisor = wf->clock_divider;
     for (u32 i = 0; i < 6; i++) {
-        wf = (debug_waveform *)cpg(this->dbg.waveforms_ym2612.chan[i]);
-        setup_debug_waveform(this, wf);
-        this->ym2612.channel[i].ext_enable = wf->ch_output_enabled;
+        wf = &dbg.waveforms_ym2612.chan[i].get();
+        setup_debug_waveform(wf);
+        ym2612.channel[i].ext_enable = wf->ch_output_enabled;
     }
 
 }
 
-static void populate_opts(jsm_system *jsm)
+void core::populate_opts()
 {
-    debugger_widgets_add_checkbox(&jsm->opts, "VDP: Enable Layer A", 1, 1, 0);
-    debugger_widgets_add_checkbox(&jsm->opts, "VDP: Enable Layer B", 1, 1, 0);
-    debugger_widgets_add_checkbox(&jsm->opts, "VDP: Enable Sprites", 1, 1, 0);
-    debugger_widgets_add_checkbox(&jsm->opts, "VDP: trace", 1, 0, 0);
+    debugger_widgets_add_checkbox(opts, "VDP: Enable Layer A", 1, 1, 0);
+    debugger_widgets_add_checkbox(opts, "VDP: Enable Layer B", 1, 1, 0);
+    debugger_widgets_add_checkbox(opts, "VDP: Enable Sprites", 1, 1, 0);
+    debugger_widgets_add_checkbox(opts, "VDP: trace", 1, 0, 0);
 }
 
-static void read_opts(jsm_system *jsm, genesis* this)
+void core::read_opts()
 {
-    struct debugger_widget *w = cvec_get(&jsm->opts, 0);
-    this->opts.vdp.enable_A = w->checkbox.value;
+    debugger_widget *w = &opts.at(0);
+    v_opts.vdp.enable_A = w->checkbox.value;
 
-    w = cvec_get(&jsm->opts, 1);
-    this->opts.vdp.enable_B = w->checkbox.value;
+    w = &opts.at(1);
+    v_opts.vdp.enable_B = w->checkbox.value;
 
-    w = cvec_get(&jsm->opts, 2);
-    this->opts.vdp.enable_sprites = w->checkbox.value;
+    w = &opts.at(2);
+    v_opts.vdp.enable_sprites = w->checkbox.value;
 
-    w = cvec_get(&jsm->opts, 3);
-    this->opts.vdp.ex_trace = w->checkbox.value;
+    w = &opts.at(3);
+    v_opts.vdp.ex_trace = w->checkbox.value;
 }
 
-static void c_vdp_z80_m68k(genesis *this, gensched_item *e)
+static void c_vdp_z80_m68k(core* th, gensched_item *e)
 {
-    this->clock.master_cycle_count += e->clk_add_vdp;
-    genesis_VDP_cycle(this);
+    th->clock.master_cycle_count += e->clk_add_vdp;
+    th->vdp.do_cycle();
 
-    this->clock.master_cycle_count += e->clk_add_z80;
-    genesis_cycle_z80(this);
+    th->clock.master_cycle_count += e->clk_add_z80;
+    th->cycle_z80();
 
-    this->clock.master_cycle_count += e->clk_add_m68k;
-    genesis_cycle_m68k(this);
+    th->clock.master_cycle_count += e->clk_add_m68k;
+    th->cycle_m68k();
 
     //assert((e->clk_add_m68k+e->clk_add_vdp+e->clk_add_z80) == 7);
 }
 
-static void c_z80_vdp_m68k(genesis *this, gensched_item *e)
+static void c_z80_vdp_m68k(core* th, gensched_item *e)
 {
-    this->clock.master_cycle_count += e->clk_add_z80;
-    genesis_cycle_z80(this);
+    th->clock.master_cycle_count += e->clk_add_z80;
+    th->cycle_z80();
 
-    this->clock.master_cycle_count += e->clk_add_vdp;
-    genesis_VDP_cycle(this);
+    th->clock.master_cycle_count += e->clk_add_vdp;
+    th->vdp.do_cycle();
 
-    this->clock.master_cycle_count += e->clk_add_m68k;
-    genesis_cycle_m68k(this);
+    th->clock.master_cycle_count += e->clk_add_m68k;
+    th->cycle_m68k();
     //assert((e->clk_add_m68k+e->clk_add_vdp+e->clk_add_z80) == 7);
 }
 
-static void c_vdp_m68k(genesis *this, gensched_item *e)
+static void c_vdp_m68k(core* th, gensched_item *e)
 {
-    this->clock.master_cycle_count += e->clk_add_vdp;
-    genesis_VDP_cycle(this);
+    th->clock.master_cycle_count += e->clk_add_vdp;
+    th->vdp.do_cycle();
 
-    this->clock.master_cycle_count += e->clk_add_m68k;
-    genesis_cycle_m68k(this);
+    th->clock.master_cycle_count += e->clk_add_m68k;
+    th->cycle_m68k();
     //assert((e->clk_add_m68k+e->clk_add_vdp) == 7);
 }
 
-static void c_z80_m68k(genesis *this, gensched_item *e)
+static void c_z80_m68k(core* th, gensched_item *e)
 {
-    this->clock.master_cycle_count += e->clk_add_z80;
-    genesis_cycle_z80(this);
+    th->clock.master_cycle_count += e->clk_add_z80;
+    th->cycle_z80();
 
-    this->clock.master_cycle_count += e->clk_add_m68k;
-    genesis_cycle_m68k(this);
+    th->clock.master_cycle_count += e->clk_add_m68k;
+    th->cycle_m68k();
     //assert((e->clk_add_m68k+e->clk_add_z80) == 7);
 }
 
-static void c_m68k(genesis *this, gensched_item *e)
+static void c_m68k(core* th, gensched_item *e)
 {
-    genesis_cycle_m68k(this);
-    this->clock.master_cycle_count += 7;
+    th->cycle_m68k();
+    th->clock.master_cycle_count += 7;
 }
 
-static void create_scheduling_lookup_table(genesis *this)
+void core::create_scheduling_lookup_table()
 {
     u32 lookup_add = 0;
     for (i32 cycles=16; cycles<24; cycles+=4) { // 4 and 5 are the two possible vdp divisors
@@ -173,12 +170,12 @@ static void create_scheduling_lookup_table(genesis *this)
             assert(vdp_cycles < 21);
 
             // Apply m68k divider, 7
-            static const i32 m68k_cycles = 7;
+            static constexpr i32 m68k_cycles = 7;
 
             z80_cycles -= m68k_cycles; // 6 = -1
             vdp_cycles -= m68k_cycles; // 7 = 0
 
-            struct gensched_item *item = &this->scheduler_lookup[lookup_add + tbl_entry];
+            gensched_item *item = &scheduler_lookup[lookup_add + tbl_entry];
 
             // Determine which function to use
             if ((z80_cycles <= 0) && (vdp_cycles <= 0)) {
@@ -245,118 +242,83 @@ static void create_scheduling_lookup_table(genesis *this)
     }
 }
 
-static void block_step(void *ptr, u64 key, u64 clock, u32 jitter)
+void core::block_step(void *ptr, u64 key, u64 clock, u32 jitter)
 {
-    struct genesis *this = (genesis *)ptr;
+    auto *th = static_cast<core *>(ptr);
     //             // Index = (z80-1 * x) + vdp-1
-    u32 lu = ((this->clock.vdp.clock_divisor >> 2) - 4);
-    assert(lu >= 0);
+    u32 lu = ((th->clock.vdp.clock_divisor >> 2) - 4);
     assert(lu <= 1);
     lu *= NUM_GENSCHED;
-    struct gensched_item *e = &this->scheduler_lookup[lu + this->scheduler_index];
-    e->callback(this, e);
+    gensched_item *e = &th->scheduler_lookup[lu + th->scheduler_index];
+    e->callback(th, e);
     u32 ni = e->next_index;
-    this->scheduler_index = ni;
+    th->scheduler_index = ni;
 }
 
 
 /*static void run_block(void *ptr, u64 key, u64 clock, u32 jitter)
 {
-    struct genesis *this = (genesis *)ptr;
-    this->block_cycles_to_run += key;
-    while (this->block_cycles_to_run > 0) {
-        block_step(this);
-        this->block_cycles_to_run -= this->clock.vdp.clock_divisor;
+    auto *th = static_cast<core *>(ptr);
+    th->block_cycles_to_run += key;
+    while (th->block_cycles_to_run > 0) {
+        block_step();
+        th->block_cycles_to_run -= th->clock.vdp.clock_divisor;
         if (dbg.do_break) break;
     }
 }*/
 
 core::core(jsm::systems in_kind) :
-    vdp(this),
+    clock(in_kind),
     scheduler(&clock.master_cycle_count),
-    ym2612(YM2612::OPN2V_ym2612, &this->clock.master_cycle_count, 32 * 7 * 6)
+    ym2612(YM2612::OPN2V_ym2612, &clock.master_cycle_count, 32 * 7 * 6),
+    vdp(this)
 {
+    create_scheduling_lookup_table();
+    populate_opts();
+    scheduler.max_block_size = 20;
+    scheduler.run.func = &block_step;
+    scheduler.run.ptr = this;
+    PAL = kind == jsm::systems::MEGADRIVE_PAL;
+    snprintf(label, sizeof(label), "Sega Genesis");
 
+    jsm_debug_read_trace dt;
+    dt.read_trace = &read_trace_z80;
+    dt.read_trace_m68k = &read_trace_m68k;
+    dt.ptr = static_cast<void *>(this);
+
+    m68k.setup_tracing(&dt, &clock.master_cycle_count);
+    z80.setup_tracing(&dt, &clock.master_cycle_count);
+    jsm.described_inputs = false;
 }
 
 jsm_system *genesis_new(jsm::systems kind)
 {
-    auto* th = new genesis::core(kind);
-
-    th->populate_opts(jsm);
-    th->create_scheduling_lookup_table();
-    th->scheduler.max_block_size = 20;
-    th->scheduler.run.func = &block_step;
-    th->scheduler.run.ptr = this;
-
-    th->PAL = kind == jsm::systems::MEGADRIVE_PAL;
-    ym2612_init(&th->ym2612, );
-    SN76489_init(&th->psg);
-    snprintf(jsm->label, sizeof(jsm->label), "Sega Genesis");
-
-    struct jsm_debug_read_trace dt;
-    dt.read_trace = &read_trace_z80;
-    dt.read_trace_m68k = &read_trace_m68k;
-    dt.ptr = (void*)this;
-    M68k_setup_tracing(&th->m68k, &dt, &th->clock.master_cycle_count);
-    Z80_setup_tracing(&th->z80, &dt, &th->clock.master_cycle_count);
-
-    th->jsm.described_inputs = 0;
-    th->jsm.IOs = nullptr;
-
-    jsm->ptr = (void*)this;
-
-    jsm->finish_frame = &genesisJ_finish_frame;
-    jsm->finish_scanline = &genesisJ_finish_scanline;
-    jsm->step_master = &genesisJ_step_master;
-    jsm->reset = &genesisJ_reset;
-    jsm->load_BIOS = &genesisJ_load_BIOS;
-    jsm->get_framevars = &genesisJ_get_framevars;
-    jsm->play = &genesisJ_play;
-    jsm->pause = &genesisJ_pause;
-    jsm->stop = &genesisJ_stop;
-    jsm->describe_io = &genesisJ_describe_io;
-    jsm->set_audiobuf = &genesisJ_set_audiobuf;
-    jsm->sideload = nullptr;
-    jsm->setup_debugger_interface = &genesisJ_setup_debugger_interface;
-    jsm->save_state = genesisJ_save_state;
-    jsm->load_state = genesisJ_load_state;
+    return new genesis::core(kind);
 }
 
-void genesis_delete(JSM) {
-    JTHIS;
-
-    M68k_delete(&this->m68k);
-    ym2612_delete(&this->ym2612);
-    genesis_VDP_delete(this);
-
-    while (cvec_len(this->jsm.IOs) > 0) {
-        struct physical_io_device* pio = cvec_pop_back(this->jsm.IOs);
-        if (pio->kind == HID_CART_PORT) {
-            if (pio->cartridge_port.unload_cart) pio->cartridge_port.unload_cart(jsm);
+void genesis_delete(jsm_system *sys) {
+    auto *th = dynamic_cast<core *>(sys);
+    for (auto &pio : th->IOs) {
+        if (pio.kind == HID_CART_PORT) {
+            if (pio.cartridge_port.unload_cart) pio.cartridge_port.unload_cart(sys);
         }
-        physical_io_device_delete(pio);
     }
-
-    free(jsm->ptr);
-    jsm->ptr = nullptr;
-
-    jsm_clearfuncs(jsm);
 }
 
-static void load_symbols(genesis* this) {
+void core::load_symbols() {
+    // Hard-coded to sonic 1 symbols atm
     FILE *f = fopen("/Users/dave/s1symbols", "r");
-    if (f == 0) abort();
+    if (!f) abort();
     char buf[200];
-    this->debugging.num_symbols = 0;
+    debugging.num_symbols = 0;
     while (fgets(buf, sizeof(buf), f)) {
         char *num = strtok(buf, "=");
         char *name = strtok(nullptr, "\n");
         u32 addr = atoi(num);
-        this->debugging.symbols[this->debugging.num_symbols].addr = addr;
-        snprintf(this->debugging.symbols[this->debugging.num_symbols].name, 50, "%s", name);
-        this->debugging.num_symbols++;
-        if (this->debugging.num_symbols >= 20000) abort();
+        debugging.symbols[debugging.num_symbols].addr = addr;
+        snprintf(debugging.symbols[debugging.num_symbols].name, 50, "%s", name);
+        debugging.num_symbols++;
+        if (debugging.num_symbols >= 20000) abort();
     }
     fclose(f);
 }
@@ -365,304 +327,295 @@ static void load_symbols(genesis* this) {
 
 static inline float i16_to_float(i16 val)
 {
-    return ((((float)(((i32)val) + 32768)) / 65535.0f) * 2.0f) - 1.0f;
+    return ((static_cast<float>(static_cast<i32>(val) + 32768) / 65535.0f) * 2.0f) - 1.0f;
 }
 
 static void run_ym2612(void *ptr, u64 key, u64 clock, u32 jitter)
 {
-    struct genesis* this = (genesis *)ptr;
-    this->timing.ym2612_cycles++;
+    auto *th = static_cast<core *>(ptr);
+    th->timing.ym2612_cycles++;
     u64 cur = clock - jitter;
-    scheduler_only_add_abs(&this->scheduler, cur+this->clock.ym2612.clock_divisor, 0, this, &run_ym2612, nullptr);
-    ym2612_cycle(&this->ym2612);
+    th->scheduler.only_add_abs(cur+th->clock.ym2612.clock_divisor, 0, th, &run_ym2612, nullptr);
+    th->ym2612.cycle();
 }
 
 static void run_psg(void *ptr, u64 key, u64 clock, u32 jitter)
 {
-    struct genesis* this = (genesis *)ptr;
-    this->timing.psg_cycles++;
+    auto *th = static_cast<core *>(ptr);
+    th->timing.psg_cycles++;
     u64 cur = clock - jitter;
-    scheduler_only_add_abs(&this->scheduler, cur+this->clock.psg.clock_divisor, 0, this, &run_psg, nullptr);
-    SN76489_cycle(&this->psg);
+    th->scheduler.only_add_abs(cur+th->clock.psg.clock_divisor, 0, th, &run_psg, nullptr);
+    th->psg.cycle();
 }
 
 static void sample_audio(void *ptr, u64 key, u64 clock, u32 jitter)
 {
-    struct genesis* this = (genesis *)ptr;
-    if (this->audio.buf) {
-        this->audio.cycles++;
-        this->audio.next_sample_cycle += this->audio.master_cycles_per_audio_sample;
-        scheduler_only_add_abs(&this->scheduler, (i64)this->audio.next_sample_cycle, 0, this, &sample_audio, nullptr);
-        if (this->audio.buf->upos < (this->audio.buf->samples_len << 1)) {
+    auto *th = static_cast<core *>(ptr);
+    if (th->audio.buf) {
+        th->audio.cycles++;
+        th->audio.next_sample_cycle += th->audio.master_cycles_per_audio_sample;
+        th->scheduler.only_add_abs(static_cast<i64>(th->audio.next_sample_cycle), 0, th, &sample_audio, nullptr);
+        if (th->audio.buf->upos < (th->audio.buf->samples_len << 1)) {
             i32 l = 0, r = 0;
-            if (this->psg.ext_enable) {
-                l = r = (i32)SN76489_mix_sample(&this->psg, 0) >> 5;
+            if (th->psg.ext_enable) {
+                l = r = static_cast<i32>(th->psg.mix_sample(false)) >> 5;
             }
-            if (this->ym2612.ext_enable) {
-                l += (i32)this->ym2612.mix.left_output;
-                r += (i32)this->ym2612.mix.right_output;
+            if (th->ym2612.ext_enable) {
+                l += th->ym2612.mix.left_output;
+                r += th->ym2612.mix.right_output;
             }
-            ((float *)this->audio.buf->ptr)[this->audio.buf->upos] = i16_to_float((i16)l);
-            ((float *)this->audio.buf->ptr)[this->audio.buf->upos+1] = i16_to_float((i16)r);
+            static_cast<float *>(th->audio.buf->ptr)[th->audio.buf->upos] = i16_to_float(static_cast<i16>(l));
+            static_cast<float *>(th->audio.buf->ptr)[th->audio.buf->upos+1] = i16_to_float(static_cast<i16>(r));
         }
-        this->audio.buf->upos+=2;
+        th->audio.buf->upos+=2;
     }
 }
 
 static void sample_audio_debug_max(void *ptr, u64 key, u64 clock, u32 jitter)
 {
-    struct genesis *this = (genesis *)ptr;
+    auto *th = static_cast<core *>(ptr);
 
     /* PSG */
-    struct debug_waveform *dw = cpg(this->dbg.waveforms_psg.main);
+    debug_waveform *dw = &th->dbg.waveforms_psg.main.get();
     if (dw->user.buf_pos < dw->samples_requested) {
-        ((float *) dw->buf.ptr)[dw->user.buf_pos] = i16_to_float(SN76489_mix_sample(&this->psg, 1));
+        static_cast<float *>(dw->buf.ptr)[dw->user.buf_pos] = i16_to_float(th->psg.mix_sample(true));
         dw->user.buf_pos++;
     }
 
     /* YM2612 */
-    dw = cpg(this->dbg.waveforms_ym2612.main);
+    dw = &th->dbg.waveforms_ym2612.main.get();
     if (dw->user.buf_pos < dw->samples_requested) {
-        ((float *) dw->buf.ptr)[dw->user.buf_pos] = i16_to_float(this->ym2612.mix.mono_output);
+        static_cast<float *>(dw->buf.ptr)[dw->user.buf_pos] = i16_to_float(th->ym2612.mix.mono_output);
         dw->user.buf_pos++;
     }
-    this->audio.next_sample_cycle_max += this->audio.master_cycles_per_max_sample;
-    scheduler_only_add_abs(&this->scheduler, (i64)this->audio.next_sample_cycle_max, 0, this, &sample_audio_debug_max, nullptr);
+    th->audio.next_sample_cycle_max += th->audio.master_cycles_per_max_sample;
+    th->scheduler.only_add_abs(static_cast<i64>(th->audio.next_sample_cycle_max), 0, th, &sample_audio_debug_max, nullptr);
 }
 
 static void sample_audio_debug_min(void *ptr, u64 key, u64 clock, u32 jitter)
 {
-    struct genesis *this = (genesis *)ptr;
+    auto *th = static_cast<core *>(ptr);
 
     /* PSG */
-    struct debug_waveform *dw = cpg(this->dbg.waveforms_psg.chan[0]);
+    debug_waveform *dw = &th->dbg.waveforms_psg.chan[0].get();
     for (int j = 0; j < 4; j++) {
-        dw = cpg(this->dbg.waveforms_psg.chan[j]);
+        dw = &th->dbg.waveforms_psg.chan[j].get();
         if (dw->user.buf_pos < dw->samples_requested) {
-            i16 sv = SN76489_sample_channel(&this->psg, j);
-            ((float *) dw->buf.ptr)[dw->user.buf_pos] = i16_to_float(sv * 4);
+            i16 sv = th->psg.sample_channel(j);
+            static_cast<float *>(dw->buf.ptr)[dw->user.buf_pos] = i16_to_float(sv * 4);
             dw->user.buf_pos++;
         }
     }
 
     /* YM2612 */
     for (int j = 0; j < 6; j++) {
-        dw = cpg(this->dbg.waveforms_ym2612.chan[j]);
+        dw = &th->dbg.waveforms_ym2612.chan[j].get();
         if (dw->user.buf_pos < dw->samples_requested) {
             dw->user.next_sample_cycle += dw->user.cycle_stride;
-            i16 sv = ym2612_sample_channel(&this->ym2612, j);
-            ((float *) dw->buf.ptr)[dw->user.buf_pos] = i16_to_float(sv << 2);
+            i16 sv = th->ym2612.sample_channel(j);
+            static_cast<float *>(dw->buf.ptr)[dw->user.buf_pos] = i16_to_float(sv << 2);
             dw->user.buf_pos++;
         }
     }
-    this->audio.next_sample_cycle_min += this->audio.master_cycles_per_min_sample;
-    scheduler_only_add_abs(&this->scheduler, (i64)this->audio.next_sample_cycle_min, 0, this, &sample_audio_debug_min, nullptr);
+    th->audio.next_sample_cycle_min += th->audio.master_cycles_per_min_sample;
+    th->scheduler.only_add_abs(static_cast<i64>(th->audio.next_sample_cycle_min), 0, th, &sample_audio_debug_min, nullptr);
 }
 
 
-static void schedule_first(genesis *this)
+void core::schedule_first()
 {
-    scheduler_only_add_abs(&this->scheduler, (i64)this->audio.next_sample_cycle_max, 0, this, &sample_audio_debug_max, nullptr);
-    scheduler_only_add_abs(&this->scheduler, (i64)this->audio.next_sample_cycle_min, 0, this, &sample_audio_debug_min, nullptr);
-    scheduler_only_add_abs(&this->scheduler, (i64)this->audio.next_sample_cycle, 0, this, &sample_audio, nullptr);
-    scheduler_only_add_abs(&this->scheduler, (i64)this->clock.ym2612.clock_divisor, 0, this, &run_ym2612, nullptr);
-    scheduler_only_add_abs(&this->scheduler, this->clock.psg.clock_divisor, 0, this, &run_psg, nullptr);
-    genesis_VDP_schedule_first(this);
+    scheduler.only_add_abs(static_cast<i64>(audio.next_sample_cycle_max), 0, this, &sample_audio_debug_max, nullptr);
+    scheduler.only_add_abs(static_cast<i64>(audio.next_sample_cycle_min), 0, this, &sample_audio_debug_min, nullptr);
+    scheduler.only_add_abs(static_cast<i64>(audio.next_sample_cycle), 0, this, &sample_audio, nullptr);
+    scheduler.only_add_abs(clock.ym2612.clock_divisor, 0, this, &run_ym2612, nullptr);
+    scheduler.only_add_abs(clock.psg.clock_divisor, 0, this, &run_psg, nullptr);
+    vdp.schedule_first();
 }
 
-static void genesisIO_load_cart(JSM, multi_file_set *mfs, physical_io_device *which_pio)
+static void genesisIO_load_cart(jsm_system *sys, multi_file_set &mfs, physical_io_device &which_pio)
 {
-    JTHIS;
-    struct buf* b = &mfs->files[0].buf;
+    auto *th = dynamic_cast<core *>(sys);
+    buf* b = &mfs.files[0].buf;
 
-    genesis_cart_load_ROM_from_RAM(&this->cart, b->ptr, b->size, which_pio, &this->io.SRAM_enabled);
-    if ((this->cart.header.region_japan) && (!this->cart.header.region_usa)) {
-        this->opts.JP = 1;
+    th->cart.load_ROM_from_RAM(static_cast<char *>(b->ptr), b->size, &which_pio, &th->io.SRAM_enabled);
+    if ((th->cart.header.region_japan) && (!th->cart.header.region_usa)) {
+        th->v_opts.JP = 1;
     }
     else
-        this->opts.JP = 0;
-    //load_symbols(this);
-    genesisJ_reset(jsm);
+        th->v_opts.JP = 0;
+    //load_symbols();
+    th->reset();
 }
 
-static void genesisIO_unload_cart(JSM)
+static void genesisIO_unload_cart(jsm_system *sys)
 {
 }
 
-static void setup_crt(genesis *this, JSM_DISPLAY *d)
+void core::setup_crt(JSM_DISPLAY &d)
 {
-    d->standard = JSS_NTSC;
-    d->enabled = 1;
+    d.kind = jsm::CRT;
+    d.enabled = 1;
 
-    d->fps = this->PAL ? 50 : 60.0988;
-    d->fps_override_hint = this->clock.timing.second.frames_per;
+    d.fps = PAL ? 50 : 60.0988;
+    d.fps_override_hint = clock.timing.second.frames_per;
 
-    d->pixelometry.cols.left_hblank = 0; // 0
-    d->pixelometry.cols.visible = 1280;  // 320x224   *4
-    d->pixelometry.cols.max_visible = 1280;  // 320x224    *4
-    d->pixelometry.cols.right_hblank = 430; // 107.5, ick   *4
-    d->pixelometry.offset.x = 0;
+    d.pixelometry.cols.left_hblank = 0; // 0
+    d.pixelometry.cols.visible = 1280;  // 320x224   *4
+    d.pixelometry.cols.max_visible = 1280;  // 320x224    *4
+    d.pixelometry.cols.right_hblank = 430; // 107.5, ick   *4
+    d.pixelometry.offset.x = 0;
 
-    d->pixelometry.rows.top_vblank = 0;
-    d->pixelometry.rows.visible = this->clock.vdp.bottom_max_rendered_line;
-    d->pixelometry.rows.max_visible = this->clock.vdp.bottom_max_rendered_line;
-    d->pixelometry.rows.bottom_vblank = 76; // TODO: update these for PAL. they're currently not really used
-    d->pixelometry.offset.y = 0;
+    d.pixelometry.rows.top_vblank = 0;
+    d.pixelometry.rows.visible = clock.vdp.bottom_max_rendered_line;
+    d.pixelometry.rows.max_visible = clock.vdp.bottom_max_rendered_line;
+    d.pixelometry.rows.bottom_vblank = 76; // TODO: update these for PAL. they're currently not really used
+    d.pixelometry.offset.y = 0;
 
-    if (this->PAL) {
-        d->geometry.physical_aspect_ratio.width = 5;
-        d->geometry.physical_aspect_ratio.height = 4;
+    if (PAL) {
+        d.geometry.physical_aspect_ratio.width = 5;
+        d.geometry.physical_aspect_ratio.height = 4;
     }
     else {
-        d->geometry.physical_aspect_ratio.width = 4;
-        d->geometry.physical_aspect_ratio.height = 3;
+        d.geometry.physical_aspect_ratio.width = 4;
+        d.geometry.physical_aspect_ratio.height = 3;
     }
 
-    d->pixelometry.overscan.left = d->pixelometry.overscan.right = 0;
-    d->pixelometry.overscan.top = d->pixelometry.overscan.bottom = 0;
+    d.pixelometry.overscan.left = d.pixelometry.overscan.right = 0;
+    d.pixelometry.overscan.top = d.pixelometry.overscan.bottom = 0;
 }
 
-static void setup_audio(genesis *this, cvec* IOs)
+void core::setup_audio()
 {
-    struct physical_io_device *pio = cvec_push_back(IOs);
+    physical_io_device *pio = &IOs.emplace_back();
     pio->kind = HID_AUDIO_CHANNEL;
-    struct JSM_AUDIO_CHANNEL *chan = &pio->audio_channel;
-    chan->sample_rate = (this->clock.timing.frame.cycles_per * this->clock.timing.second.frames_per) / (this->clock.ym2612.clock_divisor); // ~55kHz
+    JSM_AUDIO_CHANNEL *chan = &pio->audio_channel;
+    chan->sample_rate = (clock.timing.frame.cycles_per * clock.timing.second.frames_per) / (clock.ym2612.clock_divisor); // ~55kHz
     chan->left = chan->right = 1;
     chan->num = 2;
     chan->low_pass_filter = 24000;
 }
 
-void genesisJ_describe_io(JSM, cvec *IOs)
+void core::describe_io()
 {
-    cvec_lock_reallocs(IOs);
-    JTHIS;
-    if (this->jsm.described_inputs) return;
-    this->jsm.described_inputs = 1;
-
-    this->jsm.IOs = IOs;
+    if (jsm.described_inputs) return;
+    jsm.described_inputs = true;
+    IOs.reserve(15);
 
     // controllers
-    struct physical_io_device *c1 = cvec_push_back(this->jsm.IOs);
-    struct physical_io_device *c2 = cvec_push_back(this->jsm.IOs);
-    controller_6button_init(&this->controller1, &this->clock.master_cycle_count);
-    genesis6_setup_pio(c1, 0, "Player 1", 1);
-    genesis3_setup_pio(c2, 1, "Player 2", 0);
-    this->controller1.pio = c1;
-    this->controller2.pio = c2;
+    physical_io_device *c1 = &IOs.emplace_back();
+    physical_io_device *c2 = &IOs.emplace_back();
+    controller1.setup_pio(c1, 0, "Player 1", 1);
+    controller2.setup_pio(c2, 1, "Player 2", 0);
 
     // power and reset buttons
-    struct physical_io_device* chassis = cvec_push_back(IOs);
-    physical_io_device_init(chassis, HID_CHASSIS, 1, 1, 1, 1);
-    struct HID_digital_button* b;
+    physical_io_device* chassis = &IOs.emplace_back();
+    chassis->init(HID_CHASSIS, 1, 1, 1, 1);
+    HID_digital_button* b;
 
-    b = cvec_push_back(&chassis->chassis.digital_buttons);
+    b = &chassis->chassis.digital_buttons.emplace_back();
     snprintf(b->name, sizeof(b->name), "Power");
     b->state = 1;
     b->common_id = DBCID_ch_power;
 
-    b = cvec_push_back(&chassis->chassis.digital_buttons);
+    b = &chassis->chassis.digital_buttons.emplace_back();
     b->common_id = DBCID_ch_reset;
     snprintf(b->name, sizeof(b->name), "Reset");
     b->state = 0;
 
     // cartridge port
-    struct physical_io_device *d = cvec_push_back(IOs);
-    physical_io_device_init(d, HID_CART_PORT, 1, 1, 1, 0);
+    physical_io_device *d = &IOs.emplace_back();
+    d->init(HID_CART_PORT, 1, 1, 1, 0);
     d->cartridge_port.load_cart = &genesisIO_load_cart;
     d->cartridge_port.unload_cart = &genesisIO_unload_cart;
 
     // screen
-    d = cvec_push_back(IOs);
-    physical_io_device_init(d, HID_DISPLAY, 1, 1, 0, 1);
+    d = &IOs.emplace_back();
+    d->init(HID_DISPLAY, 1, 1, 0, 1);
     d->display.output[0] = malloc(1280 * 480 * 2);
     d->display.output[1] = malloc(1280 * 480 * 2);
     d->display.output_debug_metadata[0] = nullptr;
     d->display.output_debug_metadata[1] = nullptr;
-    setup_crt(this, &d->display);
-    this->vdp.display_ptr = make_cvec_ptr(IOs, cvec_len(IOs)-1);
+    setup_crt(d->display);
+    vdp.display_ptr.make(IOs, IOs.size()-1);
     d->display.last_written = 1;
-    this->clock.current_back_buffer = 0;
-    this->clock.current_front_buffer = 1;
-    this->vdp.cur_output = (u16 *)(d->display.output[0]);
+    clock.current_back_buffer = 0;
+    clock.current_front_buffer = 1;
+    vdp.cur_output = static_cast<u16 *>(d->display.output[0]);
 
-    setup_audio(this, IOs);
+    setup_audio();
 
-    this->vdp.display = &((physical_io_device *)cpg(this->vdp.display_ptr))->display;
-    genesis_controllerport_connect(&this->io.controller_port1, controller_6button, &this->controller1);
-    //genesis_controllerport_connect(&this->io.controller_port2, controller_3button, &this->controller2);
+    vdp.display = &vdp.display_ptr.get().display;
+    io.controller_port1.connect(controller_6button, &controller1);
+    //genesis_controllerport_connect(&io.controller_port2, controller_3button, &controller2);
 }
 
-void genesisJ_play(JSM)
+void core::play()
 {
 }
 
-void genesisJ_pause(JSM)
+void core::pause()
 {
 }
 
-void genesisJ_stop(JSM)
+void core::stop()
 {
 }
 
-void genesisJ_get_framevars(JSM, framevars* out)
+void core::get_framevars(framevars& out)
 {
-    JTHIS;
-    out->master_frame = this->clock.master_frame;
-    out->x = this->clock.vdp.hcount;
-    out->scanline = this->clock.vdp.vcount;
-    out->master_cycle = this->clock.master_cycle_count;
+    out.master_frame = clock.master_frame;
+    out.x = clock.vdp.hcount;
+    out.scanline = clock.vdp.vcount;
+    out.master_cycle = clock.master_cycle_count;
 }
 
-void genesisJ_reset(JSM)
+void core::reset()
 {
-    JTHIS;
-    Z80_reset(&this->z80);
-    M68k_reset(&this->m68k);
-    SN76489_reset(&this->psg);
-    ym2612_reset(&this->ym2612);
-    genesis_clock_reset(&this->clock);
-    genesis_VDP_reset(this);
-    this->io.z80.reset_line = 1;
-    this->io.z80.reset_line_count = 500;
-    this->io.z80.bus_request = this->io.z80.bus_ack = 1;
-    this->io.m68k.VDP_FIFO_stall = 0;
-    this->io.m68k.VDP_prefetch_stall = 0;
-    this->scheduler_index = 0;
+    z80.reset();
+    m68k.reset();
+    psg.reset();
+    ym2612.reset();
+    clock.reset();
+    vdp.reset();
+    io.z80.reset_line = true;
+    io.z80.reset_line_count = 500;
+    io.z80.bus_request = io.z80.bus_ack = true;
+    io.m68k.VDP_FIFO_stall = false;
+    io.m68k.VDP_prefetch_stall = false;
+    scheduler_index = 0;
 
-    scheduler_clear(&this->scheduler);
-    schedule_first(this);
+    scheduler.clear();
+    schedule_first();
     printf("\nGenesis reset!");
 }
 
 //#define DO_STATS
 
-u32 genesisJ_finish_frame(JSM)
+u32 core::finish_frame()
 {
-    JTHIS;
-    read_opts(jsm, this);
+    read_opts();
 
 #ifdef DO_STATS
-    u64 ym_start = this->timing.ym2612_cycles;
-    u64 z80_start = this->timing.z80_cycles;
-    u64 m68k_start = this->timing.m68k_cycles;
-    u64 vdp_start = this->timing.vdp_cycles;
-    u64 clock_start = this->clock.master_cycle_count;
-    u64 psg_start = this->timing.psg_cycles;
-    u64 audio_start = this->audio.cycles;
+    u64 ym_start = th->timing.ym2612_cycles;
+    u64 z80_start = th->timing.z80_cycles;
+    u64 m68k_start = th->timing.m68k_cycles;
+    u64 vdp_start = th->timing.vdp_cycles;
+    u64 clock_start = th->clock.master_cycle_count;
+    u64 psg_start = th->timing.psg_cycles;
+    u64 audio_start = th->audio.cycles;
 #endif
-    scheduler_run_til_tag(&this->scheduler, TAG_FRAME);
+    scheduler.run_til_tag(TAG_FRAME);
 
 #ifdef DO_STATS
-    u64 ym_num_cycles = (this->timing.ym2612_cycles - ym_start) * 60;
-    u64 psg_num_cycles = (this->timing.psg_cycles - psg_start) * 60;
-    u64 z80_num_cycles = (this->timing.z80_cycles - z80_start) * 60;
-    u64 m68k_num_cycles = (this->timing.m68k_cycles - m68k_start) * 60;
-    u64 vdp_num_cycles = (this->timing.vdp_cycles - vdp_start) * 60;
-    u64 clock_num_cycles = (this->clock.master_cycle_count - clock_start) * 60;
-    u64 per_frame = this->clock.master_cycle_count - clock_start;
+    u64 ym_num_cycles = (th->timing.ym2612_cycles - ym_start) * 60;
+    u64 psg_num_cycles = (th->timing.psg_cycles - psg_start) * 60;
+    u64 z80_num_cycles = (th->timing.z80_cycles - z80_start) * 60;
+    u64 m68k_num_cycles = (th->timing.m68k_cycles - m68k_start) * 60;
+    u64 vdp_num_cycles = (th->timing.vdp_cycles - vdp_start) * 60;
+    u64 clock_num_cycles = (th->clock.master_cycle_count - clock_start) * 60;
+    u64 per_frame = th->clock.master_cycle_count - clock_start;
     u64 per_scanline = per_frame / 262;
-    u64 audio_num_cycles = (this->audio.cycles - audio_start) * 60;
+    u64 audio_num_cycles = (th->audio.cycles - audio_start) * 60;
     double ym_div = (double)MASTER_CYCLES_PER_SECOND / (double)ym_num_cycles;
     double z80_div = (double)MASTER_CYCLES_PER_SECOND / (double)z80_num_cycles;
     double m68k_div = (double)MASTER_CYCLES_PER_SECOND / (double)m68k_num_cycles;
@@ -676,7 +629,7 @@ u32 genesisJ_finish_frame(JSM)
     double vdp_spd = (16.0 / vdp_div) * 100.0;
     double audio_spd = ((double)audio_num_cycles / ((MASTER_CYCLES_PER_FRAME * 60) / (7 * 144))) * 100.0;
 
-    printf("\nSCANLINE:%d FRAME:%lld", this->clock.vdp.vcount, this->clock.master_frame);
+    printf("\nSCANLINE:%d FRAME:%lld", th->clock.vdp.vcount, th->clock.master_frame);
     printf("\n\nEFFECTIVE AUDIO FREQ IS %lld. RUNNING AT %f SPEED", audio_num_cycles, audio_spd);
     printf("\nEFFECTIVE YM FREQ IS %lld. DIVISOR %f, RUNNING AT %f SPEED", ym_num_cycles, ym_div, ym_spd);
     printf("\nEFFECTIVE PSG FREQ IS %lld. DIVISOR %f, RUNNING AT %f SPEED", psg_num_cycles, psg_div, psg_spd);
@@ -685,25 +638,23 @@ u32 genesisJ_finish_frame(JSM)
     printf("\nEFFECTIVE VDP SPEED IS %lld. DIVISOR %f, RUNNING AT %f SPEED", vdp_num_cycles, vdp_div, vdp_spd);
     printf("\nEFFECTIVE MASTER CLOCK IS %lld. PER FRAME:%lld PER SCANLINE:%lld", clock_num_cycles, per_frame, per_scanline);
 #endif
-    return this->vdp.display->last_written;
+    return vdp.display->last_written;
 }
 
-u32 genesisJ_finish_scanline(JSM)
+u32 core::finish_scanline()
 {
-    JTHIS;
-    scheduler_run_til_tag(&this->scheduler, TAG_SCANLINE);
+    scheduler.run_til_tag(TAG_SCANLINE);
 
-    return this->vdp.display->last_written;
+    return vdp.display->last_written;
 }
 
-u32 genesisJ_step_master(JSM, u32 howmany)
+u32 core::step_master(u32 howmany)
 {
-    JTHIS;
-    scheduler_run_for_cycles(&this->scheduler, howmany);
+    scheduler.run_for_cycles(howmany);
     return 0;
 }
 
-void genesisJ_load_BIOS(JSM, multi_file_set* mfs)
+void core::load_BIOS(multi_file_set &mfs)
 {
     printf("\nSega Genesis doesn't have a BIOS...?");
 }

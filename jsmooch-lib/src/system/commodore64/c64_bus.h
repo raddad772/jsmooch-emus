@@ -121,6 +121,7 @@ public:
     void set_audiobuf(audiobuf *ab) final;
     void setup_debugger_interface(debugger_interface &intf) final;
     void sideload(multi_file_set& mfs) final;
+
 };
 
 }
