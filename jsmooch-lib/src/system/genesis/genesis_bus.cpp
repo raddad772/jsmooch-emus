@@ -52,7 +52,7 @@ u16 core::read_version_register(u32 mask) const
     // bit 5 0 = expansion like 32x/CD, 1 = no expansion like 32x/CD
     // bit 1-3 version, must be 0
     u32 v = 0b00100000;
-    v |= ((opts.JP ^ 1) << 7);
+    v |= ((v_opts.JP ^ 1) << 7);
     v |= PAL << 6;
     return (v << 8) | v;
 }

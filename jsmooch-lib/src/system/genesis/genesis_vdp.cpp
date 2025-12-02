@@ -1416,13 +1416,13 @@ void core::output_16()
         // We've got out ringbuffer. Now get our sprite pixel...
         auto *sprite = sprite_line_buf + line.screen_x;
 
-        if (!bus->opts.vdp.enable_A) {
+        if (!bus->v_opts.vdp.enable_A) {
             ring0->has = ring0->color = ring0->priority = 0;
         }
-        if (!bus->opts.vdp.enable_B) {
+        if (!bus->v_opts.vdp.enable_B) {
             ring1->has = ring1->color = ring1->priority = 0;
         }
-        if (!bus->opts.vdp.enable_sprites) {
+        if (!bus->v_opts.vdp.enable_sprites) {
             sprite->has_px = sprite->color = sprite->priority = 0;
         }
 
