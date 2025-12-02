@@ -206,6 +206,18 @@ set(SOURCE_LIST
         src/system/nes/nes_bus.h
         src/system/snes/snes_serialize.cpp
         src/system/snes/snes_serialize.h
+        src/component/cpu/arm7tdmi/arm7tdmi.cpp
+        src/component/cpu/arm7tdmi/arm7tdmi.h
+        src/component/cpu/arm7tdmi/arm7tdmi_decode.cpp
+        src/component/cpu/arm7tdmi/arm7tdmi_decode.h
+        src/component/cpu/arm7tdmi/arm7tdmi_instructions.cpp
+        src/component/cpu/arm7tdmi/arm7tdmi_instructions.h
+        src/component/cpu/arm7tdmi/armv4_disassembler.cpp
+        src/component/cpu/arm7tdmi/armv4_disassembler.h
+        src/component/cpu/arm7tdmi/thumb_instructions.cpp
+        src/component/cpu/arm7tdmi/thumb_instructions.h
+        src/component/cpu/arm7tdmi/thumb_disassembler.cpp
+        src/component/cpu/arm7tdmi/thumb_disassembler.h
         src/component/cpu/cdp1802/cdp1802.cpp
         src/component/cpu/cdp1802/cdp1802.h
         src/component/cpu/cdp1802/cdp1802_instructions.cpp

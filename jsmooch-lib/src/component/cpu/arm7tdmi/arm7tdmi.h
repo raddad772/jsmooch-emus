@@ -2,8 +2,7 @@
 // Created by . on 12/4/24.
 //
 
-#ifndef JSMOOCH_EMUS_ARM7TDMI_H
-#define JSMOOCH_EMUS_ARM7TDMI_H
+#pragma once
 
 #include "helpers/scheduler.h"
 #include "helpers/debugger/debuggerdefs.h"
@@ -18,6 +17,8 @@
 #define ARM7P_code 2
 #define ARM7P_dma 4
 #define ARM7P_lock 8
+
+namespace ARM7TDMI {
 
 enum ARM7TDMI_modes {
     ARM7M_old_user = 0,
@@ -52,23 +53,24 @@ enum ARM7TDMI_condition_codes {
     ARM7CC_NV = 15 // never. don't execute opcode
 };
 
-struct ARM7TDMI_regs {
-    u32 R[16];
-    u32 R_fiq[7];
-    u32 R_svc[2];
-    u32 R_abt[2];
-    u32 R_irq[2];
-    u32 R_und[2];
+struct regs {
+    int condition_passes(int which) const;
+    u32 R[16]{};
+    u32 R_fiq[7]{};
+    u32 R_svc[2]{};
+    u32 R_abt[2]{};
+    u32 R_irq[2]{};
+    u32 R_und[2]{};
 
-    u32 R_invalid[16];
+    u32 R_invalid[16]{};
 
-    u32 SPSR_fiq;
-    u32 SPSR_svc;
-    u32 SPSR_abt;
-    u32 SPSR_irq;
-    u32 SPSR_und;
-    u32 SPSR_invalid;
-    union ARM7TDMI_CPSR {
+    u32 SPSR_fiq{};
+    u32 SPSR_svc{};
+    u32 SPSR_abt{};
+    u32 SPSR_irq{};
+    u32 SPSR_und{};
+    u32 SPSR_invalid{};
+    union M_CPSR {
         struct {
             u32 mode : 5;
             u32 T: 1; // T - state bit. 0 = ARM, 1 = THUMB
@@ -85,69 +87,96 @@ struct ARM7TDMI_regs {
             u32 Z: 1; // 0 = not zero, 1 = zero
             u32 N: 1; // 0 = not signed, 1 = signed
         };
-        u32 u;
-    } CPSR;
+        u32 u{};
+    } CPSR{};
     union {
+        u32 rr;
 #if !defined(_MSC_VER) // error C2016: C requires that a struct or union have at least one member
-        struct {
-        };
 #endif
-        u32 u;
-    } SPSR;
+        u32 u{};
+    } SPSR{};
 
-    u32 IRQ_line;
+    u32 IRQ_line{};
 };
 
-struct ARM7TDMI;
+struct core;
 struct ARM7_ins {
-    void (*exec)(ARM7TDMI*, u32 opcode);
+    void (*exec)(core*, u32 opcode){};
 };
 
-struct ARM7TDMI {
-    struct scheduler_t *scheduler;
-    u32 sch_irq_sch;
-    struct ARM7TDMI_regs regs;
+struct core {
+    explicit core(u64 *master_clock, u64 *waitstates, scheduler_t *scheduler);
+    scheduler_t *scheduler{};
+    u32 sch_irq_sch{};
+    regs regs{};
     struct {
-        u32 opcode[2];
-        u32 addr[2];
-        u32 access;
-        u32 flushed;
-    } pipeline;
+        u32 opcode[2]{};
+        u32 addr[2]{};
+        u32 access{};
+        u32 flushed{};
+    } pipeline{};
 
-    u32 *regmap[16];
-    u32 carry; // temp for instructions
+    u32 *regmap[16]{};
+    u32 carry{}; // temp for instructions
 
-    u64 *waitstates;
-    u64 *master_clock;
+    u64 *waitstates{};
+    u64 *master_clock{};
 
-    struct ARM7_ins *arm7_ins;
+    ARM7_ins *arm7_ins{};
 
     struct {
-        struct jsm_debug_read_trace strct;
-        struct jsm_string str;
-        struct jsm_string str2;
-        u32 ok;
-        u64 *cycles;
-        u32 ins_PC;
-        i32 source_id;
+        jsm_debug_read_trace strct{};
+        jsm_string str{100};
+        jsm_string str2{100};
+        u32 ok{};
+        u64 *cycles{};
+        u32 ins_PC{};
+        i32 source_id{};
 
         struct {
-            struct dbglog_view *view;
-            u32 id;
-        } dbglog;
-    } trace;
+            dbglog_view *view{};
+            u32 id{};
+        } dbglog{};
+    } trace{};
 
 
-    u32 testing;
+    u32 testing{};
 
-    void *fetch_ptr, *read_ptr, *write_ptr;
-    u32 (*fetch_ins)(void *ptr, u32 addr, u32 sz, u32 access);
-    u32 (*read)(void *ptr, u32 addr, u32 sz, u32 access, u32 has_effect);
-    void (*write)(void *ptr, u32 addr, u32 sz, u32 access, u32 val);
+    void *read_ins_ptr, *read_data_ptr, *write_data_ptr{};
+    u32 (*read_ins)(void *ptr, u32 addr, u32 sz, u32 access){};
+    u32 (*read_data)(void *ptr, u32 addr, u32 sz, u32 access, u32 has_effect){};
+    void (*write_data)(void *ptr, u32 addr, u32 sz, u32 access, u32 val){};
 
-    struct ARM7_ins opcode_table_arm[4096];
-    struct thumb_instruction opcode_table_thumb[65536];
+    ARM7_ins opcode_table_arm[4096]{};
+    thumb_instruction opcode_table_thumb[65536]{};
 
+private:
+    u32 fetch_ins(u32 sz);
+    u32 go_fetch_ins(u32 addr, u32 sz, u32 access);
+    void do_IRQ();
+    static void sch_check_irq(void *ptr, u64 key, u64 timecode, u32 jitter);
+    void bad_trace(u32 r, u32 sz);
+    void print_context(struct ARMctxt *ct, jsm_string *out);
+    void armv4_trace_format(u32 opcode, u32 addr, u32 T);
+    void fill_arm_table();
+    void decode_and_exec_thumb(u32 opcode, u32 opcode_addr);
+    void decode_and_exec_arm(u32 opcode, u32 opcode_addr);
+
+public:
+    void schedule_IRQ_check();
+    void write_reg(u32 *r, u32 v);
+    void fill_regmap();
+    void flush_pipeline();
+    void idle(u32 n);
+    u32 read(u32 addr, u32 sz, u32 access, u32 has_effect);
+    void write(u32 addr, u32 sz, u32 access, u32 val);
+    void IRQcheck(bool do_sched);
+    void run_noIRQcheck();
+    void do_FIQ();
+    void disassemble_entry(disassembly_entry& entry);
+    void reload_pipeline();
+    void reset();
+    void setup_tracing(jsm_debug_read_trace *strct, u64 *trace_cycle_pointer, i32 source_id);
     DBG_START
     DBG_EVENT_VIEW
     DBG_TRACE_VIEW
@@ -155,23 +184,5 @@ struct ARM7TDMI {
 };
 
 
-void ARM7TDMI_init(ARM7TDMI *, u64 *master_clock, u64 *waitstates, scheduler_t *scheduler);
-void ARM7TDMI_delete(ARM7TDMI *);
 
-void ARM7TDMI_reset(ARM7TDMI *);
-void ARM7TDMI_disassemble_entry(ARM7TDMI*, disassembly_entry* entry);
-void ARM7TDMI_setup_tracing(ARM7TDMI*, jsm_debug_read_trace *strct, u64 *trace_cycle_pointer, i32 source_id);
-void ARM7TDMI_run_noIRQcheck(ARM7TDMI *);
-void ARM7TDMI_IRQcheck(ARM7TDMI *, u32 do_sched);
-void ARM7TDMI_flush_pipeline(ARM7TDMI *);
-void ARM7TDMI_fill_regmap(ARM7TDMI *);
-void ARM7TDMI_reload_pipeline(ARM7TDMI *);
-void ARM7TDMI_idle(ARM7TDMI*this, u32 num);
-
-
-u32 ARM7TDMI_fetch_ins(ARM7TDMI *, u32 addr, u32 sz, u32 access);
-u32 ARM7TDMI_read(ARM7TDMI *, u32 addr, u32 sz, u32 access, u32 has_effect);
-void ARM7TDMI_write(ARM7TDMI *, u32 addr, u32 sz, u32 access, u32 val);
-void ARM7TDMI_schedule_IRQ_check(ARM7TDMI *);
-
-#endif //JSMOOCH_EMUS_ARM7TDMI_H
+}

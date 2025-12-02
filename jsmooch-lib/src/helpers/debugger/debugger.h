@@ -392,7 +392,7 @@ struct trace_view {
     trace_view();
     void add_col(const char *name, i32 default_size);
     void clear();
-    void printf(u32 col, char *format, ...);
+    void printf(u32 col, const char *format, ...);
     void startline(i32 source);
     void endline();
     trace_line *get_line(int row);

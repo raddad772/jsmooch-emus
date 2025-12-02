@@ -9,6 +9,7 @@
 #include "armv4_disassembler.h"
 #include "thumb_disassembler.h"
 
+namespace ARM7TDMI {
 static u16 doBITS(u16 val, u16 hi, u16 lo)
 {
     u16 shift = lo;
@@ -18,7 +19,7 @@ static u16 doBITS(u16 val, u16 hi, u16 lo)
 
 #define OBIT(x) ((opc >> (x)) & 1)
 #define BITS(hi,lo) (doBITS(opc, hi, lo))
-#define ostr(...) jsm_string_sprintf(out, __VA_ARGS__)
+#define ostr(...) out->sprintf(__VA_ARGS__)
 
 static void add_context(ARMctxt *t, u32 rnum)
 {
@@ -33,14 +34,14 @@ static void outreg(jsm_string *out, u32 num, u32 add_comma) {
     if (add_comma) ostr(",");
 }
 
-static void outhex(jsm_string *out, u32 num, u32 num_size, u32 add_comma) {
+static void outhex(jsm_string *out, u32 num, u32 num_size, bool add_comma) {
     char fstr[50];
     snprintf(fstr, sizeof(fstr), "%%0%dx", num_size);
-    jsm_string_sprintf(out, fstr, num);
+    out->sprintf(fstr, num);
     if (add_comma) ostr(",");
 }
 
-static void outdec(jsm_string *out, u32 num, u32 add_comma)
+static void outdec(jsm_string *out, u32 num, bool add_comma)
 {
     ostr("%d", num);
     if (add_comma) ostr(",");
@@ -120,7 +121,7 @@ static void dasm_LSL_LSR_ASR(u16 opc, jsm_string *out, i64 ins_addr, ARMctxt *ct
         case 1: ostr("lsr  "); break;
         case 2: ostr("asr  "); break;
         case 3:
-            jsm_string_sprintf(out, "BAD INSTRUCTION1");
+            out->sprintf("BAD INSTRUCTION1");
             return;
         default:
             NOGOHERE;
@@ -504,7 +505,7 @@ static void dasm_BL_suffix(u16 opc, jsm_string *out, i64 ins_addr, ARMctxt *ct)
 
 void ARM7TDMI_thumb_disassemble(u16 opc, jsm_string *out, i64 ins_addr, ARMctxt *ct)
 {
-    jsm_string_quickempty(out);
+    out->quickempty();
 
     if ((opc & 0b1111100000000000) == 0b0001100000000000) { // ADD_SUB
         dasm_ADD_SUB(opc, out, ins_addr, ct);
@@ -586,4 +587,5 @@ void ARM7TDMI_thumb_disassemble(u16 opc, jsm_string *out, i64 ins_addr, ARMctxt 
     }
 #undef OBIT
 #undef BITS
+}
 }

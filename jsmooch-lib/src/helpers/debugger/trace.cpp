@@ -44,7 +44,7 @@ void trace_view::clear()
     lptr = &lines.at(0);
 }
 
-void trace_view::printf(u32 col, char *format, ...)
+void trace_view::printf(u32 col, const char *format, ...)
 {
     if (waiting_for_startline) {
         assert(1==2);

@@ -2,34 +2,33 @@
 // Created by . on 12/4/24.
 //
 
-#ifndef JSMOOCH_EMUS_ARM7TDMI_INSTRUCTIONS_H
-#define JSMOOCH_EMUS_ARM7TDMI_INSTRUCTIONS_H
+#pragma once
 
+namespace ARM7TDMI {
 #include "helpers/int.h"
 
-struct ARM7TDMI;
-void ARM7TDMI_ins_MUL_MLA(ARM7TDMI *, u32 opcode);
-void ARM7TDMI_ins_MULL_MLAL(ARM7TDMI *, u32 opcode);
-void ARM7TDMI_ins_SWP(ARM7TDMI *, u32 opcode);
-void ARM7TDMI_ins_LDRH_STRH(ARM7TDMI *, u32 opcode);
-void ARM7TDMI_ins_LDRSB_LDRSH(ARM7TDMI *, u32 opcode);
-void ARM7TDMI_ins_MRS(ARM7TDMI *, u32 opcode);
-void ARM7TDMI_ins_MSR_reg(ARM7TDMI *, u32 opcode);
-void ARM7TDMI_ins_MSR_imm(ARM7TDMI *, u32 opcode);
-void ARM7TDMI_ins_BX(ARM7TDMI *, u32 opcode);
-void ARM7TDMI_ins_data_proc_immediate_shift(ARM7TDMI *, u32 opcode);
-void ARM7TDMI_ins_data_proc_register_shift(ARM7TDMI *, u32 opcode);
-void ARM7TDMI_ins_undefined_instruction(ARM7TDMI *, u32 opcode);
-void ARM7TDMI_ins_data_proc_immediate(ARM7TDMI *, u32 opcode);
-void ARM7TDMI_ins_LDR_STR_immediate_offset(ARM7TDMI *, u32 opcode);
-void ARM7TDMI_ins_LDR_STR_register_offset(ARM7TDMI *, u32 opcode);
-void ARM7TDMI_ins_LDM_STM(ARM7TDMI *, u32 opcode);
-void ARM7TDMI_ins_B_BL(ARM7TDMI *, u32 opcode);
-void ARM7TDMI_ins_STC_LDC(ARM7TDMI *, u32 opcode);
-void ARM7TDMI_ins_CDP(ARM7TDMI *, u32 opcode);
-void ARM7TDMI_ins_MCR_MRC(ARM7TDMI *, u32 opcode);
-void ARM7TDMI_ins_SWI(ARM7TDMI *, u32 opcode);
-void ARM7TDMI_ins_INVALID(ARM7TDMI *, u32 opcode);
+struct core;
+void ins_MUL_MLA(core *, u32 opcode);
+void ins_MULL_MLAL(core *, u32 opcode);
+void ins_SWP(core *, u32 opcode);
+void ins_LDRH_STRH(core *, u32 opcode);
+void ins_LDRSB_LDRSH(core *, u32 opcode);
+void ins_MRS(core *, u32 opcode);
+void ins_MSR_reg(core *, u32 opcode);
+void ins_MSR_imm(core *, u32 opcode);
+void ins_BX(core *, u32 opcode);
+void ins_data_proc_immediate_shift(core *, u32 opcode);
+void ins_data_proc_register_shift(core *, u32 opcode);
+void ins_undefined_instruction(core *, u32 opcode);
+void ins_data_proc_immediate(core *, u32 opcode);
+void ins_LDR_STR_immediate_offset(core *, u32 opcode);
+void ins_LDR_STR_register_offset(core *, u32 opcode);
+void ins_LDM_STM(core *, u32 opcode);
+void ins_B_BL(core *, u32 opcode);
+void ins_STC_LDC(core *, u32 opcode);
+void ins_CDP(core *, u32 opcode);
+void ins_MCR_MRC(core *, u32 opcode);
+void ins_SWI(core *, u32 opcode);
+void ins_INVALID(core *, u32 opcode);
 
-
-#endif //JSMOOCH_EMUS_ARM7TDMI_INSTRUCTIONS_H
+}

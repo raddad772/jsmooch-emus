@@ -2,10 +2,13 @@
 // Created by . on 12/4/24.
 //
 
+#include <cassert>
 #include "arm7tdmi.h"
 #include "arm7tdmi_decode.h"
 #include "arm7tdmi_instructions.h"
 #include "thumb_instructions.h"
+
+namespace ARM7TDMI {
 
 enum ARM_ins_kind {
     ARM_MUL_MLA,
@@ -44,9 +47,9 @@ void decode_thumb(u16 opc, thumb_instruction *ins)
 #define OBIT(x) ((opc >> (x)) & 1)
 #define BITS(hi,lo) (doBITS(opc, hi, lo))
     ins->opcode = opc;
-    ins->func = &ARM7TDMI_THUMB_ins_INVALID;
+    ins->func = &THUMB_ins_INVALID;
     if ((opc & 0b1111100000000000) == 0b0001100000000000) { // ADD_SUB
-        ins->func = &ARM7TDMI_THUMB_ins_ADD_SUB;
+        ins->func = &THUMB_ins_ADD_SUB;
         ins->I = OBIT(10); // 0 = register, 1 = immediate
         ins->sub_opcode = OBIT(9); // 0= add, 1 = sub
         if (!ins->I)
@@ -57,33 +60,33 @@ void decode_thumb(u16 opc, thumb_instruction *ins)
         ins->Rd = BITS(2, 0);
     }
     else if ((opc & 0b1110000000000000) == 0b0000000000000000) { // LSL, LSR, etc.
-        ins->func = &ARM7TDMI_THUMB_ins_LSL_LSR_ASR;
+        ins->func = &THUMB_ins_LSL_LSR_ASR;
         ins->sub_opcode = BITS(12, 11);
         ins->imm = BITS(10, 6);
         ins->Rs = BITS(5, 3);
         ins->Rd = BITS(2, 0);
     }
     else if ((opc & 0b1110000000000000) == 0b0010000000000000) { // MOV, CMP, ADD, SUB
-        ins->func = &ARM7TDMI_THUMB_ins_MOV_CMP_ADD_SUB;
+        ins->func = &THUMB_ins_MOV_CMP_ADD_SUB;
         ins->sub_opcode = BITS(12, 11);
         ins->Rd = BITS(10, 8);
         ins->imm = BITS(7, 0);
     }
     else if ((opc & 0b1111110000000000) == 0b0100000000000000) { // data proc
-        ins->func = &ARM7TDMI_THUMB_ins_data_proc;
+        ins->func = &THUMB_ins_data_proc;
         ins->sub_opcode = BITS(9, 6);
         ins->Rs = BITS(5, 3);
         ins->Rd = BITS(2, 0);
     }
     else if ((opc & 0b1111111100000000) == 0b0100011100000000) { // BX
-        ins->func = &ARM7TDMI_THUMB_ins_BX;
+        ins->func = &THUMB_ins_BX;
         ins->Rd = OBIT(7) << 3;
         ins->Rs = OBIT(6) << 3;
         ins->Rs |= BITS(5,3);
         ins->Rd |= BITS(2, 0);
     }
     else if ((opc & 0b1111110000000000) == 0b0100010000000000) { // ADD, CMP, MOV hi
-        ins->func = &ARM7TDMI_THUMB_ins_ADD_CMP_MOV_hi;
+        ins->func = &THUMB_ins_ADD_CMP_MOV_hi;
         ins->Rd = OBIT(7) << 3;
         ins->Rs = OBIT(6) << 3;
         ins->Rs |= BITS(5,3);
@@ -91,41 +94,41 @@ void decode_thumb(u16 opc, thumb_instruction *ins)
         ins->sub_opcode = BITS(9, 8);
     }
     else if ((opc & 0b1111100000000000) == 0b0100100000000000) { // 01001.....
-        ins->func = &ARM7TDMI_THUMB_ins_LDR_PC_relative;
+        ins->func = &THUMB_ins_LDR_PC_relative;
         ins->Rd = BITS(10, 8);
         ins->imm = BITS(7, 0);
         ins->imm <<= 2;
     }
     else if ((opc & 0b1111011000000000) == 0b0101001000000000) { // 0101.01...
-        ins->func = &ARM7TDMI_THUMB_ins_LDRH_STRH_reg_offset;
+        ins->func = &THUMB_ins_LDRH_STRH_reg_offset;
         ins->L = OBIT(11);
         ins->Ro = BITS(8, 6);
         ins->Rb = BITS(5, 3);
         ins->Rd = BITS(2, 0);
     }
     else if ((opc & 0b1111011000000000) == 0b0101011000000000) { // 0101.11...
-        ins->func = &ARM7TDMI_THUMB_ins_LDRSH_LDRSB_reg_offset;
+        ins->func = &THUMB_ins_LDRSH_LDRSB_reg_offset;
         ins->B = !OBIT(11); // 0=byte, 1=halfword. oops!
         ins->Ro = BITS(8, 6);
         ins->Rb = BITS(5, 3);
         ins->Rd = BITS(2, 0);
     }
     else if ((opc & 0b1111011000000000) == 0b0101000000000000) { // 0101.00...
-        ins->func = &ARM7TDMI_THUMB_ins_LDR_STR_reg_offset;
+        ins->func = &THUMB_ins_LDR_STR_reg_offset;
         ins->L = OBIT(11);
         ins->Ro = BITS(8, 6);
         ins->Rb = BITS(5, 3);
         ins->Rd = BITS(2, 0);
     }
     else if ((opc & 0b1111011000000000) == 0b0101010000000000) { // 0101.10...
-        ins->func = &ARM7TDMI_THUMB_ins_LDRB_STRB_reg_offset;
+        ins->func = &THUMB_ins_LDRB_STRB_reg_offset;
         ins->L = OBIT(11); // 0=STR, 1=LDR
         ins->Ro = BITS(8, 6);
         ins->Rb = BITS(5, 3);
         ins->Rd = BITS(2, 0);
     }
     else if ((opc & 0b1111000000000000) == 0b0110000000000000) { // 0110......
-        ins->func = &ARM7TDMI_THUMB_ins_LDR_STR_imm_offset;
+        ins->func = &THUMB_ins_LDR_STR_imm_offset;
         ins->L = OBIT(11);
         ins->imm = BITS(10, 6);
         ins->imm <<= 2;
@@ -133,14 +136,14 @@ void decode_thumb(u16 opc, thumb_instruction *ins)
         ins->Rd = BITS(2, 0);
     }
     else if ((opc & 0b1111000000000000) == 0b0111000000000000) { // 0111......
-        ins->func = &ARM7TDMI_THUMB_ins_LDRB_STRB_imm_offset;
+        ins->func = &THUMB_ins_LDRB_STRB_imm_offset;
         ins->L = OBIT(11);
         ins->imm = BITS(10, 6);
         ins->Rb = BITS(5, 3);
         ins->Rd = BITS(2, 0);
     }
     else if ((opc & 0b1111000000000000) == 0b1000000000000000) { // 1000......
-        ins->func = &ARM7TDMI_THUMB_ins_LDRH_STRH_imm_offset;
+        ins->func = &THUMB_ins_LDRH_STRH_imm_offset;
         ins->L = OBIT(11);
         ins->imm = BITS(10, 6);
         ins->imm <<= 1;
@@ -148,69 +151,69 @@ void decode_thumb(u16 opc, thumb_instruction *ins)
         ins->Rd = BITS(2, 0);
     }
     else if ((opc & 0b1111000000000000) == 0b1001000000000000) { // 1001......
-        ins->func = &ARM7TDMI_THUMB_ins_LDR_STR_SP_relative;
+        ins->func = &THUMB_ins_LDR_STR_SP_relative;
         ins->L = OBIT(11);
         ins->Rd = BITS(10, 8);
         ins->imm = BITS(7, 0);
         ins->imm <<= 2;
     }
     else if ((opc & 0b1111000000000000) == 0b1010000000000000) { // 1010......
-        ins->func = &ARM7TDMI_THUMB_ins_ADD_SP_or_PC;
+        ins->func = &THUMB_ins_ADD_SP_or_PC;
         ins->SP = OBIT(11);
         ins->Rd = BITS(10, 8);
         ins->imm = BITS(7, 0);
         ins->imm <<= 2;
     }
     else if ((opc & 0b1111111100000000) == 0b1011000000000000) { // 10110000..
-        ins->func = &ARM7TDMI_THUMB_ins_ADD_SUB_SP;
+        ins->func = &THUMB_ins_ADD_SUB_SP;
         ins->S = OBIT(7);
         ins->imm = BITS(6, 0);
         ins->imm <<= 2;
     }
     else if ((opc & 0b1111011000000000) == 0b1011010000000000) { // 1011.10...
-        ins->func = &ARM7TDMI_THUMB_ins_PUSH_POP;
+        ins->func = &THUMB_ins_PUSH_POP;
         ins->sub_opcode = OBIT(11);
         ins->PC_LR = OBIT(8);
         ins->rlist = BITS(7, 0);
     }
     else if ((opc & 0b1111000000000000) == 0b1100000000000000) { // 1100......
-        ins->func = &ARM7TDMI_THUMB_ins_LDM_STM;
+        ins->func = &THUMB_ins_LDM_STM;
         ins->sub_opcode = OBIT(11);
         ins->Rb = BITS(10, 8);
         ins->rlist = BITS(7, 0);
     }
     else if ((opc & 0b1111111100000000) == 0b1101111100000000) { // 11011111..
-        ins->func = &ARM7TDMI_THUMB_ins_SWI;
+        ins->func = &THUMB_ins_SWI;
         ins->comment = BITS(7, 0);
     }
     else if ((opc & 0b1111111100000000) == 0b1101111000000000) { // 11011110..
-        ins->func = &ARM7TDMI_THUMB_ins_UNDEFINED_BCC;
+        ins->func = &THUMB_ins_UNDEFINED_BCC;
         ins->sub_opcode = BITS(11, 8);
         ins->imm = BITS(7, 0);
         ins->imm = SIGNe8to32(ins->imm);
         ins->imm <<= 1;
     }
     else if ((opc & 0b1111000000000000) == 0b1101000000000000) { // 1101......
-        ins->func = &ARM7TDMI_THUMB_ins_BCC;
+        ins->func = &THUMB_ins_BCC;
         ins->sub_opcode = BITS(11, 8);
         ins->imm = BITS(7, 0);
         ins->imm = SIGNe8to32(ins->imm);
         ins->imm <<= 1;
     }
     else if ((opc & 0b1111100000000000) == 0b1110000000000000) { // 11100.....
-        ins->func = &ARM7TDMI_THUMB_ins_B;
+        ins->func = &THUMB_ins_B;
         ins->imm = BITS(10, 0);
         ins->imm = SIGNe11to32(ins->imm);
         ins->imm <<= 1;
     }
     else if ((opc & 0b1111100000000000) == 0b1111000000000000) { // 11110.....
-        ins->func = &ARM7TDMI_THUMB_ins_BL_BLX_prefix;
+        ins->func = &THUMB_ins_BL_BLX_prefix;
         ins->imm = BITS(11, 0);
-        ins->imm = (i32)SIGNe11to32(ins->imm); // now SHL 11...
+        ins->imm = static_cast<i32>(SIGNe11to32(ins->imm)); // now SHL 11...
         ins->imm <<= 12;
     }
     else if ((opc & 0b1111100000000000) == 0b1111100000000000) { // 11111.....
-        ins->func = &ARM7TDMI_THUMB_ins_BL_suffix;
+        ins->func = &THUMB_ins_BL_suffix;
         ins->imm = BITS(10, 0);
         ins->imm <<= 1;
     }
@@ -284,13 +287,13 @@ static enum ARM_ins_kind decode_arm(u32 opc)
 }
 
 
-void ARM7TDMI_fill_arm_table(ARM7TDMI *this)
+void core::fill_arm_table()
 {
     for (u32 opc = 0; opc < 4096; opc++) {
-        struct ARM7_ins *ins = &this->opcode_table_arm[opc];
-        enum ARM_ins_kind k = decode_arm(opc);
+        struct ARM7_ins *ins = &opcode_table_arm[opc];
+        ARM_ins_kind k = decode_arm(opc);
         switch(k) {
-#define I(x) case ARM_##x: ins->exec = &ARM7TDMI_ins_##x; break;
+#define I(x) case ARM_##x: ins->exec = &ins_##x; break;
             I(MUL_MLA)
             I(MULL_MLAL)
             I(SWP)
@@ -319,4 +322,5 @@ void ARM7TDMI_fill_arm_table(ARM7TDMI *this)
 #undef I
         }
     }
+}
 }

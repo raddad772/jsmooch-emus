@@ -2,8 +2,7 @@
 // Created by . on 12/18/24.
 //
 
-#ifndef JSMOOCH_EMUS_THUMB_INSTRUCTIONS_H
-#define JSMOOCH_EMUS_THUMB_INSTRUCTIONS_H
+#pragma once
 /*
         THUMB_ADD_SUB,
         THUMB_LSL_LSR_ASR,
@@ -32,11 +31,13 @@
         THUMB_BL_suffix
  */
 #include "helpers/int.h"
-struct ARM7TDMI;
+
+namespace ARM7TDMI {
+struct core;
 
 struct thumb_instruction;
 struct thumb_instruction {
-    void (*func)(ARM7TDMI *, thumb_instruction *);
+    void (*func)(core *, thumb_instruction *);
     u16 sub_opcode;
     u16 opcode;
     u16 Rd, Rs;
@@ -90,31 +91,31 @@ struct thumb_instruction {
         THUMB_BL_BLX_prefix,
         THUMB_BL_suffix
  */
-void ARM7TDMI_THUMB_ins_INVALID(ARM7TDMI *, thumb_instruction *ins);
-void ARM7TDMI_THUMB_ins_ADD_SUB(ARM7TDMI *, thumb_instruction *ins);
-void ARM7TDMI_THUMB_ins_LSL_LSR_ASR(ARM7TDMI *, thumb_instruction *ins);
-void ARM7TDMI_THUMB_ins_MOV_CMP_ADD_SUB(ARM7TDMI *, thumb_instruction *ins);
-void ARM7TDMI_THUMB_ins_data_proc(ARM7TDMI *, thumb_instruction *ins);
-void ARM7TDMI_THUMB_ins_BX(ARM7TDMI *, thumb_instruction *ins);
-void ARM7TDMI_THUMB_ins_ADD_CMP_MOV_hi(ARM7TDMI *, thumb_instruction *ins);
-void ARM7TDMI_THUMB_ins_LDR_PC_relative(ARM7TDMI *, thumb_instruction *ins);
-void ARM7TDMI_THUMB_ins_LDRH_STRH_reg_offset(ARM7TDMI *, thumb_instruction *ins);
-void ARM7TDMI_THUMB_ins_LDRSH_LDRSB_reg_offset(ARM7TDMI *, thumb_instruction *ins);
-void ARM7TDMI_THUMB_ins_LDR_STR_reg_offset(ARM7TDMI *, thumb_instruction *ins);
-void ARM7TDMI_THUMB_ins_LDRB_STRB_reg_offset(ARM7TDMI *, thumb_instruction *ins);
-void ARM7TDMI_THUMB_ins_LDR_STR_imm_offset(ARM7TDMI *, thumb_instruction *ins);
-void ARM7TDMI_THUMB_ins_LDRB_STRB_imm_offset(ARM7TDMI *, thumb_instruction *ins);
-void ARM7TDMI_THUMB_ins_LDRH_STRH_imm_offset(ARM7TDMI *, thumb_instruction *ins);
-void ARM7TDMI_THUMB_ins_LDR_STR_SP_relative(ARM7TDMI *, thumb_instruction *ins);
-void ARM7TDMI_THUMB_ins_ADD_SP_or_PC(ARM7TDMI *, thumb_instruction *ins);
-void ARM7TDMI_THUMB_ins_ADD_SUB_SP(ARM7TDMI *, thumb_instruction *ins);
-void ARM7TDMI_THUMB_ins_PUSH_POP(ARM7TDMI *, thumb_instruction *ins);
-void ARM7TDMI_THUMB_ins_LDM_STM(ARM7TDMI *, thumb_instruction *ins);
-void ARM7TDMI_THUMB_ins_SWI(ARM7TDMI *, thumb_instruction *ins);
-void ARM7TDMI_THUMB_ins_UNDEFINED_BCC(ARM7TDMI *, thumb_instruction *ins);
-void ARM7TDMI_THUMB_ins_BCC(ARM7TDMI *, thumb_instruction *ins);
-void ARM7TDMI_THUMB_ins_B(ARM7TDMI *, thumb_instruction *ins);
-void ARM7TDMI_THUMB_ins_BL_BLX_prefix(ARM7TDMI *, thumb_instruction *ins);
-void ARM7TDMI_THUMB_ins_BL_suffix(ARM7TDMI *, thumb_instruction *ins);
+void THUMB_ins_INVALID(core *, thumb_instruction *ins);
+void THUMB_ins_ADD_SUB(core *, thumb_instruction *ins);
+void THUMB_ins_LSL_LSR_ASR(core *, thumb_instruction *ins);
+void THUMB_ins_MOV_CMP_ADD_SUB(core *, thumb_instruction *ins);
+void THUMB_ins_data_proc(core *, thumb_instruction *ins);
+void THUMB_ins_BX(core *, thumb_instruction *ins);
+void THUMB_ins_ADD_CMP_MOV_hi(core *, thumb_instruction *ins);
+void THUMB_ins_LDR_PC_relative(core *, thumb_instruction *ins);
+void THUMB_ins_LDRH_STRH_reg_offset(core *, thumb_instruction *ins);
+void THUMB_ins_LDRSH_LDRSB_reg_offset(core *, thumb_instruction *ins);
+void THUMB_ins_LDR_STR_reg_offset(core *, thumb_instruction *ins);
+void THUMB_ins_LDRB_STRB_reg_offset(core *, thumb_instruction *ins);
+void THUMB_ins_LDR_STR_imm_offset(core *, thumb_instruction *ins);
+void THUMB_ins_LDRB_STRB_imm_offset(core *, thumb_instruction *ins);
+void THUMB_ins_LDRH_STRH_imm_offset(core *, thumb_instruction *ins);
+void THUMB_ins_LDR_STR_SP_relative(core *, thumb_instruction *ins);
+void THUMB_ins_ADD_SP_or_PC(core *, thumb_instruction *ins);
+void THUMB_ins_ADD_SUB_SP(core *, thumb_instruction *ins);
+void THUMB_ins_PUSH_POP(core *, thumb_instruction *ins);
+void THUMB_ins_LDM_STM(core *, thumb_instruction *ins);
+void THUMB_ins_SWI(core *, thumb_instruction *ins);
+void THUMB_ins_UNDEFINED_BCC(core *, thumb_instruction *ins);
+void THUMB_ins_BCC(core *, thumb_instruction *ins);
+void THUMB_ins_B(core *, thumb_instruction *ins);
+void THUMB_ins_BL_BLX_prefix(core *, thumb_instruction *ins);
+void THUMB_ins_BL_suffix(core *, thumb_instruction *ins);
 
-#endif //JSMOOCH_EMUS_THUMB_INSTRUCTIONS_H
+}
