@@ -2,10 +2,10 @@
 add_library(imgui STATIC
         # Among the different backends available, we are interested in connecting
         # the GUI to GLFW andWebGPU:
-        backends/imgui_impl_wgpu.h
-        backends/imgui_impl_wgpu.cpp
-        backends/imgui_impl_glfw.h
-        backends/imgui_impl_glfw.cpp
+        #backends/imgui_impl_wgpu.h
+        #backends/imgui_impl_wgpu.cpp
+        #backends/imgui_impl_glfw.h
+        #backends/imgui_impl_glfw.cpp
 
         # Bonus to add some C++ specific features (the core ImGUi is a C library)
         misc/cpp/imgui_stdlib.h

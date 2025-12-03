@@ -50,6 +50,8 @@ public:
 
     struct {
         bool save_state=false, load_BIOS=false, set_audiobuf=false;
+        u32 max_loaded_files = 0;
+        u32 max_loaded_folders = 0;
     } has{};
 
     virtual void save_state(serialized_state &state) {};

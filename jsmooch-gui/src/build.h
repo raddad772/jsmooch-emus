@@ -2,8 +2,8 @@
 // Created by . on 11/27/24.
 //
 
-#ifndef JSMOOCH_EMUS_BUILD_H
-#define JSMOOCH_EMUS_BUILD_H
+#pragma once
+
 
 //#define JSM_WEBGPU
 //#define JSM_SDLR3
@@ -32,4 +32,7 @@
 #include "../vendor/myimgui/backends/imgui_impl_sdlrenderer3.h"
 #endif
 
-#endif //JSMOOCH_EMUS_BUILD_H
+#ifdef JSM_SDLGPU
+#include "../vendor/myimgui/backends/imgui_impl_sdl3.h"
+#include "../vendor/myimgui/backends/imgui_impl_sdlgpu3.h"
+#endif

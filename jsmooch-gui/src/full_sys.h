@@ -121,6 +121,11 @@ public:
     WGPUDevice wgpu_device{};
     void platform_setup(WGPUDevice device) { wgpu_device = device; };
 #endif
+#ifdef JSM_SDLGPU
+    SDL_GPUDevice *device{};
+    void platform_setup() {
+    }
+#endif
     jsm_system *sys;
     debugger_interface dbgr{};
 
