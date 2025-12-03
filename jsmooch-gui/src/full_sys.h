@@ -123,8 +123,7 @@ public:
 #endif
 #ifdef JSM_SDLGPU
     SDL_GPUDevice *device{};
-    void platform_setup() {
-    }
+    void platform_setup(SDL_GPUDevice *device_in) { device = device_in; }
 #endif
     jsm_system *sys;
     debugger_interface dbgr{};

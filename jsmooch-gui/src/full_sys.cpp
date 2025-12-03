@@ -35,6 +35,8 @@
 #else
 #ifdef JSM_WEBGPU
 #define TS(f,a,b,c) f.setup(wgpu_device, a, b, c)
+#elif defined(JSM_SDLGPU)
+#define TS(f,a,b,c) f.setup(device, a, b, c);
 #else
 #define TS(f,a,b,c) f##.setup(a,b,c);
 #endif
@@ -1347,7 +1349,7 @@ void full_system::setup_display()
 
     // Determine final output resolution
     u32 wh = get_closest_pow2(MAX(p->cols.max_visible, p->rows.max_visible));
-    output.backbuffer_texture.setup("emulator backbuffer", wh, wh);
+    TS(output.backbuffer_texture,"emulator backbuffer", wh, wh);
     //printf("\nMAX COLS:%d ROWS:%d POW2:%d", p->cols.max_visible, p->rows.max_visible, wh);
 
     u32 overscan_x_offset = p->overscan.left;
@@ -1480,7 +1482,7 @@ void full_system::pre_events_view_present()
     if (events.view) {
         if (!events.texture.is_good) {
             u32 szpo2 = get_closest_pow2(MAX(events.view->display[0].width, events.view->display[0].height));
-            events.texture.setup("Events View texture", szpo2, szpo2);
+            TS(events.texture,"Events View texture", szpo2, szpo2);
             events.texture.uv0 = ImVec2(0, 0);
             events.texture.uv1 = ImVec2(
                     (float) ((double) events.view->display[0].width / (double) events.texture.width),
@@ -1542,7 +1544,7 @@ void full_system::waveform_view_present(WVIEW &wv)
     for (auto& wf : wv.waveforms) {
         if (!wf.tex.is_good) {
             u32 szpo2 = 1024;
-            wf.tex.setup(wf.wf->name, szpo2, szpo2);
+            TS(wf.tex, wf.wf->name, szpo2, szpo2);
             assert(wf.tex.is_good);
             wf.tex.uv0 = ImVec2(0, 0);
             wf.drawbuf.resize(1024*1024*4);
@@ -1586,7 +1588,7 @@ void full_system::image_view_present(debugger_view &dview, my_texture &tex)
     image_view *iview = &dview.image;
     if (!tex.is_good) {
         u32 szpo2 = get_closest_pow2(MAX(iview->height, iview->width));
-        tex.setup(iview->label, szpo2, szpo2);
+        TS(tex,iview->label, szpo2, szpo2);
         assert(tex.is_good);
         tex.uv0 = ImVec2(0, 0);
         tex.uv1 = ImVec2((float)((double)iview->width / (double)szpo2),

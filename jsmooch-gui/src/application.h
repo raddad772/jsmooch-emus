@@ -54,6 +54,11 @@ struct imgui_jsmooch_app {
     void render_disassembly_view(struct DVIEW &dview, bool update_dasm_scroll, u32 num);
     void render_dbglog_view(struct DLVIEW &dview, bool update_dasm_scoll);
     void render_window_manager();
+
+#ifdef JSM_SDLGPU
+    SDL_GPUDevice *device{};
+    void platform_setup(SDL_GPUDevice *in_device) {device = in_device; fsys.platform_setup(in_device); }
+#endif
 #ifdef JSM_SDLR3
     SDL_Renderer *renderer;
     void platform_setup(SDL_Renderer *mrenderer) {renderer = mrenderer; fsys.platform_setup(renderer); };

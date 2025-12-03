@@ -19,8 +19,7 @@ class my_texture_sdlgpu {
 
 struct my_texture  {
     struct {
-        ImTextureData data;
-        ImTextureRef ref;
+        SDL_GPUTexture *ptr;
     } tex{};
     struct {
     } view{};
@@ -29,7 +28,7 @@ struct my_texture  {
     ImVec2 uv0{}, uv1{};
     ImVec2 sz_for_display{};
     ImVec2 zoom_sz_for_display(float zoom) { return {sz_for_display.x * zoom, sz_for_display.y * zoom}; }
-    [[nodiscard]] ImTextureRef *for_image() { tex.ref._TexID = tex.data.TexID; return &tex.ref; }
+    [[nodiscard]] ImTextureRef for_image();
     SDL_GPUDevice *device;
     SDL_GPUTextureCreateInfo info;
 
@@ -37,7 +36,7 @@ struct my_texture  {
     char store_label[500]{};
 
     ~my_texture();
-    void setup(const char *label, u32 width, u32 height);
+    void setup(SDL_GPUDevice *device, const char *label, u32 width, u32 height);
     void upload_data(void *source_ptr, size_t sz, u32 source_width, u32 source_height);
 };
 #endif
