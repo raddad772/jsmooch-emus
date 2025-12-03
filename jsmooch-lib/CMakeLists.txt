@@ -224,6 +224,32 @@ set(SOURCE_LIST
         src/component/cpu/cdp1802/cdp1802_instructions.h
         src/component/cpu/cdp1802/cdp1802_disassembler.cpp
         src/component/cpu/cdp1802/cdp1802_disassembler.h
+        src/system/gba/gba.cpp
+        src/system/gba/gba.h
+        src/system/gba/gba_apu.cpp
+        src/system/gba/gba_apu.h
+        src/system/gba/gba_bus.cpp
+        src/system/gba/gba_bus.h
+        src/system/gba/gba_clock.cpp
+        src/system/gba/gba_clock.h
+        src/system/gba/gba_controller.cpp
+        src/system/gba/gba_controller.h
+        src/system/gba/gba_debugger.cpp
+        src/system/gba/gba_debugger.h
+        src/system/gba/gba_dma.cpp
+        src/system/gba/gba_dma.h
+        src/system/gba/gba_ppu.cpp
+        src/system/gba/gba_ppu.h
+        src/system/gba/gba_timers.cpp
+        src/system/gba/gba_timers.h
+        src/system/gba/cart/eeprom.cpp
+        src/system/gba/cart/eeprom.h
+        src/system/gba/cart/flash.cpp
+        src/system/gba/cart/flash.h
+        src/system/gba/cart/gba_cart.cpp
+        src/system/gba/cart/gba_cart.h
+        src/system/gba/cart/sram.cpp
+        src/system/gba/cart/sram.h
         src/system/cosmac_vip/cosmac_vip.cpp
         src/system/cosmac_vip/cosmac_vip.h
         src/system/cosmac_vip/vip_bus.cpp

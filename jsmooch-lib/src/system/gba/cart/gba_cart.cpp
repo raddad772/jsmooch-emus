@@ -9,51 +9,38 @@
 
 #include "helpers/debug.h"
 #include "helpers/physical_io.h"
-#include "helpers/multisize_memaccess.c"
+#include "helpers/multisize_memaccess.cpp"
 
 #include "../gba_bus.h"
 #include "gba_cart.h"
 #include "flash.h"
 #include "eeprom.h"
 
-static const u32 maskalign[5] = {0, 0xFFFFFFFF, 0xFFFFFFFE, 0, 0xFFFFFFFC};
+namespace GBA::cart {
+static constexpr u32 maskalign[5] = {0, 0xFFFFFFFF, 0xFFFFFFFE, 0, 0xFFFFFFFC};
 
-void GBA_cart_init(GBA_cart* this)
-{
-    *this = (GBA_cart) {}; // Set all fields to 0
+static constexpr u32 masksz[5] = { 0, 0xFF, 0xFFFF, 0, 0xFFFFFFFF };
 
-    this->prefetch.enable = 1;
-    buf_init(&this->ROM);
-}
-
-void GBA_cart_delete(GBA_cart *this)
-{
-    buf_delete(&this->ROM);
-}
-
-static const u32 masksz[5] = { 0, 0xFF, 0xFFFF, 0, 0xFFFFFFFF };
-
-static u32 prefetch_stop(GBA *this)
-{
+bool core::prefetch_stop() const {
     // So we need to cover a few cases here...
     // "If ROM data/SRAM/FLASH is accessed in a cycle, where the prefetch unit
     //  is active and finishing a half-word access, then a one-cycle penalty applies."
-    if (this->cart.prefetch.enable) {
-        u32 page = this->cpu.regs.R[15] >> 24;
-        if ((page >= 8) && (page < 0xE) && (this->cart.prefetch.cycles_banked > 0)) {
+    if (prefetch.enable) {
+        u32 page = gba->cpu.regs.R[15] >> 24;
+        if ((page >= 8) && (page < 0xE) && (prefetch.cycles_banked > 0)) {
             // OK so we have cycles-banked that can be up to 8* what it should compare to
-            i32 cb = this->cart.prefetch.cycles_banked % this->cart.prefetch.duty_cycle;
-            if (cb == (this->cart.prefetch.duty_cycle - 1)) { // ABOUT to finish
-                return 1;
+            i32 cb = prefetch.cycles_banked % prefetch.duty_cycle;
+            if (cb == (prefetch.duty_cycle - 1)) { // ABOUT to finish
+                return true;
             }
         }
     }
-    return 0;
+    return false;
 }
 
-u32 GBA_cart_read(GBA *this, u32 addr, u32 sz, u32 access, u32 has_effect, u32 ws) {
-    if ((this->cart.RAM.is_eeprom) && (addr >= 0x0d000000) && (addr < 0x0e000000)) {
-        u32 v =  GBA_cart_read_eeprom(this, addr, sz, access, has_effect);
+u32 core::read(u32 addr, u32 sz, u32 access, bool has_effect, u32 ws) {
+    if ((RAM.is_eeprom) && (addr >= 0x0d000000) && (addr < 0x0e000000)) {
+        u32 v =  read_eeprom(addr, sz, access, has_effect);
         //printf("\nRead EEPROM addr:%08x  sz:%d  val:%02x", addr, sz, v);
         return v;
     }
@@ -63,175 +50,175 @@ u32 GBA_cart_read(GBA *this, u32 addr, u32 sz, u32 access, u32 has_effect, u32 w
     u32 page = addr >> 24;
     addr &= 0x01FFFFFF;
 
-    if (addr >= this->cart.ROM.size) { // OOB read
-        this->waitstates.current_transaction++;
+    if (addr >= ROM.size) { // OOB read
+        gba->waitstates.current_transaction++;
         if (sz == 4) {
             return ((addr >> 1) & 0xFFFF) | ((((addr >> 1) + 1) & 0xFFFF) << 16);
         }
         return (addr >> 1) & masksz[sz];
     }
 
-    /*if (this->cart.prefetch.was_disabled) {
+    /*if (prefetch.was_disabled) {
         access &= ~ARM7P_sequential; // Clear sequential flag
-        this->cart.prefetch.was_disabled = 0;
+        prefetch.was_disabled = 0;
     }*/
     u32 sequential = (access & ARM7P_sequential);
     if ((addr & 0x1FFFF) == 0) sequential = 0; // 128KB blocks are non-sequential
     // determine cycles of this access
     if (dbg.trace_on) {
-        struct trace_view *tv = this->cpu.dbg.tvptr;
+        trace_view *tv = gba->cpu.dbg.tvptr;
         if (tv) {
-            trace_view_startline(tv, 3);
-            trace_view_printf(tv, 0, "ifetch");
-            trace_view_printf(tv, 1, "%lld", this->clock.master_cycle_count + this->waitstates.current_transaction);
-            trace_view_printf(tv, 2, "%08x", addr);
-            trace_view_printf(tv, 4, "READ GAMEPAK. seq:%d code:%d page:%d", sequential, !!(access & ARM7P_code), page);
-            trace_view_endline(tv);
+            tv->startline(3);
+            tv->printf(0, "ifetch");
+            tv->printf(1, "%lld", gba->clock.master_cycle_count + gba->waitstates.current_transaction);
+            tv->printf(2, "%08x", addr);
+            tv->printf(4, "READ GAMEPAK. seq:%d code:%d page:%d", sequential, !!(access & ARM7P_code), page);
+            tv->endline();
         }
     }
     u32 outcycles = 0;
-    if (!this->cart.prefetch.enable) {
+    if (!prefetch.enable) {
         // Just do a normal read
-        outcycles = prefetch_stop(this);
-        if (sz == 4) outcycles += this->waitstates.timing32[sequential][page];
-        else outcycles += this->waitstates.timing16[sequential][page];
-        this->waitstates.current_transaction += outcycles;
-        return cR[sz](this->cart.ROM.ptr, addr);
+        outcycles = prefetch_stop();
+        if (sz == 4) outcycles += gba->waitstates.timing32[sequential][page];
+        else outcycles += gba->waitstates.timing16[sequential][page];
+        gba->waitstates.current_transaction += outcycles;
+        return cR[sz](ROM.ptr, addr);
     }
 
     // If we got here, prefetch is enabled.
-    i64 tt = (i64)GBA_clock_current(this);
-    i64 this_cycles = (sz == 4) ? this->waitstates.timing32[1][page] : this->waitstates.timing16[1][page];
+    const i64 tt = static_cast<i64>(gba->clock_current());
+    i64 this_cycles = (sz == 4) ? gba->waitstates.timing32[1][page] : gba->waitstates.timing16[1][page];
     // If we are at the next prefetch addr, and it's code...
-    if (this->cart.prefetch.last_access != 0xFFFFFFFFFFFFFFFF)
-        this->cart.prefetch.cycles_banked += (tt - (i64)this->cart.prefetch.last_access);
-    if (this->cart.prefetch.cycles_banked > (this_cycles * 8)) { // We can only get ahead 8 times
-        this->cart.prefetch.cycles_banked = this_cycles * 8;
+    if (prefetch.last_access != 0xFFFFFFFFFFFFFFFF)
+        prefetch.cycles_banked += (tt - static_cast<i64>(prefetch.last_access));
+    if (prefetch.cycles_banked > (this_cycles * 8)) { // We can only get ahead 8 times
+        prefetch.cycles_banked = this_cycles * 8;
     }
 
-    if (addr == this->cart.prefetch.next_addr && (access & ARM7P_code)) {
+    if (addr == prefetch.next_addr && (access & ARM7P_code)) {
         // Subtract # of cycles of this access
-        this->cart.prefetch.cycles_banked -= this_cycles;
+        prefetch.cycles_banked -= this_cycles;
         // if we don't have enough...
-        if (this->cart.prefetch.cycles_banked < 0) {
+        if (prefetch.cycles_banked < 0) {
             if (dbg.trace_on) {
-                struct trace_view *tv = this->cpu.dbg.tvptr;
+                trace_view *tv = gba->cpu.dbg.tvptr;
                 if (tv) {
-                    trace_view_startline(tv, 3);
-                    trace_view_printf(tv, 0, "ifetch");
-                    trace_view_printf(tv, 1, "%lld", this->clock.master_cycle_count + this->waitstates.current_transaction);
-                    trace_view_printf(tv, 2, "%08x", addr);
-                    trace_view_printf(tv, 4, "partial complete. cycles left: %d", (0 - this->cart.prefetch.cycles_banked));
-                    trace_view_endline(tv);
+                    tv->startline(3);
+                    tv->printf(0, "ifetch");
+                    tv->printf(1, "%lld", gba->clock.master_cycle_count + gba->waitstates.current_transaction);
+                    tv->printf(2, "%08x", addr);
+                    tv->printf(4, "partial complete. cycles left: %d", (0 - prefetch.cycles_banked));
+                    tv->endline();
                 }
             }
             // Add what we have left to the wait
-            outcycles += (0 - this->cart.prefetch.cycles_banked);
+            outcycles += (0 - prefetch.cycles_banked);
             // Reset cycles banked to 0
-            this->cart.prefetch.cycles_banked = 0;
+            prefetch.cycles_banked = 0;
         } else { // if we DO have enough...
             outcycles++; // transaction only takes 1 cycle!
-            //if (this->cart.prefetch.cycles_banked > (this->cart.prefetch.duty_cycle * 8)) { // We can only get ahead 8 times
-            //    this->cart.prefetch.cycles_banked = this->cart.prefetch.duty_cycle * 8;
+            //if (prefetch.cycles_banked > (prefetch.duty_cycle * 8)) { // We can only get ahead 8 times
+            //    prefetch.cycles_banked = prefetch.duty_cycle * 8;
             //}
         }
     }
     else { // Check for another case: fetch is tried of the currently-in-progress fetch
         // First calculate what the current in-progress fetch is
-        u32 current_fetch_addr = this->cart.prefetch.next_addr;
-        u32 duty_cycle = this->waitstates.timing16[1][page];
+        u32 current_fetch_addr = prefetch.next_addr;
+        u32 duty_cycle = gba->waitstates.timing16[1][page];
         if (sz == 4) duty_cycle *= 2;
 
-        u32 fetch_cycles = this->cart.prefetch.cycles_banked / duty_cycle;
+        u32 fetch_cycles = prefetch.cycles_banked / duty_cycle;
         current_fetch_addr += (fetch_cycles * sz);
         if (addr == current_fetch_addr && (access & ARM7P_code) && (fetch_cycles > 0)) {
             //printf("\nI HIT THE CASE...");
             // TODO: reaosn this out with nonsequential timing
-            u32 cycles_left_to_fetch = this->cart.prefetch.cycles_banked % duty_cycle;
+            u32 cycles_left_to_fetch = prefetch.cycles_banked % duty_cycle;
             outcycles += cycles_left_to_fetch;
-            this->cart.prefetch.cycles_banked = 0;
+            prefetch.cycles_banked = 0;
         }
         else { // Abort the prefetcher
-            outcycles += prefetch_stop(this); // Penalty if we're 1 from end!
-            this->cart.prefetch.cycles_banked = 0; // Restart prefetches
-            outcycles += (sz == 4) ? this->waitstates.timing32[sequential][page] : this->waitstates.timing16[sequential][page];; // Full cost of the read
+            outcycles += prefetch_stop(); // Penalty if we're 1 from end!
+            prefetch.cycles_banked = 0; // Restart prefetches
+            outcycles += (sz == 4) ? gba->waitstates.timing32[sequential][page] : gba->waitstates.timing16[sequential][page];; // Full cost of the read
         }
     }
-    this->cart.prefetch.duty_cycle = this->waitstates.timing16[1][page];
-    this->cart.prefetch.next_addr = addr + sz;
-    this->cart.prefetch.last_access = tt + outcycles;
-    this->waitstates.current_transaction += outcycles;
+    prefetch.duty_cycle = gba->waitstates.timing16[1][page];
+    prefetch.next_addr = addr + sz;
+    prefetch.last_access = tt + outcycles;
+    gba->waitstates.current_transaction += outcycles;
 
-    return cR[sz](this->cart.ROM.ptr, addr);
+    return cR[sz](ROM.ptr, addr);
 }
 
-u32 GBA_cart_read_wait0(GBA *this, u32 addr, u32 sz, u32 access, u32 has_effect)
+u32 core::read_wait0(u32 addr, u32 sz, u32 access, bool has_effect)
 {
     addr &= maskalign[sz];
-    return GBA_cart_read(this, addr, sz, access, has_effect, 0);
+    return read(addr, sz, access, has_effect, 0);
 }
 
-u32 GBA_cart_read_wait1(GBA *this, u32 addr, u32 sz, u32 access, u32 has_effect)
+u32 core::read_wait1(u32 addr, u32 sz, u32 access, bool has_effect)
 {
     addr &= maskalign[sz];
-    return GBA_cart_read(this, addr, sz, access, has_effect, 1);
+    return read(addr, sz, access, has_effect, 1);
 }
 
-u32 GBA_cart_read_wait2(GBA *this, u32 addr, u32 sz, u32 access, u32 has_effect)
+u32 core::read_wait2(u32 addr, u32 sz, u32 access, bool has_effect)
 {
     addr &= maskalign[sz];
-    return GBA_cart_read(this, addr, sz, access, has_effect, 2);
+    return read(addr, sz, access, has_effect, 2);
 }
 
 
 
-u32 GBA_cart_read_sram(GBA *this, u32 addr, u32 sz, u32 access, u32 has_effect)
+u32 core::read_sram(u32 addr, u32 sz, u32 access, bool has_effect)
 {
-    if (this->cart.RAM.is_flash) return GBA_cart_read_flash(this, addr, sz, access, has_effect);
+    if (RAM.is_flash) return read_flash(addr, sz, access, has_effect);
 
     /*if (addr >= 0x0E010000) {
-        return GBA_open_bus(this, addr, sz);
+        return GBA_open_bus(addr, sz);
     }*/
 
-    u32 v = ((u8 *)this->cart.RAM.store->data)[addr & this->cart.RAM.mask];
+    u32 v = static_cast<u8 *>(RAM.store->data)[addr & RAM.mask];
     if (sz == 2) {
         v *= 0x101;
     }
     if (sz == 4) {
         v *= 0x1010101;
     }
-    this->waitstates.current_transaction += this->waitstates.sram;
+    gba->waitstates.current_transaction += gba->waitstates.sram;
     return v;
 }
 
-static void write_RTC(GBA *this, u32 addr, u32 sz, u32 access, u32 val)
+void core::write_RTC(u32 addr, u32 sz, u32 access, u32 val)
 {
     // Ignore byte writes...weirdly?
     if (sz == 1) return;
 }
 
-void GBA_cart_write(GBA *this, u32 addr, u32 sz, u32 access, u32 val)
+void core::write(u32 addr, u32 sz, u32 access, u32 val)
 {
     addr &= maskalign[sz];
-    if (this->cart.RTC.present && (addr >= 0x080000C4) && (addr < 0x080000CA)) {
-        return write_RTC(this, addr, sz, access, val);
+    if (RTC.present && (addr >= 0x080000C4) && (addr < 0x080000CA)) {
+        return write_RTC(addr, sz, access, val);
     }
-    if (this->cart.RAM.is_eeprom && (addr >= 0x0d000000) && (addr < 0x0e000000)) {
+    if (RAM.is_eeprom && (addr >= 0x0d000000) && (addr < 0x0e000000)) {
         //printf("\nWrite EEPROM addr:%08x  sz:%d  val:%02x", addr, sz, val);
-        return GBA_cart_write_eeprom(this, addr, sz, access, val);
+        return write_eeprom(addr, sz, access, val);
     }
-    this->waitstates.current_transaction++;
-    this->waitstates.current_transaction += prefetch_stop(this);
-    this->cart.prefetch.cycles_banked = 0;
+    gba->waitstates.current_transaction++;
+    gba->waitstates.current_transaction += prefetch_stop();
+    prefetch.cycles_banked = 0;
     printf("\nWARNING write cart addr %08x", addr);
 }
 
 
 
 
-void GBA_cart_write_sram(GBA *this, u32 addr, u32 sz, u32 access, u32 val)
+void core::write_sram(u32 addr, u32 sz, u32 access, u32 val)
 {
-    if (this->cart.RAM.is_flash) return GBA_cart_write_flash(this, addr, sz, access, val);
+    if (RAM.is_flash) return write_flash(addr, sz, access, val);
 
     //printf("\nWRITE SRAM! %08x", addr);
     if (sz == 2) {
@@ -243,9 +230,9 @@ void GBA_cart_write_sram(GBA *this, u32 addr, u32 sz, u32 access, u32 val)
         else if ((addr & 3) == 3) val >>= 24;
     }
     val &= 0xFF;
-    ((u8 *)this->cart.RAM.store->data)[addr & this->cart.RAM.mask] = val;
-    this->waitstates.current_transaction += this->waitstates.sram;
-    this->cart.RAM.store->dirty = 1;
+    ((u8 *)RAM.store->data)[addr & RAM.mask] = val;
+    gba->waitstates.current_transaction += gba->waitstates.sram;
+    RAM.store->dirty = 1;
 }
 
 enum save_kinds {
@@ -257,116 +244,114 @@ enum save_kinds {
         SK_FLASH1M_Vnnn
 };
 
-static u32 firstmatch[3] =  {
+static constexpr u32 firstmatch[3] =  {
         0x52504545, // RPEE or EEPR backward
         0x4D415253, // MARS of SRAM backward
         0x53414C46 // SALF or FLAS
 };
 
-static int cmpstr(buf *f, u32 addr, const char *cmp)
+static bool cmpstr(const buf *f, const u32 addr, const char *cmp)
 {
-    char *ptr1 = ((char *)f->ptr) + addr;
+    const char *ptr1 = static_cast<char *>(f->ptr) + addr;
     const char *ptr2 = cmp;
     while((*ptr2)!=0) {
         if (*ptr2 != *ptr1) {
-            return 0;
+            return false;
         }
         ptr2++;
         ptr1++;
     }
-    return 1;
+    return true;
 }
 
 
-static enum save_kinds search_strings(buf *f)
+static save_kinds search_strings(buf *f)
 {
     /* First, find a first blush. */
     i64 found_addr = -1;
-    u32 *buf = (u32 *)f->ptr;
+    auto buf = static_cast<u32 *>(f->ptr);
     for (u32 i = 0; i < f->size; i += 4) {
-        u32 m = *buf;
+        const u32 m = *buf;
         buf++;
-        u32 found = (m == 0x52504545) || (m == 0x4D415253) || (m == 0x53414C46);
-        if (found) {
+        if ((m == 0x52504545) || (m == 0x4D415253) || (m == 0x53414C46)) {
             // Do full string match
             if (cmpstr(f, i, "EEPROM_V")) return SK_EEPROM_Vnnn;
-            else if (cmpstr(f, i, "SRAM_V")) return SK_SRAM_Vnnn;
-            else if (cmpstr(f, i, "FLASH_V")) return SK_FLASH_Vnnn;
-            else if (cmpstr(f, i, "FLASH512_V")) return SK_FLASH512_Vnnn;
-            else if (cmpstr(f, i, "FLASH1M_V")) return SK_FLASH1M_Vnnn;
+            if (cmpstr(f, i, "SRAM_V")) return SK_SRAM_Vnnn;
+            if (cmpstr(f, i, "FLASH_V")) return SK_FLASH_Vnnn;
+            if (cmpstr(f, i, "FLASH512_V")) return SK_FLASH512_Vnnn;
+            if (cmpstr(f, i, "FLASH1M_V")) return SK_FLASH1M_Vnnn;
         }
     }
-
     return SK_none;
 }
 
-static void detect_RTC(GBA_cart *this, buf *ROM)
+void core::detect_RTC(buf *mROM)
 {
     // offset 00000C4 at least 6 bytes filled with 0
-    u8 *ptr = ((u8 *)ROM->ptr) + 0xC4;
+    auto *ptr = static_cast<u8 *>(mROM->ptr) + 0xC4;
     u32 detect = 1;
     for (u32 i = 0; i < 6; i++) {
         if (ptr[i] != 0) detect = 0;
     }
-    this->RTC.present = detect;
+    RTC.present = detect;
     if (detect) printf("\nRTC DETECTED!");
 }
 
-u32 GBA_cart_load_ROM_from_RAM(GBA_cart* this, char* fil, u64 fil_sz, physical_io_device *pio, u32 *SRAM_enable) {
-    buf_allocate(&this->ROM, fil_sz);
-    memcpy(this->ROM.ptr, fil, fil_sz);
+bool core::load_ROM_from_RAM(char* fil, u64 fil_sz, physical_io_device *pio, u32 *SRAM_enable) {
+    ROM.allocate(fil_sz);
+    memcpy(ROM.ptr, fil, fil_sz);
     if (SRAM_enable) *SRAM_enable = 1;
-    this->RAM.store = &pio->cartridge_port.SRAM;
-    this->RAM.store->fill_value = 0xFF;
-    struct persistent_store *ps = &pio->cartridge_port.SRAM;
-    this->RAM.is_sram = 0;
-    this->RAM.is_flash = 0;
-    this->RAM.is_eeprom = 0;
+    RAM.store = &pio->cartridge_port.SRAM;
+    RAM.store->fill_value = 0xFF;
+    persistent_store *ps = &pio->cartridge_port.SRAM;
+    RAM.is_sram = false;
+    RAM.is_flash = false;
+    RAM.is_eeprom = false;
 
-    enum save_kinds save_kind = search_strings(&this->ROM);
+    save_kinds save_kind = search_strings(&ROM);
     switch(save_kind) {
         case SK_none:
             printf("\nNO SAVE STRING FOUND!");
-            this->RAM.store->requested_size = 128 * 1024;
-            this->RAM.store->persistent = 0;
+            RAM.store->requested_size = 128 * 1024;
+            RAM.store->persistent = false;
             break;
         case SK_SRAM_Vnnn:
             printf("\nSRAM found!");
-            this->RAM.store->requested_size = 32 * 1024;
-            this->RAM.store->persistent = 1;
-            this->RAM.is_sram = 1;
+            RAM.store->requested_size = 32 * 1024;
+            RAM.store->persistent = true;
+            RAM.is_sram = true;
             break;
         case SK_FLASH_Vnnn:
-            this->RAM.flash.kind = GBAFK_SST;
+            RAM.flash.kind = FK_SST;
             printf("\nFLASH (old) 64k found! Using SST!");
-            this->RAM.is_flash = 1;
-            this->RAM.store->requested_size = 64 * 1024;
-            this->RAM.store->persistent = 1;
+            RAM.is_flash = true;
+            RAM.store->requested_size = 64 * 1024;
+            RAM.store->persistent = true;
             break;
         case SK_FLASH512_Vnnn:
-            this->RAM.flash.kind = GBAFK_SST;
+            RAM.flash.kind = FK_SST;
             printf("\nFLASH (new) 64k found! Using SST!");
-            this->RAM.is_flash = 1;
-            this->RAM.store->requested_size = 64 * 1024;
-            this->RAM.store->persistent = 1;
+            RAM.is_flash = true;
+            RAM.store->requested_size = 64 * 1024;
+            RAM.store->persistent = true;
             break;
         case SK_FLASH1M_Vnnn:
-            this->RAM.flash.kind = GBAFK_macronix128k;
+            RAM.flash.kind = FK_macronix128k;
             printf("\nFLASH 128K found! Using Maronix 128!");
-            this->RAM.is_flash = 1;
-            this->RAM.store->requested_size = 128 * 1024;
-            this->RAM.store->persistent = 1;
+            RAM.is_flash = true;
+            RAM.store->requested_size = 128 * 1024;
+            RAM.store->persistent = true;
             break;
         case SK_EEPROM_Vnnn:
             printf("\nEEPROM detected!");
-            GBA_cart_init_eeprom(this);
-            this->RAM.is_eeprom = 1;
-            this->RAM.store->persistent = 1;
-            this->RAM.store->requested_size = 8 * 1024;
+            init_eeprom();
+            RAM.is_eeprom = true;
+            RAM.store->persistent = true;
+            RAM.store->requested_size = 8 * 1024;
             break;
     }
-    this->RAM.store->dirty = 1;
-    this->RAM.store->ready_to_use = 0;
+    RAM.store->dirty = true;
+    RAM.store->ready_to_use = false;
 
 /*
   EEPROM_Vnnn    EEPROM 512 bytes or 8 Kbytes (4Kbit or 64Kbit)
@@ -377,11 +362,12 @@ u32 GBA_cart_load_ROM_from_RAM(GBA_cart* this, char* fil, u64 fil_sz, physical_i
 
 
 
-    this->RAM.size = this->RAM.store->requested_size;
-    this->RAM.mask = this->RAM.size - 1;
-    this->RAM.persists = this->RAM.present = 1;
+    RAM.size = RAM.store->requested_size;
+    RAM.mask = RAM.size - 1;
+    RAM.persists = RAM.present = 1;
 
-    detect_RTC(this, &this->ROM);
+    detect_RTC(&ROM);
 
-    return 1;
+    return true;
+}
 }

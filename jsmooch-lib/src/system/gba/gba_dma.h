@@ -1,20 +1,62 @@
 //
 // Created by . on 5/5/25.
 //
-
-#ifndef JSMOOCH_EMUS_GBA_DMA_H
-#define JSMOOCH_EMUS_GBA_DMA_H
+#pragma once
 
 #include "helpers/int.h"
 
-struct GBA_DMA_ch;
-struct GBA;
+namespace GBA {
 
+struct core;
+struct DMA;
 
-void GBA_DMA_start(GBA *, GBA_DMA_ch *ch);
-void GBA_DMA_cnt_written(GBA *, GBA_DMA_ch *ch, u32 old_enable);
-void GBA_DMA_init(GBA *this);
-void GBA_DMA_on_modify_write(GBA_DMA_ch *ch);
-void GBA_block_step_dma(void *ptr, u64 key, u64 clock, u32 jitter);
+struct DMA_ch {
+    explicit DMA_ch(core *parent, u32 num_in) : bus{parent}, num {num_in} {}
+    core *bus;
+    struct {
+        u32 src_addr{}; // 28 bits
+        u32 dest_addr{}; // 28 bits
+        u32 word_count{}; // 14 bits on ch0-2, 16bit on ch3
 
-#endif //JSMOOCH_EMUS_GBA_DMA_H
+        u32 dest_addr_ctrl{};
+        u32 src_addr_ctrl{};
+        u32 repeat{};
+        u32 transfer_size{};
+        u32 game_pak_drq{}; // ch3 only
+        u32 start_timing{};
+        u32 irq_on_end{};
+        u32 enable{};
+        u32 open_bus{};
+    } io{};
+
+    struct {
+        u32 started{};
+        u32 word_count{};
+        u32 src_addr{};
+        u32 dest_addr{};
+        u32 src_access{}, dest_access{};
+    } latch{};
+    u32 is_sound{};
+    i32 src_add{}, dest_add{};
+    u32 num, word_mask{};
+
+    bool go();
+    void start();
+    void cnt_written(bool old_enable);
+    void on_modify_write();
+} ;
+
+struct DMA {
+    explicit DMA(core *parent);
+    void raise_irq_for_dma(u32 num);
+    void eval_bit_masks();
+
+    core *bus;
+    DMA_ch channel[4];
+    struct {
+        u32 normal{};
+        u32 hblank{};
+        u32 vblank{};
+    } bit_mask{};
+};
+}

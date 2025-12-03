@@ -4,10 +4,7 @@
 
 #include "gba_clock.h"
 
-void GBA_clock_init(GBA_clock *this)
-{
+namespace GBA {
+void reset() {}
 
 }
-
-void GBA_clock_reset(GBA_clock *this)
-{}

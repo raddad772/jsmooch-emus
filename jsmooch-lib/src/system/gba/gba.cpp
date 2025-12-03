@@ -56,34 +56,34 @@ static void setup_debug_waveform(debug_waveform *dw)
 void GBAJ_set_audiobuf(jsm_system* jsm, audiobuf *ab)
 {
     JTHIS;
-    this->audio.buf = ab;
-    if (this->audio.master_cycles_per_audio_sample == 0) {
-        this->audio.master_cycles_per_audio_sample = ((float)(MASTER_CYCLES_PER_FRAME / (float)ab->samples_len));
-        this->audio.next_sample_cycle_max = 0;
+    audio.buf = ab;
+    if (audio.master_cycles_per_audio_sample == 0) {
+        audio.master_cycles_per_audio_sample = ((float)(MASTER_CYCLES_PER_FRAME / (float)ab->samples_len));
+        audio.next_sample_cycle_max = 0;
 
-        struct debug_waveform *wf = cpg(this->dbg.waveforms.main);
-        this->audio.master_cycles_per_max_sample = (float)MASTER_CYCLES_PER_FRAME / (float)wf->samples_requested;
+        struct debug_waveform *wf = cpg(dbg.waveforms.main);
+        audio.master_cycles_per_max_sample = (float)MASTER_CYCLES_PER_FRAME / (float)wf->samples_requested;
 
-        wf = (debug_waveform *)cpg(this->dbg.waveforms.chan[0]);
-        this->audio.master_cycles_per_min_sample = (float)MASTER_CYCLES_PER_FRAME / (float)wf->samples_requested;
+        wf = (debug_waveform *)cpg(dbg.waveforms.chan[0]);
+        audio.master_cycles_per_min_sample = (float)MASTER_CYCLES_PER_FRAME / (float)wf->samples_requested;
     }
 
     // PSG
-    setup_debug_waveform(cvec_get(this->dbg.waveforms.main.vec, this->dbg.waveforms.main.index));
+    setup_debug_waveform(cvec_get(dbg.waveforms.main.vec, dbg.waveforms.main.index));
     for (u32 i = 0; i < 6; i++) {
-        setup_debug_waveform(cvec_get(this->dbg.waveforms.chan[i].vec, this->dbg.waveforms.chan[i].index));
-        struct debug_waveform *wf = (debug_waveform *)cvec_get(this->dbg.waveforms.chan[i].vec, this->dbg.waveforms.chan[i].index);
+        setup_debug_waveform(cvec_get(dbg.waveforms.chan[i].vec, dbg.waveforms.chan[i].index));
+        struct debug_waveform *wf = (debug_waveform *)cvec_get(dbg.waveforms.chan[i].vec, dbg.waveforms.chan[i].index);
         if (i < 4)
-            this->apu.channels[i].ext_enable = wf->ch_output_enabled;
+            apu.channels[i].ext_enable = wf->ch_output_enabled;
         else
-            this->apu.fifo[i - 4].ext_enable = wf->ch_output_enabled;
+            apu.fifo[i - 4].ext_enable = wf->ch_output_enabled;
     }
 
 }
 
 static u32 read_trace_cpu(void *ptr, u32 addr, u32 sz) {
     struct GBA* this = (GBA*)ptr;
-    return GBA_mainbus_read(this, addr, sz, this->io.cpu.open_bus_data, 0);
+    return GBA_mainbus_read(this, addr, sz, io.cpu.open_bus_data, 0);
 }
 
 void GBA_new(jsm_system *jsm)
@@ -91,21 +91,21 @@ void GBA_new(jsm_system *jsm)
     struct GBA* this = (GBA*)malloc(sizeof(GBA));
     memset(this, 0, sizeof(*this));
 
-    scheduler_init(&this->scheduler, &this->clock.master_cycle_count, &this->waitstates.current_transaction);
-    this->scheduler.max_block_size = 8;
-    this->scheduler.run.func = &GBA_block_step_cpu;
-    this->scheduler.run.ptr = this;
-    ARM7TDMI_init(&this->cpu, &this->clock.master_cycle_count, &this->waitstates.current_transaction, &this->scheduler);
-    this->cpu.read_ptr = this;
-    this->cpu.write_ptr = this;
-    this->cpu.read = &GBA_mainbus_read;
-    this->cpu.write = &GBA_mainbus_write;
-    this->cpu.fetch_ptr = this;
-    this->cpu.fetch_ins = &GBA_mainbus_fetchins;
+    scheduler_init(&scheduler, &clock.master_cycle_count, &waitstates.current_transaction);
+    scheduler.max_block_size = 8;
+    scheduler.run.func = &GBA_block_step_cpu;
+    scheduler.run.ptr = this;
+    ARM7TDMI_init(&cpu, &clock.master_cycle_count, &waitstates.current_transaction, &scheduler);
+    cpu.read_ptr = this;
+    cpu.write_ptr = this;
+    cpu.read = &GBA_mainbus_read;
+    cpu.write = &GBA_mainbus_write;
+    cpu.fetch_ptr = this;
+    cpu.fetch_ins = &GBA_mainbus_fetchins;
     GBA_DMA_init(this);
     GBA_bus_init(this);
-    GBA_clock_init(&this->clock);
-    GBA_cart_init(&this->cart);
+    GBA_clock_init(&clock);
+    GBA_cart_init(&cart);
     GBA_PPU_init(this);
     GBA_APU_init(this);
 
@@ -113,11 +113,11 @@ void GBA_new(jsm_system *jsm)
     struct jsm_debug_read_trace dt;
     dt.read_trace_arm = &read_trace_cpu;
     dt.ptr = this;
-    ARM7TDMI_setup_tracing(&this->cpu, &dt, &this->clock.master_cycle_count, 1);
+    ARM7TDMI_setup_tracing(&cpu, &dt, &clock.master_cycle_count, 1);
 
-    this->jsm.described_inputs = 0;
-    this->jsm.IOs = NULL;
-    this->jsm.cycles_left = 0;
+    jsm.described_inputs = 0;
+    jsm.IOs = nullptr;
+    jsm.cycles_left = 0;
 
     jsm->ptr = (void*)this;
 
@@ -132,10 +132,10 @@ void GBA_new(jsm_system *jsm)
     jsm->stop = &GBAJ_stop;
     jsm->describe_io = &GBAJ_describe_io;
     jsm->set_audiobuf = &GBAJ_set_audiobuf;
-    jsm->sideload = NULL;
+    jsm->sideload = nullptr;
     jsm->setup_debugger_interface = &GBAJ_setup_debugger_interface;
-    jsm->save_state = NULL;
-    jsm->load_state = NULL;
+    jsm->save_state = nullptr;
+    jsm->load_state = nullptr;
     
 }
 
@@ -143,12 +143,12 @@ void GBA_delete(jsm_system *jsm)
 {
     JTHIS;
 
-    ARM7TDMI_delete(&this->cpu);
+    ARM7TDMI_delete(&cpu);
     GBA_PPU_delete(this);
-    GBA_cart_delete(&this->cart);
+    GBA_cart_delete(&cart);
 
-    while (cvec_len(this->jsm.IOs) > 0) {
-        struct physical_io_device* pio = cvec_pop_back(this->jsm.IOs);
+    while (cvec_len(jsm.IOs) > 0) {
+        struct physical_io_device* pio = cvec_pop_back(jsm.IOs);
         if (pio->kind == HID_CART_PORT) {
             if (pio->cartridge_port.unload_cart) pio->cartridge_port.unload_cart(jsm);
         }
@@ -156,7 +156,7 @@ void GBA_delete(jsm_system *jsm)
     }
 
     free(jsm->ptr);
-    jsm->ptr = NULL;
+    jsm->ptr = nullptr;
 
     jsm_clearfuncs(jsm);
 }
@@ -164,35 +164,35 @@ void GBA_delete(jsm_system *jsm)
 u32 GBAJ_finish_frame(JSM)
 {
     JTHIS;
-   this->audio.main_waveform = cpg(this->dbg.waveforms.main);
+   audio.main_waveform = cpg(dbg.waveforms.main);
 #ifdef GBA_STATS
-    u64 master_start = this->clock.master_cycle_count;
-    u64 arm_start = this->timing.arm_cycles;
-    u64 tm0_start = this->timing.timer0_cycles;
+    u64 master_start = clock.master_cycle_count;
+    u64 arm_start = timing.arm_cycles;
+    u64 tm0_start = timing.timer0_cycles;
 #endif
 
     for (u32 i = 0; i < 6; i++) {
-        this->audio.waveforms[i] = cpg(this->dbg.waveforms.chan[i]);
+        audio.waveforms[i] = cpg(dbg.waveforms.chan[i]);
     }
-    scheduler_run_til_tag(&this->scheduler, 2);
+    scheduler_run_til_tag(&scheduler, 2);
 
 #ifdef GBA_STATS
-    u64 master_num_cycles = (this->clock.master_cycle_count - master_start) * 60;
-    u64 arm_num_cycles = (this->timing.arm_cycles - arm_start) * 60;
-    u64 tm0_num_cycles = (this->timing.timer0_cycles - tm0_start) * 60;
+    u64 master_num_cycles = (clock.master_cycle_count - master_start) * 60;
+    u64 arm_num_cycles = (timing.arm_cycles - arm_start) * 60;
+    u64 tm0_num_cycles = (timing.timer0_cycles - tm0_start) * 60;
     double master_div = (double)MASTER_CYCLES_PER_SECOND / (double)master_num_cycles;
     double arm_div = (double)MASTER_CYCLES_PER_SECOND / (double)arm_num_cycles;
     double tm0_div = (double)MASTER_CYCLES_PER_SECOND / (double)tm0_num_cycles;
     double arm_spd = (arm_div) * 100.0;
-    double tm0_spd = ((double)this->timer[0].reload_ticks / tm0_div) * 100.0;
+    double tm0_spd = ((double)timer[0].reload_ticks / tm0_div) * 100.0;
     double master_spd = master_div * 100.0;
-    printf("\n\nSCANLINE:%d FRAME:%lld", this->clock.ppu.y, this->clock.master_frame);
+    printf("\n\nSCANLINE:%d FRAME:%lld", clock.ppu.y, clock.master_frame);
     printf("\nEFFECTIVE MASTER FREQ IS %lld. DIVISOR %f, RUNNING AT %f SPEED", master_num_cycles, master_div, master_spd);
     printf("\nEFFECTIVE ARM FREQ IS %lld. DIVISOR %f, RUNNING AT %f SPEED", arm_num_cycles, arm_div, arm_spd);
     printf("\nEFFECTIVE TIMER0 FREQ IS %lld. DIVISOR %f, RUNNING AT %f SPEED", tm0_num_cycles, tm0_div, tm0_spd);
 #endif
 
-    return this->ppu.display->last_written;
+    return ppu.display->last_written;
 }
 
 void GBAJ_play(JSM)
@@ -210,10 +210,10 @@ void GBAJ_stop(JSM)
 void GBAJ_get_framevars(JSM, framevars* out)
 {
     JTHIS;
-    out->master_frame = this->clock.master_frame;
-    out->x = this->clock.ppu.x;
-    out->scanline = this->clock.ppu.y;
-    out->master_cycle = this->clock.master_cycle_count;
+    out->master_frame = clock.master_frame;
+    out->x = clock.ppu.x;
+    out->scanline = clock.ppu.y;
+    out->master_cycle = clock.master_cycle_count;
 }
 
 static void skip_BIOS(GBA* this)
@@ -224,30 +224,30 @@ Clears 200h bytes of RAM (containing stacks, and BIOS IRQ vector/flags)
 */
     printf("\nSKIP GBA BIOS!");
     for (u32 i = 0x3007E00; i < 0x3008000; i++) {
-        cW[1](this->WRAM_fast, i - 0x3000000, 0);
+        cW[1](WRAM_fast, i - 0x3000000, 0);
     }
 
     // , initializes system, supervisor, and irq stack pointers,
     // sets R0-R12, LR_svc, SPSR_svc, LR_irq, and SPSR_irq to zero, and enters system mode.
     for (u32 i = 0; i < 13; i++) {
-        this->cpu.regs.R[i] = 0;
+        cpu.regs.R[i] = 0;
     }
-    this->cpu.regs.R_svc[1] = 0;
-    this->cpu.regs.R_irq[1] = 0;
-    this->cpu.regs.SPSR_svc = 0;
-    this->cpu.regs.SPSR_irq = 0;
-    this->cpu.regs.CPSR.mode = ARM7_system;
-    ARM7TDMI_fill_regmap(&this->cpu);
+    cpu.regs.R_svc[1] = 0;
+    cpu.regs.R_irq[1] = 0;
+    cpu.regs.SPSR_svc = 0;
+    cpu.regs.SPSR_irq = 0;
+    cpu.regs.CPSR.mode = ARM7_system;
+    ARM7TDMI_fill_regmap(&cpu);
     /*
 Host  sp_svc    sp_irq    sp_svc    zerofilled area       return address
   GBA   3007FE0h  3007FA0h  3007F00h  [3007E00h..3007FFFh]  Flag[3007FFAh] */
 
-    this->cpu.regs.R_svc[0] = 0x03007FE0;
-    this->cpu.regs.R_irq[0] = 0x03007FA0;
-    this->cpu.regs.R[13] = 0x03007F00;
+    cpu.regs.R_svc[0] = 0x03007FE0;
+    cpu.regs.R_irq[0] = 0x03007FA0;
+    cpu.regs.R[13] = 0x03007F00;
 
-    this->cpu.regs.R[15] = 0x08000000;
-    ARM7TDMI_reload_pipeline(&this->cpu);
+    cpu.regs.R[15] = 0x08000000;
+    ARM7TDMI_reload_pipeline(&cpu);
 }
 
 static void tick_APU(void *ptr, u64 key, u64 clock, u32 jitter)
@@ -255,22 +255,22 @@ static void tick_APU(void *ptr, u64 key, u64 clock, u32 jitter)
     struct GBA *this = (GBA *)ptr;
     GBA_APU_cycle(this);
     i64 cur = clock - jitter;
-    scheduler_only_add_abs(&this->scheduler, cur + 16, 0, this, &tick_APU, NULL);
+    scheduler_only_add_abs(&scheduler, cur + 16, 0, this, &tick_APU, nullptr);
 }
 
 
 static void sample_audio(void *ptr, u64 key, u64 clock, u32 jitter) {
     struct GBA *this = (GBA *) ptr;
-    if (this->audio.buf) {
+    if (audio.buf) {
 
-        this->audio.next_sample_cycle += this->audio.master_cycles_per_audio_sample;
-        scheduler_only_add_abs(&this->scheduler, (i64) this->audio.next_sample_cycle, 0, this, &sample_audio, NULL);
-        if (this->audio.buf->upos < (this->audio.buf->samples_len << 1)) {
+        audio.next_sample_cycle += audio.master_cycles_per_audio_sample;
+        scheduler_only_add_abs(&scheduler, (i64) audio.next_sample_cycle, 0, this, &sample_audio, nullptr);
+        if (audio.buf->upos < (audio.buf->samples_len << 1)) {
             GBA_APU_mix_sample(this, 0);
-            ((float *) (this->audio.buf->ptr))[this->audio.buf->upos] = this->apu.output.float_l;
-            ((float *) (this->audio.buf->ptr))[this->audio.buf->upos+1] = this->apu.output.float_r;
+            ((float *) (audio.buf->ptr))[audio.buf->upos] = apu.output.float_l;
+            ((float *) (audio.buf->ptr))[audio.buf->upos+1] = apu.output.float_r;
         }
-        this->audio.buf->upos+=2;
+        audio.buf->upos+=2;
     }
 
 }
@@ -279,7 +279,7 @@ static void sample_audio_debug_max(void *ptr, u64 key, u64 clock, u32 jitter)
 {
     struct GBA *this = (GBA *)ptr;
 
-    struct debug_waveform *dw = this->audio.main_waveform;
+    struct debug_waveform *dw = audio.main_waveform;
 
     if (dw->user.buf_pos < dw->samples_requested) {
         dw->user.next_sample_cycle += dw->user.cycle_stride;
@@ -287,8 +287,8 @@ static void sample_audio_debug_max(void *ptr, u64 key, u64 clock, u32 jitter)
         dw->user.buf_pos++;
     }
 
-    this->audio.next_sample_cycle_max += this->audio.master_cycles_per_max_sample;
-    scheduler_only_add_abs(&this->scheduler, (i64)this->audio.next_sample_cycle_max, 0, this, &sample_audio_debug_max, NULL);
+    audio.next_sample_cycle_max += audio.master_cycles_per_max_sample;
+    scheduler_only_add_abs(&scheduler, (i64)audio.next_sample_cycle_max, 0, this, &sample_audio_debug_max, nullptr);
 }
 
 static void sample_audio_debug_min(void *ptr, u64 key, u64 clock, u32 jitter)
@@ -297,7 +297,7 @@ static void sample_audio_debug_min(void *ptr, u64 key, u64 clock, u32 jitter)
 
     struct debug_waveform *dw;
     for (int j = 0; j < 6; j++) {
-        dw = cpg(this->dbg.waveforms.chan[j]);
+        dw = cpg(dbg.waveforms.chan[j]);
         if (dw->user.buf_pos < dw->samples_requested) {
             float sv = GBA_APU_sample_channel(this, j);
             ((float *) dw->buf.ptr)[dw->user.buf_pos] = sv;
@@ -306,34 +306,34 @@ static void sample_audio_debug_min(void *ptr, u64 key, u64 clock, u32 jitter)
         }
     }
 
-    this->audio.next_sample_cycle_min += this->audio.master_cycles_per_min_sample;
-    scheduler_only_add_abs(&this->scheduler, (i64)this->audio.next_sample_cycle_min, 0, this, &sample_audio_debug_min, NULL);
+    audio.next_sample_cycle_min += audio.master_cycles_per_min_sample;
+    scheduler_only_add_abs(&scheduler, (i64)audio.next_sample_cycle_min, 0, this, &sample_audio_debug_min, nullptr);
 }
 
 static void schedule_first(GBA *this)
 {
-    scheduler_only_add_abs(&this->scheduler, (i64)this->audio.next_sample_cycle_max, 0, this, &sample_audio_debug_max, NULL);
-    scheduler_only_add_abs(&this->scheduler, (i64)this->audio.next_sample_cycle_min, 0, this, &sample_audio_debug_min, NULL);
-    scheduler_only_add_abs(&this->scheduler, (i64)this->audio.next_sample_cycle, 0, this, &sample_audio, NULL);
-    scheduler_only_add_abs(&this->scheduler, 16, 0, this, &tick_APU, NULL);
+    scheduler_only_add_abs(&scheduler, (i64)audio.next_sample_cycle_max, 0, this, &sample_audio_debug_max, nullptr);
+    scheduler_only_add_abs(&scheduler, (i64)audio.next_sample_cycle_min, 0, this, &sample_audio_debug_min, nullptr);
+    scheduler_only_add_abs(&scheduler, (i64)audio.next_sample_cycle, 0, this, &sample_audio, nullptr);
+    scheduler_only_add_abs(&scheduler, 16, 0, this, &tick_APU, nullptr);
     GBA_PPU_schedule_frame(this, 0, 0, 0);
 }
 
 void GBAJ_reset(JSM)
 {
     JTHIS;
-    ARM7TDMI_reset(&this->cpu);
-    GBA_clock_reset(&this->clock);
+    ARM7TDMI_reset(&cpu);
+    GBA_clock_reset(&clock);
     GBA_PPU_reset(this);
 
     for (u32 i = 0; i < 4; i++) {
-        this->io.SIO.multi[i] = 0xFFFF;
+        io.SIO.multi[i] = 0xFFFF;
     }
-    this->io.SIO.send = 0xFFFF;
+    io.SIO.send = 0xFFFF;
 
     //skip_BIOS(this);
 
-    scheduler_clear(&this->scheduler);
+    scheduler_clear(&scheduler);
     schedule_first(this);
     printf("\nGBA reset!");
 }
@@ -342,54 +342,36 @@ void GBAJ_reset(JSM)
 void GBA_block_step_halted(void *ptr, u64 key, u64 clock, u32 jitter)
 {
     struct GBA *this = (GBA *)ptr;
-    this->io.halted &= ((!!(this->io.IF & this->io.IE)) ^ 1);
-    if (!this->io.halted) {
-        this->waitstates.current_transaction = 1;
-        this->scheduler.run.func = &GBA_block_step_cpu;
+    io.halted &= ((!!(io.IF & io.IE)) ^ 1);
+    if (!io.halted) {
+        waitstates.current_transaction = 1;
+        scheduler.run.func = &GBA_block_step_cpu;
     }
     else {
-        this->clock.master_cycle_count = this->scheduler.first_event->timecode;
-        this->waitstates.current_transaction = 0;
+        clock.master_cycle_count = scheduler.first_event->timecode;
+        waitstates.current_transaction = 0;
     }
-}
-
-void GBA_block_step_cpu(void *ptr, u64 key, u64 clock, u32 jitter)
-{
-    struct GBA *this = (GBA *)ptr;
-    this->waitstates.current_transaction = 0;
-    ARM7TDMI_IRQcheck(&this->cpu, 0);
-    ARM7TDMI_run_noIRQcheck(&this->cpu);
-    this->clock.master_cycle_count += this->waitstates.current_transaction;
-#ifdef GBA_STATS
-    this->timing.arm_cycles += this->waitstates.current_transaction;
-#endif
-    this->waitstates.current_transaction = 0;
-}
-
-u64 GBA_clock_current(GBA *this)
-{
-    return this->clock.master_cycle_count + this->waitstates.current_transaction;
 }
 
 u32 GBAJ_finish_scanline(JSM)
 {
     JTHIS;
-    scheduler_run_til_tag(&this->scheduler, 1);
-    return this->ppu.display->last_written;
+    scheduler_run_til_tag(&scheduler, 1);
+    return ppu.display->last_written;
 }
 
 static u32 GBAJ_step_master(JSM, u32 howmany)
 {
     JTHIS;
-    scheduler_run_for_cycles(&this->scheduler, howmany);
+    scheduler_run_for_cycles(&scheduler, howmany);
     return 0;
 }
 
 static void GBAJ_load_BIOS(JSM, multi_file_set* mfs)
 {
     JTHIS;
-    memcpy(this->BIOS.data, mfs->files[0].buf.ptr, 16384);
-    this->BIOS.has = 1;
+    memcpy(BIOS.data, mfs->files[0].buf.ptr, 16384);
+    BIOS.has = 1;
 }
 
 static void GBAIO_unload_cart(JSM)
@@ -401,7 +383,7 @@ static void GBAIO_load_cart(JSM, multi_file_set *mfs, physical_io_device *pio) {
     struct buf* b = &mfs->files[0].buf;
 
     u32 r;
-    GBA_cart_load_ROM_from_RAM(&this->cart, b->ptr, b->size, pio, &r);
+    GBA_cart_load_ROM_from_RAM(&cart, b->ptr, b->size, pio, &r);
     GBAJ_reset(jsm);
 }
 
@@ -448,15 +430,15 @@ static void GBAJ_describe_io(JSM, cvec* IOs)
 {
     cvec_lock_reallocs(IOs);
     JTHIS;
-    if (this->jsm.described_inputs) return;
-    this->jsm.described_inputs = 1;
+    if (jsm.described_inputs) return;
+    jsm.described_inputs = 1;
 
-    this->jsm.IOs = IOs;
+    jsm.IOs = IOs;
 
     // controllers
-    struct physical_io_device *controller = cvec_push_back(this->jsm.IOs);
+    struct physical_io_device *controller = cvec_push_back(jsm.IOs);
     GBA_controller_setup_pio(controller);
-    this->controller.pio = controller;
+    controller.pio = controller;
 
     // power and reset buttons
     struct physical_io_device* chassis = cvec_push_back(IOs);
@@ -479,15 +461,15 @@ static void GBAJ_describe_io(JSM, cvec* IOs)
     physical_io_device_init(d, HID_DISPLAY, 1, 1, 0, 1);
     d->display.output[0] = malloc(240 * 160 * 2);
     d->display.output[1] = malloc(240 * 160 * 2);
-    d->display.output_debug_metadata[0] = NULL;
-    d->display.output_debug_metadata[1] = NULL;
+    d->display.output_debug_metadata[0] = nullptr;
+    d->display.output_debug_metadata[1] = nullptr;
     setup_lcd(&d->display);
-    this->ppu.display_ptr = make_cvec_ptr(IOs, cvec_len(IOs)-1);
+    ppu.display_ptr = make_cvec_ptr(IOs, cvec_len(IOs)-1);
     d->display.last_written = 1;
     //d->display.last_displayed = 1;
-    this->ppu.cur_output = (u16 *)(d->display.output[0]);
+    ppu.cur_output = (u16 *)(d->display.output[0]);
 
     setup_audio(IOs);
 
-    this->ppu.display = &((physical_io_device *)cpg(this->ppu.display_ptr))->display;
+    ppu.display = &((physical_io_device *)cpg(ppu.display_ptr))->display;
 }

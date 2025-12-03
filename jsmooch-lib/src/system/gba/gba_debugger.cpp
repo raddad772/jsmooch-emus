@@ -31,31 +31,31 @@ static void create_and_bind_registers_ARM7TDMI(GBA* this, disassembly_view *dv)
     snprintf(rg->name, sizeof(rg->name), "A");
     rg->kind = RK_int8;
     rg->index = tkindex++;
-    rg->custom_render = NULL;
+    rg->custom_render = nullptr;
 
     rg = cvec_push_back(&dv->cpu.regs);
     snprintf(rg->name, sizeof(rg->name), "B");
     rg->kind = RK_int8;
     rg->index = tkindex++;
-    rg->custom_render = NULL;
+    rg->custom_render = nullptr;
 
     rg = cvec_push_back(&dv->cpu.regs);
     snprintf(rg->name, sizeof(rg->name), "C");
     rg->kind = RK_int8;
     rg->index = tkindex++;
-    rg->custom_render = NULL;
+    rg->custom_render = nullptr;
 
     rg = cvec_push_back(&dv->cpu.regs);
     snprintf(rg->name, sizeof(rg->name), "D");
     rg->kind = RK_int8;
     rg->index = tkindex++;
-    rg->custom_render = NULL;
+    rg->custom_render = nullptr;
 
     rg = cvec_push_back(&dv->cpu.regs);
     snprintf(rg->name, sizeof(rg->name), "E");
     rg->kind = RK_int8;
     rg->index = tkindex++;
-    rg->custom_render = NULL;
+    rg->custom_render = nullptr;
 
     rg = cvec_push_back(&dv->cpu.regs);
     snprintf(rg->name, sizeof(rg->name), "F");
@@ -67,73 +67,73 @@ static void create_and_bind_registers_ARM7TDMI(GBA* this, disassembly_view *dv)
     snprintf(rg->name, sizeof(rg->name), "HL");
     rg->kind = RK_int16;
     rg->index = tkindex++;
-    rg->custom_render = NULL;
+    rg->custom_render = nullptr;
 
     rg = cvec_push_back(&dv->cpu.regs);
     snprintf(rg->name, sizeof(rg->name), "PC");
     rg->kind = RK_int16;
     rg->index = tkindex++;
-    rg->custom_render = NULL;
+    rg->custom_render = nullptr;
 
     rg = cvec_push_back(&dv->cpu.regs);
     snprintf(rg->name, sizeof(rg->name), "SP");
     rg->kind = RK_int16;
     rg->index = tkindex++;
-    rg->custom_render = NULL;
+    rg->custom_render = nullptr;
 
     rg = cvec_push_back(&dv->cpu.regs);
     snprintf(rg->name, sizeof(rg->name), "IX");
     rg->kind = RK_int16;
     rg->index = tkindex++;
-    rg->custom_render = NULL;
+    rg->custom_render = nullptr;
 
     rg = cvec_push_back(&dv->cpu.regs);
     snprintf(rg->name, sizeof(rg->name), "IY");
     rg->kind = RK_int16;
     rg->index = tkindex++;
-    rg->custom_render = NULL;
+    rg->custom_render = nullptr;
 
     rg = cvec_push_back(&dv->cpu.regs);
     snprintf(rg->name, sizeof(rg->name), "EI");
     rg->kind = RK_bool;
     rg->index = tkindex++;
-    rg->custom_render = NULL;
+    rg->custom_render = nullptr;
 
     rg = cvec_push_back(&dv->cpu.regs);
     snprintf(rg->name, sizeof(rg->name), "HALT");
     rg->kind = RK_bool;
     rg->index = tkindex++;
-    rg->custom_render = NULL;
+    rg->custom_render = nullptr;
 
     rg = cvec_push_back(&dv->cpu.regs);
     snprintf(rg->name, sizeof(rg->name), "AF_");
     rg->kind = RK_int16;
     rg->index = tkindex++;
-    rg->custom_render = NULL;
+    rg->custom_render = nullptr;
 
     rg = cvec_push_back(&dv->cpu.regs);
     snprintf(rg->name, sizeof(rg->name), "BC_");
     rg->kind = RK_int16;
     rg->index = tkindex++;
-    rg->custom_render = NULL;
+    rg->custom_render = nullptr;
 
     rg = cvec_push_back(&dv->cpu.regs);
     snprintf(rg->name, sizeof(rg->name), "DE_");
     rg->kind = RK_int16;
     rg->index = tkindex++;
-    rg->custom_render = NULL;
+    rg->custom_render = nullptr;
 
     rg = cvec_push_back(&dv->cpu.regs);
     snprintf(rg->name, sizeof(rg->name), "HL_");
     rg->kind = RK_int16;
     rg->index = tkindex++;
-    rg->custom_render = NULL;
+    rg->custom_render = nullptr;
 
     rg = cvec_push_back(&dv->cpu.regs);
     snprintf(rg->name, sizeof(rg->name), "CxI");
     rg->kind = RK_int16;
     rg->index = tkindex++;
-    rg->custom_render = NULL;
+    rg->custom_render = nullptr;
 
 #define BIND(dn, index) this->dbg.dasm_z80. dn = cvec_get(&dv->cpu.regs, index)
     BIND(A, 0);
@@ -302,7 +302,7 @@ static void render_image_view_sprites(debugger_interface *dbgr, debugger_view *d
 
         u32 mode = (ptr[0] >> 10) & 3;
         u32 mosaic = (ptr[0] >> 12) & 1;
-        u32 bpp8 = (ptr[0] >> 13) & 1;
+         bool bpp8 = (ptr[0] >> 13) & 1;
         if (bpp8 && !draw_8bpp) continue;
         if (!bpp8 && !draw_4bpp) continue;
         u32 palette = bpp8 ? 0 : ((ptr[2] >> 12) & 15);
@@ -465,7 +465,7 @@ static void render_image_view_tiles(debugger_interface *dbgr, debugger_view *dvi
 
     u32 tn = 0;
     // 32x32 8x8 tiles, so 256x256 total
-    u32 bpp8 = 0;
+     bool bpp8 = 0;
     u32 pal = 0;
     u8 *tile_ptr = this->ppu.VRAM + 0x10000;
     for (u32 ty = 0; ty < 32; ty++) {
@@ -606,7 +606,7 @@ static void render_image_view_bgmap(debugger_interface *dbgr, debugger_view *dvi
         }
     }
     else {
-        u32 bpp8 = bg->bpp8;
+         bool bpp8 = bg->bpp8;
         u32 character_base_block = affine_char_base;
         u32 screen_base_block = affine_screen_base;
         if (has_affine) {
@@ -1177,7 +1177,7 @@ static void setup_events_view(GBA* this, debugger_interface *dbgr) {
     for (u32 i = 0; i < 2; i++) {
         ev->display[i].width = 308;
         ev->display[i].height = 228;
-        ev->display[i].buf = NULL;
+        ev->display[i].buf = nullptr;
         ev->display[i].frame_num = 0;
     }
 
@@ -1345,13 +1345,13 @@ static void setup_dbglog(debugger_interface *dbgr, GBA *this) {
     dv->has_extra = 1;
 
     struct dbglog_category_node *root = dbglog_category_get_root(dv);
-    struct dbglog_category_node *arm7 = dbglog_category_add_node(dv, root, "ARM7TDMI", NULL, 0, 0);
+    struct dbglog_category_node *arm7 = dbglog_category_add_node(dv, root, "ARM7TDMI", nullptr, 0, 0);
     dbglog_category_add_node(dv, arm7, "Instruction Trace", "ARM7", GBA_CAT_ARM7_INSTRUCTION, 0x80FF80);
     this->cpu.trace.dbglog.view = dv;
     this->cpu.trace.dbglog.id = GBA_CAT_ARM7_INSTRUCTION;
     dbglog_category_add_node(dv, arm7, "Halt", "ARM7.H", GBA_CAT_ARM7_HALT, 0xA0AF80);
 
-    struct dbglog_category_node *dma = dbglog_category_add_node(dv, root, "DMA", NULL, 0, 0);
+    struct dbglog_category_node *dma = dbglog_category_add_node(dv, root, "DMA", nullptr, 0, 0);
     dbglog_category_add_node(dv, dma, "DMA Start", "dma.start", GBA_CAT_DMA_START, 0xFFFFFF);
 }
 

@@ -23,9 +23,9 @@ struct persistent_store {
     // These values must be set on discovery of RAM/SRAM
     u32 fill_value{}; // Fill value to initialize with
     u64 requested_size{};
-    u32 ready_to_use{}; // Set by host
+    bool ready_to_use{}; // Set by host
     bool dirty{}; // Set by guest on dirtying it
-    u32 persistent{};
+    bool persistent{};
 
     // Internal to UI
     char filename[500]{}; // Filename if present

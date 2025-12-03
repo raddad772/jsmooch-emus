@@ -4,13 +4,15 @@
 
 #include "gba_controller.h"
 
-u32 GBA_get_controller_state(physical_io_device *d)
+namespace GBA {
+
+u32 controller::get_state()
 {
-    struct JSM_CONTROLLER* cnt = &d->controller;
-    struct cvec* bl = &cnt->digital_buttons;
-    struct HID_digital_button *b;
+    JSM_CONTROLLER* cnt = &pio->controller;
+    auto *bl = &cnt->digital_buttons;
+    HID_digital_button *b;
     u32 v = 0;
-#define B_GET(bit, num) { b = cvec_get(bl, num); v |= (b->state << bit); }
+#define B_GET(bit, num) { b = &bl->at(num); v |= (b->state << bit); }
     B_GET(0, 4); // A
     B_GET(1, 5); // B
     B_GET(2, 9); // select
@@ -27,9 +29,9 @@ u32 GBA_get_controller_state(physical_io_device *d)
 }
 
 
-void GBA_controller_setup_pio(physical_io_device *d)
+void controller::setup_pio(physical_io_device *d)
 {
-    physical_io_device_init(d, HID_CONTROLLER, 0, 0, 1, 1);
+    d->init(HID_CONTROLLER, 0, 0, 1, 1);
 
     snprintf(d->controller.name, sizeof(d->controller.name), "%s", "GBA Input");
     d->id = 0;
@@ -37,7 +39,7 @@ void GBA_controller_setup_pio(physical_io_device *d)
     d->connected = 1;
     d->enabled = 1;
 
-    struct JSM_CONTROLLER* cnt = &d->controller;
+    JSM_CONTROLLER* cnt = &d->controller;
 
     // up down left right a b start select. in that order
     pio_new_button(cnt, "up", DBCID_co_up);
@@ -50,4 +52,5 @@ void GBA_controller_setup_pio(physical_io_device *d)
     pio_new_button(cnt, "r", DBCID_co_shoulder_right);
     pio_new_button(cnt, "start", DBCID_co_start);
     pio_new_button(cnt, "select", DBCID_co_select);
+}
 }

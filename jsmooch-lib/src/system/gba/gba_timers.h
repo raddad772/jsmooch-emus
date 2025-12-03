@@ -2,18 +2,49 @@
 // Created by . on 5/1/25.
 //
 
-#ifndef JSMOOCH_EMUS_GBA_TIMERS_H
-#define JSMOOCH_EMUS_GBA_TIMERS_H
-
+#pragma once
 #include "helpers/int.h"
-struct GBA;
-u32 GBA_timer_enabled(GBA *, u32 tn);
-u32 GBA_read_timer(GBA *, u32 tn);
-void GBA_timer_write_cnt(void *ptr, u64 tn_and_val, u64 clock, u32 jitter);
-static inline u32 GBA_timer_reload_ticks(u32 reload)
+
+namespace GBA {
+
+struct core;
+struct TIMER {
+
+    explicit TIMER(core *parent, int num_in) : bus(parent), num(num_in) {}
+    int num{};
+    struct {
+        u32 io{};
+        u32 mask{};
+        u32 counter{};
+    } divider{};
+
+    core *bus;
+
+    u32 shift{};
+
+    u64 enable_at{};
+    u64 overflow_at{}; // cycle # we'll overflow at
+    u64 sch_id{};
+    u32 sch_scheduled_still{};
+    u32 cascade{};
+    u16 val_at_stop{};
+    u32 irq_on_overflow{};
+    u16 reload{};
+    u64 reload_ticks{};
+
+    bool enabled() const;
+    u32 read() const;
+    void overflow(u64 current_time);
+    void cascade_timer_step(u64 current_time);
+    static void timer_overflow(void *ptr, u64 timer_num, u64 current_clock, u32 jitter);
+    static void write_cnt(void *ptr, u64 tn_and_val, u64 clock, u32 jitter);
+} ;
+
+
+static inline u32 timer_reload_ticks(u32 reload)
 {
     if (reload == 0xFFFF) return 0x10000;
     return 0x10000 - reload;
 }
 
-#endif //JSMOOCH_EMUS_GBA_TIMERS_H
+}

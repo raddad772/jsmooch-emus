@@ -2,104 +2,123 @@
 // Created by . on 12/4/24.
 //
 
-#ifndef JSMOOCH_EMUS_GBA_CART_H
-#define JSMOOCH_EMUS_GBA_CART_H
+#pragma once
+namespace GBA {
+    struct core;
+}
 
+namespace GBA::cart {
 #include "helpers/buf.h"
 #include "helpers/int.h"
 
-enum GBA_flash_kinds {
-    GBAFK_atmel,
-    GBAFK_macronix,
-    GBAFK_panasonic,
-    GBAFK_SST,
-    GBAFK_sanyo128k,
-    GBAFK_macronix128k,
-    GBAFK_other
+enum flash_kinds {
+    FK_atmel,
+    FK_macronix,
+    FK_panasonic,
+    FK_SST,
+    FK_sanyo128k,
+    FK_macronix128k,
+    FK_other
 };
 
 
-enum GBA_flash_states {
-    GBAFS_idle,
-    GBAFS_get_id,
-    GBAFS_erase_4k,
-    GBAFS_write_byte,
-    GBAFS_await_bank
+enum flash_states {
+    FS_idle,
+    FS_get_id,
+    FS_erase_4k,
+    FS_write_byte,
+    FS_await_bank
 };
 
+struct EEPROM {
+    void serial_clear();
+    void serial_add(u32 v);
+    u32 addr_bus_size{};
+    bool size_was_detected{true};
+    u32 size_in_bytes{8192};
+    u32 addr_mask{};
 
-struct GBA_cart {
-    struct buf ROM;
-    struct {
-        u32 mask, size, present, persists;
-        u32 is_sram;
-        u32 is_flash;
-        u32 is_eeprom;
-        struct {
-            u32 cmd_loc;
-            enum GBA_flash_kinds kind;
-            enum GBA_flash_states state;
-            u32 flash_cmd[2];
-            u32 bank_offset;
-            u32 last_cmd;
+    u32 mode{1}; // STATE_GET_CMD
 
-            struct {
-                u32 r55;
-                u32 r2a;
-            } regs;
-
-        } flash;
-
-        struct GBA_CART_EEPROM {
-            u32 addr_bus_size;
-            u32 size_was_detected;
-            u32 size_in_bytes;
-            u32 addr_mask;
-
-            u32 mode;
-
-            u64 ready_at;
-
-            struct {
-                u64 data;
-                u32 sz;
-            } serial;
-
-            struct {
-                u32 cur_bit_addr;
-            } cmd;
-
-        } eeprom;
-
-        struct persistent_store *store;
-    } RAM;
+    u64 ready_at{0};
 
     struct {
-        u32 present;
-        u64 timestamp_start;
-    } RTC;
+        u64 data{};
+        u32 sz{};
+    } serial{};
 
     struct {
-        i64 cycles_banked;
-        u32 next_addr;
-        u32 duty_cycle;
-        u64 last_access;
-        u32 enable;
-        u32 was_disabled;
-    } prefetch;
+        u32 cur_bit_addr{};
+    } cmd{};
+
 };
 
-void GBA_cart_init(GBA_cart*);
-void GBA_cart_delete(GBA_cart *);
-void GBA_cart_write(GBA *this, u32 addr, u32 sz, u32 access, u32 val);
-u32 GBA_cart_read(GBA *this, u32 addr, u32 sz, u32 access, u32 has_effect, u32 ws);
-u32 GBA_cart_load_ROM_from_RAM(GBA_cart*, char* fil, u64 fil_sz, physical_io_device *pio, u32 *SRAM_enable);
-u64 GBA_clock_current(GBA *);
+struct FLASH {
+    u32 cmd_loc{};
+    flash_kinds kind{};
+    flash_states state{};
+    u32 flash_cmd[2]{};
+    u32 bank_offset{};
+    u32 last_cmd{};
 
-struct GBA;
-u32 GBA_cart_read_wait0(GBA*, u32 addr, u32 sz, u32 access, u32 has_effect);
-u32 GBA_cart_read_wait1(GBA*, u32 addr, u32 sz, u32 access, u32 has_effect);
-u32 GBA_cart_read_wait2(GBA*, u32 addr, u32 sz, u32 access, u32 has_effect);
-u32 GBA_cart_read_sram(GBA*, u32 addr, u32 sz, u32 access, u32 has_effect);
-void GBA_cart_write_sram(GBA*, u32 addr, u32 sz, u32 access, u32 val);
-#endif //JSMOOCH_EMUS_GBA_CART_H
+    struct {
+        u32 r55{};
+        u32 r2a{};
+    } regs{};
+};
+
+struct core {
+    explicit core(GBA::core *parent) : gba(parent) {}
+    GBA::core *gba;
+    buf ROM{};
+
+    bool prefetch_stop() const;
+    u32 read(u32 addr, u32 sz, u32 access, bool has_effect, u32 ws);
+    void write(u32 addr, u32 sz, u32 access, u32 val);
+    bool load_ROM_from_RAM(char* fil, u64 fil_sz, physical_io_device *pio, u32 *SRAM_enable);
+
+private:
+    u32 read_wait0(u32 addr, u32 sz, u32 access, bool has_effect);
+    u32 read_wait1(u32 addr, u32 sz, u32 access, bool has_effect);
+    u32 read_wait2(u32 addr, u32 sz, u32 access, bool has_effect);
+    u32 read_sram(u32 addr, u32 sz, u32 access, bool has_effect);
+    void write_sram(u32 addr, u32 sz, u32 access, u32 val);
+    void write_RTC(u32 addr, u32 sz, u32 access, u32 val);
+    void detect_RTC(buf *ROM);
+    void init_eeprom();
+    void write_eeprom(u32 addr, u32 sz, u32 access, u32 val);
+    u32 read_eeprom(u32 addr, u32 sz, u32 access, bool has_effect);
+    void erase_flash();
+    void write_flash_cmd(u32 addr, u32 cmd);
+    u32 read_flash(u32 addr, u32 sz, u32 access, bool has_effect);
+    void write_flash(u32 addr, u32 sz, u32 access, u32 val);
+    void finish_flash_cmd(u32 addr, u32 sz, u32 val);
+
+public:
+    struct {
+        u32 mask{}, size{}, present{}, persists{};
+        bool is_sram{};
+        bool is_flash{};
+        bool is_eeprom{};
+
+        FLASH flash{};
+        EEPROM eeprom{};
+        persistent_store *store{};
+    } RAM{};
+
+    struct {
+        u32 present{};
+        u64 timestamp_start{};
+    } RTC{};
+
+    struct {
+        i64 cycles_banked{};
+        u32 next_addr{};
+        u32 duty_cycle{};
+        u64 last_access{};
+        bool enable{true};
+        bool was_disabled{};
+    } prefetch{};
+};
+
+}
