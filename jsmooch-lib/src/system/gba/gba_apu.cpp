@@ -686,7 +686,7 @@ float core::sample_channel_for_GBA(u32 cnum) const {
     return m_output;
 }
 
-float core::sample_channel(u32 n) const {
+float core::sample_channel(const u32 n) const {
     if (n < 4) return sample_channel_for_GBA(n);
     const auto &m_fifo = fifo[n - 4];
     i32 sample = m_fifo.output << m_fifo.vol;
@@ -702,12 +702,12 @@ float core::sample_channel(u32 n) const {
     return static_cast<float>(sample << 7) / 32768.0f;
 }
 
-float core::mix_sample(bool is_debug)
+float core::mix_sample(const bool is_debug)
 {
     float s = 0.0f;
     if (io.master_enable && (ext_enable || is_debug)) {
         i32 left = 0, right = 0;
-        for (auto &m_fifo : fifo) {
+        for (const auto &m_fifo : fifo) {
             if (!m_fifo.ext_enable && !is_debug) continue;
             if (m_fifo.enable_l) {
                 left += m_fifo.output << m_fifo.vol; // 8 to 9 bits

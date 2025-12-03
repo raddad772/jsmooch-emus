@@ -2,9 +2,7 @@
 // Created by . on 12/28/24.
 //
 
-#ifndef JSMOOCH_EMUS_GBA_APU_H
-#define JSMOOCH_EMUS_GBA_APU_H
-
+#pragma once
 #include "helpers/int.h"
 
 namespace GBA { struct core; }
@@ -106,7 +104,7 @@ struct core {
     void sound_FIFO(u32 num);
     [[nodiscard]] float sample_channel_for_GBA(u32 cnum) const;
     [[nodiscard]] float sample_channel(u32 n) const;
-    [[nodiscard]] float mix_sample(bool is_debug);
+    float mix_sample(bool is_debug);
     void tick_psg();
     void sample_psg();
     void cycle();
@@ -151,5 +149,4 @@ public:
         u32 counter{}, divisor{}, mask{};
     } divider2{};
 };
-#endif //JSMOOCH_EMUS_GBA_APU_H
 }

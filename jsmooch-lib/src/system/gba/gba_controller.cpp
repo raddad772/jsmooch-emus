@@ -32,6 +32,7 @@ u32 controller::get_state()
 void controller::setup_pio(physical_io_device *d)
 {
     d->init(HID_CONTROLLER, 0, 0, 1, 1);
+    pio = d;
 
     snprintf(d->controller.name, sizeof(d->controller.name), "%s", "GBA Input");
     d->id = 0;

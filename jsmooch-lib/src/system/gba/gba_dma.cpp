@@ -29,7 +29,7 @@ void DMA::eval_bit_masks()
 
 DMA::DMA(core *parent) :
     bus{parent},
-    channel{DMA_ch(this, 0), DMA_ch(this, 1), DMA_ch(this, 2), DMA_ch(this, 3)}
+    channel{DMA_ch(bus, 0), DMA_ch(bus, 1), DMA_ch(bus, 2), DMA_ch(bus, 3)}
 {
     for (u32 i = 0; i < 4; i++) {
         channel[i].word_mask = i < 3 ? 0x3FFF : 0xFFFF;
@@ -47,7 +47,7 @@ bool DMA_ch::go() {
         if (!io.transfer_size) {
             u16 value;
             if (latch.src_addr >= 0x02000000) {
-                value = bus->mainbus_read(latch.src_addr, 2, latch.src_access, 1);
+                value = core::mainbus_read(bus, latch.src_addr, 2, latch.src_access, 1);
                 io.open_bus = (value << 16) | value;
             } else {
                 if (latch.dest_addr & 2) {
@@ -58,14 +58,14 @@ bool DMA_ch::go() {
                 bus->waitstates.current_transaction++;
             }
 
-            bus->mainbus_write(latch.dest_addr, 2, latch.dest_access, value);
+           core::mainbus_write(bus, latch.dest_addr, 2, latch.dest_access, value);
         }
         else {
             if (latch.src_addr >= 0x02000000)
-                io.open_bus = bus->mainbus_read(latch.src_addr, 4, latch.src_access, 1);
+                io.open_bus = core::mainbus_read(bus, latch.src_addr, 4, latch.src_access, 1);
             else
                 bus->waitstates.current_transaction++;
-            bus->mainbus_write(latch.dest_addr, 4, latch.dest_access, io.open_bus);
+            core::mainbus_write(bus, latch.dest_addr, 4, latch.dest_access, io.open_bus);
         }
 
         // TODO: fix this

@@ -11,10 +11,7 @@
 #include "gba_debugger.h"
 #include "gba_timers.h"
 
-#define JTHIS struct GBA* this = (GBA*)jsm->ptr
-#define JSM struct jsm_system* jsm
-
-#define THIS struct GBA* this
+namespace GBA {
 
 #define MASTER_CYCLES_PER_SCANLINE 1232
 #define HBLANK_CYCLES 226
@@ -24,10 +21,10 @@
 #define SCANLINE_HBLANK 1006
 
 
-static void create_and_bind_registers_ARM7TDMI(GBA* this, disassembly_view *dv)
+static void create_and_bind_registers_ARM7TDMI(core* th, disassembly_view *dv)
 {
     u32 tkindex = 0;
-    /*struct cpu_reg_context *rg = cvec_push_back(&dv->cpu.regs);
+    /*cpu_reg_context *rg = cvec_push_back(&dv->cpu.regs);
     snprintf(rg->name, sizeof(rg->name), "A");
     rg->kind = RK_int8;
     rg->index = tkindex++;
@@ -135,7 +132,7 @@ static void create_and_bind_registers_ARM7TDMI(GBA* this, disassembly_view *dv)
     rg->index = tkindex++;
     rg->custom_render = nullptr;
 
-#define BIND(dn, index) this->dbg.dasm_z80. dn = cvec_get(&dv->cpu.regs, index)
+#define BIND(dn, index) th->dbg.dasm_z80. dn = cvec_get(&dv->cpu.regs, index)
     BIND(A, 0);
     BIND(B, 1);
     BIND(C, 2);
@@ -157,29 +154,29 @@ static void create_and_bind_registers_ARM7TDMI(GBA* this, disassembly_view *dv)
 #undef BIND*/
 }
 
-static void fill_disassembly_view(void *macptr, debugger_interface *dbgr, disassembly_view *dview)
+static void fill_disassembly_view(void *gbaptr, disassembly_view &dview)
 {
-    struct GBA* this = (GBA*)macptr;
+    auto *th = static_cast<core *>(gbaptr);
     /*for (u32 i = 0; i < 8; i++) {
-        this->dbg.dasm_m68k.D[i]->int32_data = this->m68k.regs.D[i];
-        if (i < 7) this->dbg.dasm_m68k.A[i]->int32_data = this->m68k.regs.A[i];
+        th->dbg.dasm_m68k.D[i]->int32_data = th->m68k.regs.D[i];
+        if (i < 7) th->dbg.dasm_m68k.A[i]->int32_data = th->m68k.regs.A[i];
     }
-    this->dbg.dasm_m68k.PC->int32_data = this->m68k.regs.PC;
-    this->dbg.dasm_m68k.SR->int32_data = this->m68k.regs.SR.u;
-    if (this->dbg.dasm_m68k.SR->int32_data & 0x2000) { // supervisor mode
-        this->dbg.dasm_m68k.USP->int32_data = this->m68k.regs.ASP;
-        this->dbg.dasm_m68k.SSP->int32_data = this->m68k.regs.A[7];
+    th->dbg.dasm_m68k.PC->int32_data = th->m68k.regs.PC;
+    th->dbg.dasm_m68k.SR->int32_data = th->m68k.regs.SR.u;
+    if (th->dbg.dasm_m68k.SR->int32_data & 0x2000) { // supervisor mode
+        th->dbg.dasm_m68k.USP->int32_data = th->m68k.regs.ASP;
+        th->dbg.dasm_m68k.SSP->int32_data = th->m68k.regs.A[7];
     }
     else { // user mode
-        this->dbg.dasm_m68k.USP->int32_data = this->m68k.regs.A[7];
-        this->dbg.dasm_m68k.SSP->int32_data = this->m68k.regs.ASP;
+        th->dbg.dasm_m68k.USP->int32_data = th->m68k.regs.A[7];
+        th->dbg.dasm_m68k.SSP->int32_data = th->m68k.regs.ASP;
     }
-    this->dbg.dasm_m68k.supervisor->bool_data = this->m68k.regs.SR.S;
-    this->dbg.dasm_m68k.trace->bool_data = this->m68k.regs.SR.T;
-    this->dbg.dasm_m68k.IMASK->int32_data = this->m68k.regs.SR.I;
-    this->dbg.dasm_m68k.CSR->int32_data = this->m68k.regs.SR.u & 0x1F;
-    this->dbg.dasm_m68k.IR->int32_data = this->m68k.regs.IR;
-    this->dbg.dasm_m68k.IRC->int32_data = this->m68k.regs.IRC;*/
+    th->dbg.dasm_m68k.supervisor->bool_data = th->m68k.regs.SR.S;
+    th->dbg.dasm_m68k.trace->bool_data = th->m68k.regs.SR.T;
+    th->dbg.dasm_m68k.IMASK->int32_data = th->m68k.regs.SR.I;
+    th->dbg.dasm_m68k.CSR->int32_data = th->m68k.regs.SR.u & 0x1F;
+    th->dbg.dasm_m68k.IR->int32_data = th->m68k.regs.IR;
+    th->dbg.dasm_m68k.IRC->int32_data = th->m68k.regs.IRC;*/
 }
 
 static void get_obj_tile_size(u8 sz, u32 shape, u32 *htiles, u32 *vtiles)
@@ -198,6 +195,7 @@ static void get_obj_tile_size(u8 sz, u32 shape, u32 *htiles, u32 *vtiles)
         T(3, 0, 8, 8)
         T(3, 1, 8, 4)
         T(3, 2, 4, 8)
+        default: NOGOHERE;
     }
     printf("\nHEY! INVALID SHAPE %d", shape);
     *htiles = 1;
@@ -206,20 +204,20 @@ static void get_obj_tile_size(u8 sz, u32 shape, u32 *htiles, u32 *vtiles)
 }
 
 static void render_image_view_sys_info(debugger_interface *dbgr, debugger_view *dview, void *ptr, u32 out_width) {
-    struct GBA *this = (GBA *) ptr;
+    auto *th = static_cast<core *>(ptr);
     //memset(ptr, 0, out_width * 4 * 10);
-    struct debugger_widget_textbox *tb = &((debugger_widget *) cvec_get(&dview->options, 0))->textbox;
-    debugger_widgets_textbox_clear(tb);
-#define spf(...) debugger_widgets_textbox_sprintf(tb, __VA_ARGS__)
+    auto *tb = &dview->options.at(0).textbox;
+    tb->clear();
+#define spf(...) tb->sprintf(__VA_ARGS__)
     for (u32 i = 0; i < 4; i++) {
-        struct GBA_TIMER *t = &this->timer[i];
-        spf("\nTimer:%d  enabled:%d  shift:%d  reload:%04x  cur:%04x", i, GBA_timer_enabled(this, i), t->shift, t->reload, GBA_read_timer(this, i));
+        auto *t = &th->timer[i];
+        spf("\nTimer:%d  enabled:%d  shift:%d  reload:%04x  cur:%04x", i, th->timer[i].enabled(), t->shift, t->reload, th->timer[i].read());
         u32 fifo=0;
-        if (this->apu.fifo[0].timer_id == i) { fifo = 1; spf("  sound_fifo_A"); }
-        if (this->apu.fifo[1].timer_id == i) { fifo = 1; spf("  sound_fifo_B"); }
+        if (th->apu.fifo[0].timer_id == i) { fifo = 1; spf("  sound_fifo_A"); }
+        if (th->apu.fifo[1].timer_id == i) { fifo = 1; spf("  sound_fifo_B"); }
         if (fifo) {
             u32 freq = MASTER_CYCLES_PER_SECOND;
-            u32 r = t->reload_ticks;
+            const u32 r = t->reload_ticks;
             freq /= r;
             spf("  calc_freq:%dhz  ", freq);
         }
@@ -228,29 +226,29 @@ static void render_image_view_sys_info(debugger_interface *dbgr, debugger_view *
 }
 
 static void render_image_view_sprites(debugger_interface *dbgr, debugger_view *dview, void *my_ptr, u32 out_width) {
-    struct GBA *this = (GBA *) my_ptr;
-    if (this->clock.master_frame == 0) return;
-    struct image_view *iv = &dview->image;
+    auto *th = static_cast<core *>(my_ptr);
+    if (th->clock.master_frame == 0) return;
+    image_view *iv = &dview->image;
     iv->draw_which_buf ^= 1;
-    u32 *outbuf = iv->img_buf[iv->draw_which_buf].ptr;
+    u32 *outbuf = static_cast<u32 *>(iv->img_buf[iv->draw_which_buf].ptr);
     memset(outbuf, 0, out_width * 4 * 160);
 
     // Draw sprites!!!
-    struct debugger_widget_checkbox *cb_draw_transparency = &((debugger_widget *)cvec_get(&dview->options, 0))->checkbox;
-    struct debugger_widget_checkbox *cb_draw_4bpp = &((debugger_widget *)cvec_get(&dview->options, 1))->checkbox;
-    struct debugger_widget_checkbox *cb_draw_8bpp = &((debugger_widget *)cvec_get(&dview->options, 2))->checkbox;
-    struct debugger_widget_checkbox *cb_draw_normal = &((debugger_widget *)cvec_get(&dview->options, 3))->checkbox;
-    struct debugger_widget_checkbox *cb_draw_affine = &((debugger_widget *)cvec_get(&dview->options, 4))->checkbox;
-    struct debugger_widget_checkbox *cb_highlight_4bpp = &((debugger_widget *)cvec_get(&dview->options, 5))->checkbox;
-    struct debugger_widget_checkbox *cb_highlight_8bpp = &((debugger_widget *)cvec_get(&dview->options, 6))->checkbox;
-    struct debugger_widget_checkbox *cb_highlight_normal = &((debugger_widget *)cvec_get(&dview->options, 7))->checkbox;
-    struct debugger_widget_checkbox *cb_highlight_affine = &((debugger_widget *)cvec_get(&dview->options, 8))->checkbox;
-    struct debugger_widget_checkbox *cb_highlight_window = &((debugger_widget *)cvec_get(&dview->options, 9))->checkbox;
-    struct debugger_widget_checkbox *cb_wb_4bpp = &((debugger_widget *)cvec_get(&dview->options, 10))->checkbox;
-    struct debugger_widget_checkbox *cb_wb_8bpp = &((debugger_widget *)cvec_get(&dview->options, 11))->checkbox;
-    struct debugger_widget_checkbox *cb_wb_normal = &((debugger_widget *)cvec_get(&dview->options, 12))->checkbox;
-    struct debugger_widget_checkbox *cb_wb_affine = &((debugger_widget *)cvec_get(&dview->options, 13))->checkbox;
-    struct debugger_widget_checkbox *cb_wb_window = &((debugger_widget *)cvec_get(&dview->options, 14))->checkbox;
+    auto *cb_draw_transparency = &dview->options.at(0).checkbox;
+    auto *cb_draw_4bpp = &dview->options.at(1).checkbox;
+    auto *cb_draw_8bpp = &dview->options.at(2).checkbox;
+    auto *cb_draw_normal = &dview->options.at(3).checkbox;
+    auto *cb_draw_affine = &dview->options.at(4).checkbox;
+    auto *cb_highlight_4bpp = &dview->options.at(5).checkbox;
+    auto *cb_highlight_8bpp = &dview->options.at(6).checkbox;
+    auto *cb_highlight_normal = &dview->options.at(7).checkbox;
+    auto *cb_highlight_affine = &dview->options.at(8).checkbox;
+    auto *cb_highlight_window = &dview->options.at(9).checkbox;
+    auto *cb_wb_4bpp = &dview->options.at(10).checkbox;
+    auto *cb_wb_8bpp = &dview->options.at(11).checkbox;
+    auto *cb_wb_normal = &dview->options.at(12).checkbox;
+    auto *cb_wb_affine = &dview->options.at(13).checkbox;
+    auto *cb_wb_window = &dview->options.at(14).checkbox;
     u32 draw_transparency = cb_draw_transparency->value;
     u32 draw_4bpp = cb_draw_4bpp->value;
     u32 draw_8bpp = cb_draw_8bpp->value;
@@ -269,7 +267,7 @@ static void render_image_view_sprites(debugger_interface *dbgr, debugger_view *d
 
     for (u32 i = 0; i < 128; i++) {
         u32 sn = 127 - i;
-        u16 *ptr = ((u16 *)this->ppu.OAM) + (sn * 4);
+        u16 *ptr = ((u16 *)th->ppu.OAM) + (sn * 4);
         u32 x = ptr[1] & 0x1FF;
         x = SIGNe9to32(x);
         u32 affine = (ptr[0] >> 8) & 1;
@@ -283,9 +281,9 @@ static void render_image_view_sprites(debugger_interface *dbgr, debugger_view *d
         u32 vflip = (ptr[1] >> 13) & 1;
         u32 htiles, vtiles;
         get_obj_tile_size(sz, shape, &htiles, &vtiles);
-        i32 tex_x_tiles = htiles;
-        i32 tex_x_pixels = htiles * 8;
-        i32 tex_y_pixels = vtiles * 8;
+        i32 tex_x_tiles = static_cast<i32>(htiles);
+        i32 tex_x_pixels = static_cast<i32>(htiles * 8);
+        i32 tex_y_pixels = static_cast<i32>(vtiles * 8);
         u32 dpix = ((ptr[0] >> 9) & 1);
         if (affine && dpix) {
             htiles *= 2;
@@ -322,7 +320,7 @@ static void render_image_view_sprites(debugger_interface *dbgr, debugger_view *d
         if (affine) {
             u32 pgroup = (ptr[1] >> 9) & 31;
             u32 pbase = (pgroup * 0x20) >> 1;
-            u16 *pbase_ptr = ((u16 *)this->ppu.OAM) + pbase;
+            u16 *pbase_ptr = ((u16 *)th->ppu.OAM) + pbase;
             pa = SIGNe16to32(pbase_ptr[3]);
             pb = SIGNe16to32(pbase_ptr[7]);
             pc = SIGNe16to32(pbase_ptr[11]);
@@ -350,15 +348,15 @@ static void render_image_view_sprites(debugger_interface *dbgr, debugger_view *d
             i32 fx = tx;
             i32 fy = ty;
             for (i32 draw_x = screen_x; draw_x < screen_x_right; draw_x++) {
-                u32 this_px_highlight = 0;
+                u32 th_px_highlight = 0;
                 u32 has = 0;
                 u32 win_pixel = 0;
-                this_px_highlight = 0;
-                this_px_highlight |= bpp8 && wb_8bpp;
-                this_px_highlight |= (!bpp8) && wb_4bpp;
-                this_px_highlight |= wb_normal && !affine;
-                this_px_highlight |= wb_affine && affine;
-                this_px_highlight |= wb_window && (mode == 2);
+                th_px_highlight = 0;
+                th_px_highlight |= bpp8 && wb_8bpp;
+                th_px_highlight |= (!bpp8) && wb_4bpp;
+                th_px_highlight |= wb_normal && !affine;
+                th_px_highlight |= wb_affine && affine;
+                th_px_highlight |= wb_window && (mode == 2);
 
                 // Get pixel at coord fx, fy
                 i32 tex_x = (fx >> 8) + ((i32)tex_x_pixels >> 1);
@@ -369,7 +367,7 @@ static void render_image_view_sprites(debugger_interface *dbgr, debugger_view *d
 
                 if ((draw_x >= 0) && (draw_x < 240) && (draw_y >= 0) && (draw_y < 140)) {
                     u32 color;
-                    if (!this_px_highlight) {
+                    if (!th_px_highlight) {
                         // Sample the texture
                         if ((tex_x >= 0) && (tex_x < tex_x_pixels) && (tex_y >= 0) && (tex_y < tex_y_pixels)) {
                             u32 block_x = tex_x >> 3;
@@ -394,7 +392,7 @@ static void render_image_view_sprites(debugger_interface *dbgr, debugger_view *d
                             u32 tile_num = ptr[2] & 0x3FF; // Get tile number
 
                             // Now advance by block y
-                            if (this->ppu.io.obj_mapping_1d) {
+                            if (th->ppu.io.obj_mapping_1d) {
                                 tile_num += ((tex_x_tiles << bpp8) * block_y);
                             }
                             else {
@@ -413,28 +411,28 @@ static void render_image_view_sprites(debugger_interface *dbgr, debugger_view *d
 
                             // Now get data
                             u32 tile_px_addr = bpp8 ? (tile_line_addr + tile_x) : (tile_line_addr + (tile_x >> 1));
-                            u8 data = this->ppu.VRAM[tile_px_addr];
+                            u8 data = th->ppu.VRAM[tile_px_addr];
                             if (!bpp8) {
                                 if (tile_x & 1) data >>= 4;
                                 data &= 15;
                             }
                             if ((data == 0) && draw_transparency) continue;
                             if (bpp8) {
-                                color = gba_to_screen(this->ppu.palette_RAM[0x100 + data]);
+                                color = gba_to_screen(th->ppu.palette_RAM[0x100 + data]);
                             }
                             else {
-                                color = gba_to_screen(this->ppu.palette_RAM[0x100 + (palette << 4) + data]);
+                                color = gba_to_screen(th->ppu.palette_RAM[0x100 + (palette << 4) + data]);
                             }
                             if ((mode == 2) && !highlight_window) continue;
                             if ((mode == 2) && highlight_window) color = 0xFFFFFFFF;
                             else {
-                                this_px_highlight |= bpp8 && highlight_8bpp;
-                                this_px_highlight |= (!bpp8) && highlight_4bpp;
-                                this_px_highlight |= highlight_normal && !affine;
-                                this_px_highlight |= highlight_affine && affine;
-                                this_px_highlight |= highlight_window && win_pixel;
+                                th_px_highlight |= bpp8 && highlight_8bpp;
+                                th_px_highlight |= (!bpp8) && highlight_4bpp;
+                                th_px_highlight |= highlight_normal && !affine;
+                                th_px_highlight |= highlight_affine && affine;
+                                th_px_highlight |= highlight_window && win_pixel;
                             }
-                            if (this_px_highlight) color = 0xFFFFFFFF;
+                            if (th_px_highlight) color = 0xFFFFFFFF;
                         }
                         else {
                             //color = 0xFFFF00FF;
@@ -455,19 +453,19 @@ static void render_image_view_sprites(debugger_interface *dbgr, debugger_view *d
 }
 
 static void render_image_view_tiles(debugger_interface *dbgr, debugger_view *dview, void *ptr, u32 out_width) {
-    struct GBA *this = (GBA *) ptr;
-    if (this->clock.master_frame == 0) return;
+    auto *th = static_cast<core *>(ptr);
+    if (th->clock.master_frame == 0) return;
 
-    struct image_view *iv = &dview->image;
+    image_view *iv = &dview->image;
     iv->draw_which_buf ^= 1;
-    u32 *outbuf = iv->img_buf[iv->draw_which_buf].ptr;
+    u32 *outbuf = static_cast<u32 *>(iv->img_buf[iv->draw_which_buf].ptr);
     memset(outbuf, 0, out_width * 4 * 256);
 
     u32 tn = 0;
     // 32x32 8x8 tiles, so 256x256 total
      bool bpp8 = 0;
     u32 pal = 0;
-    u8 *tile_ptr = this->ppu.VRAM + 0x10000;
+    u8 *tile_ptr = th->ppu.VRAM + 0x10000;
     for (u32 ty = 0; ty < 32; ty++) {
         u32 tile_screen_y = (ty * 8);
         for (u32 tx = 0; tx < 32; tx++) {
@@ -482,7 +480,7 @@ static void render_image_view_tiles(debugger_interface *dbgr, debugger_view *dvi
                         for (u32 i = 0; i < 2; i++) {
                             u32 c = data & 0x15;
                             data >>= 4;
-                            screen_y_ptr[screen_x] = gba_to_screen(this->ppu.palette_RAM[0x100 + pal + c]);
+                            screen_y_ptr[screen_x] = gba_to_screen(th->ppu.palette_RAM[0x100 + pal + c]);
                             screen_x++;
                         }
                         tile_ptr++;
@@ -527,12 +525,12 @@ static inline u32 shade_boundary_func(u32 kind, u32 incolor)
 }
 
 static void render_image_view_bgmap(debugger_interface *dbgr, debugger_view *dview, void *ptr, u32 out_width, int bg_num) {
-    struct GBA *this = (GBA *) ptr;
-    if (this->clock.master_frame == 0) return;
-    struct GBA_PPU_bg *bg = &this->ppu.bg[bg_num];
+    auto *th = static_cast<core *>(ptr);
+    if (th->clock.master_frame == 0) return;
+    auto *bg = &th->ppu.mbg[bg_num];
 
-    struct image_view *iv = &dview->image;
-    u32 *outbuf = iv->img_buf[iv->draw_which_buf].ptr;
+    image_view *iv = &dview->image;
+    u32 *outbuf = static_cast<u32 *>(iv->img_buf[iv->draw_which_buf].ptr);
     u32 max_vsize = bg->vpixels;
     u32 max_hsize = bg->hpixels;
     memset(outbuf, 0, out_width * 4 * 1024);
@@ -541,16 +539,15 @@ static void render_image_view_bgmap(debugger_interface *dbgr, debugger_view *dvi
     u32 has_affine = 0;
     u32 affine_htiles = 0;
     // Search through debug info for the bg
-    for (u32 line = 0; line < 160; line++) {
-        struct GBA_DBG_line *dbgl = &this->dbg_info.line[line];
+    for (auto & line : th->dbg_info.line) {
         u32 do_affine = 0;
-        if (dbgl->bg_mode == 1) {
+        if (line.bg_mode == 1) {
             if (bg_num == 2) do_affine = 1;
         }
-        else if (dbgl->bg_mode == 2) {
+        else if (line.bg_mode == 2) {
             if (bg_num >= 2) do_affine = 1;
         }
-        struct GBA_DBG_line_bg *dbgbg = &dbgl->bg[bg_num];
+        auto *dbgbg = &line.bg[bg_num];
         if (do_affine) {
             if (!has_affine) {
                 u32 hsize = dbgbg->htiles * 8;
@@ -565,7 +562,7 @@ static void render_image_view_bgmap(debugger_interface *dbgr, debugger_view *dvi
         }
     }
     if (!has_affine) {
-        switch (this->ppu.io.bg_mode) {
+        switch (th->ppu.io.bg_mode) {
             case 3: // 240x160 16-bit 1 buffer
                 max_hsize = 240;
                 max_vsize = 160;
@@ -581,21 +578,21 @@ static void render_image_view_bgmap(debugger_interface *dbgr, debugger_view *dvi
         }
     }
 
-    iv->viewport.p[1].x = (i32)max_hsize;
-    iv->viewport.p[1].y = (i32)max_vsize;
+    iv->viewport.p[1].x = static_cast<i32>(max_hsize);
+    iv->viewport.p[1].y = static_cast<i32>(max_vsize);
 
-    struct debugger_widget_textbox *tb = &((debugger_widget *)cvec_get(&dview->options, 0))->textbox;
-    debugger_widgets_textbox_clear(tb);
-    debugger_widgets_textbox_sprintf(tb, "hsize:%d vsize:%d", max_hsize, max_vsize);
+    debugger_widget_textbox *tb = &dview->options.at(0).textbox;
+    tb->clear();
+    tb->sprintf("hsize:%d vsize:%d", max_hsize, max_vsize);
 
-    if (this->ppu.io.bg_mode == 4) {
+    if (th->ppu.io.bg_mode == 4) {
         for (u32 screen_y = 0; screen_y < 160; screen_y++) {
             u32 *lineptr = (outbuf + (screen_y * out_width));
             for (u32 screen_x = 0; screen_x < 480; screen_x++) {
                 u32 get_x = screen_x % 240;
                 u32 base_addr = (screen_x >= 240) ? 0xA000 : 0;
-                u32 c = this->ppu.palette_RAM[this->ppu.VRAM[base_addr + (screen_y * 240) + get_x]];
-                if (this->ppu.io.frame ^ (screen_x >= 240)) {
+                u32 c = th->ppu.palette_RAM[th->ppu.VRAM[base_addr + (screen_y * 240) + get_x]];
+                if (th->ppu.io.frame ^ (screen_x >= 240)) {
                     u32 b = (c >> 16) & 0xFF;
                     u32 g = (c >> 8) & 0xFF;
                     u32 r = (c >> 0) & 0xFF;
@@ -606,13 +603,13 @@ static void render_image_view_bgmap(debugger_interface *dbgr, debugger_view *dvi
         }
     }
     else {
-         bool bpp8 = bg->bpp8;
+        bool bpp8 = bg->bpp8;
         u32 character_base_block = affine_char_base;
         u32 screen_base_block = affine_screen_base;
         if (has_affine) {
             for (u32 tilemap_y = 0; tilemap_y < max_vsize; tilemap_y++) {
                 u32 *lineptr = (outbuf + (tilemap_y * out_width));
-                u8 *scrollptr = &this->dbg_info.bg_scrolls[bg_num].lines[128 * tilemap_y];
+                u8 *scrollptr = &th->dbg_info.bg_scrolls[bg_num].lines[128 * tilemap_y];
                 for (u32 tilemap_x = 0; tilemap_x < max_hsize; tilemap_x++) {
                     u32 is_shaded = (scrollptr[tilemap_x >> 3] >> (tilemap_x & 7)) & 1;
                     u32 px = tilemap_x;
@@ -625,19 +622,19 @@ static void render_image_view_bgmap(debugger_interface *dbgr, debugger_view *dvi
 
                     u32 screenblock_addr = screen_base_block;
                     screenblock_addr += block_x + (block_y * tile_width);
-                    u32 tile_num = ((u8 *) this->ppu.VRAM)[screenblock_addr];
+                    u32 tile_num = ((u8 *) th->ppu.VRAM)[screenblock_addr];
 
                     // so now, grab that tile...
                     u32 tile_start_addr = character_base_block + (tile_num * 64);
                     u32 line_start_addr = tile_start_addr + (line_in_tile * 8);
                     line_start_addr &= 0xFFFF;
                     u32 has = 0;
-                    u8 *lsptr = ((u8 *) this->ppu.VRAM) + line_start_addr;
+                    u8 *lsptr = ((u8 *) th->ppu.VRAM) + line_start_addr;
                     u8 data = lsptr[px & 7];
                     u32 color = 0xFF000000;
                     if (data != 0) {
                         has = 1;
-                        color = gba_to_screen(this->ppu.palette_RAM[data]);
+                        color = gba_to_screen(th->ppu.palette_RAM[data]);
                     }
                     lineptr[tilemap_x] = shade_boundary_func(is_shaded * 3, color);
                 }
@@ -648,31 +645,31 @@ static void render_image_view_bgmap(debugger_interface *dbgr, debugger_view *dvi
 
 static void render_image_view_bg(debugger_interface *dbgr, debugger_view *dview, void *ptr, u32 out_width, int bg_num)
 {
-    struct GBA *this = (GBA *) ptr;
-    if (this->clock.master_frame == 0) return;
+    auto *th = static_cast<core *>(ptr);
+    if (th->clock.master_frame == 0) return;
 
-    struct image_view *iv = &dview->image;
-    u32 *outbuf = iv->img_buf[iv->draw_which_buf].ptr;
+    image_view *iv = &dview->image;
+    u32 *outbuf = static_cast<u32 *>(iv->img_buf[iv->draw_which_buf].ptr);
     memset(outbuf, 0, out_width * 4 * 160);
 
-    struct debugger_widget_textbox *tb = &((debugger_widget *)cvec_get(&dview->options, 0))->textbox;
-    struct debugger_widget_checkbox *cb_highlight_transparent = &((debugger_widget *)cvec_get(&dview->options, 1))->checkbox;
-    struct debugger_widget_checkbox *cb_highlight_window_shaded = &((debugger_widget *)cvec_get(&dview->options, 2))->checkbox;
-    struct debugger_widget_checkbox *cb_highlight_window_occluded = &((debugger_widget *)cvec_get(&dview->options, 3))->checkbox;
+    auto *tb = &dview->options.at(0).textbox;
+    auto *cb_highlight_transparent = &dview->options.at(1).checkbox;
+    auto *cb_highlight_window_shaded = &dview->options.at(2).checkbox;
+    auto *cb_highlight_window_occluded = &dview->options.at(3).checkbox;
     u32 highlight_transparent = cb_highlight_transparent->value;
     u32 highlight_window_shaded = cb_highlight_window_shaded->value;
     u32 highlight_window_occluded = cb_highlight_window_occluded->value;
 
-    struct GBA_PPU_bg *bg = &this->ppu.bg[bg_num];
+    auto *bg = &th->ppu.mbg[bg_num];
 
-    debugger_widgets_textbox_clear(tb);
-    u32 is_affine = (((this->ppu.io.bg_mode == 1) && (bg_num == 2)) || ((this->ppu.io.bg_mode == 2) && (bg_num >= 2)));
-    debugger_widgets_textbox_sprintf(tb, "enable:%d  bpp:%c  htiles:%d  vtiles:%d\naffine:%d  mode:%d  priority:%d\nsample a:%d  b:%d", bg->enable, bg->bpp8 ? '8' : '4', bg->htiles, bg->vtiles, is_affine, this->ppu.io.bg_mode, bg->priority, this->ppu.blend.targets_a[bg_num+1], this->ppu.blend.targets_b[bg_num+1]);
+    tb->clear();
+    u32 is_affine = (((th->ppu.io.bg_mode == 1) && (bg_num == 2)) || ((th->ppu.io.bg_mode == 2) && (bg_num >= 2)));
+    tb->sprintf("enable:%d  bpp:%c  htiles:%d  vtiles:%d\naffine:%d  mode:%d  priority:%d\nsample a:%d  b:%d", bg->enable, bg->bpp8 ? '8' : '4', bg->htiles, bg->vtiles, is_affine, th->ppu.io.bg_mode, bg->priority, th->ppu.blend.targets_a[bg_num+1], th->ppu.blend.targets_b[bg_num+1]);
     i32 h_origin = 0;
     i32 v_origin = 0;
     for (i32 screen_y = 0; screen_y < 160; screen_y++) {
-        struct GBA_DBG_line *dbgl = &this->dbg_info.line[screen_y];
-        struct GBA_DBG_line_bg *bgd = &dbgl->bg[bg_num];
+        auto *dbgl = &th->dbg_info.line[screen_y];
+        auto *bgd = &dbgl->bg[bg_num];
         u32 *lineptr = (outbuf + (screen_y * out_width));
 
         is_affine = (((dbgl->bg_mode == 1) && (bg_num == 2)) || ((dbgl->bg_mode == 2) && (bg_num >= 2)));
@@ -742,10 +739,10 @@ static void render_image_view_bg(debugger_interface *dbgr, debugger_view *dview,
                     u32 tile_width = bgd->htiles;
                     u32 screenblock_addr = bgd->screen_base_block;
                     screenblock_addr += block_x + (block_y * tile_width);
-                    u32 tile_num = ((u8 *)this->ppu.VRAM)[screenblock_addr];
+                    u32 tile_num = ((u8 *)th->ppu.VRAM)[screenblock_addr];
                     u32 tile_start_addr = bgd->character_base_block + (tile_num * 64);
                     u32 line_start_addr = tile_start_addr + (line_in_tile * 8);
-                    u8 *tileptr = ((u8 *)this->ppu.VRAM) + line_start_addr;
+                    u8 *tileptr = ((u8 *)th->ppu.VRAM) + line_start_addr;
                     color = tileptr[px & 7];
                     if (color != 0) {
                         has = 1;
@@ -756,7 +753,7 @@ static void render_image_view_bg(debugger_interface *dbgr, debugger_view *dview,
                 }
                 else {
                     u32 screenblock_addr = bgd->screen_base_block + (se_index_fast(block_x, block_y, bg->screen_size) << 1);
-                    u16 attr = *(u16 *)(((u8 *)this->ppu.VRAM) + screenblock_addr);
+                    u16 attr = *(u16 *)(((u8 *)th->ppu.VRAM) + screenblock_addr);
                     u32 tile_num = attr & 0x3FF;
                     u32 hflip = (attr >> 10) & 1;
                     u32 vflip = (attr >> 11) & 1;
@@ -771,7 +768,7 @@ static void render_image_view_bg(debugger_interface *dbgr, debugger_view *dview,
                     u32 tile_start_addr = bg->character_base_block + (tile_num * tile_bytes);
                     u32 line_addr = tile_start_addr + (line_in_tile * line_size);
                     if (line_addr < 0x10000) { // hardware doesn't draw from up there
-                        u8 *tileptr = ((u8 *)this->ppu.VRAM) + line_addr;
+                        u8 *tileptr = ((u8 *)th->ppu.VRAM) + line_addr;
                         color = tileptr[col_in_tile];
                         if (!bpp8) {
                             if (px&1) color >>= 4;
@@ -785,7 +782,7 @@ static void render_image_view_bg(debugger_interface *dbgr, debugger_view *dview,
                         }
                     }
                 }
-                if (has) color = this->ppu.palette_RAM[palette + color];
+                if (has) color = th->ppu.palette_RAM[palette + color];
             }
             if (!has || no_px) {
                 if (highlight_transparent) color = 0b111111111111111;
@@ -798,22 +795,22 @@ static void render_image_view_bg(debugger_interface *dbgr, debugger_view *dview,
 }
 
 static void render_image_view_window(debugger_interface *dbgr, debugger_view *dview, void *ptr, u32 out_width, int win_num) {
-    struct GBA *this = (GBA *) ptr;
-    if (this->clock.master_frame == 0) return;
+    auto *th = static_cast<core *>(ptr);
+    if (th->clock.master_frame == 0) return;
 
-    struct image_view *iv = &dview->image;
-    u32 *outbuf = iv->img_buf[iv->draw_which_buf].ptr;
+    image_view *iv = &dview->image;
+    u32 *outbuf = static_cast<u32 *>(iv->img_buf[iv->draw_which_buf].ptr);
     memset(outbuf, 0, out_width * 4 * 160);
     u8 bit = 1 << win_num;
 
-    struct debugger_widget_textbox *tb = &((debugger_widget *)cvec_get(&dview->options, 0))->textbox;
-    struct GBA_PPU_window *w = &this->ppu.window[win_num];
-    debugger_widgets_textbox_clear(tb);
-    debugger_widgets_textbox_sprintf(tb, "enable:%d  color_effect:%d\nbg0:%d  bg1:%d  bg2:%d  bg3:%d  obj:%d", w->enable, w->active[5], w->active[1], w->active[2], w->active[3], w->active[4], w->active[0]);
+    debugger_widget_textbox *tb = &dview->options.at(0).textbox;
+    auto *w = &th->ppu.window[win_num];
+    tb->clear();
+    tb->sprintf("enable:%d  color_effect:%d\nbg0:%d  bg1:%d  bg2:%d  bg3:%d  obj:%d", w->enable, w->active[5], w->active[1], w->active[2], w->active[3], w->active[4], w->active[0]);
 
     for (u32 y = 0; y < 160; y++) {
         u32 *rowptr = outbuf + (y * out_width);
-        u8 *wptr = &this->dbg_info.line[y].window_coverage[0];
+        u8 *wptr = &th->dbg_info.line[y].window_coverage[0];
         for (u32 x = 0; x < 240; x++) {
             rowptr[x]= ((*wptr) & bit) ? 0xFFFFFFFF : 0xFF000000;
             wptr++;
@@ -885,11 +882,11 @@ static void render_image_view_bg3map(debugger_interface *dbgr, debugger_view *dv
 #define PAL_BOX_SIZE 10
 #define PAL_BOX_SIZE_W_BORDER 11
 static void render_image_view_palette(debugger_interface *dbgr, debugger_view *dview, void *ptr, u32 out_width) {
-    struct GBA *this = (GBA *) ptr;
-    if (this->clock.master_frame == 0) return;
-    struct image_view *iv = &dview->image;
+    auto *th = static_cast<core *>(ptr);
+    if (th->clock.master_frame == 0) return;
+    image_view *iv = &dview->image;
     iv->draw_which_buf ^= 1;
-    u32 *outbuf = iv->img_buf[iv->draw_which_buf].ptr;
+    u32 *outbuf = static_cast<u32 *>(iv->img_buf[iv->draw_which_buf].ptr);
     memset(outbuf, 0, out_width * (((16 * PAL_BOX_SIZE_W_BORDER) * 2) + 2)); // Clear out at least 4 rows worth
 
     u32 offset = 0;
@@ -899,7 +896,7 @@ static void render_image_view_palette(debugger_interface *dbgr, debugger_view *d
             for (u32 color = 0; color < 16; color++) {
                 u32 y_top = y_offset + offset;
                 u32 x_left = color * PAL_BOX_SIZE_W_BORDER;
-                u32 c = gba_to_screen(this->ppu.palette_RAM[lohi + (palette << 4) + color]);
+                u32 c = gba_to_screen(th->ppu.palette_RAM[lohi + (palette << 4) + color]);
                 for (u32 y = 0; y < PAL_BOX_SIZE; y++) {
                     u32 *box_ptr = (outbuf + ((y_top + y) * out_width) + x_left);
                     for (u32 x = 0; x < PAL_BOX_SIZE; x++) {
@@ -916,175 +913,176 @@ static void render_image_view_palette(debugger_interface *dbgr, debugger_view *d
 
 
 
-static void get_disassembly_ARM7TDMI(void *genptr, debugger_interface *dbgr, disassembly_view *dview, disassembly_entry *entry)
+static void get_disassembly_ARM7TDMI(void *gbaptr, disassembly_view &dview, disassembly_entry &entry)
 {
-    struct GBA* this = (GBA*)genptr;
-    ARM7TDMI_disassemble_entry(&this->cpu, entry);
+    auto* th = static_cast<core *>(gbaptr);
+    th->cpu.disassemble_entry(entry);
 }
 
-static struct disassembly_vars get_disassembly_vars_ARM7TDMI(void *macptr, debugger_interface *dbgr, disassembly_view *dv)
+static disassembly_vars get_disassembly_vars_ARM7TDMI(void *gbaptr, disassembly_view &dv)
 {
-    struct GBA* this = (GBA*)macptr;
-    struct disassembly_vars dvar;
-    dvar.address_of_executing_instruction = this->cpu.trace.ins_PC;
-    dvar.current_clock_cycle = this->clock.master_cycle_count;
+    const auto* th = static_cast<core *>(gbaptr);
+    disassembly_vars dvar;
+    dvar.address_of_executing_instruction = th->cpu.trace.ins_PC;
+    dvar.current_clock_cycle = th->clock.master_cycle_count;
     return dvar;
 }
 
-static void setup_cpu_trace(debugger_interface *dbgr, GBA *this)
+static void setup_cpu_trace(debugger_interface *dbgr, core *th)
 {
-    struct cvec_ptr p = debugger_view_new(dbgr, dview_trace);
-    struct debugger_view *dview = cpg(p);
-    struct trace_view *tv = &dview->trace;
+    cvec_ptr p = dbgr->make_view(dview_trace);
+    debugger_view *dview = &p.get();
+    trace_view *tv = &dview->trace;
     snprintf(tv->name, sizeof(tv->name), "ARM7TDMI Trace");
-    trace_view_add_col(tv, "Arch", 5);
-    trace_view_add_col(tv, "Cycle#", 10);
-    trace_view_add_col(tv, "Addr", 8);
-    trace_view_add_col(tv, "Opcode", 8);
-    trace_view_add_col(tv, "Disassembly", 45);
-    trace_view_add_col(tv, "Context", 32);
+    tv->add_col("Arch", 5);
+    tv->add_col("Cycle#", 10);
+    tv->add_col("Addr", 8);
+    tv->add_col("Opcode", 8);
+    tv->add_col("Disassembly", 45);
+    tv->add_col("Context", 32);
     tv->autoscroll = 1;
     tv->display_end_top = 0;
 
-    this->cpu.dbg.tvptr = tv;
+    th->cpu.dbg.tvptr = tv;
 }
 
-static void setup_ARM7TDMI_disassembly(debugger_interface *dbgr, GBA* this)
+static void setup_ARM7TDMI_disassembly(debugger_interface *dbgr, core* th)
 {
-    struct cvec_ptr p = debugger_view_new(dbgr, dview_disassembly);
-    struct debugger_view *dview = cpg(p);
-    struct disassembly_view *dv = &dview->disassembly;
+    cvec_ptr p = dbgr->make_view(dview_disassembly);
+    debugger_view *dview = &p.get();
+    disassembly_view *dv = &dview->disassembly;
     dv->mem_end = 0xFFFFFFFF;
     dv->addr_column_size = 8;
     dv->has_context = 1;
-    jsm_string_sprintf(&dv->processor_name, "ARM7TDMI");
+    dv->processor_name.sprintf("ARM7TDMI");
 
-    create_and_bind_registers_ARM7TDMI(this, dv);
-    dv->fill_view.ptr = (void *)this;
+    create_and_bind_registers_ARM7TDMI(th, dv);
+    dv->fill_view.ptr = static_cast<void *>(th);
     dv->fill_view.func = &fill_disassembly_view;
 
-    dv->get_disassembly.ptr = (void *)this;
+    dv->get_disassembly.ptr = static_cast<void *>(th);
     dv->get_disassembly.func = &get_disassembly_ARM7TDMI;
 
-    dv->get_disassembly_vars.ptr = (void *)this;
+    dv->get_disassembly_vars.ptr = (void *)th;
     dv->get_disassembly_vars.func = &get_disassembly_vars_ARM7TDMI;
 }
 
-static void setup_image_view_tiles(GBA* this, debugger_interface *dbgr)
+static void setup_image_view_tiles(core* th, debugger_interface *dbgr)
 {
-    struct debugger_view *dview;
-    this->dbg.image_views.tiles = debugger_view_new(dbgr, dview_image);
-    dview = cpg(this->dbg.image_views.tiles);
-    struct image_view *iv = &dview->image;
+    debugger_view *dview;
+    th->dbg.image_views.tiles = dbgr->make_view(dview_image);
+    dview = &th->dbg.image_views.tiles.get();
+    image_view *iv = &dview->image;
 
     iv->width = 256;
     iv->height = 256;
     iv->viewport.exists = 1;
     iv->viewport.enabled = 1;
-    iv->viewport.p[0] = (ivec2){ 0, 0 };
+    iv->viewport.p[0] = ivec2(0, 0);
     iv->viewport.p[1] = (ivec2){ 256, 256 };
 
-    iv->update_func.ptr = this;
+    iv->update_func.ptr = th;
     iv->update_func.func = &render_image_view_tiles;
     snprintf(iv->label, sizeof(iv->label), "Tile Viewer");
 }
 
-static void setup_image_view_sprites(GBA* this, debugger_interface *dbgr)
+static void setup_image_view_sprites(core* th, debugger_interface *dbgr)
 {
-    struct debugger_view *dview;
-    this->dbg.image_views.sprites = debugger_view_new(dbgr, dview_image);
-    dview = cpg(this->dbg.image_views.sprites);
-    struct image_view *iv = &dview->image;
+    debugger_view *dview;
+    th->dbg.image_views.sprites = dbgr->make_view(dview_image);
+    dview = &th->dbg.image_views.sprites.get();
+    image_view *iv = &dview->image;
 
     iv->width = 240;
     iv->height = 160;
 
     iv->viewport.exists = 1;
     iv->viewport.enabled = 1;
-    iv->viewport.p[0] = (ivec2){ 0, 0 };
-    iv->viewport.p[1] = (ivec2){ iv->width, iv->height };
+    iv->viewport.p[0] = ivec2(0, 0);
+    iv->viewport.p[1] = ivec2(iv->width, iv->height);
 
-    iv->update_func.ptr = this;
+    iv->update_func.ptr = th;
     iv->update_func.func = &render_image_view_sprites;
     snprintf(iv->label, sizeof(iv->label), "Layer/Sprites Viewer");
 
-    debugger_widgets_add_checkbox(&dview->options, "Draw transparencies", 1, 1, 1);
-    debugger_widgets_add_checkbox(&dview->options, "Draw 4bpp", 1, 1, 0);
-    debugger_widgets_add_checkbox(&dview->options, "Draw 8bpp", 1, 1, 1);
-    debugger_widgets_add_checkbox(&dview->options, "Draw normal", 1, 1, 1);
-    debugger_widgets_add_checkbox(&dview->options, "Draw affine", 1, 1, 1);
-    debugger_widgets_add_checkbox(&dview->options, "Highlight 4bpp", 1, 0, 0);
-    debugger_widgets_add_checkbox(&dview->options, "Highlight 8bpp", 1, 0, 1);
-    debugger_widgets_add_checkbox(&dview->options, "Highlight normal", 1, 0, 1);
-    debugger_widgets_add_checkbox(&dview->options, "Highlight affine", 1, 0, 1);
-    debugger_widgets_add_checkbox(&dview->options, "Highlight window", 1, 0, 1);
-    debugger_widgets_add_checkbox(&dview->options, "White box 4bpp", 1, 0, 0);
-    debugger_widgets_add_checkbox(&dview->options, "White box 8bpp", 1, 0, 1);
-    debugger_widgets_add_checkbox(&dview->options, "White box normal", 1, 0, 1);
-    debugger_widgets_add_checkbox(&dview->options, "White box affine", 1, 0, 1);
-    debugger_widgets_add_checkbox(&dview->options, "White box window", 1, 0, 1);
+    debugger_widgets_add_checkbox(dview->options, "Draw transparencies", 1, 1, 1);
+    debugger_widgets_add_checkbox(dview->options, "Draw 4bpp", 1, 1, 0);
+    debugger_widgets_add_checkbox(dview->options, "Draw 8bpp", 1, 1, 1);
+    debugger_widgets_add_checkbox(dview->options, "Draw normal", 1, 1, 1);
+    debugger_widgets_add_checkbox(dview->options, "Draw affine", 1, 1, 1);
+    debugger_widgets_add_checkbox(dview->options, "Highlight 4bpp", 1, 0, 0);
+    debugger_widgets_add_checkbox(dview->options, "Highlight 8bpp", 1, 0, 1);
+    debugger_widgets_add_checkbox(dview->options, "Highlight normal", 1, 0, 1);
+    debugger_widgets_add_checkbox(dview->options, "Highlight affine", 1, 0, 1);
+    debugger_widgets_add_checkbox(dview->options, "Highlight window", 1, 0, 1);
+    debugger_widgets_add_checkbox(dview->options, "White box 4bpp", 1, 0, 0);
+    debugger_widgets_add_checkbox(dview->options, "White box 8bpp", 1, 0, 1);
+    debugger_widgets_add_checkbox(dview->options, "White box normal", 1, 0, 1);
+    debugger_widgets_add_checkbox(dview->options, "White box affine", 1, 0, 1);
+    debugger_widgets_add_checkbox(dview->options, "White box window", 1, 0, 1);
 }
 
-static void setup_image_view_palettes(GBA* this, debugger_interface *dbgr)
+static void setup_image_view_palettes(core* th, debugger_interface *dbgr)
 {
-    struct debugger_view *dview;
-    this->dbg.image_views.palettes = debugger_view_new(dbgr, dview_image);
-    dview = cpg(this->dbg.image_views.palettes);
-    struct image_view *iv = &dview->image;
+    debugger_view *dview;
+    th->dbg.image_views.palettes = dbgr->make_view(dview_image);
+    dview = &th->dbg.image_views.palettes.get();
+    image_view *iv = &dview->image;
 
     iv->width = 16 * PAL_BOX_SIZE_W_BORDER;
     iv->height = ((16 * PAL_BOX_SIZE_W_BORDER) * 2) + 2;
 
     iv->viewport.exists = 1;
     iv->viewport.enabled = 1;
-    iv->viewport.p[0] = (ivec2){ 0, 0 };
-    iv->viewport.p[1] = (ivec2){ iv->width, iv->height };
+    iv->viewport.p[0] = ivec2(0, 0);
+    iv->viewport.p[1] = ivec2(iv->width, iv->height);
 
-    iv->update_func.ptr = this;
+    iv->update_func.ptr = th;
     iv->update_func.func = &render_image_view_palette;
     snprintf(iv->label, sizeof(iv->label), "Palettes Viewer");
 }
 
-static void setup_image_view_bgmap(GBA* this, debugger_interface *dbgr, u32 wnum) {
-    struct debugger_view *dview;
+static void setup_image_view_bgmap(core* th, debugger_interface *dbgr, u32 wnum) {
+    debugger_view *dview;
     switch(wnum) {
         case 0:
-            this->dbg.image_views.bg0map = debugger_view_new(dbgr, dview_image);
-            dview = cpg(this->dbg.image_views.bg0map);
+            th->dbg.image_views.bg0map = dbgr->make_view(dview_image);
+            dview = &th->dbg.image_views.bg0map.get();
             break;
         case 1:
-            this->dbg.image_views.bg1map = debugger_view_new(dbgr, dview_image);
-            dview = cpg(this->dbg.image_views.bg1map);
+            th->dbg.image_views.bg1map = dbgr->make_view(dview_image);
+            dview = &th->dbg.image_views.bg1map.get();
             break;
         case 2:
-            this->dbg.image_views.bg2map = debugger_view_new(dbgr, dview_image);
-            dview = cpg(this->dbg.image_views.bg2map);
+            th->dbg.image_views.bg2map = dbgr->make_view(dview_image);
+            dview = &th->dbg.image_views.bg2map.get();
             break;
         case 3:
-            this->dbg.image_views.bg3map = debugger_view_new(dbgr, dview_image);
-            dview = cpg(this->dbg.image_views.bg3map);
+            th->dbg.image_views.bg3map = dbgr->make_view(dview_image);
+            dview = &th->dbg.image_views.bg3map.get();
             break;
+        default: NOGOHERE;
     }
-    struct image_view *iv = &dview->image;
+    image_view *iv = &dview->image;
     iv->width = 1024;
     iv->height = 1024;
     iv->viewport.exists = 1;
     iv->viewport.enabled = 1;
-    iv->viewport.p[0] = (ivec2){ 0, 0 };
+    iv->viewport.p[0] = ivec2(0, 0);
     iv->viewport.p[1] = (ivec2){ 256, 256 };
 
-    iv->update_func.ptr = this;
+    iv->update_func.ptr = th;
 
-    debugger_widgets_add_textbox(&dview->options, "hsize:0  vsize:0", 1);
-    debugger_widgets_add_checkbox(&dview->options, "Testing test", 1, 0, 1);
-    struct debugger_widget *rg = debugger_widgets_add_radiogroup(&dview->options, "Shade scroll area", 1, 0, 1);
-    debugger_widget_radiogroup_add_button(rg, "None", 0, 1);
-    debugger_widget_radiogroup_add_button(rg, "Inside", 1, 1);
-    debugger_widget_radiogroup_add_button(rg, "Outside", 2, 1);
-    rg = debugger_widgets_add_radiogroup(&dview->options, "Shading method", 1, 0, 1);
-    debugger_widget_radiogroup_add_button(rg, "Shaded", 0, 1);
-    debugger_widget_radiogroup_add_button(rg, "Black", 1, 1);
-    debugger_widget_radiogroup_add_button(rg, "White", 2, 1);
+    debugger_widgets_add_textbox(dview->options, "hsize:0  vsize:0", 1);
+    debugger_widgets_add_checkbox(dview->options, "Testing test", 1, 0, 1);
+    debugger_widget *rg = &debugger_widgets_add_radiogroup(dview->options, "Shade scroll area", 1, 0, 1);
+    rg->radiogroup.add_button("None", 0, 1);
+    rg->radiogroup.add_button("Inside", 1, 1);
+    rg->radiogroup.add_button("Outside", 2, 1);
+    rg = &debugger_widgets_add_radiogroup(dview->options, "Shading method", 1, 0, 1);
+    rg->radiogroup.add_button("Shaded", 0, 1);
+    rg->radiogroup.add_button("Black", 1, 1);
+    rg->radiogroup.add_button("White", 2, 1);
 
     switch(wnum) {
         case 0:
@@ -1103,46 +1101,48 @@ static void setup_image_view_bgmap(GBA* this, debugger_interface *dbgr, u32 wnum
             iv->update_func.func = &render_image_view_bg3map;
             snprintf(iv->label, sizeof(iv->label), "Tilemap/BG3");
             break;
+        default: NOGOHERE;
     }
 
 }
 
-static void setup_image_view_bg(GBA* this, debugger_interface *dbgr, u32 wnum)
+static void setup_image_view_bg(core* th, debugger_interface *dbgr, u32 wnum)
 {
-    struct debugger_view *dview;
+    debugger_view *dview;
     switch(wnum) {
         case 0:
-            this->dbg.image_views.bg0 = debugger_view_new(dbgr, dview_image);
-            dview = cpg(this->dbg.image_views.bg0);
+            th->dbg.image_views.bg0 = dbgr->make_view(dview_image);
+            dview = &th->dbg.image_views.bg0.get();
             break;
         case 1:
-            this->dbg.image_views.bg1 = debugger_view_new(dbgr, dview_image);
-            dview = cpg(this->dbg.image_views.bg1);
+            th->dbg.image_views.bg1 = dbgr->make_view(dview_image);
+            dview = &th->dbg.image_views.bg1.get();
             break;
         case 2:
-            this->dbg.image_views.bg2 = debugger_view_new(dbgr, dview_image);
-            dview = cpg(this->dbg.image_views.bg2);
+            th->dbg.image_views.bg2 = dbgr->make_view(dview_image);
+            dview = &th->dbg.image_views.bg2.get();
             break;
         case 3:
-            this->dbg.image_views.bg3 = debugger_view_new(dbgr, dview_image);
-            dview = cpg(this->dbg.image_views.bg3);
+            th->dbg.image_views.bg3 = dbgr->make_view(dview_image);
+            dview = &th->dbg.image_views.bg3.get();
             break;
+        default: NOGOHERE;
     }
-    struct image_view *iv = &dview->image;
+    image_view *iv = &dview->image;
 
     iv->width = 240;
     iv->height = 160;
     iv->viewport.exists = 1;
     iv->viewport.enabled = 1;
-    iv->viewport.p[0] = (ivec2){ 0, 0 };
+    iv->viewport.p[0] = ivec2(0, 0);
     iv->viewport.p[1] = (ivec2){ 240, 160 };
 
-    iv->update_func.ptr = this;
+    iv->update_func.ptr = th;
 
-    debugger_widgets_add_textbox(&dview->options, "num:%d enable:0 bpp:4", 1);
-    debugger_widgets_add_checkbox(&dview->options, "Highlight transparent pixels", 1, 0, 0);
-    debugger_widgets_add_checkbox(&dview->options, "Highlight window-shaded pixels", 1, 0, 0);
-    debugger_widgets_add_checkbox(&dview->options, "Highlight window-occluded pixels", 1, 0, 0);
+    debugger_widgets_add_textbox(dview->options, "num:%d enable:0 bpp:4", 1);
+    debugger_widgets_add_checkbox(dview->options, "Highlight transparent pixels", 1, 0, 0);
+    debugger_widgets_add_checkbox(dview->options, "Highlight window-shaded pixels", 1, 0, 0);
+    debugger_widgets_add_checkbox(dview->options, "Highlight window-occluded pixels", 1, 0, 0);
 
     switch(wnum) {
         case 0:
@@ -1161,76 +1161,77 @@ static void setup_image_view_bg(GBA* this, debugger_interface *dbgr, u32 wnum)
             iv->update_func.func = &render_image_view_bg3;
             snprintf(iv->label, sizeof(iv->label), "Layer/BG3 Viewer");
             break;
+        default: NOGOHERE;
     }
 }
 
-static void setup_events_view(GBA* this, debugger_interface *dbgr) {
-    this->dbg.events.view = debugger_view_new(dbgr, dview_events);
-    struct debugger_view *dview = cpg(this->dbg.events.view);
-    struct events_view *ev = &dview->events;
+static void setup_events_view(core& th, debugger_interface *dbgr) {
+    th.dbg.events.view = dbgr->make_view(dview_events);
+    auto *dview = &th.dbg.events.view.get();
+    events_view &ev = dview->events;
 
-    ev->timing = ev_timing_master_clock,
-    ev->master_clocks.per_line = 1232;
-    ev->master_clocks.height = 228;
-    ev->master_clocks.ptr = &this->clock.master_cycle_count;
+    ev.timing = ev_timing_master_clock,
+    ev.master_clocks.per_line = 1232;
+    ev.master_clocks.height = 228;
+    ev.master_clocks.ptr = &th.clock.master_cycle_count;
 
-    for (u32 i = 0; i < 2; i++) {
-        ev->display[i].width = 308;
-        ev->display[i].height = 228;
-        ev->display[i].buf = nullptr;
-        ev->display[i].frame_num = 0;
+    for (auto & di : ev.display) {
+        di.width = 308;
+        di.height = 228;
+        di.buf = nullptr;
+        di.frame_num = 0;
     }
 
-    ev->associated_display = this->ppu.display_ptr;
+    ev.associated_display = th.ppu.display_ptr;
 
     DEBUG_REGISTER_EVENT_CATEGORY("PPU events", DBG_GBA_CATEGORY_PPU);
     DEBUG_REGISTER_EVENT_CATEGORY("CPU events", DBG_GBA_CATEGORY_CPU);
-    cvec_grow_by(&ev->events, DBG_GBA_EVENT_MAX);
-    cvec_lock_reallocs(&ev->events);
+    ev.events.reserve(DBG_GBA_EVENT_MAX);
     DEBUG_REGISTER_EVENT("Affine regs write", 0xFFFF00, DBG_GBA_CATEGORY_PPU, DBG_GBA_EVENT_WRITE_AFFINE_REGS, 1);
     DEBUG_REGISTER_EVENT("Set IF.HBlank", 0xFF00FF, DBG_GBA_CATEGORY_PPU, DBG_GBA_EVENT_SET_HBLANK_IRQ, 1);
     DEBUG_REGISTER_EVENT("Set IF.VBlank", 0x00FF00, DBG_GBA_CATEGORY_PPU, DBG_GBA_EVENT_SET_VBLANK_IRQ, 1);
     DEBUG_REGISTER_EVENT("Set IF.LY=LYC", 0x00FFFF, DBG_GBA_CATEGORY_PPU, DBG_GBA_EVENT_SET_LINECOUNT_IRQ, 1);
     DEBUG_REGISTER_EVENT("Write VRAM", 0x0000FF, DBG_GBA_CATEGORY_PPU, DBG_GBA_EVENT_WRITE_VRAM, 1);
 
-    SET_EVENT_VIEW(this->cpu);
-    debugger_report_frame(this->dbg.interface);
+    SET_EVENT_VIEW(th.cpu);
+    debugger_report_frame(th.dbg.interface);
 }
 
 
-static void setup_image_view_window(GBA* this, debugger_interface *dbgr, u32 wnum)
+static void setup_image_view_window(core* th, debugger_interface *dbgr, u32 wnum)
 {
-    struct debugger_view *dview;
+    debugger_view *dview;
     switch(wnum) {
         case 0:
-            this->dbg.image_views.window0 = debugger_view_new(dbgr, dview_image);
-            dview = cpg(this->dbg.image_views.window0);
+            th->dbg.image_views.window0 = dbgr->make_view(dview_image);
+            dview = &th->dbg.image_views.window0.get();
             break;
         case 1:
-            this->dbg.image_views.window1 = debugger_view_new(dbgr, dview_image);
-            dview = cpg(this->dbg.image_views.window1);
+            th->dbg.image_views.window1 = dbgr->make_view(dview_image);
+            dview = &th->dbg.image_views.window1.get();
             break;
         case 2:
-            this->dbg.image_views.window2 = debugger_view_new(dbgr, dview_image);
-            dview = cpg(this->dbg.image_views.window2);
+            th->dbg.image_views.window2 = dbgr->make_view(dview_image);
+            dview = &th->dbg.image_views.window2.get();
             break;
         case 3:
-            this->dbg.image_views.window3 = debugger_view_new(dbgr, dview_image);
-            dview = cpg(this->dbg.image_views.window3);
+            th->dbg.image_views.window3 = dbgr->make_view(dview_image);
+            dview = &th->dbg.image_views.window3.get();
             break;
+        default: NOGOHERE;
     }
-    struct image_view *iv = &dview->image;
+    image_view *iv = &dview->image;
 
     iv->width = 240;
     iv->height = 160;
     iv->viewport.exists = 1;
     iv->viewport.enabled = 1;
-    iv->viewport.p[0] = (ivec2){ 0, 0 };
+    iv->viewport.p[0] = ivec2(0, 0);
     iv->viewport.p[1] = (ivec2){ 240, 160 };
 
-    debugger_widgets_add_textbox(&dview->options, "enable:%d\nbg0:0  bg1:0  bg2:0  bg3:0  obj:0", 1);
+    debugger_widgets_add_textbox(dview->options, "enable:%d\nbg0:0  bg1:0  bg2:0  bg3:0  obj:0", 1);
 
-    iv->update_func.ptr = this;
+    iv->update_func.ptr = th;
     switch(wnum) {
         case 0:
             iv->update_func.func = &render_image_view_window0;
@@ -1252,137 +1253,130 @@ static void setup_image_view_window(GBA* this, debugger_interface *dbgr, u32 wnu
 
 }
 
-static void setup_waveforms_view(GBA* this, debugger_interface *dbgr)
+static void setup_waveforms_view(core* th, debugger_interface *dbgr)
 {
     printf("\nSETTING UP WAVEFORMS VIEW...");
-    this->dbg.waveforms.view = debugger_view_new(dbgr, dview_waveforms);
-    struct debugger_view *dview = cpg(this->dbg.waveforms.view);
-    struct waveform_view *wv = (waveform_view *)&dview->waveform;
+    th->dbg.waveforms.view = dbgr->make_view(dview_waveforms);
+    debugger_view *dview = &th->dbg.waveforms.view.get();
+    auto *wv = &dview->waveform;
     snprintf(wv->name, sizeof(wv->name), "GBA APU");
 
-    cvec_alloc_atleast(&wv->waveforms, 8);
-    cvec_lock_reallocs(&wv->waveforms);
+    wv->waveforms.reserve(8);
 
-    struct debug_waveform *dw = cvec_push_back(&wv->waveforms);
-    debug_waveform_init(dw);
-    this->dbg.waveforms.main = make_cvec_ptr(&wv->waveforms, cvec_len(&wv->waveforms)-1);
+    debug_waveform *dw = &wv->waveforms.emplace_back();
+    th->dbg.waveforms.main.make(wv->waveforms, wv->waveforms.size()-1);
     snprintf(dw->name, sizeof(dw->name), "Output");
     dw->kind = dwk_main;
     dw->samples_requested = 400;
 
-    dw = cvec_push_back(&wv->waveforms);
-    debug_waveform_init(dw);
-    this->dbg.waveforms.chan[0] = make_cvec_ptr(&wv->waveforms, cvec_len(&wv->waveforms)-1);
+    dw = &wv->waveforms.emplace_back();
+    th->dbg.waveforms.chan[0].make(wv->waveforms, wv->waveforms.size()-1);
     snprintf(dw->name, sizeof(dw->name), "Square 0");
     dw->kind = dwk_channel;
     dw->samples_requested = 200;
 
-    dw = cvec_push_back(&wv->waveforms);
-    debug_waveform_init(dw);
-    this->dbg.waveforms.chan[1] = make_cvec_ptr(&wv->waveforms, cvec_len(&wv->waveforms)-1);
+    dw = &wv->waveforms.emplace_back();
+    th->dbg.waveforms.chan[1].make(wv->waveforms, wv->waveforms.size()-1);
     snprintf(dw->name, sizeof(dw->name), "Square 1");
     dw->kind = dwk_channel;
     dw->samples_requested = 200;
 
-    dw = cvec_push_back(&wv->waveforms);
-    debug_waveform_init(dw);
-    this->dbg.waveforms.chan[2] = make_cvec_ptr(&wv->waveforms, cvec_len(&wv->waveforms)-1);
+    dw = &wv->waveforms.emplace_back();
+    th->dbg.waveforms.chan[2].make(wv->waveforms, wv->waveforms.size()-1);
     snprintf(dw->name, sizeof(dw->name), "Waveform");
     dw->kind = dwk_channel;
     dw->samples_requested = 200;
 
-    dw = cvec_push_back(&wv->waveforms);
-    debug_waveform_init(dw);
-    this->dbg.waveforms.chan[3] = make_cvec_ptr(&wv->waveforms, cvec_len(&wv->waveforms)-1);
+    dw = &wv->waveforms.emplace_back();
+    th->dbg.waveforms.chan[3].make(wv->waveforms, wv->waveforms.size()-1);
     snprintf(dw->name, sizeof(dw->name), "Noise");
     dw->kind = dwk_channel;
     dw->samples_requested = 200;
 
-    dw = cvec_push_back(&wv->waveforms);
-    debug_waveform_init(dw);
-    this->dbg.waveforms.chan[4] = make_cvec_ptr(&wv->waveforms, cvec_len(&wv->waveforms)-1);
+    dw = &wv->waveforms.emplace_back();
+    th->dbg.waveforms.chan[4].make(wv->waveforms, wv->waveforms.size()-1);
     snprintf(dw->name, sizeof(dw->name), "FIFO A");
     dw->kind = dwk_channel;
     dw->samples_requested = 200;
 
-    dw = cvec_push_back(&wv->waveforms);
-    debug_waveform_init(dw);
-    this->dbg.waveforms.chan[5] = make_cvec_ptr(&wv->waveforms, cvec_len(&wv->waveforms)-1);
+    dw = &wv->waveforms.emplace_back();
+    th->dbg.waveforms.chan[5].make(wv->waveforms, wv->waveforms.size()-1);
     snprintf(dw->name, sizeof(dw->name), "FIFO B");
     dw->kind = dwk_channel;
     dw->samples_requested = 200;
 }
 
 
-static void setup_image_view_sys_info(GBA *this, debugger_interface *dbgr)
+static void setup_image_view_sys_info(core *th, debugger_interface *dbgr)
 {
-    struct debugger_view *dview;
-    this->dbg.image_views.sys_info = debugger_view_new(dbgr, dview_image);
-    dview = cpg(this->dbg.image_views.sys_info);
-    struct image_view *iv = &dview->image;
+    debugger_view *dview;
+    th->dbg.image_views.sys_info = dbgr->make_view(dview_image);
+    dview = &th->dbg.image_views.sys_info.get();
+    image_view *iv = &dview->image;
 
     iv->width = 10;
     iv->height = 10;
     iv->viewport.exists = 1;
     iv->viewport.enabled = 1;
-    iv->viewport.p[0] = (ivec2){ 0, 0 };
+    iv->viewport.p[0] = ivec2(0, 0);
     iv->viewport.p[1] = (ivec2){ 10, 10 };
 
-    iv->update_func.ptr = this;
+    iv->update_func.ptr = th;
     iv->update_func.func = &render_image_view_sys_info;
 
     snprintf(iv->label, sizeof(iv->label), "Sys Info");
 
-    debugger_widgets_add_textbox(&dview->options, "blah!", 1);
+    debugger_widgets_add_textbox(dview->options, "blah!", 1);
 }
 
-static void setup_dbglog(debugger_interface *dbgr, GBA *this) {
-    struct cvec_ptr p = debugger_view_new(dbgr, dview_dbglog);
-    struct debugger_view *dview = cpg(p);
-    struct dbglog_view *dv = &dview->dbglog;
-    this->dbg.dvptr = dv;
+static void setup_dbglog(debugger_interface *dbgr, core *th) {
+    cvec_ptr p = dbgr->make_view(dview_dbglog);
+    debugger_view *dview = &p.get();
+    dbglog_view *dv = &dview->dbglog;
+    th->dbg.dvptr = dv;
     snprintf(dv->name, sizeof(dv->name), "Trace");
     dv->has_extra = 1;
 
-    struct dbglog_category_node *root = dbglog_category_get_root(dv);
-    struct dbglog_category_node *arm7 = dbglog_category_add_node(dv, root, "ARM7TDMI", nullptr, 0, 0);
-    dbglog_category_add_node(dv, arm7, "Instruction Trace", "ARM7", GBA_CAT_ARM7_INSTRUCTION, 0x80FF80);
-    this->cpu.trace.dbglog.view = dv;
-    this->cpu.trace.dbglog.id = GBA_CAT_ARM7_INSTRUCTION;
-    dbglog_category_add_node(dv, arm7, "Halt", "ARM7.H", GBA_CAT_ARM7_HALT, 0xA0AF80);
+    dbglog_category_node &root = dbglog_category_get_root(*dv);
+    dbglog_category_node &arm7 = root.add_node(*dv, "ARM7TDMI", nullptr, 0, 0);
+    arm7.add_node(*dv, "Instruction Trace", "ARM7", CAT_ARM7_INSTRUCTION, 0x80FF80);
+    th->cpu.trace.dbglog.view = dv;
+    th->cpu.trace.dbglog.id = CAT_ARM7_INSTRUCTION;
+    arm7.add_node(*dv, "Halt", "ARM7.H", CAT_ARM7_HALT, 0xA0AF80);
 
-    struct dbglog_category_node *dma = dbglog_category_add_node(dv, root, "DMA", nullptr, 0, 0);
-    dbglog_category_add_node(dv, dma, "DMA Start", "dma.start", GBA_CAT_DMA_START, 0xFFFFFF);
+    dbglog_category_node &dma = root.add_node(*dv, "DMA", nullptr, 0, 0);
+    dma.add_node(*dv, "DMA Start", "dma.start", CAT_DMA_START, 0xFFFFFF);
 }
 
 
-void GBAJ_setup_debugger_interface(JSM, debugger_interface *dbgr)
+void core::setup_debugger_interface(debugger_interface &dbgr)
 {
-    JTHIS;
-    this->dbg.interface = dbgr;
+    dbg.interface = &dbgr;
+    dbgr.views.reserve(25);
 
-    dbgr->supported_by_core = 0;
-    dbgr->smallest_step = 1;
+    dbgr.supported_by_core = 0;
+    dbgr.smallest_step = 1;
 
-    setup_dbglog(dbgr, this);
-    //setup_ARM7TDMI_disassembly(dbgr, this);
-    setup_waveforms_view(this, dbgr);
-    setup_events_view(this, dbgr);
-    //setup_cpu_trace(dbgr, this);
-    setup_image_view_palettes(this, dbgr);
-    setup_image_view_bg(this, dbgr, 0);
-    setup_image_view_bg(this, dbgr, 1);
-    setup_image_view_bg(this, dbgr, 2);
-    setup_image_view_bg(this, dbgr, 3);
-    setup_image_view_sprites(this, dbgr);
-    setup_image_view_bgmap(this, dbgr, 0);
-    setup_image_view_bgmap(this, dbgr, 1);
-    setup_image_view_bgmap(this, dbgr, 2);
-    setup_image_view_bgmap(this, dbgr, 3);
-    setup_image_view_tiles(this, dbgr);
-    setup_image_view_window(this, dbgr, 0);
-    setup_image_view_window(this, dbgr, 1);
-    setup_image_view_window(this, dbgr, 2);
-    setup_image_view_window(this, dbgr, 3);
-    setup_image_view_sys_info(this, dbgr);
+    setup_dbglog(&dbgr, this);
+    //setup_ARM7TDMI_disassembly(dbgr, th);
+    setup_waveforms_view(this, &dbgr);
+    setup_events_view(*this, &dbgr);
+    //setup_cpu_trace(dbgr, th);
+    setup_image_view_palettes(this, &dbgr);
+    setup_image_view_bg(this, &dbgr, 0);
+    setup_image_view_bg(this, &dbgr, 1);
+    setup_image_view_bg(this, &dbgr, 2);
+    setup_image_view_bg(this, &dbgr, 3);
+    setup_image_view_sprites(this, &dbgr);
+    setup_image_view_bgmap(this, &dbgr, 0);
+    setup_image_view_bgmap(this, &dbgr, 1);
+    setup_image_view_bgmap(this, &dbgr, 2);
+    setup_image_view_bgmap(this, &dbgr, 3);
+    setup_image_view_tiles(this, &dbgr);
+    setup_image_view_window(this, &dbgr, 0);
+    setup_image_view_window(this, &dbgr, 1);
+    setup_image_view_window(this, &dbgr, 2);
+    setup_image_view_window(this, &dbgr, 3);
+    setup_image_view_sys_info(this, &dbgr);
+}
 }

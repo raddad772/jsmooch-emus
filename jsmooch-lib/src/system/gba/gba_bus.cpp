@@ -11,6 +11,10 @@
 #include "helpers/multisize_memaccess.cpp"
 
 namespace GBA {
+static u32 read_trace_cpu(void *ptr, u32 addr, u32 sz) {
+    auto *th = static_cast<GBA::core *>(ptr);
+    return core::mainbus_read(ptr, addr, sz, th->io.cpu.open_bus_data, false);
+}
 
 core::core() :
     cpu{&clock.master_cycle_count, &waitstates.current_transaction, &this->scheduler},
@@ -58,7 +62,24 @@ core::core() :
     mem.write[0xF] = &cart::core::write_sram;
 
     set_waitstates();
+    scheduler.max_block_size = 8;
+    scheduler.run.func = &block_step_cpu;
+    scheduler.run.ptr = this;
+    cpu.read_data_ptr = this;
+    cpu.write_data_ptr = this;
+    cpu.read_data = &mainbus_read;
+    cpu.write_data = &mainbus_write;
+    cpu.read_ins_ptr = this;
+    cpu.read_ins = &mainbus_fetchins;
+    snprintf(label, sizeof(label), "GameBoy Advance");
+    jsm_debug_read_trace dt;
+    dt.read_trace_arm = &read_trace_cpu;
+    dt.ptr = this;
+    cpu.setup_tracing(&dt, &clock.master_cycle_count, 1);
 
+    jsm.described_inputs = false;
+    jsm.cycles_left = 0;
+    ppu.dbg.events.view = dbg.events.view;
 }
 
 static constexpr u32 maskalign[5] = {0, 0xFFFFFFFF, 0xFFFFFFFE, 0, 0xFFFFFFFC};
@@ -815,40 +836,42 @@ void core::trace_write(u32 addr, u8 sz, u32 val) const
 }
 
 
-u32 core::mainbus_read(u32 addr, u8 sz, u8 access, bool has_effect)
+u32 core::mainbus_read(void *ptr, u32 addr, u8 sz, u8 access, bool has_effect)
 {
+    auto *th = static_cast<core *>(ptr);
     u32 v;
 
-    if (addr < 0x10000000) v = mem.read[(addr >> 24) & 15](this, addr, sz, access, has_effect);
-    else v = busrd_invalid(this, addr, sz, access, has_effect);
-    if (::dbg.trace_on) trace_read(addr, sz, v);
+    if (addr < 0x10000000) v = th->mem.read[(addr >> 24) & 15](th, addr, sz, access, has_effect);
+    else v = busrd_invalid(th, addr, sz, access, has_effect);
+    if (::dbg.trace_on) th->trace_read(addr, sz, v);
     return v;
 }
 
-u32 core::mainbus_fetchins(u32 addr, u8 sz, u8 access)
+u32 core::mainbus_fetchins(void *ptr, u32 addr, u8 sz, u8 access)
 {
-    u32 v = mainbus_read(addr, sz, access, true);
+    auto *th = static_cast<core *>(ptr);
+    u32 v = mainbus_read(th, addr, sz, access, true);
     switch(sz) {
         case 4:
-            io.cpu.open_bus_data = v;
+            th->io.cpu.open_bus_data = v;
             break;
         case 2:
-            io.cpu.open_bus_data = (v << 16) | v;
+            th->io.cpu.open_bus_data = (v << 16) | v;
             break;
         default:
     }
     return v;
 }
 
-void core::mainbus_write(u32 addr, u8 sz, u8 access, u32 val)
+void core::mainbus_write(void *ptr, u32 addr, u8 sz, u8 access, u32 val)
 {
-    //if (dbg.trace_on) trace_write(addr, sz, val);
+    auto *th = static_cast<core *>(ptr);
     if (addr < 0x10000000) {
         //printf("\nWRITE addr:%08x sz:%d val:%08x", addr, sz, val);
-        return mem.write[(addr >> 24) & 15](this, addr, sz, access, val);
+        return th->mem.write[(addr >> 24) & 15](th, addr, sz, access, val);
     }
 
-    buswr_invalid(this, addr, sz, access, val);
+    buswr_invalid(th, addr, sz, access, val);
 }
 
 void core::check_dma_at_hblank()

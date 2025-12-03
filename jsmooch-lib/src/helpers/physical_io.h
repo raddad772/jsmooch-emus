@@ -245,7 +245,7 @@ struct JSM_DISPLAY_GEOMETRY {
 
 struct JSM_DISPLAY {
     jsm::display_kinds kind{};
-    u32 enabled{};
+    bool enabled{};
     double fps{};
     u32 fps_override_hint{}; // Is it OK to go to a close value near this
 

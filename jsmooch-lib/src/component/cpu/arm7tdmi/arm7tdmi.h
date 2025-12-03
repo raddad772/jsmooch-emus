@@ -143,9 +143,9 @@ struct core {
     u32 testing{};
 
     void *read_ins_ptr, *read_data_ptr, *write_data_ptr{};
-    u32 (*read_ins)(void *ptr, u32 addr, u32 sz, u32 access){};
-    u32 (*read_data)(void *ptr, u32 addr, u32 sz, u32 access, u32 has_effect){};
-    void (*write_data)(void *ptr, u32 addr, u32 sz, u32 access, u32 val){};
+    u32 (*read_ins)(void *ptr, u32 addr, u8 sz, u8 access){};
+    u32 (*read_data)(void *ptr, u32 addr, u8 sz, u8 access, bool has_effect){};
+    void (*write_data)(void *ptr, u32 addr, u8 sz, u8 access, u32 val){};
 
     ARM7_ins opcode_table_arm[4096]{};
     thumb_instruction opcode_table_thumb[65536]{};

@@ -56,12 +56,13 @@ struct core : jsm_system {
         wrfunc write[16]{&core::buswr_invalid};
     } mem{};
 
-    u32 mainbus_read(u32 addr, u8 sz, u8 access, bool has_effect);
-    u32 mainbus_fetchins(u32 addr, u8 sz, u8 access);
-    void mainbus_write(u32 addr, u8 sz, u8 access, u32 val);
+    static u32 mainbus_read(void *ptr, u32 addr, u8 sz, u8 access, bool has_effect);
+    static u32 mainbus_fetchins(void *ptr, u32 addr, u8 sz, u8 access);
+    static void mainbus_write(void *ptr, u32 addr, u8 sz, u8 access, u32 val);
     void enable_prefetch();
 
 private:
+    void skip_BIOS();
     void trace_read(u32 addr, u8 sz, u32 val) const;
     void trace_write(u32 addr, u8 sz, u32 val) const;
     static u32 busrd_invalid(core *th, u32 addr, u8 sz, u8 access, bool has_effect);
@@ -74,22 +75,25 @@ private:
     static void buswr_WRAM_slow(core *th, u32 addr, u8 sz, u8 access, u32 val);
     static void buswr_WRAM_fast(core *th, u32 addr, u8 sz, u8 access, u32 val);
     static void buswr_IO(core *th, u32 addr, u8 sz, u8 access, u32 val);
+    void schedule_first();
 
     u32 busrd_IO8(u32 addr, u8 sz, u8 access, bool has_effect);
     void set_waitstates();
+    void setup_lcd(JSM_DISPLAY &d);
+    void setup_audio();
 
 public:
     void buswr_IO8(u32 addr, u8 sz, u8 access, u32 val);
     void check_dma_at_hblank();
     void check_dma_at_vblank();
-    u32 open_bus_byte(u32 addr) const;
-    u32 open_bus(u32 addr, u32 sz) const;
+    [[nodiscard]] u32 open_bus_byte(u32 addr) const;
+    [[nodiscard]] u32 open_bus(u32 addr, u32 sz) const;
 
     char WRAM_slow[256 * 1024]{};
     char WRAM_fast[32 * 1024]{};
 
     struct {
-        u32 has{};
+        bool has{};
         char data[16384]{};
     } BIOS{};
 
@@ -120,8 +124,7 @@ public:
     } io{};
 
     struct {
-        struct cvec* IOs{};
-        u32 described_inputs{};
+        bool described_inputs{false};
         i64 cycles_left{};
     } jsm{};
 
@@ -204,6 +207,24 @@ public:
         DBG_WAVEFORM_END1
         DBG_LOG_VIEW
     DBG_END
+
+    void play() final;
+    void pause() final;
+    void stop() final;
+    void get_framevars(framevars& out) final;
+    void reset() final;
+    void killall();
+    u32 finish_frame() final;
+    u32 finish_scanline() final;
+    u32 step_master(u32 howmany) final;
+    void load_BIOS(multi_file_set& mfs) final;
+    void enable_tracing();
+    void disable_tracing();
+    void describe_io() final;
+    void save_state(serialized_state &state) final;
+    void load_state(serialized_state &state, deserialize_ret &ret) final;
+    void set_audiobuf(audiobuf *ab) final;
+    void setup_debugger_interface(debugger_interface &intf) final;
 
 };
 

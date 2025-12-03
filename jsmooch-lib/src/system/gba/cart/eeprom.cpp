@@ -91,7 +91,7 @@ static void pprint_RAM_hw_bit0(GBA::core *th, u32 addr, u32 numbits, u32 was_rea
             on_line = 0;
             printf("\n");
         }
-        printf(" %d", th->mainbus_read(addr+(num*2), 2, 0, 0) & 1);
+        printf(" %d", GBA::core::mainbus_read(th, addr+(num*2), 2, 0, 0) & 1);
         num++;
         on_line++;
     }

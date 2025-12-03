@@ -79,11 +79,11 @@ struct core {
     GBA::core *gba;
 
     void reset();
+    static void schedule_frame(void *ptr, u64 key, u64 clock, u32 jitter);
 
 private:
     static void vblank(void *ptr, u64 val, u64 clock, u32 jitter);
     static void hblank(void *ptr, u64 key, u64 clock, u32 jitter);
-    static void schedule_frame(void *ptr, u64 key, u64 clock, u32 jitter);
 
     void do_schedule_frame(i64 cur_clock);
     void do_hblank(bool in_hblank);

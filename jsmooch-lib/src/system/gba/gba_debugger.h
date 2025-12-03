@@ -2,8 +2,7 @@
 // Created by . on 12/4/24.
 //
 
-#ifndef JSMOOCH_EMUS_GBA_DEBUGGER_H
-#define JSMOOCH_EMUS_GBA_DEBUGGER_H
+#pragma once
 
 #include "helpers/debugger/debugger.h"
 #include "helpers/sys_interface.h"
@@ -20,24 +19,22 @@
 
 #define DBG_GBA_EVENT_MAX 5
 
+namespace GBA {
+enum DBLOG_CATEGORIES {
+    CAT_UNKNOWN = 0,
+    CAT_ARM7_INSTRUCTION = 1,
+    CAT_ARM7_HALT,
 
-enum GBA_DBLOG_CATEGORIES {
-    GBA_CAT_UNKNOWN = 0,
-    GBA_CAT_ARM7_INSTRUCTION = 1,
-    GBA_CAT_ARM7_HALT,
+    CAT_CART_READ_START,
+    CAT_CART_READ_COMPLETE,
 
-    GBA_CAT_CART_READ_START,
-    GBA_CAT_CART_READ_COMPLETE,
+    CAT_DMA_START,
 
-    GBA_CAT_DMA_START,
-
-    GBA_CAT_PPU_REG_WRITE,
-    GBA_CAT_PPU_MISC,
-    GBA_CAT_PPU_BG_MODE,
+    CAT_PPU_REG_WRITE,
+    CAT_PPU_MISC,
+    CAT_PPU_BG_MODE,
 };
 
-#define dbgloglog(r_cat, r_severity, r_format, ...) if (this->dbg.dvptr->ids_enabled[r_cat]) dbglog_view_add_printf(this->dbg.dvptr, r_cat, this->clock.master_cycle_count9+this->waitstates.current_transaction, r_severity, r_format, __VA_ARGS__);
+#define dbgloglog(r_cat, r_severity, r_format, ...) if (dbg.dvptr->ids_enabled[r_cat]) dbg.dvptr->add_printf(r_cat, clock.master_cycle_count9+waitstates.current_transaction, r_severity, r_format, __VA_ARGS__);
 
-void GBAJ_setup_debugger_interface(jsm_system *, debugger_interface *dbgr);
-
-#endif //JSMOOCH_EMUS_GBA_DEBUGGER_H
+}

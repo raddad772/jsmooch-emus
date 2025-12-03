@@ -1310,7 +1310,6 @@ static void setup_events_view(core& th, debugger_interface *dbgr)
     th.dbg.events.view = dbgr->make_view(dview_events);
     auto *dview = &th.dbg.events.view.get();
     events_view &ev = dview->events;
-    
 
     ev.timing = ev_timing_master_clock;
     ev.master_clocks.per_line = 3420;
