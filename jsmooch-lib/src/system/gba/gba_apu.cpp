@@ -908,15 +908,14 @@ void core::sample_psg()
                     if (chan.enable_l) left += sample;
                     if (chan.enable_r) right += sample;
                 }
-                break;
-            }
+                break; }
             case 2: {
                 if (chan.on && chan.ext_enable && chan.dac_on) {
                     const i32 sample = chan.polarity;
                     if (chan.enable_l) left += sample;
                     if (chan.enable_r) right += sample;
                 }
-            }
+                break; }
             default: NOGOHERE;
         }
     }

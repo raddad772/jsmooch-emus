@@ -7,7 +7,15 @@
 
 namespace GBA {
 
-bool TIMER::enabled() const {
+TIMER::TIMER(core *parent, int num_in):
+    gba(parent),
+    num(num_in) {
+    int a = 4;
+    if (num_in == 0)
+        a++;
+}
+
+    bool TIMER::enabled() const {
     return gba->clock_current() >= enable_at;
 }
 
@@ -36,10 +44,10 @@ void TIMER::overflow(u64 current_time) {
     reload_ticks = timer_reload_ticks(reload) << shift;
     overflow_at = enable_at + reload_ticks;
     if (!cascade)
-        sch_id = gba->scheduler.add_or_run_abs(static_cast<i64>(overflow_at), num, this, &timer_overflow, &sch_scheduled_still);
+        sch_id = gba->scheduler.add_or_run_abs(static_cast<i64>(overflow_at), num, gba, &timer_overflow, &sch_scheduled_still);
 
     if (irq_on_overflow) {
-        u32 old_IF = gba->io.IF;
+        const u32 old_IF = gba->io.IF;
         gba->io.IF |= 8 << num;
         if (old_IF != gba->io.IF) {
             gba->eval_irqs();

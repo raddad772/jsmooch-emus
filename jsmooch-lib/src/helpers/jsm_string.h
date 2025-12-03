@@ -8,7 +8,7 @@
 #include "helpers/int.h"
 
 struct jsm_string {
-    char *ptr{}; // Pointer
+    char *ptr{nullptr}; // Pointer
     char *cur{}; // Current location in string
     u32 allocated_len{}; // Maximum length
 

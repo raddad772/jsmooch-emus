@@ -1005,6 +1005,7 @@ static void setup_image_view_sprites(core* th, debugger_interface *dbgr)
     iv->update_func.func = &render_image_view_sprites;
     snprintf(iv->label, sizeof(iv->label), "Layer/Sprites Viewer");
 
+    dview->options.reserve(20);
     debugger_widgets_add_checkbox(dview->options, "Draw transparencies", 1, 1, 1);
     debugger_widgets_add_checkbox(dview->options, "Draw 4bpp", 1, 1, 0);
     debugger_widgets_add_checkbox(dview->options, "Draw 8bpp", 1, 1, 1);
@@ -1073,6 +1074,7 @@ static void setup_image_view_bgmap(core* th, debugger_interface *dbgr, u32 wnum)
 
     iv->update_func.ptr = th;
 
+    dview->options.reserve(10);
     debugger_widgets_add_textbox(dview->options, "hsize:0  vsize:0", 1);
     debugger_widgets_add_checkbox(dview->options, "Testing test", 1, 0, 1);
     debugger_widget *rg = &debugger_widgets_add_radiogroup(dview->options, "Shade scroll area", 1, 0, 1);
@@ -1138,7 +1140,7 @@ static void setup_image_view_bg(core* th, debugger_interface *dbgr, u32 wnum)
     iv->viewport.p[1] = (ivec2){ 240, 160 };
 
     iv->update_func.ptr = th;
-
+    dview->options.reserve(dview->options.size()+5);
     debugger_widgets_add_textbox(dview->options, "num:%d enable:0 bpp:4", 1);
     debugger_widgets_add_checkbox(dview->options, "Highlight transparent pixels", 1, 0, 0);
     debugger_widgets_add_checkbox(dview->options, "Highlight window-shaded pixels", 1, 0, 0);
@@ -1229,6 +1231,7 @@ static void setup_image_view_window(core* th, debugger_interface *dbgr, u32 wnum
     iv->viewport.p[0] = ivec2(0, 0);
     iv->viewport.p[1] = (ivec2){ 240, 160 };
 
+    dview->options.reserve(10);
     debugger_widgets_add_textbox(dview->options, "enable:%d\nbg0:0  bg1:0  bg2:0  bg3:0  obj:0", 1);
 
     iv->update_func.ptr = th;
@@ -1326,6 +1329,7 @@ static void setup_image_view_sys_info(core *th, debugger_interface *dbgr)
 
     snprintf(iv->label, sizeof(iv->label), "Sys Info");
 
+    dview->options.reserve(15);
     debugger_widgets_add_textbox(dview->options, "blah!", 1);
 }
 

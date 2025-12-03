@@ -9,7 +9,7 @@ namespace GBA {
 
 struct core;
 struct TIMER {
-    explicit TIMER(core *parent, int num_in) : gba(parent), num(num_in) {}
+    explicit TIMER(core *parent, int num_in);
     int num{};
     struct {
         u32 io{};
