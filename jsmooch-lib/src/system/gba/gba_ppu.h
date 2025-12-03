@@ -80,12 +80,12 @@ struct core {
 
     void reset();
     static void schedule_frame(void *ptr, u64 key, u64 clock, u32 jitter);
+    void do_schedule_frame(i64 cur_clock);
 
 private:
     static void vblank(void *ptr, u64 val, u64 clock, u32 jitter);
     static void hblank(void *ptr, u64 key, u64 clock, u32 jitter);
 
-    void do_schedule_frame(i64 cur_clock);
     void do_hblank(bool in_hblank);
     void get_affine_bg_pixel(u32 bgnum, const BG &bg, i32 px, i32 py, PX *opx);
     void get_affine_sprite_pixel(u32 mode, i32 px, i32 py, u32 tile_num, u32 htiles, u32 vtiles,  bool bpp8, u32 palette, u32 priority, u32 obj_mapping_1d, u32 dsize, i32 screen_x, u32 blended, PPU::window *w);
@@ -114,7 +114,6 @@ private:
     void draw_line3(u16 *line_output);
     void draw_line4(u16 *line_output);
     void draw_line5(u16 *line_output);
-    void process_button_IRQ();
     u32 read_invalid(u32 addr, u8 sz, u8 access, bool has_effect);
     void write_invalid(u32 addr, u8 sz, u8 access, u32 val);
     void calc_screen_size(u32 num, u32 mode);

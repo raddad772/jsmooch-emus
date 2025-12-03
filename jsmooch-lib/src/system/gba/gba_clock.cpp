@@ -5,6 +5,6 @@
 #include "gba_clock.h"
 
 namespace GBA {
-void reset() {}
+void clock::reset() {}
 
 }

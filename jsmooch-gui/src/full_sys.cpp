@@ -840,7 +840,7 @@ void full_system::load_default_ROM()
             //worked = grab_ROM(&ROMs, which, "PSX/GTE/GTETransfer/GTETransfer.exe", nullptr);
             break;
         case jsm::systems::GBA:
-            //worked = grab_ROM(&ROMs, which, "panda.gba", nullptr);
+            worked = grab_ROM(&ROMs, which, "panda.gba", nullptr);
             //worked = grab_ROM(&ROMs, which, "armwrestler-gba-fixed.gba", nullptr);
             //worked = grab_ROM(&ROMs, which, "arm.gba", nullptr);
             //worked = grab_ROM(&ROMs, which, "thumb.gba", nullptr);
@@ -898,7 +898,7 @@ void full_system::load_default_ROM()
             //worked = grab_ROM(&ROMs, which, "goldensun.gba", nullptr);
             //worked = grab_ROM(&ROMs, which, "goldensun2.gba", nullptr);
             //worked = grab_ROM(&ROMs, which, "wario4.gba", nullptr);
-            worked = grab_ROM(&ROMs, which, "suite.gba", nullptr);
+            //worked = grab_ROM(&ROMs, which, "suite.gba", nullptr);
             //worked = grab_ROM(&ROMs, which, "suite_built.gba", nullptr);
             //worked = grab_ROM(&ROMs, which, "oh my gah.gba", nullptr);
             //worked = grab_ROM(&ROMs, which, "aging_cart.gba", nullptr);

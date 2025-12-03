@@ -19,18 +19,18 @@
 //#include "system/mac/mac.h"
 #include "helpers/debug.h"
 #include "system/gba/gba.h"
-#include "system/galaksija/galaksija.h"
-#include "system/tg16/tg16.h"
+//#include "system/galaksija/galaksija.h"
+//#include "system/tg16/tg16.h"
 
 jsm_system* new_system(jsm::systems which)
 {
     dbg_init();
     jsm_system* out = nullptr;
     switch (which) {
-        /*case jsm::systems::GBA:
-            GBA_new(out);
+        case jsm::systems::GBA:
+            out = GBA_new();
             break;
-        case jsm::systems::NDS:
+        /*case jsm::systems::NDS:
             NDS_new(out);
             break;*/
         case jsm::systems::COMMODORE64:

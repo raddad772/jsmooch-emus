@@ -1076,11 +1076,11 @@ int imgui_jsmooch_app::do_setup_before_mainloop()
     //which = jsm::systems::SG1000;
     //which = jsm::systems::MAC512K;
     //which = jsm::systems::DREAMCAST;
-    //which = jsm::systems::GBA;
+    which = jsm::systems::GBA;
     //which = jsm::systems::SNES;
     //which = jsm::systems::COSMAC_VIP_2k;
     //which = jsm::systems::COSMAC_VIP_4k;
-    which = jsm::systems::GENESIS_USA;
+    //which = jsm::systems::GENESIS_USA;
     //which = jsm::systems::MEGADRIVE_PAL;
     //which = jsm::systems::NDS;
     //which = jsm::systems::TURBOGRAFX16;

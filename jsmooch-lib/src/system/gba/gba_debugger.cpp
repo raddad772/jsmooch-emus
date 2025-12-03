@@ -1337,7 +1337,7 @@ static void setup_dbglog(debugger_interface *dbgr, core *th) {
     snprintf(dv->name, sizeof(dv->name), "Trace");
     dv->has_extra = 1;
 
-    dbglog_category_node &root = dbglog_category_get_root(*dv);
+    dbglog_category_node &root = dv->get_category_root();
     dbglog_category_node &arm7 = root.add_node(*dv, "ARM7TDMI", nullptr, 0, 0);
     arm7.add_node(*dv, "Instruction Trace", "ARM7", CAT_ARM7_INSTRUCTION, 0x80FF80);
     th->cpu.trace.dbglog.view = dv;

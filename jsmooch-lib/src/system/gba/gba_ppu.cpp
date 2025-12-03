@@ -1132,7 +1132,7 @@ void core::do_schedule_frame(i64 cur_clock)
     cur_output = static_cast<u16 *>(display->output[display->last_written ^ 1]);
     display->last_written ^= 1;
     gba->clock.master_frame++;
-    process_button_IRQ();
+    gba->process_button_IRQ();
 }
 
 

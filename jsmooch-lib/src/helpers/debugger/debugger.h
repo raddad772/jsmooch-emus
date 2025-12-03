@@ -576,7 +576,7 @@ struct debugger_interface {
     u32 supported_by_core;
 };
 
-dbglog_category_node &dbglog_category_get_root(dbglog_view &dv);
+//dbglog_category_node &dbglog_category_get_root(dbglog_view &dv);
 
 void debugger_report_event(cvec_ptr<debugger_view> &viewptr, i32 event_id);
 void debugger_report_frame(debugger_interface *dbgr);

@@ -286,6 +286,8 @@ set(SOURCE_LIST
         src/component/misc/m6526/m6526.h
         src/system/commodore64/c64_keyboard.cpp
         src/system/commodore64/c64_keyboard.h
+        src/system/gba/gba_serialize.cpp
+        src/system/gba/gba_serialize.h
 )
 
 # TODO: Fix elf-parser repo for windows
