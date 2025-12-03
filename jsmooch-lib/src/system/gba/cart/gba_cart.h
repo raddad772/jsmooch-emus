@@ -3,13 +3,15 @@
 //
 
 #pragma once
+
+#include "helpers/int.h"
+#include "helpers/buf.h"
+
 namespace GBA {
     struct core;
 }
 
 namespace GBA::cart {
-#include "helpers/buf.h"
-#include "helpers/int.h"
 
 enum flash_kinds {
     FK_atmel,
@@ -73,26 +75,26 @@ struct core {
     buf ROM{};
 
     bool prefetch_stop() const;
-    u32 read(u32 addr, u32 sz, u32 access, bool has_effect, u32 ws);
-    void write(u32 addr, u32 sz, u32 access, u32 val);
-    bool load_ROM_from_RAM(char* fil, u64 fil_sz, physical_io_device *pio, u32 *SRAM_enable);
+    static void write(GBA::core *gba, u32 addr, u8 sz, u8 access, u32 val);
+    static u32 read_wait0(GBA::core *gba, u32 addr, u8 sz, u8 access, bool has_effect);
+    static u32 read_wait1(GBA::core *gba, u32 addr, u8 sz, u8 access, bool has_effect);
+    static u32 read_wait2(GBA::core *gba, u32 addr, u8 sz, u8 access, bool has_effect);
+    static u32 read_sram(GBA::core *gba, u32 addr, u8 sz, u8 access, bool has_effect);
+    static void write_sram(GBA::core *gba, u32 addr, u8 sz, u8 access, u32 val);
+    bool load_ROM_from_RAM(const char* fil, u64 fil_sz, physical_io_device *pio, u32 *SRAM_enable);
 
 private:
-    u32 read_wait0(u32 addr, u32 sz, u32 access, bool has_effect);
-    u32 read_wait1(u32 addr, u32 sz, u32 access, bool has_effect);
-    u32 read_wait2(u32 addr, u32 sz, u32 access, bool has_effect);
-    u32 read_sram(u32 addr, u32 sz, u32 access, bool has_effect);
-    void write_sram(u32 addr, u32 sz, u32 access, u32 val);
-    void write_RTC(u32 addr, u32 sz, u32 access, u32 val);
-    void detect_RTC(buf *ROM);
+    u32 read(u32 addr, u8 sz, u8 access, bool has_effect, u32 ws);
+    void write_RTC(u32 addr, u8 sz, u8 access, u32 val);
+    void detect_RTC(const buf *ROM);
     void init_eeprom();
-    void write_eeprom(u32 addr, u32 sz, u32 access, u32 val);
-    u32 read_eeprom(u32 addr, u32 sz, u32 access, bool has_effect);
+    void write_eeprom(u32 addr, u8 sz, u8 access, u32 val);
+    u32 read_eeprom(u32 addr, u8 sz, u8 access, bool has_effect);
     void erase_flash();
     void write_flash_cmd(u32 addr, u32 cmd);
-    u32 read_flash(u32 addr, u32 sz, u32 access, bool has_effect);
-    void write_flash(u32 addr, u32 sz, u32 access, u32 val);
-    void finish_flash_cmd(u32 addr, u32 sz, u32 val);
+    u32 read_flash(u32 addr, u8 sz, u8 access, bool has_effect);
+    void write_flash(u32 addr, u8 sz, u8 access, u32 val);
+    void finish_flash_cmd(u32 addr, u8 sz, u32 val);
 
 public:
     struct {

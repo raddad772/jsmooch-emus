@@ -4,6 +4,7 @@
 
 #pragma once
 //#define GBA_STATS
+#include "helpers/sys_interface.h"
 
 #include "gba_clock.h"
 #include "gba_ppu.h"
@@ -17,27 +18,11 @@
 #include "component/cpu/arm7tdmi/arm7tdmi.h"
 
 namespace GBA {
-typedef u32 (*rdfunc)(core *, u32 addr, u32 sz, u32 access, bool has_effect);
-typedef void (*wrfunc)(core *, u32 addr, u32 sz, u32 access, u32 val);
+typedef u32 (*rdfunc)(core *, u32 addr, u8 sz, u8 access, bool has_effect);
+typedef void (*wrfunc)(core *, u32 addr, u8 sz, u8 access, u32 val);
 
-struct core {
+struct core : jsm_system {
     core();
-    ARM7TDMI::core cpu;
-    clock clock{};
-    cart::core cart;
-    PPU::core ppu;
-    controller controller{};
-    APU apu{};
-    scheduler_t scheduler;
-
-    [[nodiscard]] u64 clock_current() const { return clock.master_cycle_count + waitstates.current_transaction; }
-    void eval_irqs();
-    void process_button_IRQ();
-
-    struct { // Only bits 27-24 are needed to distinguish valid endpoints
-        rdfunc read[16]{};
-        wrfunc write[16]{};
-    } mem{};
 
     struct {
         u64 current_transaction{};
@@ -53,6 +38,52 @@ struct core {
         u32 timing16[2][16]{}; // 0=nonsequential, 1=sequential
         u32 timing32[2][16]{}; // 0=nonsequential, 1=sequential
     } waitstates{};
+
+    clock clock{};
+    ARM7TDMI::core cpu;
+    cart::core cart;
+    PPU::core ppu;
+    controller controller{};
+    APU::core apu;
+    scheduler_t scheduler;
+
+    [[nodiscard]] u64 clock_current() const { return clock.master_cycle_count + waitstates.current_transaction; }
+    void eval_irqs();
+    void process_button_IRQ();
+
+    struct { // Only bits 27-24 are needed to distinguish valid endpoints
+        rdfunc read[16]{&core::busrd_invalid};
+        wrfunc write[16]{&core::buswr_invalid};
+    } mem{};
+
+    u32 mainbus_read(u32 addr, u8 sz, u8 access, bool has_effect);
+    u32 mainbus_fetchins(u32 addr, u8 sz, u8 access);
+    void mainbus_write(u32 addr, u8 sz, u8 access, u32 val);
+    void enable_prefetch();
+
+private:
+    void trace_read(u32 addr, u8 sz, u32 val) const;
+    void trace_write(u32 addr, u8 sz, u32 val) const;
+    static u32 busrd_invalid(core *th, u32 addr, u8 sz, u8 access, bool has_effect);
+    static u32 busrd_bios(core *th, u32 addr, u8 sz, u8 access, bool has_effect);
+    static u32 busrd_WRAM_slow(core *th, u32 addr, u8 sz, u8 access, bool has_effect);
+    static u32 busrd_WRAM_fast(core *th, u32 addr, u8 sz, u8 access, bool has_effect);
+    static u32 busrd_IO(core *th, u32 addr, u8 sz, u8 access, bool has_effect);
+    static void buswr_invalid(core *th, u32 addr, u8 sz, u8 access, u32 val);
+    static void buswr_bios(core *th, u32 addr, u8 sz, u8 access, u32 val);
+    static void buswr_WRAM_slow(core *th, u32 addr, u8 sz, u8 access, u32 val);
+    static void buswr_WRAM_fast(core *th, u32 addr, u8 sz, u8 access, u32 val);
+    static void buswr_IO(core *th, u32 addr, u8 sz, u8 access, u32 val);
+
+    u32 busrd_IO8(u32 addr, u8 sz, u8 access, bool has_effect);
+    void set_waitstates();
+
+public:
+    void buswr_IO8(u32 addr, u8 sz, u8 access, u32 val);
+    void check_dma_at_hblank();
+    void check_dma_at_vblank();
+    u32 open_bus_byte(u32 addr) const;
+    u32 open_bus(u32 addr, u32 sz) const;
 
     char WRAM_slow[256 * 1024]{};
     char WRAM_fast[32 * 1024]{};
@@ -84,7 +115,7 @@ struct core {
 
         u8 POSTFLG{};
 
-        i32 bios_open_bus{};
+        u32 bios_open_bus{};
         u32 dma_open_bus{};
     } io{};
 

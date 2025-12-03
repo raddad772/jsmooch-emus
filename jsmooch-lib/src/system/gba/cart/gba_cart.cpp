@@ -38,7 +38,7 @@ bool core::prefetch_stop() const {
     return false;
 }
 
-u32 core::read(u32 addr, u32 sz, u32 access, bool has_effect, u32 ws) {
+u32 core::read(u32 addr, u8 sz, u8 access, bool has_effect, u32 ws) {
     if ((RAM.is_eeprom) && (addr >= 0x0d000000) && (addr < 0x0e000000)) {
         u32 v =  read_eeprom(addr, sz, access, has_effect);
         //printf("\nRead EEPROM addr:%08x  sz:%d  val:%02x", addr, sz, v);
@@ -152,35 +152,39 @@ u32 core::read(u32 addr, u32 sz, u32 access, bool has_effect, u32 ws) {
     return cR[sz](ROM.ptr, addr);
 }
 
-u32 core::read_wait0(u32 addr, u32 sz, u32 access, bool has_effect)
+u32 core::read_wait0(GBA::core *gba, u32 addr, u8 sz, u8 access, bool has_effect)
 {
+    auto *th = &gba->cart;
     addr &= maskalign[sz];
-    return read(addr, sz, access, has_effect, 0);
+    return th->read(addr, sz, access, has_effect, 0);
 }
 
-u32 core::read_wait1(u32 addr, u32 sz, u32 access, bool has_effect)
+u32 core::read_wait1(GBA::core *gba, u32 addr, u8 sz, u8 access, bool has_effect)
 {
+    auto *th = &gba->cart;
     addr &= maskalign[sz];
-    return read(addr, sz, access, has_effect, 1);
+    return th->read(addr, sz, access, has_effect, 1);
 }
 
-u32 core::read_wait2(u32 addr, u32 sz, u32 access, bool has_effect)
+u32 core::read_wait2(GBA::core *gba, u32 addr, u8 sz, u8 access, bool has_effect)
 {
+    auto *th = &gba->cart;
     addr &= maskalign[sz];
-    return read(addr, sz, access, has_effect, 2);
+    return th->read(addr, sz, access, has_effect, 2);
 }
 
 
 
-u32 core::read_sram(u32 addr, u32 sz, u32 access, bool has_effect)
+u32 core::read_sram(GBA::core *gba, u32 addr, u8 sz, u8 access, bool has_effect)
 {
-    if (RAM.is_flash) return read_flash(addr, sz, access, has_effect);
+    auto *th = &gba->cart;
+    if (th->RAM.is_flash) return th->read_flash(addr, sz, access, has_effect);
 
     /*if (addr >= 0x0E010000) {
         return GBA_open_bus(addr, sz);
     }*/
 
-    u32 v = static_cast<u8 *>(RAM.store->data)[addr & RAM.mask];
+    u32 v = static_cast<u8 *>(th->RAM.store->data)[addr & th->RAM.mask];
     if (sz == 2) {
         v *= 0x101;
     }
@@ -191,34 +195,36 @@ u32 core::read_sram(u32 addr, u32 sz, u32 access, bool has_effect)
     return v;
 }
 
-void core::write_RTC(u32 addr, u32 sz, u32 access, u32 val)
+void core::write_RTC(u32 addr, u8 sz, u8 access, u32 val)
 {
     // Ignore byte writes...weirdly?
     if (sz == 1) return;
 }
 
-void core::write(u32 addr, u32 sz, u32 access, u32 val)
+void core::write(GBA::core *gba, u32 addr, u8 sz, u8 access, u32 val)
 {
+    auto *th = &gba->cart;
     addr &= maskalign[sz];
-    if (RTC.present && (addr >= 0x080000C4) && (addr < 0x080000CA)) {
-        return write_RTC(addr, sz, access, val);
+    if (th->RTC.present && (addr >= 0x080000C4) && (addr < 0x080000CA)) {
+        return th->write_RTC(addr, sz, access, val);
     }
-    if (RAM.is_eeprom && (addr >= 0x0d000000) && (addr < 0x0e000000)) {
+    if (th->RAM.is_eeprom && (addr >= 0x0d000000) && (addr < 0x0e000000)) {
         //printf("\nWrite EEPROM addr:%08x  sz:%d  val:%02x", addr, sz, val);
-        return write_eeprom(addr, sz, access, val);
+        return th->write_eeprom(addr, sz, access, val);
     }
     gba->waitstates.current_transaction++;
-    gba->waitstates.current_transaction += prefetch_stop();
-    prefetch.cycles_banked = 0;
+    gba->waitstates.current_transaction += th->prefetch_stop();
+    th->prefetch.cycles_banked = 0;
     printf("\nWARNING write cart addr %08x", addr);
 }
 
 
 
 
-void core::write_sram(u32 addr, u32 sz, u32 access, u32 val)
+void core::write_sram(GBA::core *gba, u32 addr, u8 sz, u8 access, u32 val)
 {
-    if (RAM.is_flash) return write_flash(addr, sz, access, val);
+    auto *th = &gba->cart;
+    if (th->RAM.is_flash) return th->write_flash(addr, sz, access, val);
 
     //printf("\nWRITE SRAM! %08x", addr);
     if (sz == 2) {
@@ -230,9 +236,9 @@ void core::write_sram(u32 addr, u32 sz, u32 access, u32 val)
         else if ((addr & 3) == 3) val >>= 24;
     }
     val &= 0xFF;
-    ((u8 *)RAM.store->data)[addr & RAM.mask] = val;
+    static_cast<u8 *>(th->RAM.store->data)[addr & th->RAM.mask] = val;
     gba->waitstates.current_transaction += gba->waitstates.sram;
-    RAM.store->dirty = 1;
+    th->RAM.store->dirty = true;
 }
 
 enum save_kinds {
@@ -265,7 +271,7 @@ static bool cmpstr(const buf *f, const u32 addr, const char *cmp)
 }
 
 
-static save_kinds search_strings(buf *f)
+static save_kinds search_strings(const buf *f)
 {
     /* First, find a first blush. */
     i64 found_addr = -1;
@@ -285,7 +291,7 @@ static save_kinds search_strings(buf *f)
     return SK_none;
 }
 
-void core::detect_RTC(buf *mROM)
+void core::detect_RTC(const buf *mROM)
 {
     // offset 00000C4 at least 6 bytes filled with 0
     auto *ptr = static_cast<u8 *>(mROM->ptr) + 0xC4;
@@ -297,7 +303,7 @@ void core::detect_RTC(buf *mROM)
     if (detect) printf("\nRTC DETECTED!");
 }
 
-bool core::load_ROM_from_RAM(char* fil, u64 fil_sz, physical_io_device *pio, u32 *SRAM_enable) {
+bool core::load_ROM_from_RAM(const char* fil, u64 fil_sz, physical_io_device *pio, u32 *SRAM_enable) {
     ROM.allocate(fil_sz);
     memcpy(ROM.ptr, fil, fil_sz);
     if (SRAM_enable) *SRAM_enable = 1;

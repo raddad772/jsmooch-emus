@@ -92,7 +92,7 @@ static u32 flash_bank_mask(flash_kinds kind)
 }
 
 
-u32 core::read_flash(u32 addr, u32 sz, u32 access, bool has_effect)
+u32 core::read_flash(u32 addr, u8 sz, u8 access, bool has_effect)
 {
     addr &= 0x00FFFF;
     addr |= 0x0E000000;
@@ -138,7 +138,7 @@ u32 core::read_flash(u32 addr, u32 sz, u32 access, bool has_effect)
     return v;
 }
 
-void core::finish_flash_cmd(u32 addr, u32 sz, u32 val) {
+void core::finish_flash_cmd(u32 addr, u8 sz, u32 val) {
     RAM.flash.cmd_loc = 0;
     if (RAM.flash.state == FS_await_bank) {
         val &= flash_bank_mask(RAM.flash.kind);
@@ -162,7 +162,7 @@ void core::finish_flash_cmd(u32 addr, u32 sz, u32 val) {
     }
 }
 
-void core::write_flash(u32 addr, u32 sz, u32 access, u32 val)
+void core::write_flash(u32 addr, u8 sz, u8 access, u32 val)
 {
     gba->waitstates.current_transaction += gba->waitstates.sram;
     addr &= 0x00FFFF;

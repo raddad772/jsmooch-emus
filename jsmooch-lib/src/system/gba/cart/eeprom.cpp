@@ -98,7 +98,7 @@ static void pprint_RAM_hw_bit0(GBA::core *th, u32 addr, u32 numbits, u32 was_rea
 }
 
 
-void core::write_eeprom(u32 addr, u32 sz, u32 access, u32 val)
+void core::write_eeprom(u32 addr, u8 sz, u8 access, u32 val)
 {
     auto &e = RAM.eeprom;
     gba->waitstates.current_transaction += gba->waitstates.sram;
@@ -175,7 +175,7 @@ void core::write_eeprom(u32 addr, u32 sz, u32 access, u32 val)
     }
 }
 
-u32 core::read_eeprom(u32 addr, u32 sz, u32 access, bool has_effect)
+u32 core::read_eeprom(u32 addr, u8 sz, u8 access, bool has_effect)
 {
     auto &e = RAM.eeprom;
     gba->waitstates.current_transaction += gba->waitstates.sram;

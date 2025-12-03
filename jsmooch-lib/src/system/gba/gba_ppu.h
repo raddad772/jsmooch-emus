@@ -115,21 +115,22 @@ private:
     void draw_line4(u16 *line_output);
     void draw_line5(u16 *line_output);
     void process_button_IRQ();
-    u32 read_invalid(u32 addr, u32 sz, u32 access, bool has_effect);
-    void write_invalid(u32 addr, u32 sz, u32 access, u32 val);
-    u32 mainbus_read_palette(u32 addr, u32 sz, u32 access, bool has_effect);
-    u32 mainbus_read_VRAM(u32 addr, u32 sz, u32 access, bool has_effect);
-    u32 mainbus_read_OAM(u32 addr, u32 sz, u32 access, bool has_effect);
-    u32 mainbus_read_IO(u32 addr, u32 sz, u32 access, bool has_effect);
-    void mainbus_write_palette(u32 addr, u32 sz, u32 access, u32 val);
-    void mainbus_write_VRAM(u32 addr, u32 sz, u32 access, u32 val);
-    void mainbus_write_OAM(u32 addr, u32 sz, u32 access, u32 val);
-    void mainbus_write_IO(u32 addr, u32 sz, u32 access, u32 val);
+    u32 read_invalid(u32 addr, u8 sz, u8 access, bool has_effect);
+    void write_invalid(u32 addr, u8 sz, u8 access, u32 val);
     void calc_screen_size(u32 num, u32 mode);
     void update_bg_x(u32 bgnum, u32 which, u32 val);
     void update_bg_y(u32 bgnum, u32 which, u32 val);
 
 public:
+    static u32 mainbus_read_palette(GBA::core *gba, u32 addr, u8 sz, u8 access, bool has_effect);
+    static u32 mainbus_read_VRAM(GBA::core *gba, u32 addr, u8 sz, u8 access, bool has_effect);
+    static u32 mainbus_read_OAM(GBA::core *gba, u32 addr, u8 sz, u8 access, bool has_effect);
+    static u32 mainbus_read_IO(GBA::core *gba, u32 addr, u8 sz, u8 access, bool has_effect);
+    static void mainbus_write_palette(GBA::core *gba, u32 addr, u8 sz, u8 access, u32 val);
+    static void mainbus_write_VRAM(GBA::core *gba, u32 addr, u8 sz, u8 access, u32 val);
+    static void mainbus_write_OAM(GBA::core *gba, u32 addr, u8 sz, u8 access, u32 val);
+    static void mainbus_write_IO(GBA::core *gba, u32 addr, u8 sz, u8 access, u32 val);
+
     struct {
         struct {
             u32 hsize{1}, vsize{1};

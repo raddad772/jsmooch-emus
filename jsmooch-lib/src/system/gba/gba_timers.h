@@ -9,8 +9,7 @@ namespace GBA {
 
 struct core;
 struct TIMER {
-
-    explicit TIMER(core *parent, int num_in) : bus(parent), num(num_in) {}
+    explicit TIMER(core *parent, int num_in) : gba(parent), num(num_in) {}
     int num{};
     struct {
         u32 io{};
@@ -18,12 +17,12 @@ struct TIMER {
         u32 counter{};
     } divider{};
 
-    core *bus;
+    core *gba;
 
     u32 shift{};
 
-    u64 enable_at{};
-    u64 overflow_at{}; // cycle # we'll overflow at
+    u64 enable_at{0xFFFFFFFFFFFFFFFF};
+    u64 overflow_at{0xFFFFFFFFFFFFFFFF}; // cycle # we'll overflow at
     u64 sch_id{};
     u32 sch_scheduled_still{};
     u32 cascade{};
@@ -37,7 +36,7 @@ struct TIMER {
     void overflow(u64 current_time);
     void cascade_timer_step(u64 current_time);
     static void timer_overflow(void *ptr, u64 timer_num, u64 current_clock, u32 jitter);
-    static void write_cnt(void *ptr, u64 tn_and_val, u64 clock, u32 jitter);
+    void write_cnt(u32 val, u64 clock, u32 jitter);
 } ;
 
 

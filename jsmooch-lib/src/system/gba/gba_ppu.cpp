@@ -58,7 +58,7 @@ void core::vblank(void *ptr, u64 val, u64 clock, u32 jitter)
 
 #define OUT_WIDTH 240
 
-static void get_obj_tile_size(u32 sz, u32 shape, u32 *htiles, u32 *vtiles)
+static void get_obj_tile_size(u8 sz, u32 shape, u32 *htiles, u32 *vtiles)
 {
 #define T(s1, s2, hn, vn) case (((s1) << 2) | (s2)): *htiles = hn; *vtiles = vn; return;
     switch((sz << 2) | shape) {
@@ -416,7 +416,7 @@ void core::draw_obj_line()
     // n*1 cycles per pixel
     // 10 + n*2 per pixel if rotated/scaled
     for (u32 i = 0; i < 128; i++) {
-        u16 *ptr = reinterpret_cast<u16 *>(OAM) + (i * 4);
+        const u16 *ptr = reinterpret_cast<u16 *>(OAM) + (i * 4);
         const u32 affine = (ptr[0] >> 8) & 1;
 
         if (affine) draw_sprite_affine(ptr, w, i);
@@ -960,7 +960,7 @@ void core::draw_line5(u16 *line_output)
     memset(&mbg[1].line, 0, sizeof(mbg[1].line));
     draw_bg_line5();
     memset(&mbg[3].line, 0, sizeof(mbg[3].line));
-    calcualte_windows(false);
+    calculate_windows(false);
     apply_mosaic();
 
     bool bg_enables[4] = {false, false, mbg[2].enable, false};
@@ -1136,21 +1136,22 @@ void core::do_schedule_frame(i64 cur_clock)
 }
 
 
-u32 core::read_invalid(u32 addr, u32 sz, u32 access, bool has_effect)
+u32 core::read_invalid(u32 addr, u8 sz, u8 access, bool has_effect)
 {
     printf("\nREAD UNKNOWN PPU ADDR:%08x sz:%d", addr, sz);
     return gba->open_bus_byte(addr);
 }
 
-void core::write_invalid(u32 addr, u32 sz, u32 access, u32 val)
+void core::write_invalid(u32 addr, u8 sz, u8 access, u32 val)
 {
     printf("\nWRITE UNKNOWN PPU ADDR:%08x sz:%d DATA:%08x", addr, sz, val);
     //dbg.var++;
     //if (dbg.var > 5) dbg_break("too many ppu write", gba->clock.master_cycle_count);
 }
 
-u32 core::mainbus_read_palette(u32 addr, u32 sz, u32 access, bool has_effect)
+u32 core::mainbus_read_palette(GBA::core *gba, u32 addr, u8 sz, u8 access, bool has_effect)
 {
+    auto *th = &gba->ppu;
     addr &= maskalign[sz];
 
     gba->waitstates.current_transaction++;
@@ -1158,48 +1159,52 @@ u32 core::mainbus_read_palette(u32 addr, u32 sz, u32 access, bool has_effect)
         gba->waitstates.current_transaction++;
     }
     //if (addr < 0x05000400)
-    return cR[sz](palette_RAM, addr & 0x3FF);
+    return cR[sz](th->palette_RAM, addr & 0x3FF);
 
     //return GBA_PPU_read_invalid(addr, sz, access, has_effect);
 }
 
-u32 core::mainbus_read_VRAM(u32 addr, u32 sz, u32 access, bool has_effect)
+u32 core::mainbus_read_VRAM(GBA::core *gba, u32 addr, u8 sz, u8 access, bool has_effect)
 {
+    auto *th = &gba->ppu;
     addr &= maskalign[sz];
     gba->waitstates.current_transaction += (sz == 4) ? 2 : 1;
     addr &= 0x1FFFF;
     if (addr < 0x18000)
-        return cR[sz](VRAM, addr);
+        return cR[sz](th->VRAM, addr);
     else
-        return cR[sz](VRAM, addr - 0x8000);
+        return cR[sz](th->VRAM, addr - 0x8000);
 }
 
-u32 core::mainbus_read_OAM(u32 addr, u32 sz, u32 access, bool has_effect) {
+u32 core::mainbus_read_OAM(GBA::core *gba, u32 addr, u8 sz, u8 access, bool has_effect) {
+    auto *th = &gba->ppu;
     addr &= maskalign[sz];
     gba->waitstates.current_transaction++;
     //if (addr < 0x07000400)
-        return cR[sz](OAM, addr & 0x3FF);
+        return cR[sz](th->OAM, addr & 0x3FF);
 
     //return GBA_PPU_read_invalid(addr, sz, access, has_effect);
 }
 
-void core::mainbus_write_palette(u32 addr, u32 sz, u32 access, u32 val)
+void core::mainbus_write_palette(GBA::core *gba, u32 addr, u8 sz, u8 access, u32 val)
 {
+    auto *th = &gba->ppu;
     gba->waitstates.current_transaction += (sz == 4) ? 2 : 1;
     addr &= maskalign[sz];
 
     if (sz == 1) { sz = 2; val = (val & 0xFF) | ((val << 8) & 0xFF00); }
 
-    return cW[sz](palette_RAM, addr & 0x3FF, val);
+    return cW[sz](th->palette_RAM, addr & 0x3FF, val);
 }
 
-void core::mainbus_write_VRAM(u32 addr, u32 sz, u32 access, u32 val)
+void core::mainbus_write_VRAM(GBA::core *gba, u32 addr, u8 sz, u8 access, u32 val)
 {
-    DBG_EVENT(DBG_GBA_EVENT_WRITE_VRAM);
+    auto *th = &gba->ppu;
+    DBG_EVENT_TH(DBG_GBA_EVENT_WRITE_VRAM);
     addr &= maskalign[sz];
     gba->waitstates.current_transaction += (sz == 4) ? 2 : 1;
 
-    u32 vram_boundary = io.bg_mode >= 3 ? 0x14000 : 0x10000;
+    u32 vram_boundary = th->io.bg_mode >= 3 ? 0x14000 : 0x10000;
     u32 mask = sz == 4 ? 0xFFFFFFFF : (sz == 2 ? 0xFFFF : 0xFF);
     val &= mask;
     addr &= 0x1FFFF;
@@ -1212,7 +1217,7 @@ void core::mainbus_write_VRAM(u32 addr, u32 sz, u32 access, u32 val)
                     return;
                 }
             }
-            return cW[sz](VRAM, addr, val);
+            return cW[sz](th->VRAM, addr, val);
         }
         return;
     }
@@ -1222,19 +1227,20 @@ void core::mainbus_write_VRAM(u32 addr, u32 sz, u32 access, u32 val)
             sz = 2;
             val = (val << 8) | val;
         }
-        return cW[sz](VRAM, addr, val);
+        return cW[sz](th->VRAM, addr, val);
     }
 
-    write_invalid(addr, sz, access, val);
+    th->write_invalid(addr, sz, access, val);
 }
 
-void core::mainbus_write_OAM(u32 addr, u32 sz, u32 access, u32 val)
+void core::mainbus_write_OAM(GBA::core *gba, u32 addr, u8 sz, u8 access, u32 val)
 {
+    auto *th = &gba->ppu;
     gba->waitstates.current_transaction++;
     addr &= maskalign[sz];
     if (sz == 1) return;
     //if (addr < 0x07000400)
-    return cW[sz](OAM, addr & 0x3FF, val);
+    return cW[sz](th->OAM, addr & 0x3FF, val);
 
     //GBA_PPU_write_invalid(addr, sz, access, val);
 }
@@ -1257,38 +1263,39 @@ void core::mainbus_write_OAM(u32 addr, u32 sz, u32 access, u32 val)
 #define BLDALPHA 0x04000052
 #define BLDY 0x04000054
 
-u32 core::mainbus_read_IO(u32 addr, u32 sz, u32 access, bool has_effect)
+u32 core::mainbus_read_IO(GBA::core *gba, u32 addr, u8 sz, u8 access, bool has_effect)
 {
+    auto *th = &gba->ppu;
     u32 v = 0;
     addr &= maskalign[sz];
     switch(addr) {
         case 0x04000000: // DISPCTRL lo DISPCNT
-            v = io.bg_mode;
-            v |= (io.frame) << 4;
-            v |= (io.hblank_free) << 5;
-            v |= (io.obj_mapping_1d) << 6;
-            v |= (io.force_blank) << 7;
+            v = th->io.bg_mode;
+            v |= (th->io.frame) << 4;
+            v |= (th->io.hblank_free) << 5;
+            v |= (th->io.obj_mapping_1d) << 6;
+            v |= (th->io.force_blank) << 7;
             return v;
         case 0x04000001: // DISPCTRL hi
-            v = (mbg[0].enable);
-            v |= (mbg[1].enable) << 1;
-            v |= (mbg[2].enable) << 2;
-            v |= (mbg[3].enable) << 3;
-            v |= (obj.enable) << 4;
-            v |= (window[0].enable) << 5;
-            v |= (window[1].enable) << 6;
-            v |= (window[WINOBJ].enable) << 7;
+            v = th->mbg[0].enable;
+            v |= th->mbg[1].enable << 1;
+            v |= th->mbg[2].enable << 2;
+            v |= th->mbg[3].enable << 3;
+            v |= th->obj.enable << 4;
+            v |= th->window[0].enable << 5;
+            v |= th->window[1].enable << 6;
+            v |= th->window[WINOBJ].enable << 7;
             return v;
         case 0x04000004: // DISPSTAT lo
             v = gba->clock.ppu.vblank_active;
             v |= gba->clock.ppu.hblank_active << 1;
-            v |=  (gba->clock.ppu.y == io.vcount_at) << 2;
-            v |= io.vblank_irq_enable << 3;
-            v |= io.hblank_irq_enable << 4;
-            v |= io.vcount_irq_enable << 5;
+            v |=  (gba->clock.ppu.y == th->io.vcount_at) << 2;
+            v |= th->io.vblank_irq_enable << 3;
+            v |= th->io.hblank_irq_enable << 4;
+            v |= th->io.vcount_irq_enable << 5;
             return v;
         case 0x04000005: // DISPSTAT hi
-            v = io.vcount_at;
+            v = th->io.vcount_at;
             return v;
         case 0x04000006: // VCNT lo
             return gba->clock.ppu.y;
@@ -1298,8 +1305,8 @@ u32 core::mainbus_read_IO(u32 addr, u32 sz, u32 access, bool has_effect)
         case 0x0400000A:
         case 0x0400000C:
         case 0x0400000E: {
-            u32 bgnum = (addr & 0b0110) >> 1;
-            BG &bg = mbg[bgnum];
+            const u32 bgnum = (addr & 0b0110) >> 1;
+            const BG &bg = th->mbg[bgnum];
             v = bg.priority;
             v |= bg.extrabits << 4;
             v |= (bg.character_base_block >> 12);
@@ -1310,66 +1317,66 @@ u32 core::mainbus_read_IO(u32 addr, u32 sz, u32 access, bool has_effect)
         case 0x0400000B:
         case 0x0400000D:
         case 0x0400000F: {
-            u32 bgnum = (addr & 0b0110) >> 1;
-            BG &bg = mbg[bgnum];
+            const u32 bgnum = (addr & 0b0110) >> 1;
+            const BG &bg = th->mbg[bgnum];
             v = bg.screen_base_block >> 11;
             if (bgnum >= 2) v |= bg.display_overflow << 5;
             v |= bg.screen_size << 6;
             return v; }
 
         case WININ:
-            v = window[0].active[1] << 0;
-            v |= window[0].active[2] << 1;
-            v |= window[0].active[3] << 2;
-            v |= window[0].active[4] << 3;
-            v |= window[0].active[0] << 4;
-            v |= window[0].active[5] << 5;
+            v = th->window[0].active[1] << 0;
+            v |= th->window[0].active[2] << 1;
+            v |= th->window[0].active[3] << 2;
+            v |= th->window[0].active[4] << 3;
+            v |= th->window[0].active[0] << 4;
+            v |= th->window[0].active[5] << 5;
             return v;
         case WININ+1:
-            v = window[1].active[1] << 0;
-            v |= window[1].active[2] << 1;
-            v |= window[1].active[3] << 2;
-            v |= window[1].active[4] << 3;
-            v |= window[1].active[0] << 4;
-            v |= window[1].active[5] << 5;
+            v = th->window[1].active[1] << 0;
+            v |= th->window[1].active[2] << 1;
+            v |= th->window[1].active[3] << 2;
+            v |= th->window[1].active[4] << 3;
+            v |= th->window[1].active[0] << 4;
+            v |= th->window[1].active[5] << 5;
             return v;
         case WINOUT:
-            v = window[WINOUTSIDE].active[1] << 0;
-            v |= window[WINOUTSIDE].active[2] << 1;
-            v |= window[WINOUTSIDE].active[3] << 2;
-            v |= window[WINOUTSIDE].active[4] << 3;
-            v |= window[WINOUTSIDE].active[0] << 4;
-            v |= window[WINOUTSIDE].active[5] << 5;
+            v = th->window[WINOUTSIDE].active[1] << 0;
+            v |= th->window[WINOUTSIDE].active[2] << 1;
+            v |= th->window[WINOUTSIDE].active[3] << 2;
+            v |= th->window[WINOUTSIDE].active[4] << 3;
+            v |= th->window[WINOUTSIDE].active[0] << 4;
+            v |= th->window[WINOUTSIDE].active[5] << 5;
             return v;
         case WINOUT+1:
-            v = window[WINOBJ].active[1] << 0;
-            v |= window[WINOBJ].active[2] << 1;
-            v |= window[WINOBJ].active[3] << 2;
-            v |= window[WINOBJ].active[4] << 3;
-            v |= window[WINOBJ].active[0] << 4;
-            v |= window[WINOBJ].active[5] << 5;
+            v = th->window[WINOBJ].active[1] << 0;
+            v |= th->window[WINOBJ].active[2] << 1;
+            v |= th->window[WINOBJ].active[3] << 2;
+            v |= th->window[WINOBJ].active[4] << 3;
+            v |= th->window[WINOBJ].active[0] << 4;
+            v |= th->window[WINOBJ].active[5] << 5;
             return v;
         case BLDCNT:
-            v = blend.targets_a[0] << 4;
-            v |= blend.targets_a[1] << 0;
-            v |= blend.targets_a[2] << 1;
-            v |= blend.targets_a[3] << 2;
-            v |= blend.targets_a[4] << 3;
-            v |= blend.targets_a[5] << 5;
-            v |= blend.mode << 6;
+            v = th->blend.targets_a[0] << 4;
+            v |= th->blend.targets_a[1] << 0;
+            v |= th->blend.targets_a[2] << 1;
+            v |= th->blend.targets_a[3] << 2;
+            v |= th->blend.targets_a[4] << 3;
+            v |= th->blend.targets_a[5] << 5;
+            v |= th->blend.mode << 6;
             return v;
         case BLDCNT+1:
-            v = blend.targets_b[0] << 4;
-            v |= blend.targets_b[1] << 0;
-            v |= blend.targets_b[2] << 1;
-            v |= blend.targets_b[3] << 2;
-            v |= blend.targets_b[4] << 3;
-            v |= blend.targets_b[5] << 5;
+            v = th->blend.targets_b[0] << 4;
+            v |= th->blend.targets_b[1] << 0;
+            v |= th->blend.targets_b[2] << 1;
+            v |= th->blend.targets_b[3] << 2;
+            v |= th->blend.targets_b[4] << 3;
+            v |= th->blend.targets_b[5] << 5;
             return v;
         case BLDALPHA:
-            return blend.eva_a;
+            return th->blend.eva_a;
         case BLDALPHA+1:
-            return blend.eva_b;
+            return th->blend.eva_b;
 
 
         case 0x04000002:
@@ -1449,7 +1456,7 @@ u32 core::mainbus_read_IO(u32 addr, u32 sz, u32 access, bool has_effect)
             return gba->open_bus_byte(addr);
         default:
     }
-    return read_invalid(addr, sz, access, has_effect);
+    return th->read_invalid(addr, sz, access, has_effect);
 }
 
 void core::calc_screen_size(u32 num, u32 mode)
@@ -1517,10 +1524,11 @@ void core::update_bg_y(u32 bgnum, u32 which, u32 val)
     //printf("\nline:%d Y%d update:%08x", gba->clock.ppu.y, bgnum, v);
 }
 
-void core::mainbus_write_IO(u32 addr, u32 sz, u32 access, u32 val) {
+void core::mainbus_write_IO(GBA::core *gba, u32 addr, u8 sz, u8 access, u32 val) {
+    auto *th = &gba->ppu;
     addr &= maskalign[sz];
     if ((addr >= 0x04000020) && (addr < 0x04000040)) {
-        DBG_EVENT(DBG_GBA_EVENT_WRITE_AFFINE_REGS);
+        DBG_EVENT_TH(DBG_GBA_EVENT_WRITE_AFFINE_REGS);
     }
     switch(addr) {
         case 0x04000000: {// DISPCNT lo
@@ -1534,26 +1542,26 @@ void core::mainbus_write_IO(u32 addr, u32 sz, u32 access, u32 val) {
                 //if (new_mode != ppu->io.bg_mode) printf("\nBG MODE:%d LINE:%d", val & 7, gba->clock.ppu.y);
             }
 
-            io.bg_mode = new_mode;
-            calc_screen_size(0, io.bg_mode);
-            calc_screen_size(1, io.bg_mode);
-            calc_screen_size(2, io.bg_mode);
-            calc_screen_size(3, io.bg_mode);
+            th->io.bg_mode = new_mode;
+            th->calc_screen_size(0, th->io.bg_mode);
+            th->calc_screen_size(1, th->io.bg_mode);
+            th->calc_screen_size(2, th->io.bg_mode);
+            th->calc_screen_size(3, th->io.bg_mode);
 
-            io.frame = (val >> 4) & 1;
-            io.hblank_free = (val >> 5) & 1;
-            io.obj_mapping_1d = (val >> 6) & 1;
-            io.force_blank = (val >> 7) & 1;
+            th->io.frame = (val >> 4) & 1;
+            th->io.hblank_free = (val >> 5) & 1;
+            th->io.obj_mapping_1d = (val >> 6) & 1;
+            th->io.force_blank = (val >> 7) & 1;
             return; }
         case 0x04000001: { // DISPCNT hi
-            mbg[0].enable = (val >> 0) & 1;
-            mbg[1].enable = (val >> 1) & 1;
-            mbg[2].enable = (val >> 2) & 1;
-            mbg[3].enable = (val >> 3) & 1;
-            obj.enable = (val >> 4) & 1;
-            window[0].enable = (val >> 5) & 1;
-            window[1].enable = (val >> 6) & 1;
-            window[WINOBJ].enable = (val >> 7) & 1;
+            th->mbg[0].enable = (val >> 0) & 1;
+            th->mbg[1].enable = (val >> 1) & 1;
+            th->mbg[2].enable = (val >> 2) & 1;
+            th->mbg[3].enable = (val >> 3) & 1;
+            th->obj.enable = (val >> 4) & 1;
+            th->window[0].enable = (val >> 5) & 1;
+            th->window[1].enable = (val >> 6) & 1;
+            th->window[WINOBJ].enable = (val >> 7) & 1;
             /*printf("\nBGs 0:%d 1:%d 2:%d 3:%d obj:%d window0:%d window1:%d force_hblank:%d",
                    bg[0].enable, bg[1].enable, bg[2].enable, bg[3].enable,
                    obj.enable, window[0].enable, window[1].enable, io.force_blank
@@ -1567,11 +1575,11 @@ void core::mainbus_write_IO(u32 addr, u32 sz, u32 access, u32 val) {
             printf("\nGREEN SWAP2? %d", val);
             return;
         case 0x04000004: {// DISPSTAT
-            io.vblank_irq_enable = (val >> 3) & 1;
-            io.hblank_irq_enable = (val >> 4) & 1;
-            io.vcount_irq_enable = (val >> 5) & 1;
+            th->io.vblank_irq_enable = (val >> 3) & 1;
+            th->io.hblank_irq_enable = (val >> 4) & 1;
+            th->io.vcount_irq_enable = (val >> 5) & 1;
             return; }
-        case 0x04000005: io.vcount_at = val; return;
+        case 0x04000005: th->io.vcount_at = val; return;
         case 0x04000006: // not used
         case 0x04000007: return; // not used
 
@@ -1579,8 +1587,8 @@ void core::mainbus_write_IO(u32 addr, u32 sz, u32 access, u32 val) {
         case 0x0400000A:
         case 0x0400000C:
         case 0x0400000E: { // BGCNT lo
-            u32 bgnum = (addr & 0b0110) >> 1;
-            BG &bg = mbg[bgnum];
+            const u32 bgnum = (addr & 0b0110) >> 1;
+            BG &bg = th->mbg[bgnum];
             bg.priority = val & 3;
             bg.extrabits = (val >> 4) & 3;
             bg.character_base_block = ((val >> 2) & 3) << 14;
@@ -1591,114 +1599,114 @@ void core::mainbus_write_IO(u32 addr, u32 sz, u32 access, u32 val) {
         case 0x0400000B:
         case 0x0400000D:
         case 0x0400000F: {
-            u32 bgnum = (addr & 0b0110) >> 1;
-            BG &bg = mbg[bgnum];
+            const u32 bgnum = (addr & 0b0110) >> 1;
+            BG &bg = th->mbg[bgnum];
             bg.screen_base_block = ((val >> 0) & 31) << 11;
             if (bgnum >= 2) bg.display_overflow = (val >> 5) & 1;
             bg.screen_size = (val >> 6) & 3;
-            calc_screen_size(bgnum, io.bg_mode);
+            th->calc_screen_size(bgnum, th->io.bg_mode);
             return; }
 #define BG2 2
 #define BG3 3
-        case 0x04000010: mbg[0].hscroll = (mbg[0].hscroll & 0xFF00) | val; return;
-        case 0x04000011: mbg[0].hscroll = (mbg[0].hscroll & 0x00FF) | (val << 8); return;
-        case 0x04000012: mbg[0].vscroll = (mbg[0].vscroll & 0xFF00) | val; return;
-        case 0x04000013: mbg[0].vscroll = (mbg[0].vscroll & 0x00FF) | (val << 8); return;
-        case 0x04000014: mbg[1].hscroll = (mbg[1].hscroll & 0xFF00) | val; return;
-        case 0x04000015: mbg[1].hscroll = (mbg[1].hscroll & 0x00FF) | (val << 8); return;
-        case 0x04000016: mbg[1].vscroll = (mbg[1].vscroll & 0xFF00) | val; return;
-        case 0x04000017: mbg[1].vscroll = (mbg[1].vscroll & 0x00FF) | (val << 8); return;
-        case 0x04000018: mbg[2].hscroll = (mbg[2].hscroll & 0xFF00) | val; return;
-        case 0x04000019: mbg[2].hscroll = (mbg[2].hscroll & 0x00FF) | (val << 8); return;
-        case 0x0400001A: mbg[2].vscroll = (mbg[2].vscroll & 0xFF00) | val; return;
-        case 0x0400001B: mbg[2].vscroll = (mbg[2].vscroll & 0x00FF) | (val << 8); return;
-        case 0x0400001C: mbg[3].hscroll = (mbg[3].hscroll & 0xFF00) | val; return;
-        case 0x0400001D: mbg[3].hscroll = (mbg[3].hscroll & 0x00FF) | (val << 8); return;
-        case 0x0400001E: mbg[3].vscroll = (mbg[3].vscroll & 0xFF00) | val; return;
-        case 0x0400001F: mbg[3].vscroll = (mbg[3].vscroll & 0x00FF) | (val << 8); return;
+        case 0x04000010: th->mbg[0].hscroll = (th->mbg[0].hscroll & 0xFF00) | val; return;
+        case 0x04000011: th->mbg[0].hscroll = (th->mbg[0].hscroll & 0x00FF) | (val << 8); return;
+        case 0x04000012: th->mbg[0].vscroll = (th->mbg[0].vscroll & 0xFF00) | val; return;
+        case 0x04000013: th->mbg[0].vscroll = (th->mbg[0].vscroll & 0x00FF) | (val << 8); return;
+        case 0x04000014: th->mbg[1].hscroll = (th->mbg[1].hscroll & 0xFF00) | val; return;
+        case 0x04000015: th->mbg[1].hscroll = (th->mbg[1].hscroll & 0x00FF) | (val << 8); return;
+        case 0x04000016: th->mbg[1].vscroll = (th->mbg[1].vscroll & 0xFF00) | val; return;
+        case 0x04000017: th->mbg[1].vscroll = (th->mbg[1].vscroll & 0x00FF) | (val << 8); return;
+        case 0x04000018: th->mbg[2].hscroll = (th->mbg[2].hscroll & 0xFF00) | val; return;
+        case 0x04000019: th->mbg[2].hscroll = (th->mbg[2].hscroll & 0x00FF) | (val << 8); return;
+        case 0x0400001A: th->mbg[2].vscroll = (th->mbg[2].vscroll & 0xFF00) | val; return;
+        case 0x0400001B: th->mbg[2].vscroll = (th->mbg[2].vscroll & 0x00FF) | (val << 8); return;
+        case 0x0400001C: th->mbg[3].hscroll = (th->mbg[3].hscroll & 0xFF00) | val; return;
+        case 0x0400001D: th->mbg[3].hscroll = (th->mbg[3].hscroll & 0x00FF) | (val << 8); return;
+        case 0x0400001E: th->mbg[3].vscroll = (th->mbg[3].vscroll & 0xFF00) | val; return;
+        case 0x0400001F: th->mbg[3].vscroll = (th->mbg[3].vscroll & 0x00FF) | (val << 8); return;
 
-        case 0x04000020: mbg[2].pa = static_cast<i32>((mbg[2].pa & 0xFFFFFF00) | val); return;
-        case 0x04000021: mbg[2].pa = static_cast<i32>((mbg[2].pa & 0xFF) | (val << 8) | (((val >> 7) & 1) * 0xFFFF0000)); return;
-        case 0x04000022: mbg[2].pb = static_cast<i32>((mbg[2].pb & 0xFFFFFF00) | val); return;
-        case 0x04000023: mbg[2].pb = static_cast<i32>((mbg[2].pb & 0xFF) | (val << 8) | (((val >> 7) & 1) * 0xFFFF0000)); return;
-        case 0x04000024: mbg[2].pc = static_cast<i32>((mbg[2].pc & 0xFFFFFF00) | val); return;
-        case 0x04000025: mbg[2].pc = static_cast<i32>((mbg[2].pc & 0xFF) | (val << 8) | (((val >> 7) & 1) * 0xFFFF0000)); return;
-        case 0x04000026: mbg[2].pd = static_cast<i32>((mbg[2].pd & 0xFFFFFF00) | val); return;
-        case 0x04000027: mbg[2].pd = static_cast<i32>((mbg[2].pd & 0xFF) | (val << 8) | (((val >> 7) & 1) * 0xFFFF0000)); return;
-        case 0x04000028: update_bg_x(BG2, 0, val); return;
-        case 0x04000029: update_bg_x(BG2, 1, val); return;
-        case 0x0400002A: update_bg_x(BG2, 2, val); return;
-        case 0x0400002B: update_bg_x(BG2, 3, val); return;
-        case 0x0400002C: update_bg_y(BG2, 0, val); return;
-        case 0x0400002D: update_bg_y(BG2, 1, val); return;
-        case 0x0400002E: update_bg_y(BG2, 2, val); return;
-        case 0x0400002F: update_bg_y(BG2, 3, val); return;
+        case 0x04000020: th->mbg[2].pa = static_cast<i32>((th->mbg[2].pa & 0xFFFFFF00) | val); return;
+        case 0x04000021: th->mbg[2].pa = static_cast<i32>((th->mbg[2].pa & 0xFF) | (val << 8) | (((val >> 7) & 1) * 0xFFFF0000)); return;
+        case 0x04000022: th->mbg[2].pb = static_cast<i32>((th->mbg[2].pb & 0xFFFFFF00) | val); return;
+        case 0x04000023: th->mbg[2].pb = static_cast<i32>((th->mbg[2].pb & 0xFF) | (val << 8) | (((val >> 7) & 1) * 0xFFFF0000)); return;
+        case 0x04000024: th->mbg[2].pc = static_cast<i32>((th->mbg[2].pc & 0xFFFFFF00) | val); return;
+        case 0x04000025: th->mbg[2].pc = static_cast<i32>((th->mbg[2].pc & 0xFF) | (val << 8) | (((val >> 7) & 1) * 0xFFFF0000)); return;
+        case 0x04000026: th->mbg[2].pd = static_cast<i32>((th->mbg[2].pd & 0xFFFFFF00) | val); return;
+        case 0x04000027: th->mbg[2].pd = static_cast<i32>((th->mbg[2].pd & 0xFF) | (val << 8) | (((val >> 7) & 1) * 0xFFFF0000)); return;
+        case 0x04000028: th->update_bg_x(BG2, 0, val); return;
+        case 0x04000029: th->update_bg_x(BG2, 1, val); return;
+        case 0x0400002A: th->update_bg_x(BG2, 2, val); return;
+        case 0x0400002B: th->update_bg_x(BG2, 3, val); return;
+        case 0x0400002C: th->update_bg_y(BG2, 0, val); return;
+        case 0x0400002D: th->update_bg_y(BG2, 1, val); return;
+        case 0x0400002E: th->update_bg_y(BG2, 2, val); return;
+        case 0x0400002F: th->update_bg_y(BG2, 3, val); return;
 
-        case BG3PA:   mbg[3].pa = static_cast<i32>((mbg[3].pa & 0xFFFFFF00) | val); return;
-        case BG3PA+1: mbg[3].pa = static_cast<i32>((mbg[3].pa & 0xFF) | (val << 8) | (((val >> 7) & 1) * 0xFFFF0000)); return;
-        case BG3PB:   mbg[3].pb = static_cast<i32>((mbg[3].pb & 0xFFFFFF00) | val); return;
-        case BG3PB+1: mbg[3].pb = static_cast<i32>((mbg[3].pb & 0xFF) | (val << 8) | (((val >> 7) & 1) * 0xFFFF0000)); return;
-        case BG3PC:   mbg[3].pc = static_cast<i32>((mbg[3].pc & 0xFFFFFF00) | val); return;
-        case BG3PC+1: mbg[3].pc = static_cast<i32>((mbg[3].pc & 0xFF) | (val << 8) | (((val >> 7) & 1) * 0xFFFF0000)); return;
-        case BG3PD:   mbg[3].pd = static_cast<i32>((mbg[3].pd & 0xFFFFFF00) | val); return;
-        case BG3PD+1: mbg[3].pd = static_cast<i32>((mbg[3].pd & 0xFF) | (val << 8) | (((val >> 7) & 1) * 0xFFFF0000)); return;
-        case 0x04000038: update_bg_x(BG3, 0, val); return;
-        case 0x04000039: update_bg_x(BG3, 1, val); return;
-        case 0x0400003A: update_bg_x(BG3, 2, val); return;
-        case 0x0400003B: update_bg_x(BG3, 3, val); return;
-        case 0x0400003C: update_bg_y(BG3, 0, val); return;
-        case 0x0400003D: update_bg_y(BG3, 1, val); return;
-        case 0x0400003E: update_bg_y(BG3, 2, val); return;
-        case 0x0400003F: update_bg_y(BG3, 3, val); return;
+        case BG3PA:   th->mbg[3].pa = static_cast<i32>((th->mbg[3].pa & 0xFFFFFF00) | val); return;
+        case BG3PA+1: th->mbg[3].pa = static_cast<i32>((th->mbg[3].pa & 0xFF) | (val << 8) | (((val >> 7) & 1) * 0xFFFF0000)); return;
+        case BG3PB:   th->mbg[3].pb = static_cast<i32>((th->mbg[3].pb & 0xFFFFFF00) | val); return;
+        case BG3PB+1: th->mbg[3].pb = static_cast<i32>((th->mbg[3].pb & 0xFF) | (val << 8) | (((val >> 7) & 1) * 0xFFFF0000)); return;
+        case BG3PC:   th->mbg[3].pc = static_cast<i32>((th->mbg[3].pc & 0xFFFFFF00) | val); return;
+        case BG3PC+1: th->mbg[3].pc = static_cast<i32>((th->mbg[3].pc & 0xFF) | (val << 8) | (((val >> 7) & 1) * 0xFFFF0000)); return;
+        case BG3PD:   th->mbg[3].pd = static_cast<i32>((th->mbg[3].pd & 0xFFFFFF00) | val); return;
+        case BG3PD+1: th->mbg[3].pd = static_cast<i32>((th->mbg[3].pd & 0xFF) | (val << 8) | (((val >> 7) & 1) * 0xFFFF0000)); return;
+        case 0x04000038: th->update_bg_x(BG3, 0, val); return;
+        case 0x04000039: th->update_bg_x(BG3, 1, val); return;
+        case 0x0400003A: th->update_bg_x(BG3, 2, val); return;
+        case 0x0400003B: th->update_bg_x(BG3, 3, val); return;
+        case 0x0400003C: th->update_bg_y(BG3, 0, val); return;
+        case 0x0400003D: th->update_bg_y(BG3, 1, val); return;
+        case 0x0400003E: th->update_bg_y(BG3, 2, val); return;
+        case 0x0400003F: th->update_bg_y(BG3, 3, val); return;
 
-        case WIN0H:   window[0].right = static_cast<i32>(val); return;
-        case WIN0H+1: window[0].left = static_cast<i32>(val); return;
-        case WIN1H:   window[1].right = static_cast<i32>(val); return;
-        case WIN1H+1: window[1].left = static_cast<i32>(val); return;
-        case WIN0V:   window[0].bottom = static_cast<i32>(val); return;
-        case WIN0V+1: window[0].top = static_cast<i32>(val); return;
-        case WIN1V:   window[1].bottom = static_cast<i32>(val); return;
-        case WIN1V+1: window[1].top = static_cast<i32>(val); return;
+        case WIN0H:   th->window[0].right = static_cast<i32>(val); return;
+        case WIN0H+1: th->window[0].left = static_cast<i32>(val); return;
+        case WIN1H:   th->window[1].right = static_cast<i32>(val); return;
+        case WIN1H+1: th->window[1].left = static_cast<i32>(val); return;
+        case WIN0V:   th->window[0].bottom = static_cast<i32>(val); return;
+        case WIN0V+1: th->window[0].top = static_cast<i32>(val); return;
+        case WIN1V:   th->window[1].bottom = static_cast<i32>(val); return;
+        case WIN1V+1: th->window[1].top = static_cast<i32>(val); return;
 
         case WININ:
-            window[0].active[1] = (val >> 0) & 1;
-            window[0].active[2] = (val >> 1) & 1;
-            window[0].active[3] = (val >> 2) & 1;
-            window[0].active[4] = (val >> 3) & 1;
-            window[0].active[0] = (val >> 4) & 1;
-            window[0].active[5] = (val >> 5) & 1;
+            th->window[0].active[1] = (val >> 0) & 1;
+            th->window[0].active[2] = (val >> 1) & 1;
+            th->window[0].active[3] = (val >> 2) & 1;
+            th->window[0].active[4] = (val >> 3) & 1;
+            th->window[0].active[0] = (val >> 4) & 1;
+            th->window[0].active[5] = (val >> 5) & 1;
             return;
         case WININ+1:
-            window[1].active[1] = (val >> 0) & 1;
-            window[1].active[2] = (val >> 1) & 1;
-            window[1].active[3] = (val >> 2) & 1;
-            window[1].active[4] = (val >> 3) & 1;
-            window[1].active[0] = (val >> 4) & 1;
-            window[1].active[5] = (val >> 5) & 1;
+            th->window[1].active[1] = (val >> 0) & 1;
+            th->window[1].active[2] = (val >> 1) & 1;
+            th->window[1].active[3] = (val >> 2) & 1;
+            th->window[1].active[4] = (val >> 3) & 1;
+            th->window[1].active[0] = (val >> 4) & 1;
+            th->window[1].active[5] = (val >> 5) & 1;
             return;
         case WINOUT:
-            window[WINOUTSIDE].active[1] = (val >> 0) & 1;
-            window[WINOUTSIDE].active[2] = (val >> 1) & 1;
-            window[WINOUTSIDE].active[3] = (val >> 2) & 1;
-            window[WINOUTSIDE].active[4] = (val >> 3) & 1;
-            window[WINOUTSIDE].active[0] = (val >> 4) & 1;
-            window[WINOUTSIDE].active[5] = (val >> 5) & 1;
+            th->window[WINOUTSIDE].active[1] = (val >> 0) & 1;
+            th->window[WINOUTSIDE].active[2] = (val >> 1) & 1;
+            th->window[WINOUTSIDE].active[3] = (val >> 2) & 1;
+            th->window[WINOUTSIDE].active[4] = (val >> 3) & 1;
+            th->window[WINOUTSIDE].active[0] = (val >> 4) & 1;
+            th->window[WINOUTSIDE].active[5] = (val >> 5) & 1;
             return;
         case WINOUT+1:
-            window[WINOBJ].active[1] = (val >> 0) & 1;
-            window[WINOBJ].active[2] = (val >> 1) & 1;
-            window[WINOBJ].active[3] = (val >> 2) & 1;
-            window[WINOBJ].active[4] = (val >> 3) & 1;
-            window[WINOBJ].active[0] = (val >> 4) & 1;
-            window[WINOBJ].active[5] = (val >> 5) & 1;
+            th->window[WINOBJ].active[1] = (val >> 0) & 1;
+            th->window[WINOBJ].active[2] = (val >> 1) & 1;
+            th->window[WINOBJ].active[3] = (val >> 2) & 1;
+            th->window[WINOBJ].active[4] = (val >> 3) & 1;
+            th->window[WINOBJ].active[0] = (val >> 4) & 1;
+            th->window[WINOBJ].active[5] = (val >> 5) & 1;
             return;
         case 0x0400004C:
-            mosaic.bg.hsize = (val & 15) + 1;
-            mosaic.bg.vsize = ((val >> 4) & 15) + 1;
+            th->mosaic.bg.hsize = (val & 15) + 1;
+            th->mosaic.bg.vsize = ((val >> 4) & 15) + 1;
             return;
         case 0x0400004D:
-            mosaic.obj.hsize = (val & 15) + 1;
-            mosaic.obj.vsize = ((val >> 4) & 15) + 1;
+            th->mosaic.obj.hsize = (val & 15) + 1;
+            th->mosaic.obj.vsize = ((val >> 4) & 15) + 1;
             return;
 #define BT_BG0 0
 #define BT_BG1 1
@@ -1708,38 +1716,38 @@ void core::mainbus_write_IO(u32 addr, u32 sz, u32 access, u32 val) {
 #define BT_BD 5
 
         case BLDCNT:
-            blend.mode = (val >> 6) & 3;
+            th->blend.mode = (val >> 6) & 3;
             // sp, bg0, bg1, bg2, bg3, bd
-            blend.targets_a[0] = (val >> 4) & 1;
-            blend.targets_a[1] = (val >> 0) & 1;
-            blend.targets_a[2] = (val >> 1) & 1;
-            blend.targets_a[3] = (val >> 2) & 1;
-            blend.targets_a[4] = (val >> 3) & 1;
-            blend.targets_a[5] = (val >> 5) & 1;
+            th->blend.targets_a[0] = (val >> 4) & 1;
+            th->blend.targets_a[1] = (val >> 0) & 1;
+            th->blend.targets_a[2] = (val >> 1) & 1;
+            th->blend.targets_a[3] = (val >> 2) & 1;
+            th->blend.targets_a[4] = (val >> 3) & 1;
+            th->blend.targets_a[5] = (val >> 5) & 1;
             return;
         case BLDCNT+1:
-            blend.targets_b[0] = (val >> 4) & 1;
-            blend.targets_b[1] = (val >> 0) & 1;
-            blend.targets_b[2] = (val >> 1) & 1;
-            blend.targets_b[3] = (val >> 2) & 1;
-            blend.targets_b[4] = (val >> 3) & 1;
-            blend.targets_b[5] = (val >> 5) & 1;
+            th->blend.targets_b[0] = (val >> 4) & 1;
+            th->blend.targets_b[1] = (val >> 0) & 1;
+            th->blend.targets_b[2] = (val >> 1) & 1;
+            th->blend.targets_b[3] = (val >> 2) & 1;
+            th->blend.targets_b[4] = (val >> 3) & 1;
+            th->blend.targets_b[5] = (val >> 5) & 1;
             return;
 
         case BLDALPHA:
-            blend.eva_a = val & 31;
-            blend.use_eva_a = blend.eva_a;
-            if (blend.use_eva_a > 16) blend.use_eva_a = 16;
+            th->blend.eva_a = val & 31;
+            th->blend.use_eva_a = th->blend.eva_a;
+            if (th->blend.use_eva_a > 16) th->blend.use_eva_a = 16;
             return;
         case BLDALPHA+1:
-            blend.eva_b = val & 31;
-            blend.use_eva_b = blend.eva_b;
-            if (blend.use_eva_b > 16) blend.use_eva_b = 16;
+            th->blend.eva_b = val & 31;
+            th->blend.use_eva_b = th->blend.eva_b;
+            if (th->blend.use_eva_b > 16) th->blend.use_eva_b = 16;
             return;
         case 0x04000054:
-            blend.bldy = val & 31;
-            blend.use_bldy = blend.bldy;
-            if (blend.use_bldy > 16) blend.use_bldy = 16;
+            th->blend.bldy = val & 31;
+            th->blend.use_bldy = th->blend.bldy;
+            if (th->blend.use_bldy > 16) th->blend.use_bldy = 16;
             return;
         case 0x04000055:
             // TODO: support this stuff
@@ -1762,7 +1770,7 @@ void core::mainbus_write_IO(u32 addr, u32 sz, u32 access, u32 val) {
 #undef BG3
     }
 
-    write_invalid(addr, sz, access, val);
+    th->write_invalid(addr, sz, access, val);
 }
 
 }

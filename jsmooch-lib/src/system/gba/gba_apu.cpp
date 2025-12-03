@@ -271,7 +271,7 @@ u32 core::read_wave_ram(const u32 addr) const {
 #define C2 channels[2]
 #define C3 channels[3]
 
-u32 core::read_IO(u32 addr, u32 sz, u32 access, bool has_effect)
+u32 core::read_IO(u32 addr, u8 sz, u8 access, bool has_effect)
 {
     u32 v;
     switch(addr) {
@@ -653,7 +653,7 @@ void core::write_IO8(const u32 addr, u32 val)
 #undef C2
 #undef C3
 
-void core::write_IO(const u32 addr, const u32 sz, const u32 val) {
+void core::write_IO(const u32 addr, const u8 sz, const u32 val) {
     write_IO8(addr, val & 0xFF);
     if (sz >= 2) {
         write_IO8(addr + 1, (val >> 8) & 0xFF);

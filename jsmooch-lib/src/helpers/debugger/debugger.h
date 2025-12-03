@@ -596,4 +596,5 @@ debugger_widget &debugger_widgets_add_color_key(std::vector<debugger_widget> &wi
 #define SET_CPU_EVENT_ID(id, k) th.cpu.dbg.events. k = id
 
 #define DBG_EVENT(x) debugger_report_event(dbg.events.view, x)
+#define DBG_EVENT_TH(x) debugger_report_event(th->dbg.events.view, x)
 

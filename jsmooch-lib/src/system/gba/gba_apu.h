@@ -99,19 +99,20 @@ struct CHANNEL {
 
 struct core {
     explicit core(GBA::core *parent);
-    GBA::core *bus;
     void write_wave_ram(u32 addr, u32 val);
     [[nodiscard]] u32 read_wave_ram(u32 addr) const;
-    u32 read_IO(u32 addr, u32 sz, u32 access, bool has_effect);
-    void write_IO(u32 addr, u32 sz, u32 val);
+    [[nodiscard]] u32 read_IO(u32 addr, u8 sz, u8 access, bool has_effect);
+    void write_IO(u32 addr, u8 sz, u32 val);
     void sound_FIFO(u32 num);
-    float sample_channel_for_GBA(u32 cnum) const;
-    float sample_channel(u32 n) const;
-    float mix_sample(bool is_debug);
+    [[nodiscard]] float sample_channel_for_GBA(u32 cnum) const;
+    [[nodiscard]] float sample_channel(u32 n) const;
+    [[nodiscard]] float mix_sample(bool is_debug);
     void tick_psg();
     void sample_psg();
     void cycle();
 
+
+    GBA::core *bus;
 private:
     void write_IO8(u32 addr, u32 val);
 public:

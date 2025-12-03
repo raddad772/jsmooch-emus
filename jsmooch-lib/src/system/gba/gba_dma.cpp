@@ -8,7 +8,7 @@
 namespace GBA {
 
 static void block_step_dma(void *ptr, u64 key, u64 clock, u32 jitter);
-static void block_step_cpu(void *ptr, u64 key, u64 clock, u32 jitter);
+void block_step_cpu(void *ptr, u64 key, u64 clock, u32 jitter);
 
 void DMA::eval_bit_masks()
 {
@@ -122,7 +122,7 @@ static constexpr u32 hipri[16] = {
 };
 
 
-static void block_step_cpu(void *ptr, u64 key, u64 clock, u32 jitter)
+void block_step_cpu(void *ptr, u64 key, u64 clock, u32 jitter)
 {
     auto *th = static_cast<GBA::core *>(ptr);
     th->waitstates.current_transaction = 0;

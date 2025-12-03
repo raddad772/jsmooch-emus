@@ -59,4 +59,6 @@ struct DMA {
         u32 vblank{};
     } bit_mask{};
 };
+
+void block_step_cpu(void *ptr, u64 key, u64 clock, u32 jitter);
 }

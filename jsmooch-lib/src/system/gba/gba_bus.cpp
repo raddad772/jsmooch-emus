@@ -2,6 +2,7 @@
 // Created by . on 12/4/24.
 //
 #include <cstring>
+#include <cassert>
 
 #include "gba_apu.h"
 #include "gba_bus.h"
@@ -12,97 +13,139 @@
 namespace GBA {
 
 core::core() :
+    cpu{&clock.master_cycle_count, &waitstates.current_transaction, &this->scheduler},
+    cart{this},
+    ppu{this},
+    apu{this},
+    scheduler{&clock.master_cycle_count},
+    dma{this},
     timer{TIMER(this, 0), TIMER(this, 1), TIMER(this, 2), TIMER(this, 3)}
-{
+{   has.load_BIOS = true;
+    has.save_state = false;
+    has.set_audiobuf = true;
+
+    memset(dbg_info.mgba.str, 0, sizeof(dbg_info.mgba.str));
+    mem.read[0x0] = &busrd_bios;
+    mem.read[0x2] = &core::busrd_WRAM_slow;
+    mem.read[0x3] = &core::busrd_WRAM_fast;
+    mem.read[0x4] = &core::busrd_IO;
+    mem.read[0x5] = &PPU::core::mainbus_read_palette;
+    mem.read[0x6] = &PPU::core::mainbus_read_VRAM;
+    mem.read[0x7] = &PPU::core::mainbus_read_OAM;
+    mem.read[0x8] = &cart::core::read_wait0;
+    mem.read[0x9] = &cart::core::read_wait0;
+    mem.read[0xA] = &cart::core::read_wait1;
+    mem.read[0xB] = &cart::core::read_wait1;
+    mem.read[0xC] = &cart::core::read_wait2;
+    mem.read[0xD] = &cart::core::read_wait2;
+    mem.read[0xE] = &cart::core::read_sram;
+    mem.read[0xF] = &cart::core::read_sram;
+
+    mem.write[0x0] = &core::buswr_bios;
+    mem.write[0x2] = &core::buswr_WRAM_slow;
+    mem.write[0x3] = &core::buswr_WRAM_fast;
+    mem.write[0x4] = &core::buswr_IO;
+    mem.write[0x5] = &PPU::core::mainbus_write_palette;
+    mem.write[0x6] = &PPU::core::mainbus_write_VRAM;
+    mem.write[0x7] = &PPU::core::mainbus_write_OAM;
+    mem.write[0x8] = &cart::core::write;
+    mem.write[0x9] = &cart::core::write;
+    mem.write[0xA] = &cart::core::write;
+    mem.write[0xB] = &cart::core::write;
+    mem.write[0xC] = &cart::core::write;
+    mem.write[0xD] = &cart::core::write;
+    mem.write[0xE] = &cart::core::write_sram;
+    mem.write[0xF] = &cart::core::write_sram;
+
+    set_waitstates();
 
 }
 
 static constexpr u32 maskalign[5] = {0, 0xFFFFFFFF, 0xFFFFFFFE, 0, 0xFFFFFFFC};
 
-static u32 busrd_invalid(GBA *this, u32 addr, u32 sz, u32 access, bool has_effect) {
+u32 core::busrd_invalid(core *th, u32 addr, u8 sz, u8 access, bool has_effect) {
     printf("\nREAD UNKNOWN ADDR:%08x sz:%d", addr, sz);
-    waitstates.current_transaction++;
+    th->waitstates.current_transaction++;
     if (addr == 0x83001888) {
         int a = 4;
         a++;
     }
     //dbg.var++;
     //if (dbg.var > 15) dbg_break("too many bad reads", clock.master_cycle_count);
-    u32 v = GBA_open_bus_byte(this, addr);
+    u32 v = th->open_bus_byte(addr);
     if (sz >= 2) {
-        v |= GBA_open_bus_byte(this, addr+1) << 8;
+        v |= th->open_bus_byte(addr+1) << 8;
     }
     if (sz == 4) {
-        v |= GBA_open_bus_byte(this, addr+2) << 16;
-        v |= GBA_open_bus_byte(this, addr+3) << 24;
+        v |= th->open_bus_byte(addr+2) << 16;
+        v |= th->open_bus_byte(addr+3) << 24;
     }
     return v;
 }
 
-static void buswr_invalid(GBA *this, u32 addr, u32 sz, u32 access, u32 val) {
+void core::buswr_invalid(core *th, u32 addr, u8 sz, u8 access, u32 val) {
     printf("\nWRITE UNKNOWN ADDR:%08x sz:%d DATA:%08x", addr, sz, val);
-    waitstates.current_transaction++;
-    dbg.var++;
+    th->waitstates.current_transaction++;
+    ::dbg.var++;
     //if (dbg.var > 15) dbg_break("too many bad writes", clock.master_cycle_count);
 }
 
 #define WAITCNT 0x04000204
 
-static u32 busrd_bios(GBA *this, u32 addr, u32 sz, u32 access, bool has_effect) {
+u32 core::busrd_bios(core *th, u32 addr, u8 sz, u8 access, bool has_effect) {
     addr &= maskalign[sz];
-    waitstates.current_transaction++;
+    th->waitstates.current_transaction++;
     if (addr < 0x4000) {
-        if (cpu.regs.R[15] < 0x4000) {
-            u32 v = cR[sz](BIOS.data, addr);
-            io.bios_open_bus = v;
+        if (th->cpu.regs.R[15] < 0x4000) {
+            const u32 v = cR[sz](th->BIOS.data, addr);
+            th->io.bios_open_bus = v;
             return v;
         }
         else {
-            return io.bios_open_bus;
+            return th->io.bios_open_bus;
         }
     }
 
-    return GBA_open_bus(this, addr, sz);
+    return th->open_bus(addr, sz);
 }
 
-static void buswr_bios(GBA *this, u32 addr, u32 sz, u32 access, u32 val) {
-    waitstates.current_transaction++;
+void core::buswr_bios(core *th, u32 addr, u8 sz, u8 access, u32 val) {
+    th->waitstates.current_transaction++;
     //printf("\nWarning write to BIOS...");
 }
 
-
-static u32 busrd_WRAM_slow(GBA *this, u32 addr, u32 sz, u32 access, bool has_effect) {
+u32 core::busrd_WRAM_slow(core *th, u32 addr, u8 sz, u8 access, bool has_effect) {
     addr &= maskalign[sz];
-    waitstates.current_transaction += 3;
+    th->waitstates.current_transaction += 3;
     if (sz == 4) {
         addr &= ~3;
-        waitstates.current_transaction += 3;
+        th->waitstates.current_transaction += 3;
     }
     if (sz == 2) addr &= ~1;
-    return cR[sz](WRAM_slow, addr & 0x3FFFF);
+    return cR[sz](th->WRAM_slow, addr & 0x3FFFF);
 }
 
-static u32 busrd_WRAM_fast(GBA *this, u32 addr, u32 sz, u32 access, bool has_effect) {
+u32 core::busrd_WRAM_fast(core *th, u32 addr, u8 sz, u8 access, bool has_effect) {
     addr &= maskalign[sz];
-    waitstates.current_transaction++;
+    th->waitstates.current_transaction++;
     if (sz == 4) addr &= ~3;
     if (sz == 2) addr &= ~1;
-    return cR[sz](WRAM_fast, addr & 0x7FFF);
+    return cR[sz](th->WRAM_fast, addr & 0x7FFF);
 }
 
-static void buswr_WRAM_slow(GBA *this, u32 addr, u32 sz, u32 access, u32 val) {
+void core::buswr_WRAM_slow(core *th, u32 addr, u8 sz, u8 access, u32 val) {
     addr &= maskalign[sz];
-    waitstates.current_transaction += 3;
+    th->waitstates.current_transaction += 3;
     if (sz == 4) {
         addr &= ~3;
-        waitstates.current_transaction += 3;
+        th->waitstates.current_transaction += 3;
     }
     if (sz == 4) addr &= ~3;
     if (sz == 2) addr &= ~1;
-    cW[sz](WRAM_slow, addr & 0x3FFFF, val);
+    cW[sz](th->WRAM_slow, addr & 0x3FFFF, val);
 }
 
-static void set_waitstates(GBA *this) {
+void core::set_waitstates() {
 
 // 8 and 8+1  are set to...based on the thing....
 #define DOV4(n, a, b, c, d) switch(waitstates.io. n) { case 0: waitstates. n = a; break; case 1: waitstates. n = b; break; case 2: waitstates. n = c; break; case 3: waitstates. n = d; break; }
@@ -111,10 +154,10 @@ static void set_waitstates(GBA *this) {
     
     // OK we need to fill up 3 sections based on Nonsequential and Sequential
     // Nonsequentiual gets 4 possible values, sequential gets different values
-    static const u32 nonseq[4] = {5, 4, 3, 9};
-    static const u32 seq0[2] = {3, 2};
-    static const u32 seq1[2] = {5, 2};
-    static const u32 seq2[2] = {9, 2};
+    static constexpr u32 nonseq[4] = {5, 4, 3, 9};
+    static constexpr u32 seq0[2] = {3, 2};
+    static constexpr u32 seq1[2] = {5, 2};
+    static constexpr u32 seq2[2] = {9, 2};
     
 #define t16 waitstates.timing16
 #define t32 waitstates.timing32
@@ -159,15 +202,15 @@ static void set_waitstates(GBA *this) {
 }
 
 
-static void buswr_WRAM_fast(GBA *this, u32 addr, u32 sz, u32 access, u32 val) {
+void core::buswr_WRAM_fast(core *th, u32 addr, u8 sz, u8 access, u32 val) {
     addr &= maskalign[sz];
-    waitstates.current_transaction++;
+    th->waitstates.current_transaction++;
     if (sz == 4) addr &= ~3;
     if (sz == 2) addr &= ~1;
-    cW[sz](WRAM_fast, addr & 0x7FFF, val);
+    cW[sz](th->WRAM_fast, addr & 0x7FFF, val);
 }
 
-static u32 DMA_CH_NUM(u32 addr)
+static inline u32 DMA_CH_NUM(u32 addr)
 {
     addr &= 0xFF;
     if (addr < 0xBC) return 0;
@@ -176,15 +219,15 @@ static u32 DMA_CH_NUM(u32 addr)
     return 3;
 }
 
-static u32 busrd_IO8(GBA *this, u32 addr, u32 sz, u32 access, bool has_effect) {
-    if (addr < 0x4000060) return GBA_PPU_mainbus_read_IO(this, addr, sz, access, has_effect);
-    if ((addr >= 0x04000060) && (addr < 0x040000B0)) return GBA_APU_read_IO(this, addr, sz, access, has_effect);
+u32 core::busrd_IO8(u32 addr, u8 sz, u8 access, bool has_effect) {
+    if (addr < 0x4000060) return PPU::core::mainbus_read_IO(this, addr, sz, access, has_effect);
+    if ((addr >= 0x04000060) && (addr < 0x040000B0)) return apu.read_IO(addr, sz, access, has_effect);
 
     switch(addr) {
         case 0x04000130: // buttons!!!
-            return GBA_get_controller_state(controller.pio) & 0xFF;
+            return controller.get_state() & 0xFF;
         case 0x04000131: // buttons!!!
-            return GBA_get_controller_state(controller.pio) >> 8;
+            return controller.get_state() >> 8;
 
         // 40000BA DMA0cnt
         // 40000C6 DMA1cnt
@@ -194,9 +237,9 @@ static u32 busrd_IO8(GBA *this, u32 addr, u32 sz, u32 access, bool has_effect) {
         case 0x040000C6:
         case 0x040000D2:
         case 0x040000DE: {
-            struct GBA_DMA_ch *ch = &dma.channel[DMA_CH_NUM(addr)];
-            u32 v = ch->io.dest_addr_ctrl << 5;
-            v |= ch->io.src_addr_ctrl << 7;
+            const auto &ch = dma.channel[DMA_CH_NUM(addr)];
+            u32 v = ch.io.dest_addr_ctrl << 5;
+            v |= ch.io.src_addr_ctrl << 7;
             return v;}
 
         case 0x040000B8:
@@ -213,24 +256,24 @@ static u32 busrd_IO8(GBA *this, u32 addr, u32 sz, u32 access, bool has_effect) {
         case 0x040000D3:
         case 0x040000DF: {
             u32 chnum = DMA_CH_NUM(addr);
-            struct GBA_DMA_ch *ch = &dma.channel[chnum];
-            u32 v = (ch->io.src_addr_ctrl >> 1) & 1;
-            v |= ch->io.repeat << 1;
-            v |= ch->io.transfer_size << 2;
-            if (chnum == 3) v |= ch->io.game_pak_drq << 3;
-            v |= ch->io.start_timing << 4;
-            v |= ch->io.irq_on_end << 6;
-            v |= ch->io.enable << 7;
+            auto &ch = dma.channel[chnum];
+            u32 v = (ch.io.src_addr_ctrl >> 1) & 1;
+            v |= ch.io.repeat << 1;
+            v |= ch.io.transfer_size << 2;
+            if (chnum == 3) v |= ch.io.game_pak_drq << 3;
+            v |= ch.io.start_timing << 4;
+            v |= ch.io.irq_on_end << 6;
+            v |= ch.io.enable << 7;
             return v;}
 
-        case 0x04000100: return (GBA_read_timer(this, 0) >> 0) & 0xFF;
-        case 0x04000101: return (GBA_read_timer(this, 0) >> 8) & 0xFF;
-        case 0x04000104: return (GBA_read_timer(this, 1) >> 0) & 0xFF;
-        case 0x04000105: return (GBA_read_timer(this, 1) >> 8) & 0xFF;
-        case 0x04000108: return (GBA_read_timer(this, 2) >> 0) & 0xFF;
-        case 0x04000109: return (GBA_read_timer(this, 2) >> 8) & 0xFF;
-        case 0x0400010C: return (GBA_read_timer(this, 3) >> 0) & 0xFF;
-        case 0x0400010D: return (GBA_read_timer(this, 3) >> 8) & 0xFF;
+        case 0x04000100: return (timer[0].read() >> 0) & 0xFF;
+        case 0x04000101: return (timer[0].read() >> 8) & 0xFF;
+        case 0x04000104: return (timer[1].read() >> 0) & 0xFF;
+        case 0x04000105: return (timer[1].read() >> 8) & 0xFF;
+        case 0x04000108: return (timer[2].read() >> 0) & 0xFF;
+        case 0x04000109: return (timer[2].read() >> 8) & 0xFF;
+        case 0x0400010C: return (timer[3].read() >> 0) & 0xFF;
+        case 0x0400010D: return (timer[3].read() >> 8) & 0xFF;
 
         case 0x04000103: // TIMERCNT upper, not used.
         case 0x04000107:
@@ -246,7 +289,7 @@ static u32 busrd_IO8(GBA *this, u32 addr, u32 sz, u32 access, bool has_effect) {
             u32 v = timer[tn].divider.io;
             v |= timer[tn].cascade << 2;
             v |= timer[tn].irq_on_overflow << 6;
-            v |= GBA_timer_enabled(this, tn) << 7;
+            v |= timer[tn].enabled() << 7;
             return v;
         }
 
@@ -299,7 +342,7 @@ static u32 busrd_IO8(GBA *this, u32 addr, u32 sz, u32 access, bool has_effect) {
             v |= cart.prefetch.enable << 6;
             return v; }
         case 0x04000208: return io.IME;
-        case 0x04000209: return 0;
+        case 0x04000209:
 
         // Unsupproted altogether...
         case 0x04000150:
@@ -323,20 +366,21 @@ static u32 busrd_IO8(GBA *this, u32 addr, u32 sz, u32 access, bool has_effect) {
         case 0x04fff780: // mgba debug identifier
         case 0x04fff781:
             return io.cpu.open_bus_data & 0xFF;
+        default:
     }
-    return GBA_open_bus_byte(this, addr);
+    return open_bus_byte(addr);
 }
 
-static u32 busrd_IO(GBA *this, u32 addr, u32 sz, u32 access, bool has_effect) {
+u32 core::busrd_IO(core *th, u32 addr, u8 sz, u8 access, bool has_effect) {
     addr &= maskalign[sz];
-    waitstates.current_transaction++;
-    u32 r = busrd_IO8(this, addr, 1, access, has_effect) << 0;
+    th->waitstates.current_transaction++;
+    u32 r = th->busrd_IO8(addr, 1, access, has_effect) << 0;
     if (sz >= 2) {
-        r |= busrd_IO8(this, addr + 1, 1, access, has_effect) << 8;
+        r |= th->busrd_IO8(addr + 1, 1, access, has_effect) << 8;
     }
     if (sz == 4) {
-        r |= busrd_IO8(this, addr + 2, 1, access, has_effect) << 16;
-        r |= busrd_IO8(this, addr + 3, 1, access, has_effect) << 24;
+        r |= th->busrd_IO8(addr + 2, 1, access, has_effect) << 16;
+        r |= th->busrd_IO8(addr + 3, 1, access, has_effect) << 24;
     }
     return r;
 }
@@ -367,44 +411,58 @@ void core::eval_irqs()
 }
 
 
-static void enable_prefetch(GBA *this)
+void core::enable_prefetch()
 {
     u32 page = cpu.regs.R[15] >> 28;
     if ((page < 8) || (page >= 0xE)) { // Prefetch is enabled but not great...
         cart.prefetch.last_access = 0xFFFFFFFFFFFFFFFF;
     }
     else {
-        cart.prefetch.last_access = GBA_clock_current(this);
+        cart.prefetch.last_access = clock_current();
     }
     cart.prefetch.cycles_banked = 0;
     cart.prefetch.next_addr = cpu.regs.R[15];
     cart.prefetch.duty_cycle = waitstates.timing16[0][page];
 }
 
-static void buswr_IO8(GBA *this, u32 addr, u32 sz, u32 access, u32 val) {
+static void block_step_halted(void *ptr, u64 key, u64 clock, u32 jitter)
+{
+    auto *th = static_cast<core *>(ptr);
+    th->io.halted &= ((!!(th->io.IF & th->io.IE)) ^ 1);
+    if (!th->io.halted) {
+        th->waitstates.current_transaction = 1;
+        th->scheduler.run.func = &block_step_cpu;
+    }
+    else {
+        th->clock.master_cycle_count = th->scheduler.first_event->timecode;
+        th->waitstates.current_transaction = 0;
+    }
+}
+
+void core::buswr_IO8(u32 addr, u8 sz, u8 access, u32 val) {
     val &= 0xFF;
-    if (addr < 0x04000060) return GBA_PPU_mainbus_write_IO(this, addr, sz, access, val);
-    u32 mask = 0xFF;
+    if (addr < 0x04000060) return PPU::core::mainbus_write_IO(this, addr, sz, access, val);
+    //u32 mask = 0xFF;
     if ((addr >= 0x4FFF600) && (addr < 0x4FFF700)) {
-        dbg_info.mgba.str[addr - 0x4FFF600] = val & 0xFF;
+        dbg_info.mgba.str[addr - 0x4FFF600] = static_cast<char>(val & 0xFF);
         return;
     }
     switch(addr) {
         case 0x04000200: // IE lo-byte
             io.IE = (io.IE & 0xFF00) | val;
-            GBA_eval_irqs(this);
+            eval_irqs();
             return;
         case 0x04000201: // IE hi-byte
             io.IE = (io.IE & 0xFF) | (val << 8);
-            GBA_eval_irqs(this);
+            eval_irqs();
             return;
         case 0x04000202: // IF lo-byte
             io.IF &= ~val;
-            GBA_eval_irqs(this);
+            eval_irqs();
             return;
         case 0x04000203: // IF hi-byte
             io.IF &= ~(val << 8);
-            GBA_eval_irqs(this);
+            eval_irqs();
             return;
         case WAITCNT:
             waitstates.io.sram = val & 3;
@@ -412,7 +470,7 @@ static void buswr_IO8(GBA *this, u32 addr, u32 sz, u32 access, u32 val) {
             waitstates.io.ws0_s = (val >> 4) & 1; // 4
             waitstates.io.ws1_n = (val >> 5) & 3; // 5-6
             waitstates.io.ws1_s = (val >> 7) & 1; // 7
-            set_waitstates(this);
+            set_waitstates();
             return;
         case WAITCNT+1: {
             waitstates.io.ws2_n = val & 3;
@@ -421,21 +479,20 @@ static void buswr_IO8(GBA *this, u32 addr, u32 sz, u32 access, u32 val) {
             waitstates.io.empty_bit = (val >> 5) & 1;
             u32 old_enable = cart.prefetch.enable;
             cart.prefetch.enable = (val >> 6) & 1;
-            set_waitstates(this);
+            set_waitstates();
             if (old_enable && !cart.prefetch.enable) {
-                cart.prefetch.was_disabled = 1;
+                cart.prefetch.was_disabled = true;
                 //cart.prefetch.active = 0;
             }
             if (!old_enable && cart.prefetch.enable) {
-                enable_prefetch(this);
+                enable_prefetch();
             }
             return; }
         case 0x04000208: // IME lo
             io.IME = val & 1;
-            GBA_eval_irqs(this);
+            eval_irqs();
             return;
         case 0x04000209: // IME hi
-            return;
         case 0x04000206:
         case 0x04000207:
         case 0x0400020A:
@@ -517,8 +574,8 @@ static void buswr_IO8(GBA *this, u32 addr, u32 sz, u32 access, u32 val) {
         case 0x04000106:
         case 0x0400010A:
         case 0x0400010E: {
-            u32 tn = (addr >> 2) & 3;
-            GBA_timer_write_cnt(this, (tn << 24) | val, GBA_clock_current(this), 0);
+            const u32 tn = (addr >> 2) & 3;
+            timer[tn].write_cnt(val, clock_current(), 0);
             return; }
         case 0x04000100: timer[0].reload = (timer[0].reload & 0xFF00) | val; return;
         case 0x04000104: timer[1].reload = (timer[1].reload & 0xFF00) | val; return;
@@ -532,7 +589,7 @@ static void buswr_IO8(GBA *this, u32 addr, u32 sz, u32 access, u32 val) {
 
 
         case 0x04000300: { io.POSTFLG = val; return; }
-        case 0x04000301: { io.halted = 1; scheduler.run.func = &GBA_block_step_halted;  return; }
+        case 0x04000301: { io.halted = 1; scheduler.run.func = &block_step_halted;  return; }
 
         // DMA enable 0->1 while start timing = 0 will start it
         case 0x040000BA:
@@ -540,27 +597,27 @@ static void buswr_IO8(GBA *this, u32 addr, u32 sz, u32 access, u32 val) {
         case 0x040000D2:
         case 0x040000DE: {
             u32 chn = DMA_CH_NUM(addr);
-            struct GBA_DMA_ch *ch = &dma.channel[chn];
-            ch->io.dest_addr_ctrl = (val >> 5) & 3;
-            ch->io.src_addr_ctrl = (ch->io.src_addr_ctrl & 2) | ((val >> 7) & 1);
-            GBA_DMA_on_modify_write(ch);
+            auto &ch = dma.channel[chn];
+            ch.io.dest_addr_ctrl = (val >> 5) & 3;
+            ch.io.src_addr_ctrl = (ch.io.src_addr_ctrl & 2) | ((val >> 7) & 1);
+            ch.on_modify_write();
             return;}
         case 0x040000BB:
         case 0x040000C7:
         case 0x040000D3:
         case 0x040000DF: {
-            u32 chnum = DMA_CH_NUM(addr);
-            struct GBA_DMA_ch *ch = &dma.channel[chnum];
-            ch->io.src_addr_ctrl = (ch->io.src_addr_ctrl & 1) | ((val & 1) << 1);
-            ch->io.repeat = (val >> 1) & 1;
-            ch->io.transfer_size = (val >> 2) & 1;
-            if (chnum == 3) ch->io.game_pak_drq = (val >> 3) & 1;
-            ch->io.start_timing = (val >> 4) & 3;
-            ch->io.irq_on_end = (val >> 6) & 1;
-            u32 old_enable = ch->io.enable;
-            ch->io.enable = (val >> 7) & 1;
-            GBA_DMA_cnt_written(this, ch, old_enable);
-            GBA_DMA_on_modify_write(ch);
+            const u32 chnum = DMA_CH_NUM(addr);
+            auto &ch = dma.channel[chnum];
+            ch.io.src_addr_ctrl = (ch.io.src_addr_ctrl & 1) | ((val & 1) << 1);
+            ch.io.repeat = (val >> 1) & 1;
+            ch.io.transfer_size = (val >> 2) & 1;
+            if (chnum == 3) ch.io.game_pak_drq = (val >> 3) & 1;
+            ch.io.start_timing = (val >> 4) & 3;
+            ch.io.irq_on_end = (val >> 6) & 1;
+            u32 old_enable = ch.io.enable;
+            ch.io.enable = (val >> 7) & 1;
+            ch.cnt_written(old_enable);
+            ch.on_modify_write();
             return;}
 
         case 0x04000120: io.SIO.multi[0] = (io.SIO.multi[0] & 0xFF00) | val; return;
@@ -576,7 +633,6 @@ static void buswr_IO8(GBA *this, u32 addr, u32 sz, u32 access, u32 val) {
             io.SIO.send = (io.SIO.send & 0xFF00) | val; return;
         case 0x0400012B:
             io.SIO.send = (io.SIO.send & 0xFF) | (val << 8); return;
-            return;
 
         case 0x04000130:
         case 0x04000131:
@@ -623,8 +679,6 @@ static void buswr_IO8(GBA *this, u32 addr, u32 sz, u32 access, u32 val) {
         case 0x04000157:
         case 0x04000158:
         case 0x04000159:
-            return;
-
 
         case 0x04000410: // not used
         case 0x04000411:
@@ -701,140 +755,79 @@ static void buswr_IO8(GBA *this, u32 addr, u32 sz, u32 access, u32 val) {
         case 0x0400015D:
         case 0x0400015E:
         case 0x0400015F:
-
+        default:
             return;
     }
-    //buswr_invalid(this, addr, sz, access, val);
 }
 
-static void buswr_IO(GBA *this, u32 addr, u32 sz, u32 access, u32 val) {
+void core::buswr_IO(core *th, u32 addr, u8 sz, u8 access, u32 val) {
     addr &= maskalign[sz];
-    waitstates.current_transaction++;
-    if ((addr >= 0x04000060) && (addr < 0x040000B0)) return GBA_APU_write_IO(this, addr, sz, access, val);
+    th->waitstates.current_transaction++;
+    if ((addr >= 0x04000060) && (addr < 0x040000B0)) return th->apu.write_IO(addr, sz, val);
 
     if (addr == 0x04fff780) {
         assert(sz == 2);
-        if (val == 0xc0de) dbg_info.mgba.enable = 1;
+        if (val == 0xc0de) th->dbg_info.mgba.enable = 1;
         return;
     }
-    if (dbg_info.mgba.enable) {
+    if (th->dbg_info.mgba.enable) {
         if (addr == 0x04fff700) {
             //if (val & 0x100) {
-            if (dbg_info.mgba.str[0] != 0) {
+            if (th->dbg_info.mgba.str[0] != 0) {
                 //printf("\n%s", dbg_info.mgba.str);
-                memset(dbg_info.mgba.str, 0, sizeof(dbg_info.mgba.str));
+                memset(th->dbg_info.mgba.str, 0, sizeof(dbg_info.mgba.str));
             }
             return;
         }
     }
-    buswr_IO8(this, addr, 1, access, (val >> 0) & 0xFF);
+    th->buswr_IO8(addr, 1, access, (val >> 0) & 0xFF);
     if (sz >= 2) {
-        buswr_IO8(this, addr + 1, 1, access, (val >> 8) & 0xFF);
+        th->buswr_IO8(addr + 1, 1, access, (val >> 8) & 0xFF);
     }
     if (sz == 4) {
-        buswr_IO8(this, addr + 2, 1, access, (val >> 16) & 0xFF);
-        buswr_IO8(this, addr + 3, 1, access, (val >> 24) & 0xFF);
+        th->buswr_IO8(addr + 2, 1, access, (val >> 16) & 0xFF);
+        th->buswr_IO8(addr + 3, 1, access, (val >> 24) & 0xFF);
     }
 }
 
-void GBA_bus_init(GBA *this)
+void core::trace_read(u32 addr, u8 sz, u32 val) const
 {
-    for (u32 i = 0; i < 4; i++) {
-        struct GBA_TIMER *t = &timer[i];
-        t->overflow_at = 0xFFFFFFFFFFFFFFFF;
-        t->enable_at = 0xFFFFFFFFFFFFFFFF;
-    }
-    for (u32 i = 0; i < 16; i++) {
-        mem.read[i] = &busrd_invalid;
-        mem.write[i] = &buswr_invalid;
-    }
-    memset(dbg_info.mgba.str, 0, sizeof(dbg_info.mgba.str));
-    mem.read[0x0] = &busrd_bios;
-    mem.read[0x2] = &busrd_WRAM_slow;
-    mem.read[0x3] = &busrd_WRAM_fast;
-    mem.read[0x4] = &busrd_IO;
-    mem.read[0x5] = &GBA_PPU_mainbus_read_palette;
-    mem.read[0x6] = &GBA_PPU_mainbus_read_VRAM;
-    mem.read[0x7] = &GBA_PPU_mainbus_read_OAM;
-    mem.read[0x8] = &GBA_cart_read_wait0;
-    mem.read[0x9] = &GBA_cart_read_wait0;
-    mem.read[0xA] = &GBA_cart_read_wait1;
-    mem.read[0xB] = &GBA_cart_read_wait1;
-    mem.read[0xC] = &GBA_cart_read_wait2;
-    mem.read[0xD] = &GBA_cart_read_wait2;
-    mem.read[0xE] = &GBA_cart_read_sram;
-    mem.read[0xF] = &GBA_cart_read_sram;
-
-    mem.write[0x0] = &buswr_bios;
-    mem.write[0x2] = &buswr_WRAM_slow;
-    mem.write[0x3] = &buswr_WRAM_fast;
-    mem.write[0x4] = &buswr_IO;
-    mem.write[0x5] = &GBA_PPU_mainbus_write_palette;
-    mem.write[0x6] = &GBA_PPU_mainbus_write_VRAM;
-    mem.write[0x7] = &GBA_PPU_mainbus_write_OAM;
-    mem.write[0x8] = &GBA_cart_write;
-    mem.write[0x9] = &GBA_cart_write;
-    mem.write[0xA] = &GBA_cart_write;
-    mem.write[0xB] = &GBA_cart_write;
-    mem.write[0xC] = &GBA_cart_write;
-    mem.write[0xD] = &GBA_cart_write;
-    mem.write[0xE] = &GBA_cart_write_sram;
-    mem.write[0xF] = &GBA_cart_write_sram;
-
-    set_waitstates(this);
-}
-
-static u32 GBA_mainbus_IO_read(GBA *this, u32 addr, u32 sz, bool has_effect)
-{
-    printf("\nUnknown IO read addr:%08x sz:%d", addr, sz);
-    return 0;
-}
-
-static void GBA_mainbus_IO_write(GBA *this, u32 addr, u32 sz, u32 val)
-{
-    printf("\nUnknown IO write addr:%08x sz:%d val:%08x", addr, sz, val);
-}
-
-static void trace_read(GBA *this, u32 addr, u32 sz, u32 val)
-{
-    struct trace_view *tv = cpu.dbg.tvptr;
+    trace_view *tv = cpu.dbg.tvptr;
     if (!tv) return;
-    trace_view_startline(tv, 2);
-    trace_view_printf(tv, 0, "BUSrd");
-    trace_view_printf(tv, 1, "%lld", clock.master_cycle_count + waitstates.current_transaction);
-    trace_view_printf(tv, 2, "%08x", addr);
-    trace_view_printf(tv, 3, "%08x", val);
-    trace_view_endline(tv);
+    tv->startline(2);
+    tv->printf(0, "BUSrd");
+    tv->printf(1, "%lld", clock.master_cycle_count + waitstates.current_transaction);
+    tv->printf(2, "%08x", addr);
+    tv->printf(3, "%08x", val);
+    tv->endline();
 }
 
-static void trace_write(GBA *this, u32 addr, u32 sz, u32 val)
+void core::trace_write(u32 addr, u8 sz, u32 val) const
 {
-    struct trace_view *tv = cpu.dbg.tvptr;
+    trace_view *tv = cpu.dbg.tvptr;
     if (!tv) return;
-    trace_view_startline(tv, 2);
-    trace_view_printf(tv, 0, "BUSwr");
-    trace_view_printf(tv, 1, "%lld", clock.master_cycle_count + waitstates.current_transaction);
-    trace_view_printf(tv, 2, "%08x", addr);
-    trace_view_printf(tv, 3, "%08x", val);
-    trace_view_endline(tv);
+    tv->startline(2);
+    tv->printf(0, "BUSwr");
+    tv->printf(1, "%lld", clock.master_cycle_count + waitstates.current_transaction);
+    tv->printf(2, "%08x", addr);
+    tv->printf(3, "%08x", val);
+    tv->endline();
 }
 
 
-u32 GBA_mainbus_read(void *ptr, u32 addr, u32 sz, u32 access, bool has_effect)
+u32 core::mainbus_read(u32 addr, u8 sz, u8 access, bool has_effect)
 {
-    struct GBA *this = (GBA *)ptr;
     u32 v;
 
     if (addr < 0x10000000) v = mem.read[(addr >> 24) & 15](this, addr, sz, access, has_effect);
     else v = busrd_invalid(this, addr, sz, access, has_effect);
-    if (dbg.trace_on) trace_read(this, addr, sz, v);
+    if (::dbg.trace_on) trace_read(addr, sz, v);
     return v;
 }
 
-u32 GBA_mainbus_fetchins(void *ptr, u32 addr, u32 sz, u32 access)
+u32 core::mainbus_fetchins(u32 addr, u8 sz, u8 access)
 {
-    struct GBA *this = (GBA*)ptr;
-    u32 v = GBA_mainbus_read(ptr, addr, sz, access, 1);
+    u32 v = mainbus_read(addr, sz, access, true);
     switch(sz) {
         case 4:
             io.cpu.open_bus_data = v;
@@ -842,14 +835,14 @@ u32 GBA_mainbus_fetchins(void *ptr, u32 addr, u32 sz, u32 access)
         case 2:
             io.cpu.open_bus_data = (v << 16) | v;
             break;
+        default:
     }
     return v;
 }
 
-void GBA_mainbus_write(void *ptr, u32 addr, u32 sz, u32 access, u32 val)
+void core::mainbus_write(u32 addr, u8 sz, u8 access, u32 val)
 {
-    struct GBA *this = (GBA *)ptr;
-    //if (dbg.trace_on) trace_write(this, addr, sz, val);
+    //if (dbg.trace_on) trace_write(addr, sz, val);
     if (addr < 0x10000000) {
         //printf("\nWRITE addr:%08x sz:%d val:%08x", addr, sz, val);
         return mem.write[(addr >> 24) & 15](this, addr, sz, access, val);
@@ -858,26 +851,26 @@ void GBA_mainbus_write(void *ptr, u32 addr, u32 sz, u32 access, u32 val)
     buswr_invalid(this, addr, sz, access, val);
 }
 
-void GBA_check_dma_at_hblank(GBA *this)
+void core::check_dma_at_hblank()
 {
     // Check if any DMA channels are at enabled=1, started=0, time=hblank
     for (u32 i = 0; i < 4; i++) {
-        struct GBA_DMA_ch *ch = &dma.channel[i];
-        if ((ch->io.enable) && (!ch->latch.started) && ((ch->io.start_timing == 2) || ((i == 3) && (ch->io.start_timing == 3)))) {
-            if (ch->io.start_timing == 3) { // SPECIAL VIDEO MODE CH3 only goes 2-162 weirdly...
+        auto &ch = dma.channel[i];
+        if ((ch.io.enable) && (!ch.latch.started) && ((ch.io.start_timing == 2) || ((i == 3) && (ch.io.start_timing == 3)))) {
+            if (ch.io.start_timing == 3) { // SPECIAL VIDEO MODE CH3 only goes 2-162 weirdly...
                 if ((clock.ppu.y < 2) || (clock.ppu.y > 162)) continue;
             }
             else { // no hblank IRQs in vblank
                 if (clock.ppu.y >= 160) continue;
             }
             //printf("\nDMA HBLANK START %d", i);
-            GBA_DMA_start(this, ch);
+            ch.start();
         }
     }
     // And if it's channel 3 and "special", if we're in the correct lines.
 }
 
-u32 GBA_open_bus_byte(GBA *this, u32 addr)
+u32 core::open_bus_byte(u32 addr) const
 {
     switch(addr & 3) {
         case 0:
@@ -888,35 +881,33 @@ u32 GBA_open_bus_byte(GBA *this, u32 addr)
             return (io.cpu.open_bus_data >> 16) & 0xFF;
         case 3:
             return (io.cpu.open_bus_data >> 24) & 0xFF;
+        default: NOGOHERE;
     }
     return 0;
 }
 
-u32 GBA_open_bus(GBA *this, u32 addr, u32 sz)
+u32 core::open_bus(const u32 addr, const u32 sz) const
 {
-    u32 v = GBA_open_bus_byte(this, addr);
+    u32 v = open_bus_byte(addr);
     if (sz >= 2) {
-        v |= GBA_open_bus_byte(this, addr+1) << 8;
+        v |= open_bus_byte(addr+1) << 8;
     }
     if (sz == 4) {
-        v |= GBA_open_bus_byte(this, addr+2) << 16;
-        v |= GBA_open_bus_byte(this, addr+3) << 24;
+        v |= open_bus_byte(addr+2) << 16;
+        v |= open_bus_byte(addr+3) << 24;
     }
     return v;
 }
 
-
-void GBA_check_dma_at_vblank(GBA *this)
+void core::check_dma_at_vblank()
 {
     // Check if any DMA channels are at enabled=1, started=0, time=hblank
-    for (u32 i = 0; i < 4; i++) {
-        struct GBA_DMA_ch *ch = &dma.channel[i];
-        if ((ch->io.enable) && (!ch->latch.started) && (ch->io.start_timing == 1)) {
-            GBA_DMA_start(this, ch);
+    for (auto &ch : dma.channel) {
+        if ((ch.io.enable) && (!ch.latch.started) && (ch.io.start_timing == 1)) {
+            ch.start();
         }
     }
 }
-
 
 void core::process_button_IRQ()
 {

@@ -182,7 +182,7 @@ static void fill_disassembly_view(void *macptr, debugger_interface *dbgr, disass
     this->dbg.dasm_m68k.IRC->int32_data = this->m68k.regs.IRC;*/
 }
 
-static void get_obj_tile_size(u32 sz, u32 shape, u32 *htiles, u32 *vtiles)
+static void get_obj_tile_size(u8 sz, u32 shape, u32 *htiles, u32 *vtiles)
 {
 #define T(s1, s2, hn, vn) case (((s1) << 2) | (s2)): *htiles = hn; *vtiles = vn; return;
     switch((sz << 2) | shape) {

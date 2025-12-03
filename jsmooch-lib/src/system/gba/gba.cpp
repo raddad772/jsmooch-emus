@@ -339,20 +339,6 @@ void GBAJ_reset(JSM)
 }
 
 
-void GBA_block_step_halted(void *ptr, u64 key, u64 clock, u32 jitter)
-{
-    struct GBA *this = (GBA *)ptr;
-    io.halted &= ((!!(io.IF & io.IE)) ^ 1);
-    if (!io.halted) {
-        waitstates.current_transaction = 1;
-        scheduler.run.func = &GBA_block_step_cpu;
-    }
-    else {
-        clock.master_cycle_count = scheduler.first_event->timecode;
-        waitstates.current_transaction = 0;
-    }
-}
-
 u32 GBAJ_finish_scanline(JSM)
 {
     JTHIS;
