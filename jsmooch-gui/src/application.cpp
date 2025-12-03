@@ -189,7 +189,7 @@ static void render_emu_window(full_system &fsys, ImGuiIO& io, u32 frame_multi)
         /*origin_pos.x -= window_origin.x;
         origin_pos.y -= window_origin.y;*/
         ImGui::PushStyleVar(ImGuiStyleVar_FramePadding, {0,0});
-        //ImGui::ImageButton("RENDER GAME", fsys.output.backbuffer_texture.for_image(), fsys.output_size(), fsys.output_uv0(), fsys.output_uv1());
+        ImGui::ImageButton("RENDER GAME", fsys.output.backbuffer_texture.for_image(), fsys.output_size(), fsys.output_uv0(), fsys.output_uv1());
         ImGui::PopStyleVar();
 
         mouse_emu_struct a{};
@@ -1155,7 +1155,6 @@ void imgui_jsmooch_app::mainloop(ImGuiIO& io) {
         }
         fsys.advance_time(0, 0, frame_multi);
         last_frame_was_whole = true;
-        //fsys.events_view_present();
         fsys.has_played_once = true;
     }
     key_was_down = frame_multi != 1;

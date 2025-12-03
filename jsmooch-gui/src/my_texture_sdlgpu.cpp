@@ -13,7 +13,6 @@
 
 void create_texture(ImTextureData &td, int width, int height)
 {
-    return;
     td.Status = ImTextureStatus_WantCreate;
     td.Format = ImTextureFormat_RGBA32;
     td.Width = width;
@@ -22,28 +21,32 @@ void create_texture(ImTextureData &td, int width, int height)
     td.Pixels = static_cast<unsigned char*>(malloc(width*height*4));
     memset(td.Pixels, 0, width*height*4);
     td.SetStatus(ImTextureStatus_WantCreate);
-    ImGui_ImplSDLGPU3_UpdateTexture(&td);
-    assert(td.Status == ImTextureStatus_OK);
+    //ImGui_ImplSDLGPU3_UpdateTexture(&td);
+    //assert(td.Status == ImTextureStatus_OK);
 }
 
 void my_texture::setup(const char *label, u32 twidth, u32 theight) {
     width = twidth;
     height = theight;
     create_texture(tex.data, width, height);
+    snprintf(store_label, sizeof(store_label), "%s", label);
+    printf("\nSETUP TEXTURE %s", store_label);
     is_good = 1;
 }
 
 void my_texture::upload_data(void *source_ptr, size_t sz, u32 source_width, u32 source_height)
 {
-    return;
+    if (tex.data.Status != ImTextureStatus_OK) {
+        printf("\nTEXT NOT OK: %s", store_label);
+    }
     tex.data.SetStatus(ImTextureStatus_WantUpdates);
     tex.data.UpdateRect.x = 0;
     tex.data.UpdateRect.y = 0;
     tex.data.UpdateRect.w = source_width;
     tex.data.UpdateRect.h = source_height;
     memcpy(tex.data.Pixels, source_ptr, source_width * source_height * 4);
-    ImGui_ImplSDLGPU3_UpdateTexture(&tex.data);
-    assert(tex.data.Status == ImTextureStatus_OK);
+    //ImGui_ImplSDLGPU3_UpdateTexture(&tex.data);
+    //assert(tex.data.Status == ImTextureStatus_OK);
 }
 
 my_texture::~my_texture() {

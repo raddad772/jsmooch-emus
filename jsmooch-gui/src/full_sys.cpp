@@ -1236,8 +1236,6 @@ void full_system::setup_system(jsm::systems which)
 
     setup_bios();
 
-    //    backbuffer.setup(wgpu_device, "backbuffer", bb_width, bb_height);
-
     load_default_ROM();
 
 #ifdef SIDELOAD
