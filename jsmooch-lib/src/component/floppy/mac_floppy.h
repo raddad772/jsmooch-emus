@@ -1,32 +1,24 @@
 // Created by . on 8/5/24.
 //
 
-#ifndef JSMOOCH_EMUS_MAC_FLOPPY_H
-#define JSMOOCH_EMUS_MAC_FLOPPY_H
-
-#ifdef __cplusplus
-extern "C" {
-#endif
-
+#pragma once
 #include "generic_floppy.h"
+namespace floppy::mac {
+struct DISC {
 
-struct mac_floppy {
-    struct generic_floppy disc; // struct generic_floppy_track
-    u32 write_protect;
-    u32 num_heads;
+    generic::DISC<80,12,5181> disc{}; // struct generic_floppy_track
+    bool write_protect{};
+    u32 num_heads{};
+
+    void save();
+    bool load(const char *fname, buf &b);
+    void fill_tracks(u32 num_heads);
+
+    u8 *dc42_load_gcr(buf &b, u32 head_count, u32 &check, u32 fmt);
+    int dc42_load_tags(u8 *bptr, u32 tags_size, u32 &check);
+    bool load_dc42(buf &b);
+    bool load_plain(buf &b);
+    void encode_track(generic::TRACK<12, 5181> &track);
+    bool load_dave(buf &b);
 };
-
-void mac_floppy_init(mac_floppy *);
-void mac_floppy_delete(mac_floppy *);
-void mac_floppy_encode_track(generic_floppy_track *track);
-int mac_floppy_plain_load(mac_floppy *mflpy, buf *b);
-int mac_floppy_load(mac_floppy *mflpy, const char* fname, buf *b);
-int mac_floppy_dc42_load(mac_floppy *mflpy, buf *b);
-
-
-#ifdef __cplusplus
 }
-#endif
-
-
-#endif //JSMOOCH_EMUS_MAC_FLOPPY_H

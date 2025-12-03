@@ -2,53 +2,45 @@
 // Created by . on 8/5/24.
 //
 
-#ifndef JSMOOCH_EMUS_GENERIC_FLOPPY_H
-#define JSMOOCH_EMUS_GENERIC_FLOPPY_H
-
-#ifdef __cplusplus
-extern "C" {
-#endif
+#pragma once
 
 #include "helpers/int.h"
 #include "helpers/cvec.h"
 #include "helpers/buf.h"
 #include "helpers/bitbuffer.h"
 
+namespace floppy {
+namespace generic {
 
-struct generic_floppy_sector {
-    u8 track, head, sector, info;
-    u8 *tag, *data;
+struct SECTOR {
+    SECTOR();
+    u8 track{}, head{}, sector{}, info{};
+    u8 *tag{}, *data{};
 };
 
-struct generic_floppy_track {
-    u32 id, head;
-    double radius_mm, length_mm, rpm;
+template<int sectors_per_track, int bits_per_sector>
+struct TRACK {
+    u32 id{}, head{};
+    double radius_mm{}, length_mm{}, rpm{};
 
-    struct cvec sectors;
+    std::array<SECTOR, sectors_per_track> sectors{};
 
-    struct buf unencoded_data;
-    struct bitbuf encoded_data;
 
-    struct buf tags_data;
+    buf unencoded_data{};
+    static_bitbuf<bits_per_sector*sectors_per_track,true> encoded_data{};
+
+    buf tags_data{};
 };
 
-struct generic_floppy {
-    struct cvec tracks; // struct generic_floppy_track
+template<int num_tracks, int sectors_per_track, int bits_per_sector>
+struct DISC {
+    std::array<TRACK<sectors_per_track, bits_per_sector>, num_tracks> tracks{}; // struct generic_floppy_track
     struct {
-        float size_mm;
-        float track_inner_mm;
-        float track_outer_mm;
-    } geometry;
+        float size_mm{};
+        float track_inner_mm{};
+        float track_outer_mm{};
+    } geometry{};
 };
 
-void generic_floppy_init(generic_floppy *);
-void generic_floppy_delete(generic_floppy *);
-void generic_floppy_track_init(generic_floppy_track *this);
-void generic_floppy_sector_init(generic_floppy_sector *);
-void generic_floppy_sector_delete(generic_floppy_sector *);
-
-#ifdef __cplusplus
 }
-#endif
-
-#endif //JSMOOCH_EMUS_GENERIC_FLOPPY_H
+}

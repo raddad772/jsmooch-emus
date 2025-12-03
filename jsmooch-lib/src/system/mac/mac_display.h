@@ -1,15 +1,35 @@
-//
-// Created by . on 7/25/24.
-//
+#pragma once
 
-#ifndef JSMOOCH_EMUS_MAC_DISPLAY_H
-#define JSMOOCH_EMUS_MAC_DISPLAY_H
+#include "helpers/int.h"
+#include "helpers/physical_io.h"
 
-#include "mac.h"
-#include "mac_internal.h"
+namespace mac {
+struct display {
+    explicit display(struct core* parent) : bus(parent) {}
+    static void scanline_visible(core *bus);
+    static void scanline_vblank(core* th);
+    void update_irqs();
+    void step2();
+    void reset();
 
-void mac_step_display2(mac*);
-void mac_display_reset(mac*);
-u32 mac_display_in_hblank(mac*);
+    core *bus;
+    bool in_hblank();
+    void new_frame();
+    JSM_DISPLAY* crt;
+    cvec_ptr<physical_io_device> crt_ptr{};
+    u8 *cur_output{};
 
-#endif //JSMOOCH_EMUS_MAC_DISPLAY_H
+    u32 ram_base_address{};
+    u32 read_addr{};
+    u16 output_shifter{};
+
+    u32 IRQ_signal{};
+    u32 IRQ_out{};
+
+    void (*scanline_func)(core*);
+
+private:
+    void calc_display_addr();
+    void new_scanline();
+};
+}

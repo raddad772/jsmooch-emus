@@ -6,7 +6,7 @@
 #include <cassert>
 
 #include "mac.h"
-#include "mac_internal.h"
+#include "mac_bus.h"
 #include "mac_debugger.h"
 
 #define JTHIS struct mac* this = (mac*)jsm->ptr

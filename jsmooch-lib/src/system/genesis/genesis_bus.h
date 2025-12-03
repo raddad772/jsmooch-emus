@@ -141,8 +141,7 @@ struct core : jsm_system {
             DBG_WAVEFORM_MAIN
             DBG_WAVEFORM_CHANS(6)
         DBG_WAVEFORM_END(ym2612)
-
-    DBG_END
+   DBG_END
 
     struct {
         double master_cycles_per_audio_sample{}, master_cycles_per_min_sample{}, master_cycles_per_max_sample{};

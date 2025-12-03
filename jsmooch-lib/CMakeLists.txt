@@ -145,6 +145,8 @@ set(SOURCE_LIST
         "src/component/audio/ym2612/ym2612.cpp"
         "src/component/audio/ym2612/ym2612.h"
         "src/helpers/int.h"
+        "src/helpers/bitbuffer.cpp"
+        "src/helpers/bitbuffer.h"
         "src/helpers/inifile.cpp"
         "src/helpers/inifile.h"
         "src/helpers/irq_multiplexer.cpp"
@@ -224,6 +226,16 @@ set(SOURCE_LIST
         src/component/cpu/cdp1802/cdp1802_instructions.h
         src/component/cpu/cdp1802/cdp1802_disassembler.cpp
         src/component/cpu/cdp1802/cdp1802_disassembler.h
+        src/system/mac/mac.cpp
+        src/system/mac/mac.h
+        src/system/mac/mac_debugger.cpp
+        src/system/mac/mac_debugger.h
+        src/system/mac/mac_display.cpp
+        src/system/mac/mac_display.h
+        src/system/mac/mac_bus.cpp
+        src/system/mac/mac_bus.h
+        src/system/mac/mac_iwm.cpp
+        src/system/mac/mac_iwm.h
         src/system/gba/gba.cpp
         src/system/gba/gba.h
         src/system/gba/gba_apu.cpp
@@ -284,10 +296,20 @@ set(SOURCE_LIST
         src/system/commodore64/c64_serialize.h
         src/component/misc/m6526/m6526.cpp
         src/component/misc/m6526/m6526.h
+        #src/component/misc/via6522/via6522.cpp
+        #src/component/misc/via6522/via6522.h
         src/system/commodore64/c64_keyboard.cpp
         src/system/commodore64/c64_keyboard.h
         src/system/gba/gba_serialize.cpp
         src/system/gba/gba_serialize.h
+        src/system/mac/mac_clock.cpp
+        src/system/mac/mac_clock.h
+        src/system/mac/mac_via.cpp
+        src/system/mac/mac_via.h
+        src/component/floppy/generic_floppy.cpp
+        src/component/floppy/generic_floppy.h
+        src/component/floppy/mac_floppy.cpp
+        src/component/floppy/mac_floppy.h
 )
 
 # TODO: Fix elf-parser repo for windows

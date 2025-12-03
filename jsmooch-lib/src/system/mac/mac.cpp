@@ -8,7 +8,7 @@
 #include <cstring>
 
 #include "mac.h"
-#include "mac_internal.h"
+#include "mac_bus.h"
 #include "mac_display.h"
 #include "mac_debugger.h"
 
@@ -48,7 +48,7 @@ static u32 read_trace_m68k(void *ptr, u32 addr, u32 UDS, u32 LDS) {
 void mac_new(jsm_system* jsm, enum mac_variants variant)
 {
     struct mac* this = (mac*)calloc(1, sizeof(mac));
-    this->dbgr = NULL;
+    this->dbgr = nullptr;
     this->kind = variant;
     mac_clock_init(this);
     switch(variant) {
@@ -86,7 +86,7 @@ void mac_new(jsm_system* jsm, enum mac_variants variant)
     mac_iwm_init(this);
 
     this->jsm.described_inputs = 0;
-    this->jsm.IOs = NULL;
+    this->jsm.IOs = nullptr;
     this->jsm.cycles_left = 0;
 
     jsm->ptr = (void*)this;
@@ -101,7 +101,7 @@ void mac_new(jsm_system* jsm, enum mac_variants variant)
     jsm->pause = &macJ_pause;
     jsm->stop = &macJ_stop;
     jsm->describe_io = &macJ_describe_io;
-    jsm->sideload = NULL;
+    jsm->sideload = nullptr;
     jsm->setup_debugger_interface = &macJ_setup_debugger_interface;
 
 }
@@ -123,13 +123,13 @@ void mac_delete(jsm_system* jsm)
     }*/
 
     if (this->RAM) free(this->RAM);
-    this->RAM = NULL;
+    this->RAM = nullptr;
 
     if (this->ROM) free(this->ROM);
-    this->ROM = NULL;
+    this->ROM = nullptr;
 
     free(jsm->ptr);
-    jsm->ptr = NULL;
+    jsm->ptr = nullptr;
 
     jsm_clearfuncs(jsm);
 }
@@ -238,12 +238,12 @@ void macJ_describe_io(JSM, cvec *IOs)
     struct physical_io_device *d = cvec_push_back(IOs);
     physical_io_device_init(d, HID_DISC_DRIVE, 1, 1, 1, 0);
     d->disc_drive.insert_disc = &macJ_IO_insert_disk;
-    d->disc_drive.remove_disc = NULL;
-    d->disc_drive.close_drive = NULL;
-    d->disc_drive.open_drive = NULL;
-    this->iwm.drive[0].device = NULL;
+    d->disc_drive.remove_disc = nullptr;
+    d->disc_drive.close_drive = nullptr;
+    d->disc_drive.open_drive = nullptr;
+    this->iwm.drive[0].device = nullptr;
     this->iwm.drive[0].io_index = 2;
-    this->iwm.drive[1].device = NULL;
+    this->iwm.drive[1].device = nullptr;
     this->iwm.drive[0].connected = 1;
     this->iwm.drive[1].connected = 0;
 
@@ -255,8 +255,8 @@ void macJ_describe_io(JSM, cvec *IOs)
     setup_crt(&d->display);
     d->display.output[0] = malloc(512 * 342);
     d->display.output[1] = malloc(512 * 342);
-    d->display.output_debug_metadata[0] = NULL;
-    d->display.output_debug_metadata[1] = NULL;
+    d->display.output_debug_metadata[0] = nullptr;
+    d->display.output_debug_metadata[1] = nullptr;
     this->display.crt_ptr = make_cvec_ptr(IOs, cvec_len(IOs)-1);
     this->display.cur_output = (u8 *)d->display.output[0];
     d->display.last_written = 1;

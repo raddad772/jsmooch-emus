@@ -26,7 +26,7 @@ struct timer {
     u8 out_count{};
 };
 
-struct core {
+struct chip {
     void reset();
     void cycle();
     struct {

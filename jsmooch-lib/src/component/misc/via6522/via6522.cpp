@@ -4,29 +4,29 @@
 
 #include <cstdio>
 
-#include "m6526.h"
+#include "via6522.h"
 
-namespace M6526 {
+namespace VIA6522 {
 
 u8 chip::read(u8 addr, u8 old, bool has_effect) {
     addr &= 15;
     switch(addr) {
-        case 0b0000: return read_PRA();
-        case 0b0001: return read_PRB(has_effect);
-        case 0b0010: return regs.DDRA;
-        case 0b0011: return regs.DDRB;
+        case 0b0000: return read_PRB(has_effect);
+        case 0b0001: return read_PRA(has_effect, true);
+        case 0b0010: return regs.DDRB;
+        case 0b0011: return regs.DDRA;
         case 0b0100: return timerA.count & 0xFF;
         case 0b0101: return (timerA.count >> 8) & 0xFF;
-        case 0b0110: return timerB.count & 0xFF;
-        case 0b0111: return (timerB.count >> 8) & 0xFF;
-        case 0b1000: return regs.TOD10;
-        case 0b1001: return regs.TODSEC;
-        case 0b1010: return regs.TODMIN;
-        case 0b1011: return regs.TODHR;
-        case 0b1100: return regs.SDR;
-        case 0b1101: return read_ICR(has_effect);
-        case 0b1110: return regs.CRA.u;
-        case 0b1111: return regs.CRB.u;
+        case 0b0110: return timerA.latch & 0xFF;
+        case 0b0111: return (timerA.latch >> 8) & 0xFF;
+        case 0b1000: return timerB.count & 0xFF;
+        case 0b1001: return (timerB.count >> 8) & 0xFF;
+        case 0b1010: return regs.SR;
+        case 0b1011: return regs.ACR.u;
+        case 0b1100: return regs.PCR.u;
+        case 0b1101: return read_IFR(has_effect);
+        case 0b1110: return regs.IER;
+        case 0b1111: return read_PRA(has_effect, false);
     }
     return old;
 }

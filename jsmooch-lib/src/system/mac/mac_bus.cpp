@@ -6,7 +6,7 @@
 #include <cstdio>
 #include <cassert>
 
-#include "mac_internal.h"
+#include "mac_bus.h"
 #include "mac_display.h"
 
 static u16 ulmask[4] = {
@@ -219,59 +219,10 @@ void mac_step_CPU(mac* this)
     }
 }
 
-void mac_reset_via(mac* this)
-{
-    this->via.state.t1_active = this->via.state.t2_active = 0;
-}
-
 void mac_set_cpu_irq(mac* this)
 {
     //M68k_set_interrupt_level(&this->cpu, this->io.irq.via | (this->io.irq.scc << 1) | (this->io.irq.iswitch << 2));
     M68k_set_interrupt_level(&this->cpu, 0);
-}
-
-void mac_via_irq_sample(mac* this)
-{
-    u32 old_irq = this->io.irq.via;
-    this->io.irq.via = (this->via.regs.IER & this->via.regs.IFR & 0x7F) ? 1 : 0;
-    if (old_irq != this->io.irq.via) mac_set_cpu_irq(this);
-}
-
-void step_via(mac* this)
-{
-    mac_via_irq_sample(this);
-
-    // TODO: add .5 cycles to the countdowns
-    u32 IRQ_sample = 0;
-    if (this->via.state.t1_active) {
-        // 7=PB out
-        // 6=1 is continuous, 6=0 is one-shot
-        if (this->via.regs.T1C == 0) {
-            // PB7 gets modified if
-            if (((this->via.regs.ACR & this->via.regs.dirB) >> 7) & 1) {
-                mac_set_sound_output(this, 1);
-            }
-            this->via.regs.IFR |= 0x40;
-            IRQ_sample = 1;
-
-            if ((this->via.regs.ACR >> 6) & 1) {
-                this->via.regs.T1C = this->via.regs.T1L;
-            }
-            else {
-                this->via.state.t1_active = 0;
-            }
-        }
-        else this->via.regs.T1C--;
-    }
-    if (this->via.state.t2_active) {
-        if (this->via.regs.T2C == 0) {
-            this->via.regs.IFR |= 0x20;
-            IRQ_sample = 1;
-            this->via.state.t2_active = 0;
-        }
-    }
-    this->via.regs.T2C--; // T2C counts down no matter what
-    if (IRQ_sample) mac_via_irq_sample(this);
 }
 
 void mac_step_eclock(mac* this)
@@ -377,7 +328,7 @@ u16 mac_mainbus_read_via(mac* this, u32 addr, u16 mask, u16 old, u32 has_effect)
             return this->via.regs.dirB << 8;
         case vT1C: // timer 1 count lo
             this->via.regs.IFR &= 0b10111111;
-            mac_via_irq_sample(this);
+            via.irq_sample();
             return (this->via.regs.T1C & 0xFF) << 8;
         case vT1CH:
             return (this->via.regs.T1C & 0xFF00);
@@ -387,14 +338,14 @@ u16 mac_mainbus_read_via(mac* this, u32 addr, u16 mask, u16 old, u32 has_effect)
             return (this->via.regs.T1L & 0xFF00);
         case vT2C: // read t2 lo
             this->via.regs.IFR &= 0b11011111;
-            mac_via_irq_sample(this);
+            via.irq_sample();
 
             return (this->via.regs.T2C & 0xFF) << 8;
         case vT2CH: // read t2 hi
             return this->via.regs.T2C & 0xFF00;
         case vSR: // keyboard shfit reg
             this->via.regs.IFR &= 0b11111011;
-            mac_via_irq_sample(this);
+            via.irq_sample();
             printf("\nREAD KEYBOARD SR! cyc:%lld", this->clock.master_cycles);
             return this->via.regs.SR << 8;
         case vACR: // aux control reg
@@ -405,7 +356,7 @@ u16 mac_mainbus_read_via(mac* this, u32 addr, u16 mask, u16 old, u32 has_effect)
             // not emulated
             // bit 7 - SCC wait/request
             this->via.regs.IFR &= 0b11111100;
-            mac_via_irq_sample(this);
+            via.irq_sample();
 
             v = this->io.ROM_overlay << 4;
             // For un-emulated bits, return the last thing we wrote
@@ -415,7 +366,7 @@ u16 mac_mainbus_read_via(mac* this, u32 addr, u16 mask, u16 old, u32 has_effect)
             //return this->via.regs.regA << 8; }
         case vBufB: {// read Data Reg B
             this->via.regs.IFR &= 0b11100111;
-            mac_via_irq_sample(this);
+            via.irq_sample();
             v = 0;
 
             // First, inputs...
@@ -448,46 +399,6 @@ void mac_clock_init(mac* this)
     this->clock.timing.cycles_per_frame = 704 * 370 * 60; // not quite right
 }
 
-void mac_via_load_SR(mac* this, u8 bit)
-{
-    this->via.regs.num_shifts++;
-    this->via.regs.SR = (this->via.regs.SR >> 1) | ((bit & 1) << 7);
-    if (this->via.regs.num_shifts == 8) {
-        this->via.regs.num_shifts = 0;
-        this->via.regs.IFR |= 4;
-        mac_via_irq_sample(this);
-    }
-}
-
-static void update_via_RA(mac* this)
-{
-    // emulated: bits 4, 6
-    // not emulated:
-    // bit 0-2, sound volume
-    // bit 3, alternate sound buffer
-    // bit 7, vSCCWReq, SCC wait/request
-
-    u8 val = (this->via.regs.ORA & this->via.regs.dirA); // When a pin is programmed as an output, it's controlled by ORA.
-    val |= (this->via.regs.IRA & (~this->via.regs.dirA));
-
-    this->iwm.lines.SELECT = (val >> 5) & 1;
-    this->io.ROM_overlay = (val >> 4) & 1;
-}
-
-static void update_via_RB(mac* this)
-{
-    // emulated:  bit 7 (sound), bits 0-2 (RTC), bit 6 (horizontal blank bit)
-    // not emulated:
-    // bits 4, 5 (mouse X2, Y2)
-    // bit 3 (mouse switch)
-    //u8 write_mask = this->via.regs.dirB;
-    //if (write_mask & 0x80) {
-    u8 val = (this->via.regs.ORB & this->via.regs.dirB); // When a pin is programmed as an output, it's controlled by ORA.
-
-    mac_set_sound_output(this, (val >> 7) & 1);
-    write_rtc_bits(this, val & 7, 7);
-}
-
 void mac_mainbus_write_via(mac* this, u32 addr, u16 mask, u16 val)
 {
     val >>= 8;
@@ -514,7 +425,7 @@ void mac_mainbus_write_via(mac* this, u32 addr, u16 mask, u16 val)
             else { // Disable flags
                 this->via.regs.IER &= ~val;
             }
-            mac_via_irq_sample(this);
+            via.irq_sample();
             return; }
         case vDirA: // Direction reg A
             this->via.regs.dirA = val;
@@ -529,7 +440,7 @@ void mac_mainbus_write_via(mac* this, u32 addr, u16 mask, u16 val)
             return;
         case vT1CH:
             this->via.regs.IFR &= 0b10111111;
-            mac_via_irq_sample(this);
+            via.irq_sample();
 
             this->via.regs.T1L = (this->via.regs.T1L | 0xFF) | (val << 8);
 
@@ -546,13 +457,13 @@ void mac_mainbus_write_via(mac* this, u32 addr, u16 mask, u16 val)
             this->via.regs.T1L = (this->via.regs.T1L | 0xFF) | (val << 8);
             return;
         case vT2C: // write timer 2 lo
-            mac_via_irq_sample(this);
+            via.irq_sample();
 
             this->via.regs.T2L = (this->via.regs.T2L | 0xFF00) | val;
             return;
         case vT2CH: // write timer 2 hi
             this->via.regs.IFR &= 0b11011111;
-            mac_via_irq_sample(this);
+            via.irq_sample();
 
             this->via.regs.T2L = (this->via.regs.T2L | 0xFF) | (val << 8);
             this->via.regs.T2C = this->via.regs.T2L;
@@ -560,7 +471,7 @@ void mac_mainbus_write_via(mac* this, u32 addr, u16 mask, u16 val)
             return;
         case vSR: // keyboard shfit reg
             this->via.regs.IFR &= 0b11111011;
-            mac_via_irq_sample(this);
+            via.irq_sample();
             printf("\nWrite keyboard SR: %02x cyc:%lld", val, this->clock.master_cycles);
 
             this->via.regs.SR = val;
@@ -578,7 +489,7 @@ void mac_mainbus_write_via(mac* this, u32 addr, u16 mask, u16 val)
         case vBufA: {// Write Data Reg A
 
             this->via.regs.IFR &= 0b11111100;
-            mac_via_irq_sample(this);
+            via.irq_sample();
 
             this->via.regs.ORA = val;
             update_via_RA(this);
@@ -593,7 +504,7 @@ void mac_mainbus_write_via(mac* this, u32 addr, u16 mask, u16 val)
             return;}
         case vBufB: {// write Data Reg B
             this->via.regs.IFR &= 0b11100111;
-            mac_via_irq_sample(this);
+            via.irq_sample();
 
             this->via.regs.ORB = val;
 

@@ -6,47 +6,37 @@
 #include <cassert>
 #include <cstdio>
 
-#include "mac_internal.h"
-void mac_iwm_init(mac* mac) {
-    cvec_init(&mac->iwm.my_disks, sizeof(mac_floppy), 10);
-    mac->iwm.active = IWMM_IDLE;
-    mac->iwm.rw = IWMM_IDLE;
-    mac->iwm.regs.data = 0;
-    mac->iwm.regs.status.u = 0;
-    mac->iwm.regs.write_shift = 0;
-    mac->iwm.regs.read_shift = 0;
-    mac->iwm.regs.write_handshake = 0xBD;
-    mac->iwm.selected_drive = -1;
-    mac->iwm.cur_drive = NULL;
+#include "mac_iwm.h"
+#include "mac_bus.h"
 
-    for (u32 i = 0; i < 2; i++) {
-        mac->iwm.drive[i].pwm_len = 65000;
-        mac->iwm.drive[i].pwm_pos = 0;
-    }
+namespace mac {
+iwm::iwm(core* parent) : bus(parent)
+{
+    regs.write_handshake = 0xBD;
 
-    struct mac_floppy *f = cvec_push_back(&mac->iwm.my_disks);
+    mac_floppy *f = cvec_push_back(&my_disks);
     mac_floppy_init(f);
     f->write_protect = 0;
-    mac->iwm.drive[0].disc = f;
+    drive[0].disc = f;
 }
 
 void mac_iwm_delete(mac* mac) {
-    for (u32 i = 0; i < cvec_len(&mac->iwm.my_disks); i++) {
-        mac_floppy_delete(cvec_get(&mac->iwm.my_disks, i));
+    for (u32 i = 0; i < cvec_len(&my_disks); i++) {
+        mac_floppy_delete(cvec_get(&my_disks, i));
     }
-    cvec_delete(&mac->iwm.my_disks);
+    cvec_delete(&my_disks);
 }
 
 void mac_iwm_reset(mac* mac) {
     for (u32 i = 0; i < 2; i++) {
-        mac->iwm.drive[i].head.track_num = 0;
-        mac->iwm.drive[i].RPM = 0;
+        drive[i].head.track_num = 0;
+        drive[i].RPM = 0;
     }
-    if (mac->iwm.drive[0].connected)
-        mac->iwm.drive[0].device = cvec_get(mac->iwm.IOs, mac->iwm.drive[0].io_index);
-    if (mac->iwm.drive[1].connected)
-        mac->iwm.drive[1].device = cvec_get(mac->iwm.IOs, mac->iwm.drive[1].io_index);
-    mac->iwm.active = IWMM_IDLE;
+    if (drive[0].connected)
+        drive[0].device = cvec_get(IOs, drive[0].io_index);
+    if (drive[1].connected)
+        drive[1].device = cvec_get(IOs, drive[1].io_index);
+    active = IWMM_IDLE;
 }
 
 static void drive_setup_track(mac* this)
@@ -59,7 +49,7 @@ static void drive_setup_track(mac* this)
 static void drive_write_motor_on(mac* this, u8 onoff)
 {
     struct JSMAC_DRIVE *drv = &this->iwm.drive[this->iwm.selected_drive];
-    if (drv->disc == NULL) { // No disk inserted
+    if (drv->disc == nullptr) { // No disk inserted
         return;
     }
 
@@ -82,7 +72,7 @@ static void drive_select(mac* this, u8 towhich)
     if (towhich == 0) {
         printf("\nSELECT NO DRIVE");
         this->iwm.selected_drive = -1;
-        this->iwm.cur_drive = NULL;
+        this->iwm.cur_drive = nullptr;
     }
     else if (this->iwm.regs.drive_select != this->iwm.selected_drive) {
         printf("\nSELECT DRIVE %d", this->iwm.regs.drive_select);
@@ -93,14 +83,14 @@ static void drive_select(mac* this, u8 towhich)
 
 static u32 floppy_inserted(mac* this)
 {
-    if (this->iwm.cur_drive == NULL) return 0;
-    if (this->iwm.cur_drive->disc == NULL) return 0;
+    if (this->iwm.cur_drive == nullptr) return 0;
+    if (this->iwm.cur_drive->disc == nullptr) return 0;
     return 1;
 }
 
 static u32 floppy_write_protected(mac* this) {
-    if (this->iwm.cur_drive == NULL) return 0;
-    if (this->iwm.cur_drive->disc == NULL) return 0;
+    if (this->iwm.cur_drive == nullptr) return 0;
+    if (this->iwm.cur_drive->disc == nullptr) return 0;
     return this->iwm.cur_drive->disc->write_protect;
 
 }
@@ -479,4 +469,5 @@ u16 mac_iwm_read(mac *this, u8 addr)
 void mac_iwm_write(mac *this, u8 addr, u8 val)
 {
     mac_iwm_control(this, addr, val, 1);
+}
 }
