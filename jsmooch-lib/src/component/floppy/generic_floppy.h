@@ -13,7 +13,6 @@ namespace floppy {
 namespace generic {
 
 struct SECTOR {
-    SECTOR();
     u8 track{}, head{}, sector{}, info{};
     u8 *tag{}, *data{};
 };

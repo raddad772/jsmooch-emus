@@ -17,15 +17,9 @@
 
 #include "component/cpu/m68000/m68000.h"
 
-namespace mac {
-u32 read_trace_m68k(void *ptr, u32 addr, u32 UDS, u32 LDS) {
-    auto *th = static_cast<core *>(ptr);
-    return th->mainbus_read(addr, UDS, LDS, th->io.cpu.last_read_data, false);
-}
-
-jsm_system *mac_new(variants variant)
+jsm_system *mac_new(mac::variants variant)
 {
-    auto* th = new core(variant);
+    auto* th = new mac::core(variant);
     return th;
 }
 
@@ -41,6 +35,13 @@ void mac_delete(jsm_system* jsm)
         }
         physical_io_device_delete(pio);
     }*/
+}
+
+
+namespace mac {
+u32 read_trace_m68k(void *ptr, u32 addr, u32 UDS, u32 LDS) {
+    auto *th = static_cast<core *>(ptr);
+    return th->mainbus_read(addr, UDS, LDS, th->io.cpu.last_read_data, false);
 }
 
 static constexpr JKEYS mac_keyboard_keymap[77] = {
@@ -119,6 +120,9 @@ void core::setup_crt(JSM_DISPLAY &d)
     d.pixelometry.overscan.left = d.pixelometry.overscan.right = d.pixelometry.overscan.top = d.pixelometry.overscan.bottom = 8;
 }
 
+void core::set_audiobuf(audiobuf *ab) {
+    printf("\nERROR NO MAC AUDIO SUPPORT");
+}
 
 void core::describe_io()
 {

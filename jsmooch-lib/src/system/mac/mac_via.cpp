@@ -8,6 +8,36 @@
 
 namespace mac {
 
+void via::update_RA()
+{
+    // emulated: bits 4, 6
+    // not emulated:
+    // bit 0-2, sound volume
+    // bit 3, alternate sound buffer
+    // bit 7, vSCCWReq, SCC wait/request
+
+    u8 val = (regs.ORA & regs.dirA); // When a pin is programmed as an output, it's controlled by ORA.
+    val |= (regs.IRA & (~regs.dirA));
+
+    bus->iwm.lines.SELECT = (val >> 5) & 1;
+    bus->io.ROM_overlay = (val >> 4) & 1;
+}
+
+void via::update_RB()
+{
+    // emulated:  bit 7 (sound), bits 0-2 (RTC), bit 6 (horizontal blank bit)
+    // not emulated:
+    // bits 4, 5 (mouse X2, Y2)
+    // bit 3 (mouse switch)
+    //u8 write_mask = regs.dirB;
+    //if (write_mask & 0x80) {
+    u8 val = (regs.ORB & regs.dirB); // When a pin is programmed as an output, it's controlled by ORA.
+
+    bus->set_sound_output((val >> 7) & 1);
+    bus->rtc.write_bits(val & 7, 7);
+}
+
+
 void via::write(u32 addr, u16 mask, u16 val)
 {
     val >>= 8;
@@ -38,11 +68,11 @@ void via::write(u32 addr, u16 mask, u16 val)
             return; }
         case vDirA: // Direction reg A
             regs.dirA = val;
-            update_via_RA();
+            update_RA();
             return;
         case vDirB: // Direction reg B
             regs.dirB = val;
-            update_via_RB();
+            update_RB();
             return;
         case vT1C: // timer 1 count lo
             regs.T1L = (regs.T1L & 0xFF00) | val;
@@ -101,7 +131,7 @@ void via::write(u32 addr, u16 mask, u16 val)
             irq_sample();
 
             regs.ORA = val;
-            update_via_RA();
+            update_RA();
             if ((regs.ORA & 0x20) != (val & 0x20)) {
                 bus->iwm.lines.SELECT = (val >> 5) & 1;
                 printf("\nFLOPPY HEADSEL line via Via A to: %d", (val >> 5) & 1);
@@ -116,7 +146,7 @@ void via::write(u32 addr, u16 mask, u16 val)
 
             regs.ORB = val;
 
-            update_via_RB();
+            update_RB();
 
             return;}
     }

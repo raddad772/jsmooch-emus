@@ -12,6 +12,8 @@ struct via {
     void reset();
     void step();
     void irq_sample();
+    void update_RA();
+    void update_RB();
 
     struct {
         u8 IRA{}, ORA{}; // Input and Output Register A
