@@ -20,7 +20,7 @@ struct static_bitbuf {
     }
 
     int write_final() {
-
+        return 0;
     }
 
     struct {

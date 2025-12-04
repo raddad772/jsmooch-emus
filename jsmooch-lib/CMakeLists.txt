@@ -310,6 +310,13 @@ set(SOURCE_LIST
         src/component/floppy/generic_floppy.h
         src/component/floppy/mac_floppy.cpp
         src/component/floppy/mac_floppy.h
+        src/system/mac/mac_fdd.cpp
+        src/system/mac/mac_fdd.h
+        src/system/mac/mac_rtc.cpp
+        src/system/mac/mac_rtc.h
+        src/system/mac/mac_regs.h
+        src/system/mac/mac_serialize.cpp
+        src/system/mac/mac_serialize.h
 )
 
 # TODO: Fix elf-parser repo for windows

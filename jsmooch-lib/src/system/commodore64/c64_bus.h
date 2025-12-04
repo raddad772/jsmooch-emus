@@ -33,7 +33,7 @@ struct core : jsm_system {
     M6502::core cpu{M6502::decoded_opcodes};
     //scheduler_t scheduler;
     i64 cycles_deficit{};
-    M6526::core cia1{}, cia2{};
+    M6526::chip cia1{}, cia2{};
     keyboard keyboard;
 
     void update_IRQ(u32 device_num, u8 level);
@@ -121,7 +121,6 @@ public:
     void set_audiobuf(audiobuf *ab) final;
     void setup_debugger_interface(debugger_interface &intf) final;
     void sideload(multi_file_set& mfs) final;
-
 };
 
 }

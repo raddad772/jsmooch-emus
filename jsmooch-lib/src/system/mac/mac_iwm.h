@@ -6,67 +6,48 @@
 
 #include "component/floppy/mac_floppy.h"
 #include "helpers/int.h"
+#include "mac_fdd.h"
+#include "helpers/cvec.h"
 
 namespace mac {
 enum iwm_modes {
-    IWMM_IDLE,
-    IWMM_MOTOR_STOP_DELAY,
-    IWMM_ACTIVE,
-    IWMM_READ,
-    IWMM_WRITE
+    M_IDLE,
+    M_MOTOR_STOP_DELAY,
+    M_ACTIVE,
+    M_READ,
+    M_WRITE
 };
 
+
 struct iwm {
-    explicit iwm(struct core* parent);
+    void reset();
+    void drive_select(u8 towhich);
+    void update_phases();
+    u32 get_drive_reg();
+    void set_drive_reg();
+    void clock();
+    u16 control(u8 addr, u8 val, u32 is_write);
+    u16 read(u8 addr);
+    void write(u8 addr, u8 val);
+    explicit iwm(core* parent);
+    [[nodiscard]] bool floppy_write_protected() const;
+    [[nodiscard]] bool floppy_inserted() const;
+    void write_data(u8 val);
+    void write_mode(u8 val);
     core *bus;
+    FDD drive[2];
+    std::vector <floppy::mac::DISC> my_disks{};
 
-    struct DRIVE {
-        mac_floppy* disc{};
-
-        double RPM{};
-        u32 pwm_val{};
-
-        struct {
-            u32 current_data{};
-            u32 track_num{}; // reset to 0 at power on
-
-            struct {
-                u32 status{};
-                u64 start{};
-                u64 end{};
-            } stepping{};
-        } head{};
-
-        u64 last_RPM_change_time{};
-        float last_RPM_change_pos{};
-
-        u32 io_index{};
-        u32 motor_on{};
-        u32 disk_switched{};
-
-        u32 head_step_direction{};
-        JSM_DISC_DRIVE *device{};
-
-        u32 connected{};
-
-        u64 input_clock_cnt{};
-
-        u32 pwm_len{65000}, pwm_pos{};
-    } drive[2]{};
-
-    std::vector<mac_floppy> my_disks{};
-    cvec* IOs{};
-
-    iwm_modes active{IWMM_IDLE};
+    iwm_modes active{M_IDLE};
     u64 motor_stop_timer{};
 
-    iwm_modes rw{IWMM_IDLE};
+    iwm_modes rw{ M_IDLE};
     iwm_modes rw_state{};
 
     u8 old_drive_select{};
     u32 ctrl{};
     i32 selected_drive{-1};
-    DRIVE *cur_drive{};
+    FDD *cur_drive{};
 
     struct {
         u8 CA0{}, CA1{}, CA2{}, LSTRB{}, ENABLE{};

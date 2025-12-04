@@ -256,7 +256,7 @@ bool DISC::load_dave(buf &b) {
     fill_tracks(1);
     for (u32 i = 0; i < 80; i++) {
         auto &track = disc.tracks[i];
-        memcpy(track.unencoded_data.ptr, buf_ptr, 62172);
+        memcpy(&track.encoded_data.data[0], buf_ptr, 62172);
         buf_ptr += 62172;
     }
     return true;

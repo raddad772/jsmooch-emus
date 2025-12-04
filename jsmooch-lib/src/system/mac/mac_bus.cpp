@@ -6,532 +6,155 @@
 #include <cstdio>
 #include <cassert>
 
+#include "mac_regs.h"
 #include "mac_bus.h"
 #include "mac_display.h"
 
-static u16 ulmask[4] = {
+namespace mac {
+static constexpr u16 ulmask[4] = {
         0, // UDS = 0 LDS = 0
         0xFF, // UDS = 0 LDS = 1
         0xFF00, // UDS = 1 LDS = 0
         0xFFFF // UDS = 1 LDS = 1
 };
 
-static u8 read_rtc_bits(mac* this)
-{
-    u8 o = 0;
-    o |= (this->rtc.tx.shift >> 7) & 1;
-    o |= this->rtc.old_clock_bit << 1;
-    o |= (this->rtc.tx.kind > 0) << 2;
-    return o;
-}
+u32 read_trace_m68k(void *ptr, u32 addr, u32 UDS, u32 LDS);
 
-
-static void rtc_do_read(mac* this)
-{
-    u8 rand = this->rtc.cmd & 0b01110000;
-    u8 addr;
-    switch(rand) {
-        case 0b00100000:
-            addr = ((this->rtc.cmd >> 2) & 3) + 0x10;
-            this->rtc.tx.shift = this->rtc.param_mem[addr];
+core::core(variants variant) {
+    has.load_BIOS = true;
+    has.max_loaded_files = 1;
+    has.max_loaded_folders = 1;
+    has.save_state = false;
+    has.set_audiobuf = false;
+    kind = variant;
+    switch(variant) {
+        case mac128k:
+            RAM_size = 128 * 1024;
+            ROM_size = 64 * 1024;
+            snprintf(label, sizeof(label), "Mac Classic 128K");
             break;
-        case 0b01000000:
-            addr = (this->rtc.cmd >> 2) & 0x0F;
-            this->rtc.tx.shift = this->rtc.param_mem[addr];
+        case mac512k:
+            RAM_size = 512 * 1024;
+            ROM_size = 64 * 1024;
+            snprintf(label, sizeof(label), "Mac Classic 512K");
             break;
-        default: {
-            switch (this->rtc.cmd) {
-                case 0b10000001:
-                    this->rtc.tx.shift = this->rtc.seconds & 0xFF;
-                    break;
-                case 0b10000101:
-                    this->rtc.tx.shift = (this->rtc.seconds >> 8) & 0xFF;
-                    break;
-                case 0b10001001:
-                    this->rtc.tx.shift = (this->rtc.seconds >> 16) & 0xFF;
-                    break;
-                case 0b10001101:
-                    this->rtc.tx.shift = (this->rtc.seconds >> 24) & 0xFF;
-                    break;
-                default:
-                    printf("\nUnknown RTC command %02x", this->rtc.cmd);
-                    break;
-            }
-        }
-    }
-}
-
-static void rtc_finish_write(mac* this)
-{
-    u8 rand = this->rtc.cmd & 0b01110000;
-    u8 addr;
-    switch(rand) {
-        case 0b00100000:
-            addr = ((this->rtc.cmd >> 2) & 3) + 0x10;
-            this->rtc.tx.shift = this->rtc.param_mem[addr];
+        case macplus_1mb:
+            RAM_size = 1 * 1024 * 1024;
+            ROM_size = 128 * 1024;
+            snprintf(label, sizeof(label), "Mac Plus 1MB");
             break;
-        case 0b01000000:
-            addr = (this->rtc.cmd >> 2) & 0x0F;
-            this->rtc.tx.shift = this->rtc.param_mem[addr];
-            break;
-        default: {
-            switch (this->rtc.cmd) {
-                case 0b10000001:
-                    this->rtc.seconds = (this->rtc.seconds & 0xFFFFFF00) | this->rtc.tx.shift;
-                    break;
-                case 0b10000101:
-                    this->rtc.seconds = (this->rtc.seconds & 0xFFFF00FF) | (this->rtc.tx.shift << 8);
-                    break;
-                case 0b10001001:
-                    this->rtc.seconds = (this->rtc.seconds & 0xFF00FFFF) | (this->rtc.tx.shift << 16);
-                    break;
-                case 0b10001101:
-                    this->rtc.seconds = (this->rtc.seconds & 0xFFFFFF) | (this->rtc.tx.shift << 24);
-                    break;
-                case 0b00110001:
-                    this->rtc.test_register = this->rtc.tx.shift;
-                    printf("\nWrite RTC test reg %02x", this->rtc.tx.shift);
-                    break;
-                case 0b00110101:
-                    this->rtc.write_protect_register = this->rtc.tx.shift;
-                    break;
-                default:
-                    printf("\nUnknown RTC command %02x", this->rtc.cmd);
-                    break;
-            }
-        }
+        default:
+            assert(1==2);
     }
+    RAM = static_cast<u16 *>(calloc(1, RAM_size));
+    RAM_mask = (RAM_size >> 1) - 1; // in words
+    ROM = static_cast<u16 *>(calloc(1, ROM_size));
+    ROM_mask = (ROM_size >> 1) - 1;
+    kind = variant;
+
+    jsm_debug_read_trace dt;
+    dt.read_trace_m68k = &read_trace_m68k;
+    dt.ptr = this;
+    cpu.setup_tracing(&dt, &clock.master_cycles);
+    
+    jsm.described_inputs = false;
+    jsm.cycles_left = 0;
 }
 
-static void write_rtc_bits(mac* this, u8 val, u8 write_mask)
-{
-    // bit 0 - serial data
-    // bit 1 - data-clock
-    // bit 2 - serial enable (if 1, no data will be shifted, transaction cancelled)
-    u8 data, clock, enable;
-    if (write_mask & 1) data = val & 1;
-    else data = (this->rtc.tx.shift & 0x80) >> 7;
-
-    if (write_mask & 2) clock = (val >> 1) & 1;
-    else clock = this->rtc.old_clock_bit;
-
-    if (write_mask & 4) enable = ((val >> 2) & 1) ^ 1;
-    else enable = this->rtc.tx.kind > 0;
-
-    // transfers are 8 bits. write is 8 bits out + 8 bits outs
-    // read is 8 bits out + 8 bits in
-    if (enable) {
-        if (clock != this->rtc.old_clock_bit) {
-            this->rtc.old_clock_bit = clock;
-            if (clock == 1) {
-                // Do a transfer.
-                // 1 = write, 2 = read
-                if ((this->rtc.tx.progress < 8) || (this->rtc.tx.kind == 1)) {
-                    // It will be a transfer in
-                    this->rtc.tx.shift >>= 1;
-                    this->rtc.tx.shift |= (data << 7);
-                }
-                else { // progress > 8 and it's a read
-                    if (this->rtc.tx.kind == 1) {
-                        this->rtc.tx.shift <<= 1;
-                    }
-                }
-                this->rtc.tx.progress++;
-                // We completed a command...
-                if (this->rtc.tx.progress == 8) {
-                    this->rtc.cmd = this->rtc.tx.shift;
-                    if (this->rtc.cmd & 0x80) {
-                        this->rtc.tx.kind = 1; // write
-                    }
-                    else {
-                        this->rtc.tx.kind = 2; // read
-                        rtc_do_read(this);
-                        // get the data...
-                    }
-                }
-                else if (this->rtc.tx.progress == 16) {
-                    // We compelted totality
-                    if (this->rtc.tx.kind == 1) { // read
-                    }
-                    else if (this->rtc.tx.kind == 2) { // write
-                        // determine where to commit
-                        if (this->rtc.write_protect_register & 0x80) {
-                            // If write-protect on, only write to write-protect.
-                            if (this->rtc.cmd != 0b00110101) {
-                                printf("\nTried to write to write-protected RTC! cyc:%lld", this->clock.master_cycles);
-                            }
-                            else {
-                                this->rtc.write_protect_register = this->rtc.tx.shift;
-                            }
-                        }
-                        else {
-                            rtc_finish_write(this);
-                        }
-                    }
-                    else {
-                        printf("\nREACHED END OF UNKNOWN TRANSFER? %02x cyc:%lld", this->rtc.cmd, this->clock.master_cycles);
-                    }
-                    this->rtc.tx.kind = 0;
-                    this->rtc.tx.shift = 0;
-                    this->rtc.tx.progress = 0;
-                }
-            }
-        }
-    }
-    else {
-        // reset transfer
-        this->rtc.tx.shift = 0;
-        this->rtc.tx.progress = 0;
-        this->rtc.tx.kind = 0;
-    }
+    core::~core() {
+    if (RAM) free(RAM);
+    if (ROM) free(ROM);
+    RAM = nullptr;
+    ROM = nullptr;
 }
 
-void mac_set_sound_output(mac* this, u32 set_to)
+void core::set_sound_output(u32 set_to)
 {
-    this->sound.io.on = set_to;
+    sound.io.on = set_to;
 }
 
-void mac_step_CPU(mac* this)
+void core::step_CPU()
 {
-    //if (this->io.m68k.stuck) dbg_printf("\nSTUCK cyc %lld", *this->cpu.trace.cycles);
+    //if (io.m68k.stuck) dbg_printf("\nSTUCK cyc %lld", *cpu.trace.cycles);
 
-    M68k_cycle(&this->cpu);
-    if (this->cpu.pins.FC == 7) {
+    cpu.cycle();
+    if (cpu.pins.FC == 7) {
         // Auto-vector interrupts!
-        this->cpu.pins.VPA = 1;
+        cpu.pins.VPA = 1;
         return;
     }
-    if (this->cpu.pins.AS && (!this->cpu.pins.DTACK)) {
-        if (!this->cpu.pins.RW) { // read
-            this->io.cpu.last_read_data = this->cpu.pins.D = mac_mainbus_read(this, this->cpu.pins.Addr, this->cpu.pins.UDS, this->cpu.pins.LDS, this->io.cpu.last_read_data, 1);
-            this->cpu.pins.DTACK = 1;
-            if (dbg.trace_on && dbg.traces.m68000.mem && ((this->cpu.pins.FC & 1) || dbg.traces.m68000.ifetch)) {
-                dbg_printf(DBGC_READ "\nr.M68k(%lld)   %06x  v:%04x" DBGC_RST, this->clock.master_cycles, this->cpu.pins.Addr, this->cpu.pins.D);
+    if (cpu.pins.AS && (!cpu.pins.DTACK)) {
+        if (!cpu.pins.RW) { // read
+            io.cpu.last_read_data = cpu.pins.D = mainbus_read(cpu.pins.Addr, cpu.pins.UDS, cpu.pins.LDS, io.cpu.last_read_data, true);
+            cpu.pins.DTACK = 1;
+            if (::dbg.trace_on && ::dbg.traces.m68000.mem && ((cpu.pins.FC & 1) || ::dbg.traces.m68000.ifetch)) {
+                dbg_printf(DBGC_READ "\nr.M68k(%lld)   %06x  v:%04x" DBGC_RST, clock.master_cycles, cpu.pins.Addr, cpu.pins.D);
             }
         }
         else { // write
-            mac_mainbus_write(this, this->cpu.pins.Addr, this->cpu.pins.UDS, this->cpu.pins.LDS, this->cpu.pins.D);
-            this->cpu.pins.DTACK = 1;
-            if (dbg.trace_on && dbg.traces.m68000.mem && (this->cpu.pins.FC & 1)) {
-                dbg_printf(DBGC_WRITE "\nw.M68k(%lld)   %06x  v:%04x" DBGC_RST, this->clock.master_cycles, this->cpu.pins.Addr, this->cpu.pins.D);
+            mainbus_write(cpu.pins.Addr, cpu.pins.UDS, cpu.pins.LDS, cpu.pins.D);
+            cpu.pins.DTACK = 1;
+            if (::dbg.trace_on && ::dbg.traces.m68000.mem && (cpu.pins.FC & 1)) {
+                dbg_printf(DBGC_WRITE "\nw.M68k(%lld)   %06x  v:%04x" DBGC_RST, clock.master_cycles, cpu.pins.Addr, cpu.pins.D);
             }
         }
     }
 }
 
-void mac_set_cpu_irq(mac* this)
+void core::set_cpu_irq()
 {
-    //M68k_set_interrupt_level(&this->cpu, this->io.irq.via | (this->io.irq.scc << 1) | (this->io.irq.iswitch << 2));
-    M68k_set_interrupt_level(&this->cpu, 0);
+    // TODO: ???
+    //M68k_set_interrupt_level(&cpu, io.irq.via | (io.irq.scc << 1) | (io.irq.iswitch << 2));
+    cpu.set_interrupt_level(0);
 }
 
-void mac_step_eclock(mac* this)
+void core::step_eclock()
 {
-    if (this->io.eclock == 0) {
-        step_via(this);
+    if (io.eclock == 0) {
+        via.step();
     }
 
-    this->io.eclock = (this->io.eclock + 1) % 10;
-    if (this->io.eclock == 0) { // my RTC works off the e clock for some reason
-        this->rtc.cycle_counter++;
-        if (this->rtc.cycle_counter >= 783360) {
-            this->rtc.cycle_counter = 0;
-            this->rtc.seconds++;
-            this->via.regs.IFR |= 1;
+    io.eclock = (io.eclock + 1) % 10;
+    if (io.eclock == 0) { // my RTC works off the e clock for some reason
+        rtc.cycle_counter++;
+        if (rtc.cycle_counter >= 783360) {
+            rtc.cycle_counter = 0;
+            rtc.seconds++;
+            via.regs.IFR |= 1;
         }
     }
 
-    mac_iwm_clock(this);
+    iwm.clock();
 }
 
-void mac_step_bus(mac* this)
+void core::step_bus()
 {
     // Step everything in the mac by 2
-    mac_step_CPU(this);         // CPU, 1 clock
-    mac_step_display2(this);    // Display, 2 clocks
-    mac_step_eclock(this);      // e-clock devices like VIA, 1 clocks, but only fires once every 10
-    this->clock.master_cycles += 2;
+    step_CPU();         // CPU, 1 clock
+    display.step2();    // Display, 2 clocks
+    step_eclock();      // e-clock devices like VIA, 1 clocks, but only fires once every 10
+    clock.master_cycles += 2;
 }
 
-#define iwm_dBase 0xDFE1FF
-#define iwm_ph0L (0*512)  // CA0 off (0)
-#define iwm_ph0H (1*512)  // CA0 on (1)
-#define iwm_ph1L (2*512)  // CA1 off (0)
-#define iwm_ph1H (3*512)  // CA1 on (1)
-#define iwm_ph2L (4*512)  // CA2 off (0)
-#define iwm_ph2H (5*512)  // CA2 on (1)
-#define iwm_ph3L (6*512)  // LSTRB off (low)
-#define iwm_ph3H (7*512)  // LSTRB on (high)
-#define iwm_mtrOff (8*512) // disk enable off
-#define iwm_mtrOn (9*512)  // disk enable on
-#define iwm_intDrive (10*512) // select internal drive
-#define iwm_extDrive (11*512) // select external drive
-#define iwm_q6L (12*512) // Q6 off
-#define iwm_q6H (13*512) // Q6 on
-#define iwm_q7L (14*512) // Q7 off
-#define iwm_q7H (15*512) // Q7 on
 
-#define sccRBase  0x9FFFF8
-#define sccWBase  0xBFFFF9
-#define scc_aData 6
-#define scc_aCtl 2
-#define scc_bData 4
-#define scc_bCtl 0
-
-#define vBase  0xEFE1FE
-#define aVBufB vBase    // via register B
-#define aVBufA 0xEFFFFE // via register A
-#define aVBufM aVBufB    // mouse buffer
-#define aVIFR 0xEFFBFE   // interrupt flag
-#define aVIER 0xEFFDFE   // interrupt enable
-
-// offsets from vBase
-#define vBufB (512*0)  // data reg b
-#define vDirB (512*2)  // direction reg b
-#define vDirA (512*3)  // direction reg a
-#define vT1C  (512*4)  // timer 1 count lo
-#define vT1CH (512*5)  // timer 1 count hi, write causes timer start
-#define vT1L  (512*6)  // timer 1 latch lo
-#define vT1LH (512*7)  // timer 1 latch hi
-#define vT2C  (512*8)  // timer 2 count lo
-#define vT2CH (512*9)  // timer 2 count hi
-#define vSR   (512*10) // shift register, keyboard
-#define vACR  (512*11) // aux control register
-#define vPCR  (512*12) // peripheral control register
-#define vIFR  (512*13) // interrupt flag register
-#define vIER  (512*14) // interrupt enable register
-#define vBufA (512*15)
-
-
-u16 mac_mainbus_read_via(mac* this, u32 addr, u16 mask, u16 old, u32 has_effect)
+u16 core::mainbus_read_iwm(u32 addr, u16 mask, u16 old, bool has_effect)
 {
-    u16 v = 0;
-    if (addr < vBase) {
-        printf("\nread BAD VIA ADDR? addr:%06x cyc:%lld", addr, this->clock.master_cycles);
-        return old;
-    }
-    addr -= vBase;
-    switch(addr) {
-        case vIFR: // interrupt flag register
-            //dbg_printf("\npIFR: %02x", this->via.regs.IFR);
-            v = (this->via.regs.IFR & 0x7F);// & this->via.regs.IER;
-            v |= v ? 0x80 : 0;
-            //dbg_printf("\nIFR: %02x", v);
-            return v << 8;
-        case vIER: // interrupt enable register
-            return ((this->via.regs.IER & 0x7F) | 0x80) << 8;
-        case vDirA: // Direction reg A
-            // TODO: apply changes here
-            return this->via.regs.dirA << 8;
-        case vDirB: // Direction reg B
-            // TODO: apply changes here
-            return this->via.regs.dirB << 8;
-        case vT1C: // timer 1 count lo
-            this->via.regs.IFR &= 0b10111111;
-            via.irq_sample();
-            return (this->via.regs.T1C & 0xFF) << 8;
-        case vT1CH:
-            return (this->via.regs.T1C & 0xFF00);
-        case vT1L:
-            return (this->via.regs.T1L & 0xFF) << 8;
-        case vT1LH:
-            return (this->via.regs.T1L & 0xFF00);
-        case vT2C: // read t2 lo
-            this->via.regs.IFR &= 0b11011111;
-            via.irq_sample();
-
-            return (this->via.regs.T2C & 0xFF) << 8;
-        case vT2CH: // read t2 hi
-            return this->via.regs.T2C & 0xFF00;
-        case vSR: // keyboard shfit reg
-            this->via.regs.IFR &= 0b11111011;
-            via.irq_sample();
-            printf("\nREAD KEYBOARD SR! cyc:%lld", this->clock.master_cycles);
-            return this->via.regs.SR << 8;
-        case vACR: // aux control reg
-            return this->via.regs.ACR << 8;
-        case vPCR: // peripheral control reg
-            return this->via.regs.PCR << 8;
-        case vBufA: {// read Data Reg A
-            // not emulated
-            // bit 7 - SCC wait/request
-            this->via.regs.IFR &= 0b11111100;
-            via.irq_sample();
-
-            v = this->io.ROM_overlay << 4;
-            // For un-emulated bits, return the last thing we wrote
-            v |= (this->via.regs.ORA & (~(1 << 4)));
-            v |= 0x80; // SCC wait/request 1 so it doesn't keep just looping there
-            return ((v << 8) | v) & mask; }
-            //return this->via.regs.regA << 8; }
-        case vBufB: {// read Data Reg B
-            this->via.regs.IFR &= 0b11100111;
-            via.irq_sample();
-            v = 0;
-
-            // First, inputs...
-            u8 IRB_mask = ~this->via.regs.dirB;
-
-            // Setup v with inputs
-            v |= (this->sound.io.on << 7) & IRB_mask;
-            v |= (mac_display_in_hblank(this) << 6) & IRB_mask;
-            v |= read_rtc_bits(this) & IRB_mask; // bits 0-2
-
-            // Now for the unemulated pins, fill with ORB no matter what
-            u8 emulated_mask = 0b00111000;
-            v |= this->via.regs.ORB & emulated_mask;
-
-            // Now fill the rest with ORB, since these will be returned for output bits
-            u8 ORB_mask = this->via.regs.dirB;
-            v |= 8; // mouse button not pressed
-            v |= this->via.regs.ORB & ORB_mask;
-            return ((v << 8) | v) & mask; }
-            /* The VIA event timers use the Enable signal (E clock) as a reference; therefore, the timer
-counter is decremented once every 1.2766 uS. Timer T2 can be programmed to count
-down once each time the VIA receives an input for bit 6 of Data register B. */
-    }
-    printf("\nUnhandled VIA read addr:%06x cyc:%lld", addr, this->clock.master_cycles);
-    return old;
-}
-
-void mac_clock_init(mac* this)
-{
-    this->clock.timing.cycles_per_frame = 704 * 370 * 60; // not quite right
-}
-
-void mac_mainbus_write_via(mac* this, u32 addr, u16 mask, u16 val)
-{
-    val >>= 8;
-    u16 v = 0;
-    if (addr < vBase) {
-        printf("\nread BAD VIA WRITE ADDR? addr:%06x data:%02x cyc:%lld", addr, val, this->clock.master_cycles);
-        return;
-    }
-    addr -= vBase;
-    switch(addr) {
-        case vIFR: {// interrupt flag register
-            u8 old_val = this->via.regs.IFR;
-            //this->via.regs.IFR = ((val ^ 0xFF) & this->via.regs.IFR) & 0x7F;
-            this->via.regs.IFR &= (~val) & 0x7F;
-            //printf("\nWrite IFR %02x new:%02x old:%02x cyc:%lld", val, this->via.regs.IFR, old_val, this->clock.master_cycles);
-            return; }
-        case vIER: {// interrupt enable register
-            u32 flags_to_affect = val & 0x7F;
-            val &= 0x7F;
-            // 00 set, 0x80 clear
-            if (val & 0x80) { // Enable flags
-                this->via.regs.IER |= val;
-            }
-            else { // Disable flags
-                this->via.regs.IER &= ~val;
-            }
-            via.irq_sample();
-            return; }
-        case vDirA: // Direction reg A
-            this->via.regs.dirA = val;
-            update_via_RA(this);
-            return;
-        case vDirB: // Direction reg B
-            this->via.regs.dirB = val;
-            update_via_RB(this);
-            return;
-        case vT1C: // timer 1 count lo
-            this->via.regs.T1L = (this->via.regs.T1L & 0xFF00) | val;
-            return;
-        case vT1CH:
-            this->via.regs.IFR &= 0b10111111;
-            via.irq_sample();
-
-            this->via.regs.T1L = (this->via.regs.T1L | 0xFF) | (val << 8);
-
-            this->via.regs.T1C = this->via.regs.T1L;
-            this->via.state.t1_active = 1;
-            if (((this->via.regs.ACR & this->via.regs.dirB) >> 7) & 1) {
-                mac_set_sound_output(this, 0);
-            }
-            return;
-        case vT1L:
-            this->via.regs.T1L = (this->via.regs.T1L & 0xFF00) | val;
-            return;
-        case vT1LH:
-            this->via.regs.T1L = (this->via.regs.T1L | 0xFF) | (val << 8);
-            return;
-        case vT2C: // write timer 2 lo
-            via.irq_sample();
-
-            this->via.regs.T2L = (this->via.regs.T2L | 0xFF00) | val;
-            return;
-        case vT2CH: // write timer 2 hi
-            this->via.regs.IFR &= 0b11011111;
-            via.irq_sample();
-
-            this->via.regs.T2L = (this->via.regs.T2L | 0xFF) | (val << 8);
-            this->via.regs.T2C = this->via.regs.T2L;
-            this->via.state.t2_active = 1;
-            return;
-        case vSR: // keyboard shfit reg
-            this->via.regs.IFR &= 0b11111011;
-            via.irq_sample();
-            printf("\nWrite keyboard SR: %02x cyc:%lld", val, this->clock.master_cycles);
-
-            this->via.regs.SR = val;
-            return;
-        case vACR: // aux control reg
-            // TODO: more
-            this->via.regs.ACR = val;
-            return;
-        case vPCR: // peripheral control reg
-            // TODO: more
-             // bit 0 - vblank IRQ control
-             // bit 1-3 - one-second interrupt control
-            this->via.regs.PCR = val;
-            return;
-        case vBufA: {// Write Data Reg A
-
-            this->via.regs.IFR &= 0b11111100;
-            via.irq_sample();
-
-            this->via.regs.ORA = val;
-            update_via_RA(this);
-            if ((this->via.regs.ORA & 0x20) != (val & 0x20)) {
-                this->iwm.lines.SELECT = (val >> 5) & 1;
-                printf("\nFLOPPY HEADSEL line via Via A to: %d", (val >> 5) & 1);
-                mac_iwm_control(this, addr, 0, 0);;
-            }
-
-
-            printf("\nwrite VIA BufA data:%02x cyc:%lld", val, this->clock.master_cycles);
-            return;}
-        case vBufB: {// write Data Reg B
-            this->via.regs.IFR &= 0b11100111;
-            via.irq_sample();
-
-            this->via.regs.ORB = val;
-
-            update_via_RB(this);
-
-            return;}
-    }
-    printf("\nUnhandled VIA write addr:%06x val:%04x cyc:%lld", addr, (val & mask) >> 8, this->clock.master_cycles);
-}
-u16 mac_mainbus_read_iwm(mac* this, u32 addr, u16 mask, u16 old, u32 has_effect)
-{
-    uint16_t result = mac_iwm_read(this, (addr >> 9) & 15);
+    uint16_t result = iwm.read((addr >> 9) & 15);
     return (result << 8) | result;
 }
 
-void mac_mainbus_write_iwm(mac* this, u32 addr, u16 mask, u16 val)
+void core::mainbus_write_iwm(u32 addr, u16 mask, u16 val)
 {
     if (mask & 0xFF)
-        mac_iwm_write(this, (addr >> 9) & 15, val & 0xFF);
+        iwm.write((addr >> 9) & 15, val & 0xFF);
     else
-        mac_iwm_write(this, (addr >> 9) & 15, val >> 8);
+        iwm.write((addr >> 9) & 15, val >> 8);
 }
 
-u16 mac_mainbus_read_scc(mac* this, u32 addr, u16 mask, u16 old, u32 has_effect)
+u16 core::mainbus_read_scc(u32 addr, u16 mask, u16 old, bool has_effect)
 {
     /*if ((addr >= sccWBase) && (addr < (sccWBase + 10))) {
-        printf("\nRead to SCC write addr:%06x cyc:%lld", addr, this->clock.master_cycles);
+        printf("\nRead to SCC write addr:%06x cyc:%lld", addr, clock.master_cycles);
         return old;
     }*/
     u32 oaddr = addr;
@@ -540,29 +163,29 @@ u16 mac_mainbus_read_scc(mac* this, u32 addr, u16 mask, u16 old, u32 has_effect)
 
     switch(addr) {
         case scc_aData:
-            printf("\nSCC aData read, unsupported, cyc:%lld", this->clock.master_cycles);
-            return this->scc.regs.aData << 8;
+            printf("\nSCC aData read, unsupported, cyc:%lld", clock.master_cycles);
+            return scc.regs.aData << 8;
         case scc_aCtl:
-            printf("\nSCC aCtl read, unsupported, cyc:%lld", this->clock.master_cycles);
-            return this->scc.regs.aCtl << 8;
+            printf("\nSCC aCtl read, unsupported, cyc:%lld", clock.master_cycles);
+            return scc.regs.aCtl << 8;
         case scc_bData:
-            printf("\nSCC bData read, unsupported, cyc:%lld", this->clock.master_cycles);
-            return this->scc.regs.bData << 8;
+            printf("\nSCC bData read, unsupported, cyc:%lld", clock.master_cycles);
+            return scc.regs.bData << 8;
         case scc_bCtl:
-            printf("\nSCC bCtl read, unsupported, cyc:%lld", this->clock.master_cycles);
-            return this->scc.regs.bCtl << 8;
+            printf("\nSCC bCtl read, unsupported, cyc:%lld", clock.master_cycles);
+            return scc.regs.bCtl << 8;
+        default:
     }
 
-
-    printf("\nUnhandled SCC read addr:%06x cyc:%lld", oaddr, this->clock.master_cycles);
+    printf("\nUnhandled SCC read addr:%06x cyc:%lld", oaddr, clock.master_cycles);
     return 0xFFFF;
 }
 
-void mac_mainbus_write_scc(mac* this, u32 addr, u16 mask, u16 val)
+void core::mainbus_write_scc(u32 addr, u16 mask, u16 val)
 {
     val >>= 8;
     /*if ((addr >= sccRBase) && (addr < (sccRBase + 10))) {
-        printf("\nWrite to SCC read addr:%06x val:%02x cyc:%lld", addr, val, this->clock.master_cycles);
+        printf("\nWrite to SCC read addr:%06x val:%02x cyc:%lld", addr, val, clock.master_cycles);
        return;
     }*/
     u32 oaddr = addr;
@@ -571,46 +194,45 @@ void mac_mainbus_write_scc(mac* this, u32 addr, u16 mask, u16 val)
 
     switch(addr) {
         case scc_aData:
-            printf("\nSCC aData write, unsupported, val:%02x cyc:%lld", val, this->clock.master_cycles);
-            this->scc.regs.aData = val;
+            printf("\nSCC aData write, unsupported, val:%02x cyc:%lld", val, clock.master_cycles);
+            scc.regs.aData = val;
             return;
         case scc_aCtl:
-            printf("\nSCC aCtl write, unsupported, val:%02x cyc:%lld", val, this->clock.master_cycles);
-            this->scc.regs.aCtl = val;
+            printf("\nSCC aCtl write, unsupported, val:%02x cyc:%lld", val, clock.master_cycles);
+            scc.regs.aCtl = val;
             return;
         case scc_bData:
-            printf("\nSCC bData write, unsupported, val:%02x cyc:%lld", val, this->clock.master_cycles);
-            this->scc.regs.bData = val;
+            printf("\nSCC bData write, unsupported, val:%02x cyc:%lld", val, clock.master_cycles);
+            scc.regs.bData = val;
             return;
         case scc_bCtl:
-            printf("\nSCC bCtl write, unsupported, val:%02x cyc:%lld", val, this->clock.master_cycles);
-            this->scc.regs.bCtl = val;
+            printf("\nSCC bCtl write, unsupported, val:%02x cyc:%lld", val, clock.master_cycles);
+            scc.regs.bCtl = val;
             return;
+        default:
     }
 
-    printf("\nUnhandled SCC write addr:%06x val:%04x cyc:%lld", oaddr, val & mask, this->clock.master_cycles);
+    printf("\nUnhandled SCC write addr:%06x val:%04x cyc:%lld", oaddr, val & mask, clock.master_cycles);
 }
 
-static inline void write_RAM(mac* this, u32 addr, u16 mask, u16 val)
+void core::write_RAM(u32 addr, u16 mask, u16 val)
 {
-    this->RAM[(addr >> 1) & this->RAM_mask] = (this->RAM[(addr >> 1) & this->RAM_mask] & ~mask) | (val & mask);
+    RAM[(addr >> 1) & RAM_mask] = (RAM[(addr >> 1) & RAM_mask] & ~mask) | (val & mask);
 }
 
-static inline u16 read_ROM(mac* this, u32 addr, u16 mask, u16 old)
+u16 core::read_ROM(u32 addr, u16 mask, u16 old)
 {
-    return this->ROM[(addr >> 1) & this->ROM_mask] & mask;
+    return ROM[(addr >> 1) & ROM_mask] & mask;
 }
 
-static inline u16 read_RAM(mac* this, u32 addr, u16 mask, u16 old)
-{
-    return this->RAM[(addr >> 1) & this->RAM_mask];
+u16 core::read_RAM(u32 addr, u16 mask, u16 old) const {
+    return RAM[(addr >> 1) & RAM_mask];
 }
 
-
-void mac_mainbus_write(mac* this, u32 addr, u32 UDS, u32 LDS, u16 val)
+void core::mainbus_write(u32 addr, u32 UDS, u32 LDS, u16 val)
 {
     u16 mask = ulmask[(UDS << 1) | LDS];
-    if (this->io.ROM_overlay) {
+    if (io.ROM_overlay) {
         if (addr < 0x100000) { // ROM
             return;
         }
@@ -623,13 +245,13 @@ void mac_mainbus_write(mac* this, u32 addr, u32 UDS, u32 LDS, u16 val)
         }
 
         if ((addr >= 0x600000) && (addr < 0x800000)) {
-            return write_RAM(this, addr - 0x600000, mask, val);
+            return write_RAM(addr - 0x600000, mask, val);
         }
     }
     else {
 
         if (addr < 0x400000) {
-            return write_RAM(this, addr, mask, val);
+            return write_RAM(addr, mask, val);
         }
         if (addr < 0x500000) { // ROM
             return;
@@ -638,70 +260,71 @@ void mac_mainbus_write(mac* this, u32 addr, u32 UDS, u32 LDS, u16 val)
 
 
     if ((addr >= 0x900000) && (addr <= 0x9FFFFF)) {
-        return mac_mainbus_write_scc(this, addr, mask, val);
+        return mainbus_write_scc(addr, mask, val);
     }
 
     if ((addr >= 0xB00000) && (addr <= 0xBFFFFF)) {
-        return mac_mainbus_write_scc(this, addr, mask, val);
+        return mainbus_write_scc(addr, mask, val);
     }
 
 
     if ((addr >= 0xC00000) && (addr < 0xE00000)) {
-        return mac_mainbus_write_iwm(this, addr, mask, val);
+        return mainbus_write_iwm(addr, mask, val);
     }
 
     if ((addr >= 0xE80000) && (addr < 0xF00000)) {
-        return mac_mainbus_write_via(this, addr, mask, val);
+        return via.write(addr, mask, val);
     }
 
     if ((addr >= 0xF80000) && (addr < 0xF8FFFF))
         return;
 
-    printf("\nUnhandled mainbus write addr:%06x val:%04x sz:%d cyc:%lld", addr, val, UDS && LDS ? 2 : 1, this->clock.master_cycles);
+    printf("\nUnhandled mainbus write addr:%06x val:%04x sz:%d cyc:%lld", addr, val, UDS && LDS ? 2 : 1, clock.master_cycles);
 }
 
-u16 mac_mainbus_read(mac* this, u32 addr, u32 UDS, u32 LDS, u16 old, u32 has_effect)
+u16 core::mainbus_read(u32 addr, u32 UDS, u32 LDS, u16 old, bool has_effect)
 {
     u16 mask = ulmask[(UDS << 1) | LDS];
     // 0-10k, 20-30k = ROM
     // 40-50k = ROM
-    if (this->io.ROM_overlay) {
+    if (io.ROM_overlay) {
         if (addr < 0x100000)
-            return read_ROM(this, addr, mask, old);
+            return read_ROM(addr, mask, old);
         if ((addr >= 0x200000) && (addr < 0x300000))
-            return read_ROM(this, addr - 0x200000, mask, old);
+            return read_ROM(addr - 0x200000, mask, old);
         if ((addr >= 0x400000) && (addr < 0x500000))
-            return read_ROM(this, addr, mask, old);
+            return read_ROM(addr, mask, old);
         if ((addr >= 0x600000) && (addr < 0x800000))
-            return read_RAM(this, addr - 0x600000, mask, old);
+            return read_RAM(addr - 0x600000, mask, old);
     }
     else {
         if (addr < 0x400000)
-            return read_RAM(this, addr, mask, old);
+            return read_RAM(addr, mask, old);
 
         if (addr < 0x500000)
-            return read_ROM(this, addr - 0x400000, mask, old);
+            return read_ROM(addr - 0x400000, mask, old);
     }
 
     if ((addr >= 0x900000) && (addr <= 0x9FFFFF)) {
         //if (mask == 0xFFFF) return 0xFFFF;
-        return mac_mainbus_read_scc(this, addr, mask, old, has_effect);
+        return mainbus_read_scc(addr, mask, old, has_effect);
     }
 
     if ((addr >= 0xBF0000) && (addr <= 0xBFFFFF)) {
-        return mac_mainbus_read_scc(this, addr, mask, old, has_effect);
+        return mainbus_read_scc(addr, mask, old, has_effect);
     }
 
     if ((addr >= 0xC00000) && (addr < 0xE00000))
-        return mac_mainbus_read_iwm(this, addr, mask, old, has_effect);
+        return mainbus_read_iwm(addr, mask, old, has_effect);
 
     if ((addr >= 0xE80000) && (addr < 0xF00000))
-        return mac_mainbus_read_via(this, addr, mask, old, has_effect);
+        return via.read(addr, mask, old, has_effect);
 
     if ((addr >= 0xF80000) && (addr < 0xF8FFFF)) // phase read
         return 0xFFFF;
 
-    printf("\nUnhandled mainbus read addr:%06x cyc:%lld", addr, this->clock.master_cycles);
+    printf("\nUnhandled mainbus read addr:%06x cyc:%lld", addr, clock.master_cycles);
     return 0xFFFF;
 }
 
+}

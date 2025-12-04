@@ -573,7 +573,7 @@ struct debugger_interface {
     std::vector<debugger_view> views; // debugger_view
     cvec_ptr<debugger_view> make_view(debugger_view_kinds kind);
     u32 smallest_step; // smallest possible step
-    u32 supported_by_core;
+    bool supported_by_core;
 };
 
 //dbglog_category_node &dbglog_category_get_root(dbglog_view &dv);

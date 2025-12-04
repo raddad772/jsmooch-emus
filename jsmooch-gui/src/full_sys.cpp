@@ -733,7 +733,7 @@ void full_system::load_default_ROM()
         case jsm::systems::MAC128K:
         case jsm::systems::MACPLUS_1MB:
             //worked = grab_ROM(&ROMs, which, "system1_1.img", nullptr);
-            worked = grab_ROM(&ROMs, which, "fd1.image", nullptr);
+            worked = grab_ROM(&ROMs, which, "disk.bin", nullptr);
             break;
         case jsm::systems::GALAKSIJA:
             worked = 1;

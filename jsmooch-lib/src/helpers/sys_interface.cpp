@@ -16,7 +16,7 @@
 //#include "system/zxspectrum/zxspectrum.h"
 #include "system/genesis/genesis.h"
 //#include "system/apple2/apple2.h"
-//#include "system/mac/mac.h"
+#include "system/mac/mac.h"
 #include "helpers/debug.h"
 #include "system/gba/gba.h"
 //#include "system/galaksija/galaksija.h"
@@ -55,16 +55,16 @@ jsm_system* new_system(jsm::systems which)
 			break;
         case jsm::systems::GBC:
             GB_new(out, GBC);
-            break;
+            break;*/
         case jsm::systems::MAC128K:
-            mac_new(out, mac128k);
+            out = mac_new(mac::mac128k);
             break;
         case jsm::systems::MAC512K:
-            mac_new(out, mac512k);
+            out = mac_new(mac::mac512k);
             break;
         case jsm::systems::MACPLUS_1MB:
-            mac_new(out, macplus_1mb);
-            break;*/
+            out = mac_new(mac::macplus_1mb);
+            break;
         case jsm::systems::COSMAC_VIP_2k:
         case jsm::systems::COSMAC_VIP_4k:
             out = VIP_new(which);

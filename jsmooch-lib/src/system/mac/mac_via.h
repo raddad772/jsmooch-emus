@@ -6,6 +6,8 @@ namespace mac {
 struct core;
 struct via {
     explicit via(core *parent) : bus(parent) {}
+    u16 read(u32 addr, u16 mask, u16 old, bool has_effect);
+    void write(u32 addr, u16 mask, u16 val);
     core *bus;
     void reset();
     void step();

@@ -13,7 +13,7 @@ struct clock {
     } crt{};
 
     struct {
-        u64 cycles_per_frame{};
+        u64 cycles_per_frame{704 * 370 * 60};// not quite right
     } timing{};
 };
 
