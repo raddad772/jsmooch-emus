@@ -110,6 +110,7 @@ void core::set_cpu_irq()
 
 void core::step_eclock()
 {
+
     if (io.eclock == 0) {
         via.step();
     }
@@ -129,6 +130,7 @@ void core::step_eclock()
 
 void core::step_bus()
 {
+
     // Step everything in the mac by 2
     step_CPU();         // CPU, 1 clock
     display.step2();    // Display, 2 clocks

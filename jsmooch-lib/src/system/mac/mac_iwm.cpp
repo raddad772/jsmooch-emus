@@ -107,6 +107,7 @@ u32 iwm::get_drive_reg() {
 void iwm::clock()
 {
     u32 clk, bit;
+    if (selected_drive <= 0 || selected_drive >= 2) return;
     auto &drv = drive[selected_drive];
     clk = drv.input_clock_cnt + 500000UL;
     bit = clk / (7833600 * 2);
