@@ -12,18 +12,26 @@ namespace mac {
 #define SCREEN_WIDTH 512
 #define SCREEN_HEIGHT 342
 
+void display::do_sound_and_pwm() {
+    // TODO: alternate buffer
+    // TODO: sound
+    // $1fd00 / $1a100 on 128k
+    // andd $60000 for 512k
+    u16 v = pwm_base_addr + bus->clock.crt.vpos;
+    u16 data = bus->RAM[v & bus->RAM_mask];
+    bus->iwm.update_pwm(data & 0xFF);
+}
+
+
 void display::scanline_visible(core *bus)
 {
-    if (bus->clock.crt.hpos == 512)  {
-        // TODO: hblank
-    }
-    if (bus->clock.crt.hpos >= 512) return;
     if ((bus->clock.crt.hpos & 15) == 0) {
         bus->display.output_shifter = bus->RAM[bus->display.read_addr];
         bus->display.read_addr++;
         bus->ram_contended = true;
     }
     else bus->ram_contended = false;
+    if (bus->clock.crt.hpos >= 512) return;
     for (u32 i = 0; i < 2; i++) {
         *bus->display.cur_output = (bus->display.output_shifter >> 15) & 1;
         bus->display.cur_output++;
@@ -31,7 +39,7 @@ void display::scanline_visible(core *bus)
     }
 }
 
-void display::scanline_vblank(core* th)
+void display::scanline_vblank(core* bus)
 {
 }
 
@@ -57,6 +65,8 @@ void display::new_frame()
 
 #define MAC128K_MAIN_BUF (0x1A700 >> 1)
 #define MAC128K_ALTERNATE_BUF (0x12700 >> 1)
+#define MAC128K_AUDIO_BUF (0x1FD00 >> 1)
+#define MAC128K_ALTERNATE_AUDIO_BUF (0x1A100 >> 1)
 #define DISPLAY_BASE (0x12700 >> 1)
 #define MAC512K_OFFSET (0x60000 >> 1)
 
@@ -80,6 +90,13 @@ void display::update_irqs()
         bus->via.regs.IFR |= 2;
         bus->via.irq_sample();
     }
+}
+
+display::display(core* parent) : bus(parent)
+{
+    u32 base_addr = MAC128K_AUDIO_BUF;
+    if (bus->kind == mac512k) base_addr += 0x6000;
+    pwm_base_addr = base_addr;
 }
 
 void display::new_scanline()
@@ -119,6 +136,10 @@ void display::step2()
 
     crt->scan_x += 2;
     bus->clock.crt.hpos += 2;
+    if (bus->clock.crt.hpos == 512)  {
+        // do sound and PWM!
+        bus->display.do_sound_and_pwm();
+    }
     if (bus->clock.crt.hpos >= 704) new_scanline();
 }
 

@@ -10,7 +10,7 @@ struct core;
 struct FDD {
     explicit FDD(core *bus_in, u32 num_in);
     void calculate_ticks_per_flux();
-    bool floppy_inserted();
+    bool floppy_inserted() const;
     void write_motor_on(bool onoff);
     void setup_track();
     void do_step();
@@ -18,6 +18,7 @@ struct FDD {
     void write_reg(u8 which);
     floppy::mac::DISC *disc{};
     bool clock();
+    void set_pwm_dutycycle(i64 to);
 
     core *bus;
     u32 num;
@@ -54,7 +55,11 @@ struct FDD {
 
     u64 input_clock_cnt{};
 
-    u32 pwm_len{65000}, pwm_pos{};
+    struct {
+        i64 avg_sum{};
+        i64 avg_count{};
+        i64 dutycycle{};
+    } pwm;
 };
 
 }

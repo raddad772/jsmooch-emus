@@ -28,6 +28,27 @@ iwm::iwm(core* parent, variants variant_in) : bus(parent), drive{FDD(parent, 0),
     }
 }
 
+void iwm::update_pwm(u8 val) {
+    static constexpr u8 VALUE_TO_LEN[64] = {
+        0, 1, 59, 2, 60, 40, 54, 3, 61, 32, 49, 41, 55, 19, 35, 4, 62, 52, 30, 33, 50, 12, 14,
+        42, 56, 16, 27, 20, 36, 23, 44, 5, 63, 58, 39, 53, 31, 48, 18, 34, 51, 29, 11, 13, 15,
+        26, 22, 43, 57, 38, 47, 17, 28, 10, 25, 21, 37, 46, 9, 24, 45, 8, 7, 6
+    };
+    //if (!drive->has_pwm) return;
+    for (auto &drv : drive) {
+        drv.pwm.avg_sum += static_cast<i64>(VALUE_TO_LEN[val]) & 63;
+        drv.pwm.avg_count++;
+        if (drv.pwm.avg_count >= 100) {
+            i64 idx = drv.pwm.avg_sum / (drv.pwm.avg_count / 10) - 11;
+            if (idx < 0) idx = 0;
+            if (idx > 399) idx = 399;
+            drv.set_pwm_dutycycle((idx * 100) / 419);
+            drv.pwm.avg_sum = 0;
+            drv.pwm.avg_count = 0;
+        }
+    }
+}
+
 void iwm::reset() {
     for (auto & d : drive) {
         d.head.track_num = 0;
@@ -68,8 +89,8 @@ u16 iwm::do_read(u32 addr, u16 mask, u16 old, bool has_effect) {
 }
 
 void iwm::clock() {
-    if (drive->clock() && regs.mode.latch && lines.HEADSEL == 0) {
-        regs.shifter = (regs.shifter << 1) | drive->head.flux;
+    if (selected_drive->clock() && regs.mode.latch && lines.HEADSEL == 0) {
+        regs.shifter = (regs.shifter << 1) | selected_drive->head.flux;
         if (regs.shifter & 0x80) {
             regs.data = regs.shifter;
             regs.shifter = 0;

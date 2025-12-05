@@ -13,19 +13,20 @@ FDD::FDD(core *bus_in, u32 num_in) : bus(bus_in), num(num_in) {
 void FDD::setup_track()
 {
     auto &track = disc->disc.tracks[head.track_num];
-    RPM = track.rpm;
+    //RPM = track.rpm;
     last_RPM_change_time = bus->clock.master_cycles;
     next_flux_tick = bus->clock.master_cycles - 1;
     track_pos = 0;
-    calculate_ticks_per_flux();
+
 }
 
 void FDD::calculate_ticks_per_flux() {
     if (disc == nullptr)
         return;
+    if (RPM == 0) { ticks_per_flux = 10000000000; }
     auto &track = disc->disc.tracks[head.track_num];
     long double num_bits = track.encoded_data.num_bits;
-    long double bits_per_second = (num_bits * track.rpm) / 60.0l;
+    long double bits_per_second = (num_bits * RPM) / 60.0l;
     ticks_per_flux = bus->clock.timing.cycles_per_second / bits_per_second;
 }
 
@@ -73,10 +74,32 @@ void FDD::do_step()
     setup_track();
 }
 
-bool FDD::floppy_inserted() {
+bool FDD::floppy_inserted() const {
     return !!disc;
 }
 
+
+void FDD::set_pwm_dutycycle(i64 to) {
+    if (to != pwm.dutycycle) {
+        constexpr i64 DUTY_T0 = 9;
+        constexpr i64 SPEED_T0 = (380 + 304) / 2;
+        constexpr i64 DUTY_T79 = 91;
+        constexpr i64 SPEED_T79 = (625 + 480) / 2;
+        if (to < DUTY_T0) {
+            RPM = 0;
+        }
+        else {
+            RPM = ((to - DUTY_T0) * (SPEED_T79 * 100 + SPEED_T0 * 100)
+                / (DUTY_T79 - DUTY_T0))
+                / 100
+                + SPEED_T0;
+        }
+        printf("\nNEW RPM: %d", RPM);
+        calculate_ticks_per_flux();
+        // TODO: adjust time til next bit!?!?!
+    }
+    pwm.dutycycle = to;
+}
 
 u8 FDD::read_reg(u8 which) {
     u32 v = 0;
@@ -109,6 +132,7 @@ u8 FDD::read_reg(u8 which) {
             if (!motor_on) return 0;
             if (!disc) return 0;
             if (RPM == 0) return 0;
+            printf("\nGET TACH RPM %d", RPM);
             u64 edges_per_minute = RPM * 120;
             u64 ticks_per_edge = (8000000 * 60) / edges_per_minute;
             u8 r = (bus->clock.master_cycles/ticks_per_edge) & 1;
@@ -196,12 +220,14 @@ bool FDD::clock() {
         else return false;
     }
     // At this point, a disc is inserted, motor is on, and head is done stepping. Track is setup
-    while (next_flux_tick <= tc) {
-        next_flux_tick += ticks_per_flux;
-        auto &track = disc->disc.tracks[head.track_num];
-        head.flux = track.encoded_data.data[track_pos];
-        track_pos = (track_pos + 1) % track.encoded_data.num_bits;
-        return true;
+    if (RPM != 0) {
+        while (next_flux_tick <= tc) {
+            next_flux_tick += ticks_per_flux;
+            auto &track = disc->disc.tracks[head.track_num];
+            head.flux = track.encoded_data.data[track_pos];
+            track_pos = (track_pos + 1) % track.encoded_data.num_bits;
+            return true;
+        }
     }
     return false;
 }

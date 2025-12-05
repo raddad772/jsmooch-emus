@@ -9,6 +9,7 @@ struct DISC {
     generic::DISC<80,12,5181> disc{}; // struct generic_floppy_track
     bool write_protect{true};
     u32 num_heads{};
+    void set_pwm_dutycycle(i64 to);
 
     void save();
     bool load(const char *fname, buf &b);

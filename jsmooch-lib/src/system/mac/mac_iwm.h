@@ -26,6 +26,7 @@ struct iwm {
     variants variant;
     void reset();
     void clock();
+    void update_pwm(u8 val);
 
     u16 do_read(u32 addr, u16 mask, u16 old, bool has_effect);
     void do_write(u32 addr, u16 mask, u16 val);
