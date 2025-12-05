@@ -12,8 +12,10 @@ struct clock {
         u32 hpos{}, vpos{};
     } crt{};
 
-    struct {
-        u64 cycles_per_frame{704 * 370 * 60};// not quite right
+    struct timing {
+        static constexpr u64 cycles_per_frame = 704 * 370 * 60;// not quite right
+        static constexpr u64 fps = 60;
+        static constexpr u64 cycles_per_second = cycles_per_frame * fps;
     } timing{};
 };
 

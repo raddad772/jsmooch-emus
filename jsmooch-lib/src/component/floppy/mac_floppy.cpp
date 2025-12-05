@@ -64,6 +64,7 @@ void DISC::save()
 bool DISC::load(const char* fname, buf &b)
 {
     int r;
+    fill_tracks(1);
     if (ends_with(fname, ".image")) {
         r = load_dc42(b);
     }

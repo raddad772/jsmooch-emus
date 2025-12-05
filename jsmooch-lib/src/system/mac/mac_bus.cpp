@@ -20,7 +20,7 @@ static constexpr u16 ulmask[4] = {
 
 u32 read_trace_m68k(void *ptr, u32 addr, u32 UDS, u32 LDS);
 
-core::core(variants variant) {
+core::core(variants variant) : iwm{this, variant} {
     has.load_BIOS = true;
     has.max_loaded_files = 1;
     has.max_loaded_folders = 1;
@@ -141,16 +141,13 @@ void core::step_bus()
 
 u16 core::mainbus_read_iwm(u32 addr, u16 mask, u16 old, bool has_effect)
 {
-    uint16_t result = iwm.read((addr >> 9) & 15);
-    return (result << 8) | result;
+    uint16_t result = iwm.do_read(addr, mask, old, has_effect);
+    return ((result << 8) | result) & mask;
 }
 
 void core::mainbus_write_iwm(u32 addr, u16 mask, u16 val)
 {
-    if (mask & 0xFF)
-        iwm.write((addr >> 9) & 15, val & 0xFF);
-    else
-        iwm.write((addr >> 9) & 15, val >> 8);
+        iwm.do_write(addr, mask, val);
 }
 
 u16 core::mainbus_read_scc(u32 addr, u16 mask, u16 old, bool has_effect)

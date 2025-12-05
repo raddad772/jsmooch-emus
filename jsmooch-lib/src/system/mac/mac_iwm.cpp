@@ -9,13 +9,23 @@
 #include "mac_bus.h"
 
 namespace mac {
-iwm::iwm(core* parent) : bus(parent), drive{FDD(parent), FDD(parent)}
+iwm::iwm(core* parent, variants variant_in) : bus(parent), drive{FDD(parent, 0), FDD(parent, 1)}, variant(variant_in)
 {
-    regs.write_handshake = 0xBD;
-
     floppy::mac::DISC &f = my_disks.emplace_back();
     f.write_protect = false;
     drive[0].disc = &f;
+    my_disks.reserve(10);
+    switch(variant) {
+        case mac128k:
+        case mac512k:
+            num_drives = 1;
+            break;
+        case macplus_1mb:
+            num_drives = 2;
+            break;
+        default:
+            NOGOHERE;
+    }
 }
 
 void iwm::reset() {
@@ -27,10 +37,101 @@ void iwm::reset() {
         drive[0].device = &drive[0].ptr.get();
     if (drive[1].connected)
         drive[1].device = &drive[1].ptr.get();
-    active = M_IDLE;
 }
 
-void iwm::drive_select(u8 towhich)
+u16 iwm::do_read(u32 addr, u16 mask, u16 old, bool has_effect) {
+    if (!has_effect) return 0xFFFF & mask;
+    access(addr);
+    u8 q67 = (lines.Q6 << 1) | lines.Q7;
+    switch (q67) {
+        case 0b00: { // read data
+            if (!lines.ENABLE) return 0xFF;
+            u8 v = regs.data;
+            regs.data = 0;
+            printf("\nREAD DATA! %02x", v);
+            return v; }
+        case 0b10: // read status
+            regs.status.sense = selected_drive->read_reg(get_drive_reg());
+            regs.status.mode = regs.mode.u & 0x1F;
+            regs.status.enable = lines.ENABLE;
+
+            regs.shifter = 0;
+            return regs.status.u;
+        case 0b01: // read handshake
+            return ((!(write.pos == 0 && write.buffer == -1) << 6) |
+                ((write.buffer == -1) << 7));
+                    // nothing for 0b11
+        default:
+    }
+    printf("\nIWM unknown read! %04x q6:%d q7:%d", addr, lines.Q6, lines.Q7);
+    return 0;
+}
+
+void iwm::clock() {
+    if (drive->clock() && regs.mode.latch && lines.HEADSEL == 0) {
+        regs.shifter = (regs.shifter << 1) | drive->head.flux;
+        if (regs.shifter & 0x80) {
+            regs.data = regs.shifter;
+            regs.shifter = 0;
+        }
+    };
+
+}
+
+u8 iwm::get_drive_reg() const {
+    return lines.HEADSEL | (lines.CA0 << 1) | (lines.CA1 << 2) | (lines.CA2 << 3);
+}
+
+void iwm::access(u32 addr) {
+    switch ((addr >> 9) & 15) {
+        case 0: lines.CA0 = 0; break;
+        case 1: lines.CA0 = 1; break;
+        case 2: lines.CA1 = 0; break;
+        case 3: lines.CA1 = 1; break;
+        case 4: lines.CA2 = 0; break;
+        case 5: lines.CA2 = 1; break;
+        case 6: lines.LSTRB = 0; break;
+        case 7: lines.LSTRB = 1; selected_drive->write_reg(get_drive_reg());break;
+        case 8: lines.ENABLE = 0; break;
+        case 9: lines.ENABLE = 1; break;
+        case 10: lines.SELECT = 0; break; // currently no second drive support so do nothing
+        case 11: lines.SELECT = 1; break;
+        case 12: lines.Q6 = 0; break;
+        case 13: lines.Q6 = 1; break;
+        case 14: lines.Q7 = 0; break;
+        case 15: lines.Q7 = 1; break;
+    }
+
+}
+
+void iwm::write_HEADSEL(u8 what) {
+    lines.HEADSEL = what;
+}
+
+void iwm::do_write(u32 addr, u16 mask, u16 val) {
+    access(addr);
+    u8 q67e = (lines.Q6 << 2) | (lines.Q7 << 1) | lines.ENABLE;
+    switch (q67e) {
+        case 0b110: // write MODE. copy protection stuff, ignore for now
+            //set_mode(val);
+            //printf("\nMODE write %02x", regs.mode.u);
+            // TODO: switch mhz?
+            regs.mode.u = val;
+            return;
+        case 0b111:
+            if (write.buffer == -1) {
+                printf("\nDisk write with data in buffer..");
+            }
+            write.buffer = val;
+            return;
+    }
+}
+
+
+
+
+    /*
+    void iwm::drive_select(u8 towhich)
 {
     if (towhich == 0) {
         printf("\nSELECT NO DRIVE");
@@ -88,11 +189,10 @@ void iwm::write_mode(u8 val)
 void iwm::update_phases()
 {
     lines.phases = (lines.phases & 0xF0) | (lines.CA0) | (lines.CA1 << 1) | (lines.CA2 << 2) | (lines.LSTRB << 3);
-    /*
-    u8 mask = lines.phases >> 4;
-    u8 m_phases_cb = ((lines.phases & mask) | (m_phases_input & (mask ^ 0xf)));
-    if (cur_drive)
-        updates_drive_phases(m_phases_cb)*/
+    //u8 mask = lines.phases >> 4;
+    //u8 m_phases_cb = ((lines.phases & mask) | (m_phases_input & (mask ^ 0xf)));
+    //if (cur_drive)
+        //updates_drive_phases(m_phases_cb)
 }
 
 
@@ -114,14 +214,6 @@ void iwm::clock()
     clk = clk % (7833600 * 2);
     drv.input_clock_cnt = clk;
 
-    /*if (drv.cur_track_len > 0) {
-        drv.cur_track_pos += bit;
-
-        while (drv.cur_track_pos >= drv.cur_track_len) {
-            drv.cur_track_pos -= drv.cur_track_len;
-        }
-    }*/
-
     if (drv.pwm_len > 0) {
         drv.pwm_pos += bit;
 
@@ -130,15 +222,6 @@ void iwm::clock()
         }
     }
 
-    /*if (iwm->writing) {
-        mac_iwm_write (iwm, drv);
-    }
-    else if ((iwm->lines & (MAC_IWM_Q6 | MAC_IWM_Q7)) == 0) {
-        mac_iwm_read (iwm, drv);
-    }
-
-    drv.read_pos = drv.cur_track_pos;
-    drv.write_pos = drv.cur_track_pos;*/
 }
 
 void iwm::set_drive_reg()
@@ -306,5 +389,5 @@ u16 iwm::read(u8 addr)
 void iwm::write(u8 addr, u8 val)
 {
     control(addr, val, 1);
-}
+}*/
 }

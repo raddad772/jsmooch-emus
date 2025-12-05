@@ -46,7 +46,7 @@ struct core : jsm_system {
     clock clock{};
     display display{this};
     via via{this};
-    iwm iwm{this};
+    iwm iwm;
     RTC rtc{this};
 
     struct {

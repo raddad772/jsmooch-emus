@@ -6,12 +6,27 @@
 #include "mac_fdd.h"
 
 namespace mac {
+
+FDD::FDD(core *bus_in, u32 num_in) : bus(bus_in), num(num_in) {
+}
+
 void FDD::setup_track()
 {
-    //struct JSMAC_DRIVE *drv = &drive[selected_drive];
     auto &track = disc->disc.tracks[head.track_num];
     RPM = track.rpm;
     last_RPM_change_time = bus->clock.master_cycles;
+    next_flux_tick = bus->clock.master_cycles - 1;
+    track_pos = 0;
+    calculate_ticks_per_flux();
+}
+
+void FDD::calculate_ticks_per_flux() {
+    if (disc == nullptr)
+        return;
+    auto &track = disc->disc.tracks[head.track_num];
+    long double num_bits = track.encoded_data.num_bits;
+    long double bits_per_second = (num_bits * track.rpm) / 60.0l;
+    ticks_per_flux = bus->clock.timing.cycles_per_second / bits_per_second;
 }
 
 void FDD::write_motor_on(bool onoff)
@@ -36,7 +51,7 @@ void FDD::write_motor_on(bool onoff)
 
 void FDD::do_step()
 {
-    if (head_step_direction == 0) {
+    if (step_direction == 0) {
         if (head.track_num > 0) {
             head.track_num -= 1;
             printf("\nTRACK CHANGE DOWN TO %d", head.track_num);
@@ -50,124 +65,145 @@ void FDD::do_step()
             }
         }
     }
+    printf("\nHead stepped to track %d @%lld", head.track_num, bus->clock.master_cycles);
 
     head.stepping.start = bus->clock.master_cycles;
-    head.stepping.status = 1;
-    head.stepping.end = bus->clock.master_cycles + ((704*370 * 60) / 100); //10ms
+    head.stepping.is_stepping = true;
+    head.stepping.end = bus->clock.master_cycles + bus->clock.timing.cycles_per_second / 33; //~30ms. assumes 60fps
+    setup_track();
 }
 
-u32 FDD::read_reg(u8 which) {
+bool FDD::floppy_inserted() {
+    return !!disc;
+}
+
+
+u8 FDD::read_reg(u8 which) {
     u32 v = 0;
 
     switch (which) {
-        case 0:
-            v = head_step_direction;
-            printf("\nSTATUSREG.0: head step direction: %d", v);
+        case 0b0000: // DIRTN head step direction
+            v = step_direction;
             return v;
-        case 1: // head is stepping = 0. head is NOT stepping = 1
-            v = head.stepping.status == 0;
-            printf("\nSTATUSREG.1: head step status: %d", v);
+        case 0b0001: // disk in drive? 0=yes
+            v = floppy_inserted() ^ 1;
             return v;
-        case 2: // 0 = motor on, 1 = motor stopped
+        case 0b0010: // STEP head is stepping = 0. head is NOT stepping = 1
+            v = head.stepping.is_stepping == false;
+            return v;
+        case 0b0011: // WRTPRT: 0=disk write protect, 1 = no write protect
+            if (!disc) return 1;
+            v = !disc->write_protect;
+            return v;
+        case 0b0100: // MOTORON 0 = running, 1 = off
             v = motor_on == 0;
             printf("\nSTATUSREG.2: motor power on: %d", v);
             return v;
-        case 3:
-            v = disk_switched;
-            printf("\nSTATUSREG.3: motor power on: %d", v);
-            return v;
-        case 4:
-            v = 1;
-            printf("\nSTATUSREG.4: head #: %d", v);
-            return v;
-        case 5:
-            v = 0;
-            printf("\nSTATUSREG.5: is_superdrive: %d", v);
-            return v;
-        case 6:
-            v = 0;
-            printf("\nSTATUSREG.6: # sides: %d", v);
-            return v;
-        case 7: //
-            v = 1;
-            printf("\nSTATUSREG.7: drive installed: %d", v);
-            return v;
-        case 8: // 0 = disk in drive, 1 = no disk
-            v = disc ? 0 : 1;
-            printf("\nSTATUSREG.8: disk inserted: %d", v);
-            return v;
-        case 9:
-            if (disc)
-                v = disc->write_protect;
-            else v = 0;
-            printf("\nSTATUSREG.9: drive locked: %d", v);
-            return v;
-
-        case 10:
+        case 0b0101: // TKO, head at track 0, 0 = track 0, 1 = other track
             v = head.track_num != 0;
-            printf("\nSTATUSREG.A: !head track0: %d", v);
             return v;
-        case 11: {
-            u32 pwm = 65536 - pwm_val;
-
-            v = ((((120 * pwm) / 32768) * pwm_pos) / pwm_len) & 1;
-            v = !v;
-            printf("\nSTATUSREG.B: tachometer: %d", v);
-            return (v == 0); }
-        case 12:
-            v = 1;
-            printf("\nSTATUSREG.C: head: %d", v);
+        case 0b0110: // disk switched!??!?
+            v = disk_switched;
             return v;
-        case 13:
-            printf("\nSTATUSREG.D: none: 1");
-            return true;
-        case 14:
-            v = 1;
-            printf("\nSTATUSREG.E: ready: %d", v);
-            return v;
-        case 15:
-            v = 1;
-            printf("\nSTATUSREG.F: new interface: %d", v);
-            return v;
-    }
+        case 0b0111: { // TACH tachometer
+            if (!motor_on) return 0;
+            if (!disc) return 0;
+            if (RPM == 0) return 0;
+            u64 edges_per_minute = RPM * 120;
+            u64 ticks_per_edge = (8000000 * 60) / edges_per_minute;
+            u8 r = (bus->clock.master_cycles/ticks_per_edge) & 1;
+            static u8 last_returned = 0;
+            return r;
+            }
+        case 0b1000: // read data low TODO
+            return head.flux;
+        case 0b1001: // read data hi TODO
+            if (motor_on) return 1; // no upper head yet
+            return 1; // if motor is off we return 1
+        case 0b1010: // SUPERDRIVE
+            return 0;
+        case 0b1011: // MFM mode
+            return mfm;
+            return 0;
+        case 0b1100: // SIDES. 0 = single
+            return 0;
+        case 0b1101: //  READY. 0 = ready, 1 = not ready
+            return 0;
+        case 0b1110: // INSTALLED 0=installed
+            return 0;
+        case 0b1111: // HD present
+            return 0;
+        }
     NOGOHERE;
     return 0;
 }
 
-void FDD::write_reg(u8 which, u8 val) {
-    switch (which) {
-        case 0: {
-            printf("\nWRITE CMD.STEP DIR:%d  cyc:%lld", val, bus->clock.master_cycles);
-            head_step_direction = val;
-            break;
-        }
-        case 1:
-            if (val == 0) {
-                printf("\nWRITE CMD.DO STEP   cyc:%lld", bus->clock.master_cycles);
-                do_step();
-            }
-            break;
+void FDD::write_reg(u8 which) {
+    enum regwrites {
+        TRACKUP = 0b0000,
+        TRACKDN = 0b1000,
+        TRACKSTEP = 0b0010,
+        MFMMODE = 0b0011,
+        MOTORON = 0b0100,
+        CLRSWITCHED = 0b1001,
+        GCRMODE = 0b1011,
+        MOTOROFF = 0b1100,
+        EJECT = 0b1110,
+    } whichrw = static_cast<regwrites>(which);
 
-        case 2:
-            printf("\n WRITE CMD.MOTOR ON:%d    cyc:%lld", val == 0,
-                   bus->clock.master_cycles);
-            write_motor_on(val == 0);
-            break;
-        case 3:
-            if (val) {
-                printf("\n EJECT    cyc:%lld", bus->clock.master_cycles);
-            }
-            break;
-        case 4:
-            if (val) {
-                printf("\n CLEAR DISK SWITCHED   cyc:%lld", bus->clock.master_cycles);
-                disk_switched = 0;
-            }
-            break;
+    switch (whichrw) {
+        case TRACKUP:
+            step_direction = 1;
+            return;
+        case TRACKDN:
+            step_direction = -1;
+            return;
+        case MOTORON:
+            write_motor_on(true);
+            return;
+        case MOTOROFF:
+            write_motor_on(false);
+            return;
+        case TRACKSTEP:
+            do_step();
+            return;
+        case MFMMODE: // only for SuperDrive
+            return;
+        case GCRMODE: // also only for superdrive
+            return;
+        case CLRSWITCHED:
+            // clear "disk switched" flag
+            return;
+        case EJECT:
+            printf("\nEJECT? NAH!");
+            return;
         default:
-            printf("\n unknown reg:%d val:%d   cyc:%lld", which, val, bus->clock.master_cycles);
+            printf("\n unknown reg:%d   cyc:%lld", which, bus->clock.master_cycles);
             break;
     }
+}
+
+bool FDD::clock() {
+    if (!motor_on) return false;
+    if (!disc) return false;
+    u64 tc = bus->clock.master_cycles;
+    if (head.stepping.is_stepping) {
+        if (tc >= head.stepping.end) {
+            head.stepping.is_stepping = false;
+            setup_track();
+            printf("\nHead step finished @%lld", bus->clock.master_cycles);
+        }
+        else return false;
+    }
+    // At this point, a disc is inserted, motor is on, and head is done stepping. Track is setup
+    while (next_flux_tick <= tc) {
+        next_flux_tick += ticks_per_flux;
+        auto &track = disc->disc.tracks[head.track_num];
+        head.flux = track.encoded_data.data[track_pos];
+        track_pos = (track_pos + 1) % track.encoded_data.num_bits;
+        return true;
+    }
+    return false;
 }
     
 }

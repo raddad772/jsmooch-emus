@@ -1077,6 +1077,7 @@ int imgui_jsmooch_app::do_setup_before_mainloop()
     //which = jsm::systems::ZX_SPECTRUM_128K;
     //which = jsm::systems::SG1000;
     which = jsm::systems::MAC512K;
+    //which = jsm::systems::MACPLUS_1MB;
     //which = jsm::systems::DREAMCAST;
     //which = jsm::systems::GBA;
     //which = jsm::systems::SNES;

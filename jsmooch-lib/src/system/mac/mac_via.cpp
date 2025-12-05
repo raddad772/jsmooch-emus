@@ -10,7 +10,7 @@ namespace mac {
 
 void via::update_RA()
 {
-    // emulated: bits 4, 6
+    // emulated: bits 4, 5, 6
     // not emulated:
     // bit 0-2, sound volume
     // bit 3, alternate sound buffer
@@ -19,7 +19,7 @@ void via::update_RA()
     u8 val = (regs.ORA & regs.dirA); // When a pin is programmed as an output, it's controlled by ORA.
     val |= (regs.IRA & (~regs.dirA));
 
-    bus->iwm.lines.SELECT = (val >> 5) & 1;
+    bus->iwm.write_HEADSEL((val >> 5) & 1);
     bus->io.ROM_overlay = (val >> 4) & 1;
 }
 
@@ -135,10 +135,9 @@ void via::write(u32 addr, u16 mask, u16 val)
             if ((regs.ORA & 0x20) != (val & 0x20)) {
                 bus->iwm.lines.SELECT = (val >> 5) & 1;
                 printf("\nFLOPPY HEADSEL line via Via A to: %d", (val >> 5) & 1);
-                bus->iwm.control(addr, 0, 0);;
             }
 
-            printf("\nwrite VIA BufA data:%02x cyc:%lld", val, bus->clock.master_cycles);
+            //printf("\nwrite VIA BufA data:%02x cyc:%lld", val, bus->clock.master_cycles);
             return;}
         case vBufB: {// write Data Reg B
             regs.IFR &= 0b11100111;

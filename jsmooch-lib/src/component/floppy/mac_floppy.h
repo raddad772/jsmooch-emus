@@ -7,7 +7,7 @@ namespace floppy::mac {
 struct DISC {
 
     generic::DISC<80,12,5181> disc{}; // struct generic_floppy_track
-    bool write_protect{};
+    bool write_protect{true};
     u32 num_heads{};
 
     void save();

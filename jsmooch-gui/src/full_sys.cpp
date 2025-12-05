@@ -153,7 +153,7 @@ u32 grab_BIOSes(multi_file_set* BIOSes, jsm::systems which)
         case jsm::systems::MACPLUS_1MB:
             has_bios = 1;
             snprintf(BIOS_PATH, sizeof(BIOS_PATH), "%s/mac", BASE_PATH);
-            BIOSes->add("macplus_1mb.rom", BIOS_PATH);
+            BIOSes->add("macplus.rom", BIOS_PATH);
             break;
         case jsm::systems::PS1:
             has_bios = 1;
@@ -733,6 +733,7 @@ void full_system::load_default_ROM()
         case jsm::systems::MAC128K:
         case jsm::systems::MACPLUS_1MB:
             //worked = grab_ROM(&ROMs, which, "system1_1.img", nullptr);
+            //worked = grab_ROM(&ROMs, which, "fd1.image", nullptr);
             worked = grab_ROM(&ROMs, which, "disk.bin", nullptr);
             break;
         case jsm::systems::GALAKSIJA:
