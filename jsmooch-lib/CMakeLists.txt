@@ -220,6 +220,33 @@ set(SOURCE_LIST
         src/component/cpu/arm7tdmi/thumb_instructions.h
         src/component/cpu/arm7tdmi/thumb_disassembler.cpp
         src/component/cpu/arm7tdmi/thumb_disassembler.h
+        #src/component/cpu/arm946es/arm946es.cpp
+        #src/component/cpu/arm946es/arm946es.h
+        #src/component/cpu/arm946es/arm946es_decode.cpp
+        #src/component/cpu/arm946es/arm946es_decode.h
+        #src/component/cpu/arm946es/arm946es_instructions.cpp
+        #src/component/cpu/arm946es/arm946es_instructions.h
+        #src/component/cpu/arm946es/armv5_disassembler.cpp
+        #src/component/cpu/arm946es/armv5_disassembler.h
+        #src/component/cpu/arm946es/nds_cp15.cpp
+        #src/component/cpu/arm946es/nds_cp15.h
+        #src/component/cpu/arm946es/thumb2_disassembler.cpp
+        #src/component/cpu/arm946es/thumb2_disassembler.h
+        #src/component/cpu/arm946es/thumb2_instructions.cpp
+        #src/component/cpu/arm946es/thumb2_instructions.h
+        src/component/cpu/huc6280/huc6280.cpp
+        src/component/cpu/huc6280/huc6280.h
+        src/component/cpu/huc6280/huc6280_disassembler.cpp
+        src/component/cpu/huc6280/huc6280_disassembler.h
+        src/component/cpu/huc6280/huc6280_misc.h
+        src/component/cpu/huc6280/huc6280_opcodes.cpp
+        src/component/cpu/huc6280/huc6280_opcodes.h
+        src/component/audio/huc6280_psg/huc6280_psg.cpp
+        src/component/audio/huc6280_psg/huc6280_psg.h
+        src/component/gpu/huc6260/huc6260.cpp
+        src/component/gpu/huc6260/huc6260.h
+        src/component/gpu/huc6270/huc6270.cpp
+        src/component/gpu/huc6270/huc6270.h
         src/component/cpu/cdp1802/cdp1802.cpp
         src/component/cpu/cdp1802/cdp1802.h
         src/component/cpu/cdp1802/cdp1802_instructions.cpp

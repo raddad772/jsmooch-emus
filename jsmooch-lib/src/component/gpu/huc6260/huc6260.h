@@ -10,7 +10,6 @@
 #include "helpers/scheduler.h"
 #include "helpers/debugger/debuggerdefs.h"
 
-struct HUC6270;
 
 
 

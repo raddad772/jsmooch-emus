@@ -1,65 +1,64 @@
 //
 // Created by Dave on 2/4/2024.
 //
-#include <cstdio>
 #include "huc6280.h"
 #include "huc6280_disassembler.h"
-
-static u16 dbg_read(jsm_debug_read_trace *trace, u32 *PC)
+namespace HUC6280 {
+static u16 dbg_read(const jsm_debug_read_trace &trace, u32 &PC)
 {
-    u16 v = trace->read_trace(trace->ptr, *PC);
-    (*PC)++;
+    const u16 v = trace.read_trace(trace.ptr, PC);
+    PC++;
     return v;
 }
 
-static u16 dbg_read16(jsm_debug_read_trace *trace, u32 *PC)
+static u16 dbg_read16(jsm_debug_read_trace &trace, u32 &PC)
 {
     u16 v = dbg_read(trace,PC);
     v |= dbg_read(trace,PC) << 8;
     return v;
 }
 
-#define SARG const char *ins, jsm_debug_read_trace *trace, u32 *PC, jsm_string *outstr, HUC6280 *cpu
-#define SARG2x const char *ins, const char *s2, jsm_debug_read_trace *trace, u32 *PC, jsm_string *outstr, HUC6280 *cpu
-#define SARGBIT const char *ins, u32 bitnum, jsm_debug_read_trace *trace, u32 *PC, jsm_string *outstr, HUC6280 *cpu
+#define SARG const char *ins, jsm_debug_read_trace &trace, u32 &PC, jsm_string &outstr, core &cpu
+#define SARG2x const char *ins, const char *s2, jsm_debug_read_trace &trace, u32 &PC, jsm_string &outstr, core &cpu
+#define SARGBIT const char *ins, u32 bitnum, jsm_debug_read_trace &trace, u32 &PC, jsm_string &outstr, core &cpu
 
-static u32 longaddr(HUC6280 *cpu, u32 addr)
+static u32 longaddr(const core &cpu, const u32 addr)
 {
-    return cpu->regs.MPR[(addr & 0xE000) >> 13] | (addr & 0x1FFF);
+    return cpu.regs.MPR[(addr & 0xE000) >> 13] | (addr & 0x1FFF);
 }
 
 //#define zpa(x) longaddr(cpu, x | 0x2000)
 //#define la(x) longaddr(cpu, x)
-#define mpr(x) cpu->regs.MPR[x >> 13] > 13
+#define mpr(x) cpu.regs.MPR[x >> 13] > 13
 
 static void immediate_absolute(SARG)
 {
     u32 immediate = dbg_read(trace, PC);
     u32 absolute = dbg_read16(trace, PC);
-    jsm_string_sprintf(outstr, "%s#$%02x, $%02x:%04x", ins, immediate, mpr(absolute), absolute);
+    outstr.sprintf("%s#$%02x, $%02x:%04x", ins, immediate, mpr(absolute), absolute);
 }
 
 static void immediate_absolute_x(SARG)
 {
     u32 immediate = dbg_read(trace, PC);
     u32 absolute = dbg_read16(trace, PC);
-    jsm_string_sprintf(outstr, "%s#$%02x, $%02x:%04x, x", ins, immediate, mpr(absolute), absolute);
+    outstr.sprintf("%s#$%02x, $%02x:%04x, x", ins, immediate, mpr(absolute), absolute);
 }
 
 static void absolute(SARG)
 {
     u16 v = dbg_read16(trace, PC);
-    jsm_string_sprintf(outstr, "%s$%02x:%04x", ins, mpr(v), v);
+    outstr.sprintf("%s$%02x:%04x", ins, mpr(v), v);
 }
 
 static void absolute_x(SARG) {
     u16 v = dbg_read16(trace, PC);
-    jsm_string_sprintf(outstr, "%s$%02x:%04x,x", ins, mpr(v), v);
+    outstr.sprintf("%s$%02x:%04x,x", ins, mpr(v), v);
 };
 
 static void absolute_y(SARG) {
     u16 v = dbg_read16(trace, PC);
-    jsm_string_sprintf(outstr, "%s$%02x:%04x,y", ins, mpr(v), v);
+    outstr.sprintf("%s$%02x:%04x,y", ins, mpr(v), v);
 };
 
 static void block_move(SARG)
@@ -67,7 +66,7 @@ static void block_move(SARG)
     u32 source = dbg_read16(trace, PC);
     u32 target = dbg_read16(trace, PC);
     u32 length = dbg_read16(trace, PC);
-    jsm_string_sprintf(outstr, "%ss:$%02x:%04x, t:$%02x:%04x, l:$%x", ins, mpr(source), source, mpr(target), target, length);
+    outstr.sprintf("%ss:$%02x:%04x, t:$%02x:%04x, l:$%x", ins, mpr(source), source, mpr(target), target, length);
 
 }
 
@@ -75,7 +74,7 @@ static void immediate_zero_page_x(SARG)
 {
     u32 immediate = dbg_read(trace, PC);
     u32 zp = dbg_read(trace, PC);
-    jsm_string_sprintf(outstr, "%s#$02x, $%02x:%02x,x", ins, immediate, mpr(0x2000), zp);
+    outstr.sprintf("%s#$02x, $%02x:%02x,x", ins, immediate, mpr(0x2000), zp);
 
 }
 
@@ -83,104 +82,104 @@ static void immediate_zero_page(SARG)
 {
     u32 immediate = dbg_read(trace, PC);
     u32 zp = dbg_read(trace, PC);
-    jsm_string_sprintf(outstr, "%s#$02x, $%02x:%04x", ins, immediate, mpr(0x2000), zp);
+    outstr.sprintf("%s#$02x, $%02x:%04x", ins, immediate, mpr(0x2000), zp);
 }
 
 static void indirect_long_x(SARG)
 {
     u32 addr = dbg_read16(trace, PC);
-    jsm_string_sprintf(outstr, "%s($%02x:%04x,x)", ins, mpr(addr), addr);
+    outstr.sprintf("%s($%02x:%04x,x)", ins, mpr(addr), addr);
 }
 
 static void indirect_long(SARG)
 {
     u32 addr = dbg_read16(trace, PC);
-    jsm_string_sprintf(outstr, "%s($%02x:%04x)", ins, mpr(addr), addr);
+    outstr.sprintf("%s($%02x:%04x)", ins, mpr(addr), addr);
 }
 
 static void zero_page_bit_relative(SARGBIT)
 {
     u32 zp = dbg_read(trace, PC);
-    u16 v = (u16)(i8)dbg_read(trace, PC);
-    u16 pc = v + (*PC);
-    jsm_string_sprintf(outstr, "%s$%02x:%02x:%c, $%02x:%02x", ins, mpr(zp), zp, bitnum + 0x30, mpr(pc), pc);
+    u16 v = static_cast<u8>(static_cast<i8>(dbg_read(trace, PC)));
+    u16 pc = v + PC;
+    outstr.sprintf("%s$%02x:%02x:%c, $%02x:%02x", ins, mpr(zp), zp, bitnum + 0x30, mpr(pc), pc);
 }
 
 static void branch(SARG) {
-    u16 v = (u16)(i8)dbg_read(trace, PC);
-    u16 pc = v + (*PC);
-    jsm_string_sprintf(outstr, "%s$%02x:%04x", ins, mpr(pc), pc);
+    u16 v = static_cast<u8>(static_cast<i8>(dbg_read(trace, PC)));
+    u16 pc = v + PC;
+    outstr.sprintf("%s$%02x:%04x", ins, mpr(pc), pc);
 }
 
 static void immediate(SARG)
 {
-    jsm_string_sprintf(outstr, "%s#$%02x", ins, dbg_read(trace, PC));
+    outstr.sprintf("%s#$%02x", ins, dbg_read(trace, PC));
 }
 
 static void implied(SARG)
 {
-    jsm_string_sprintf(outstr, "%s", ins);
+    outstr.sprintf("%s", ins);
 }
 
 static void str2x(SARG2x)
 {
-    jsm_string_sprintf(outstr, "%s%s", ins, s2);
+    outstr.sprintf("%s%s", ins, s2);
 }
 
 static void indirect(SARG)
 {
     u32 addr = dbg_read16(trace, PC);
-    jsm_string_sprintf(outstr, "%s($%02x:%02x)", ins, mpr(addr), addr);
+    outstr.sprintf("%s($%02x:%02x)", ins, mpr(addr), addr);
 }
 
 static void indirect_x(SARG)
 {
     u32 addr = dbg_read16(trace, PC);
-    jsm_string_sprintf(outstr, "%s($%02x:%04x,x)  ", ins, mpr(addr), addr);
+    outstr.sprintf("%s($%02x:%04x,x)  ", ins, mpr(addr), addr);
 }
 
 static void indirect_y(SARG) {
     u32 zpa = dbg_read(trace, PC);
     u32 zer = zpa;
-    u32 a = dbg_read16(trace, &zer);
-    jsm_string_sprintf(outstr, "%s($%02x:%02x),y  [$%02x:%$04x]", ins, mpr(0x2000), zpa, mpr(a), a);
+    u32 a = dbg_read16(trace, zer);
+    outstr.sprintf("%s($%02x:%02x),y  [$%02x:%$04x]", ins, mpr(0x2000), zpa, mpr(a), a);
 }
 
 static void zero_page_bit(SARGBIT)
 {
     u32 addr = dbg_read(trace, PC);
-    jsm_string_sprintf(outstr, "%s$%02x:%02x", ins, mpr(addr), addr);
+    outstr.sprintf("%s$%02x:%02x", ins, mpr(addr), addr);
 }
 
 static void zero_page(SARG)
 {
     u32 addr = dbg_read(trace, PC);
-    jsm_string_sprintf(outstr, "%s$%02x:%02x", ins, mpr(addr), addr);
+    outstr.sprintf("%s$%02x:%02x", ins, mpr(addr), addr);
 }
 
 static void zero_page_x(SARG)
 {
     u32 addr = dbg_read(trace, PC);
-    jsm_string_sprintf(outstr, "%s$%02x:%02x,x", ins, mpr(addr), addr);
+    outstr.sprintf("%s$%02x:%02x,x", ins, mpr(addr), addr);
 }
 
 static void zero_page_y(SARG)
 {
     u32 addr = dbg_read(trace, PC);
-    jsm_string_sprintf(outstr, "%s$%02x:%02x,y", ins, mpr(addr), addr);
+    outstr.sprintf("%s$%02x:%02x,y", ins, mpr(addr), addr);
 }
 
 #undef zpa
 #undef la
 
-void HUC6280_disassemble(HUC6280 *cpu, u32 *PC, jsm_debug_read_trace *trace, jsm_string *outstr)
+void HUC6280_disassemble(core &cpu, u32 PC, jsm_debug_read_trace &trace, jsm_string &outstr)
 {
 #define SPCS "   "
 #define dasm(id, prefix, mode) case id: mode(prefix SPCS, trace, PC, outstr, cpu); break;
 #define dasm2s(id, prefix, str) case id: str2x(prefix SPCS, str, trace, PC, outstr, cpu); break;
 #define dasmbit(id, prefix, mode, bitnum) case id: mode(prefix SPCS, bitnum, trace, PC, outstr, cpu); break;
     u32 opcode = dbg_read(trace, PC);
-    // const char *ins, jsm_debug_read_trace *trace, u32 *PC, jsm_string *outstr
+    // const char *ins, jsm_debug_read_trace &trace, u32 PC, jsm_string *outstr
     switch(opcode) {
         dasm(0x00, "brk", implied)
         dasm(0x01, "ora", indirect_x)
@@ -438,18 +437,19 @@ void HUC6280_disassemble(HUC6280 *cpu, u32 *PC, jsm_debug_read_trace *trace, jsm
         dasm(0xfe, "inc", absolute_x)
         dasmbit(0xff, "bbs", zero_page_bit_relative, 7)
         default:
-            jsm_string_sprintf(outstr, "UKN" SPCS "$%02x", opcode);
+            outstr.sprintf("UKN" SPCS "$%02x", opcode);
             break;
     }
 #undef op
 }
 
-void HUC6280_disassemble_entry(HUC6280 *this, disassembly_entry* entry)
+void disassemble_entry(core &th, disassembly_entry &entry)
 {
-    jsm_string_quickempty(&entry->dasm);
-    jsm_string_quickempty(&entry->context);
-    u32 PC = entry->addr;
+    entry.dasm.quickempty();
+    entry.context.quickempty();
+    u32 PC = entry.addr;
     //printf("\nDISASSEMBLE ENTRY AT %04x", PC);
-    HUC6280_disassemble(this, &PC, &this->trace.strct, &entry->dasm);
-    entry->ins_size_bytes = PC - entry->addr;
+    disassemble(th, PC, th.trace.strct, entry.dasm);
+    entry.ins_size_bytes = PC - entry.addr;
+}
 }

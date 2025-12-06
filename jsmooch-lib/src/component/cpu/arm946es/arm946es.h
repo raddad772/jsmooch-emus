@@ -2,8 +2,7 @@
 // Created by . on 1/18/25.
 //
 
-#ifndef JSMOOCH_EMUS_ARM946ES_H
-#define JSMOOCH_EMUS_ARM946ES_H
+#pragma once
 
 #include "helpers/scheduler.h"
 #include "helpers/debugger/debuggerdefs.h"
