@@ -7,6 +7,8 @@
 #include "tg16_clock.h"
 #include "component/gpu/huc6260/huc6260.h"
 
+
+namespace TG16 {
 /*
 The (NTSC) PC Engine is clocked with a master clock equal to six times the NTSC color burst (315/88 MHz), or approximately 21.47727 MHz.
 This is divided into the following clocks:
@@ -19,30 +21,31 @@ VCE pixel clocks:
 "5MHz" = master clock / 4.
  */
 
-void TG16_clock_init(TG16_clock *this)
+clock::clock()
 {
-    memset(this, 0, sizeof(*this));
-    TG16_clock_reset(this);
+    reset();
 }
 
-void TG16_clock_reset(TG16_clock *this)
+void clock::reset()
 {
-    this->timing.second.frames = 60;
-    this->timing.frame.lines = 262;
+    timing.second.frames = 60;
+    timing.frame.lines = 262;
 
-    //u64 per_frame = master_freq / this->timing.second.frames;
-    u64 per_line = HUC6260_CYCLE_PER_LINE; // = 1364
+    //u64 per_frame = master_freq / timing.second.frames;
+    u64 per_line = HUC6260::CYCLE_PER_LINE; // = 1364
 
-    u64 per_frame = per_line * this->timing.frame.lines;
-    u64 master_freq = per_frame * this->timing.second.frames;
+    u64 per_frame = per_line * timing.frame.lines;
+    u64 master_freq = per_frame * timing.second.frames;
     printf("\nMASTER FREQ %lld", master_freq);
 
-    this->timing.scanline.cycles = per_line;
-    this->timing.frame.cycles = per_frame;
-    this->timing.second.cycles = master_freq;
+    timing.scanline.cycles = per_line;
+    timing.frame.cycles = per_frame;
+    timing.second.cycles = master_freq;
     printf("\nMASTER FREQ %lld", master_freq);
 
-    this->next.cpu = 3;
-    this->next.vce = 4;
-    this->next.timer = 3072;
+    next.cpu = 3;
+    next.vce = 4;
+    next.timer = 3072;
+}
+
 }

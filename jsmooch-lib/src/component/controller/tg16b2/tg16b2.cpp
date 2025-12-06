@@ -3,29 +3,18 @@
 //
 
 #include "tg16b2.h"
-
-void TG16_2button_init(TG16_2button *this)
+namespace TG16 {
+void controller_2button::setup_pio(physical_io_device &d, u32 num, const char*name, bool connected)
 {
-    this->pio = NULL;
+    d.init(HID_CONTROLLER, 0, 0, 1, 1);
 
-}
+    snprintf(d.controller.name, sizeof(d.controller.name), "%s", name);
+    d.id = num;
+    d.kind = HID_CONTROLLER;
+    d.connected = connected;
+    d.enabled = connected;
 
-void TG16_2button_delete(TG16_2button *this)
-{
-    this->pio = NULL;
-}
-
-void TG16_2button_setup_pio(physical_io_device *d, u32 num, const char*name, u32 connected)
-{
-    physical_io_device_init(d, HID_CONTROLLER, 0, 0, 1, 1);
-
-    snprintf(d->controller.name, sizeof(d->controller.name), "%s", name);
-    d->id = num;
-    d->kind = HID_CONTROLLER;
-    d->connected = connected;
-    d->enabled = connected;
-
-    struct JSM_CONTROLLER* cnt = &d->controller;
+    JSM_CONTROLLER* cnt = &d.controller;
 
     // up down left right a b start select. in that order
     pio_new_button(cnt, "up", DBCID_co_up);
@@ -38,14 +27,14 @@ void TG16_2button_setup_pio(physical_io_device *d, u32 num, const char*name, u32
     pio_new_button(cnt, "run", DBCID_co_start);
 }
 
-u8 TG16_2button_read_data(TG16_2button *this)
+u8 controller_2button::read_data()
 {
-    struct cvec* bl = &this->pio->controller.digital_buttons;
-    struct HID_digital_button *b;
-
     if (this->clr) return 0;
+    auto& bl = this->pio->controller.digital_buttons;
+    HID_digital_button *b;
+
     u32 data = 0;
-#define B_GET(num, snum) { b = cvec_get(bl, num); data |= b->state << snum; }
+#define B_GET(num, snum) { b = &bl.at(num); data |= b->state << snum; }
     if (this->sel) {
         B_GET(0, 0); // up
         B_GET(1, 1); // right
@@ -63,8 +52,9 @@ u8 TG16_2button_read_data(TG16_2button *this)
     return data;
 }
 
-void TG16_2button_write_data(TG16_2button *this, u8 val)
+void controller_2button::write_data(u8 val)
 {
     this->sel = val & 1;
     this->clr = (val >> 1) & 1;
+}
 }

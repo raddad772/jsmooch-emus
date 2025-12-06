@@ -385,7 +385,7 @@ void TG16J_describe_io(JSM, cvec *IOs)
     setup_audio(this, IOs);
 
     this->vce.display = &((physical_io_device *)cpg(this->vce.display_ptr))->display;
-    TG16_controllerport_connect(&this->controller_port, TG16CK_2button, &this->controller);
+    TG16_controllerport_connect(&this->controller_port, CK_2button, &this->controller);
 }
 
 void TG16J_play(JSM)

@@ -195,11 +195,11 @@ void chip::new_v_state(states st)
     timing.v.state = st;
     switch(st) {
         case S_sync_window:
-            vblank(0);
+            vblank(false);
             timing.v.counter = io.VSW + 1;
             break;
         case S_wait_for_display:
-            vblank(0);
+            vblank(false);
             setup_new_frame();
             timing.v.counter = io.VDS + 2;
             break;
@@ -210,7 +210,7 @@ void chip::new_v_state(states st)
             regs.blank_line = 1;
             break;
         case S_wait_for_sync_window:
-            vblank(1);
+            vblank(true);
             regs.px_out = 0x100;
             timing.v.counter = io.VCR;
             break;
@@ -294,7 +294,7 @@ void chip::cycle()
 
             u32 sp_color = 0;
             u32 sp_pal, sp_prio;
-            for (i32 spnum = sprites.num_tiles_on_line - 1; spnum >= 0; spnum--) {
+            for (i32 spnum = static_cast<i32>(sprites.num_tiles_on_line) - 1; spnum >= 0; spnum--) {
                 auto &sp = sprites.tiles[spnum];
                 // If not triggered, check if triggered!
                 if (!sp.triggered) {
@@ -379,16 +379,16 @@ void chip::reset()
 
 void chip::update_RCR(void *ptr, u64 key, u64 clock, u32 jitter)
 {
-    auto &th = *static_cast<chip *>(ptr);;
-    u32 signal = (th.regs.y_counter == th.io.RCR.u);
+    auto *th = static_cast<chip *>(ptr);;
+    u32 signal = (th->regs.y_counter == th->io.RCR.u);
     //printf("\nTEST LINE %d against %d @%lld", regs.y_counter, io.RCR.u, *scheduler->clock);
-    if (signal && (signal != th.io.STATUS.RR) && (th.io.CR.IE & 4)) {
-        DBG_EVENT(th.dbg.events.HIT_RCR);
-        th.io.STATUS.RR = 1;
+    if (signal && (signal != th->io.STATUS.RR) && (th->io.CR.IE & 4)) {
+        DBG_EVENT_TH(th->dbg.events.HIT_RCR);
+        th->io.STATUS.RR = 1;
         //printf("\nRCR HIT LINE %d  DL:%lld  X %lld", regs.y_counter, events_view_get_current_line(dbg.events.view), events_view_get_current_line_pos(dbg.events.view));
     }
 
-    th.update_irqs();
+    th->update_irqs();
 }
 
 void chip::vram_satb_end(void *ptr, u64 key, u64 clock, u32 jitter)
@@ -410,7 +410,7 @@ void chip::vram_vram_end(void *ptr, u64 key, u64 clock, u32 jitter)
 void chip::vram_satb()
 {
     // TODO: make not instant
-    scheduler->only_add_abs((*scheduler->clock) + (1024 * regs.divisor), 0, this, &vram_satb_end, NULL);
+    scheduler->only_add_abs((*scheduler->clock) + (1024 * regs.divisor), 0, this, &vram_satb_end, nullptr);
     for (u32 i = 0; i < 0x100; i++) {
         u32 addr = (io.DVSSR.u + i) & 0xFFFF;
         SAT[i] = read_VRAM(addr);
@@ -433,7 +433,7 @@ void chip::trigger_vram_vram()
     dbg_printf("\nVRAM-VRAM src:%04x dst:%04x len:%d", io.SOUR.u, io.DESR.u, io.LENR.u);
 #endif
 
-    scheduler->only_add_abs((*scheduler->clock) + (4 * io.LENR.u), 0, this, &vram_vram_end, NULL);
+    scheduler->only_add_abs((*scheduler->clock) + (4 * io.LENR.u), 0, this, &vram_vram_end, nullptr);
     io.LENR.u++;
     while(true) {
         u16 val = read_VRAM(io.SOUR.u);

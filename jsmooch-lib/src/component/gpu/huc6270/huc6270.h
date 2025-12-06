@@ -32,6 +32,8 @@ struct chip {
     explicit chip(scheduler_t *scheduler_in) : scheduler(scheduler_in) {}
     void cycle();
     void reset();
+    void hsync(bool val);
+    void vsync(bool val);
     void update_irqs();
     static void vram_vram_end(void *ptr, u64 key, u64 clock, u32 jitter);
     static void update_RCR(void *ptr, u64 key, u64 clock, u32 jitter);
@@ -175,7 +177,7 @@ struct chip {
 
     DBG_START
         DBG_EVENT_VIEW_START
-        WRITE_VRAM{}, WRITE_RCR{}, HIT_RCR{}, WRITE_XSCROLL{}, WRITE_YSCROLL
+        WRITE_VRAM{}, WRITE_RCR{}, HIT_RCR{}, WRITE_XSCROLL{}, WRITE_YSCROLL{}
         DBG_EVENT_VIEW_END
         events_view *evptr{};
     DBG_END
@@ -183,8 +185,6 @@ struct chip {
 private:
     void force_new_frame();
     void force_new_line();
-    void hsync(bool val);
-    void vsync(bool val);
     void new_v_state(states st);
     void new_h_state(states st);
     void setup_new_line();

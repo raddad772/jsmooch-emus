@@ -9,120 +9,110 @@
 #include "huc6260.h"
 #include "helpers/physical_io.h"
 #include "helpers/debug.h"
-#include "fail"
+#include "helpers/debugger/debugger.h"
 
 /* HUC6260 creates an NTSC-ish frame.
  * It drives VDC to get pixel info
  * VDC responds to some signals like HSYNC etc.
  */
 
-void HUC6260_init(HUC6260 *this, scheduler_t *scheduler, HUC6270 *vdc0, HUC6270 *vdc1) {
-    memset(this, 0, sizeof(*this));
-    this->regs.clock_div = 4;
-    //this->scheduler = scheduler;
-    this->scheduler = scheduler;
-    this->vdc0 = vdc0;
-    this->vdc1 = vdc1;
-    this->regs.frame_height = 262;
-    this->regs.next_frame_height = 262;
-    this->regs.cycles_per_frame = HUC6260_CYCLE_PER_LINE * this->regs.frame_height;
+namespace HUC6260 {
+chip::chip(scheduler_t *scheduler_in, HUC6270::chip *vdc0_in, HUC6270::chip *vdc1_in) :
+    scheduler{scheduler_in}, vdc0{vdc0_in}, vdc1{vdc1_in} {
+    regs.frame_height = 262;
+    regs.next_frame_height = 262;
+    regs.cycles_per_frame = CYCLE_PER_LINE * regs.frame_height;
 }
 
-void HUC6260_delete(HUC6260 *this)
+void chip::reset()
 {
+    vdc0->regs.divisor = regs.clock_div;
 
 }
 
-void HUC6260_reset(HUC6260 *this)
+void chip::hsync(void *ptr, u64 key, u64 clock, u32 jitter)
 {
-    this->vdc0->regs.divisor = this->regs.clock_div;
-
-}
-
-
-static void hsync(void *ptr, u64 key, u64 clock, u32 jitter)
-{
-    struct HUC6260 *this = (HUC6260 *)ptr;
+    auto *th = static_cast<HUC6260::chip *>(ptr);
 
     if (key) {
-        DBG_EVENT(this->dbg.events.HSYNC_UP);
+        DBG_EVENT_TH(th->dbg.events.HSYNC_UP);
     }
-    this->regs.hsync = key;
-    HUC6270_hsync(this->vdc0, key);
+    th->regs.hsync = key;
+    th->vdc0->hsync(key);
 }
 
-static void vsync(void *ptr, u64 key, u64 clock, u32 jitter)
+void chip::vsync(void *ptr, u64 key, u64 clock, u32 jitter)
 {
-    struct HUC6260 *this = (HUC6260 *)ptr;
+    auto *th = static_cast<HUC6260::chip *>(ptr);
     if (key) {
-        DBG_EVENT(this->dbg.events.VSYNC_UP);
+        DBG_EVENT_TH(th->dbg.events.VSYNC_UP);
     }
     else {
 
     }
-    this->regs.vsync = key;
-    HUC6270_vsync(this->vdc0, key);
+    th->regs.vsync = key;
+    th->vdc0->vsync(key);
 }
 
-static void new_frame(HUC6260 *this)
+void chip::new_frame()
 {
     //printf("\n6260 NEW FRAME!");
-    debugger_report_frame(this->dbg.interface);
-    this->regs.y = 0;
-    this->master_frame++;
-    this->cur_output = this->display->output[this->display->last_written];
-    memset(this->cur_output, 0, 1024*240*2);
-    this->display->last_written ^= 1;
-    //vsync(this, 1, 0, 0);
+    debugger_report_frame(dbg.interface);
+    regs.y = 0;
+    master_frame++;
+    cur_output = static_cast<u16 *>(display->output[display->last_written]);
+    memset(cur_output, 0, 1024*240*2);
+    display->last_written ^= 1;
+    //vsync(th, 1, 0, 0);
 }
 
-static void frame_end(void *ptr, u64 key, u64 clock, u32 jitter)
+void chip::frame_end(void *ptr, u64 key, u64 clock, u32 jitter)
 {
 
 }
 
-static void schedule_scanline(void *ptr, u64 key, u64 cclock, u32 jitter)
+void chip::schedule_scanline(void *ptr, u64 key, u64 cclock, u32 jitter)
 {
-    struct HUC6260 *this = (HUC6260 *)ptr;
+    auto *th = static_cast<HUC6260::chip *>(ptr);
     //printf("\nNEW LINE %lld", key);
-    this->regs.y = key;
+    th->regs.y = key;
     u64 clock = cclock - jitter;
 
     // Schedule next line
     u32 next_line = key + 1;
-    if (next_line == this->regs.frame_height) next_line = 0;
-    scheduler_only_add_abs(this->scheduler, clock + HUC6260_HSYNC_DOWN, 0, this, &hsync, NULL);
-    scheduler_only_add_abs(this->scheduler, clock + HUC6260_HSYNC_UP, 1, this, &hsync, NULL);
+    if (next_line == th->regs.frame_height) next_line = 0;
+    th->scheduler->only_add_abs(clock + HSYNC_DOWN, 0, th, &hsync, nullptr);
+    th->scheduler->only_add_abs(clock + HSYNC_UP, 1, th, &hsync, nullptr);
 
-    scheduler_only_add_abs_w_tag(this->scheduler, clock + HUC6260_CYCLE_PER_LINE, next_line, this, &schedule_scanline, NULL, 1);
-    this->regs.line_start = clock;
+    th->scheduler->only_add_abs_w_tag(clock + CYCLE_PER_LINE, next_line, th, &schedule_scanline, nullptr, 1);
+    th->regs.line_start = clock;
 
     // New frame or vsync begin or end scheduling
-    if (this->regs.y == 0) { // new frame stuff
-        new_frame(this);
-        scheduler_only_add_abs_w_tag(this->scheduler, clock + (HUC6260_CYCLE_PER_LINE * this->regs.frame_height), 0, this, &frame_end, NULL, 2);
+    if (th->regs.y == 0) { // new frame stuff
+        th->new_frame();
+        th->scheduler->only_add_abs_w_tag(clock + (CYCLE_PER_LINE * th->regs.frame_height), 0, th, &frame_end, nullptr, 2);
     }
-    else if (this->regs.y == HUC6260_LINE_VSYNC_START) {
-        scheduler_only_add_abs(this->scheduler, clock + HUC6260_LINE_VSYNC_POS, 0, this, &vsync, NULL);
-        this->regs.frame_height = this->regs.next_frame_height;
-        this->regs.cycles_per_frame = HUC6260_CYCLE_PER_LINE * this->regs.frame_height;
+    else if (th->regs.y == LINE_VSYNC_START) {
+        th->scheduler->only_add_abs(clock + LINE_VSYNC_POS, 0, th, &vsync, nullptr);
+        th->regs.frame_height = th->regs.next_frame_height;
+        th->regs.cycles_per_frame = CYCLE_PER_LINE * th->regs.frame_height;
     }
-    else if (this->regs.y == HUC6260_LINE_VSYNC_END)
-        scheduler_only_add_abs(this->scheduler, clock + HUC6260_LINE_VSYNC_POS, 1, this, &vsync, NULL);
+    else if (th->regs.y == LINE_VSYNC_END)
+        th->scheduler->only_add_abs(clock + LINE_VSYNC_POS, 1, th, &vsync, nullptr);
 
-    // Report this line to debugger interface
-    debugger_report_line(this->dbg.interface, key);
+    // Report th line to debugger interface
+    debugger_report_line(th->dbg.interface, key);
 
-    this->cur_line = this->cur_output + (this->regs.y * HUC6260_CYCLE_PER_LINE);
+    th->cur_line = th->cur_output + (th->regs.y * CYCLE_PER_LINE);
 }
 
-void HUC6260_schedule_first(HUC6260 *this)
+void chip::schedule_first()
 {
     schedule_scanline(this, 0, 0, 0);
-    scheduler_only_add_abs(this->scheduler, this->regs.clock_div, 0, this, &HUC6260_pixel_clock, NULL);
+    scheduler->only_add_abs(regs.clock_div, 0, this, &pixel_clock, nullptr);
 }
 
-void HUC6260_write(HUC6260 *this, u32 maddr, u32 val)
+void chip::write(u32 maddr, u8 val)
 {
     u32 addr = maddr & 7;
 #ifdef TG16_LYCODER2
@@ -130,36 +120,36 @@ void HUC6260_write(HUC6260 *this, u32 maddr, u32 val)
 #endif
     switch(addr) {
         case 0: //CR
-            this->io.DCC = val;
-            this->regs.clock_div = 4 - (val & 3);
+            io.DCC = val;
+            regs.clock_div = 4 - (val & 3);
             if ((val & 3) == 3) {
                 printf("\nWARN ILLEGAL DIVISOR");
-                this->regs.clock_div = 2;
+                regs.clock_div = 2;
             }
-            this->vdc0->regs.divisor = this->regs.clock_div;
+            vdc0->regs.divisor = regs.clock_div;
             // Bit 2 = Frame height (0= 262, 1= 263 scanlines)
-            this->regs.next_frame_height = ((val >> 2) & 1) ? 263 : 262;
+            regs.next_frame_height = ((val >> 2) & 1) ? 263 : 262;
 
             //Bit 7 = Color subcarrier enable (0= enabled, 1= disabled (B&W video))
-            this->regs.bw = ((val >> 7) & 1) << 15;
+            regs.bw = ((val >> 7) & 1) << 15;
             return;
         case 1: //CTA
             return;
         case 2:
-            this->io.CTA.lo = val;
+            io.CTA.lo = val;
             return;
         case 3:
-            this->io.CTA.hi = val & 1;
+            io.CTA.hi = val & 1;
             return;
         case 4: //CDW
-            DBG_EVENT(this->dbg.events.WRITE_CRAM);
-            this->CRAM[this->io.CTA.u] = (val & 0xFF) | (this->CRAM[this->io.CTA.u] & 0x100);
+            DBG_EVENT(dbg.events.WRITE_CRAM);
+            CRAM[io.CTA.u] = (val & 0xFF) | (CRAM[io.CTA.u] & 0x100);
             return;
         case 5:
-            this->io.CTW.hi = val & 1;
-            DBG_EVENT(this->dbg.events.WRITE_CRAM);
-            this->CRAM[this->io.CTA.u] = ((val & 1) << 8) | (this->CRAM[this->io.CTA.u] & 0xFF);
-            this->io.CTA.u = (this->io.CTA.u + 1) & 0x1FF;
+            io.CTW.hi = val & 1;
+            DBG_EVENT(dbg.events.WRITE_CRAM);
+            CRAM[io.CTA.u] = ((val & 1) << 8) | (CRAM[io.CTA.u] & 0xFF);
+            io.CTA.u = (io.CTA.u + 1) & 0x1FF;
             return;
         case 6:
         case 7:
@@ -168,58 +158,61 @@ void HUC6260_write(HUC6260 *this, u32 maddr, u32 val)
     }
 }
 
-u32 HUC6260_read(HUC6260 *this, u32 maddr, u32 old)
+u8 chip::read(u32 maddr, u8 old)
 {
-    u32 addr = maddr & 7;u32 lo = (maddr & 1) ^ 1;
+    u32 addr = maddr & 7;
+    u32 lo = (maddr & 1) ^ 1;
 
     switch(addr) {
         case 4: {// CDR
-            return this->CRAM[this->io.CTA.u] & 0xFF;
+            return CRAM[io.CTA.u] & 0xFF;
         }
         case 5: {
-            u32 la = this->io.CTA.u;
-            this->io.CTA.u = (this->io.CTA.u + 1) & 0x1FF;
-            return 0xFE | ((this->CRAM[la] >> 8) & 1);
+            u32 la = io.CTA.u;
+            io.CTA.u = (io.CTA.u + 1) & 0x1FF;
+            return 0xFE | ((CRAM[la] >> 8) & 1);
         }
+        default:
     }
 
     return 0xFF;
 }
 
-static void schedule_next_pixel_clock(HUC6260 *this, u64 cur)
+void chip::schedule_next_pixel_clock(u64 cur)
 {
     // If /4 or /2 and we are at start of line inside hsync,
     // And we are on an uneven cycle,
     // We lengthen from 4-5 or 2-3 in order to sync pixel clock up.
     // Otherwise it would drift out of phase 1/4 or 1/2 each line
-    u32 sdiv = this->regs.clock_div;
-    static const int stretch_cycle = 1;
-    u32 line_pos = cur - this->regs.line_start;
+    u32 sdiv = regs.clock_div;
+    static constexpr int stretch_cycle = 1;
+    u32 line_pos = cur - regs.line_start;
 
     if (line_pos == stretch_cycle)
         sdiv++;
-    scheduler_only_add_abs(this->scheduler, cur + sdiv, 0, this, &HUC6260_pixel_clock, NULL);
+    scheduler->only_add_abs(cur + sdiv, 0, this, &pixel_clock, nullptr);
 }
 
-void HUC6260_pixel_clock(void *ptr, u64 key, u64 clock, u32 jitter)
+void chip::pixel_clock(void *ptr, u64 key, u64 clock, u32 jitter)
 {
-    struct HUC6260 *this = (HUC6260 *)ptr;
-    HUC6270_cycle(this->vdc0);
+    auto *th = static_cast<chip *>(ptr);
+    th->vdc0->cycle();
 
     u64 cur = clock - jitter;
-    u64 line_pos = cur - this->regs.line_start;
-    u32 pc = this->vdc0->regs.px_out;
-    u16 c = this->CRAM[pc];
+    u64 line_pos = cur - th->regs.line_start;
+    u32 pc = th->vdc0->regs.px_out;
+    u16 c = th->CRAM[pc];
     // GRB hi-lo, 9-bit
     // so blue is low 3 bits
     if (pc == 0xFFFF) c = 0x1FF;
-    /*if (this->regs.y == 4) {
+    /*if (regs.y == 4) {
         c = 0x1FF;
     }*/
-    for (i32 i = 0; i < this->regs.clock_div; i++) {
-        if ((line_pos+i) >= HUC6260_CYCLE_PER_LINE) break;
-        this->cur_line[line_pos+i] = c | this->regs.bw;
+    for (i32 i = 0; i < th->regs.clock_div; i++) {
+        if ((line_pos+i) >= CYCLE_PER_LINE) break;
+        th->cur_line[line_pos+i] = c | th->regs.bw;
     }
 
-    schedule_next_pixel_clock(this, cur);
+    th->schedule_next_pixel_clock(cur);
+}
 }
