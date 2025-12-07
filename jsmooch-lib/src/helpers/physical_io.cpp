@@ -32,7 +32,7 @@ void physical_io_device::move_from(physical_io_device&& other) noexcept {
     other.kind = IO_CLASSES{};
 }
 
-void physical_io_device::init(IO_CLASSES inkind, u32 inenabled, u32 inconnected, u32 ininput, u32 inoutput)
+void physical_io_device::init(IO_CLASSES inkind, bool inenabled, bool inconnected, bool ininput, bool inoutput)
 {
     kind = inkind;
     enabled = inenabled;

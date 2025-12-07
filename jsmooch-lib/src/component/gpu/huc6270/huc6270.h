@@ -4,6 +4,7 @@
 
 #pragma once
 
+#include "helpers/debugger/debugger.h"
 #include "helpers/scheduler.h"
 #include "helpers/int.h"
 #include "helpers/debugger/debuggerdefs.h"
@@ -18,7 +19,6 @@ enum states {
 };
 
 struct sprite {
-    sprite();
     u64 pattern_shifter{};
     u64 num_left{};
     u32 triggered{};
@@ -119,7 +119,7 @@ struct chip {
 
     struct {
         u32 line{};
-        void (*update_func)(void *, u32){};
+        void (*update_func)(void *, bool){};
         void *update_func_ptr{};
     } irq{};
 

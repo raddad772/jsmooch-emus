@@ -3,16 +3,16 @@
 //
 
 #pragma once
-namespace TG16 {
 #include "helpers/int.h"
 #include "helpers/buf.h"
 #include "helpers/physical_io.h"
+namespace TG16 {
 
 struct cart {
-    void reset();
+    static void reset();
     void write(u32 addr, u8 val);
-    u8 read(u32 addr, u8 old) const;
-    u8 read_SRAM(u32 addr) const;
+    [[nodiscard]] u8 read(u32 addr, u8 old) const;
+    [[nodiscard]] u8 read_SRAM(u32 addr) const;
     void write_SRAM(u32 addr, u8 val);
     void load_ROM_from_RAM(void *ptr, u64 sz, physical_io_device &pio);
 

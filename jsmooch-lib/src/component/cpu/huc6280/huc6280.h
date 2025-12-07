@@ -95,10 +95,10 @@ struct core {
     u32 PCO{};
 
     void *read_ptr{}, *write_ptr{}, *read_io_ptr{}, *write_io_ptr{};
-    u32 (*read_func)(void *ptr, u32 addr, u32 old, bool has_effect){};
-    u32 (*read_io_func)(void *ptr){};
-    void (*write_func)(void *ptr, u32 addr, u32 val){};
-    void (*write_io_func)(void *ptr, u32 val){};
+    u8 (*read_func)(void *ptr, u32 addr, u8 old, bool has_effect){};
+    u8 (*read_io_func)(void *ptr){};
+    void (*write_func)(void *ptr, u32 addr, u8 val){};
+    void (*write_io_func)(void *ptr, u8 val){};
 
     u32 ins_decodes{};
 

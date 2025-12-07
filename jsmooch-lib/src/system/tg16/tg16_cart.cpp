@@ -1,5 +1,3 @@
-#include <cstring>
-
 #include "helpers/debug.h"
 #include "helpers/physical_io.h"
 #include "tg16_cart.h"

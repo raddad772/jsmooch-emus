@@ -1,7 +1,7 @@
 //
 // Created by Dave on 1/24/2024.
 //
-
+#include <cassert>
 #include <cstring>
 #include <cstdio>
 
@@ -9,7 +9,7 @@
 #include "helpers/color.h"
 #include "helpers/debugger/debugger.h"
 #include "system/commodore64/c64_vic2_color.h"
-//#include "component/gpu/huc6260/huc6260.h"
+#include "component/gpu/huc6260/huc6260.h"
 
 static u32 calc_stride(u32 out_width, u32 in_width)
 {
@@ -420,17 +420,18 @@ static u32 genesis_color_lookup[4][8] =  {
         {130, 144, 158, 172, 187, 206, 228, 255},  //highlight
         {0,0,0,0,0,0,0,0}
 };
-/*
+
+
 void tg16_present(physical_io_device &device, void *out_buf, u32 out_width, u32 out_height, u32 is_event_view_present, events_view *evp)
 {
     u16 *tg16o = (u16 *)device.display.output[device.display.last_written];
     u32 w = out_width;//256 - (overscan_left + overscan_right);
-    u32 xsize = HUC6260_CYCLE_PER_LINE;
-    u32 *img32 = (u32 *) out_buf;
+    u32 xsize = HUC6260::CYCLE_PER_LINE;
+    u32 *img32 = static_cast<u32 *>(out_buf);
     i32 x_start = 0;
     if (is_event_view_present) {
-        xsize = HUC6260_CYCLE_PER_LINE;
-        u32 *o = out_buf;
+        xsize = HUC6260::CYCLE_PER_LINE;
+        u32 *o = static_cast<u32 *>(out_buf);
         u32 max = out_width * out_height;
         for (u32 i = 0; i < max; i++) {
             *o = 0xFF000000;
@@ -445,16 +446,16 @@ void tg16_present(physical_io_device &device, void *out_buf, u32 out_width, u32 
             // Now, account for draw offset in buffer
             // OFFSET 180
             // XSTART 192
-            //x_start += HUC6260_DRAW_OFFSET;
+            //x_start += HUC6260::DRAW_OFFSET;
             assert(x_start >= 0);
-            assert(x_start < HUC6260_CYCLE_PER_LINE);
+            assert(x_start < HUC6260::CYCLE_PER_LINE);
         }
         u32 y = ry;
         u32 outyw = y * w;
-        for (u32 rx = 0; rx < HUC6260_CYCLE_PER_LINE; rx++) {
+        for (u32 rx = 0; rx < HUC6260::CYCLE_PER_LINE; rx++) {
             u32 outx = rx + x_start;
             if (outx >= xsize) break;
-            u32 di = ((y * HUC6260_CYCLE_PER_LINE) + rx);
+            u32 di = ((y * HUC6260::CYCLE_PER_LINE) + rx);
             u32 b_out = outyw + outx;
             u32 color = tg16o[di];
             if (color & 0x8000) {
@@ -467,7 +468,7 @@ void tg16_present(physical_io_device &device, void *out_buf, u32 out_width, u32 
         }
     }
 }
-*/
+
 
 void snes_present(physical_io_device &device, void *out_buf, u32 out_width, u32 out_height, u32 is_event_view_present)
 {
@@ -629,9 +630,9 @@ void jsm_present(jsm::systems which, physical_io_device &display, void *out_buf,
         case jsm::systems::SNES:
             snes_present(display, out_buf, out_width, out_height, is_event_view_present);
             break;
-        //case jsm::systems::TURBOGRAFX16:
-        //    tg16_present(display, out_buf, out_width, out_height, is_event_view_present, ev);
-         //   break;
+        case jsm::systems::TURBOGRAFX16:
+            tg16_present(display, out_buf, out_width, out_height, is_event_view_present, ev);
+            break;
         case jsm::systems::GENESIS_USA:
         case jsm::systems::GENESIS_JAP:
         case jsm::systems::MEGADRIVE_PAL:

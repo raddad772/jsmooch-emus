@@ -2,18 +2,19 @@
 // Created by . on 6/18/25.
 //
 
+#include <cassert>
 #include <cstdio>
 
 #include "tg16_bus.h"
-
-u32 TG16_bus_read(TG16 *this, u32 addr, u32 old, u32 has_effect)
+namespace TG16 {
+u8 core::bus_read(u32 addr, u8 old, bool has_effect)
 {
     if (addr >= 0x1FE000) {
         if (addr < 0x1FE400) {
-            return HUC6270_read(&this->vdc0, addr, old);
+            return vdc0.read(addr, old);
         }
         else if (addr < 0x1FE800) {
-            return HUC6260_read(&this->vce, addr, old);
+            return vce.read(addr, old);
         }
         if (has_effect) {
             assert(1 == 2);
@@ -21,45 +22,45 @@ u32 TG16_bus_read(TG16 *this, u32 addr, u32 old, u32 has_effect)
         }
         return 0;
     }
-    if (addr < 0x100000) return TG16_cart_read(&this->cart, addr, old);
+    if (addr < 0x100000) return cart.read(addr, old);
     else if ((addr >= 0x1EE000) && (addr < 0x1F0000)) {
-        return TG16_cart_read_SRAM(&this->cart, addr);
+        return cart.read_SRAM(addr);
     }
     else if ((addr >= 0x1F0000) && (addr <= 0x1F8000)) {
-        return this->RAM[addr & 0x1FFF];
+        return RAM[addr & 0x1FFF];
     }
 
     printf("\nUnserviced bus read addr:%06x", addr);
     return 0;
 }
 
-void TG16_bus_write(TG16 *this, u32 addr, u32 val)
+void core::bus_write(u32 addr, u8 val)
 {
-    if (this->clock.master_cycles > 172000) {
+    if (clock.master_cycles > 172000) {
         int a =4;
         a++;
     }
     if (addr >= 0x1FE000) {
         if (addr < 0x1FE400) {
-            return HUC6270_write(&this->vdc0, addr, val);
+            return vdc0.write(addr, val);
         }
         else if (addr < 0x1FE800) {
-            return HUC6260_write(&this->vce, addr, val);
+            return vce.write(addr, val);
         }
         assert(1==2);
         printf("\nWHAT22");
         return;
     }
-    if (addr < 0x100000) return TG16_cart_write(&this->cart, addr, val);
+    if (addr < 0x100000) return cart.write(addr, val);
     else if ((addr >= 0x1EE000) && (addr < 0x1F0000)) {
-        TG16_cart_write_SRAM(&this->cart, addr, val);
+        cart.write_SRAM(addr, val);
         return;
     }
     else if ((addr >= 0x1F0000) && (addr <= 0x1F8000)) {
         /*if (((addr & 0x1FFF) == 0xF) && (val == 0x12)) {
             dbg_break("\nF to 12", 0);
         }*/
-        this->RAM[addr & 0x1FFF] = val;
+        RAM[addr & 0x1FFF] = val;
         return;
     }
 
@@ -67,24 +68,27 @@ void TG16_bus_write(TG16 *this, u32 addr, u32 val)
 }
 
 
-u32 TG16_huc_read_mem(void *ptr, u32 addr, u32 old, u32 has_effect)
+u8 core::huc_read_mem(void *ptr, u32 addr, u8 old, bool has_effect)
 {
-    return TG16_bus_read(ptr, addr, old, has_effect);
+    auto *th = static_cast<core *>(ptr);
+    return th->bus_read(addr, old, has_effect);
 }
 
-void TG16_huc_write_mem(void *ptr, u32 addr, u32 val)
+void core::huc_write_mem(void *ptr, u32 addr, u8 val)
 {
-    TG16_bus_write(ptr, addr, val);
+    auto *th = static_cast<core *>(ptr);
+    th->bus_write(addr, val);
 }
 
-u32 TG16_huc_read_io(void *ptr)
+u8 core::huc_read_io(void *ptr)
 {
-    struct TG16 *this = (TG16 *)ptr;
-    return TG16_controllerport_read_data(&this->controller_port) & 0x0F;
+    auto *th = static_cast<core *>(ptr);
+    return th->controller_port.read_data() & 0x0F;
 }
 
-void TG16_huc_write_io(void *ptr, u32 val)
+void core::huc_write_io(void *ptr, u8 val)
 {
-    struct TG16 *this = (TG16 *)ptr;
-    TG16_controllerport_write_data(&this->controller_port, val & 3);
+    auto *th = static_cast<core *>(ptr);
+    th->controller_port.write_data(val & 3);
+}
 }

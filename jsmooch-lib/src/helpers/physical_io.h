@@ -347,7 +347,7 @@ struct physical_io_device {
     bool enabled{};
     void *sys_ptr{};
     u32 id{};
-    void init(IO_CLASSES kind, u32 enabled, u32 connected, u32 input, u32 output);
+    void init(IO_CLASSES kind, bool enabled, bool connected, bool input, bool output);
 
     u32 input{};
     u32 output{};

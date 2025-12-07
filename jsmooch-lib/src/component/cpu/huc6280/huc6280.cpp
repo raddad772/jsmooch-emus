@@ -24,7 +24,7 @@ void core::reset()
 {
     regs.MPR[7] = 0;
     regs.clock_div = 12;
-    current_instruction = HUC6280_decoded_opcodes[0][0x100];
+    current_instruction = decoded_opcodes[0][0x100];
     regs.TCU = 0;
     regs.P.T = 0;
     pins.D = 0x100; // special RESET code
@@ -187,7 +187,7 @@ void core::cycle()
             dbg_break("PHNO", 0);
         }
         trace_format(regs.IR);
-        current_instruction = HUC6280_decoded_opcodes[regs.P.T][regs.IR];
+        current_instruction = decoded_opcodes[regs.P.T][regs.IR];
 #ifdef TG16_LYCODER2
         dbg_printf("PC:%04X I:%02X A:%02X X:%02X Y:%02X P:%02X S:%02X MPR0-7:%02X %02X %02X %02X %02X %02X %02X %02x\n",
             PCO, regs.IR, regs.A, regs.X, regs.Y, regs.P.u, regs.S,

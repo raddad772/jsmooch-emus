@@ -6,6 +6,7 @@
 namespace TG16 {
 void controller_2button::setup_pio(physical_io_device &d, u32 num, const char*name, bool connected)
 {
+    pio = &d;
     d.init(HID_CONTROLLER, 0, 0, 1, 1);
 
     snprintf(d.controller.name, sizeof(d.controller.name), "%s", name);
@@ -29,13 +30,13 @@ void controller_2button::setup_pio(physical_io_device &d, u32 num, const char*na
 
 u8 controller_2button::read_data()
 {
-    if (this->clr) return 0;
-    auto& bl = this->pio->controller.digital_buttons;
+    if (clr) return 0;
+    auto& bl = pio->controller.digital_buttons;
     HID_digital_button *b;
 
     u32 data = 0;
 #define B_GET(num, snum) { b = &bl.at(num); data |= b->state << snum; }
-    if (this->sel) {
+    if (sel) {
         B_GET(0, 0); // up
         B_GET(1, 1); // right
         B_GET(2, 2); // down
@@ -54,7 +55,7 @@ u8 controller_2button::read_data()
 
 void controller_2button::write_data(u8 val)
 {
-    this->sel = val & 1;
-    this->clr = (val >> 1) & 1;
+    sel = val & 1;
+    clr = (val >> 1) & 1;
 }
 }

@@ -2,8 +2,8 @@
 // Created by . on 6/18/25.
 //
 
-namespace TG16 {
 #include "helpers/int.h"
+namespace TG16 {
 
 struct clock {
     clock();

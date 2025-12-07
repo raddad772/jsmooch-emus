@@ -140,6 +140,7 @@ struct disassembly_view {
     int get_rows(u32 instruction_addr, u32 bytes_before, u32 total_lines, std::vector<disassembly_entry_strings> &out_lines);
     void dirty_mem(u32 mem_bus, u32 addr_start, u32 addr_end);
 
+    u32 mem_start{};
     u32 mem_end{};
     std::vector<u32> dirty_range_indices{}; // 100 indices of dirty ranges we can re-use
     struct {
@@ -356,12 +357,12 @@ enum debug_waveform_kinds {
 
 struct debug_waveform {
     char name[50]{};
-    u32 ch_output_enabled{1};
+    bool ch_output_enabled{true};
     u32 default_clock_divider{};
     u32 clock_divider{};
     u32 samples_requested{};
     u32 samples_rendered{};
-    u32 is_unsigned{};
+    bool is_unsigned{};
     buf buf{8192}; // height*width. value -1...1
     debug_waveform_kinds kind{};
 

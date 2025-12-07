@@ -172,7 +172,7 @@ static void zero_page_y(SARG)
 #undef zpa
 #undef la
 
-void HUC6280_disassemble(core &cpu, u32 PC, jsm_debug_read_trace &trace, jsm_string &outstr)
+void disassemble(core &cpu, u32 &PC, jsm_debug_read_trace &trace, jsm_string &outstr)
 {
 #define SPCS "   "
 #define dasm(id, prefix, mode) case id: mode(prefix SPCS, trace, PC, outstr, cpu); break;

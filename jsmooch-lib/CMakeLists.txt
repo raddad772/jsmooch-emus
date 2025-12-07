@@ -358,6 +358,8 @@ set(SOURCE_LIST
         src/system/mac/mac_regs.h
         src/system/mac/mac_serialize.cpp
         src/system/mac/mac_serialize.h
+        src/system/tg16/tg16_serialize.cpp
+        src/system/tg16/tg16_serialize.h
 )
 
 # TODO: Fix elf-parser repo for windows

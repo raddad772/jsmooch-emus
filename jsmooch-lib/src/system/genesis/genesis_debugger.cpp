@@ -1375,7 +1375,7 @@ void core::setup_debugger_interface(debugger_interface &dbgr)
     dbg.interface = &dbgr;
     dbgr.views.reserve(15);
 
-    dbgr.supported_by_core = 1;
+    dbgr.supported_by_core = true;
     dbgr.smallest_step = 20;
     setup_m68k_disassembly(&dbgr, this);
     setup_z80_disassembly(&dbgr, this);

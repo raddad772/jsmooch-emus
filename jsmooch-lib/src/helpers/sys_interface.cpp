@@ -20,7 +20,7 @@
 #include "helpers/debug.h"
 #include "system/gba/gba.h"
 //#include "system/galaksija/galaksija.h"
-//#include "system/tg16/tg16.h"
+#include "system/tg16/tg16.h"
 
 jsm_system* new_system(jsm::systems which)
 {
@@ -39,9 +39,9 @@ jsm_system* new_system(jsm::systems which)
         case jsm::systems::SNES:
             out = SNES_new();
             break;
-        /*case jsm::systems::TURBOGRAFX16:
-            TG16_new(out, which);
-            break;*/
+        case jsm::systems::TURBOGRAFX16:
+            out = TG16_new(which);
+            break;
         case jsm::systems::GENESIS_JAP:
         case jsm::systems::GENESIS_USA:
         case jsm::systems::MEGADRIVE_PAL:

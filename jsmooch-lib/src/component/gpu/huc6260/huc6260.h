@@ -11,6 +11,10 @@
 #include "helpers/debugger/debuggerdefs.h"
 #include "helpers/physical_io.h"
 
+namespace HUC6270 {
+    struct chip;
+}
+
 namespace HUC6260 {
 struct chip {
     explicit chip(scheduler_t *scheduler, HUC6270::chip *vdc0, HUC6270::chip *vdc1);
