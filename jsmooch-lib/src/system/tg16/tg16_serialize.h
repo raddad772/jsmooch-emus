@@ -1,0 +1,8 @@
+//
+// Created by . on 12/7/25.
+//
+
+#ifndef JSMOOCH_EMUS_TG16_SERIALIZE_H
+#define JSMOOCH_EMUS_TG16_SERIALIZE_H
+
+#endif //JSMOOCH_EMUS_TG16_SERIALIZE_H
