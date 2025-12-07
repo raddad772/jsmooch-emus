@@ -72,7 +72,21 @@ struct pins {
 };
 
 struct core {
-    explicit core(scheduler_t *scheduler_in, u64 clocks_per_second) : scheduler(scheduler_in) {}
+    explicit core(scheduler_t *scheduler_in, u64 clocks_per_second);
+    void timer_schedule(u64 cur);;
+    [[nodiscard]] u32 longpc() const;
+    void trace_format(u32 opcode);
+    void cycle();
+    [[nodiscard]] u8 internal_read(u32 addr, bool has_effect) const;
+    static void internal_cycle(void *ptr, u64 key, u64 clock, u32 jitter);
+    void internal_write(u32 addr, u8 val);
+    void trace_write();
+    void trace_read();
+    void schedule_first(u64 clock);
+    void reset();
+    void poll_IRQs();
+    void setup_tracing(jsm_debug_read_trace *strct, u64 *trace_cycle_ptr, i32 source_id);
+    static void timer_tick(void *ptr, u64 key, u64 clock, u32 jitter);
     regs regs{};
     pins pins{};
     PSG::core psg{};
@@ -81,7 +95,7 @@ struct core {
     u32 PCO{};
 
     void *read_ptr{}, *write_ptr{}, *read_io_ptr{}, *write_io_ptr{};
-    u32 (*read_func)(void *ptr, u32 addr, u32 old, u32 has_effect){};
+    u32 (*read_func)(void *ptr, u32 addr, u32 old, bool has_effect){};
     u32 (*read_io_func)(void *ptr){};
     void (*write_func)(void *ptr, u32 addr, u32 val){};
     void (*write_io_func)(void *ptr, u32 val){};

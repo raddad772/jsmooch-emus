@@ -5,39 +5,22 @@
 #include <cstring>
 #include <cstdio>
 
+#include "helpers/debugger/debugger.h"
 #include "helpers/debug.h"
 #include "huc6280.h"
 #include "huc6280_disassembler.h"
 
 namespace HUC6280 {
 
-static void timer_schedule(HUC6280 *this, u64 cur);
-
-
-core::core(HUC6280 *this, scheduler_t *scheduler, u64 clocks_per_second)
-{
+core::core(scheduler_t *scheduler_in, u64 clocks_per_second) : scheduler(scheduler_in) {
     timer.sch_interval = clocks_per_second / 6992;
     printf("\nTIMER INTERVAL: %lld", timer.sch_interval);
 
-
-
-    HUC6280_PSG_init(&psg);
-
-    DBG_EVENT_VIEW_INIT;
     DBG_TRACE_VIEW_INIT;
 }
 
-void HUC6280_delete(HUC6280 *this)
-{
-
-    jsm_string_delete(&trace.str);
-    jsm_string_delete(&trace.str2);
-    HUC6280_PSG_delete(&psg);
-}
-
 // IRQD IS INVERTED!
-
-void HUC6280_reset(HUC6280 *this)
+void core::reset()
 {
     regs.MPR[7] = 0;
     regs.clock_div = 12;
@@ -46,10 +29,10 @@ void HUC6280_reset(HUC6280 *this)
     regs.P.T = 0;
     pins.D = 0x100; // special RESET code
     regs.S = 0;
-    HUC6280_PSG_reset(&psg);
+    psg.reset();
 }
 
-void HUC6280_setup_tracing(HUC6280* this, jsm_debug_read_trace *strct, u64 *trace_cycle_ptr, i32 source_id)
+void core::setup_tracing(jsm_debug_read_trace *strct, u64 *trace_cycle_ptr, i32 source_id)
 {
     trace.strct.ptr = this;
     trace.strct.read_trace = strct->read_trace;
@@ -59,41 +42,40 @@ void HUC6280_setup_tracing(HUC6280* this, jsm_debug_read_trace *strct, u64 *trac
 }
 // Poll during second-to-last cycle
 
-void HUC6280_poll_IRQs(HUC6280_regs *regs, HUC6280_pins *pins)
+void core::poll_IRQs()
 {
-    regs->do_IRQ = (regs->IRQD.u & regs->IRQR.u) && !regs->P.I;
-    regs->IRQR_polled.u = regs->IRQR.u;
+    regs.do_IRQ = (regs.IRQD.u & regs.IRQR.u) && !regs.P.I;
+    regs.IRQR_polled.u = regs.IRQR.u;
 }
 
 
-void timer_tick(void *ptr, u64 key, u64 clock, u32 jitter)
+void core::timer_tick(void *ptr, u64 key, u64 clock, u32 jitter)
 {
-    struct HUC6280 *this = (HUC6280 *)ptr;
+    auto &th = *static_cast<core *>(ptr);
     u64 cur = clock - jitter;
-    timer_schedule(this, cur);
-    if (!regs.timer_startstop) return;
-    if (timer.counter == 0) {
-        timer.counter = timer.reload;
-        regs.IRQR.TIQ = regs.timer_startstop;
+    th.timer_schedule(cur);
+    if (!th.regs.timer_startstop) return;
+    if (th.timer.counter == 0) {
+        th.timer.counter = th.timer.reload;
+        th.regs.IRQR.TIQ = th.regs.timer_startstop;
     }
-    else timer.counter = (timer.counter - 1) & 0x7F;
+    else th.timer.counter = (th.timer.counter - 1) & 0x7F;
 }
 
-static void timer_schedule(HUC6280 *this, u64 cur)
+void core::timer_schedule(u64 cur)
 {
     if (timer.still_sch) {
-        scheduler_delete_if_exist(scheduler, timer.sch_id);
+        scheduler->delete_if_exist(timer.sch_id);
     }
-    timer.sch_id = scheduler_only_add_abs(scheduler, cur + timer.sch_interval, 0, this, &timer_tick, &timer.still_sch);
+    timer.sch_id = scheduler->only_add_abs(cur + timer.sch_interval, 0, this, &timer_tick, &timer.still_sch);
 }
 
-static u32 longpc(HUC6280 *this)
-{
-    u32 mpc = (regs.PC - 1) & 0xFFFF;
+u32 core::longpc() const {
+    const u32 mpc = (regs.PC - 1) & 0xFFFF;
     return regs.MPR[mpc >> 13] | (mpc & 0x1FFF);
 }
 
-static void trace_format(HUC6280 *this, u32 opcode)
+void core::trace_format(u32 opcode)
 {
     u32 do_dbglog = 0;
 
@@ -102,15 +84,15 @@ static void trace_format(HUC6280 *this, u32 opcode)
     }
     //u32 do_tracething = (dbg.tvptr && dbg.trace_on && dbg.traces.huc6280.instruction);
     if (do_dbglog) { //}) || do_tracething) {
-        jsm_string_quickempty(&trace.str);
-        jsm_string_quickempty(&trace.str2);
+        trace.str.quickempty();
+        trace.str2.quickempty();
         if (regs.IR < 0x100) {
             u32 mpc = pins.Addr;
 
-            HUC6280_disassemble(this, &mpc, &trace.strct, &trace.str);
+            disassemble(*this, mpc, trace.strct, trace.str);
 
             // Now add context...
-            jsm_string_sprintf(&trace.str2, "A:%02x  X:%02x  Y:%02x  S:%02x  P:%c%c%c%c%c%c%c%c  PC:%04x M_0:%02x 1:%02x 2:%02x 3:%02x 4:%02x 5:%02x 6:%02x 7:%02x",
+            trace.str2.sprintf("A:%02x  X:%02x  Y:%02x  S:%02x  P:%c%c%c%c%c%c%c%c  PC:%04x M_0:%02x 1:%02x 2:%02x 3:%02x 4:%02x 5:%02x 6:%02x 7:%02x",
                                regs.A, regs.X, regs.Y, regs.S,
                                regs.P.N ? 'N' : 'n',
                                regs.P.V ? 'V' : 'v',
@@ -134,18 +116,20 @@ static void trace_format(HUC6280 *this, u32 opcode)
         else {
             switch(opcode) {
                 case 0x100: // RESET
-                    jsm_string_sprintf(&trace.str, "RESET");
+                    trace.str.sprintf("RESET");
                     break;
                 case 0x101: // IRQ2
-                    jsm_string_sprintf(&trace.str, "IRQ2");
+                    trace.str.sprintf("IRQ2");
                     break;
                 case 0x102: // IRQ1
-                    jsm_string_sprintf(&trace.str, "IRQ1");
+                    trace.str.sprintf("IRQ1");
                     //printf("\nIRQ1 @ %lld", *trace.cycles);
                     break;
                 case 0x103: // TIQ
-                    jsm_string_sprintf(&trace.str, "TIQ");
+                    trace.str.sprintf("TIQ");
                     break;
+                default:
+                    NOGOHERE;
             }
         }
         u64 tc;
@@ -153,14 +137,14 @@ static void trace_format(HUC6280 *this, u32 opcode)
         else tc = *trace.cycles;
 
         if (do_dbglog) {
-            struct dbglog_view *dv = dbg.dvptr;
-            dbglog_view_add_printf(dv, dbg.dv_id, tc, DBGLS_TRACE, "%06x  %s", longpc(this), trace.str.ptr);
-            dbglog_view_extra_printf(dv, "%s", trace.str2.ptr);
+            dbglog_view *dv = dbg.dvptr;
+            dv->add_printf(dbg.dv_id, tc, DBGLS_TRACE, "%06x  %s", longpc(), trace.str.ptr);
+            dv->extra_printf("%s", trace.str2.ptr);
         }
     }
 }
 
-void HUC6280_cycle(HUC6280 *this)
+void core::cycle()
 {
     regs.TCU++;
     //printf("\nEXEC TCU %d PC %04x", regs.TCU, regs.PC);
@@ -181,7 +165,7 @@ void HUC6280_cycle(HUC6280 *this)
                 //printf("\nIRQ1");
                 regs.IR = 0x102;
                 DBG_EVENT(dbg.events.IRQ1);
-                if (dbg.trace_on) {
+                if (::dbg.trace_on) {
                     static int a = 0;
                     if (!a) {
                         a++;
@@ -202,7 +186,7 @@ void HUC6280_cycle(HUC6280 *this)
         if ((regs.MPR[regs.PC >> 13]) > 0x1FE000) {
             dbg_break("PHNO", 0);
         }
-        trace_format(this, regs.IR);
+        trace_format(regs.IR);
         current_instruction = HUC6280_decoded_opcodes[regs.P.T][regs.IR];
 #ifdef TG16_LYCODER2
         dbg_printf("PC:%04X I:%02X A:%02X X:%02X Y:%02X P:%02X S:%02X MPR0-7:%02X %02X %02X %02X %02X %02X %02X %02x\n",
@@ -219,13 +203,13 @@ void HUC6280_cycle(HUC6280 *this)
     }
     // NEXT: check HUC6270 IRQ vs. normal
     // NEXT: check HUC6270 timing
-    current_instruction(&regs, &pins);
+    current_instruction(*this);
     trace.my_cycles++;
 }
 
-static u32 internal_read(HUC6280 *this, u32 addr, u32 has_effect)
+u8 core::internal_read(u32 addr, bool has_effect) const
 {
-    u32 k = addr & 0x1C00;
+    const u32 k = addr & 0x1C00;
     u32 val = 0xFF;
     switch(k) {
         case 0x0800: // PSG.
@@ -256,6 +240,8 @@ static u32 internal_read(HUC6280 *this, u32 addr, u32 has_effect)
                 case 3:
                     val = regs.IRQR.u | (io.buffer & 0b11111000);
                     break;
+                default:
+                    NOGOHERE;
             }
             break;
         case 0x1800: {// CD IO
@@ -269,6 +255,7 @@ static u32 internal_read(HUC6280 *this, u32 addr, u32 has_effect)
         case 0x1C00: // unmapped
             val = 0xFF;
             break;
+        default:
     }
 #ifdef TG16_LYCODER2
     dbg_printf("CPU read %06X: %02X\n", addr, val);
@@ -276,16 +263,14 @@ static u32 internal_read(HUC6280 *this, u32 addr, u32 has_effect)
     return val;
 }
 
-static void internal_write(HUC6280 *this, u32 addr, u32 val)
+void core::internal_write(u32 addr, u8 val)
 {
 #ifdef TG16_LYCODER2
     dbg_printf("CPU write %06X: %02X\n", addr, val);
 #endif
-    u32 k = addr & 0x1C00;
-
-    switch(k) {
+    switch(addr & 0x1C00) {
         case 0x0800:
-            HUC6280_PSG_write(&psg, addr, val);
+            psg.write(addr, val);
             return;
         case 0x0C00: // 1FEC00 to 1FEFFF is timer
             io.buffer = val;
@@ -295,11 +280,11 @@ static void internal_write(HUC6280 *this, u32 addr, u32 val)
             else {
                 if (!regs.timer_startstop && (val & 1)) {
                     timer.counter = timer.reload;
-                    //timer_schedule(this, *scheduler->clock);
+                    //timer_schedule(*scheduler->clock);
                 }
                 regs.timer_startstop = val & 1;
                 /*if (((val & 1) ^ 1) && timer.still_sch) {
-                    //scheduler_delete_if_exist(scheduler, timer.still_sch);
+                    //scheduler->delete_if_exist(timer.still_sch);
                 }*/
             }
             return;
@@ -325,89 +310,90 @@ static void internal_write(HUC6280 *this, u32 addr, u32 val)
             return; }
         case 0x1C00: // nothin
             return;
+        default:
     }
 
     printf("\nUNHANDLED INTERNAL WRITE! %06x - %02x", addr, val);
 }
 
-static void trace_write(HUC6280 *this) {
+void core::trace_write() {
     u32 do_dbglog = 0;
     if (dbg.dvptr) {
         do_dbglog = dbg.dvptr->ids_enabled[trace.dbglog.id_write];
     }
     if (do_dbglog) {
-        jsm_string_quickempty(&trace.str);
-        jsm_string_quickempty(&trace.str2);
-        struct dbglog_view *dv = dbg.dvptr;
+        trace.str.quickempty();
+        trace.str2.quickempty();
+        dbglog_view *dv = dbg.dvptr;
         u64 tc;
         if (!trace.cycles) tc = 0;
         else tc = *trace.cycles;
-        dbglog_view_add_printf(dv, trace.dbglog.id_write, tc, DBGLS_TRACE, "%06x    (write) %02x", pins.Addr, pins.D);
+        dv->add_printf(trace.dbglog.id_write, tc, DBGLS_TRACE, "%06x    (write) %02x", pins.Addr, pins.D);
     }
 }
 
-static void trace_read(HUC6280 *this)
+void core::trace_read()
 {
     u32 do_dbglog = 0;
     if (dbg.dvptr) {
         do_dbglog = dbg.dvptr->ids_enabled[trace.dbglog.id_read];
     }
     if (do_dbglog) {
-        jsm_string_quickempty(&trace.str);
-        jsm_string_quickempty(&trace.str2);
-        struct dbglog_view *dv = dbg.dvptr;
+        trace.str.quickempty();
+        trace.str2.quickempty();
+        dbglog_view *dv = dbg.dvptr;
         u64 tc;
         if (!trace.cycles) tc = 0;
         else tc = *trace.cycles;
-        dbglog_view_add_printf(dv, trace.dbglog.id_read, tc, DBGLS_TRACE, "%06x    (read) %02x", pins.Addr, pins.D);
-        dbglog_view_extra_printf(dv, "");
+        dv->add_printf(trace.dbglog.id_read, tc, DBGLS_TRACE, "%06x    (read) %02x", pins.Addr, pins.D);
+        dv->extra_printf("");
     }
 }
 
-void HUC6280_internal_cycle(void *ptr, u64 key, u64 clock, u32 jitter) {
-    struct HUC6280* this = (HUC6280 *)ptr;
+void core::internal_cycle(void *ptr, u64 key, u64 clock, u32 jitter) {
+     auto &th = *static_cast<core *>(ptr);
     u64 cur = clock - jitter;
-    extra_cycles = 0;
-    if (pins.RD) {
-        if (pins.Addr >= 0x1FE800)
-            pins.D = internal_read(this, pins.Addr, 1);
+    th.extra_cycles = 0;
+    if (th.pins.RD) {
+        if (th.pins.Addr >= 0x1FE800)
+            th.pins.D = th.internal_read(th.pins.Addr, true);
         else {
-            if (pins.Addr >= 0x1FE000)
-                extra_cycles = 1;
-            pins.D = read_func(read_ptr, pins.Addr, pins.D, 1);
+            if (th.pins.Addr >= 0x1FE000)
+                th.extra_cycles = 1;
+            th.pins.D = th.read_func(th.read_ptr, th.pins.Addr, th.pins.D, true);
 #ifdef TG16_LYCODER2
             dbg_printf("CPU read %06X: %02X\n", pins.Addr, pins.D);
 #endif
         }
-        trace_read(this);
+        th.trace_read();
     }
 
-    HUC6280_cycle(this);
-    assert(pins.Addr < 0x200000);
+    th.cycle();
+    assert(th.pins.Addr < 0x200000);
 
-    if (pins.WR) {
-        trace_write(this);
-        if (pins.Addr >= 0x1FE800)
-            internal_write(this, pins.Addr, pins.D);
+    if (th.pins.WR) {
+        th.trace_write();
+        if (th.pins.Addr >= 0x1FE800)
+            th.internal_write(th.pins.Addr, th.pins.D);
         else {
-            if (pins.Addr >= 0x1FE000)
-                extra_cycles = 1;
+            if (th.pins.Addr >= 0x1FE000)
+                th.extra_cycles = 1;
 #ifdef TG16_LYCODER2
             if ((regs.IR != 0x03) && (regs.IR != 0x13) && (regs.IR != 0x23))
                 dbg_printf("CPU write %06X: %02X\n", pins.Addr, pins.D);
 #endif
-            write_func(write_ptr, pins.Addr, pins.D);
+            th.write_func(th.write_ptr, th.pins.Addr, th.pins.D);
         }
     }
-    u32 sch_for = regs.clock_div * (extra_cycles + 1);
-    //scheduler_from_event_adjust_master_clock(scheduler, regs.clock_div);
-    scheduler_only_add_abs(scheduler, cur + sch_for, 0, this, &HUC6280_internal_cycle, NULL);
+    u32 sch_for = th.regs.clock_div * (th.extra_cycles + 1);
+    //scheduler->from_event_adjust_master_clock(regs.clock_div);
+    th.scheduler->only_add_abs(cur + sch_for, 0, &th, &internal_cycle, nullptr);
 }
 
 
-void HUC6280_schedule_first(HUC6280 *this, u64 clock)
+void core::schedule_first(u64 clock)
 {
-    scheduler_only_add_abs(scheduler, clock + regs.clock_div, 0, this, &HUC6280_internal_cycle, NULL);
-    timer_schedule(this, clock);
+    scheduler->only_add_abs(clock + regs.clock_div, 0, this, &internal_cycle, nullptr);
+    timer_schedule(clock);
 }
 }

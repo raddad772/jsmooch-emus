@@ -33,12 +33,12 @@ struct CH {
 
 struct core {
     core();
+    void reset() {}
     void mix_sample();
     void cycle();
     void update_ch_output(CH &ch);
     void update_DDA(CH &ch);
     void write(u16 addr, u8 val);
-    u16 debug_ch_sample(u32 num);
 
     u8 LMAL{}, RMAL{}; // left/right main amplitude
     u8 SEL{};

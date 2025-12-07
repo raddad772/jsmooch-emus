@@ -9,6 +9,10 @@ core::core() : channels{CH(this, 0), CH(this, 1), CH(this, 2), CH(this, 3), CH(t
 {
 }
 
+void core::reset() {
+
+}
+
 void core::update_ch_output(CH &ch)
 {
     const u8 volume_reduce[30] = { 255,214,180,151,127,107,90,76,64,53,45,38,32,27,22,19,16,13,11,9,8,6,5,4,4,3,2,2,2,1 };
