@@ -56,6 +56,12 @@ struct core : jsm_system {
     } scc{};
 
     struct {
+        bool loaded_symbols{};
+        char path[500]{};
+    } dasm;
+    void load_symbols(debugger_interface &dif);
+
+    struct {
         i64 cycles_left;
         bool described_inputs;
     } jsm{};
@@ -96,6 +102,9 @@ struct core : jsm_system {
         *supervisor, *trace,
         *IMASK, *CSR, *IR, *IRC
     DBG_CPU_REG_END1
+    struct {
+        cvec_ptr<debugger_view> view{};
+    } source_listing;
     DBG_END
 
     void setup_crt(JSM_DISPLAY &d);

@@ -17,7 +17,8 @@ enum managed_window_kind {
     mwk_debug_disassembly,
     mwk_debug_events,
     mwk_debug_memory,
-    mwk_debug_dbglog
+    mwk_debug_dbglog,
+    mwk_debug_source_list
 };
 
 struct managed_window {
@@ -35,8 +36,9 @@ struct managed_windows {
 
 struct RenderResources;
 struct imgui_jsmooch_app {
-    struct managed_windows windows{};
-    struct managed_window *register_managed_window(u32 id, enum managed_window_kind kind, const char *name, u32 default_enabled);
+    void render_source_list_view(bool update_dasm_scroll);
+    managed_windows windows{};
+    managed_window *register_managed_window(u32 id, enum managed_window_kind kind, const char *name, u32 default_enabled);
     void do_setup_onstart();
     int do_setup_before_mainloop();
     void mainloop(ImGuiIO& io);

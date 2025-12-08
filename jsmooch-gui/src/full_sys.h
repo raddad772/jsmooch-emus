@@ -133,6 +133,7 @@ public:
     std::vector<DVIEW> dasm_views;
     std::vector<TVIEW> trace_views;
     std::vector<CVIEW> console_views;
+
     bool screenshot;
     bool signal;
     system_io inputs;
@@ -187,6 +188,11 @@ public:
     struct {
         memory_view *view{};
     } memory;
+
+    struct {
+        source_listing::view *view{};
+    } source_listing;
+
     struct {
         my_texture texture;
         events_view *view{};

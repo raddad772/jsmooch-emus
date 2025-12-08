@@ -4,22 +4,52 @@
 //
 
 #include <cstdarg>
-
+#include <cstdlib>
 #include "helpers/int.h"
 
 struct jsm_string {
     char *ptr{nullptr}; // Pointer
-    char *cur{}; // Current location in string
+    char *cur{nullptr}; // Current location in string
     u32 allocated_len{}; // Maximum length
 
     explicit jsm_string(u32 sz);
+    void trim_right();
     ~jsm_string();
     void seek(i32 pos);
     int sprintf(const char* format, ...);
     int vsprintf(const char* format, va_list va);
     void empty();
     void quickempty();
+
+    // Move constructor
+    jsm_string(jsm_string&& other) noexcept
+        : ptr(other.ptr), cur(other.cur), allocated_len(other.allocated_len)
+    {
+        other.ptr = nullptr;
+        other.cur = nullptr;
+        other.allocated_len = 0;
+    }
+
+    // Move assignment
+    jsm_string& operator=(jsm_string&& other) noexcept {
+        if (this != &other) {
+            // Free existing memory if any
+            if (ptr) free(ptr);
+
+            // Steal resources
+            ptr = other.ptr;
+            cur = other.cur;
+            allocated_len = other.allocated_len;
+
+            // Leave source in empty state
+            other.ptr = nullptr;
+            other.cur = nullptr;
+            other.allocated_len = 0;
+        }
+        return *this;
+    }
 };
+
 #include <cstddef>
 #include <utility>
 template <std::size_t N, std::size_t... Is>

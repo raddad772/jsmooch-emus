@@ -205,6 +205,7 @@ static void render_emu_window(full_system &fsys, ImGuiIO& io, u32 frame_multi)
 #define MEMORY_VIEW_DEFAULT_ENABLE 0
 #define EVENT_VIEWER_DEFAULT_ENABLE 0
 #define DISASM_VIEW_DEFAULT_ENABLE 0
+#define SOURCE_LIST_VIEW_DEFAULT_ENABLE 1
 #define IMAGE_VIEW_DEFAULT_ENABLE 0
 #define DBGLOG_VIEW_DEFAULT_ENABLE 0
 #define SOUND_VIEW_DEFAULT_ENABLE 0
@@ -522,8 +523,7 @@ void imgui_jsmooch_app::render_dbglog_view(DLVIEW &dview, bool update_dasm_scrol
 }
 
 
-void imgui_jsmooch_app::render_disassembly_view(DVIEW &dview, bool update_dasm_scroll, u32 num)
-{
+void imgui_jsmooch_app::render_disassembly_view(DVIEW &dview, bool update_dasm_scroll, u32 num) {
     disassembly_view *dasm = &dview.view->disassembly;
     std::vector<disassembly_entry_strings> &dasm_rows = dview.dasm_rows;
     char wname[100];
@@ -618,7 +618,63 @@ void imgui_jsmooch_app::render_disassembly_view(DVIEW &dview, bool update_dasm_s
         }
         ImGui::End();
     }
+}
 
+void imgui_jsmooch_app::render_source_list_view(bool update_dasm_scroll) {
+    if (fsys.source_listing.view) {
+        source_listing::view &lv = *fsys.source_listing.view;
+        char wname[100];
+        snprintf(wname, sizeof(wname), "Source Listing");
+        managed_window *mw = register_managed_window(0x6600, mwk_debug_source_list, wname, SOURCE_LIST_VIEW_DEFAULT_ENABLE);
+        if (mw->enabled && fsys.enable_debugger) {
+            if (ImGui::Begin(wname)) {
+                static ImGuiTableFlags flags =
+                        ImGuiTableFlags_ScrollY | ImGuiTableFlags_RowBg | ImGuiTableFlags_BordersOuter |
+                        ImGuiTableFlags_BordersV | ImGuiTableFlags_Resizable;
+                source_listing::realtime_vars rv;;
+                lv.get_realtime_vars.func(lv.get_realtime_vars.ptr, lv, rv);
+                static u32 cur_line_num = 0;
+                if (cur_line_num != rv.line_of_executing_instruction) {
+                    update_dasm_scroll = true;
+                    cur_line_num = rv.line_of_executing_instruction;
+                }
+                if (!rv.instruction_in_list) update_dasm_scroll = false;
+
+                static const float TEXT_BASE_WIDTH = ImGui::CalcTextSize("A").x;
+                static const float TEXT_BASE_HEIGHT = ImGui::GetTextLineHeightWithSpacing();
+                ImVec2 outer_size = ImVec2(TEXT_BASE_WIDTH * 110, TEXT_BASE_HEIGHT * 40);
+                if (ImGui::BeginTable("table_source_list", 2, flags, outer_size)) {
+                    ImGui::TableSetupColumn("Address", ImGuiTableColumnFlags_WidthFixed, TEXT_BASE_WIDTH * 8);
+                    ImGui::TableSetupColumn("Listing", ImGuiTableColumnFlags_WidthStretch);
+                    ImGui::TableHeadersRow();
+                    ImGuiListClipper clipper;
+                    if (update_dasm_scroll) {
+                        float scrl = clipper.ItemsHeight * (cur_line_num - 2);
+                        float cur_scroll = ImGui::GetScrollY();
+                        if ((cur_scroll > scrl) || (scrl < (cur_scroll + (clipper.ItemsHeight * 8))))
+                            ImGui::SetScrollY(scrl);
+                    }
+                    clipper.Begin(lv.lines.size());
+                    char addrstr[50];
+                    while (clipper.Step()) {
+                        for (int row = clipper.DisplayStart; row < clipper.DisplayEnd; row++) {
+                            ImGui::TableNextRow();
+                            ImGui::TableSetColumnIndex(0);
+                            auto &l = lv.lines[row];
+                            snprintf(addrstr, sizeof(addrstr), "%06x", l.addr + lv.base_addr);
+                            ImGui::PushID(row);
+                            ImGui::Selectable(addrstr, row == cur_line_num, ImGuiSelectableFlags_SpanAllColumns | ImGuiSelectableFlags_Disabled);
+                            ImGui::PopID();
+                            ImGui::TableSetColumnIndex(1);
+                            ImGui::Text("%s", lv.lines[row].text.ptr);
+                        }
+                    }
+                }
+                ImGui::EndTable();
+            }
+        }
+        ImGui::End();
+    }
 }
 
 void imgui_jsmooch_app::render_disassembly_views(bool update_dasm_scroll) {
@@ -987,6 +1043,7 @@ void imgui_jsmooch_app::render_debug_views(ImGuiIO& io, bool update_dasm_scroll)
     render_image_views();
     render_trace_view(update_dasm_scroll);
     render_console_view(update_dasm_scroll);
+    render_source_list_view(update_dasm_scroll);
     u32 i = 0;
     for (auto &wv : fsys.waveform_views) {
         render_waveform_view(wv, i++);

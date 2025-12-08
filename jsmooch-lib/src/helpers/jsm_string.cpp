@@ -34,6 +34,27 @@ void jsm_string::seek(i32 pos)
     cur = ptr + pos;
 }
 
+void jsm_string::trim_right() {
+    return;
+    char *p = cur - 1;
+    while (p>ptr) {
+        switch (*p) {
+            case ' ':
+            case '\n':
+            case 0x0D:
+            case '\t':
+                *p = 0;
+                p--;
+                continue;
+            default:
+                p++;
+                cur = p;
+                break;
+        }
+    }
+
+}
+
 int jsm_string::vsprintf(const char* format, va_list va)
 {
     int num;

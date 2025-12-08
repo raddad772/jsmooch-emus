@@ -360,6 +360,10 @@ set(SOURCE_LIST
         src/system/mac/mac_serialize.h
         src/system/tg16/tg16_serialize.cpp
         src/system/tg16/tg16_serialize.h
+        src/system/mac/mac_symbols_dasmview.cpp
+        src/system/mac/mac_symbols_dasmview.h
+        src/helpers/debugger/source_list.cpp
+        src/helpers/debugger/source_list.h
 )
 
 # TODO: Fix elf-parser repo for windows

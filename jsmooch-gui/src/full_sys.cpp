@@ -341,7 +341,6 @@ u32 grab_ROM(multi_file_set* ROMs, jsm::systems which, const char* fname, const 
     }
 
     ROMs->add(fname, BASE_PATH);
-    printf("\nHERE...");
     printf("\n%d %s %s", ROMs->files[ROMs->files.size()-1].buf.size > 0, BASE_PATH, fname);
     return ROMs->files[ROMs->files.size()-1].buf.size > 0;
 }
@@ -1202,6 +1201,9 @@ void full_system::setup_debugger_interface()
                 break;
             case dview_memory:
                 memory.view = &view.memory;
+                break;
+            case dview_source_listing:
+                source_listing.view = &view.source_listing;
                 break;
             case dview_events:
                 events.view = &view.events;

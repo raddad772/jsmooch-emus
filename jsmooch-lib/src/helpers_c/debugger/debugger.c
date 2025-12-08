@@ -125,7 +125,6 @@ void debugger_view_init(debugger_view *this, enum debugger_view_kinds kind)
         case dview_memory:
             memory_view_init(&this->memory);
             break;
-
         case dview_events:
             events_view_init(&this->events);
             break;

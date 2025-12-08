@@ -61,6 +61,7 @@ void debugger_interface_dirty_mem(debugger_interface *dbgr, u32 mem_bus, u32 add
             case dview_waveforms:
             case dview_console:
             case dview_dbglog:
+            case dview_source_listing:
                 break;
             case dview_memory: {
                 dv.memory.force_refresh = 1;
@@ -110,6 +111,9 @@ debugger_view::debugger_view(debugger_view_kinds kind) : kind(kind), memory{}
             break;
         case dview_events:
             new (&events) events_view();
+            break;
+        case dview_source_listing:
+            new (&source_listing) source_listing::view();
             break;
         case dview_waveforms:
             new (&waveform) waveform_view();
@@ -307,6 +311,8 @@ void debugger_view::move_union_from(debugger_view&& other) {
     switch (other.kind) {
         case dview_disassembly:
             new (&disassembly) disassembly_view(std::move(other.disassembly)); break;
+        case dview_source_listing:
+            new (&source_listing) source_listing::view(std::move(other.source_listing)); break;
         case dview_events:
             new (&events) events_view(std::move(other.events)); break;
         case dview_image:
@@ -338,6 +344,9 @@ void debugger_view::destroy_active()
             break;
         case dview_disassembly:
             disassembly.~disassembly_view();
+            break;
+        case dview_source_listing:
+            source_listing.~view();
             break;
         case dview_events:
             events.~events_view();

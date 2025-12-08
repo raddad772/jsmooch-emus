@@ -201,5 +201,6 @@ void core::setup_debugger_interface(debugger_interface &dbgr)
     dbgr.views.reserve(15);
 
     setup_disassembly_view(*this, &dbgr);
+    load_symbols(dbgr);
 }
 }

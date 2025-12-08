@@ -3,7 +3,7 @@
 //
 
 #pragma once
-
+#include <map>
 #include <array>
 #include <algorithm>
 
@@ -30,6 +30,7 @@ enum debugger_view_kinds {
     dview_trace,
     dview_console,
     dview_dbglog,
+    dview_source_listing
 };
 
 
@@ -51,6 +52,59 @@ enum debugger_view_kinds {
  *   disassemblies should be managed in that way, if possible, to allow back-traces, but anyway.
  *
  */
+
+namespace source_listing {
+    struct realtime_vars {
+        u64 current_clock_cycle{};
+        u32 line_of_executing_instruction{};
+        bool instruction_in_list{};
+    };
+
+    enum line_kinds {
+        LK_OTHER = 0,
+        LK_LABEL = 1,
+        LK_CODE = 2
+    };
+    struct symbol;
+    struct line {
+        jsm_string text{128};
+        u32 line_num_in_origin{};
+        u32 addr{};
+        cvec_ptr<symbol> symbol{};
+        line_kinds kind{};
+        u8 expected_data[16]{};
+    };
+
+    struct symbol {
+        cvec_ptr<line> line{};
+        jsm_string name{50};
+        jsm_string frt{128};
+        u32 addr{};
+    };
+
+    struct view {
+        view() = default;
+        line &add_line(u32 memaddr, line_kinds kind, char *txt);
+        symbol &add_symbol(u32 memaddr, u32 line, char *txt);
+
+        struct {
+            void *ptr{};
+            void (*func)(void *, view &, realtime_vars &){};
+        } get_realtime_vars{};
+
+        void finalize_adds();
+
+        u32 base_addr{};
+        u32 range_start{0xFFFFFFFF}, range_end{0};
+        std::vector<line> lines{};
+        std::vector<symbol> symbols{};
+        std::map<u32, u32> addr_to_line{};
+        std::map<u32, u32> addr_to_symbol{};
+        std::map<u32, u32> line_to_symbol{};
+
+
+    };
+}
 
 struct disassembly_entry {
     u32 addr{};
@@ -562,6 +616,7 @@ struct debugger_view {
         console_view console;
         dbglog_view dbglog;
         memory_view memory;
+        source_listing::view source_listing;
     };
 
 private:
