@@ -187,7 +187,7 @@ static void print_imm(u32 &PC, jsm_debug_read_trace &rt, u32 sz, u32 do_comma, j
 void disasm_BADINS(ins_t &ins, u32 &PC, jsm_debug_read_trace &rt, jsm_string &out)
 {
     //printf("\nERROR UNIMPLEMENTED DISASSEMBLY %04x", ins.opcode);
-    out.sprintf("UNIMPLEMENTED DISASSEMBLY %s", __func__);
+    out.sprintf("%04x  UNKNOWN", ins.opcode);
 }
 
 #define dea(ea, sz) dodea(ea, 0, out, sz, PC, rt)
