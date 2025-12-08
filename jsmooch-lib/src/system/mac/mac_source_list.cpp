@@ -124,15 +124,17 @@ void core::load_symbols(debugger_interface &dif) {
         u32 new_addr = strtoul(line, &eptr, 16);
         u32 my_addr = last_addr;
         if ((eptr - line) < 7) {
-            if (new_addr > my_addr) my_addr = new_addr;
+            if (new_addr > my_addr) {
+                my_addr = new_addr;
+                for (auto &s : waiting_for_addr) {
+                    lv.add_line(my_addr, source_listing::LK_LABEL, s.frt.ptr);
+                    lv.add_symbol(my_addr, s.line.index, s.name.ptr);
+                }
+                waiting_for_addr.clear();
+            }
         }
         last_addr = my_addr;
         // Add symbols
-        for (auto &s : waiting_for_addr) {
-            lv.add_line(my_addr, source_listing::LK_LABEL, s.frt.ptr);
-            lv.add_symbol(my_addr, s.line.index, s.name.ptr);
-        }
-        waiting_for_addr.clear();
 
         // Add line
         last_addr = my_addr;

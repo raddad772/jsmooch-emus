@@ -9,7 +9,7 @@ line &view::add_line(u32 memaddr, line_kinds kind, char *txt)
 {
     if (memaddr < range_start) range_start = memaddr;
     if (memaddr > range_end) range_end = memaddr;
-    if (!addr_to_line.contains(memaddr)) {
+    if ((!addr_to_line.contains(memaddr)) && kind == LK_CODE) {
         addr_to_line[memaddr] = lines.size();
     }
     auto &l = lines.emplace_back();

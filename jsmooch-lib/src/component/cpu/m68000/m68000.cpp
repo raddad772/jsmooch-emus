@@ -363,17 +363,15 @@ void core::reset()
 
 void core::disassemble_entry(disassembly_entry& entry)
 {
-    u16 IR = trace.strct.read_trace_m68k(trace.strct.ptr, entry.addr, 1, 1);
-    u16 opcode = IR;
+    const u16 IR = trace.strct.read_trace_m68k(trace.strct.ptr, entry.addr, 1, 1) & 0xFFFF;
     entry.dasm.quickempty();
     entry.context.quickempty();
-    ins_t &m_ins = decoded[opcode];
+    ins_t &m_ins = decoded[IR];
     u32 mPC = entry.addr+2;
-    ins->disasm(m_ins, mPC, trace.strct, entry.dasm);
+    m_ins.disasm(m_ins, mPC, trace.strct, entry.dasm);
     entry.ins_size_bytes = mPC - entry.addr;
-    ins_t &t =  decoded[IR & 0xFFFF];
-    pprint_ea(t, 0, &entry.context);
-    pprint_ea(t, 1, &entry.context);
+    pprint_ea(m_ins, 0, &entry.context);
+    pprint_ea(m_ins, 1, &entry.context);
 }
 
 #define S(x) Sadd(state, & x, sizeof( x))

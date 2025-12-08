@@ -3387,7 +3387,6 @@ static void bind_opcode(const char* inpt, u32 sz, ins_func exec_func, disassembl
     if (operand_mode == OM_qimm_ea) {
         transform_ea(ea2);
     }
-
     ins_t *ins = &decoded[out];
     ins->opcode = out;
     ins->disasm = disasm_func;

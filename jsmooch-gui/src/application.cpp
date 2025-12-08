@@ -653,7 +653,6 @@ void imgui_jsmooch_app::render_source_list_view(bool update_dasm_scroll) {
                         float cur_scroll = ImGui::GetScrollY();
                         //if ((cur_scroll > scrl) || (scrl < (cur_scroll + (item_height * 8))))
                             ImGui::SetScrollY(scrl);
-                        printf("\nSet SCORLL to line %d SCRL:%f ITEMHEIGHT:%f", cur_line_num, scrl);
                     }
                     clipper.Begin(lv.lines.size());
                     char addrstr[50];

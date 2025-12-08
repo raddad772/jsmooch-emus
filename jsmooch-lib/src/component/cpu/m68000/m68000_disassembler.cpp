@@ -100,7 +100,7 @@ static void dodea(EA *ea, u32 IR, jsm_string &out, u32 sz, u32 &PC, jsm_debug_re
             return;
         case 6: // ^ index
             //($, hex(read(displacement),ax,dx)
-            PC -= 2;
+            //PC -= 2;
             v =  read_pc(PC, rt);
             jss("($%02x,a%d,d%d)", v & 0xFF, ea->reg, (v >> 12) & 7);
             return;
@@ -227,7 +227,8 @@ void disasm_ADDQ(ins_t &ins, u32 &PC, jsm_debug_read_trace &rt, jsm_string &out)
 
 void disasm_ADDQ_ar(ins_t &ins, u32 &PC, jsm_debug_read_trace &rt, jsm_string &out)
 {
-    jss("addq.l  %d,a%d", ins.ea[0].reg, ins.ea[1].reg);
+    ins_suffix("addq", ins.sz, out, "  ");
+    out.sprintf("%d,a%d", ins.ea[0].reg, ins.ea[1].reg);
 }
 
 
@@ -400,6 +401,11 @@ void disasm_CMPM(ins_t &ins, u32 &PC, jsm_debug_read_trace &rt, jsm_string &out)
 
 void disasm_DBCC(ins_t &ins, u32 &PC, jsm_debug_read_trace &rt, jsm_string &out)
 {
+    //printf("\nDASM INS %04x", ins.opcode);
+    if (ins.opcode == 0x082d) {
+        int a =4;
+        a++;
+    }
     jss("db%s    d%d,$%04x", conditions[ins.ea[0].reg], ins.ea[1].reg, read_disp(PC, rt));
 }
 
@@ -902,6 +908,7 @@ void disasm_FLINE(ins_t &ins, u32 &PC, jsm_debug_read_trace &rt, jsm_string &out
 void disassemble(u32 PC, u16 IR, jsm_debug_read_trace &rt, jsm_string &out)
 {
     u16 opcode = IR;
+    printf("\nDAMS %04x", IR);
     ins_t &ins = decoded[opcode];
     u32 mPC = (PC+2)&0xFFFFFF;
     ins.disasm(ins, mPC, rt, out);
