@@ -639,34 +639,37 @@ void imgui_jsmooch_app::render_source_list_view(bool update_dasm_scroll) {
                     cur_line_num = rv.line_of_executing_instruction;
                 }
                 if (!rv.instruction_in_list) update_dasm_scroll = false;
-
+                static float item_height = 1.0f;
                 static const float TEXT_BASE_WIDTH = ImGui::CalcTextSize("A").x;
                 static const float TEXT_BASE_HEIGHT = ImGui::GetTextLineHeightWithSpacing();
-                ImVec2 outer_size = ImVec2(TEXT_BASE_WIDTH * 110, TEXT_BASE_HEIGHT * 40);
+                ImVec2 outer_size = ImVec2(TEXT_BASE_WIDTH * 110, TEXT_BASE_HEIGHT * 30);
                 if (ImGui::BeginTable("table_source_list", 2, flags, outer_size)) {
                     ImGui::TableSetupColumn("Address", ImGuiTableColumnFlags_WidthFixed, TEXT_BASE_WIDTH * 8);
                     ImGui::TableSetupColumn("Listing", ImGuiTableColumnFlags_WidthStretch);
                     ImGui::TableHeadersRow();
                     ImGuiListClipper clipper;
                     if (update_dasm_scroll) {
-                        float scrl = clipper.ItemsHeight * (cur_line_num - 2);
+                        float scrl = item_height * (cur_line_num - 2);
                         float cur_scroll = ImGui::GetScrollY();
-                        if ((cur_scroll > scrl) || (scrl < (cur_scroll + (clipper.ItemsHeight * 8))))
+                        //if ((cur_scroll > scrl) || (scrl < (cur_scroll + (item_height * 8))))
                             ImGui::SetScrollY(scrl);
+                        printf("\nSet SCORLL to line %d SCRL:%f ITEMHEIGHT:%f", cur_line_num, scrl);
                     }
                     clipper.Begin(lv.lines.size());
                     char addrstr[50];
                     while (clipper.Step()) {
                         for (int row = clipper.DisplayStart; row < clipper.DisplayEnd; row++) {
                             ImGui::TableNextRow();
+                            item_height = clipper.ItemsHeight;
                             ImGui::TableSetColumnIndex(0);
                             auto &l = lv.lines[row];
-                            snprintf(addrstr, sizeof(addrstr), "%06x", l.addr + lv.base_addr);
+                            snprintf(addrstr, sizeof(addrstr), "%06x", l.addr+lv.base_addr);
                             ImGui::PushID(row);
                             ImGui::Selectable(addrstr, row == cur_line_num, ImGuiSelectableFlags_SpanAllColumns | ImGuiSelectableFlags_Disabled);
                             ImGui::PopID();
                             ImGui::TableSetColumnIndex(1);
                             ImGui::Text("%s", lv.lines[row].text.ptr);
+                            //ImGui::Text("%d / %ld", row, lv.lines.size());
                         }
                     }
                 }
@@ -812,7 +815,7 @@ static void render_colorkey(debugger_widget &widget)
         ImGui::Button(" ");
         ImGui::EndDisabled();
         ImGui::PopStyleColor(3);
-        ImGui::PopID();
+        ImGui::GetIO();
         ImGui::SameLine();
         ImGui::Text("%s", item->name);
     }

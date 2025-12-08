@@ -172,6 +172,11 @@ static void fill_disassembly_view(void *genptr, disassembly_view &dview)
     th->dbg.dasm.IRC->int32_data = th->cpu.regs.IRC;
 }
 
+int print_addr(void *, u32 addr, char *out, size_t out_sz) {
+    return snprintf(out, out_sz, "%06x", addr);
+}
+
+
 static void setup_disassembly_view(core& th, debugger_interface *dbgr) {
     cvec_ptr<debugger_view> p = dbgr->make_view(dview_disassembly);
     debugger_view *dview = &p.get();
@@ -182,6 +187,8 @@ static void setup_disassembly_view(core& th, debugger_interface *dbgr) {
     dv->processor_name.sprintf("m68000");
 
     create_and_bind_registers(&th, dv);
+    dv->print_addr.ptr = &th;
+    dv->print_addr.func = &print_addr;
     dv->fill_view.ptr = static_cast<void *>(&th);
     dv->fill_view.func = &fill_disassembly_view;
 

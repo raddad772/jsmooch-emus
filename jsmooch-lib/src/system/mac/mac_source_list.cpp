@@ -7,7 +7,7 @@
 
 #include "helpers/inifile.h"
 
-#include "mac_symbols_dasmview.h"
+#include "mac_source_list.h"
 #include "mac_bus.h"
 
 namespace mac {
@@ -95,6 +95,7 @@ void core::load_symbols(debugger_interface &dif) {
         if (read > 0 && line[read-1] == '\n') line[read-1] = 0;
         if (read > max_len) max_len = read;
         char *tstart = seek_whitespace_end(line);
+        // TODO: figure out why this isn't working for some blank lines
         if (!tstart || *tstart == ';') {
             auto &dl = lv.add_line(last_addr, source_listing::LK_OTHER, line);
             num_lines++;
@@ -119,10 +120,12 @@ void core::load_symbols(debugger_interface &dif) {
         // Parse out address
         // Up to the first 6 characters of the line will be addr, left-aligned
 
-        u32 new_addr = strtoul(line, nullptr, 16);
-        //printf("\nADDRSTR %s ADDR:%06x", addrstr, my_addr);
+        char *eptr;
+        u32 new_addr = strtoul(line, &eptr, 16);
         u32 my_addr = last_addr;
-        if (new_addr > my_addr) my_addr = new_addr;
+        if ((eptr - line) < 7) {
+            if (new_addr > my_addr) my_addr = new_addr;
+        }
         last_addr = my_addr;
         // Add symbols
         for (auto &s : waiting_for_addr) {
@@ -133,7 +136,7 @@ void core::load_symbols(debugger_interface &dif) {
 
         // Add line
         last_addr = my_addr;
-        auto &l = lv.add_line(my_addr, source_listing::LK_CODE, line);
+        auto &l = lv.add_line(my_addr, source_listing::LK_CODE, line+7);
 
         num_lines++;
     }
