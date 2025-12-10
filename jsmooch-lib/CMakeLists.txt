@@ -242,12 +242,12 @@ set(SOURCE_LIST
         src/component/cpu/arm946es/arm946es_instructions.h
         src/component/cpu/arm946es/armv5_disassembler.cpp
         src/component/cpu/arm946es/armv5_disassembler.h
-        #src/component/cpu/arm946es/nds_cp15.cpp
-        #src/component/cpu/arm946es/nds_cp15.h
-        #src/component/cpu/arm946es/thumb2_disassembler.cpp
-        #src/component/cpu/arm946es/thumb2_disassembler.h
-        #src/component/cpu/arm946es/thumb2_instructions.cpp
-        #src/component/cpu/arm946es/thumb2_instructions.h
+        src/component/cpu/arm946es/nds_cp15.cpp
+        src/component/cpu/arm946es/nds_cp15.h
+        src/component/cpu/arm946es/thumb2_disassembler.cpp
+        src/component/cpu/arm946es/thumb2_disassembler.h
+        src/component/cpu/arm946es/thumb2_instructions.cpp
+        src/component/cpu/arm946es/thumb2_instructions.h
         src/component/cpu/huc6280/huc6280.cpp
         src/component/cpu/huc6280/huc6280.h
         src/component/cpu/huc6280/huc6280_disassembler.cpp

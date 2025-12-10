@@ -52,38 +52,38 @@ static void cW64(void *ptr, u32 addr, u64 val) {
 }
 
 static u64 (*cR[9])(void *, u32) = {
-        NULL,
+        nullptr,
         &cR8,
         &cR16,
-        NULL,
+        nullptr,
         &cR32,
-        NULL,
-        NULL,
-        NULL,
+        nullptr,
+        nullptr,
+        nullptr,
         &cR64
 };
 
 static u64 (*cR_be[9])(void *, u32) = {
-        NULL,
+        nullptr,
         &cR8,
         &cR16_be,
-        NULL,
+        nullptr,
         &cR32_be,
-        NULL,
-        NULL,
-        NULL,
+        nullptr,
+        nullptr,
+        nullptr,
         &cR64_be
 };
 
 
 static void (*cW[9])(void *, u32, u64) = {
-        NULL,
+        nullptr,
         &cW8,
         &cW16,
-        NULL,
+        nullptr,
         &cW32,
-        NULL,
-        NULL,
-        NULL,
+        nullptr,
+        nullptr,
+        nullptr,
         &cW64
 };

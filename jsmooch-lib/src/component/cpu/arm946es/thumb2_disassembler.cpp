@@ -125,7 +125,7 @@ static void dasm_LSL_LSR_ASR(u16 opc, jsm_string *out, i64 ins_addr, ARMctxt *ct
         case 1: ostr("lsr  "); break;
         case 2: ostr("asr  "); break;
         case 3:
-            jsm_string_sprintf(out, "BAD INSTRUCTION1");
+            out->sprintf("BAD INSTRUCTION1");
             return;
         default:
         NOGOHERE;
@@ -525,7 +525,7 @@ static void dasm_BL_suffix(u16 opc, jsm_string *out, i64 ins_addr, ARMctxt *ct)
 
 void ARM946ES_thumb_disassemble(u16 opc, jsm_string *out, i64 ins_addr, ARMctxt *ct)
 {
-    jsm_string_quickempty(out);
+    out->quickempty();
 
     if ((opc & 0b1111100000000000) == 0b0001100000000000) { // ADD_SUB
         dasm_ADD_SUB(opc, out, ins_addr, ct);

@@ -57,8 +57,7 @@ static CP15::regs get_register(u32 opcode, u32 cn, u32 cm, u32 cp)
     return CP15::unknown;
 }
 
-u32 core::NDS_CP_read(u32 num, u32 opcode, u32 Cn, u32 Cm, u32 CP)
-{
+u32 core::NDS_CP_read(u32 num, u32 opcode, u32 Cn, u32 Cm, u32 CP) const {
     if (num != 15) {
         printf("\n!BAD! CP.r:%d opcode:%d Cn:%d Cm:%d CP:%d", num, opcode, Cn, Cm, CP);
         return 0;
@@ -70,21 +69,21 @@ u32 core::NDS_CP_read(u32 num, u32 opcode, u32 Cn, u32 Cm, u32 CP)
 
     u32 v = 0;
     switch(cpreg) {
-        case main_id:
+        case CP15::main_id:
             return 0x41059461; // ARM946ES
-        case cache_type_and_size:
+        case CP15::cache_type_and_size:
             return 0x0F0D2112;
-        case TCM_physical_size:
+        case CP15::TCM_physical_size:
             return 0x00140180;
-        case control_register:
+        case CP15::control_register:
             return cp15.regs.control.u;
-        case PU_cacheability_data_unified_PR:
+        case CP15::PU_cacheability_data_unified_PR:
             return cp15.regs.pu_data_cacheable;
-        case PU_cacheability_instruction_PR:
+        case CP15::PU_cacheability_instruction_PR:
             return cp15.regs.pu_instruction_cacheable;
-        case PU_cache_write_buffer_ability_data_PR:
+        case CP15::PU_cache_write_buffer_ability_data_PR:
             return cp15.regs.pu_data_cached_write;
-        case PU_access_permission_data_unified_PR:
+        case CP15::PU_access_permission_data_unified_PR:
             v = cp15.regs.pu_data_rw & 0x00000003;
             v |= (cp15.regs.pu_data_rw & 0x00000030) >> 2;
             v |= (cp15.regs.pu_data_rw & 0x00000300) >> 4;
@@ -94,7 +93,7 @@ u32 core::NDS_CP_read(u32 num, u32 opcode, u32 Cn, u32 Cm, u32 CP)
             v |= (cp15.regs.pu_data_rw & 0x03000000) >> 12;
             v |= (cp15.regs.pu_data_rw & 0x30000000) >> 14;
             return v;
-        case PU_access_permission_instruction_PR:
+        case CP15::PU_access_permission_instruction_PR:
             v = cp15.regs.pu_code_rw & 0x00000003;
             v |= (cp15.regs.pu_code_rw & 0x00000030) >> 2;
             v |= (cp15.regs.pu_code_rw & 0x00000300) >> 4;
@@ -104,20 +103,20 @@ u32 core::NDS_CP_read(u32 num, u32 opcode, u32 Cn, u32 Cm, u32 CP)
             v |= (cp15.regs.pu_code_rw & 0x03000000) >> 12;
             v |= (cp15.regs.pu_code_rw & 0x30000000) >> 14;
             return v;
-        case PU_extended_access_permission_data_unified_PR:
+        case CP15::PU_extended_access_permission_data_unified_PR:
             return cp15.regs.pu_data_rw;
-        case PU_extended_access_permission_instruction_PTR:
+        case CP15::PU_extended_access_permission_instruction_PTR:
             return cp15.regs.pu_code_rw;
-        case PU_instruction_0_7:
-        case PU_data_unified_0_7:
+        case CP15::PU_instruction_0_7:
+        case CP15::PU_data_unified_0_7:
             return cp15.regs.pu_region[Cm];
-        case TCM_data_TCM_base_and_virtual_size:
+        case CP15::TCM_data_TCM_base_and_virtual_size:
             return cp15.regs.dtcm_setting;
-        case TCM_instruction_TCM_base_and_virtual_size:
+        case CP15::TCM_instruction_TCM_base_and_virtual_size:
             return cp15.regs.itcm_setting;
-        case misc_process_ID:
+        case CP15::misc_process_ID:
             return cp15.regs.trace_process_id;
-        case misc_implementation_defined:
+        case CP15::misc_implementation_defined:
             return 0;
 
         default:
@@ -128,7 +127,7 @@ u32 core::NDS_CP_read(u32 num, u32 opcode, u32 Cn, u32 Cm, u32 CP)
     return 0;
 }
 
-static void update_dtcm()
+void core::update_dtcm()
 {
     if (!cp15.regs.control.dtcm_enable) {
         cp15.dtcm.size = cp15.dtcm.mask = 0;
@@ -149,7 +148,7 @@ static void update_dtcm()
 #endif
 }
 
-static void update_itcm()
+void core::update_itcm()
 {
     if (!cp15.regs.control.itcm_enable) {
         cp15.itcm.size = 0;

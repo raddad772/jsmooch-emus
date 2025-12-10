@@ -140,6 +140,8 @@ struct thumb2_instruction {
 
 struct core {
     explicit core(scheduler_t *scheduler, u64 *master_clock_in, u64 *waitstates_in);
+    void update_dtcm();
+    void update_itcm();
     void reset();
     void run_noIRQcheck();
     void setup_tracing(jsm_debug_read_trace *strct, u64 *trace_cycle_pointer, i32 source_id);
@@ -155,7 +157,7 @@ struct core {
     u32 MUL(u32 product, u32 multiplicand, u32 multiplier, u32 S);
 
     void NDS_CP_write(u32 num, u32 opcode, u32 Cn, u32 Cm, u32 CP, u32 val);
-    u32 NDS_CP_read(u32 num, u32 opcode, u32 Cn, u32 Cm, u32 CP);
+    u32 NDS_CP_read(u32 num, u32 opcode, u32 Cn, u32 Cm, u32 CP) const;
 
     u32 fetch_ins(u8 sz);
     u32 do_fetch_ins(u32 addr, u8 sz, u32 access);

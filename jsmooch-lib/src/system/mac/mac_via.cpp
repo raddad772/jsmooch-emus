@@ -10,6 +10,8 @@ namespace mac {
 
 void via::update_RA()
 {
+    int8_t a = 4;
+    i16 b = static_cast<i16>(a);
     // emulated: bits 4, 5, 6
     // not emulated:
     // bit 0-2, sound volume
