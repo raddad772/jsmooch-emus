@@ -278,6 +278,13 @@ void core::cycle()
                 if (process_interrupts()) break;
                 decode();
                 debug.ins_PC = regs.PC - 4;
+                if ((debug.ins_PC >= 0x400000 + 0x1822) && (debug.ins_PC <= 0x400000 + 0x195A)// P_Sony_DiskPrime
+                //if ((debug.ins_PC >= 0x400000 + 0x1E2C) && (debug.ins_PC <= 0x400000 + 0x1E4A)) { // P_Sony_MotorOn2wh
+                //if ((debug.ins_PC >= 0x400000 + 0x1D84) && (debug.ins_PC <= 0x400000 + 0x1E22) || // P_Sony_Recal
+                    || (debug.ins_PC >= 0x400000 + 0x1D02) && (debug.ins_PC <= 0x400000 + 0x1D4C) // P_Sony_WakeUp
+                    ) {
+                    dbg_break("M68000 BREAK", 0);
+                }
                 // This must be done AFTER interrupt, trace, etc. processing
                 regs.SR.T = regs.next_SR_T;
                 ins_decoded = 1;

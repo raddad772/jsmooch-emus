@@ -11,452 +11,376 @@
 #include "arm946es_instructions.h"
 #include "thumb2_disassembler.h"
 
-#include "helpers/multisize_memaccess.c"
 #define PC R[15]
 
 //#define TRACE
-static const u32 masksz[5] = { 0, 0xFF, 0xFFFF, 0, 0xFFFFFFFF };
-static const u32 maskalign[5] = {0, 0xFFFFFFFF, 0xFFFFFFFE, 0, 0xFFFFFFFC};
+static constexpr u32 masksz[5] = { 0, 0xFF, 0xFFFF, 0, 0xFFFFFFFF };
+static constexpr u32 maskalign[5] = {0, 0xFFFFFFFF, 0xFFFFFFFE, 0, 0xFFFFFFFC};
 
-static u32 fetch_ins(ARM946ES *this, u32 sz) {
-    u32 r = ARM946ES_fetch_ins(this, this->regs.PC, sz, this->pipeline.access);
-    return r;
-}
+namespace ARM946ES {
+    u32 core::fetch_ins(u8 sz) {
+        u32 r = do_fetch_ins(regs.PC, sz, pipeline.access);
+        return r;
+    }
 
-void ARM946ES_flush_pipeline(ARM946ES *this)
-{
-    this->pipeline.flushed = 1;
-}
-
-void ARM946ES_init(ARM946ES *this, u64 *master_clock, u64 *waitstates, scheduler_t *scheduler)
+core::core(scheduler_t *scheduler_in, u64 *master_clock_in, u64 *waitstates_in) :
+        scheduler{scheduler_in}, waitstates{waitstates_in}, master_clock{master_clock_in}
 {
     //dbg.trace_on = 1;
-    memset(this, 0, sizeof(*this));
-    ARM946ES_fill_arm_table(this);
-    this->waitstates = waitstates;
-    this->scheduler = scheduler;
-    this->master_clock = master_clock;
+    fill_arm_table();
     for (u32 i = 0; i < 16; i++) {
-        this->regmap[i] = &this->regs.R[i];
+        regmap[i] = &regs.R[i];
     }
     for (u32 i = 0; i < 65536; i++) {
-        decode_thumb2(i, &this->opcode_table_thumb[i]);
+        decode_thumb2(i, &opcode_table_thumb[i]);
     }
-    jsm_string_init(&this->trace.str, 100);
-    jsm_string_init(&this->trace.str2, 100);
-
-    DBG_EVENT_VIEW_INIT;
     DBG_TRACE_VIEW_INIT;
 }
 
-void ARM946ES_reset(ARM946ES *this)
+void core::reset()
 {
-    this->pipeline.flushed = 0;
+    pipeline.flushed = false;
 
-    this->regs.CPSR.F = 1;
-    this->regs.CPSR.mode = ARM9_supervisor;
-    this->regs.SPSR_svc = this->regs.CPSR.u;
-    this->regs.CPSR.T = 0;
-    this->regs.CPSR.I = 1;
-    *this->regmap[14] = 0;
-    *this->regmap[15] = 0;
-    this->regs.R[15] = 0xFFFF0000;
-    ARM946ES_reload_pipeline(this);
+    regs.CPSR.F = 1;
+    regs.CPSR.mode = M_supervisor;
+    regs.SPSR_svc = regs.CPSR.u;
+    regs.CPSR.T = 0;
+    regs.CPSR.I = 1;
+    *regmap[14] = 0;
+    *regmap[15] = 0;
+    regs.R[15] = 0xFFFF0000;
+    reload_pipeline();
 
-    this->regs.EBR = 0xFFFF0000;
+    regs.EBR = 0xFFFF0000;
 
 }
 
-void ARM946ES_setup_tracing(ARM946ES* this, jsm_debug_read_trace *strct, u64 *trace_cycle_pointer, i32 source_id)
+void core::setup_tracing(jsm_debug_read_trace *strct, u64 *trace_cycle_pointer, i32 source_id)
 {
-    this->trace.strct.read_trace_m68k = strct->read_trace_m68k;
-    this->trace.strct.ptr = strct->ptr;
-    this->trace.strct.read_trace = strct->read_trace;
-    this->trace.ok = 1;
-    this->trace.cycles = trace_cycle_pointer;
-    this->trace.source_id = source_id;
+    trace.strct.read_trace_m68k = strct->read_trace_m68k;
+    trace.strct.ptr = strct->ptr;
+    trace.strct.read_trace = strct->read_trace;
+    trace.ok = true;
+    trace.cycles = trace_cycle_pointer;
+    trace.source_id = source_id;
 }
 
-static void do_IRQ(ARM946ES* this)
+void core::do_IRQ()
 {
-    /*if (this->halted) {
-        printf("\nUNHALT ARM9");
-    }*/
-    this->halted = 0;
-    if (this->regs.CPSR.T) {
-        fetch_ins(this, 2);
+    halted = false;
+    if (regs.CPSR.T) {
+        fetch_ins(2);
     }
     else {
-        fetch_ins(this, 4);
+        fetch_ins(4);
     };
 
-    this->regs.SPSR_irq = this->regs.CPSR.u;
-    //printf("\nDO IRQ! CURRENT PC:%08x T:%d cyc:%lld", this->regs.PC, this->regs.CPSR.T, *this->trace.cycles);
-    this->regs.CPSR.mode = ARM9_irq;
-    ARM946ES_fill_regmap(this);
-    this->regs.CPSR.I = 1;
+    regs.SPSR_irq = regs.CPSR.u;
+    //printf("\nDO IRQ! CURRENT PC:%08x T:%d cyc:%lld", regs.PC, regs.CPSR.T, *trace.cycles);
+    regs.CPSR.mode = M_irq;
+    fill_regmap();
+    regs.CPSR.I = 1;
 
-    u32 *r14 = this->regmap[14];
-    if (this->regs.CPSR.T) {
-        this->regs.CPSR.T = 0;
-        *r14 = this->regs.PC;
+    u32 *r14 = regmap[14];
+    if (regs.CPSR.T) {
+        regs.CPSR.T = 0;
+        *r14 = regs.PC;
     }
     else {
-        *r14 = this->regs.PC - 4;
+        *r14 = regs.PC - 4;
     }
 
-    this->regs.PC = this->regs.EBR | 0x00000018;
-    ARM946ES_reload_pipeline(this);
+    regs.PC = regs.EBR | 0x00000018;
+    reload_pipeline();
 }
-static void do_FIQ(ARM946ES *this)
+void core::do_FIQ()
 {
-    this->regs.SPSR_irq = this->regs.CPSR.u;
-    this->regs.CPSR.mode = ARM9_fiq;
-    this->regs.CPSR.mode = ARM9_fiq;
-    ARM946ES_fill_regmap(this);
-    this->regs.CPSR.I = 1;
+    regs.SPSR_irq = regs.CPSR.u;
+    regs.CPSR.mode = M_fiq;
+    regs.CPSR.mode = M_fiq;
+    fill_regmap();
+    regs.CPSR.I = 1;
 
-    u32 *r14 = this->regmap[14];
-    if (this->regs.CPSR.T) {
-        this->regs.CPSR.T = 0;
-        *r14 = this->regs.PC;
+    u32 *r14 = regmap[14];
+    if (regs.CPSR.T) {
+        regs.CPSR.T = 0;
+        *r14 = regs.PC;
     }
     else {
-        *r14 = this->regs.PC - 4;
+        *r14 = regs.PC - 4;
     }
 
-    this->regs.PC = this->regs.EBR | 0x0000001C;
-    ARM946ES_reload_pipeline(this);
+    regs.PC = regs.EBR | 0x0000001C;
+    reload_pipeline();
 }
 
-static int condition_passes(ARM946ES_regs *this, int which) {
-#define flag(x) (this->CPSR. x)
+bool core::condition_passes(const condition_codes which) const {
+#define flag(x) (regs.CPSR. x)
     switch(which) {
-        case ARM9CC_AL:    return 1;
-        case ARM9CC_NV:    return 0;
-        case ARM9CC_EQ:    return flag(Z) == 1;
-        case ARM9CC_NE:    return flag(Z) != 1;
-        case ARM9CC_CS_HS: return flag(C) == 1;
-        case ARM9CC_CC_LO: return flag(C) == 0;
-        case ARM9CC_MI:    return flag(N) == 1;
-        case ARM9CC_PL:    return flag(N) == 0;
-        case ARM9CC_VS:    return flag(V) == 1;
-        case ARM9CC_VC:    return flag(V) == 0;
-        case ARM9CC_HI:    return (flag(C) == 1) && (flag(Z) == 0);
-        case ARM9CC_LS:    return (flag(C) == 0) || (flag(Z) == 1);
-        case ARM9CC_GE:    return flag(N) == flag(V);
-        case ARM9CC_LT:    return flag(N) != flag(V);
-        case ARM9CC_GT:    return (flag(Z) == 0) && (flag(N) == flag(V));
-        case ARM9CC_LE:    return (flag(Z) == 1) || (flag(N) != flag(V));
+        case CC_AL:    return true;
+        case CC_NV:    return false;
+        case CC_EQ:    return flag(Z) == 1;
+        case CC_NE:    return flag(Z) != 1;
+        case CC_CS_HS: return flag(C) == 1;
+        case CC_CC_LO: return flag(C) == 0;
+        case CC_MI:    return flag(N) == 1;
+        case CC_PL:    return flag(N) == 0;
+        case CC_VS:    return flag(V) == 1;
+        case CC_VC:    return flag(V) == 0;
+        case CC_HI:    return (flag(C) == 1) && (flag(Z) == 0);
+        case CC_LS:    return (flag(C) == 0) || (flag(Z) == 1);
+        case CC_GE:    return flag(N) == flag(V);
+        case CC_LT:    return flag(N) != flag(V);
+        case CC_GT:    return (flag(Z) == 0) && (flag(N) == flag(V));
+        case CC_LE:    return (flag(Z) == 1) || (flag(N) != flag(V));
         default:
             NOGOHERE;
-            return 0;
+            return false;
     }
 #undef flag
 }
 
-void ARM946ES_reload_pipeline(ARM946ES* this)
+void core::reload_pipeline()
 {
-    if (this->regs.PC == 0xFFFF07CE) {
+    if (regs.PC == 0xFFFF07CE) {
         printf("\nYO!");
         dbg_break("arm9 ffff07ce", 0);
     }
-    this->pipeline.flushed = 0;
-    if (this->regs.CPSR.T) {
-        this->pipeline.access = ARM9P_code | ARM9P_nonsequential;
-        this->pipeline.opcode[0] = fetch_ins(this, 2) & 0xFFFF;
-        this->pipeline.addr[0] = this->regs.PC;
-        this->regs.PC += 2;
-        this->pipeline.access = ARM9P_code | ARM9P_sequential;
-        this->pipeline.opcode[1] = fetch_ins(this, 2) & 0xFFFF;
-        this->pipeline.addr[1] = this->regs.PC;
-        this->regs.PC += 2;
+    pipeline.flushed = false;
+    if (regs.CPSR.T) {
+        pipeline.access = ARM9P_code | ARM9P_nonsequential;
+        pipeline.opcode[0] = fetch_ins(2) & 0xFFFF;
+        pipeline.addr[0] = regs.PC;
+        regs.PC += 2;
+        pipeline.access = ARM9P_code | ARM9P_sequential;
+        pipeline.opcode[1] = fetch_ins(2) & 0xFFFF;
+        pipeline.addr[1] = regs.PC;
+        regs.PC += 2;
     }
     else {
-        this->pipeline.access = ARM9P_code | ARM9P_nonsequential;
-        this->pipeline.opcode[0] = fetch_ins(this, 4);
-        this->pipeline.addr[0] = this->regs.PC;
-        this->regs.PC += 4;
-        this->pipeline.access = ARM9P_code | ARM9P_sequential;
-        this->pipeline.opcode[1] = fetch_ins(this, 4);
-        this->pipeline.addr[1] = this->regs.PC;
-        this->regs.PC += 4;
+        pipeline.access = ARM9P_code | ARM9P_nonsequential;
+        pipeline.opcode[0] = fetch_ins(4);
+        pipeline.addr[0] = regs.PC;
+        regs.PC += 4;
+        pipeline.access = ARM9P_code | ARM9P_sequential;
+        pipeline.opcode[1] = fetch_ins(4);
+        pipeline.addr[1] = regs.PC;
+        regs.PC += 4;
     }
 }
 
-static void print_context(ARM946ES *this, ARMctxt *ct, jsm_string *out, u32 taken)
-{
-    jsm_string_quickempty(out);
-    u32 needs_commaspace = 0;
-    if (!taken) jsm_string_sprintf(out, "NT.");
+void core::print_context(ARMctxt *ct, jsm_string *out, bool taken) const {
+    out->quickempty();
+    bool needs_commaspace = false;
+    if (!taken) out->sprintf("NT.");
     for (u32 i = 0; i < 16; i++) {
         if (ct->regs & (1 << i)) {
             if (needs_commaspace) {
-                jsm_string_sprintf(out, ", ");
+                out->sprintf(", ");
             }
-            needs_commaspace = 1;
-            jsm_string_sprintf(out, "R%d:%08x", i, *this->regmap[i]);
+            needs_commaspace = true;
+            out->sprintf("R%d:%08x", i, *regmap[i]);
         }
     }
 }
 
 
-static void armv5_trace_format(ARM946ES *this, u32 opcode, u32 addr, u32 T, u32 taken)
+void core::armv5_trace_format(u32 opcode, u32 addr, bool T, bool taken)
 {
-#ifdef TRACE
-    printf("\nARM9: %08x  %s  /  %s    / %08x", addr, this->trace.str.ptr, this->trace.str2.ptr, this->regs.R[15]);
-    struct ARMctxt ct;
-    ct.regs = 0;
-    if (T) {
-        ARM946ES_thumb_disassemble(opcode, &this->trace.str, (i64) addr, &ct);
+    bool do_dbglog = false;
+    if (dbg.dvptr) {
+        do_dbglog = dbg.dvptr->ids_enabled[dbg.dv_id];
     }
-    else {
-        ARMv5_disassemble(opcode, &this->trace.str, (i64) addr, &ct);
-    }
-    print_context(this, &ct, &this->trace.str2, taken);
-#else
-    u32 do_dbglog = 0;
-    if (this->dbg.dvptr) {
-        do_dbglog = this->dbg.dvptr->ids_enabled[this->dbg.dv_id];
-    }
-    u32 do_tracething = (this->dbg.tvptr && dbg.trace_on && dbg.traces.arm946es.instruction);
+    u32 do_tracething = (dbg.tvptr && ::dbg.trace_on && ::dbg.traces.arm946es.instruction);
     if (do_dbglog || do_tracething) {
-        struct ARMctxt ct;
+        ARMctxt ct;
         ct.regs = 0;
         if (T) {
-            ARM946ES_thumb_disassemble(opcode, &this->trace.str, (i64) addr, &ct);
+            thumb_disassemble(opcode, &trace.str, (i64) addr, &ct);
         } else {
-            ARMv5_disassemble(opcode, &this->trace.str, (i64) addr, &ct);
+            ARMv5_disassemble(opcode, &trace.str, (i64) addr, &ct);
         }
-        print_context(this, &ct, &this->trace.str2, taken);
+        print_context(&ct, &trace.str2, taken);
 
         u64 tc;
-        if (!this->trace.cycles) tc = 0;
-        else tc = *this->trace.cycles;
-        tc += *this->waitstates;
+        if (!trace.cycles) tc = 0;
+        else tc = *trace.cycles;
+        tc += *waitstates;
 
         if (do_dbglog) {
-            struct dbglog_view *dv = this->dbg.dvptr;
-            dbglog_view_add_printf(dv, this->dbg.dv_id, tc, DBGLS_TRACE, "%08x  %s", addr, this->trace.str.ptr);
-            dbglog_view_extra_printf(dv, "%s", this->trace.str2.ptr);
+            dbglog_view *dv = dbg.dvptr;
+            dv->add_printf(dbg.dv_id, tc, DBGLS_TRACE, "%08x  %s", addr, trace.str.ptr);
+            dv->extra_printf("%s", trace.str2.ptr);
         }
 
         if (do_tracething) {
-            struct trace_view *tv = this->dbg.tvptr;
-            trace_view_startline(tv, this->trace.source_id);
+            trace_view *tv = dbg.tvptr;
+            tv->startline(trace.source_id);
             if (T) {
-                trace_view_printf(tv, 0, "THUMB9");
-                trace_view_printf(tv, 3, "%04x", opcode);
+                tv->printf(0, "THUMB9");
+                tv->printf(3, "%04x", opcode);
             } else {
-                trace_view_printf(tv, 0, "ARM9");
-                trace_view_printf(tv, 3, "%08x", opcode);
+                tv->printf(0, "ARM9");
+                tv->printf(3, "%08x", opcode);
             }
-            trace_view_printf(tv, 1, "%lld", tc);
-            trace_view_printf(tv, 2, "%08x", addr);
-            trace_view_printf(tv, 4, "%s", this->trace.str.ptr);
-            trace_view_printf(tv, 5, "%s", this->trace.str2.ptr);
-            trace_view_endline(tv);
+            tv->printf(1, "%lld", tc);
+            tv->printf(2, "%08x", addr);
+            tv->printf(4, "%s", trace.str.ptr);
+            tv->printf(5, "%s", trace.str2.ptr);
+            tv->endline();
         }
     }
-#endif
 }
 
-static void decode_and_exec_thumb(ARM946ES *this, u32 opcode, u32 opcode_addr)
+void core::decode_and_exec_thumb(u32 opcode, u32 opcode_addr)
 {
-#ifdef TRACE
-    armv5_trace_format(this, opcode, opcode_addr, 1, 1);
-#else
-    armv5_trace_format(this, opcode, opcode_addr, 1, 1);
-#endif
-    struct thumb2_instruction *ins = &this->opcode_table_thumb[opcode];
-    ins->func(this, ins);
-    if (this->pipeline.flushed)
-        ARM946ES_reload_pipeline(this);
+    armv5_trace_format(opcode, opcode_addr, true, true);
+    const thumb2_instruction &ins = opcode_table_thumb[opcode];
+    (this->*ins.func)(ins);
+    if (pipeline.flushed)
+        reload_pipeline();
 }
 
-static void decode_and_exec_arm(ARM946ES *this, u32 opcode, u32 opcode_addr)
+void core::decode_and_exec_arm(u32 opcode, u32 opcode_addr)
 {
     // bits 27-0 and 7-4
 #ifdef TRACE
-    armv5_trace_format(this, opcode, opcode_addr, 0, 1);
+    armv5_trace_format(opcode, opcode_addr, 0, 1);
 #else
-    armv5_trace_format(this, opcode, opcode_addr, 0, 1);
+    armv5_trace_format(opcode, opcode_addr, false, true);
 #endif
     u32 decode = ((opcode >> 4) & 15) | ((opcode >> 16) & 0xFF0);
-    this->arm9_ins = &this->opcode_table_arm[decode];
-    this->arm9_ins->exec(this, opcode);
+    arm_ins = &opcode_table_arm[decode];
+    (this->*arm_ins->exec)(opcode);
 }
 
-static void sch_check_irq(void *ptr, u64 key, u64 timecode, u32 jitter)
+void core::sch_check_irq(void *ptr, u64 key, u64 timecode, u32 jitter)
 {
-    struct ARM946ES *this = (ARM946ES *)ptr;
-    if (this->regs.IRQ_line && !this->regs.CPSR.I) {
-        do_IRQ(this);
+    auto *th = static_cast<core *>(ptr);
+    if (th->regs.IRQ_line && !th->regs.CPSR.I) {
+        th->do_IRQ();
     }
 }
 
-void ARM946ES_IRQcheck(ARM946ES *this, u32 do_sched) {
+void core::IRQcheck(bool do_sched) {
     if (do_sched) {
-        scheduler_add_next(this->scheduler, 0, this, &sch_check_irq, NULL);
+        scheduler->add_next(0, this, &sch_check_irq, nullptr);
         return;
     }
-    if (this->regs.IRQ_line && !this->regs.CPSR.I) {
-        do_IRQ(this);
+    if (regs.IRQ_line && !regs.CPSR.I) {
+        do_IRQ();
     }
 }
 
-void ARM946ES_schedule_IRQ_check(ARM946ES *this)
+void core::schedule_IRQ_check()
 {
-    if (this->scheduler && !this->sch_irq_sch) {
-        scheduler_add_next(this->scheduler, 0, this, &sch_check_irq, &this->sch_irq_sch);
+    if (scheduler && !sch_irq_sch) {
+        scheduler->add_next(0, this, &sch_check_irq, &sch_irq_sch);
     }
 }
 
-void ARM946ES_run_noIRQcheck(ARM946ES*this)
+void core::run_noIRQcheck()
 {
-    if (this->halted) {
-        (*this->waitstates)++;
+    if (halted) {
+        (*waitstates)++;
         return;
     }
-    u32 opcode = this->pipeline.opcode[0];
-    u32 opcode_addr = this->pipeline.addr[0];
-    this->pipeline.opcode[0] = this->pipeline.opcode[1];
-    this->pipeline.addr[0] = this->pipeline.addr[1];
-    this->regs.PC &= 0xFFFFFFFE;
-    //if (this->regs.PC == 0x0800a648) dbg_break("PC==0800a649", *this->trace.cycles);
+    u32 opcode = pipeline.opcode[0];
+    u32 opcode_addr = pipeline.addr[0];
+    pipeline.opcode[0] = pipeline.opcode[1];
+    pipeline.addr[0] = pipeline.addr[1];
+    regs.PC &= 0xFFFFFFFE;
+    //if (regs.PC == 0x0800a648) dbg_break("PC==0800a649", *trace.cycles);
 
-    if (this->regs.CPSR.T) { // THUMB mode!
-        this->pipeline.opcode[1] = fetch_ins(this, 2);
-        this->pipeline.addr[1] = this->regs.PC;
-        decode_and_exec_thumb(this, opcode, opcode_addr);
-        if (this->pipeline.flushed)
-            ARM946ES_reload_pipeline(this);
+    if (regs.CPSR.T) { // THUMB mode!
+        pipeline.opcode[1] = fetch_ins(2);
+        pipeline.addr[1] = regs.PC;
+        decode_and_exec_thumb(opcode, opcode_addr);
+        if (pipeline.flushed)
+            reload_pipeline();
     }
     else {
-        this->pipeline.opcode[1] = fetch_ins(this, 4);
-        this->pipeline.addr[1] = this->regs.PC;
-        if (condition_passes(&this->regs, (int)(opcode >> 28))) {
-            decode_and_exec_arm(this, opcode, opcode_addr);
-            if (this->pipeline.flushed)
-                ARM946ES_reload_pipeline(this);
+        pipeline.opcode[1] = fetch_ins(4);
+        pipeline.addr[1] = regs.PC;
+        if (condition_passes(static_cast<condition_codes>(opcode >> 28))) {
+            decode_and_exec_arm(opcode, opcode_addr);
+            if (pipeline.flushed)
+                reload_pipeline();
         }
         else {
             // check for PLD and 4 undefined's
             u32 execed = 0;
             if ((opcode >> 28) == 15) {
 #ifdef TRACE
-                armv5_trace_format(this, opcode, opcode_addr, 0, 1);
+                armv5_trace_format(opcode, opcode_addr, 0, 1);
 #else
-                armv5_trace_format(this, opcode, opcode_addr, 0, 1);
+                armv5_trace_format(opcode, opcode_addr, false, true);
 #endif
                 u32 decode = ((opcode >> 4) & 15) | ((opcode >> 16) & 0xFF0);
-                this->arm9_ins = &this->opcode_table_arm_never[decode];
-                if (this->arm9_ins->valid) {
-                    this->arm9_ins->exec(this, opcode);
-                    if (this->pipeline.flushed)
-                        ARM946ES_reload_pipeline(this);
+                arm_ins = &opcode_table_arm_never[decode];
+                if (arm_ins->valid) {
+                    (this->*arm_ins->exec)(opcode);
+                    if (pipeline.flushed)
+                        reload_pipeline();
                     execed = 1;
                 }
             }
 
             if (!execed) {
 #ifdef TRACE
-                armv5_trace_format(this, opcode, opcode_addr, 0, 0);
+                armv5_trace_format(opcode, opcode_addr, 0, 0);
 #else
-                armv5_trace_format(this, opcode, opcode_addr, 0, 0);
+                armv5_trace_format(opcode, opcode_addr, false, false);
 #endif
-                this->pipeline.access = ARM9P_code | ARM9P_sequential;
-                this->regs.PC += 4;
+                pipeline.access = ARM9P_code | ARM9P_sequential;
+                regs.PC += 4;
             }
         }
     }
 }
 
-void ARM946ES_delete(ARM946ES *this)
+void core::idle(u32 num)
 {
-
+    *waitstates += num;
 }
 
-void ARM946ES_idle(ARM946ES*this, u32 num)
-{
-    *this->waitstates += num;
-}
-
-static inline u32 addr_in_itcm(ARM946ES *this, u32 addr)
-{
-    //printf("\ntest ADDR:%08x. ?:%d", addr, ((addr >= this->cp15.itcm.base_addr) && (addr < this->cp15.itcm.end_addr)));
-    return ((addr >= this->cp15.itcm.base_addr) && (addr < this->cp15.itcm.end_addr));
-}
-
-static inline u32 read_itcm(ARM946ES *this, u32 addr, u32 sz)
-{
-    (*this->waitstates)++;
-    u32 tcm_addr = (addr - this->cp15.itcm.base_addr) & this->cp15.itcm.mask;
-    return cR[sz](this->cp15.itcm.data, tcm_addr & (ITCM_SIZE - 1));
-}
-
-u32 ARM946ES_fetch_ins(ARM946ES *this, u32 addr, u32 sz, u32 access)
+u32 core::do_fetch_ins(u32 addr, u8 sz, u32 access)
 {
     addr &= maskalign[sz];
-    if (addr_in_itcm(this, addr) && this->cp15.regs.control.itcm_enable && !this->cp15.regs.control.itcm_load_mode) {
-        return read_itcm(this, addr, sz);
+    if (addr_in_itcm(addr) && cp15.regs.control.itcm_enable && !cp15.regs.control.itcm_load_mode) {
+        return read_itcm(addr, sz);
     }
-    u32 v = this->fetch_ins(this->fetch_ptr, addr, sz, access);
+    u32 v = fetch_ins_func(fetch_ptr, addr, sz, access);
     return v;
 }
 
-static inline u32 addr_in_dtcm(ARM946ES *this, u32 addr)
-{
-    return ((addr >= this->cp15.dtcm.base_addr) && ((addr < this->cp15.dtcm.end_addr)));
-}
-
-static inline u32 read_dtcm(ARM946ES *this, u32 addr, u32 sz)
-{
-    (*this->waitstates)++;
-    u32 tcm_addr = (addr - this->cp15.dtcm.base_addr) & (DTCM_SIZE - 1);
-    return cR[sz](this->cp15.dtcm.data, tcm_addr & (DTCM_SIZE - 1));
-}
-
-static inline void write_dtcm(ARM946ES *this, u32 addr, u32 sz, u32 v)
-{
-    (*this->waitstates)++;
-    u32 tcm_addr = (addr - this->cp15.dtcm.base_addr) & (this->cp15.dtcm.size - 1);
-    cW[sz](this->cp15.dtcm.data, tcm_addr & (DTCM_SIZE - 1), v);
-}
-
-static inline void write_itcm(ARM946ES *this, u32 addr, u32 sz, u32 v)
-{
-    (*this->waitstates)++;
-    u32 tcm_addr = (addr - this->cp15.itcm.base_addr) & this->cp15.itcm.mask;
-    cW[sz](this->cp15.itcm.data, tcm_addr & (ITCM_SIZE - 1), v);
-}
-
-u32 ARM946ES_read(ARM946ES *this, u32 addr, u32 sz, u32 access, u32 has_effect) {
+u32 core::read(u32 addr, u8 sz, u32 access, bool has_effect) {
     u32 v;
     addr &= maskalign[sz];
 
-    if (addr_in_itcm(this, addr) && this->cp15.regs.control.itcm_enable && !this->cp15.regs.control.itcm_load_mode) {
-        return read_itcm(this, addr, sz);
+    if (addr_in_itcm(addr) && cp15.regs.control.itcm_enable && !cp15.regs.control.itcm_load_mode) {
+        return read_itcm(addr, sz);
     }
-    if (!(access & ARM9P_code) && addr_in_dtcm(this, addr) && this->cp15.regs.control.dtcm_enable && !this->cp15.regs.control.dtcm_load_mode) {
-        return read_dtcm(this, addr, sz);
+    if (!(access & ARM9P_code) && addr_in_dtcm(addr) && cp15.regs.control.dtcm_enable && !cp15.regs.control.dtcm_load_mode) {
+        return read_dtcm(addr, sz);
     }
 
-    v = this->read(this->read_ptr, addr, sz, access, has_effect) & masksz[sz];
+    v = read_func(read_ptr, addr, sz, access, has_effect) & masksz[sz];
     return v;
 }
 
-void ARM946ES_write(ARM946ES *this, u32 addr, u32 sz, u32 access, u32 val)
+void core::write(u32 addr, u8 sz, u32 access, u32 val)
 {
     addr &= maskalign[sz];
-    if (addr_in_itcm(this, addr) && this->cp15.regs.control.itcm_enable) {
-        write_itcm(this, addr, sz, val);
+    if (addr_in_itcm(addr) && cp15.regs.control.itcm_enable) {
+        write_itcm(addr, sz, val);
         return;
     }
-    if (!(access & ARM9P_code) && addr_in_dtcm(this, addr) && this->cp15.regs.control.dtcm_enable) {
-        write_dtcm(this, addr, sz, val);
+    if (!(access & ARM9P_code) && addr_in_dtcm(addr) && cp15.regs.control.dtcm_enable) {
+        write_dtcm(addr, sz, val);
         return;
     }
 
-    this->write(this->write_ptr, addr, sz, access, val);
+    write_func(write_ptr, addr, sz, access, val);
+}
 }

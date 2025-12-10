@@ -8,7 +8,7 @@
 #include <cassert>
 
 #include "armv5_disassembler.h"
-
+namespace ARM946ES {
 static u16 doBITS(u16 val, u16 hi, u16 lo)
 {
     u16 shift = lo;
@@ -18,14 +18,14 @@ static u16 doBITS(u16 val, u16 hi, u16 lo)
 
 #define OBIT(x) ((opcode >> (x)) & 1)
 #define BITS(hi,lo) (doBITS(opcode, hi, lo))
-#define ostr(...) jsm_string_sprintf(out, __VA_ARGS__)
+#define ostr(...) out->sprintf(__VA_ARGS__)
 
 static void add_context(ARMctxt *t, u32 rnum)
 {
     if (t) t->regs |= (1 << rnum);
 }
 
-static void outreg(jsm_string *out, u32 num, u32 add_comma) {
+static void outreg(jsm_string *out, u32 num, bool add_comma) {
     if (num == 13) ostr("sp");
     else if (num == 14) ostr("lr");
     else if (num == 15) ostr("pc");
@@ -33,14 +33,14 @@ static void outreg(jsm_string *out, u32 num, u32 add_comma) {
     if (add_comma) ostr(",");
 }
 
-static void outhex(jsm_string *out, u32 num, u32 num_size, u32 add_comma) {
+static void outhex(jsm_string *out, u32 num, u32 num_size, bool add_comma) {
     char fstr[50];
     snprintf(fstr, sizeof(fstr), "%%0%dx", num_size);
-    jsm_string_sprintf(out, fstr, num);
+    out->sprintf(fstr, num);
     if (add_comma) ostr(",");
 }
 
-static void outdec(jsm_string *out, u32 num, u32 add_comma)
+static void outdec(jsm_string *out, u32 num, bool add_comma)
 {
     ostr("%d", num);
     if (add_comma) ostr(",");
@@ -77,7 +77,7 @@ static int out_cond(jsm_string *out, u32 opc, int num_space)
 
 
 
-static void annoying(jsm_string *out, u32 opcode, char *name, int num_spaces, char *suffix)
+static void annoying(jsm_string *out, u32 opcode, const char *name, int num_spaces, const char *suffix)
 {
     u32 cnd = opcode >> 28;
     ostr(name);
@@ -368,8 +368,8 @@ static void dasm_data_proc_immediate_shift(u32 opcode, jsm_string *out, i64 inst
     u32 Is = (opcode >> 7) & 31; // shift amount
     u32 shift_type = (opcode >> 5) & 3; // 0=LSL, 1=LSR, 2=ASR, 3=ROR
     u32 Rmd = opcode & 15;
-    char *whichs = S ? "s" : NULL;
-    char *whichp = NULL;
+    const char *whichs = S ? "s" : nullptr;
+    const char *whichp = nullptr;
     switch(alu_opcode) {
         case 0: mnp("and", 3, whichs); break;
         case 1: mnp("eor", 3, whichs); break;
@@ -412,8 +412,8 @@ static void dasm_data_proc_register_shift(u32 opcode, jsm_string *out, i64 instr
     u32 shift_type = (opcode >> 5) & 3; // 0=LSL, 1=LSR, 2=ASR, 3=ROR
     // R(bit4) = 0 for this
     u32 Rmd = opcode & 15;
-    char *whichs = S ? "s" : NULL;
-    char *whichp = NULL;
+    const char *whichs = S ? "s" : nullptr;
+    const char *whichp = nullptr;
 
     switch(alu_opcode) {
         case 0: mnp("and", 3, whichs); break;
@@ -475,8 +475,8 @@ static void dasm_data_proc_immediate(u32 opcode, jsm_string *out, i64 instructio
     u32 imm_ROR_amount = (opcode >> 7) & 30;
     Rm = (Rm << (32 - imm_ROR_amount)) | (Rm >> imm_ROR_amount);
 
-    char *whichs = S ? "s" : NULL;
-    char *whichp = NULL;
+    const char *whichs = S ? "s" : nullptr;
+    const char *whichp = nullptr;
     switch(alu_opcode) {
         case 0: mnp("and", 3, whichs); break;
         case 1: mnp("eor", 3, whichs); break;
@@ -524,11 +524,11 @@ static void dasm_LDR_STR_immediate_offset(u32 opcode, jsm_string *out, i64 instr
     u32 Rnd = (opcode >> 16) & 15; // base register. PC=+8
     u32 Rdd = (opcode >> 12) & 15; // source/dest register. PC=+12
     u32 offset = (opcode & 4095);
-    char *w;
+    const char *w;
     if (T && B) w = "bt";
     else if (T && (!B)) w = "t";
     else if ((!T) && B) w = "b";
-    else w = NULL;
+    else w = nullptr;
     if (L) {
         mnp("ldr", 3, w)
     }
@@ -578,11 +578,11 @@ static void dasm_LDR_STR_register_offset(u32 opcode, jsm_string *out, i64 instru
     u32 Is = (opcode >> 7) & 31;
     u32 shift_type = (opcode >> 5) & 3;
     u32 Rmd = opcode & 15;
-    char *w;
+    const char *w;
     if (T && B) w = "bt";
     else if (T && (!B)) w = "t";
     else if ((!T) && B) w = "b";
-    else w = NULL;
+    else w = nullptr;
     if (L) {
         mnp("ldr", 2, w)
     }
@@ -623,7 +623,7 @@ static void dasm_LDM_STM(u32 opcode, jsm_string *out, i64 instruction_addr, ARMc
     u32 Rnd = (opcode >> 16) & 15;
     add_context(ct, Rnd);
     u32 rlist = (opcode & 0xFFFF);
-    char *w;
+    const char *w;
     if ((P == 1) && (U == 1)) w = "ib";
     else if ((P == 0) && (U == 1)) w = "ia";
     else if ((P == 1) && (U == 0)) w = "db";
@@ -884,7 +884,7 @@ static void dasm_BLX(u32 opcode, jsm_string *out, i64 instruction_addr, ARMctxt 
 void ARMv5_disassemble(u32 opcode, jsm_string *out, i64 ins_addr, ARMctxt *ct)
 {
     // i64 instruction_addr, ARMctxt *ctxt
-    jsm_string_quickempty(out);
+    out->quickempty();
     u32 opc = ((opcode >> 4) & 15) | ((opcode >> 16) & 0xFF0);
 
     u32 opc2 = ((opcode >> 4) & 15) | ((opcode >> 16) & 0xFFF0);
@@ -962,4 +962,5 @@ void ARMv5_disassemble(u32 opcode, jsm_string *out, i64 ins_addr, ARMctxt *ct)
     else
         dasm_INVALID(opcode, out, ins_addr, ct);
 
+}
 }

@@ -66,6 +66,7 @@ u16 iwm::do_read(u32 addr, u16 mask, u16 old, bool has_effect) {
     u8 q67 = (lines.Q6 << 1) | lines.Q7;
     switch (q67) {
         case 0b00: { // read data
+            printf("\nREAD DATA! ENABLE:%d", lines.ENABLE);
             if (!lines.ENABLE) return 0xFF;
             u8 v = regs.data;
             regs.data = 0;
@@ -77,6 +78,7 @@ u16 iwm::do_read(u32 addr, u16 mask, u16 old, bool has_effect) {
             regs.status.enable = lines.ENABLE;
 
             regs.shifter = 0;
+            printf("\nREAD STATUS! %02x", regs.status.u);
             return regs.status.u;
         case 0b01: // read handshake
             return ((!(write.pos == 0 && write.buffer == -1) << 6) |
@@ -104,6 +106,7 @@ u8 iwm::get_drive_reg() const {
 }
 
 void iwm::access(u32 addr) {
+    printf("\naccess %06x", addr);
     switch ((addr >> 9) & 15) {
         case 0: lines.CA0 = 0; break;
         case 1: lines.CA0 = 1; break;

@@ -2,19 +2,17 @@
 // Created by . on 1/19/25.
 //
 
-#ifndef JSMOOCH_EMUS_NDS_CP15_H
-#define JSMOOCH_EMUS_NDS_CP15_H
+#pragma once
 
 #include "helpers/int.h"
 
-#define ITCM_SIZE 0x8000
-#define DTCM_SIZE 0x4000
 
+namespace ARM946ES {
 
-struct ARM946ES;
-u32 NDS_CP_read(ARM946ES *, u32 num, u32 opcode, u32 Cn, u32 Cm, u32 CP);
-void NDS_CP_write(ARM946ES *, u32 num, u32 opcode, u32 Cn, u32 Cm, u32 CP, u32 val);
-void NDS_CP_init(ARM946ES *);
-void NDS_CP_reset(ARM946ES *);
+static constexpr u32 ITCM_SIZE = 0x8000;
+static constexpr u32 DTCM_SIZE = 0x4000;
+static constexpr u32 ITCM_MASK = ITCM_SIZE - 1;
+static constexpr u32 DTCM_MASK = DTCM_SIZE - 1;
 
-#endif //JSMOOCH_EMUS_NDS_CP15_H
+}
+

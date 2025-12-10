@@ -103,6 +103,7 @@ void FDD::set_pwm_dutycycle(i64 to) {
 
 u8 FDD::read_reg(u8 which) {
     u32 v = 0;
+    printf("\nDRIVE READ REG %d", which);
 
     switch (which) {
         case 0b0000: // DIRTN head step direction
@@ -174,6 +175,7 @@ void FDD::write_reg(u8 which) {
         MOTOROFF = 0b1100,
         EJECT = 0b1110,
     } whichrw = static_cast<regwrites>(which);
+    printf("\nWRITE DRIVE REG %d", which);
 
     switch (whichrw) {
         case TRACKUP:

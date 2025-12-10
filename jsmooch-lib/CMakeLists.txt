@@ -234,14 +234,14 @@ set(SOURCE_LIST
         src/component/cpu/arm7tdmi/thumb_instructions.h
         src/component/cpu/arm7tdmi/thumb_disassembler.cpp
         src/component/cpu/arm7tdmi/thumb_disassembler.h
-        #src/component/cpu/arm946es/arm946es.cpp
-        #src/component/cpu/arm946es/arm946es.h
-        #src/component/cpu/arm946es/arm946es_decode.cpp
-        #src/component/cpu/arm946es/arm946es_decode.h
-        #src/component/cpu/arm946es/arm946es_instructions.cpp
-        #src/component/cpu/arm946es/arm946es_instructions.h
-        #src/component/cpu/arm946es/armv5_disassembler.cpp
-        #src/component/cpu/arm946es/armv5_disassembler.h
+        src/component/cpu/arm946es/arm946es.cpp
+        src/component/cpu/arm946es/arm946es.h
+        src/component/cpu/arm946es/arm946es_decode.cpp
+        src/component/cpu/arm946es/arm946es_decode.h
+        src/component/cpu/arm946es/arm946es_instructions.cpp
+        src/component/cpu/arm946es/arm946es_instructions.h
+        src/component/cpu/arm946es/armv5_disassembler.cpp
+        src/component/cpu/arm946es/armv5_disassembler.h
         #src/component/cpu/arm946es/nds_cp15.cpp
         #src/component/cpu/arm946es/nds_cp15.h
         #src/component/cpu/arm946es/thumb2_disassembler.cpp

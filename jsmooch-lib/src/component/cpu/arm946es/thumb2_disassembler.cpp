@@ -13,7 +13,7 @@
 
 #include "armv5_disassembler.h"
 #include "thumb2_disassembler.h"
-
+namespace ARM946ES {
 static u16 doBITS(u16 val, u16 hi, u16 lo)
 {
     u16 shift = lo;
@@ -23,14 +23,14 @@ static u16 doBITS(u16 val, u16 hi, u16 lo)
 
 #define OBIT(x) ((opc >> (x)) & 1)
 #define BITS(hi,lo) (doBITS(opc, hi, lo))
-#define ostr(...) jsm_string_sprintf(out, __VA_ARGS__)
+#define ostr(...) out->sprintf(__VA_ARGS__)
 
 static void add_context(ARMctxt *t, u32 rnum)
 {
     if (t) t->regs |= (1 << rnum);
 }
 
-static void outreg(jsm_string *out, u32 num, u32 add_comma) {
+static void outreg(jsm_string *out, u32 num, bool add_comma) {
     if (num == 13) ostr("SP");
     else if (num == 14) ostr("LR");
     else if (num == 15) ostr("PC");
@@ -38,14 +38,14 @@ static void outreg(jsm_string *out, u32 num, u32 add_comma) {
     if (add_comma) ostr(",");
 }
 
-static void outhex(jsm_string *out, u32 num, u32 num_size, u32 add_comma) {
+static void outhex(jsm_string *out, u32 num, u32 num_size, bool add_comma) {
     char fstr[50];
     snprintf(fstr, sizeof(fstr), "%%0%dx", num_size);
-    jsm_string_sprintf(out, fstr, num);
+    out->sprintf(fstr, num);
     if (add_comma) ostr(",");
 }
 
-static void outdec(jsm_string *out, u32 num, u32 add_comma)
+static void outdec(jsm_string *out, u32 num, bool add_comma)
 {
     ostr("%d", num);
     if (add_comma) ostr(",");
@@ -508,7 +508,7 @@ static void dasm_BLX_suffix(u16 opc, jsm_string *out, i64 ins_addr, ARMctxt *ct)
 static void dasm_BL_BLX_prefix(u16 opc, jsm_string *out, i64 ins_addr, ARMctxt *ct)
 {
     u32 imm = BITS(11, 0);
-    imm = (i32)SIGNe11to32(imm); // now SHL 11...
+    imm = static_cast<i32>(SIGNe11to32(imm)); // now SHL 11...
     imm <<= 12;
     ostr("bl/blx1 ");
     odec(imm);
@@ -611,4 +611,5 @@ void ARM946ES_thumb_disassemble(u16 opc, jsm_string *out, i64 ins_addr, ARMctxt 
     }
 #undef OBIT
 #undef BITS
+}
 }
