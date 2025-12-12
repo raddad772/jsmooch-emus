@@ -1236,7 +1236,7 @@ void hblank(void *ptr, u64 key, u64 clock, u32 jitter) // Called at hblank time
 #define MASTER_CYCLES_PER_FRAME 570716
 void core::new_frame() {
     bus->clock.ppu.y = 0;
-    bus->clock.frame_start_cycle = bus->clock_current7();
+    bus->clock.frame_start_cycle = bus->clock.current7();
     cur_output = static_cast<u32 *>(display->output[display->last_written ^ 1]);
     display->last_written ^= 1;
     bus->clock.master_frame++;
@@ -1261,7 +1261,7 @@ static void vblank(void *ptr, u64 key, u64 clock, u32 jitter)
 {
     auto *bus = static_cast<NDS::core *>(ptr);
     auto &ppu = bus->ppu;
-    //printf("\nvblank %lld: line %d cyc:%lld", key, bus->clock.ppu.y, NDS_clock_current7());
+    //printf("\nvblank %lld: line %d cyc:%lld", key, bus->clock.ppu.y, NDS_clock.current7());
 
     bus->clock.ppu.vblank_active = key;
     if (key) { // line 192

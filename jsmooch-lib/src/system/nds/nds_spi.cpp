@@ -5,68 +5,60 @@
 #include "nds_spi.h"
 #include "nds_bus.h"
 #include "nds_irq.h"
-#include "helpers/multisize_memaccess.c"
+#include "helpers/multisize_memaccess.cpp"
 
-#define SPI this->spi
-#define PWM this->spi.pwm
-#define FMW this->spi.firmware
-#define TSC this->spi.touchscr
+#define SPI spi
+#define PWM spi.pwm
+#define FMW spi.firmware
+#define TSC spi.touchscr
 
-struct NDS_tsc_cd {
-    i32 adc_x1;
-    i32 adc_y1;
-    i32 adc_x2;
-    i32 adc_y2;
-    i32 screen_x1;
-    i32 screen_y1;
-    i32 screen_x2;
-    i32 screen_y2;
-};
+namespace NDS {
 
-static void apply_calib_data(NDS *this, NDS_tsc_cd *data)
+
+void core::SPI_apply_calib_data(tsc_cd &data)
 {
-    struct NDS_SPI_TOUCHSCREEN *t = &this->spi.touchscr;
-    t->adc_x_top_left = data->adc_x1;
-    t->adc_x_delta = data->adc_x2 - data->adc_x1;
-    t->adc_y_top_left = data->adc_y1;
-    t->adc_y_delta = data->adc_y2 - data->adc_y1;
-    t->screen_x_top_left = data->screen_x1;
-    t->screen_x_delta = data->screen_x2 - data->screen_x1;
-    t->screen_y_top_left = data->screen_y1;
-    t->screen_y_delta = data->screen_y2 - data->screen_y1;
+    auto &t = spi.touchscr;
+    t.adc_x_top_left = data.adc_x1;
+    t.adc_x_delta = data.adc_x2 - data.adc_x1;
+    t.adc_y_top_left = data.adc_y1;
+    t.adc_y_delta = data.adc_y2 - data.adc_y1;
+    t.screen_x_top_left = data.screen_x1;
+    t.screen_x_delta = data.screen_x2 - data.screen_x1;
+    t.screen_y_top_left = data.screen_y1;
+    t.screen_y_delta = data.screen_y2 - data.screen_y1;
 
-    if (!t->screen_x_delta) t->screen_x_delta = 1;
-    if (!t->screen_y_delta) t->screen_y_delta = 1;
+    if (!t.screen_x_delta) t.screen_x_delta = 1;
+    if (!t.screen_y_delta) t.screen_y_delta = 1;
 }
 
-static void read_and_apply_touchscreen_calibration(NDS *this)
+void core::SPI_read_and_apply_touchscreen_calibration()
 {
-    u32 userdata_offset = cR16(this->mem.firmware, 0x20) << 3;
+    u32 userdata_offset = cR16(mem.firmware, 0x20) << 3;
     u32 offset = userdata_offset + 0x58;
 
-    struct NDS_tsc_cd calibration_data;
+    tsc_cd calibration_data;
 
-    calibration_data.adc_x1 = cR16(this->mem.firmware, offset); offset += 2;
-    calibration_data.adc_y1 = cR16(this->mem.firmware, offset); offset += 2;
-    calibration_data.screen_x1 = cR8(this->mem.firmware, offset); offset += 1;
-    calibration_data.screen_y1 = cR8(this->mem.firmware, offset); offset += 1;
-    calibration_data.adc_x2 = cR16(this->mem.firmware, offset); offset += 2;
-    calibration_data.adc_y2 = cR16(this->mem.firmware, offset); offset += 2;
-    calibration_data.screen_x2 = cR8(this->mem.firmware, offset); offset += 1;
-    calibration_data.screen_y2 = cR8(this->mem.firmware, offset); offset += 1;
+    calibration_data.adc_x1 = cR16(mem.firmware, offset); offset += 2;
+    calibration_data.adc_y1 = cR16(mem.firmware, offset); offset += 2;
+    calibration_data.screen_x1 = cR8(mem.firmware, offset); offset += 1;
+    calibration_data.screen_y1 = cR8(mem.firmware, offset); offset += 1;
+    calibration_data.adc_x2 = cR16(mem.firmware, offset); offset += 2;
+    calibration_data.adc_y2 = cR16(mem.firmware, offset); offset += 2;
+    calibration_data.screen_x2 = cR8(mem.firmware, offset); offset += 1;
+    calibration_data.screen_y2 = cR8(mem.firmware, offset); offset += 1;
 
-    apply_calib_data(this, &calibration_data);
+    SPI_apply_calib_data(calibration_data);
 }
 
-void NDS_SPI_reset(NDS *this)
+void core::SPI_reset()
 {
-    this->spi.enable = 1;
-    read_and_apply_touchscreen_calibration(this);
+    spi.enable = 1;
+    SPI_read_and_apply_touchscreen_calibration();
 }
 
 // On read OR write, value is transferred in and data is transferred out
 
-static void pwm_transaction(NDS *this, u32 val)
+void core::SPI_pwm_transaction(u32 val)
 {
     if (!PWM.hold) {
         PWM.hold = 1;
@@ -108,7 +100,7 @@ static void pwm_transaction(NDS *this, u32 val)
         SPI.output = 0;
 }
 
-static void firmware_transaction(NDS *this, u32 val)
+void core::SPI_firmware_transaction(u32 val)
 {
     if (!FMW.hold) {
         FMW.hold = 1;
@@ -158,7 +150,7 @@ static void firmware_transaction(NDS *this, u32 val)
                 SPI.output = 0;
             }
             else {
-                SPI.output = this->mem.firmware[FMW.cmd.addr & 0x3FFFF];
+                SPI.output = mem.firmware[FMW.cmd.addr & 0x3FFFF];
                 FMW.cmd.addr++;
             }
             FMW.cmd.pos++;
@@ -169,7 +161,7 @@ static void firmware_transaction(NDS *this, u32 val)
                 SPI.output = 0;
             }
             else {
-                this->mem.firmware[FMW.cmd.addr] = val;
+                mem.firmware[FMW.cmd.addr] = val;
                 SPI.output = val;
                 FMW.cmd.addr++;
             }
@@ -182,7 +174,7 @@ static void firmware_transaction(NDS *this, u32 val)
     }
 }
 
-static void touchscreen_transaction(NDS *this, u32 val)
+void core::SPI_touchscreen_transaction(u32 val)
 {
     switch(TSC.pos) {
         case 1:
@@ -198,7 +190,7 @@ static void touchscreen_transaction(NDS *this, u32 val)
 
 
     if (val & 0x80) { // new command byte
-        struct JSM_TOUCHSCREEN *ts = &this->spi.touchscr.pio->touchscreen;
+        JSM_TOUCHSCREEN *ts = &spi.touchscr.pio->touchscreen;
         TSC.cnt.u = val;
         TSC.cnt.penirq ^= 1;
         TSC.pos = 0;
@@ -232,7 +224,7 @@ static void touchscreen_transaction(NDS *this, u32 val)
     TSC.pos++;
 }
 
-void NDS_SPI_release_hold(NDS *this)
+void core::SPI_release_hold()
 {
     switch(SPI.cnt.device) {
         case 0:
@@ -248,16 +240,16 @@ void NDS_SPI_release_hold(NDS *this)
     }
 }
 
-static void SPI_irq(void *ptr, u64 num_cycles, u64 clock, u32 jitter)
+void SPI_irq(void *ptr, u64 num_cycles, u64 clock, u32 jitter)
 {
-    struct NDS *this = (NDS *)ptr;
-    this->spi.irq_id = 0;
-    if (SPI.cnt.irq_enable)
-        NDS_update_IF7(this, IRQ_SPI);
+    auto *th = static_cast<core *>(ptr);
+    th->spi.irq_id = 0;
+    if (th->SPI.cnt.irq_enable)
+        th->update_IF7(IRQ_SPI);
 }
 
 
-static void SPI_transaction(NDS *this, u32 val)
+void core::SPI_transaction(u32 val)
 {
     SPI.input = val;
     SPI.output = 0;
@@ -269,13 +261,13 @@ static void SPI_transaction(NDS *this, u32 val)
     SPI.chipsel |= SPI.cnt.chipselect_hold;
     switch(SPI.cnt.device) {
         case 0:
-            pwm_transaction(this, val);
+            SPI_pwm_transaction(val);
             break;
         case 1:
-            firmware_transaction(this, val);
+            SPI_firmware_transaction(val);
             break;
         case 2:
-            touchscreen_transaction(this, val);
+            SPI_touchscreen_transaction(val);
             break;
         case 3:
             printf("\nINVALID SPI TRANSACTION!?");
@@ -284,22 +276,23 @@ static void SPI_transaction(NDS *this, u32 val)
 
     SPI.chipsel &= SPI.cnt.chipselect_hold;
     if (!SPI.chipsel) { // Chipsel down
-        NDS_SPI_release_hold(this);
+        SPI_release_hold();
     }
-    SPI.busy_until = NDS_clock_current7(this) + (8 * (8 << SPI.cnt.baudrate));
+    SPI.busy_until = clock.current7() + (8 * (8 << SPI.cnt.baudrate));
 
-    if (SPI.irq_id) scheduler_delete_if_exist(&this->scheduler, SPI.irq_id);
+    if (SPI.irq_id) scheduler.delete_if_exist(SPI.irq_id);
     // Schedule IRQ
-    SPI.irq_id = scheduler_add_or_run_abs(&this->scheduler, SPI.busy_until, 0, this, &SPI_irq, nullptr);
+    SPI.irq_id = scheduler.add_or_run_abs(SPI.busy_until, 0, this, &SPI_irq, nullptr);
 }
 
-u32 NDS_SPI_read(NDS *this, u8 sz)
+u32 core::SPI_read(u8 sz)
 {
-    //SPI_transaction(this, 0);
-    return this->spi.output;
+    //SPI_transaction, 0);
+    return spi.output;
 }
 
-void NDS_SPI_write(NDS *this, u8 sz, u32 val)
+void core::SPI_write(u8 sz, u32 val)
 {
-    SPI_transaction(this, val & 0xFF);
+    SPI_transaction(val & 0xFF);
+}
 }

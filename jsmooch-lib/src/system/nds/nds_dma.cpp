@@ -101,7 +101,7 @@ void core::dma7_go_ch(DMA_ch &ch) {
             ch.op.started = 0; // Disable
             ch.op.first_run = 0;
             if (ch.io.irq_on_end) {
-                scheduler.add_or_run_abs(clock_current7() + num_transfer, ch.num, this, &dma7_irq, nullptr);
+                scheduler.add_or_run_abs(clock.current7() + num_transfer, ch.num, this, &dma7_irq, nullptr);
                 //dma7_irq(ch.num, 0, 0);
             }
 
@@ -216,7 +216,7 @@ void core::dma9_go_ch(DMA_ch &ch) {
             ch.op.started = 0; // Disable
             ch.op.first_run = 0;
             if (ch.io.irq_on_end) {
-                scheduler.add_or_run_abs(clock_current9() + num_transfer, ch.num, this, &dma9_irq, nullptr);
+                scheduler.add_or_run_abs(clock.current9() + num_transfer, ch.num, this, &dma9_irq, nullptr);
                 //dma9_irq(ch.num, 0, 0);
             }
 

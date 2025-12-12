@@ -1683,7 +1683,7 @@ void GE::handle_cmd()
     assert(fifo.cmd_scheduled == 0);
     printfifo("\nSCHEDULING GE CMD %02x FOR %d CYCLES!", cmd, num_cycles);
     GXSTAT.test_busy = tbl_test_busy[cmd];
-    scheduler->only_add_abs(bus->clock_current7() + num_cycles, cmd, this, &do_cmd, &fifo.cmd_scheduled);
+    scheduler->only_add_abs(bus->clock.current7() + num_cycles, cmd, this, &do_cmd, &fifo.cmd_scheduled);
 }
 
 u32 GE::check_irq() const {
@@ -2043,7 +2043,7 @@ void GE::vblank_up()
 {
     // Schedule swap_buffers if we're scheduled to!
     if (io.swap_buffers) {
-        scheduler->only_add_abs(bus->clock_current7() + 392, 0, this, &do_swap_buffers, nullptr);
+        scheduler->only_add_abs(bus->clock.current7() + 392, 0, this, &do_swap_buffers, nullptr);
     }
     else {
         re->render_frame();

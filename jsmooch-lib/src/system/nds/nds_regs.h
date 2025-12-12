@@ -2,9 +2,7 @@
 // Created by . on 1/20/25.
 //
 
-#ifndef JSMOOCH_EMUS_NDS_REGS_H
-#define JSMOOCH_EMUS_NDS_REGS_H
-
+#pragma once
 // Register defs shared
 
 #define R_AUXSPICNT     0x040001A0
@@ -209,4 +207,3 @@
 #define R9_G_CMD_VEC_TEST       0x040005C8
 
 
-#endif //JSMOOCH_EMUS_NDS_REGS_H

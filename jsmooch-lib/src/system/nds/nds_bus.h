@@ -13,9 +13,11 @@
 #include "cart/nds_cart.h"
 #include "nds_ipc.h"
 #include "nds_dma.h"
+#include "nds_timers.h"
 #include "system/nds/3d/nds_ge.h"
 #include "system/nds/3d/nds_re.h"
 #include "nds_apu.h"
+#include "nds_spi.h"
 
 #include "component/cpu/arm7tdmi/arm7tdmi.h"
 #include "component/cpu/arm946es/arm946es.h"
@@ -39,13 +41,41 @@ struct reg32 {
 struct core {
     ARM7TDMI::core arm7;
     ARM946ES::core arm9;
-    clock clock{};
     PPU::core ppu;
     GFX::GE ge{this, &scheduler};
     GFX::RE re;
-    //APU apu{};
+    APU::core apu{this, &scheduler};
+    clock clock{&this->waitstates.current_transaction};
+
     u32 arm9_ins{}, arm7_ins{};
     //controller controller{};
+    [[nodiscard]] u32 RTC_days_in_month() const;
+    void RTC_set_irq(u32 which);
+    void RTC_clear_irq(u32 flag);
+    void RTC_process_irqs(u32 kind);
+    void RTC_reset();
+    void RTC_check_end_of_month();
+    void RTC_cmd_read();
+    void RTC_reset_state();
+    void RTC_write_dt(u32 num, u32 val);
+    void RTC_save_dt();
+    void RTC_cmd_write(u32 val);
+    void RTC_byte_in();
+    void write_RTC(u8 sz, u32 val);
+    void RTC_day_inc();
+    static void RTC_tick(void *ptr, u64 key, u64 clock, u32 jitter);
+
+    void SPI_apply_calib_data(tsc_cd &data);
+    void SPI_read_and_apply_touchscreen_calibration();
+    void SPI_reset();
+    void SPI_pwm_transaction(u32 val);
+    void SPI_firmware_transaction(u32 val);
+    void SPI_touchscreen_transaction(u32 val);
+    void SPI_release_hold();
+    static void SPI_irq(void *ptr, u64 num_cycles, u64 clock, u32 jitter);
+    void SPI_transaction(u32 val);
+    u32 SPI_read(u8 sz);
+    void SPI_write(u8 sz, u32 val);
 
     static void hblank(void *ptr, u64 key, u64 clock, u32 jitter);
 
@@ -59,6 +89,7 @@ struct core {
         u64 current_transaction{};
         u64 current_shift{}; // 1
     } waitstates{};
+
 
     struct {
         struct { // Only bits 27-24 are needed to distinguish valid endpoints{}, mostly.
@@ -185,7 +216,7 @@ struct core {
             u8 output[8]{};
             u32 output_bit{}, output_pos{};
             u32 cmd{};
-            u32 status_reg[2]{};
+            u32 status_reg[2]{0x82, 0};
             u32 date_time[7]{};
             u32 alarm1[3]{}, alarm2[3]{};
 
@@ -322,25 +353,8 @@ struct core {
     void update_IFs_card(u32 bitnum);
     void update_IFs(u32 bitnum);
 
-    struct NDS_TIMER {
-        struct {
-            u32 io{};
-            u32 mask{};
-            u32 counter{};
-        } divider{};
-
-        u32 shift{};
-
-        u64 enable_at{}; // cycle # we'll be enabled at
-        u64 overflow_at{}; // cycle # we'll overflow at
-        u64 sch_id{};
-        u32 sch_scheduled_still{};
-        u32 cascade{};
-        u16 val_at_stop{};
-        u32 irq_on_overflow{};
-        u16 reload{};
-        u64 reload_ticks{};
-    } timer7[4]{}, timer9[4]{};
+    timer7_t timer7[4]{ timer7_t(this, 0), timer7_t(this, 1), timer7_t(this, 2), timer7_t(this, 3) };
+    timer9_t timer9[4]{ timer9_t(this, 0), timer9_t(this, 1), timer9_t(this, 2), timer9_t(this, 3) };
 
     struct {
         double master_cycles_per_audio_sample{};

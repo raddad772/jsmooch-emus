@@ -259,7 +259,7 @@ void MCH::change_freq()
     if (new_interval != status.sampling_interval) {
         if (scheduled) {
             apu->scheduler->delete_if_exist(schedule_id);
-            schedule_id = apu->scheduler->only_add_abs(apu->bus->clock_current7() + new_interval, num, this, &MCH::run, &scheduled);
+            schedule_id = apu->scheduler->only_add_abs(apu->bus->clock.current7() + new_interval, num, this, &MCH::run, &scheduled);
         }
         status.sampling_interval = new_interval;
     }
@@ -291,7 +291,7 @@ void MCH::probe_trigger(u32 old_status)
     status.pos = 0;
 
     sample = 0;
-    schedule_id = apu->scheduler->only_add_abs(apu->bus->clock_current7() + status.sampling_interval, num, this, &MCH::run, &scheduled);
+    schedule_id = apu->scheduler->only_add_abs(apu->bus->clock.current7() + status.sampling_interval, num, this, &MCH::run, &scheduled);
     lfsr = 0x7FFF;
 }
 

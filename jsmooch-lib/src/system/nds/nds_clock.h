@@ -9,11 +9,23 @@
 namespace NDS {
 
 struct clock {
+    explicit clock(u64 *current_transaction_in) : current_transaction(current_transaction_in) {}
+    u64 *current_transaction;
     u64 frame_start_cycle{};
     i64 cycles_left_this_frame{};
     u64 master_cycle_count7{};
     u64 master_cycle_count9{};
     u64 master_frame{};
+
+    [[nodiscard]] u64 current7() const {
+        return master_cycle_count7 + *current_transaction;
+    }
+
+    [[nodiscard]] u64 current9() const {
+        return master_cycle_count9 + *current_transaction;
+    }
+
+    u64 current9();
 
     i64 cycles7{};
     i64 cycles9{};

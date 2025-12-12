@@ -1,17 +1,18 @@
 //
 // Created by . on 1/22/25.
 //
-
-#ifndef JSMOOCH_EMUS_NDS_SPI_H
-#define JSMOOCH_EMUS_NDS_SPI_H
-
+#pragma once
 #include "helpers/int.h"
+namespace NDS {
+struct tsc_cd {
+    i32 adc_x1;
+    i32 adc_y1;
+    i32 adc_x2;
+    i32 adc_y2;
+    i32 screen_x1;
+    i32 screen_y1;
+    i32 screen_x2;
+    i32 screen_y2;
+};
 
-
-
-void NDS_SPI_reset(NDS *);
-u32 NDS_SPI_read(NDS *, u8 sz);
-void NDS_SPI_write(NDS *, u8 sz, u32 val);
-void NDS_SPI_release_hold(NDS *this);
-
-#endif //JSMOOCH_EMUS_NDS_SPI_H
+}

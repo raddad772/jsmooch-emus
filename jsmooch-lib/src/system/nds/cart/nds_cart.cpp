@@ -124,7 +124,7 @@ u32 ridge::read_rom(u32 addr, u8 sz)
             NDS_update_IFs_card(IRQ_CART_DATA_READY);
         }
     } else {
-        rom_busy_until = bus->clock_current7() + rom_transfer_time(io.romctrl.transfer_clk_rate, 4);
+        rom_busy_until = bus->clock.current7() + rom_transfer_time(io.romctrl.transfer_clk_rate, 4);
         if (sch_sch) bus->scheduler.delete_if_exist(sch_id);
         bus->scheduler.add_or_run_abs(rom_busy_until, ANB_after_read, this, &ridge::check_transfer, &sch_sch);
     }
@@ -206,7 +206,7 @@ void ridge::handle_cmd()
 
     if (io.romctrl.busy) {
 
-        rom_busy_until = bus->clock_current7() + rom_transfer_time(io.romctrl.transfer_clk_rate, 4);
+        rom_busy_until = bus->clock.current7() + rom_transfer_time(io.romctrl.transfer_clk_rate, 4);
         if (sch_sch) bus->scheduler.delete_if_exist(sch_id);
         bus->scheduler.add_or_run_abs(rom_busy_until, ANB_after_read, this, &ridge::check_transfer, &sch_sch);
     }
@@ -298,7 +298,7 @@ void ridge::write_romctrl(u32 val)
         // Trigger handle of command
         io.romctrl.busy = 1;
 
-        rom_busy_until = bus->clock_current7() + rom_transfer_time(io.romctrl.transfer_clk_rate, 8);
+        rom_busy_until = bus->clock.current7() + rom_transfer_time(io.romctrl.transfer_clk_rate, 8);
         if (sch_sch) bus->scheduler.delete_if_exist(sch_id);
         bus->scheduler.add_or_run_abs(rom_busy_until, ANB_handle_cmd, this, &ridge::check_transfer, &sch_sch);
     }

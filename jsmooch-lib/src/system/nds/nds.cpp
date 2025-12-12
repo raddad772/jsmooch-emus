@@ -468,14 +468,14 @@ u32 NDSJ_finish_scanline(JSM)
 {
     JTHIS;
 
-    u64 scanline_cycle = NDS_clock_current7(this) - this->clock.ppu.scanline_start;
+    u64 scanline_cycle = NDS_clock.current7(this) - this->clock.ppu.scanline_start;
     assert(scanline_cycle < this->clock.timing.scanline.cycles_total);
 
-    u64 old_clock = NDS_clock_current7(this);
+    u64 old_clock = NDS_clock.current7(this);
 
 
     NDSJ_step_master(jsm, this->clock.timing.scanline.cycles_total - scanline_cycle);
-    u64 diff = NDS_clock_current7(this) - old_clock;
+    u64 diff = NDS_clock.current7(this) - old_clock;
     this->clock.cycles_left_this_frame -= diff;
     return this->ppu.display->last_written;
 }

@@ -289,7 +289,7 @@ static u32 busrd7_io8(NDS *this, u32 addr, u8 sz, u32 access, bool has_effect)
         case 0x04000138:
         case 0x04000139: return 0;
         case R7_SPICNT+0:
-            this->spi.cnt.busy = NDS_clock_current7(this) < this->spi.busy_until;
+            this->spi.cnt.busy = NDS_clock.current7(this) < this->spi.busy_until;
             return this->spi.cnt.u & 0xFF;
         case R7_SPICNT+1:
             return this->spi.cnt.u >> 8;
@@ -489,13 +489,13 @@ static void start_div(NDS *this)
         case 2:
             num_clks = 34;
     }
-    this->io.div.busy_until = NDS_clock_current9(this) + num_clks;
+    this->io.div.busy_until = NDS_clock.current9(this) + num_clks;
 }
 
 static void start_sqrt(NDS *this)
 {
     this->io.sqrt.needs_calc = 1;
-    this->io.div.busy_until = NDS_clock_current9(this) + 13;
+    this->io.div.busy_until = NDS_clock.current9(this) + 13;
 }
 
 #ifdef _MSC_VER
@@ -664,7 +664,7 @@ static void buswr7_io8(NDS *this, u32 addr, u8 sz, u32 access, u32 val)
                     printf("\nWARNING GBA MODE ATTEMPT");
                     return;
                 case 2:
-                    dbgloglog(NDS_CAT_ARM7_HALT, DBGLS_INFO, "HALT ARM7 cyc:%lld", NDS_clock_current7(this));
+                    dbgloglog(NDS_CAT_ARM7_HALT, DBGLS_INFO, "HALT ARM7 cyc:%lld", NDS_clock.current7(this));
                     this->io.arm7.halted = 1;
                     return;
                 case 3:
@@ -941,7 +941,7 @@ static u32 busrd9_io8(NDS *this, u32 addr, u8 sz, u32 access, bool has_effect)
             return v;
         case R9_DIVCNT+1:
             v = this->io.div.by_zero << 6;
-            v |= (NDS_clock_current9(this) < this->io.div.busy_until) << 7;
+            v |= (NDS_clock.current9(this) < this->io.div.busy_until) << 7;
             return v;
 
         case R9_DIV_NUMER+0:
@@ -2067,12 +2067,3 @@ void NDS_mainbus_write9(void *ptr, u32 addr, u8 sz, u32 access, u32 val)
     buswr9_invalid(this, addr, sz, access, val);
 }
 
-u64 NDS_clock_current7(NDS *this)
-{
-    return this->clock.master_cycle_count7 + this->waitstates.current_transaction;
-}
-
-u64 NDS_clock_current9(NDS *this)
-{
-    return this->clock.master_cycle_count9 + this->waitstates.current_transaction;
-}

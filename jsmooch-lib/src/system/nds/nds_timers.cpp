@@ -6,195 +6,188 @@
 #include "nds_bus.h"
 #include "nds_irq.h"
 
-static void timer_overflow(void *ptr, u64 timer_num, u64 current_clock, u32 jitter);
+namespace NDS {
 
-static u32 timer_reload_ticks(u32 reload)
+u32 timer_reload_ticks(u32 reload)
 {
     // So it overflows at 0x100
     if (reload == 0xFFFF) return 0x10000;
     return 0x10000 - reload;
 }
 
-u32 NDS_timer7_enabled(NDS *this, u32 tn) {
-    return NDS_clock_current7(this) >= this->timer7[tn].enable_at;
+bool timer7_t::enabled() {
+    return bus->clock.current7() >= enable_at;
 }
 
-u32 NDS_timer9_enabled(NDS *this, u32 tn) {
-    return NDS_clock_current9(this) >= this->timer9[tn].enable_at;
+bool timer9_t::enabled() {
+    return bus->clock.current9() >= enable_at;
 }
 
-static void overflow_timer7(NDS *this, u32 tn, u64 current_time);
-static void overflow_timer9(NDS *this, u32 tn, u64 current_time);
-
-static void cascade_timer7_step(NDS *this, u32 tn, u64 current_time)
+void timer7_t::cascade_step(u64 current_time)
 {
     //printf("\nCASCADE TIMER STEP!");
-    struct NDS_TIMER *t = &this->timer7[tn];
-    t->val_at_stop = (t->val_at_stop + 1) & 0xFFFF;
-    if (t->val_at_stop == 0) {
-        overflow_timer7(this, tn, current_time);
+    val_at_stop = (val_at_stop + 1) & 0xFFFF;
+    if (val_at_stop == 0) {
+        overflow(current_time);
     }
 }
 
-static void cascade_timer9_step(NDS *this, u32 tn, u64 current_time)
+void timer9_t::cascade_step(u64 current_time)
 {
-    //printf("\nCASCADE TIMER STEP!");
-    struct NDS_TIMER *t = &this->timer9[tn];
-    t->val_at_stop = (t->val_at_stop + 1) & 0xFFFF;
-    if (t->val_at_stop == 0) {
-        overflow_timer9(this, tn, current_time);
+    val_at_stop = (val_at_stop + 1) & 0xFFFF;
+    if (val_at_stop == 0) {
+        overflow(current_time);
     }
 }
 
-static void overflow_timer7(NDS *this, u32 tn, u64 current_time) {
-    struct NDS_TIMER *t = &this->timer7[tn];
+void timer7_t::overflow(u64 current_time) {
     //printf("\nOVERFLOW: %d", tn);
-    t->enable_at = current_time;
-    t->val_at_stop = t->reload;
-    t->reload_ticks = timer_reload_ticks(t->reload) << t->shift;
-    t->overflow_at = t->enable_at + t->reload_ticks;
-    if (!t->cascade)
-        t->sch_id = scheduler_add_or_run_abs(&this->scheduler, t->overflow_at, tn, this, &timer_overflow, &t->sch_scheduled_still);
+    enable_at = current_time;
+    val_at_stop = reload;
+    reload_ticks = timer_reload_ticks(reload) << shift;
+    overflow_at = enable_at + reload_ticks;
+    if (!cascade)
+        sch_id = bus->scheduler.add_or_run_abs(overflow_at, num, bus, &timer7_t::overflow_callback, &sch_scheduled_still);
 
-    if (t->irq_on_overflow) {
+    if (irq_on_overflow) {
         //printf("\nIRQ!");
-        NDS_update_IF7(this, IRQ_TIMER0 + tn);
+        bus->update_IF7(IRQ_TIMER0 + num);
     }
 
-    if (tn < 3) {
+    if (num < 3) {
         // Check for cascade!
-        struct NDS_TIMER *tp1 = &this->timer7[tn+1];
-        if (tp1->cascade) {
-            cascade_timer7_step(this, tn+1, current_time);
+        timer7_t &tp1 = bus->timer7[num+1];
+        if (tp1.cascade) {
+            tp1.cascade_step(current_time);
         }
     }
 }
 
-static void overflow_timer9(NDS *this, u32 tn, u64 current_time)
+void timer9_t::overflow(u64 current_time)
 {
-    struct NDS_TIMER *t = &this->timer9[tn];
-    t->enable_at = current_time;
-    t->val_at_stop = t->reload;
-    t->reload_ticks = timer_reload_ticks(t->reload) << t->shift;
-    t->overflow_at = t->enable_at + t->reload_ticks;
-    if (!t->cascade)
-        t->sch_id = scheduler_add_or_run_abs(&this->scheduler, t->overflow_at, 0x10 + tn, this, &timer_overflow, &t->sch_scheduled_still);
+    enable_at = current_time;
+    val_at_stop = reload;
+    reload_ticks = timer_reload_ticks(reload) << shift;
+    overflow_at = enable_at + reload_ticks;
+    if (!cascade)
+        sch_id = bus->scheduler.add_or_run_abs(overflow_at, num, bus, &timer9_t::overflow_callback, &sch_scheduled_still);
 
-    if (t->irq_on_overflow) {
-        NDS_update_IF9(this, IRQ_TIMER0 + tn);
+    if (irq_on_overflow) {
+        bus->update_IF9(IRQ_TIMER0 + num);
     }
 
-    if (tn < 3) {
+    if (num < 3) {
         // Check for cascade!
-        struct NDS_TIMER *tp1 = &this->timer9[tn+1];
-        if (tp1->cascade) {
-            cascade_timer9_step(this, tn+1, current_time);
+        timer9_t &tp1 = bus->timer9[num+1];
+        if (tp1.cascade) {
+            tp1.cascade_step(current_time);
         }
     }
 }
 
-u32 NDS_read_timer7(NDS *this, u32 tn)
+u32 timer7_t::read()
 {
-    struct NDS_TIMER *t = &this->timer7[tn];
-    u64 current_time = this->clock.master_cycle_count7 + this->waitstates.current_transaction;
-    if (!NDS_timer7_enabled(this, tn) || t->cascade) return t->val_at_stop;
+    u64 current_time = bus->clock.master_cycle_count7 + bus->waitstates.current_transaction;
+    if (!enabled() || cascade) return val_at_stop;
 
     // Timer is enabled, so, check how many cycles we have had...
-    u64 ticks_passed = (((current_time - 1) - t->enable_at) >> t->shift);
-    u32 v = t->val_at_stop + ticks_passed;
+    u64 ticks_passed = (((current_time - 1) - enable_at) >> shift);
+    u32 v = val_at_stop + ticks_passed;
     return v;
 }
 
-u32 NDS_read_timer9(NDS *this, u32 tn)
+u32 timer9_t::read()
 {
-    struct NDS_TIMER *t = &this->timer9[tn];
-    u64 current_time = this->clock.master_cycle_count9 + this->waitstates.current_transaction;
-    if (!NDS_timer9_enabled(this, tn) || t->cascade) return t->val_at_stop;
+    u64 current_time = bus->clock.master_cycle_count9 + bus->waitstates.current_transaction;
+    if (!enabled() || cascade) return val_at_stop;
 
     // Timer is enabled, so, check how many cycles we have had...
-    u64 ticks_passed = (((current_time - 1) - t->enable_at) >> t->shift);
-    u32 v = t->val_at_stop + ticks_passed;
+    u64 ticks_passed = (((current_time - 1) - enable_at) >> shift);
+    u32 v = val_at_stop + ticks_passed;
     return v;
 }
 
-static void timer_overflow(void *ptr, u64 timer_num, u64 current_clock, u32 jitter)
+void timer7_t::overflow_callback(void *ptr, u64 timer_num, u64 current_clock, u32 jitter)
 {
-    struct NDS *this = (NDS *)ptr;
-    if (timer_num & 0x10) overflow_timer9(this, timer_num & 0x0F, NDS_clock_current7(this));
-    else overflow_timer7(this, timer_num, NDS_clock_current7(this));
+    auto *th = static_cast<core *>(ptr);
+    th->timer7[timer_num].overflow(th->clock.current7());
 }
 
-void NDS_timer7_write_cnt(NDS *this, u32 tn, u32 val)
+void timer9_t::overflow_callback(void *ptr, u64 timer_num, u64 current_clock, u32 jitter)
 {
-    struct NDS_TIMER *t = &this->timer7[tn];
-
-    t->val_at_stop = NDS_read_timer7(this, tn);
-    if (t->sch_scheduled_still) {
-        scheduler_delete_if_exist(&this->scheduler, t->sch_id);
-        t->sch_id = 0;
-    }
-    t->enable_at = 0xFFFFFFFFFFFFFFFF;
-    t->overflow_at = 0xFFFFFFFFFFFFFFFF;
-
-    t->divider.io = val & 3;
-    switch(val & 3) {
-        case 0: t->shift = 0; break;
-        case 1: t->shift = 6; break;
-        case 2: t->shift = 8; break;
-        case 3: t->shift = 10; break;
-    }
-    u32 old_enable = NDS_timer7_enabled(this, tn);
-    u32 new_enable = ((val >> 7) & 1);
-    t->cascade = (val >> 2) & 1;
-    t->irq_on_overflow = (val >> 6) & 1;
-
-    // Schedule new overflow if necessary
-    if (!old_enable && new_enable) {
-        t->val_at_stop = t->reload;
-    }
-    if (new_enable && !t->cascade) {
-        u64 cur_clock = NDS_clock_current7(this);
-        t->enable_at = cur_clock + 1;
-        t->reload_ticks = timer_reload_ticks(t->val_at_stop) << t->shift;
-        t->overflow_at = cur_clock + t->reload_ticks;
-        t->sch_id = scheduler_add_or_run_abs(&this->scheduler, t->overflow_at, tn, this, &timer_overflow, &t->sch_scheduled_still);
-    }
+    auto *th = static_cast<core *>(ptr);
+    th->timer9[timer_num].overflow(th->clock.current9());
 }
 
 
-void NDS_timer9_write_cnt(NDS *this, u32 tn, u32 val)
+void timer7_t::write_cnt(u32 val)
 {
-    struct NDS_TIMER *t = &this->timer9[tn];
-
-    t->val_at_stop = NDS_read_timer9(this, tn);
-    if (t->sch_scheduled_still) {
-        scheduler_delete_if_exist(&this->scheduler, t->sch_id);
-        t->sch_id = 0;
+    val_at_stop = read();
+    if (sch_scheduled_still) {
+        bus->scheduler.delete_if_exist(sch_id);
+        sch_id = 0;
     }
-    t->enable_at = 0xFFFFFFFFFFFFFFFF;
-    t->overflow_at = 0xFFFFFFFFFFFFFFFF;
+    enable_at = 0xFFFFFFFFFFFFFFFF;
+    overflow_at = 0xFFFFFFFFFFFFFFFF;
 
-    t->divider.io = val & 3;
+    divider.io = val & 3;
     switch(val & 3) {
-        case 0: t->shift = 0; break;
-        case 1: t->shift = 6; break;
-        case 2: t->shift = 8; break;
-        case 3: t->shift = 10; break;
+        case 0: shift = 0; break;
+        case 1: shift = 6; break;
+        case 2: shift = 8; break;
+        case 3: shift = 10; break;
     }
-    u32 old_enable = NDS_timer9_enabled(this, tn);
-    u32 new_enable = ((val >> 7) & 1);
-    t->cascade = (val >> 2) & 1;
-    t->irq_on_overflow = (val >> 6) & 1;
+    bool old_enable = enabled();
+    bool new_enable = ((val >> 7) & 1);
+    cascade = (val >> 2) & 1;
+    irq_on_overflow = (val >> 6) & 1;
 
     // Schedule new overflow if necessary
     if (!old_enable && new_enable) {
-        t->val_at_stop = t->reload;
+        val_at_stop = reload;
     }
-    if (new_enable && !t->cascade) {
-        u64 cur_clock = NDS_clock_current9(this);
-        t->enable_at = cur_clock + 1;
-        t->reload_ticks = timer_reload_ticks(t->val_at_stop) << t->shift;
-        t->overflow_at = cur_clock + t->reload_ticks;
-        t->sch_id = scheduler_add_or_run_abs(&this->scheduler, t->overflow_at, tn | 0x10, this, &timer_overflow, &t->sch_scheduled_still);
+    if (new_enable && !cascade) {
+        u64 cur_clock = bus->clock.current7();
+        enable_at = cur_clock + 1;
+        reload_ticks = timer_reload_ticks(val_at_stop) << shift;
+        overflow_at = cur_clock + reload_ticks;
+        sch_id = bus->scheduler.add_or_run_abs(overflow_at, num, bus, &timer7_t::overflow_callback, &sch_scheduled_still);
     }
+}
+
+
+void timer9_t::write_cnt(u32 val)
+{
+    val_at_stop = read();
+    if (sch_scheduled_still) {
+        bus->scheduler.delete_if_exist(sch_id);
+        sch_id = 0;
+    }
+    enable_at = 0xFFFFFFFFFFFFFFFF;
+    overflow_at = 0xFFFFFFFFFFFFFFFF;
+
+    divider.io = val & 3;
+    switch(val & 3) {
+        case 0: shift = 0; break;
+        case 1: shift = 6; break;
+        case 2: shift = 8; break;
+        case 3: shift = 10; break;
+    }
+    bool old_enable = enabled();
+    bool new_enable = ((val >> 7) & 1);
+    cascade = (val >> 2) & 1;
+    irq_on_overflow = (val >> 6) & 1;
+
+    // Schedule new overflow if necessary
+    if (!old_enable && new_enable) {
+        val_at_stop = reload;
+    }
+    if (new_enable && !cascade) {
+        u64 cur_clock = bus->clock.current9();
+        enable_at = cur_clock + 1;
+        reload_ticks = timer_reload_ticks(val_at_stop) << shift;
+        overflow_at = cur_clock + reload_ticks;
+        sch_id = bus->scheduler.add_or_run_abs(overflow_at, num, bus, &timer9_t::overflow_callback, &sch_scheduled_still);
+    }
+}
 }
