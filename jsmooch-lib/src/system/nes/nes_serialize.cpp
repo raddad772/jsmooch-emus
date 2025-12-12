@@ -255,7 +255,7 @@ void deserialize_cart(NES &nes, serialized_state &state) {
     Sload(state, &v, sizeof(v));
     if (v > 0) {
         Sload(state, nes.bus.SRAM->data, v);
-        nes.bus.SRAM->dirty = 1;
+        nes.bus.SRAM->dirty = true;
     }
     Sload(state, nes.bus.CHR_RAM.ptr, nes.bus.CHR_RAM.sz);
     nes.bus.mapper->deserialize(state);

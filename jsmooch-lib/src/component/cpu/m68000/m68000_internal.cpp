@@ -995,8 +995,8 @@ void core::sample_interrupts()
         if (pins.IPL <= regs.SR.I) return;
         if (pins.IPL == 0) return;
     }
-    state.nmi = 0;
-    state.exception.interrupt.on_next_instruction = 1;
+    state.nmi = false;
+    state.exception.interrupt.on_next_instruction = true;
     //dbg_printf("\nSET ONI cyc:%lld  IPL:%d   I:%d   %d", *trace.cycles, pins.IPL, regs.SR.I, state.nmi);
 }
 

@@ -2,24 +2,27 @@
 // Created by . on 12/4/24.
 //
 
-#ifndef JSMOOCH_EMUS_NDS_CONTROLLER_H
-#define JSMOOCH_EMUS_NDS_CONTROLLER_H
+#pragma once
 
 #include "helpers/int.h"
 #include "helpers/physical_io.h"
 
-struct NDS_controller_inputs {
-    u32 a, b, l, r, start, select, up, down, left, right;
+namespace NDS {
+
+struct controller_inputs {
+    u32 a{}, b{}, l{}, r{}, start{}, select{}, up{}, down{}, left{}, right{};
 };
 
 
-struct NDS_controller {
-    struct physical_io_device *pio;
-    struct NDS_controller_inputs input_buffer;
+struct controller {
+    explicit controller(core *parent) : bus(parent) {}
+    void setup_pio(physical_io_device *d);
+    core *bus;
+    u32 get_state(u32 byte);
+    physical_io_device *pio{};
+    controller_inputs input_buffer{};
 };
 
-struct NDS;
-void NDS_controller_setup_pio(physical_io_device *d);
-u32 NDS_get_controller_state(NDS *, u32 byte);
 
-#endif //JSMOOCH_EMUS_NDS_CONTROLLER_H
+}
+

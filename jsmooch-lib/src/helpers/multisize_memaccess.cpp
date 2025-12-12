@@ -4,33 +4,33 @@
 
 #include "helpers/int.h"
 
-static u64 cR8(void *ptr, u32 addr) {
+static u64 cR8(const void *ptr, const u32 addr) {
     return ((u8 *)ptr)[addr];
 }
 
-static u64 cR16(void *ptr, u32 addr) {
+static u64 cR16(const void *ptr, const u32 addr) {
     return *(u16*)(((u8*)ptr)+addr);
 }
 
-static u64 cR16_be(void *ptr, u32 addr) {
+static u64 cR16_be(const void *ptr, const u32 addr) {
     u16 a = *(u16*)(((u8*)ptr)+addr);
     return bswap_16(a);
 }
 
-static u64 cR32(void *ptr, u32 addr) {
+static u64 cR32(const void *ptr, const u32 addr) {
     return *(u32*)(((u8*)ptr)+addr);
 }
 
-static u64 cR32_be(void *ptr, u32 addr) {
+static u64 cR32_be(const void *ptr, const u32 addr) {
     u32 a = *(u32*)(((u8*)ptr)+addr);
     return bswap_32(a);
 }
 
-static u64 cR64(void *ptr, u32 addr) {
+static u64 cR64(const void *ptr, const u32 addr) {
     return *(u64*)(((u8*)ptr)+addr);
 }
 
-static u64 cR64_be(void *ptr, u32 addr) {
+static u64 cR64_be(const void *ptr, const u32 addr) {
     u64 a = *(u64*)(((u8*)ptr)+addr);
     return bswap_64(a);
 }
@@ -51,7 +51,7 @@ static void cW64(void *ptr, u32 addr, u64 val) {
     *(u64 *)(((u8*)ptr)+addr) = val;
 }
 
-static u64 (*cR[9])(void *, u32) = {
+static u64 (*cR[9])(const void *, const u32) = {
         nullptr,
         &cR8,
         &cR16,
@@ -63,7 +63,7 @@ static u64 (*cR[9])(void *, u32) = {
         &cR64
 };
 
-static u64 (*cR_be[9])(void *, u32) = {
+static u64 (*cR_be[9])(const void *, const u32) = {
         nullptr,
         &cR8,
         &cR16_be,

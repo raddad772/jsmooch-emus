@@ -103,7 +103,7 @@ private:
 
 public:
     void write(u32 addr, u32 val, memmap_block *bl);
-    u32 read(u32 addr, u32 old, u32 has_effect, memmap_block *bl);
+    u32 read(u32 addr, u32 old, bool has_effect, memmap_block *bl);
     void latch_counters();
     void draw_line();
     void new_scanline(u64 cur_clock);

@@ -178,7 +178,7 @@ struct core {
     SNES::core *snes;
     void calculate_sample_addrs();
 
-    u32 read(u32 addr, u32 old, u32 has_effect) const;
+    u32 read(u32 addr, u32 old, bool has_effect) const;
     void write(u32 addr, u32 val);
 
 public:

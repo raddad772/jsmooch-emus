@@ -69,5 +69,5 @@ void NES_memmap::write(u32 write_addr, u32 val)
     assert(buf);
     assert(buf->ptr);
     buf->ptr[((write_addr & mask) + offset) % buf->sz] = val;
-    if (is_SRAM && SRAM) SRAM->dirty = 1;
+    if (is_SRAM && SRAM) SRAM->dirty = true;
 }

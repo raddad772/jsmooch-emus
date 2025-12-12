@@ -2,27 +2,26 @@
 // Created by . on 1/21/25.
 //
 
-#ifndef JSMOOCH_EMUS_NDS_IPC_H
-#define JSMOOCH_EMUS_NDS_IPC_H
+#pragma once
 
 #include "helpers/int.h"
+namespace NDS {
 
-struct NDS_CPU_FIFO {
-    u32 data[16];
-    u32 head, tail;
-    u32 last;
-    u32 len;
+struct IPC_FIFO {
+    [[nodiscard]] bool is_empty() const;
+    [[nodiscard]] bool is_not_empty() const;
+    void empty();
+    [[nodiscard]] bool is_full() const;
+    bool push(u32 val);
+    [[nodiscard]] u32 peek_last() const;
+    u32 pop();
+    u32 data[16]{};
+    u32 head{}, tail{};
+    u32 last{};
+    u32 len{};
 
-    u32 enable;
+    u32 enable{};
 };
 
-struct NDS;
-u32 NDS_IPC_fifo_is_empty(NDS_CPU_FIFO *);
-u32 NDS_IPC_fifo_is_full(NDS_CPU_FIFO *);
-u32 NDS_IPC_fifo_is_not_empty(NDS_CPU_FIFO *);
-void NDS_IPC_empty_fifo(NDS *this, NDS_CPU_FIFO *f);
-u32 NDS_IPC_fifo_push(NDS_CPU_FIFO *, u32 val);
-u32 NDS_IPC_fifo_peek_last(NDS_CPU_FIFO *);
-u32 NDS_IPC_fifo_pop(NDS_CPU_FIFO *);
 
-#endif //JSMOOCH_EMUS_NDS_IPC_H
+}

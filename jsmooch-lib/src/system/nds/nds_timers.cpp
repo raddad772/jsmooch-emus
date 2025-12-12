@@ -58,7 +58,7 @@ static void overflow_timer7(NDS *this, u32 tn, u64 current_time) {
 
     if (t->irq_on_overflow) {
         //printf("\nIRQ!");
-        NDS_update_IF7(this, NDS_IRQ_TIMER0 + tn);
+        NDS_update_IF7(this, IRQ_TIMER0 + tn);
     }
 
     if (tn < 3) {
@@ -81,7 +81,7 @@ static void overflow_timer9(NDS *this, u32 tn, u64 current_time)
         t->sch_id = scheduler_add_or_run_abs(&this->scheduler, t->overflow_at, 0x10 + tn, this, &timer_overflow, &t->sch_scheduled_still);
 
     if (t->irq_on_overflow) {
-        NDS_update_IF9(this, NDS_IRQ_TIMER0 + tn);
+        NDS_update_IF9(this, IRQ_TIMER0 + tn);
     }
 
     if (tn < 3) {

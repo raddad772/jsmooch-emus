@@ -2,41 +2,33 @@
 // Created by . on 1/20/25.
 //
 
-#ifndef JSMOOCH_EMUS_NDS_IRQ_H
-#define JSMOOCH_EMUS_NDS_IRQ_H
+#pragma once
 
 #include "helpers/int.h"
-struct NDS;
-void NDS_update_IFs(NDS*, u32 bitnum);
-void NDS_update_IFs_card(NDS*, u32 bitnum);
-void NDS_update_IF9(NDS*, u32 bitnum);
-void NDS_update_IF7(NDS*, u32 bitnum);
-void NDS_eval_irqs(NDS*);
-void NDS_eval_irqs_9(NDS*);
-void NDS_eval_irqs_7(NDS*);
 
-enum NDS_IRQs {
-    NDS_IRQ_VBLANK = 0,
-    NDS_IRQ_HBLANK = 1,
-    NDS_IRQ_VMATCH = 2,
-    NDS_IRQ_TIMER0 = 3,
-    NDS_IRQ_TIMER1 = 4,
-    NDS_IRQ_TIMER2 = 5,
-    NDS_IRQ_TIMER3 = 6,
-    NDS_IRQ_SERIAL = 7,
-    NDS_IRQ_DMA0 = 8,
-    NDS_IRQ_DMA1 = 9,
-    NDS_IRQ_DMA2 = 10,
-    NDS_IRQ_DMA3 = 11,
-    NDS_IRQ_KEYPAD = 12,
-    NDS_IRQ_IPC_SYNC = 16,
-    NDS_IRQ_IPC_SEND_EMPTY = 17,
-    NDS_IRQ_IPC_RECV_NOT_EMPTY = 18,
-    NDS_IRQ_CART_DATA_READY = 19,
-    NDS_IRQ_GXFIFO = 21,
-    NDS_IRQ_SPI = 23
+namespace NDS {
+
+enum IRQs {
+    IRQ_VBLANK = 0,
+    IRQ_HBLANK = 1,
+    IRQ_VMATCH = 2,
+    IRQ_TIMER0 = 3,
+    IRQ_TIMER1 = 4,
+    IRQ_TIMER2 = 5,
+    IRQ_TIMER3 = 6,
+    IRQ_SERIAL = 7,
+    IRQ_DMA0 = 8,
+    IRQ_DMA1 = 9,
+    IRQ_DMA2 = 10,
+    IRQ_DMA3 = 11,
+    IRQ_KEYPAD = 12,
+    IRQ_IPC_SYNC = 16,
+    IRQ_IPC_SEND_EMPTY = 17,
+    IRQ_IPC_RECV_NOT_EMPTY = 18,
+    IRQ_CART_DATA_READY = 19,
+    IRQ_GXFIFO = 21,
+    IRQ_SPI = 23
 
 };
 
-
-#endif //JSMOOCH_EMUS_NDS_IRQ_H
+}

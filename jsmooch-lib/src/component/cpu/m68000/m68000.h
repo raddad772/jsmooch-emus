@@ -165,7 +165,7 @@ struct core {
 
     struct {
         states current{};
-        u32 nmi{};
+        bool nmi{};
         u32 internal_interrupt_level{};
 
         struct {
@@ -265,7 +265,7 @@ struct core {
                 u32 TCU{};
 
                 // Indicates we have an interrupt to process
-                u32 on_next_instruction{};
+                bool on_next_instruction{};
                 u32 new_I{};
 
                 // For saving

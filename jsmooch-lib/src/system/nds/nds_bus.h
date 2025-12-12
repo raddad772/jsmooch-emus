@@ -2,10 +2,9 @@
 // Created by . on 12/4/24.
 //
 
-#ifndef JSMOOCH_EMUS_NDS_BUS_H
-#define JSMOOCH_EMUS_NDS_BUS_H
-
 //#define TRACE
+#pragma once
+
 
 #include "helpers/scheduler.h"
 #include "nds_clock.h"
@@ -13,201 +12,210 @@
 #include "nds_controller.h"
 #include "cart/nds_cart.h"
 #include "nds_ipc.h"
+#include "nds_dma.h"
 #include "system/nds/3d/nds_ge.h"
 #include "system/nds/3d/nds_re.h"
 #include "nds_apu.h"
 
 #include "component/cpu/arm7tdmi/arm7tdmi.h"
 #include "component/cpu/arm946es/arm946es.h"
-
-struct NDS;
-typedef u32 (*NDS_rdfunc)(NDS *, u32 addr, u32 sz, u32 access, u32 has_effect);
-typedef void (*NDS_wrfunc)(NDS *, u32 addr, u32 sz, u32 access, u32 val);
+namespace NDS {
+typedef u32 (*rdfunc)(u32 addr, u8 sz, u32 access, bool has_effect);
+typedef void (*wrfunc)(u32 addr, u8 sz, u32 access, u32 val);
 
 #define NDSVRAMSHIFT(nda) (((nda) & 0xFFFFFF) >> 14)
 #define NDSVRAMMASK 0x3FF
 
-struct NDS {
-    struct ARM7TDMI arm7;
-    struct ARM946ES arm9;
-    struct NDS_clock clock;
-    struct NDS_PPU ppu;
-    struct NDS_GE ge;
-    struct NDS_RE re;
-    struct NDS_APU apu;
-    u32 arm9_ins, arm7_ins;
-    struct NDS_controller controller;
+struct reg64 {
+    u8 data[8]{};
+    u32 data32[2]{};
+    u64 u{};
+};
+struct reg32 {
+    u8 data[4]{};
+    u32 u{};
+};
 
-    struct scheduler_t scheduler;
+struct core {
+    ARM7TDMI::core arm7;
+    ARM946ES::core arm9;
+    clock clock{};
+    PPU::core ppu;
+    GFX::GE ge{this, &scheduler};
+    GFX::RE re;
+    //APU apu{};
+    u32 arm9_ins{}, arm7_ins{};
+    //controller controller{};
+
+    static void hblank(void *ptr, u64 key, u64 clock, u32 jitter);
+
+    scheduler_t scheduler{};
+    [[nodiscard]] u32 VRAM_tex_read(u32 addr, u8 sz) const;
+    [[nodiscard]] u32 VRAM_pal_read(u32 addr, u8 sz) const;
+    void VRAM_set_bank(u32 bank_num, u32 mst, u32 ofs, u8 *ptr, bool force, bool update_io);
+    void VRAM_resetup_banks();
 
     struct {
-        u64 current_transaction;
-        u64 current_shift; // 1
-    } waitstates;
+        u64 current_transaction{};
+        u64 current_shift{}; // 1
+    } waitstates{};
 
     struct {
-        struct { // Only bits 27-24 are needed to distinguish valid endpoints, mostly.
-            NDS_rdfunc read[16];
-            NDS_wrfunc write[16];
-        } rw[2]; // ARM7, ARM9 maps...
-        u8 RAM[0x400000]; // 4MB RAM
-        u8 WRAM_share[32 * 1024];      // 32KB WRAM mappable
-        u8 WRAM_arm7[64 * 1024]; // 64KB of WRAM for ARM7 only
+        struct { // Only bits 27-24 are needed to distinguish valid endpoints{}, mostly.
+            rdfunc read[16]{};
+            wrfunc write[16]{};
+        } rw[2]{}; // ARM7{}, ARM9 maps...
+        u8 RAM[0x400000]{}; // 4MB RAM
+        u8 WRAM_share[32 * 1024]{};      // 32KB WRAM mappable
+        u8 WRAM_arm7[64 * 1024]{}; // 64KB of WRAM for ARM7 only
         struct {
-            u8 data[16 * 1024];
-            u8 code[32 * 1024];
-        } tcm;
-        u8 oam[2048];
-        u8 palette[2048];
-        u8 internal_3d[248 * 1024];
-        u8 wifi[8 * 1024];
-        u8 bios7[16384];
-        u8 bios9[4096];
-        u8 firmware[256 * 1024];
+            u8 data[16 * 1024]{};
+            u8 code[32 * 1024]{};
+        } tcm{};
+        u8 oam[2048]{};
+        u8 palette[2048]{};
+        u8 internal_3d[248 * 1024]{};
+        u8 wifi[8 * 1024]{};
+        u8 bios7[16384]{};
+        u8 bios9[4096]{};
+        u8 firmware[256 * 1024]{};
         struct {
             struct {
-                u32 base, mask, disabled, val;
-            } RAM7, RAM9;
-        } io;
+                u32 base{}, mask{}, disabled{}, val{};
+            } RAM7{}, RAM9{};
+        } io{};
 
         struct NDS_VRAM {
-            u8 data[656 * 1024];
+            u8 data[656 * 1024]{};
             struct {
                 struct {
-                    u32 mst, ofs, enable;
-                } bank[9];
-            } io;
+                    u32 mst{}, ofs{}, enable{};
+                } bank[9]{};
+            } io{};
             struct {
-                u8 *arm9[0x400]; // 16KB banks from 06000000 to 06FFFFFF
-                u8 *arm7[2];    // 2 128KB banks at 06000000. addr < 06400000, slot[0] or [1] & 128KB
-            } map;
-        } vram;
+                u8 *arm9[0x400]{}; // 16KB banks from 06000000 to 06FFFFFF
+                u8 *arm7[2]{};    // 2 128KB banks at 06000000. addr < 06400000{}, slot[0] or [1] & 128KB
+            } map{};
+        } vram{};
 
-    } mem;
+    } mem{};
 
     struct {
         struct {
-            u8 filldata[16];
-        } dma;
+            u8 filldata[16]{};
+        } dma{};
 
-        u8 POSTFLG;
-
-        struct {
-            u32 arm7, arm9, bios, dma;
-        } open_bus;
+        u8 POSTFLG{};
 
         struct {
-            struct NDS_CPU_FIFO to_arm7, to_arm9;
+            u32 arm7{}, arm9{}, bios{}, dma{};
+        } open_bus{};
+
+        struct {
+            IPC_FIFO to_arm7{}, to_arm9{};
 
             struct {
-                u32 irq_on_send_fifo_empty;
-                u32 irq_on_recv_fifo_not_empty;
-                u32 error;
-                u32 fifo_enable;
-            } arm7, arm9;
+                u32 irq_on_send_fifo_empty{};
+                u32 irq_on_recv_fifo_not_empty{};
+                u32 error{};
+                u32 fifo_enable{};
+            } arm7{}, arm9{};
             struct {
-                u32 dinput;
-                u32 doutput;
-                u32 enable_irq_from_remote;
+                u32 dinput{};
+                u32 doutput{};
+                u32 enable_irq_from_remote{};
 
-            } arm7sync, arm9sync;
-        } ipc;
+            } arm7sync{}, arm9sync{};
+        } ipc{};
 
 
         struct {
-            u32 BIOSPROT;
-            u32 EXMEM;
-            u32 IF, IE, IME, IE_val;
+            u32 BIOSPROT{};
+            u32 EXMEM{};
+            u32 IF{}, IE{}, IME{}, IE_val{};
             struct {
-                u32 buttons;
-                u32 enable, condition;
-            } button_irq;
-            u32 halted;
-            u32 POSTFLG;
-        } arm7;
+                u32 buttons{};
+                u32 enable{}, condition{};
+            } button_irq{};
+            u32 halted{};
+            u32 POSTFLG{};
+        } arm7{};
 
         struct {
-            u32 EXMEM;
-            u32 IF, IE, IME;
+            u32 EXMEM{};
+            u32 IF{}, IE{}, IME{};
             struct {
-                u32 buttons;
-                u32 enable, condition;
-            } button_irq;
-            u32 POSTFLG;
-        } arm9;
+                u32 buttons{};
+                u32 enable{}, condition{};
+            } button_irq{};
+            u32 POSTFLG{};
+        } arm9{};
 
         struct {
-            u32 gba_slot; // 0=ARM9, 1=ARM7
-            u32 nds_slot_is7; // 0=ARM9, 1=ARM7
-            u32 main_memory;
-        } rights;
+            u32 gba_slot{}; // 0=ARM9{}, 1=ARM7
+            u32 nds_slot_is7{}; // 0=ARM9{}, 1=ARM7
+            u32 main_memory{};
+        } rights{};
 
         struct {
-            u64 busy_until;
-            u32 mode;
-            u32 by_zero;
-            u32 needs_calc;
+            u64 busy_until{};
+            u32 mode{};
+            u32 by_zero{};
+            u32 needs_calc{};
 
-            union NDSreg64 {
-                u8 data[8];
-                u32 data32[2];
-                u64 u;
-           } numer, denom, result, remainder;
-            // numer & demom are r/w, result and remainder are R-only
-        } div;
+            reg64 numer{}, denom{}, result{}, remainder{};
+            // numer & demom are r/w{}, result and remainder are R-only
+        } div{};
 
         struct {
-            u64 busy_until;
-            u32 mode;
-            u32 needs_calc;
+            u64 busy_until{};
+            u32 mode{};
+            u32 needs_calc{};
 
-            union NDSreg32 {
-                u8 data[4];
-                u32 u;
-            } result; // r-only
-            union NDSreg64 param; // r/w
-        } sqrt;
+            reg32 result{};
+            reg64 param{}; // r/w
+        } sqrt{};
 
         struct {
-            u64 timestamp;
-            u16 data;
+            u64 timestamp{};
+            u16 data{};
 
-            u8 input;
-            u32 input_bit, input_pos;
-            u8 output[8];
-            u32 output_bit, output_pos;
-            u32 cmd;
-            u32 status_reg[2];
-            u32 date_time[7];
-            u32 alarm1[3], alarm2[3];
+            u8 input{};
+            u32 input_bit{}, input_pos{};
+            u8 output[8]{};
+            u32 output_bit{}, output_pos{};
+            u32 cmd{};
+            u32 status_reg[2]{};
+            u32 date_time[7]{};
+            u32 alarm1[3]{}, alarm2[3]{};
 
-            u64 divider;
+            u64 divider{};
 
-            u64 minute_count;
-            u32 irq_flag;
-            u32 clock_adjust;
-            u32 free_register;
-            u32 alarm_date1[3];
-            u32 alarm_date2[3];
-            u32 FOUT1, FOUT2;
-            u64 sch_id;
-        } rtc;
-
-        struct {
-            u32 rcnt;
-        } sio;
+            u64 minute_count{};
+            u32 irq_flag{};
+            u32 clock_adjust{};
+            u32 free_register{};
+            u32 alarm_date1[3]{};
+            u32 alarm_date2[3]{};
+            u32 FOUT1{}, FOUT2{};
+            u64 sch_id{};
+        } rtc{};
 
         struct {
-            u32 lcd_enable;
+            u32 rcnt{};
+        } sio{};
 
-            u32 speakers;
-            u32 wifi;
-            u32 wifi_waitcnt;
+        struct {
+            u32 lcd_enable{};
 
-        } powcnt;
+            u32 speakers{};
+            u32 wifi{};
+            u32 wifi_waitcnt{};
 
-        u32 sio_data;
-    } io;
+        } powcnt{};
+
+        u32 sio_data{};
+    } io{};
 
     struct {
         union {
@@ -225,36 +233,36 @@ struct NDS {
                 u32 irq_enable : 1;
                 u32 bus_enable : 1;
             };
-            u32 u;
-        } cnt;
-        u32 enable;
-        u64 busy_until;
-        u32 input, output;
-        u32 chipsel;
+            u32 u{};
+        } cnt{};
+        u32 enable{};
+        u64 busy_until{};
+        u32 input{}, output{};
+        u32 chipsel{};
 
         struct {
-            u32 hold;
-            u32 index, pos;
-            u32 dir;
-            u8 regs[4];
-        } pwm;
+            u32 hold{};
+            u32 index{}, pos{};
+            u32 dir{};
+            u8 regs[4]{};
+        } pwm{};
 
         struct {
-            u32 write_enable;
-            u32 status;
+            u32 write_enable{};
+            u32 status{};
 
-            u32 input[8];
-            u32 output[8];
+            u32 input[8]{};
+            u32 output[8]{};
             struct {
-                u32 pos;
-                u32 addr;
-                u32 cur;
-            } cmd;
+                u32 pos{};
+                u32 addr{};
+                u32 cur{};
+            } cmd{};
 
-            u32 num_params;
+            u32 num_params{};
 
-            u32 hold;
-        } firmware;
+            u32 hold{};
+        } firmware{};
 
         struct NDS_SPI_TOUCHSCREEN {
             union {
@@ -266,126 +274,92 @@ struct NDS {
                     u8 chan_select : 3;
                     u8 start : 1;
                 };
-                u8 u;
-            } cnt;
-            u32 result;
-            u32 pos;
-            u32 touch_x, touch_y;
-            u32 hold;
+                u8 u{};
+            } cnt{};
+            u32 result{};
+            u32 pos{};
+            u32 touch_x{}, touch_y{};
+            u32 hold{};
 
-            struct physical_io_device *pio;
+            physical_io_device *pio{};
 
-            i32 adc_x_top_left, adc_y_top_left;
-            i32 adc_x_delta, adc_y_delta;
-            i32 screen_x_top_left, screen_y_top_left;
-            i32 screen_x_delta, screen_y_delta;
+            i32 adc_x_top_left{}, adc_y_top_left{};
+            i32 adc_x_delta{}, adc_y_delta{};
+            i32 screen_x_top_left{}, screen_y_top_left{};
+            i32 screen_x_delta{}, screen_y_delta{};
 
-        } touchscr;
+        } touchscr{};
 
-        u64 irq_id;
-        u64 irq_scheduled;
+        u64 irq_id{};
+        u64 irq_scheduled{};
 
-        u32 hold;
-    } spi;
+        u32 hold{};
+    } spi{};
 
     struct {
-        struct cvec* IOs;
-        u32 described_inputs;
-        i64 cycles_left;
-    } jsm;
+        bool described_inputs{};
+        i64 cycles_left{};
+    } jsm{};
 
-    struct NDS_DMA_ch {
-        u32 active;
-        u32 num;
-        struct {
-            u32 src_addr; // 28 bits
-            u32 dest_addr; // 28 bits
-            u32 word_count; // 14 bits on ch0-2, 16bit on ch3
+    void DMA_init();
+    void dma7_go_ch(DMA_ch &ch);
+    void dma7_start(DMA_ch &ch, u32 i);
+    static void dma9_irq(void *ptr, u64 key, u64 cur_time, u32 jitter);
+    void dma9_go_ch(DMA_ch &ch);
+    void dma9_start(DMA_ch &ch, u32 i);
+    void check_dma7_at_vblank();
+    void check_dma9_at_vblank();
+    void check_dma9_at_hblank();
+    void trigger_dma7_if(u32 start_timing);
+    void trigger_dma9_if(u32 start_timing);
+    DMA_ch dma7[4]{}, dma9[4]{};
 
-            u32 dest_addr_ctrl;
-            u32 src_addr_ctrl;
-            u32 repeat;
-            u32 transfer_size;
-
-            u32 start_timing;
-            u32 irq_on_end;
-            u32 enable;
-            u32 open_bus;
-        } io;
-
-        struct {
-            u32 started;
-            u32 word_count;
-            u32 word_mask;
-            u32 src_addr;
-            u32 dest_addr;
-            u32 src_access, dest_access;
-            u32 sz;
-            u32 first_run;
-            u32 is_sound;
-            i32 chunks;
-            // for mode GE_FIFO
-        } op;
-        u32 run_counter;
-    } dma7[4], dma9[4];
+    void eval_irqs_7();
+    void eval_irqs_9();
+    void eval_irqs();
+    void update_IF7(u32 bitnum);
+    void update_IF9(u32 bitnum);
+    void update_IFs_card(u32 bitnum);
+    void update_IFs(u32 bitnum);
 
     struct NDS_TIMER {
         struct {
-            u32 io;
-            u32 mask;
-            u32 counter;
-        } divider;
+            u32 io{};
+            u32 mask{};
+            u32 counter{};
+        } divider{};
 
-        u32 shift;
+        u32 shift{};
 
-        u64 enable_at; // cycle # we'll be enabled at
-        u64 overflow_at; // cycle # we'll overflow at
-        u64 sch_id;
-        u32 sch_scheduled_still;
-        u32 cascade;
-        u16 val_at_stop;
-        u32 irq_on_overflow;
-        u16 reload;
-        u64 reload_ticks;
-    } timer7[4], timer9[4];
-
-    struct {
-        double master_cycles_per_audio_sample;
-        double next_sample_cycle;
-        struct audiobuf *buf;
-    } audio;
+        u64 enable_at{}; // cycle # we'll be enabled at
+        u64 overflow_at{}; // cycle # we'll overflow at
+        u64 sch_id{};
+        u32 sch_scheduled_still{};
+        u32 cascade{};
+        u16 val_at_stop{};
+        u32 irq_on_overflow{};
+        u16 reload{};
+        u64 reload_ticks{};
+    } timer7[4]{}, timer9[4]{};
 
     struct {
-        struct NDS_DBG_eng {
-            struct NDS_DBG_line {
-                struct NDS_DBG_line_bg {
-                    union NDS_PX buf[256];
-                    u32 hscroll, vscroll;
-                    i32 hpos, vpos;
-                    i32 x_lerp, y_lerp;
-                    i32 pa, pb, pc, pd;
-                    u32 reset_x, reset_y;
-                    u32 htiles, vtiles;
-                    u32 display_overflow;
-                    u32 screen_base_block, character_base_block;
-                    u32 priority;
-                    u32 bpp8;
-                } bg[4];
-                union NDS_PX sprite_buf[256];
-                u16 dispcap_px[256];
-                u32 bg_mode;
-            } line[192];
-        } eng[2];
+        double master_cycles_per_audio_sample{};
+        double next_sample_cycle{};
+        struct audiobuf *buf{};
+    } audio{};
+
+    struct {
+        PPU::DBG_eng eng[2];
         struct NDS_DBG_tilemap_line_bg {
-            u8 lines[1024 * 128]; // 4, 128*8 1-bit "was rendered or not" values
-        } bg_scrolls[4];
+            u8 lines[1024 * 128]{}; // 4{}, 128*8 1-bit "was rendered or not" values
+        } bg_scrolls[4]{};
         struct {
-            u32 enable;
-            char str[257];
-        } mgba;
-    } dbg_info;
+            u32 enable{};
+            char str[257]{};
+        } mgba{};
+    } dbg_info{};
 
-    struct NDS_cart cart;
+    CART::ridge cart;
 
     DBG_START
         DBG_EVENT_VIEW
@@ -443,28 +417,4 @@ struct NDS {
     DBG_END
 
 };
-
-/*
-    u32 (*read)(void *ptr, u32 addr, u32 sz, u32 access, u32 has_effect);
-    void (*write)(void *ptr, u32 addr, u32 sz, u32 access, u32 val);
- */
-u32 NDS_mainbus_read7(void *ptr, u32 addr, u32 sz, u32 access, u32 has_effect);
-void NDS_mainbus_write7(void *ptr, u32 addr, u32 sz, u32 access, u32 val);
-u32 NDS_mainbus_fetchins7(void *ptr, u32 addr, u32 sz, u32 access);
-
-u32 NDS_mainbus_read9(void *ptr, u32 addr, u32 sz, u32 access, u32 has_effect);
-void NDS_mainbus_write9(void *ptr, u32 addr, u32 sz, u32 access, u32 val);
-u32 NDS_mainbus_fetchins9(void *ptr, u32 addr, u32 sz, u32 access);
-
-
-void NDS_bus_init(NDS *);
-void NDS_eval_irqs(NDS *);
-void NDS_check_dma9_at_hblank(NDS *);
-void NDS_check_dma7_at_vblank(NDS *);
-void NDS_check_dma9_at_vblank(NDS *);
-u32 NDS_open_bus_byte(NDS *, u32 addr);
-u32 NDS_open_bus(NDS *this, u32 addr, u32 sz);
-u64 NDS_clock_current7(NDS *);
-u64 NDS_clock_current9(NDS *);
-void NDS_bus_reset(NDS *);
-#endif //JSMOOCH_EMUS_NDS_BUS_H
+}

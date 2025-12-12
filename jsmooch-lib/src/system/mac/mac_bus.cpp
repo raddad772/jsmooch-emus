@@ -104,19 +104,17 @@ void core::step_CPU()
 void core::set_cpu_irq()
 {
     // TODO: ???
-    //M68k_set_interrupt_level(&cpu, io.irq.via | (io.irq.scc << 1) | (io.irq.iswitch << 2));
-    cpu.set_interrupt_level(0);
+    u32 level = io.irq.via | (io.irq.scc << 1) | (io.irq.iswitch << 2);
+    cpu.set_interrupt_level(level);
+    //cpu.set_interrupt_level(0);
 }
 
 void core::step_eclock()
 {
 
-    if (io.eclock == 0) {
-        via.step();
-    }
-
     io.eclock = (io.eclock + 1) % 10;
     if (io.eclock == 0) { // my RTC works off the e clock for some reason
+        via.step();
         rtc.cycle_counter++;
         if (rtc.cycle_counter >= 783360) {
             rtc.cycle_counter = 0;

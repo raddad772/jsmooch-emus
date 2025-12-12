@@ -31,7 +31,7 @@ struct via {
     } regs{};
 
     struct {
-        u32 t1_active{}, t2_active{};
+        bool t1_active{}, t2_active{};
     } state{};
 };
 

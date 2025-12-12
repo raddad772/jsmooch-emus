@@ -84,12 +84,12 @@ void NDSJ_set_audiobuf(jsm_system* jsm, audiobuf *ab)
 
 }
 
-static u32 read_trace_cpu9(void *ptr, u32 addr, u32 sz) {
+static u32 read_trace_cpu9(void *ptr, u32 addr, u8 sz) {
     struct NDS* this = (NDS*)ptr;
     return NDS_mainbus_read9(this, addr, sz, 0, 0);
 }
 
-static u32 read_trace_cpu7(void *ptr, u32 addr, u32 sz) {
+static u32 read_trace_cpu7(void *ptr, u32 addr, u8 sz) {
     struct NDS* this = (NDS*)ptr;
     return NDS_mainbus_read7(this, addr, sz, 0, 0);
 }
@@ -115,25 +115,25 @@ static void schedule_frame(NDS *this, u64 start_clock, u32 is_first)
     for (u32 line = 0; line < 263; line++) {
         // vblank start
         if (line == this->clock.timing.frame.vblank_up_on) {
-            scheduler_only_add_abs(&this->scheduler, cur_clock, 1, this, &NDS_PPU_vblank, NULL);
+            scheduler_only_add_abs(&this->scheduler, cur_clock, 1, this, &NDS_PPU_vblank, nullptr);
         }
         // vblank end
         if (line == this->clock.timing.frame.vblank_down_on) {
-            scheduler_only_add_abs(&this->scheduler, cur_clock, 0, this, &NDS_PPU_vblank, NULL);
+            scheduler_only_add_abs(&this->scheduler, cur_clock, 0, this, &NDS_PPU_vblank, nullptr);
         }
 
         // hblank down...
-        scheduler_only_add_abs(&this->scheduler, cur_clock, 0, this, &NDS_PPU_hblank, NULL);
+        scheduler_only_add_abs(&this->scheduler, cur_clock, 0, this, &NDS_PPU_hblank, nullptr);
         // hblank up...
-        scheduler_only_add_abs(&this->scheduler, cur_clock+this->clock.timing.scanline.cycle_of_hblank, 1, this, NDS_PPU_hblank, NULL);
+        scheduler_only_add_abs(&this->scheduler, cur_clock+this->clock.timing.scanline.cycle_of_hblank, 1, this, NDS_PPU_hblank, nullptr);
 
         // Advance clock
         cur_clock += this->clock.timing.scanline.cycles_total;
     }
 
     //printf("\nSCHEDULE NEW FRAME SET FOR CYCLE %lld", start_clock+this->clock.timing.frame.cycles);
-    scheduler_only_add_abs_w_tag(&this->scheduler, start_clock+this->clock.timing.frame.cycles, 0, this, &do_next_scheduled_frame, NULL, 1);
-    if (is_first) scheduler_only_add_abs(&this->scheduler, (i64)this->apu.next_sample, 0, this, &NDS_master_sample_callback, NULL);
+    scheduler_only_add_abs_w_tag(&this->scheduler, start_clock+this->clock.timing.frame.cycles, 0, this, &do_next_scheduled_frame, nullptr, 1);
+    if (is_first) scheduler_only_add_abs(&this->scheduler, (i64)this->apu.next_sample, 0, this, &NDS_master_sample_callback, nullptr);
 }
 
 static void NDS_run_block(void *ptr, u64 num_cycles, u64 clock, u32 jitter)
@@ -192,9 +192,9 @@ void NDS_new(jsm_system *jsm)
     this->scheduler.run.ptr = this;
 
     NDS_clock_init(&this->clock);
-    NDS_DMA_init(this);
+    DMA_init(this);
     ARM7TDMI_init(&this->arm7, &this->clock.master_cycle_count7, &this->waitstates.current_transaction, &this->scheduler);
-    //ARM7TDMI_init(&this->arm7, &this->clock.master_cycle_count7, &this->waitstates.current_transaction, NULL);
+    //ARM7TDMI_init(&this->arm7, &this->clock.master_cycle_count7, &this->waitstates.current_transaction, nullptr);
     this->arm7.read_ptr = this;
     this->arm7.write_ptr = this;
     this->arm7.read = &NDS_mainbus_read7;
@@ -202,7 +202,7 @@ void NDS_new(jsm_system *jsm)
     this->arm7.fetch_ptr = this;
     this->arm7.fetch_ins = &NDS_mainbus_fetchins7;
 
-    //ARM946ES_init(&this->arm9, &this->clock.master_cycle_count9, &this->waitstates.current_transaction, NULL);
+    //ARM946ES_init(&this->arm9, &this->clock.master_cycle_count9, &this->waitstates.current_transaction, nullptr);
     ARM946ES_init(&this->arm9, &this->clock.master_cycle_count9, &this->waitstates.current_transaction, &this->scheduler);
     this->arm9.read_ptr = this;
     this->arm9.read = &NDS_mainbus_read9;
@@ -232,7 +232,7 @@ void NDS_new(jsm_system *jsm)
     ARM946ES_setup_tracing(&this->arm9, &dt9, &this->clock.master_cycle_count9, 2);
 
     this->jsm.described_inputs = 0;
-    this->jsm.IOs = NULL;
+    this->jsm.IOs = nullptr;
     this->jsm.cycles_left = 0;
 
     jsm->ptr = (void*)this;
@@ -248,10 +248,10 @@ void NDS_new(jsm_system *jsm)
     jsm->stop = &NDSJ_stop;
     jsm->describe_io = &NDSJ_describe_io;
     jsm->set_audiobuf = &NDSJ_set_audiobuf;
-    jsm->sideload = NULL;
+    jsm->sideload = nullptr;
     jsm->setup_debugger_interface = &NDSJ_setup_debugger_interface;
-    jsm->save_state = NULL;
-    jsm->load_state = NULL;
+    jsm->save_state = nullptr;
+    jsm->load_state = nullptr;
 }
 
 void NDS_delete(jsm_system *jsm)
@@ -272,7 +272,7 @@ void NDS_delete(jsm_system *jsm)
     }
 
     free(jsm->ptr);
-    jsm->ptr = NULL;
+    jsm->ptr = nullptr;
 
     jsm_clearfuncs(jsm);
 }
@@ -585,8 +585,8 @@ static void NDSJ_describe_io(JSM, cvec* IOs)
     d->display.output[1] = malloc(256 * 384 * 4);
     memset(d->display.output[0], 0, 256*384*4);
     memset(d->display.output[1], 0, 256*384*4);
-    d->display.output_debug_metadata[0] = NULL;
-    d->display.output_debug_metadata[1] = NULL;
+    d->display.output_debug_metadata[0] = nullptr;
+    d->display.output_debug_metadata[1] = nullptr;
     setup_lcd(&d->display);
     this->ppu.display_ptr = make_cvec_ptr(IOs, cvec_len(IOs)-1);
     d->display.last_written = 1;

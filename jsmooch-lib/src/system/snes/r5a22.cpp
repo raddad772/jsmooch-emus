@@ -153,7 +153,7 @@ void core::reset()
     io.vtime = 0x1FF; // VIRQ time
 }
 
-u32 core::dma_reg_read(u32 addr, u32 old, u32 has_effect)
+u32 core::dma_reg_read(u32 addr, u32 old, bool has_effect)
 {
     DMA_CHANNEL &ch = dma.channels[(addr >> 4) & 7];
     switch(addr & 0xFF8F) {
@@ -448,7 +448,7 @@ void core::hblank(const u32 which)
     }
 }
 
-u32 core::reg_read(u32 addr, u32 old, u32 has_effect, memmap_block *bl)
+u32 core::reg_read(u32 addr, u32 old, bool has_effect, memmap_block *bl)
 {
     addr &= 0xFFFF;
     if ((addr >= 0x4300) && (addr <= 0x43FF)) return dma_reg_read(addr, old, has_effect );

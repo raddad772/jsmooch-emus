@@ -36,7 +36,8 @@ enum NDS_DBLOG_CATEGORIES {
     NDS_CAT_PPU_BG_MODE,
 };
 
-#define dbgloglog(r_cat, r_severity, r_format, ...) if (this->dbg.dvptr->ids_enabled[r_cat]) dbglog_view_add_printf(this->dbg.dvptr, r_cat, this->clock.master_cycle_count9+this->waitstates.current_transaction, r_severity, r_format, __VA_ARGS__);
+#define dbgloglog(r_cat, r_severity, r_format, ...) if (dbg.dvptr->ids_enabled[r_cat]) dbg.dvptr->add_printf(r_cat, clock.master_cycle_count9+waitstates.current_transaction, r_severity, r_format, __VA_ARGS__);
+#define dbgloglog_bus(r_cat, r_severity, r_format, ...) if (bus->dbg.dvptr->ids_enabled[r_cat]) bus->dbg.dvptr->add_printf(r_cat, bus->clock.master_cycle_count9+bus->waitstates.current_transaction, r_severity, r_format, __VA_ARGS__);
 
 void NDSJ_setup_debugger_interface(jsm_system *, debugger_interface *dbgr);
 

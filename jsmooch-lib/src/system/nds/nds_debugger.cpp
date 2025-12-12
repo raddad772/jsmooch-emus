@@ -133,16 +133,16 @@ static void render_image_view_re_wireframe(debugger_interface *dbgr, debugger_vi
     debugger_widgets_textbox_sprintf(tb, "#poly:%d", b->polygon_index);
 
     for (u32 i = 0; i < b->polygon_index; i++) {
-        struct NDS_RE_POLY *p = &b->polygon[i];
+        struct POLY *p = &b->polygon[i];
         if (p->attr.mode > 2) continue;
-        struct NDS_GE_VTX_list_node *v0, *v1;
+        struct VTX_list_node *v0, *v1;
         v1 = p->vertex_list.first;
         for (u32 vn = 1; vn < p->vertex_list.len+1; vn++) {
             v0 = v1;
             v1 = v1->next;
             if (!v1) v1 = p->vertex_list.first;
 
-            struct NDS_GE_VTX_list_node *n0, *n1;
+            struct VTX_list_node *n0, *n1;
             if (v0->data.xyzw[1] < v1->data.xyzw[1]) {
                 n0 = v0;
                 n1 = v1;
@@ -172,7 +172,7 @@ static void render_image_view_re_output(debugger_interface *dbgr, debugger_view 
     struct NDS_GE_BUFFERS *b = &this->ge.buffers[this->ge.ge_has_buffer ^ 1];
 
     for (u32 y = 0; y < 192; y++) {
-        struct NDS_RE_LINEBUFFER *lbuf = &this->re.out.linebuffer[y];
+        struct LINEBUFFER *lbuf = &this->re.out.linebuffer[y];
         u32 *out_line = outbuf + (y * out_width);
         for (u32 x = 0; x < 256; x++) {
             out_line[x] = nds_to_screen(lbuf->rgb[x]);
@@ -612,7 +612,7 @@ static void render_image_view_ppu_layers(debugger_interface *dbgr, debugger_view
     print_layer_info(this, eng, layernum->value, tb);
 
     for (u32 y = 0; y < 192; y++) {
-        //struct NDS_RE_LINEBUFFER *lbuf = &this->re.out.linebuffer[y];
+        //struct LINEBUFFER *lbuf = &this->re.out.linebuffer[y];
         u32 *out_line = outbuf + (y * out_width);
         union NDS_PX *px_line;
         if (layernum->value < 4) {
@@ -723,12 +723,12 @@ static void render_image_view_re_attr(debugger_interface *dbgr, debugger_view *d
     memset(outbuf, 0, out_width * 4 * 192);
 
     for (u32 y = 0; y < 192; y++) {
-        struct NDS_RE_LINEBUFFER *lbuf = &this->re.out.linebuffer[y];
+        struct LINEBUFFER *lbuf = &this->re.out.linebuffer[y];
         u32 *out_line = outbuf + (y * out_width);
         for (u32 x = 0; x < 256; x++) {
             switch(attr_kind->value) {
                 case 0: {
-                    union NDS_GE_TEX_PARAM tp = lbuf->tex_param[x];
+                    union TEX_PARAM tp = lbuf->tex_param[x];
                     out_line[x] = tm_colors[tp.format];
                     break; }
                 case 1: {
@@ -778,25 +778,25 @@ static void setup_dbglog(debugger_interface *dbgr, NDS *this)
     dv->has_extra = 1;
 
     struct dbglog_category_node *root = dbglog_category_get_root(dv);
-    struct dbglog_category_node *arm7 = dbglog_category_add_node(dv, root, "ARM7TDMI", NULL, 0, 0);
+    struct dbglog_category_node *arm7 = dbglog_category_add_node(dv, root, "ARM7TDMI", nullptr, 0, 0);
     dbglog_category_add_node(dv, arm7, "Instruction Trace", "ARM7", NDS_CAT_ARM7_INSTRUCTION, 0x80FF80);
     this->arm7.trace.dbglog.view = dv;
     this->arm7.trace.dbglog.id = NDS_CAT_ARM7_INSTRUCTION;
     dbglog_category_add_node(dv, arm7, "Halt", "ARM7.H", NDS_CAT_ARM7_HALT, 0xA0AF80);
 
-    struct dbglog_category_node *arm9 = dbglog_category_add_node(dv, root, "ARM946ES", NULL, 0, 0);
+    struct dbglog_category_node *arm9 = dbglog_category_add_node(dv, root, "ARM946ES", nullptr, 0, 0);
     dbglog_category_add_node(dv, arm9, "Instruction Trace", "ARM9", NDS_CAT_ARM9_INSTRUCTION, 0x8080FF);
     this->arm9.dbg.dvptr = dv;
     this->arm9.dbg.dv_id = NDS_CAT_ARM9_INSTRUCTION;
 
-    struct dbglog_category_node *cart = dbglog_category_add_node(dv, root, "Cart", NULL, 0, 0);
+    struct dbglog_category_node *cart = dbglog_category_add_node(dv, root, "Cart", nullptr, 0, 0);
     dbglog_category_add_node(dv, cart, "Read Start", "Cart.read", NDS_CAT_CART_READ_START, 0xFFFFFF);
     dbglog_category_add_node(dv, cart, "Read Complete", "Cart.read.", NDS_CAT_CART_READ_COMPLETE, 0xFFFFFF);
 
-    struct dbglog_category_node *dma = dbglog_category_add_node(dv, root, "DMA", NULL, 0, 0);
+    struct dbglog_category_node *dma = dbglog_category_add_node(dv, root, "DMA", nullptr, 0, 0);
     dbglog_category_add_node(dv, dma, "DMA Start", "dma.start", NDS_CAT_DMA_START, 0xFFFFFF);
 
-    struct dbglog_category_node *ppu = dbglog_category_add_node(dv, root, "PPU", NULL, 0, 0);
+    struct dbglog_category_node *ppu = dbglog_category_add_node(dv, root, "PPU", nullptr, 0, 0);
     dbglog_category_add_node(dv, ppu, "Register Writes", "PPU.regw", NDS_CAT_PPU_REG_WRITE, 0xFFFFFF);
     dbglog_category_add_node(dv, ppu, "BG mode changes", "PPU.BG+", NDS_CAT_PPU_BG_MODE, 0xFFFFFF);
     dbglog_category_add_node(dv, ppu, "Misc.", "PPU.misc", NDS_CAT_PPU_MISC, 0xFFFFFF);

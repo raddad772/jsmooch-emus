@@ -261,7 +261,7 @@ void NES_bus::set_cart(physical_io_device &pio)
     SRAM->persistent = nes->cart.header.battery_present;
     fake_PRG_RAM.sz = nes->cart.header.prg_ram_size;
     fake_PRG_RAM.ptr = nullptr;
-    SRAM->dirty = 1;
+    SRAM->dirty = true;
     SRAM->ready_to_use = 0;
 
     mapper->setcart(nes->cart);

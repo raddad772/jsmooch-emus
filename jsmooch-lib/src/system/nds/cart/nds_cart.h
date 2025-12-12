@@ -2,77 +2,103 @@
 // Created by . on 12/4/24.
 //
 
-#ifndef JSMOOCH_EMUS_NDS_CART_H
-#define JSMOOCH_EMUS_NDS_CART_H
+#pragma once
 
 #include "helpers/buf.h"
 #include "helpers/int.h"
 
-enum NDS_flash_kinds {
-    NDSFK_atmel,
-    NDSFK_macronix,
-    NDSFK_panasonic,
-    NDSFK_SST,
-    NDSFK_sanyo128k,
-    NDSFK_macronix128k,
-    NDSFK_other
+namespace NDS::CART {
+
+enum flash_kinds {
+    FK_atmel,
+    FK_macronix,
+    FK_panasonic,
+    FK_SST,
+    FK_sanyo128k,
+    FK_macronix128k,
+    FK_other
 };
 
-
-enum NDS_flash_states {
-    NDSFS_idle,
-    NDSFS_get_id,
-    NDSFS_erase_4k,
-    NDSFS_write_byte,
-    NDSFS_await_bank
+enum after_next_busy {
+    ANB_none=0,
+    ANB_handle_cmd=1,
+    ANB_after_read=2
 };
 
-enum NDS_cart_data_modes {
+enum data_modes {
     NCDM_unencrypted,
     NCDM_secure_area,
     NCDM_main
 };
 
-enum NDS_after_next_busy {
-    NDANB_none,
-    NDANB_handle_cmd,
-    NDANB_after_read
+enum backup_kind {
+    BK_none=0,
+    BK_eeprom=1,
+    BK_flash=2,
+    BK_fram=3
 };
 
+struct ridge {
+    explicit ridge(NDS::core *parent) : bus(parent) {}
+    bool load_ROM_from_RAM(char* fil, u64 fil_sz, physical_io_device *pio, u32 *SRAM_enable);
+    NDS::core *bus;
+    [[nodiscard]] u32 read_spicnt() const;
+    [[nodiscard]] bool data_ready();
+    [[nodiscard]] u32 read_romctrl() const;
+    [[nodiscard]] u32 get_transfer_irq_bits() const;
+    [[nodiscard]] u32 read_spi(u32 bnum) const;
+    [[nodiscard]] u32 read_rom(u32 addr, u8 sz);
+    [[nodiscard]] u32 get_block_size() const;
+    void spi_write_spicnt(u32 val, u32 bnum);
+    void after_read();
+    static void check_transfer(void *ptr, u64 key, u64 clock, u32 jitter);
+    void raise_transfer_irq();
+    void reset();
+    void direct_boot();
+    void set_block_start_status(u32 val, u32 transfer_ready_irq);
+    void handle_cmd();
+    void inc_addr();
+    void spi_transaction(u32 val);
+    void write_romctrl(u32 val);
+    void write_cmd(u32 addr, u32 val);
+    void detect_kind(u32 from, u32 val);
 
-enum NDS_BACKUP_KIND {
-    NDSBK_none=0,
-    NDSBK_eeprom=1,
-    NDSBK_flash=2,
-    NDSBK_fram
-};
+    void eeprom_setup();
+    void eeprom_get_addr(u32 val);
+    void eeprom_read();
+    void eeprom_write(u32 val);
+    void eeprom_handle_spi_cmd(u32 val, u32 is_cmd);
+    void eeprom_spi_transaction(u32 val);
 
-struct NDS_cart {
-    u64 sch_id;
-    u32 sch_sch;
+    void flash_setup();
+    void flash_handle_spi_cmd(u32 val);
+    void flash_spi_transaction(u32 val);
+
+    u64 sch_id{};
+    u32 sch_sch{};
     struct {
-        u32 data_in[8];
-        u32 pos_in;
-        u32 data_out[0x1000];
-        u32 pos_out;
-        u32 sz_out;
-        u32 addr;
+        u32 data_in[8]{};
+        u32 pos_in{};
+        u32 data_out[0x1000]{};
+        u32 pos_out{};
+        u8 sz_out{};
+        u32 addr{};
 
-        u32 cur;
+        u32 cur{};
 
-        u32 input, output;
-        u32 block_size;
-    } cmd;
+        u32 input{}, output{};
+        u32 block_size{};
+    } cmd{};
 
     struct {
         struct {
-            u32 divider_val;
-            u32 divider;
-            u32 next_chipsel;
-            u32 slot_mode;
-        } spi;
-        u32 transfer_ready_irq;
-        u32 nds_slot_enable;
+            u32 divider_val{};
+            u32 divider{};
+            u32 next_chipsel{};
+            u32 slot_mode{};
+        } spi{};
+        u32 transfer_ready_irq{};
+        u32 nds_slot_enable{};
 
         union {
             struct {
@@ -85,34 +111,34 @@ struct NDS_cart {
                 // byte 2
                 u32 key2_gap_len : 6; // 16-21
                 u32 key2_encrypt_cmd : 1; // 22
-                u32 data_ready : 1; // read-only, bit 23
+                u32 data_ready : 1; // read-only{}, bit 23
 
                 // byte 3
                 u32 data_block_size : 3; // 24-26
                 u32 transfer_clk_rate : 1; // 27
                 u32 key1_gap_clks : 1; // 28
-                u32 resb_release_reset : 1; // 29, cannot be cleared once set
-                u32 data_direction : 1; // 30, for FLASH/NAND carts
-                u32 busy : 1; // 31 IRQ on bit14 of SPICNT, read-only
+                u32 resb_release_reset : 1; // 29{}, cannot be cleared once set
+                u32 data_direction : 1; // 30{}, for FLASH/NAND carts
+                u32 busy : 1; // 31 IRQ on bit14 of SPICNT{}, read-only
             };
-            u32 u;
-        } romctrl;
-    } io;
+            u32 u{};
+        } romctrl{};
+    } io{};
 
 
     struct {
-        struct persistent_store *store;
-        u32 cmd;
+        persistent_store *store{};
+        u32 cmd{};
         union {
             u8 b8[4];
-            u32 u;
-        } data_in;
-        u32 data_in_pos;
-        u32 cmd_addr;
+            u32 u{};
+        } data_in{};
+        u32 data_in_pos{};
+        u32 cmd_addr{};
         union {
             u8 b8[4];
-            u32 b32;
-        } data_out;
+            u32 b32{};
+        } data_out{};
 
         union {
             struct {
@@ -122,45 +148,28 @@ struct NDS_cart {
                 u8 _u : 3;
                 u8 reg_write_disable : 1;
             };
-            u8 u;
-        } status;
-        u32 chipsel;
+            u8 u{};
+        } status{};
+        u32 chipsel{};
 
-        u32 page_mask;
-        u32 uh, uq;
+        u32 page_mask{};
+        u32 uh{}, uq{};
 
         struct {
-            u32 done;
-            u32 pos;
-            enum NDS_BACKUP_KIND kind;
-            u32 sz_mask;
-            u32 sz;
-            u32 arg_buf_addr;
-            u32 arg_buf_ptr;
-            u32 addr_bytes;
-        } detect;
-    } backup;
+            u32 done{};
+            u32 pos{};
+            backup_kind kind{};
+            u8 sz_mask{};
+            u32 sz{};
+            u32 arg_buf_addr{};
+            u32 arg_buf_ptr{};
+            u32 addr_bytes{};
+        } detect{};
+    } backup{};
 
-    u64 rom_busy_until;
-    enum NDS_cart_data_modes data_mode;
+    u64 rom_busy_until{};
+    data_modes data_mode{};
 
-    struct buf ROM;
+    buf ROM{};
 };
-
-void NDS_cart_init(NDS *);
-void NDS_cart_reset(NDS *);
-void NDS_cart_delete(NDS *);
-void NDS_cart_direct_boot(NDS *);
-u32 NDS_cart_load_ROM_from_RAM(NDS_cart*, char* fil, u64 fil_sz, physical_io_device *pio, u32 *SRAM_enable);
-void NDS_cart_spi_write_spicnt(NDS *, u32 val, u32 bnum);
-void NDS_cart_spi_transaction(NDS *, u32 val);
-void NDS_cart_write_romctrl(NDS *, u32 val);
-void NDS_cart_write_cmd(NDS *, u32 addr, u32 val);
-u32 NDS_cart_read_romctrl(NDS *);
-u32 NDS_cart_read_rom(NDS *, u32 addr, u32 sz);
-void NDS_cart_check_transfer(void *ptr, u64 key, u64 clock, u32 jitter);
-u32 NDS_cart_read_spicnt(NDS *);
-u32 NDS_cart_read_spi(NDS *, u32 bnum);
-void NDS_cart_detect_kind(NDS *, u32 from, u32 val);
-
-#endif //JSMOOCH_EMUS_NDS_CART_H
+}

@@ -13,7 +13,7 @@ void mem::write_bad(u32 addr, u32 val, memmap_block *bl)
     printf("\nWARN BAD WRITE %06x:%02x", addr, val);
 }
 
-u32 mem::read_bad(u32 addr, u32 old, u32 has_effect, memmap_block *bl)
+u32 mem::read_bad(u32 addr, u32 old, bool has_effect, memmap_block *bl)
 {
     if (has_effect) {
         printf("\nWARN BAD READ %06x", addr);
@@ -37,13 +37,13 @@ void mem::clear_map()
 }
 
 // typedef void (*SNES_memmap_write)(core *, u32 addr, u32 val, memmap_block *bl);
-//typedef u32 (*SNES_memmap_read)(core *, u32 addr, u32 old, u32 has_effect, memmap_block *bl);
+//typedef u32 (*SNES_memmap_read)(core *, u32 addr, u32 old, bool has_effect, memmap_block *bl);
 void mem::write_WRAM(u32 addr, u32 val, memmap_block *bl)
 {
     WRAM[((addr & 0xFFF) + bl->offset) & 0x1FFFF] = val;
 }
 
-u32 mem::read_WRAM(u32 addr, u32 old, u32 has_effect, memmap_block *bl)
+u32 mem::read_WRAM(u32 addr, u32 old, bool has_effect, memmap_block *bl)
 {
     return WRAM[((addr & 0xFFF) + bl->offset) & 0x1FFFF];
 }
@@ -58,7 +58,7 @@ void mem::write_loROM(u32 addr, u32 val, memmap_block *bl)
     }
 }
 
-u32 mem::read_loROM(u32 addr, u32 old, u32 has_effect, memmap_block *bl)
+u32 mem::read_loROM(u32 addr, u32 old, bool has_effect, memmap_block *bl)
 {
     u32 maddr = ((addr & 0xFFF) + bl->offset) % snes->cart.ROM.size;
     return static_cast<u8 *>(snes->cart.ROM.ptr)[maddr];
@@ -67,10 +67,10 @@ u32 mem::read_loROM(u32 addr, u32 old, u32 has_effect, memmap_block *bl)
 void mem::write_SRAM(u32 addr, u32 val, memmap_block *bl)
 {
     static_cast<u8 *>(snes->cart.SRAM->data)[((addr & 0xFFF) + bl->offset) & snes->cart.header.sram_mask] = val;
-    snes->cart.SRAM->dirty = 1;
+    snes->cart.SRAM->dirty = true;
 }
 
-u32 mem::read_SRAM(u32 addr, u32 old, u32 has_effect, memmap_block *bl)
+u32 mem::read_SRAM(u32 addr, u32 old, bool has_effect, memmap_block *bl)
 {
     return static_cast<u8 *>(snes->cart.SRAM->data)[((addr & 0xFFF) + bl->offset) & snes->cart.header.sram_mask];
 }
@@ -271,7 +271,7 @@ void mem::cart_inserted()
 }
 
 // wdc65816_read and _write replaced with read_bus_a
-u32 mem::read_bus_A(u32 addr, u32 old, u32 has_effect)
+u32 mem::read_bus_A(u32 addr, u32 old, bool has_effect)
 {
     return (this->*read[addr >> 12])(addr, old, has_effect, &blockmap[addr >> 12]);
 }
@@ -281,7 +281,7 @@ void mem::write_bus_A(u32 addr, u32 val)
     (this->*write[addr >> 12])(addr, val, &blockmap[addr >> 12]);
 }
 
-u32 mem::read_R5A22(u32 addr, u32 old, u32 has_effect, memmap_block *bl) {
+u32 mem::read_R5A22(u32 addr, u32 old, bool has_effect, memmap_block *bl) {
     return snes->r5a22.reg_read(addr, old, has_effect, bl);
 }
 
@@ -289,7 +289,7 @@ void mem::write_R5A22(u32 addr, u32 val, memmap_block *bl) {
     snes->r5a22.reg_write(addr, val, bl);
 }
 
-u32 mem::read_PPU(u32 addr, u32 old, u32 has_effect, memmap_block *bl) {
+u32 mem::read_PPU(u32 addr, u32 old, bool has_effect, memmap_block *bl) {
     return snes->ppu.read(addr, old, has_effect, bl);
 }
 

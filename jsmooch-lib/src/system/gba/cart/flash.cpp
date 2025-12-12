@@ -47,7 +47,7 @@ void core::write_flash_cmd(u32 addr, u32 cmd)
                 if ((addr & 0x0FFF) == 0) {
                     u32 base = addr & 0xF000;
                     memset(static_cast<u8 *>(RAM.store->data) + (base | RAM.flash.bank_offset), 0xFF, 0x1000);
-                    RAM.store->dirty = 1;
+                    RAM.store->dirty = true;
                 }
                 return;
             }

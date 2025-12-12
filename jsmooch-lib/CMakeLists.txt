@@ -218,6 +218,47 @@ set(SOURCE_LIST
         "src/helpers/debugger/waveform.h"
         "src/helpers/cvec.cpp"
         "src/helpers/cvec.h"
+        src/system/nds/nds.cpp
+        src/system/nds/nds.h
+        src/system/nds/nds_apu.cpp
+        src/system/nds/nds_apu.h
+        src/system/nds/nds_bus.cpp
+        src/system/nds/nds_bus.h
+        src/system/nds/nds_clock.cpp
+        src/system/nds/nds_clock.h
+        src/system/nds/nds_controller.cpp
+        src/system/nds/nds_controller.h
+        src/system/nds/nds_debugger.cpp
+        src/system/nds/nds_debugger.h
+        src/system/nds/nds_dma.cpp
+        src/system/nds/nds_dma.h
+        src/system/nds/nds_ipc.cpp
+        src/system/nds/nds_ipc.h
+        src/system/nds/nds_irq.cpp
+        src/system/nds/nds_irq.h
+        src/system/nds/nds_ppu.cpp
+        src/system/nds/nds_ppu.h
+        src/system/nds/nds_regs.h
+        src/system/nds/nds_rtc.cpp
+        src/system/nds/nds_rtc.h
+        src/system/nds/nds_spi.cpp
+        src/system/nds/nds_spi.h
+        src/system/nds/nds_timers.cpp
+        src/system/nds/nds_timers.h
+        src/system/nds/nds_vram.cpp
+        src/system/nds/nds_vram.h
+        src/system/nds/3d/nds_3dmath.cpp
+        src/system/nds/3d/nds_3dmath.h
+        src/system/nds/3d/nds_ge.cpp
+        src/system/nds/3d/nds_ge.h
+        src/system/nds/3d/nds_re.cpp
+        src/system/nds/3d/nds_re.h
+        src/system/nds/cart/nds_cart.cpp
+        src/system/nds/cart/nds_cart.h
+        src/system/nds/cart/nds_eeprom.cpp
+        src/system/nds/cart/nds_eeprom.h
+        src/system/nds/cart/nds_flash.cpp
+        src/system/nds/cart/nds_flash.h
         src/system/nes/nes_bus.cpp
         src/system/nes/nes_bus.h
         src/system/snes/snes_serialize.cpp

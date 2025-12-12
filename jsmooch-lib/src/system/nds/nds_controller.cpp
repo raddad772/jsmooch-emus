@@ -5,15 +5,16 @@
 #include "nds_bus.h"
 #include "nds_controller.h"
 
-u32 NDS_get_controller_state(NDS *this, u32 byte)
-{
+namespace NDS {
 
-    struct JSM_CONTROLLER *cnt = &this->controller.pio->controller;
-    struct JSM_TOUCHSCREEN *tsc = &this->spi.touchscr.pio->touchscreen;
-    struct cvec* bl = &cnt->digital_buttons;
-    struct HID_digital_button *b;
+u32 controller::get_state(u32 byte)
+{
+    JSM_CONTROLLER *cnt = &pio->controller;
+    JSM_TOUCHSCREEN *tsc = &bus->spi.touchscr.pio->touchscreen;
+    auto &bl = cnt->digital_buttons;
+    HID_digital_button *b;
     u32 v = 0;
-#define B_GET(bit, num) { b = cvec_get(bl, num); v |= (b->state << bit); }
+#define B_GET(bit, num) { b = &bl.at(num); v |= (b->state << bit); }
     B_GET(0, 4); // A
     B_GET(1, 5); // B
     B_GET(2, 9); // select
@@ -27,7 +28,7 @@ u32 NDS_get_controller_state(NDS *this, u32 byte)
     B_GET(16, 10); // X button
     B_GET(17, 11); // Y button
 #undef B_GET
-    b = cvec_get(bl, 10);
+    b = &bl.at(10);
     // pen down bit 22
     v |= (tsc->touch.down << 22);
     v ^= 0x007FFFFF;
@@ -43,19 +44,19 @@ u32 NDS_get_controller_state(NDS *this, u32 byte)
 }
 
 
-void NDS_controller_setup_pio(physical_io_device *d)
+void controller::setup_pio(physical_io_device *d)
 {
-    physical_io_device_init(d, HID_CONTROLLER, 0, 0, 1, 1);
+    d->init(HID_CONTROLLER, true, true, true, false);
 
     snprintf(d->controller.name, sizeof(d->controller.name), "%s", "NDS Input");
     d->id = 0;
     d->kind = HID_CONTROLLER;
-    d->connected = 1;
-    d->enabled = 1;
+    d->connected = true;
+    d->enabled = true;
 
-    struct JSM_CONTROLLER* cnt = &d->controller;
+    JSM_CONTROLLER* cnt = &d->controller;
 
-    cvec_alloc_atleast(&cnt->digital_buttons, 12);
+    cnt->digital_buttons.reserve(12);
     // up down left right a b start select. in that order
     pio_new_button(cnt, "up", DBCID_co_up);
     pio_new_button(cnt, "down", DBCID_co_down);
@@ -69,4 +70,7 @@ void NDS_controller_setup_pio(physical_io_device *d)
     pio_new_button(cnt, "select", DBCID_co_select);
     pio_new_button(cnt, "x", DBCID_co_fire4);
     pio_new_button(cnt, "y", DBCID_co_fire3);
+
+    pio = d;
+}
 }

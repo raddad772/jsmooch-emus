@@ -75,7 +75,7 @@ static void set_irq(NDS *this, u32 which)
 
     if ((!(oldstat & 0x30) && (this->io.rtc.irq_flag & 0x30))) {
         if ((this->io.sio.rcnt & 0xC100) == 0x8100) {
-            NDS_update_IF7(this, NDS_IRQ_SERIAL);
+            NDS_update_IF7(this, IRQ_SERIAL);
         }
     }
 }
@@ -195,7 +195,7 @@ void NDS_RTC_reset(NDS *this)
     this->io.rtc.cmd = 0;
 
     this->io.rtc.divider = 0;
-    scheduler_add_or_run_abs(&this->scheduler, 32768, 0, this, &NDS_RTC_tick, NULL);
+    scheduler_add_or_run_abs(&this->scheduler, 32768, 0, this, &NDS_RTC_tick, nullptr);
 }
 
 void NDS_RTC_init(NDS *this)
@@ -462,7 +462,7 @@ static void RTC_byte_in(NDS *this)
     cmd_write(this, val);
 }
 
-void NDS_write_RTC(NDS *this, u32 sz, u32 val)
+void NDS_write_RTC(NDS *this, u8 sz, u32 val)
 {
     if (sz != 1) val |= (this->io.rtc.data & 0xFF00);
 
@@ -534,7 +534,7 @@ void NDS_RTC_tick(void *ptr, u64 key, u64 clock, u32 jitter) // Called on scanli
 {
     struct NDS *this = (NDS *)ptr;
     u64 tstamp = (NDS_clock_current7(this) - jitter) + 32768;
-    this->io.rtc.sch_id = scheduler_add_or_run_abs(&this->scheduler, tstamp, 0, this, &NDS_RTC_tick, NULL);
+    this->io.rtc.sch_id = scheduler_add_or_run_abs(&this->scheduler, tstamp, 0, this, &NDS_RTC_tick, nullptr);
     this->io.rtc.divider++;
     if ((this->io.rtc.divider & 0x7FFF) == 0) {
         this->io.rtc.date_time[6] = bcd_inc(this->io.rtc.date_time[6]);

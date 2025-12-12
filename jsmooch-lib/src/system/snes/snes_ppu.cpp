@@ -618,7 +618,7 @@ void core::latch_counters() {
     snes->ppu.latch.counters = 1;
 }
 
-u32 core::read(u32 addr, u32 old, u32 has_effect, memmap_block *bl)
+u32 core::read(u32 addr, u32 old, bool has_effect, memmap_block *bl)
 {
     addr &= 0xFFFF;
     if (addr >= 0x2140 && addr < 0x217F) { return snes->apu.read(addr, old, has_effect); }

@@ -138,7 +138,7 @@ void GBMBC2_CPU_write(GB_mapper* parent, u32 addr, u32 val)
     else if ((addr >= 0xA000) && (addr < 0xC000)) { // cart RAM
         if (this->regs.ext_RAM_enable) {
             ((u8 *)this->cart->SRAM->data)[addr & 0x1FF] = val & 0x0F;
-            this->cart->SRAM->dirty = 1;
+            this->cart->SRAM->dirty = true;
         }
         return;
     }

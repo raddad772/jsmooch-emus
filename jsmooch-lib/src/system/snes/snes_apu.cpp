@@ -666,7 +666,7 @@ void core::schedule_first()
     }
 }
 
-u32 core::read(u32 addr, u32 old, u32 has_effect) const {
+u32 core::read(u32 addr, u32 old, bool has_effect) const {
     return cpu.io.CPUO[addr & 3];
 }
 

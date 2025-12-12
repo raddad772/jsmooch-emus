@@ -253,7 +253,7 @@ static void SPI_irq(void *ptr, u64 num_cycles, u64 clock, u32 jitter)
     struct NDS *this = (NDS *)ptr;
     this->spi.irq_id = 0;
     if (SPI.cnt.irq_enable)
-        NDS_update_IF7(this, NDS_IRQ_SPI);
+        NDS_update_IF7(this, IRQ_SPI);
 }
 
 
@@ -290,16 +290,16 @@ static void SPI_transaction(NDS *this, u32 val)
 
     if (SPI.irq_id) scheduler_delete_if_exist(&this->scheduler, SPI.irq_id);
     // Schedule IRQ
-    SPI.irq_id = scheduler_add_or_run_abs(&this->scheduler, SPI.busy_until, 0, this, &SPI_irq, NULL);
+    SPI.irq_id = scheduler_add_or_run_abs(&this->scheduler, SPI.busy_until, 0, this, &SPI_irq, nullptr);
 }
 
-u32 NDS_SPI_read(NDS *this, u32 sz)
+u32 NDS_SPI_read(NDS *this, u8 sz)
 {
     //SPI_transaction(this, 0);
     return this->spi.output;
 }
 
-void NDS_SPI_write(NDS *this, u32 sz, u32 val)
+void NDS_SPI_write(NDS *this, u8 sz, u32 val)
 {
     SPI_transaction(this, val & 0xFF);
 }

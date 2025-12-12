@@ -38,7 +38,7 @@ struct core {
     void reset();
     void setup_tracing(jsm_debug_read_trace *strct);
     void hblank(u32 which);
-    u32 reg_read(u32 addr, u32 old, u32 has_effect, memmap_block *bl);
+    u32 reg_read(u32 addr, u32 old, bool has_effect, memmap_block *bl);
     void reg_write(u32 addr, u32 val, memmap_block *bl);
     void cycle_cpu();
     void cycle_alu();
@@ -46,7 +46,7 @@ struct core {
 
 private:
     void dma_reset();
-    u32 dma_reg_read(u32 addr, u32 old, u32 has_effect);
+    u32 dma_reg_read(u32 addr, u32 old, bool has_effect);
     void dma_reg_write(u32 addr, u32 val);
 
 public:

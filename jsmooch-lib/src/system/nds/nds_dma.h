@@ -2,8 +2,7 @@
 // Created by . on 1/20/25.
 //
 
-#ifndef JSMOOCH_EMUS_NDS_DMA_H
-#define JSMOOCH_EMUS_NDS_DMA_H
+#pragma once
 
 #include "helpers/int.h"
 
@@ -16,31 +15,50 @@
   5  DS Cartridge Slot
   6  GBA Cartridge Slot
   7  Geometry Command FIFO */
-
-enum NDS_DMA_start_timings {
-    NDS_DMA_IMMEDIATE=0,
-    NDS_DMA_VBLANK,
-    NDS_DMA_HBLANK,
-    NDS_DMA_START_OF_DISPLAY,
-    NDS_DMA_MAIN_MEMORY_DISPLAY,
-    NDS_DMA_DS_CART_SLOT,
-    NDS_DMA_GBA_CART_SLOT,
-    NDS_DMA_GE_FIFO
+namespace NDS {
+enum DMA_start_timings {
+    DMA_IMMEDIATE=0,
+    DMA_VBLANK=1,
+    DMA_HBLANK=2,
+    DMA_START_OF_DISPLAY=3,
+    DMA_MAIN_MEMORY_DISPLAY=4,
+    DMA_DS_CART_SLOT=5,
+    DMA_GBA_CART_SLOT=6,
+    DMA_GE_FIFO=7
 };
 
-struct NDS_DMA_ch;
-struct NDS;
-void NDS_dma7_start(NDS *, NDS_DMA_ch *ch, u32 i);
-u32 NDS_dma7_go(NDS *this);
+struct DMA_ch {
+    u32 active{};
+    u32 num{};
+    struct {
+        u32 src_addr{}; // 28 bits
+        u32 dest_addr{}; // 28 bits
+        u32 word_count{}; // 14 bits on ch0-2{}, 16bit on ch3
 
-void NDS_dma9_start(NDS *, NDS_DMA_ch *ch, u32 i);
-u32 NDS_dma9_go(NDS *this);
+        u32 dest_addr_ctrl{};
+        u32 src_addr_ctrl{};
+        u32 repeat{};
+        u32 transfer_size{};
 
-void NDS_DMA_init(NDS *);
-void NDS_check_dma9_at_hblank(NDS *);
-void NDS_check_dma9_at_vblank(NDS *);
-void NDS_check_dma7_at_vblank(NDS *);
-void NDS_trigger_dma7_if(NDS *, u32 start_timing);
-void NDS_trigger_dma9_if(NDS *, u32 start_timing);
+        u32 start_timing{};
+        u32 irq_on_end{};
+        u32 enable{};
+        u32 open_bus{};
+    } io{};
 
-#endif //JSMOOCH_EMUS_NDS_DMA_H
+    struct {
+        u32 started{};
+        u32 word_count{};
+        u32 word_mask{};
+        u32 src_addr{};
+        u32 dest_addr{};
+        u32 src_access{}, dest_access{};
+        u8 sz{};
+        u32 first_run{};
+        u32 is_sound{};
+        i32 chunks{};
+        // for mode GE_FIFO
+    } op{};
+    u32 run_counter{};
+};
+}

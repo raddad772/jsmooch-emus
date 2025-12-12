@@ -193,7 +193,7 @@ void GBMBC3_CPU_write(GB_mapper* parent, u32 addr, u32 val)
     if ((addr >= 0xA000) && (addr < 0xC000)) { // cart RAM
         if ((this->has_RAM) && (this->regs.RAM_bank < 4)) {
             ((u8 *)this->cart->SRAM->data)[(addr & 0x1FFF) + this->RAM_bank_offset] = val;
-            this->cart->SRAM->dirty = 1;
+            this->cart->SRAM->dirty = true;
         }
         return;
     }

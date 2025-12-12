@@ -57,14 +57,13 @@ void via::write(u32 addr, u16 mask, u16 val)
             //printf("\nWrite IFR %02x new:%02x old:%02x cyc:%lld", val, regs.IFR, old_val, clock.master_cycles);
             return; }
         case vIER: {// interrupt enable register
-            u32 flags_to_affect = val & 0x7F;
-            val &= 0x7F;
+            //val &= 0x7F;
             // 00 set, 0x80 clear
             if (val & 0x80) { // Enable flags
-                regs.IER |= val;
+                regs.IER |= (val & 0x7F);
             }
             else { // Disable flags
-                regs.IER &= ~val;
+                regs.IER &= ~(val & 0x7F);
             }
             irq_sample();
             return; }
@@ -108,7 +107,7 @@ void via::write(u32 addr, u16 mask, u16 val)
 
             regs.T2L = (regs.T2L | 0xFF) | (val << 8);
             regs.T2C = regs.T2L;
-            state.t2_active = 1;
+            state.t2_active = true;
             return;
         case vSR: // keyboard shfit reg
             regs.IFR &= 0b11111011;
@@ -263,7 +262,7 @@ void via::step()
     irq_sample();
 
     // TODO: add .5 cycles to the countdowns
-    u32 IRQ_sample = 0;
+    bool IRQ_sample = false;
     if (state.t1_active) {
         // 7=PB out
         // 6=1 is continuous, 6=0 is one-shot
@@ -273,7 +272,7 @@ void via::step()
                 bus->set_sound_output(1);
             }
             regs.IFR |= 0x40;
-            IRQ_sample = 1;
+            IRQ_sample = true;
 
             if ((regs.ACR >> 6) & 1) {
                 regs.T1C = regs.T1L;
@@ -287,7 +286,7 @@ void via::step()
     if (state.t2_active) {
         if (regs.T2C == 0) {
             regs.IFR |= 0x20;
-            IRQ_sample = 1;
+            IRQ_sample = true;
             state.t2_active = 0;
         }
     }

@@ -7,7 +7,7 @@
 
 #include "helpers/int.h"
 
-struct NDS;
+
 u32 NDS_timer7_enabled(NDS *, u32 tn);
 u32 NDS_timer9_enabled(NDS *, u32 tn);
 u32 NDS_read_timer7(NDS *, u32 tn);

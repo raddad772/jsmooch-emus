@@ -317,7 +317,7 @@ static void deserialize_cartridge(GB* this, serialized_state *state) {
     Sload(state, &sz, sizeof(sz));
     if (sz > 0) {
         Sload(state, this->cart.SRAM->data, sz);
-        this->cart.SRAM->dirty = 1;
+        this->cart.SRAM->dirty = true;
     }
 
     this->cart.mapper->deserialize(this->cart.mapper, state);

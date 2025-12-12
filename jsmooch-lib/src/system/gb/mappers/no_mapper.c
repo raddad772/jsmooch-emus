@@ -103,7 +103,7 @@ void GBMN_CPU_write(GB_mapper* parent, u32 addr, u32 val)
     if ((addr >= 0xA000) && (addr < 0xC000)) { // cart RAM
         if (!this->has_RAM) return;
         ((u8 *)this->cart->SRAM->data)[(addr - 0xA000) & this->RAM_mask] = val;
-        this->cart->SRAM->dirty = 1;
+        this->cart->SRAM->dirty = true;
         return;
     }
 }

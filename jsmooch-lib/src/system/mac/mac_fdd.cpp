@@ -103,7 +103,6 @@ void FDD::set_pwm_dutycycle(i64 to) {
 
 u8 FDD::read_reg(u8 which) {
     u32 v = 0;
-    printf("\nDRIVE READ REG %d", which);
 
     switch (which) {
         case 0b0000: // DIRTN head step direction
@@ -133,7 +132,7 @@ u8 FDD::read_reg(u8 which) {
             if (!motor_on) return 0;
             if (!disc) return 0;
             if (RPM == 0) return 0;
-            printf("\nGET TACH RPM %d", RPM);
+            //printf("\nGET TACH RPM %d", RPM);
             u64 edges_per_minute = RPM * 120;
             u64 ticks_per_edge = (8000000 * 60) / edges_per_minute;
             u8 r = (bus->clock.master_cycles/ticks_per_edge) & 1;

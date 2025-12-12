@@ -201,7 +201,7 @@ void core::register_iack_handler(void *ptr, void (*handler)(void*))
 void core::set_interrupt_level(u32 val)
 {
     if ((pins.IPL < 7) && (val == 7)) {
-        state.nmi = 1;
+        state.nmi = true;
     }
     pins.IPL = val;
 }
@@ -210,11 +210,12 @@ u32 core::process_interrupts()
 {
     if (state.exception.interrupt.on_next_instruction) {
         //printf("\nM68K IRQFIRE cyc:%lld", *trace.cycles);
-        state.exception.interrupt.on_next_instruction = 0;
+        state.exception.interrupt.on_next_instruction = false;
         state.exception.interrupt.PC = regs.PC - 4;
         state.exception.interrupt.TCU = 0;
         state.exception.interrupt.new_I = pins.IPL;
         state.current = S_exc_interrupt;
+        //dbg_break("\nM68K IRQ", 0);
         //printf("\nM68K IRQ FIRE! cyc:%lld", *trace.cycles);
         if (::dbg.trace_on && ::dbg.traces.m68000.irq) {
             dbg_printf(DBGC_M68K "\n M68K  (%06llu)  !!!!    INTERRUPT level:%d!" DBGC_RST, *trace.cycles, state.exception.interrupt.new_I);
@@ -281,10 +282,11 @@ void core::cycle()
                 if ((debug.ins_PC >= 0x400000 + 0x1822) && (debug.ins_PC <= 0x400000 + 0x195A)// P_Sony_DiskPrime
                 //if ((debug.ins_PC >= 0x400000 + 0x1E2C) && (debug.ins_PC <= 0x400000 + 0x1E4A)) { // P_Sony_MotorOn2wh
                 //if ((debug.ins_PC >= 0x400000 + 0x1D84) && (debug.ins_PC <= 0x400000 + 0x1E22) || // P_Sony_Recal
-                    || (debug.ins_PC >= 0x400000 + 0x1D02) && (debug.ins_PC <= 0x400000 + 0x1D4C) // P_Sony_WakeUp
+                    //|| (debug.ins_PC >= 0x400000 + 0x1D02) && (debug.ins_PC <= 0x400000 + 0x1D4C) // P_Sony_WakeUp
                     ) {
                     dbg_break("M68000 BREAK", 0);
                 }
+                //if (debug.ins_PC == 0x400000 + 0x20B4) dbg_break("GOT IT!", 0);
                 // This must be done AFTER interrupt, trace, etc. processing
                 regs.SR.T = regs.next_SR_T;
                 ins_decoded = 1;
