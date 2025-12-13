@@ -172,7 +172,7 @@ void ENG2D::draw_obj_on_line(u32 oam_offset, u32 prio_to_draw)
 
     attr[1] = read_oam(oam_offset+2, 2);
     i32 x = attr[1] & 0x1FF;
-    u8 sz = (attr[1] >> 14) & 3;
+    u32 sz = (attr[1] >> 14) & 3;
     if (x & 0x100) x -= 512;
 
     i32 width = obj_size[shape][sz][0];

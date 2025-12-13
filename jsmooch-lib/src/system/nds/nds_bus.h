@@ -29,13 +29,13 @@ typedef void (core::*wrfunc)(u32 addr, u8 sz, u8 access, u32 val);
 #define NDSVRAMSHIFT(nda) (((nda) & 0xFFFFFF) >> 14)
 #define NDSVRAMMASK 0x3FF
 
-struct reg64 {
-    u8 data[8]{};
-    u32 data32[2]{};
+union reg64 {
+    u8 data[8];
+    u32 data32[2];
     u64 u{};
 };
-struct reg32 {
-    u8 data[4]{};
+union reg32 {
+    u8 data[4];
     u32 u{};
 };
 
@@ -260,7 +260,7 @@ struct core : jsm_system {
             u64 busy_until{};
             u32 mode{};
             u32 by_zero{};
-            u32 needs_calc{};
+            bool needs_calc{};
 
             reg64 numer{}, denom{}, result{}, remainder{};
             // numer & demom are r/w{}, result and remainder are R-only
@@ -269,7 +269,7 @@ struct core : jsm_system {
         struct {
             u64 busy_until{};
             u32 mode{};
-            u32 needs_calc{};
+            bool needs_calc{};
 
             reg32 result{};
             reg64 param{}; // r/w
@@ -427,7 +427,7 @@ struct core : jsm_system {
     struct {
         double master_cycles_per_audio_sample{};
         double next_sample_cycle{};
-        struct audiobuf *buf{};
+        audiobuf *buf{};
     } audio{};
 
     struct {

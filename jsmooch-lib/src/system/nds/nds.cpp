@@ -36,7 +36,7 @@ static u32 read_trace_cpu7(void *ptr, u32 addr, u8 sz) {
 }
 
 core::core() :
-    clock{&this->waitstates.current_transaction},
+    clock{&waitstates.current_transaction},
     scheduler{&clock.master_cycle_count7},
     arm7{&clock.master_cycle_count7, &waitstates.current_transaction, &scheduler}, arm9{&scheduler, &clock.master_cycle_count9, &waitstates.current_transaction}, ppu{this}, ge{this, &scheduler},
     re{this}, apu{this, &scheduler},

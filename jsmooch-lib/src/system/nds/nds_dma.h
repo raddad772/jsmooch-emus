@@ -53,7 +53,7 @@ struct DMA_ch {
         u32 src_addr{};
         u32 dest_addr{};
         u32 src_access{}, dest_access{};
-        u8 sz{};
+        u32 sz{};
         u32 first_run{};
         u32 is_sound{};
         i32 chunks{};

@@ -88,7 +88,7 @@ void ridge::set_block_start_status(u32 val, u32 transfer_ready_irq)
         raise_transfer_irq();
 }
 
-static u32 rom_transfer_time(u32 clk_spd, u8 sz_in_bytes)
+static u32 rom_transfer_time(u32 clk_spd, u32 sz_in_bytes)
 {
     static constexpr u32 cpb[2] = {5, 8};
     return cpb[clk_spd] * sz_in_bytes;
@@ -331,7 +331,7 @@ void ridge::detect_kind(u32 from, u32 val)
                 // - never seen fram used), and
                 // bits 8-15 encode the backup size in a shift amount - i.e. the size in bytes is (1 << n)
                 u32 kind = second_word & 3;
-                u8 sz = 1 << ((second_word >> 8) & 0xFF);
+                u32 sz = 1 << ((second_word >> 8) & 0xFF);
                 printf("\nDETECT CART SAVE KIND:%d SZ:%d bytes", kind, sz);
                 backup.detect.kind = static_cast<backup_kind>(kind);
                 backup.detect.sz = sz;

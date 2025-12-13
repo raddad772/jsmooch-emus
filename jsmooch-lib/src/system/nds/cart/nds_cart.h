@@ -81,7 +81,7 @@ struct ridge {
         u32 pos_in{};
         u32 data_out[0x1000]{};
         u32 pos_out{};
-        u8 sz_out{};
+        u32 sz_out{};
         u32 addr{};
 
         u32 cur{};
@@ -159,7 +159,7 @@ struct ridge {
             u32 done{};
             u32 pos{};
             backup_kind kind{};
-            u8 sz_mask{};
+            u32 sz_mask{};
             u32 sz{};
             u32 arg_buf_addr{};
             u32 arg_buf_ptr{};

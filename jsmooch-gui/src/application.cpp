@@ -814,6 +814,7 @@ static void render_colorkey(debugger_widget &widget)
         ImGui::Button(" ");
         ImGui::EndDisabled();
         ImGui::PopStyleColor(3);
+        ImGui::PopID();
         ImGui::GetIO();
         ImGui::SameLine();
         ImGui::Text("%s", item->name);

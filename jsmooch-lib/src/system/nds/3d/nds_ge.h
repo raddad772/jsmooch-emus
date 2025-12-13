@@ -131,8 +131,8 @@ union TEX_PARAM {
         u32 repeat_t : 1;
         u32 flip_s : 1;
         u32 flip_t : 1;
-        u8 sz_s : 3;
-        u8 sz_t : 3;
+        u32 sz_s : 3;
+        u32 sz_t : 3;
         NDS_TEX_FORMAT format : 3;
         u32 color0_is_transparent : 1;
         NDS_TEX_COORD_TRANSFORM_MODE texture_coord_transform_mode : 2;

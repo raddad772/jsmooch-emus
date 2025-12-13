@@ -481,7 +481,7 @@ void core::start_div()
 
 void core::start_sqrt()
 {
-    io.sqrt.needs_calc = 1;
+    io.sqrt.needs_calc = true;
     io.div.busy_until = clock.current9() + 13;
 }
 
@@ -492,8 +492,8 @@ void core::start_sqrt()
 
 void core::div_calc()
 {
-    io.div.needs_calc = 0;
-
+    io.div.needs_calc = false;
+    printf("\nDIV MODE %d", io.div.mode);
     switch (io.div.mode) {
         case 0: {
             i32 num = static_cast<i32>(io.div.numer.data32[0]);
@@ -525,7 +525,7 @@ void core::div_calc()
                 io.div.remainder.u = 0;
             }
             else {
-                io.div.result.u = (i64)(num / den);
+                io.div.result.u = num / den;
                 io.div.remainder.u = (i64)(num % den);
             }
             break; }
@@ -901,13 +901,13 @@ u32 core::busrd9_io8(u32 addr, u8 sz, u8 access, bool has_effect)
             // send fifo from 9 is to_7
             v = io.ipc.to_arm7.is_empty();
             v |= io.ipc.to_arm7.is_full() << 1;
-            printf("\nFIFO7 EMPTY:%d FULL:%d?", v & 1, (v >> 1));
+            //printf("\nFIFO7 EMPTY:%d FULL:%d?", v & 1, (v >> 1));
             v |= io.ipc.arm9.irq_on_send_fifo_empty << 2;
             return v;
         case R_IPCFIFOCNT+1:
             v = io.ipc.to_arm9.is_empty();
             v |= io.ipc.to_arm9.is_full() << 1;
-            printf("\nFIFO9 EMPTY:%d FULL:%d", v & 1, (v >> 1));
+            //printf("\nFIFO9 EMPTY:%d FULL:%d", v & 1, (v >> 1));
             v |= io.ipc.arm9.irq_on_recv_fifo_not_empty << 2;
             v |= io.ipc.arm9.error << 6;
             v |= io.ipc.arm9.fifo_enable << 7;
