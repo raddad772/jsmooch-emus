@@ -5,7 +5,6 @@
 //#define TRACE
 #pragma once
 
-
 #include "helpers/scheduler.h"
 #include "nds_clock.h"
 #include "nds_ppu.h"
@@ -22,8 +21,9 @@
 #include "component/cpu/arm7tdmi/arm7tdmi.h"
 #include "component/cpu/arm946es/arm946es.h"
 namespace NDS {
-typedef u32 (*rdfunc)(u32 addr, u8 sz, u32 access, bool has_effect);
-typedef void (*wrfunc)(u32 addr, u8 sz, u32 access, u32 val);
+struct core;
+typedef u32 (core::*rdfunc)(u32 addr, u8 sz, u32 access, bool has_effect);
+typedef void (core::*wrfunc)(u32 addr, u8 sz, u32 access, u32 val);
 
 #define NDSVRAMSHIFT(nda) (((nda) & 0xFFFFFF) >> 14)
 #define NDSVRAMMASK 0x3FF
@@ -39,16 +39,80 @@ struct reg32 {
 };
 
 struct core {
+    core();
+    struct {
+        u64 current_transaction{};
+        u64 current_shift{}; // 1
+    } waitstates{};
+    clock clock;
+    scheduler_t scheduler;
+
     ARM7TDMI::core arm7;
     ARM946ES::core arm9;
     PPU::core ppu;
-    GFX::GE ge{this, &scheduler};
+    GFX::GE ge;
     GFX::RE re;
-    APU::core apu{this, &scheduler};
-    clock clock{&this->waitstates.current_transaction};
+    APU::core apu;
+
+    static u32 mainbus_read7(void *ptr, u32 addr, u8 sz, u32 access, bool has_effect);
+    static u32 mainbus_read9(void *ptr, u32 addr, u8 sz, u32 access, bool has_effect);
+    static u32 mainbus_fetchins9(void *ptr, u32 addr, u8 sz, u32 access);
+    static void mainbus_write9(void *ptr, u32 addr, u8 sz, u32 access, u32 val);
+    static u32 mainbus_fetchins7(void *ptr, u32 addr, u8 sz, u32 access);
+    static void mainbus_write7(void *ptr, u32 addr, u8 sz, u32 access, u32 val);
+    void reset();
+
+    u32 busrd7_invalid(u32 addr, u8 sz, u32 access, bool has_effect);
+    u32 busrd9_invalid(u32 addr, u8 sz, u32 access, bool has_effect);
+    void buswr7_invalid(u32 addr, u8 sz, u32 access, u32 val);
+    void buswr9_invalid(u32 addr, u8 sz, u32 access, u32 val);
+    void buswr7_shared(u32 addr, u8 sz, u32 access, u32 val);
+    [[nodiscard]] u32 rd9_bios(u32 addr, u8 sz) const;
+    u32 busrd7_shared(u32 addr, u8 sz, u32 access, bool has_effect);
+    void buswr7_vram(u32 addr, u8 sz, u32 access, u32 val);
+    u32 busrd7_vram(u32 addr, u8 sz, u32 access, bool has_effect);
+    void buswr7_gba_cart(u32 addr, u8 sz, u32 access, u32 val);
+    u32 busrd7_gba_cart(u32 addr, u8 sz, u32 access, bool has_effect);
+    void buswr7_gba_sram(u32 addr, u8 sz, u32 access, u32 val);
+    u32 busrd7_gba_sram(u32 addr, u8 sz, u32 access, bool has_effect);
+    u32 busrd9_main(u32 addr, u8 sz, u32 access, bool has_effect);
+    void buswr9_main(u32 addr, u8 sz, u32 access, u32 val);
+    void buswr9_gba_cart(u32 addr, u8 sz, u32 access, u32 val);
+    u32 busrd9_gba_cart(u32 addr, u8 sz, u32 access, bool has_effect);
+    void buswr9_gba_sram(u32 addr, u8 sz, u32 access, u32 val);
+    u32 busrd9_gba_sram(u32 addr, u8 sz, u32 access, bool has_effect);
+    void buswr9_shared(u32 addr, u8 sz, u32 access, u32 val);
+    u32 busrd9_shared(u32 addr, u8 sz, u32 access, bool has_effect);
+    void buswr9_obj_and_palette(u32 addr, u8 sz, u32 access, u32 val);
+    u32 busrd9_obj_and_palette(u32 addr, u8 sz, u32 access, bool has_effect);
+    void buswr9_vram(u32 addr, u8 sz, u32 access, u32 val);
+    u32 busrd9_vram(u32 addr, u8 sz, u32 access, bool has_effect);
+    void buswr9_oam(u32 addr, u8 sz, u32 access, u32 val);
+    u32 busrd9_oam(u32 addr, u8 sz, u32 access, bool has_effect);
+    void buswr7_bios7(u32 addr, u8 sz, u32 access, u32 val);
+    u32 busrd7_bios7(u32 addr, u8 sz, u32 access, bool has_effect);
+    void buswr7_main(u32 addr, u8 sz, u32 access, u32 val);
+    u32 busrd7_main(u32 addr, u8 sz, u32 access, bool has_effect);
+
+    u32 busrd7_io8(u32 addr, u8 sz, u32 access, bool has_effect);
+    u32 busrd9_io8(u32 addr, u8 sz, u32 access, bool has_effect);
+    u32 busrd9_io(u32 addr, u8 sz, u32 access, bool has_effect);
+    u32 busrd7_wifi(u32 addr, u8 sz, u32 access, bool has_effect);
+    u32 busrd7_io(u32 addr, u8 sz, u32 access, bool has_effect);
+    void buswr9_io(u32 addr, u8 sz, u32 access, u32 val);
+    void buswr7_wifi(u32 addr, u8 sz, u32 access, u32 val);
+    void start_div();
+    void start_sqrt();
+    void div_calc();
+    void sqrt_calc();
+
+    void buswr7_io8(u32 addr, u8 sz, u32 access, u32 val);
+    void buswr9_io8(u32 addr, u8 sz, u32 access, u32 val);
+    void buswr7_io(u32 addr, u8 sz, u32 access, u32 val);
+
 
     u32 arm9_ins{}, arm7_ins{};
-    //controller controller{};
+    controller controller{this};
     [[nodiscard]] u32 RTC_days_in_month() const;
     void RTC_set_irq(u32 which);
     void RTC_clear_irq(u32 flag);
@@ -79,17 +143,10 @@ struct core {
 
     static void hblank(void *ptr, u64 key, u64 clock, u32 jitter);
 
-    scheduler_t scheduler{};
     [[nodiscard]] u32 VRAM_tex_read(u32 addr, u8 sz) const;
     [[nodiscard]] u32 VRAM_pal_read(u32 addr, u8 sz) const;
     void VRAM_set_bank(u32 bank_num, u32 mst, u32 ofs, u8 *ptr, bool force, bool update_io);
     void VRAM_resetup_banks();
-
-    struct {
-        u64 current_transaction{};
-        u64 current_shift{}; // 1
-    } waitstates{};
-
 
     struct {
         struct { // Only bits 27-24 are needed to distinguish valid endpoints{}, mostly.
@@ -120,7 +177,8 @@ struct core {
             u8 data[656 * 1024]{};
             struct {
                 struct {
-                    u32 mst{}, ofs{}, enable{};
+                    u32 mst{}, ofs{};
+                    bool enable{};
                 } bank[9]{};
             } io{};
             struct {

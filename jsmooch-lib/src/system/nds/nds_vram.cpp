@@ -10,18 +10,6 @@
 
 namespace NDS {
 
-
-#define NVA 0
-#define NVB 1
-#define NVC 2
-#define NVD 3
-#define NVE 4
-#define NVF 5
-#define NVG 6
-#define NVH 7
-#define NVI 8
-
-
 static constexpr u32 VRAM_offsets[9] = {
         0x00000, // A - 128KB
         0x20000, // B - 128KB

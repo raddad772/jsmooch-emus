@@ -2,8 +2,6 @@
 // Created by . on 1/21/25.
 //
 
-#include <cstring>
-
 #include "nds_rtc.h"
 #include "nds_bus.h"
 #include "nds_irq.h"
@@ -528,7 +526,7 @@ void core::RTC_tick(void *ptr, u64 key, u64 clock, u32 jitter) // Called on scan
 {
     auto *bus = static_cast<core *>(ptr);
     u64 tstamp = (bus->clock.current7() - jitter) + 32768;
-    bus->io.rtc.sch_id = bus->scheduler.add_or_run_abs(tstamp, 0, bus, &NDS_RTC_tick, nullptr);
+    bus->io.rtc.sch_id = bus->scheduler.add_or_run_abs(tstamp, 0, bus, &RTC_tick, nullptr);
     bus->io.rtc.divider++;
     if ((bus->io.rtc.divider & 0x7FFF) == 0) {
         bus->io.rtc.date_time[6] = bcd_inc(bus->io.rtc.date_time[6]);

@@ -55,8 +55,8 @@ struct timer9_t {
 
     u32 shift{};
 
-    u64 enable_at{}; // cycle # we'll be enabled at
-    u64 overflow_at{}; // cycle # we'll overflow at
+    u64 enable_at{0xFFFFFFFFFFFFFFFF}; // cycle # we'll be enabled at
+    u64 overflow_at{0xFFFFFFFFFFFFFFFF}; // cycle # we'll overflow at
     u64 sch_id{};
     u32 sch_scheduled_still{};
     u32 cascade{};
