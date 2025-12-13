@@ -42,6 +42,11 @@ core::core() :
     re{this}, apu{this, &scheduler},
     cart{this}
 {
+    has.load_BIOS = true;
+    has.max_loaded_files = 0;
+    has.max_loaded_folders = 0;
+    has.save_state = false;
+    has.set_audiobuf = true;
     re.ge = &ge;
     ge.re = &re;
     for (u32 i = 0; i < 16; i++) {
@@ -165,17 +170,17 @@ void core::schedule_frame(u64 start_clock, bool is_first)
     for (u32 line = 0; line < 263; line++) {
         // vblank start
         if (line == clock.timing.frame.vblank_up_on) {
-            scheduler.only_add_abs(cur_clock, 1, &ppu, &PPU::core::vblank, nullptr);
+            scheduler.only_add_abs(cur_clock, 1, this, &PPU::core::vblank, nullptr);
         }
         // vblank end
         if (line == clock.timing.frame.vblank_down_on) {
-            scheduler.only_add_abs(cur_clock, 0, &ppu, &PPU::core::vblank, nullptr);
+            scheduler.only_add_abs(cur_clock, 0, this, &PPU::core::vblank, nullptr);
         }
 
         // hblank down...
-        scheduler.only_add_abs(cur_clock, 0, &ppu, &PPU::core::hblank, nullptr);
+        scheduler.only_add_abs(cur_clock, 0, this, &PPU::core::hblank, nullptr);
         // hblank up...
-        scheduler.only_add_abs(cur_clock+clock.timing.scanline.cycle_of_hblank, 1, &ppu, PPU::core::hblank, nullptr);
+        scheduler.only_add_abs(cur_clock+clock.timing.scanline.cycle_of_hblank, 1, this, PPU::core::hblank, nullptr);
 
         // Advance clock
         cur_clock += clock.timing.scanline.cycles_total;
@@ -376,6 +381,17 @@ void core::reset()
     arm7.reset();
     arm9.reset();
     arm9.NDS_CP_reset();
+    RTC_reset();
+    spi.irq_id = 0;
+
+    for (u32 i = 0; i < 4; i++) {
+        timer7_t *t = &timer7[i];
+        t->overflow_at = 0xFFFFFFFFFFFFFFFF;
+        t->enable_at = 0xFFFFFFFFFFFFFFFF;
+        timer9_t *p = &timer9[i];
+        p->overflow_at = 0xFFFFFFFFFFFFFFFF;
+        p->enable_at = 0xFFFFFFFFFFFFFFFF;
+    }
     //clock.reset();
     SPI_reset();
     ppu.reset();
@@ -399,7 +415,7 @@ void core::reset()
     ge.reset();
     re.reset();
 
-    //skip_BIOS();
+    skip_BIOS();
     waitstates.current_transaction = 0;
     clock.master_cycle_count7 = 0;
     clock.master_cycle_count9 = 0;

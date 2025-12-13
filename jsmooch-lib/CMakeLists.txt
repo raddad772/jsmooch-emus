@@ -405,6 +405,7 @@ set(SOURCE_LIST
         src/system/mac/mac_source_list.h
         src/helpers/debugger/source_list.cpp
         src/helpers/debugger/source_list.h
+        src/system/nds/nds_serialize.cpp
 )
 
 # TODO: Fix elf-parser repo for windows

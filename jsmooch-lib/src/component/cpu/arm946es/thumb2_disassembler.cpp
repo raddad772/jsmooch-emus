@@ -523,7 +523,7 @@ static void dasm_BL_suffix(u16 opc, jsm_string *out, i64 ins_addr, ARMctxt *ct)
 }
 
 
-void ARM946ES_thumb_disassemble(u16 opc, jsm_string *out, i64 ins_addr, ARMctxt *ct)
+void thumb_disassemble(u16 opc, jsm_string *out, i64 ins_addr, ARMctxt *ct)
 {
     out->quickempty();
 

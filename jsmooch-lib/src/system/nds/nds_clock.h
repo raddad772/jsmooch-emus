@@ -25,8 +25,6 @@ struct clock {
         return master_cycle_count9 + *current_transaction;
     }
 
-    u64 current9();
-
     i64 cycles7{};
     i64 cycles9{};
 

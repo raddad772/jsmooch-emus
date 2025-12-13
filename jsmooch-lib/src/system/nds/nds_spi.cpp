@@ -240,7 +240,7 @@ void core::SPI_release_hold()
     }
 }
 
-void SPI_irq(void *ptr, u64 num_cycles, u64 clock, u32 jitter)
+void core::SPI_irq(void *ptr, u64 num_cycles, u64 clock, u32 jitter)
 {
     auto *th = static_cast<core *>(ptr);
     th->spi.irq_id = 0;

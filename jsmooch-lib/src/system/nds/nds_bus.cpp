@@ -12,6 +12,7 @@
 #include "nds_ipc.h"
 #include "nds_rtc.h"
 #include "nds_spi.h"
+#include "nds_clock.h"
 #include "nds_timers.h"
 #include "nds_debugger.h"
 #include "helpers/multisize_memaccess.cpp"
@@ -1863,20 +1864,6 @@ void core::buswr7_io(u32 addr, u8 sz, u8 access, u32 val)
     if (sz == 4) {
         buswr7_io8(addr+2, 1, access, (val >> 16) & 0xFF);
         buswr7_io8(addr+3, 1, access, (val >> 24) & 0xFF);
-    }
-}
-
-void core::reset() {
-    RTC_reset();
-    spi.irq_id = 0;
-
-    for (u32 i = 0; i < 4; i++) {
-        timer7_t *t = &timer7[i];
-        t->overflow_at = 0xFFFFFFFFFFFFFFFF;
-        t->enable_at = 0xFFFFFFFFFFFFFFFF;
-        timer9_t *p = &timer9[i];
-        p->overflow_at = 0xFFFFFFFFFFFFFFFF;
-        p->enable_at = 0xFFFFFFFFFFFFFFFF;
     }
 }
 
