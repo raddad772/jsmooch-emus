@@ -5,6 +5,7 @@
 //#define TRACE
 #pragma once
 
+#include "helpers/sys_interface.h"
 #include "helpers/scheduler.h"
 #include "nds_clock.h"
 #include "nds_ppu.h"
@@ -22,8 +23,8 @@
 #include "component/cpu/arm946es/arm946es.h"
 namespace NDS {
 struct core;
-typedef u32 (core::*rdfunc)(u32 addr, u8 sz, u32 access, bool has_effect);
-typedef void (core::*wrfunc)(u32 addr, u8 sz, u32 access, u32 val);
+typedef u32 (core::*rdfunc)(u32 addr, u8 sz, u8 access, bool has_effect);
+typedef void (core::*wrfunc)(u32 addr, u8 sz, u8 access, u32 val);
 
 #define NDSVRAMSHIFT(nda) (((nda) & 0xFFFFFF) >> 14)
 #define NDSVRAMMASK 0x3FF
@@ -38,7 +39,7 @@ struct reg32 {
     u32 u{};
 };
 
-struct core {
+struct core : jsm_system {
     core();
     struct {
         u64 current_transaction{};
@@ -54,64 +55,73 @@ struct core {
     GFX::RE re;
     APU::core apu;
 
-    static u32 mainbus_read7(void *ptr, u32 addr, u8 sz, u32 access, bool has_effect);
-    static u32 mainbus_read9(void *ptr, u32 addr, u8 sz, u32 access, bool has_effect);
-    static u32 mainbus_fetchins9(void *ptr, u32 addr, u8 sz, u32 access);
-    static void mainbus_write9(void *ptr, u32 addr, u8 sz, u32 access, u32 val);
-    static u32 mainbus_fetchins7(void *ptr, u32 addr, u8 sz, u32 access);
-    static void mainbus_write7(void *ptr, u32 addr, u8 sz, u32 access, u32 val);
-    void reset();
+    static u32 mainbus_read7(void *ptr, u32 addr, u8 sz, u8 access, bool has_effect);
+    static u32 mainbus_read9(void *ptr, u32 addr, u8 sz, u8 access, bool has_effect);
+    static u32 mainbus_fetchins9(void *ptr, u32 addr, u8 sz, u8 access);
+    static void mainbus_write9(void *ptr, u32 addr, u8 sz, u8 access, u32 val);
+    static u32 mainbus_fetchins7(void *ptr, u32 addr, u8 sz, u8 access);
+    static void mainbus_write7(void *ptr, u32 addr, u8 sz, u8 access, u32 val);
 
-    u32 busrd7_invalid(u32 addr, u8 sz, u32 access, bool has_effect);
-    u32 busrd9_invalid(u32 addr, u8 sz, u32 access, bool has_effect);
-    void buswr7_invalid(u32 addr, u8 sz, u32 access, u32 val);
-    void buswr9_invalid(u32 addr, u8 sz, u32 access, u32 val);
-    void buswr7_shared(u32 addr, u8 sz, u32 access, u32 val);
+    static void run_block(void *ptr, u64 num_cycles, u64 clock, u32 jitter);
+    static void do_next_scheduled_frame(void *bound_ptr, u64 key, u64 current_clock, u32 jitter);
+    void schedule_frame(u64 start_clock, bool is_first);
+
+    void sample_audio();
+
+    void skip_BIOS();
+    void setup_lcd(JSM_DISPLAY &d);
+    void setup_audio();
+
+    u32 busrd7_invalid(u32 addr, u8 sz, u8 access, bool has_effect);
+    u32 busrd9_invalid(u32 addr, u8 sz, u8 access, bool has_effect);
+    void buswr7_invalid(u32 addr, u8 sz, u8 access, u32 val);
+    void buswr9_invalid(u32 addr, u8 sz, u8 access, u32 val);
+    void buswr7_shared(u32 addr, u8 sz, u8 access, u32 val);
     [[nodiscard]] u32 rd9_bios(u32 addr, u8 sz) const;
-    u32 busrd7_shared(u32 addr, u8 sz, u32 access, bool has_effect);
-    void buswr7_vram(u32 addr, u8 sz, u32 access, u32 val);
-    u32 busrd7_vram(u32 addr, u8 sz, u32 access, bool has_effect);
-    void buswr7_gba_cart(u32 addr, u8 sz, u32 access, u32 val);
-    u32 busrd7_gba_cart(u32 addr, u8 sz, u32 access, bool has_effect);
-    void buswr7_gba_sram(u32 addr, u8 sz, u32 access, u32 val);
-    u32 busrd7_gba_sram(u32 addr, u8 sz, u32 access, bool has_effect);
-    u32 busrd9_main(u32 addr, u8 sz, u32 access, bool has_effect);
-    void buswr9_main(u32 addr, u8 sz, u32 access, u32 val);
-    void buswr9_gba_cart(u32 addr, u8 sz, u32 access, u32 val);
-    u32 busrd9_gba_cart(u32 addr, u8 sz, u32 access, bool has_effect);
-    void buswr9_gba_sram(u32 addr, u8 sz, u32 access, u32 val);
-    u32 busrd9_gba_sram(u32 addr, u8 sz, u32 access, bool has_effect);
-    void buswr9_shared(u32 addr, u8 sz, u32 access, u32 val);
-    u32 busrd9_shared(u32 addr, u8 sz, u32 access, bool has_effect);
-    void buswr9_obj_and_palette(u32 addr, u8 sz, u32 access, u32 val);
-    u32 busrd9_obj_and_palette(u32 addr, u8 sz, u32 access, bool has_effect);
-    void buswr9_vram(u32 addr, u8 sz, u32 access, u32 val);
-    u32 busrd9_vram(u32 addr, u8 sz, u32 access, bool has_effect);
-    void buswr9_oam(u32 addr, u8 sz, u32 access, u32 val);
-    u32 busrd9_oam(u32 addr, u8 sz, u32 access, bool has_effect);
-    void buswr7_bios7(u32 addr, u8 sz, u32 access, u32 val);
-    u32 busrd7_bios7(u32 addr, u8 sz, u32 access, bool has_effect);
-    void buswr7_main(u32 addr, u8 sz, u32 access, u32 val);
-    u32 busrd7_main(u32 addr, u8 sz, u32 access, bool has_effect);
+    u32 busrd7_shared(u32 addr, u8 sz, u8 access, bool has_effect);
+    void buswr7_vram(u32 addr, u8 sz, u8 access, u32 val);
+    u32 busrd7_vram(u32 addr, u8 sz, u8 access, bool has_effect);
+    void buswr7_gba_cart(u32 addr, u8 sz, u8 access, u32 val);
+    u32 busrd7_gba_cart(u32 addr, u8 sz, u8 access, bool has_effect);
+    void buswr7_gba_sram(u32 addr, u8 sz, u8 access, u32 val);
+    u32 busrd7_gba_sram(u32 addr, u8 sz, u8 access, bool has_effect);
+    u32 busrd9_main(u32 addr, u8 sz, u8 access, bool has_effect);
+    void buswr9_main(u32 addr, u8 sz, u8 access, u32 val);
+    void buswr9_gba_cart(u32 addr, u8 sz, u8 access, u32 val);
+    u32 busrd9_gba_cart(u32 addr, u8 sz, u8 access, bool has_effect);
+    void buswr9_gba_sram(u32 addr, u8 sz, u8 access, u32 val);
+    u32 busrd9_gba_sram(u32 addr, u8 sz, u8 access, bool has_effect);
+    void buswr9_shared(u32 addr, u8 sz, u8 access, u32 val);
+    u32 busrd9_shared(u32 addr, u8 sz, u8 access, bool has_effect);
+    void buswr9_obj_and_palette(u32 addr, u8 sz, u8 access, u32 val);
+    u32 busrd9_obj_and_palette(u32 addr, u8 sz, u8 access, bool has_effect);
+    void buswr9_vram(u32 addr, u8 sz, u8 access, u32 val);
+    u32 busrd9_vram(u32 addr, u8 sz, u8 access, bool has_effect);
+    void buswr9_oam(u32 addr, u8 sz, u8 access, u32 val);
+    u32 busrd9_oam(u32 addr, u8 sz, u8 access, bool has_effect);
+    void buswr7_bios7(u32 addr, u8 sz, u8 access, u32 val);
+    u32 busrd7_bios7(u32 addr, u8 sz, u8 access, bool has_effect);
+    void buswr7_main(u32 addr, u8 sz, u8 access, u32 val);
+    u32 busrd7_main(u32 addr, u8 sz, u8 access, bool has_effect);
 
-    u32 busrd7_io8(u32 addr, u8 sz, u32 access, bool has_effect);
-    u32 busrd9_io8(u32 addr, u8 sz, u32 access, bool has_effect);
-    u32 busrd9_io(u32 addr, u8 sz, u32 access, bool has_effect);
-    u32 busrd7_wifi(u32 addr, u8 sz, u32 access, bool has_effect);
-    u32 busrd7_io(u32 addr, u8 sz, u32 access, bool has_effect);
-    void buswr9_io(u32 addr, u8 sz, u32 access, u32 val);
-    void buswr7_wifi(u32 addr, u8 sz, u32 access, u32 val);
+    u32 busrd7_io8(u32 addr, u8 sz, u8 access, bool has_effect);
+    u32 busrd9_io8(u32 addr, u8 sz, u8 access, bool has_effect);
+    u32 busrd9_io(u32 addr, u8 sz, u8 access, bool has_effect);
+    u32 busrd7_wifi(u32 addr, u8 sz, u8 access, bool has_effect);
+    u32 busrd7_io(u32 addr, u8 sz, u8 access, bool has_effect);
+    void buswr9_io(u32 addr, u8 sz, u8 access, u32 val);
+    void buswr7_wifi(u32 addr, u8 sz, u8 access, u32 val);
     void start_div();
     void start_sqrt();
     void div_calc();
     void sqrt_calc();
 
-    void buswr7_io8(u32 addr, u8 sz, u32 access, u32 val);
-    void buswr9_io8(u32 addr, u8 sz, u32 access, u32 val);
-    void buswr7_io(u32 addr, u8 sz, u32 access, u32 val);
+    void buswr7_io8(u32 addr, u8 sz, u8 access, u32 val);
+    void buswr9_io8(u32 addr, u8 sz, u8 access, u32 val);
+    void buswr7_io(u32 addr, u8 sz, u8 access, u32 val);
 
 
-    u32 arm9_ins{}, arm7_ins{};
+    bool arm9_ins{}, arm7_ins{};
     controller controller{this};
     [[nodiscard]] u32 RTC_days_in_month() const;
     void RTC_set_irq(u32 which);
@@ -487,6 +497,25 @@ struct core {
         DBG_WAVEFORM_END1
         DBG_LOG_VIEW
     DBG_END
+public:
+    void play() final;
+    void pause() final;
+    void stop() final;
+    void get_framevars(framevars& out) final;
+    void reset() final;
+    void killall();
+    u32 finish_frame() final;
+    u32 finish_scanline() final;
+    u32 step_master(u32 howmany) final;
+    void load_BIOS(multi_file_set& mfs) final;
+    void enable_tracing();
+    void disable_tracing();
+    void describe_io() final;
+    void save_state(serialized_state &state) final;
+    void load_state(serialized_state &state, deserialize_ret &ret) final;
+    void set_audiobuf(audiobuf *ab) final;
+    void setup_debugger_interface(debugger_interface &intf) final;
+    //void sideload(multi_file_set& mfs) final;
 
 };
 }

@@ -1178,7 +1178,7 @@ void core::draw_line(u32 eng_num)
     }
 }
 
-void hblank(void *ptr, u64 key, u64 clock, u32 jitter) // Called at hblank time
+void core::hblank(void *ptr, u64 key, u64 clock, u32 jitter) // Called at hblank time
 {
     auto *bus = static_cast<NDS::core *>(ptr);
     auto &ppu = bus->ppu;
@@ -1257,7 +1257,7 @@ void core::new_frame() {
 }
 
 
-static void vblank(void *ptr, u64 key, u64 clock, u32 jitter)
+void core::vblank(void *ptr, u64 key, u64 clock, u32 jitter)
 {
     auto *bus = static_cast<NDS::core *>(ptr);
     auto &ppu = bus->ppu;
@@ -1447,7 +1447,7 @@ void MBG::update_y(u32 which, u32 val)
 static constexpr u32 boundary_to_stride[4] = {32, 64, 128, 256};
 static constexpr u32 boundary_to_stride_bitmap[2] = { 32, 64}; // ??
 
-void core::write7_io8(u32 addr, u8 sz, u32 access, u32 val) {
+void core::write7_io8(u32 addr, u8 sz, u8 access, u32 val) {
     u32 en = 0;
     if (addr >= 0x04001000) {
         addr -= 0x1000;
@@ -1467,7 +1467,7 @@ void core::write7_io8(u32 addr, u8 sz, u32 access, u32 val) {
     printf("\nUNKNOWN PPU WR7 ADDR:%08x sz:%d VAL:%08x", addr, sz, val);
 }
 
-void core::write9_io8(u32 addr, u8 sz, u32 access, u32 val)
+void core::write9_io8(u32 addr, u8 sz, u8 access, u32 val)
 {
     u32 en = 0;
     if (addr >= 0x04001000) {
@@ -1773,7 +1773,7 @@ void core::write9_io8(u32 addr, u8 sz, u32 access, u32 val)
     printf("\nUNKNOWN PPU WR9 ADDR:%08x sz:%d VAL:%08x", addr, sz, val);
 }
 
-void core::write9_io(u32 addr, u8 sz, u32 access, u32 val)
+void core::write9_io(u32 addr, u8 sz, u8 access, u32 val)
 {
     write9_io8(addr, sz, access, val & 0xFF);
     if (sz >= 2) write9_io8(addr+1, sz, access, (val >> 8) & 0xFF);
@@ -1783,7 +1783,7 @@ void core::write9_io(u32 addr, u8 sz, u32 access, u32 val)
     }
 }
 
-u32 core::read9_io8(u32 addr, u8 sz, u32 access, bool has_effect)
+u32 core::read9_io8(u32 addr, u8 sz, u8 access, bool has_effect)
 {
     u32 en = 0;
     if (addr >= 0x04001000) {
@@ -1955,7 +1955,7 @@ u32 core::read9_io8(u32 addr, u8 sz, u32 access, bool has_effect)
     return 0;
 }
 
-u32 core::read7_io8(u32 addr, u8 sz, u32 access, bool has_effect) const
+u32 core::read7_io8(u32 addr, u8 sz, u8 access, bool has_effect) const
 {
     u32 v;
     switch(addr) {
@@ -1980,7 +1980,7 @@ u32 core::read7_io8(u32 addr, u8 sz, u32 access, bool has_effect) const
    return 0;
 }
 
-u32 core::read7_io(u32 addr, u8 sz, u32 access, bool has_effect) const
+u32 core::read7_io(u32 addr, u8 sz, u8 access, bool has_effect) const
 {
     u32 v = read7_io8(addr, sz, access, has_effect);
     if (sz >= 2) v |= read7_io8(addr+1, sz, access, has_effect) << 8;
@@ -1991,7 +1991,7 @@ u32 core::read7_io(u32 addr, u8 sz, u32 access, bool has_effect) const
     return v;
 }
 
-u32 core::read9_io(u32 addr, u8 sz, u32 access, bool has_effect)
+u32 core::read9_io(u32 addr, u8 sz, u8 access, bool has_effect)
 {
     u32 v = read9_io8(addr, sz, access, has_effect);
     if (sz >= 2) v |= read9_io8(addr+1, sz, access, has_effect) << 8;
@@ -2002,7 +2002,7 @@ u32 core::read9_io(u32 addr, u8 sz, u32 access, bool has_effect)
     return v;
 }
 
-void core::write7_io(u32 addr, u8 sz, u32 access, u32 val)
+void core::write7_io(u32 addr, u8 sz, u8 access, u32 val)
 {
     write7_io8(addr, sz, access, val & 0xFF);
     if (sz >= 2) write7_io8(addr+1, sz, access, (val >> 8) & 0xFF);

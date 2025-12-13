@@ -33,20 +33,20 @@ static u32 align_val(u32 addr, u32 tmp)
 
 static u32 *get_SPSR_by_mode(core *th){
     switch(th->regs.CPSR.mode) {
-        case ARM7_user:
+        case M_user:
             return &th->regs.CPSR.u;
-        case ARM7_fiq:
+        case M_fiq:
             return &th->regs.SPSR_fiq;
-        case ARM7_irq:
+        case M_irq:
             return &th->regs.SPSR_irq;
-        case ARM7_supervisor:
+        case M_supervisor:
             return &th->regs.SPSR_svc;
-        case ARM7_abort:
+        case M_abort:
             return &th->regs.SPSR_abt;
-        case ARM7_undefined:
+        case M_undefined:
             return &th->regs.SPSR_und;
         default:
-        case ARM7_system:
+        case M_system:
             printf("\nINVALID2!!!");
             return &th->regs.SPSR_invalid;
     }
@@ -75,22 +75,22 @@ static inline u32 *old_getR(core *th, u32 num) {
         case 10:
         case 11:
         case 12:
-            return th->regs.CPSR.mode == ARM7_fiq ? &th->regs.R_fiq[num - 8] : &th->regs.R[num];
+            return th->regs.CPSR.mode == M_fiq ? &th->regs.R_fiq[num - 8] : &th->regs.R[num];
         case 13:
         case 14: {
             switch(th->regs.CPSR.mode) {
-                case ARM7_abort:
+                case M_abort:
                     return &th->regs.R_abt[num - 13];
-                case ARM7_fiq:
+                case M_fiq:
                     return &th->regs.R_fiq[num - 8];
-                case ARM7_irq:
+                case M_irq:
                     return &th->regs.R_irq[num - 13];
-                case ARM7_supervisor:
+                case M_supervisor:
                     return &th->regs.R_svc[num - 13];
-                case ARM7_undefined:
+                case M_undefined:
                     return &th->regs.R_und[num - 13];
-                case ARM7_user:
-                case ARM7_system:
+                case M_user:
+                case M_system:
                     return &th->regs.R[num];
                 default:
                     assert(1==2);
@@ -327,7 +327,7 @@ void ins_MRS(core *th, u32 opcode)
     u32 Rdd = (opcode >> 12) & 15;
     u32 *Rd = getR(th, Rdd);
     if (PSR) {
-        if (th->regs.CPSR.mode == ARM7_system) *Rd = th->regs.CPSR.u;
+        if (th->regs.CPSR.mode == M_system) *Rd = th->regs.CPSR.u;
         else *Rd = *get_SPSR_by_mode(th);
     }
     else {
@@ -353,7 +353,7 @@ void ins_MSR_reg(core *th, u32 opcode)
     if (c) mask |= 0xFF;
     u32 imm = *getR(th, Rmd);
     if (!PSR) { // CPSR
-        if (th->regs.CPSR.mode == ARM7_user)
+        if (th->regs.CPSR.mode == M_user)
             mask &= 0xFF000000;
         if (mask & 0xFF)
             imm |= 0x10; // force th bit always
@@ -364,7 +364,7 @@ void ins_MSR_reg(core *th, u32 opcode)
         }
     }
     else {
-        if ((th->regs.CPSR.mode != ARM7_user) && (th->regs.CPSR.mode != ARM7_system)) {
+        if ((th->regs.CPSR.mode != M_user) && (th->regs.CPSR.mode != M_system)) {
             u32 *v = get_SPSR_by_mode(th);
             *v = (~mask & *v) | (imm & mask);
         }
@@ -390,7 +390,7 @@ void ins_MSR_imm(core *th, u32 opcode)
     if (x) mask |= 0xFF00;
     if (c) mask |= 0xFF;
     if (!PSR) { // CPSR
-        if (th->regs.CPSR.mode == ARM7_user)
+        if (th->regs.CPSR.mode == M_user)
             mask &= 0xFF000000;
         if (mask & 0xFF)
             imm |= 0x10; // force th bit always
@@ -401,7 +401,7 @@ void ins_MSR_imm(core *th, u32 opcode)
         }
     }
     else {
-        if ((th->regs.CPSR.mode != ARM7_user) && (th->regs.CPSR.mode != ARM7_system)) {
+        if ((th->regs.CPSR.mode != M_user) && (th->regs.CPSR.mode != M_system)) {
             u32 *v = get_SPSR_by_mode(th);
             *v = (~mask & *v) | (imm & mask);
         }
@@ -568,7 +568,7 @@ void ins_data_proc_immediate_shift(core *th, u32 opcode)
 
     ALU(th, Rn, Rm, alu_opcode, S, Rd);
     if ((S==1) && (Rdd == 15)) {
-        if (th->regs.CPSR.mode != ARM7_system) {
+        if (th->regs.CPSR.mode != M_system) {
             u32 v = *get_SPSR_by_mode(th);
             u32 old_i = th->regs.CPSR.I;
             th->regs.CPSR.u = v;
@@ -618,7 +618,7 @@ void ins_data_proc_register_shift(core *th, u32 opcode)
     ALU(th, Rn, Rm, alu_opcode, S, Rd);
 
     if ((S==1) && (Rdd == 15)) {
-        if (th->regs.CPSR.mode != ARM7_system) {
+        if (th->regs.CPSR.mode != M_system) {
             u32 old_i = th->regs.CPSR.I;
             th->regs.CPSR.u = *get_SPSR_by_mode(th);
             if (old_i && !th->regs.CPSR.I) th->schedule_IRQ_check();
@@ -633,7 +633,7 @@ void ins_undefined_instruction(core *th, u32 opcode)
     assert(1==2);
     th->regs.R_und[1] = th->regs.PC - 4;
     th->regs.SPSR_und = th->regs.CPSR.u;
-    th->regs.CPSR.mode = ARM7_undefined;
+    th->regs.CPSR.mode = M_undefined;
     th->fill_regmap();
     th->regs.CPSR.I = 1;
     th->regs.PC = 0x00000004;
@@ -658,7 +658,7 @@ void ins_data_proc_immediate(core *th, u32 opcode)
     if (imm_ROR_amount) Rm = ROR(th, Rm, imm_ROR_amount);
     ALU(th, Rn, Rm, alu_opcode, S, Rd);
     if ((S==1) && (Rdd == 15)) {
-        if (th->regs.CPSR.mode != ARM7_system) {
+        if (th->regs.CPSR.mode != M_system) {
             u32 old_i = th->regs.CPSR.I;
             th->regs.CPSR.u = *get_SPSR_by_mode(th);
             if (old_i && !th->regs.CPSR.I) th->schedule_IRQ_check();
@@ -823,7 +823,7 @@ void ins_LDM_STM(core *th, u32 opcode)
     u32 do_mode_switch = S && (!L || !move_pc);
     u32 old_mode = th->regs.CPSR.mode;
     if (do_mode_switch) {
-        th->regs.CPSR.mode = ARM7_user;
+        th->regs.CPSR.mode = M_user;
         th->fill_regmap();
     }
 
@@ -879,22 +879,22 @@ void ins_LDM_STM(core *th, u32 opcode)
             if (S) { // If force usermode...
                 th->regs.CPSR.u |= 0x10;
                 switch(old_mode) {
-                    case ARM7_system:
-                    case ARM7_user:
+                    case M_system:
+                    case M_user:
                         break;
-                    case ARM7_fiq:
+                    case M_fiq:
                         th->schedule_IRQ_check();
                         th->regs.CPSR.u = th->regs.SPSR_fiq; break;
-                    case ARM7_irq:
+                    case M_irq:
                         th->schedule_IRQ_check();
                         th->regs.CPSR.u = th->regs.SPSR_irq; break;
-                    case ARM7_supervisor:
+                    case M_supervisor:
                         th->schedule_IRQ_check();
                         th->regs.CPSR.u = th->regs.SPSR_svc; break;
-                    case ARM7_abort:
+                    case M_abort:
                         th->schedule_IRQ_check();
                         th->regs.CPSR.u = th->regs.SPSR_abt; break;
-                    case ARM7_undefined:
+                    case M_undefined:
                         th->schedule_IRQ_check();
                         th->regs.CPSR.u = th->regs.SPSR_und; break;
                     default:
@@ -945,7 +945,7 @@ void ins_SWI(core *th, u32 opcode)
 {
     th->regs.R_svc[1] = th->regs.PC - 4;
     th->regs.SPSR_svc = th->regs.CPSR.u;
-    th->regs.CPSR.mode = ARM7_supervisor;
+    th->regs.CPSR.mode = M_supervisor;
     th->fill_regmap();
     th->regs.CPSR.I = 1;
     th->regs.PC = 0x00000008;

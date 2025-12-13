@@ -71,22 +71,22 @@ THUMB_NOP: 000046C0
 static int condition_passes(regs *th, int which) {
 #define flag(x) (th->CPSR. x)
     switch(which) {
-        case ARM7CC_AL:    return 1;
-        case ARM7CC_NV:    return 0;
-        case ARM7CC_EQ:    return flag(Z) == 1;
-        case ARM7CC_NE:    return flag(Z) != 1;
-        case ARM7CC_CS_HS: return flag(C) == 1;
-        case ARM7CC_CC_LO: return flag(C) == 0;
-        case ARM7CC_MI:    return flag(N) == 1;
-        case ARM7CC_PL:    return flag(N) == 0;
-        case ARM7CC_VS:    return flag(V) == 1;
-        case ARM7CC_VC:    return flag(V) == 0;
-        case ARM7CC_HI:    return (flag(C) == 1) && (flag(Z) == 0);
-        case ARM7CC_LS:    return (flag(C) == 0) || (flag(Z) == 1);
-        case ARM7CC_GE:    return flag(N) == flag(V);
-        case ARM7CC_LT:    return flag(N) != flag(V);
-        case ARM7CC_GT:    return (flag(Z) == 0) && (flag(N) == flag(V));
-        case ARM7CC_LE:    return (flag(Z) == 1) || (flag(N) != flag(V));
+        case CC_AL:    return 1;
+        case CC_NV:    return 0;
+        case CC_EQ:    return flag(Z) == 1;
+        case CC_NE:    return flag(Z) != 1;
+        case CC_CS_HS: return flag(C) == 1;
+        case CC_CC_LO: return flag(C) == 0;
+        case CC_MI:    return flag(N) == 1;
+        case CC_PL:    return flag(N) == 0;
+        case CC_VS:    return flag(V) == 1;
+        case CC_VC:    return flag(V) == 0;
+        case CC_HI:    return (flag(C) == 1) && (flag(Z) == 0);
+        case CC_LS:    return (flag(C) == 0) || (flag(Z) == 1);
+        case CC_GE:    return flag(N) == flag(V);
+        case CC_LT:    return flag(N) != flag(V);
+        case CC_GT:    return (flag(Z) == 0) && (flag(N) == flag(V));
+        case CC_LE:    return (flag(Z) == 1) || (flag(N) != flag(V));
         default:
             NOGOHERE;
             return 0;
@@ -633,7 +633,7 @@ Execution SWI/BKPT:
      */
     th->regs.R_svc[1] = th->regs.PC - 2;
     th->regs.SPSR_svc = th->regs.CPSR.u;
-    th->regs.CPSR.mode = ARM7_supervisor;
+    th->regs.CPSR.mode = M_supervisor;
     th->regs.CPSR.T = 0; // exit THUMB
     th->regs.CPSR.I = 1; // mask IRQ
     th->pipeline.access = ARM7P_nonsequential | ARM7P_code;

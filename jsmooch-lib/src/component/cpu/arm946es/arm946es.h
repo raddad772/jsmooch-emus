@@ -146,8 +146,8 @@ struct core {
     void run_noIRQcheck();
     void setup_tracing(jsm_debug_read_trace *strct, u64 *trace_cycle_pointer, i32 source_id);
     void idle(u32 num);
-    u32 read(u32 addr, u8 sz, u32 access, bool has_effect);
-    void write(u32 addr, u8 sz, u32 access, u32 val);
+    u32 read(u32 addr, u8 sz, u8 access, bool has_effect);
+    void write(u32 addr, u8 sz, u8 access, u32 val);
     void fill_arm_table();
     void NDS_CP_reset();
     void NDS_direct_boot();
@@ -160,7 +160,7 @@ struct core {
     u32 NDS_CP_read(u32 num, u32 opcode, u32 Cn, u32 Cm, u32 CP) const;
 
     u32 fetch_ins(u8 sz);
-    u32 do_fetch_ins(u32 addr, u8 sz, u32 access);
+    u32 do_fetch_ins(u32 addr, u8 sz, u8 access);
     void do_IRQ();
     void do_FIQ();
     bool condition_passes(condition_codes which) const;
@@ -414,9 +414,9 @@ struct core {
     bool testing{};
 
     void *fetch_ptr{}, *read_ptr{}, *write_ptr{};
-    u32 (*fetch_ins_func)(void *ptr, u32 addr, u8 sz, u32 access){};
-    u32 (*read_func)(void *ptr, u32 addr, u8 sz, u32 access, bool has_effect){};
-    void (*write_func)(void *ptr, u32 addr, u8 sz, u32 access, u32 val){};
+    u32 (*fetch_ins_func)(void *ptr, u32 addr, u8 sz, u8 access){};
+    u32 (*read_func)(void *ptr, u32 addr, u8 sz, u8 access, bool has_effect){};
+    void (*write_func)(void *ptr, u32 addr, u8 sz, u8 access, u32 val){};
 
     arm9_ins opcode_table_arm[4096]{};
     arm9_ins opcode_table_arm_never[4096]{};

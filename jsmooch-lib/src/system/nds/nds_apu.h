@@ -129,8 +129,8 @@ struct core {
     scheduler_t *scheduler;
     u32 read8(u32 addr);
     void write8(u32 addr, u32 val, MCH &ch);
-    void write(u32 addr, u8 sz, u32 access, u32 val);
-    u32 read(u32 addr, u8 sz, u32 access);
+    void write(u32 addr, u8 sz, u8 access, u32 val);
+    u32 read(u32 addr, u8 sz, u8 access);
     static void master_sample_callback(void *ptr, u64 nothing, u64 cur_clock, u32 jitter);
     NDS::core *bus;
     MCH CH[16] {

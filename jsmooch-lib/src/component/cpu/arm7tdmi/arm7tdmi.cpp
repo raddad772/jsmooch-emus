@@ -38,7 +38,7 @@ void core::do_IRQ()
 
     regs.SPSR_irq = regs.CPSR.u;
     //printf("\nDO IRQ! CURRENT PC:%08x T:%d cyc:%lld", regs.PC, regs.CPSR.T, *trace.cycles);
-    regs.CPSR.mode = ARM7_irq;
+    regs.CPSR.mode = M_irq;
     fill_regmap();
     regs.CPSR.I = 1;
 
@@ -88,7 +88,7 @@ void core::reset()
     pipeline.flushed = 0;
 
     regs.CPSR.F = 1;
-    regs.CPSR.mode = ARM7_supervisor;
+    regs.CPSR.mode = M_supervisor;
     regs.SPSR_svc = regs.CPSR.u;
     regs.CPSR.T = 0;
     regs.CPSR.I = 1;
@@ -120,9 +120,9 @@ void core::disassemble_entry(disassembly_entry& entry)
 void core::do_FIQ()
 {
     regs.SPSR_irq = regs.CPSR.u;
-    regs.CPSR.mode = ARM7_fiq;
+    regs.CPSR.mode = M_fiq;
     printf("\nFIQ! CURRENT PC:%08x T:%d cyc:%lld", regs.PC, regs.CPSR.T, *trace.cycles);
-    regs.CPSR.mode = ARM7_fiq;
+    regs.CPSR.mode = M_fiq;
     fill_regmap();
     regs.CPSR.I = 1;
 
@@ -157,22 +157,22 @@ void core::bad_trace(u32 r, u32 sz)
 int regs::condition_passes(int which) const {
 #define flag(x) (CPSR. x)
     switch(which) {
-        case ARM7CC_AL:    return 1;
-        case ARM7CC_NV:    return 0;
-        case ARM7CC_EQ:    return flag(Z) == 1;
-        case ARM7CC_NE:    return flag(Z) != 1;
-        case ARM7CC_CS_HS: return flag(C) == 1;
-        case ARM7CC_CC_LO: return flag(C) == 0;
-        case ARM7CC_MI:    return flag(N) == 1;
-        case ARM7CC_PL:    return flag(N) == 0;
-        case ARM7CC_VS:    return flag(V) == 1;
-        case ARM7CC_VC:    return flag(V) == 0;
-        case ARM7CC_HI:    return (flag(C) == 1) && (flag(Z) == 0);
-        case ARM7CC_LS:    return (flag(C) == 0) || (flag(Z) == 1);
-        case ARM7CC_GE:    return flag(N) == flag(V);
-        case ARM7CC_LT:    return flag(N) != flag(V);
-        case ARM7CC_GT:    return (flag(Z) == 0) && (flag(N) == flag(V));
-        case ARM7CC_LE:    return (flag(Z) == 1) || (flag(N) != flag(V));
+        case CC_AL:    return 1;
+        case CC_NV:    return 0;
+        case CC_EQ:    return flag(Z) == 1;
+        case CC_NE:    return flag(Z) != 1;
+        case CC_CS_HS: return flag(C) == 1;
+        case CC_CC_LO: return flag(C) == 0;
+        case CC_MI:    return flag(N) == 1;
+        case CC_PL:    return flag(N) == 0;
+        case CC_VS:    return flag(V) == 1;
+        case CC_VC:    return flag(V) == 0;
+        case CC_HI:    return (flag(C) == 1) && (flag(Z) == 0);
+        case CC_LS:    return (flag(C) == 0) || (flag(Z) == 1);
+        case CC_GE:    return flag(N) == flag(V);
+        case CC_LT:    return flag(N) != flag(V);
+        case CC_GT:    return (flag(Z) == 0) && (flag(N) == flag(V));
+        case CC_LE:    return (flag(Z) == 1) || (flag(N) != flag(V));
         default:
             NOGOHERE;
             return 0;

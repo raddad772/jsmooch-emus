@@ -10,5 +10,4 @@
 #include "helpers/sys_interface.h"
 
 jsm_system *NDS_new(jsm_system*);
-
-
+void NDS_delete(jsm_system*);

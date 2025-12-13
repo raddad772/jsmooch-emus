@@ -20,41 +20,41 @@
 
 namespace ARM7TDMI {
 
-enum ARM7TDMI_modes {
-    ARM7M_old_user = 0,
-    ARM7M_old_fiq = 1,
-    ARM7M_old_irq = 2,
-    ARM7_old_supervisor = 3,
-    ARM7_user = 16,
-    ARM7_fiq = 17,
-    ARM7_irq = 18,
-    ARM7_supervisor = 19,
-    ARM7_abort = 23,
-    ARM7_undefined = 27,
-    ARM7_system = 31
+enum modes {
+    M_old_user = 0,
+    M_old_fiq = 1,
+    M_old_irq = 2,
+    M_old_supervisor = 3,
+    M_user = 16,
+    M_fiq = 17,
+    M_irq = 18,
+    M_supervisor = 19,
+    M_abort = 23,
+    M_undefined = 27,
+    M_system = 31
 };
 
-enum ARM7TDMI_condition_codes {
-    ARM7CC_EQ = 0, // Z=1
-    ARM7CC_NE = 1, // Z=0
-    ARM7CC_CS_HS = 2, // C=1
-    ARM7CC_CC_LO = 3, // C=0
-    ARM7CC_MI = 4, // N=1
-    ARM7CC_PL = 5, // N=0
-    ARM7CC_VS = 6, // V=1
-    ARM7CC_VC = 7, // V=0
-    ARM7CC_HI = 8, // C=1 and Z=0
-    ARM7CC_LS = 9, // C=0 or Z=1
-    ARM7CC_GE = 10, // N=V
-    ARM7CC_LT = 11, // N!=V
-    ARM7CC_GT = 12, // Z=0 and N=V
-    ARM7CC_LE = 13, // Z=1 or N!=V
-    ARM7CC_AL = 14, // "always"
-    ARM7CC_NV = 15 // never. don't execute opcode
+enum condition_codes {
+    CC_EQ = 0, // Z=1
+    CC_NE = 1, // Z=0
+    CC_CS_HS = 2, // C=1
+    CC_CC_LO = 3, // C=0
+    CC_MI = 4, // N=1
+    CC_PL = 5, // N=0
+    CC_VS = 6, // V=1
+    CC_VC = 7, // V=0
+    CC_HI = 8, // C=1 and Z=0
+    CC_LS = 9, // C=0 or Z=1
+    CC_GE = 10, // N=V
+    CC_LT = 11, // N!=V
+    CC_GT = 12, // Z=0 and N=V
+    CC_LE = 13, // Z=1 or N!=V
+    CC_AL = 14, // "always"
+    CC_NV = 15 // never. don't execute opcode
 };
 
 struct regs {
-    int condition_passes(int which) const;
+    [[nodiscard]] int condition_passes(int which) const;
     u32 R[16]{};
     u32 R_fiq[7]{};
     u32 R_svc[2]{};

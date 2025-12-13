@@ -21,7 +21,7 @@ namespace NDS {
 static constexpr u32 masksz[5] = { 0, 0xFF, 0xFFFF, 0, 0xFFFFFFFF};
 static constexpr u32 maskalign[5] = {0, 0xFFFFFFFF, 0xFFFFFFFE, 0, 0xFFFFFFFC};
 
-u32 core::busrd7_invalid(u32 addr, u8 sz, u32 access, bool has_effect) {
+u32 core::busrd7_invalid(u32 addr, u8 sz, u8 access, bool has_effect) {
     printf("\nREAD7 UNKNOWN ADDR:%08x sz:%d", addr, sz);
     waitstates.current_transaction++;
     //dbg.var++;
@@ -29,7 +29,7 @@ u32 core::busrd7_invalid(u32 addr, u8 sz, u32 access, bool has_effect) {
     return 0;
 }
 
-u32 core::busrd9_invalid(u32 addr, u8 sz, u32 access, bool has_effect) {
+u32 core::busrd9_invalid(u32 addr, u8 sz, u8 access, bool has_effect) {
     printf("\nREAD9 UNKNOWN ADDR:%08x sz:%d", addr, sz);
     waitstates.current_transaction++;
     //dbg.var++;
@@ -37,14 +37,14 @@ u32 core::busrd9_invalid(u32 addr, u8 sz, u32 access, bool has_effect) {
     return 0;
 }
 
-void core::buswr7_invalid(u32 addr, u8 sz, u32 access, u32 val) {
+void core::buswr7_invalid(u32 addr, u8 sz, u8 access, u32 val) {
     printf("\nWRITE7 UNKNOWN ADDR:%08x sz:%d DATA:%08x", addr, sz, val);
     waitstates.current_transaction++;
     ::dbg.var++;
     //if (dbg.var > 15) dbg_break("too many bad writes", clock.master_cycle_count);
 }
 
-void core::buswr9_invalid(u32 addr, u8 sz, u32 access, u32 val) {
+void core::buswr9_invalid(u32 addr, u8 sz, u8 access, u32 val) {
     waitstates.current_transaction++;
     static int pokemon_didit = 0;
     if ((addr == 0) && !pokemon_didit) {
@@ -59,21 +59,21 @@ void core::buswr9_invalid(u32 addr, u8 sz, u32 access, u32 val) {
     //dbg_break("unknown addr write9", clock.master_cycle_count7);
 }
 
-void core::buswr7_shared(u32 addr, u8 sz, u32 access, u32 val)
+void core::buswr7_shared(u32 addr, u8 sz, u8 access, u32 val)
 {
     if (addr >= 0x03800000) return cW[sz](mem.WRAM_arm7, addr & 0xFFFF, val);
     if (!mem.io.RAM7.disabled) cW[sz](mem.WRAM_share, (addr & mem.io.RAM7.mask) + mem.io.RAM7.base, val);
     else cW[sz](mem.WRAM_arm7, addr & 0xFFFF, val);
 }
 
-u32 core::busrd7_shared(u32 addr, u8 sz, u32 access, bool has_effect)
+u32 core::busrd7_shared(u32 addr, u8 sz, u8 access, bool has_effect)
 {
     if (addr >= 0x03800000) return cR[sz](mem.WRAM_arm7, addr & 0xFFFF);
     if (mem.io.RAM7.disabled) return cR[sz](mem.WRAM_arm7, addr & 0xFFFF);
     return cR[sz](mem.WRAM_share, (addr & mem.io.RAM7.mask) + mem.io.RAM7.base);
 }
 
-void core::buswr7_vram(u32 addr, u8 sz, u32 access, u32 val)
+void core::buswr7_vram(u32 addr, u8 sz, u8 access, u32 val)
 {
     u32 bank = (addr >> 17) & 1;
     if (mem.vram.map.arm7[bank]) return cW[sz](mem.vram.map.arm7[bank], addr & 0x1FFFF, val);
@@ -81,7 +81,7 @@ void core::buswr7_vram(u32 addr, u8 sz, u32 access, u32 val)
     //printf("\nWarning write7 to unmapped VRAM:%08x sz:%d data:%08x", addr, sz, val);
 }
 
-u32 core::busrd7_vram(u32 addr, u8 sz, u32 access, bool has_effect)
+u32 core::busrd7_vram(u32 addr, u8 sz, u8 access, bool has_effect)
 {
     u32 bank = (addr >> 17) & 1;
     if (mem.vram.map.arm7[bank]) return cR[sz](mem.vram.map.arm7[bank], addr & 0x1FFFF);
@@ -89,70 +89,70 @@ u32 core::busrd7_vram(u32 addr, u8 sz, u32 access, bool has_effect)
     return busrd7_invalid(addr, sz, access, has_effect);
 }
 
-void core::buswr7_gba_cart(u32 addr, u8 sz, u32 access, u32 val)
+void core::buswr7_gba_cart(u32 addr, u8 sz, u8 access, u32 val)
 {
 }
 
-u32 core::busrd7_gba_cart(u32 addr, u8 sz, u32 access, bool has_effect)
+u32 core::busrd7_gba_cart(u32 addr, u8 sz, u8 access, bool has_effect)
 {
     if (!io.rights.gba_slot) return (addr & 0x1FFFF) >> 1;
     return 0;
 }
 
-void core::buswr7_gba_sram(u32 addr, u8 sz, u32 access, u32 val)
+void core::buswr7_gba_sram(u32 addr, u8 sz, u8 access, u32 val)
 {
 }
 
-u32 core::busrd7_gba_sram(u32 addr, u8 sz, u32 access, bool has_effect)
+u32 core::busrd7_gba_sram(u32 addr, u8 sz, u8 access, bool has_effect)
 {
     if (!io.rights.gba_slot) return masksz[sz];
     return 0;
 }
 
-u32 core::busrd9_main(u32 addr, u8 sz, u32 access, bool has_effect)
+u32 core::busrd9_main(u32 addr, u8 sz, u8 access, bool has_effect)
 {
     return cR[sz](mem.RAM, addr & 0x3FFFFF);
 }
 
-void core::buswr9_main(u32 addr, u8 sz, u32 access, u32 val)
+void core::buswr9_main(u32 addr, u8 sz, u8 access, u32 val)
 {
     cW[sz](mem.RAM, addr & 0x3FFFFF, val);
 }
 
 
-void core::buswr9_gba_cart(u32 addr, u8 sz, u32 access, u32 val)
+void core::buswr9_gba_cart(u32 addr, u8 sz, u8 access, u32 val)
 {
 }
 
-u32 core::busrd9_gba_cart(u32 addr, u8 sz, u32 access, bool has_effect)
+u32 core::busrd9_gba_cart(u32 addr, u8 sz, u8 access, bool has_effect)
 {
     if (io.rights.gba_slot) return (addr & 0x1FFFF) >> 1;
     return 0;
 }
 
-void core::buswr9_gba_sram(u32 addr, u8 sz, u32 access, u32 val)
+void core::buswr9_gba_sram(u32 addr, u8 sz, u8 access, u32 val)
 {
     return;
 }
 
-u32 core::busrd9_gba_sram(u32 addr, u8 sz, u32 access, bool has_effect)
+u32 core::busrd9_gba_sram(u32 addr, u8 sz, u8 access, bool has_effect)
 {
     if (io.rights.gba_slot) return masksz[sz];
     return 0;
 }
 
-void core::buswr9_shared(u32 addr, u8 sz, u32 access, u32 val)
+void core::buswr9_shared(u32 addr, u8 sz, u8 access, u32 val)
 {
     if (!mem.io.RAM9.disabled) cW[sz](mem.WRAM_share, (addr & mem.io.RAM9.mask) + mem.io.RAM9.base, val);
 }
 
-u32 core::busrd9_shared(u32 addr, u8 sz, u32 access, bool has_effect)
+u32 core::busrd9_shared(u32 addr, u8 sz, u8 access, bool has_effect)
 {
     if (mem.io.RAM9.disabled) return 0; // undefined
     return cR[sz](mem.WRAM_share, (addr & mem.io.RAM9.mask) + mem.io.RAM9.base);
 }
 
-void core::buswr9_obj_and_palette(u32 addr, u8 sz, u32 access, u32 val)
+void core::buswr9_obj_and_palette(u32 addr, u8 sz, u8 access, u32 val)
 {
     if (addr < 0x05000000) return;
     addr &= 0x7FF;
@@ -168,7 +168,7 @@ void core::buswr9_obj_and_palette(u32 addr, u8 sz, u32 access, u32 val)
     buswr9_invalid(addr, sz, access, val);
 }
 
-u32 core::busrd9_obj_and_palette(u32 addr, u8 sz, u32 access, bool has_effect)
+u32 core::busrd9_obj_and_palette(u32 addr, u8 sz, u8 access, bool has_effect)
 {
     if (addr < 0x05000000) return busrd9_invalid(addr, sz, access, has_effect);
     addr &= 0x7FF;
@@ -183,7 +183,7 @@ u32 core::busrd9_obj_and_palette(u32 addr, u8 sz, u32 access, bool has_effect)
     return busrd9_invalid(addr, sz, access, has_effect);
 }
 
-void core::buswr9_vram(u32 addr, u8 sz, u32 access, u32 val)
+void core::buswr9_vram(u32 addr, u8 sz, u8 access, u32 val)
 {
     if (sz == 1) {
         static int a = 1;
@@ -206,7 +206,7 @@ void core::buswr9_vram(u32 addr, u8 sz, u32 access, u32 val)
     //dbg_break("Unmapped VRAM9 write", clock.master_cycle_count7);
 }
 
-u32 core::busrd9_vram(u32 addr, u8 sz, u32 access, bool has_effect)
+u32 core::busrd9_vram(u32 addr, u8 sz, u8 access, bool has_effect)
 {
     u8 *ptr = mem.vram.map.arm9[NDSVRAMSHIFT(addr) & NDSVRAMMASK];
     if (ptr) return cR[sz](ptr, addr & 0x3FFF);
@@ -216,7 +216,7 @@ u32 core::busrd9_vram(u32 addr, u8 sz, u32 access, bool has_effect)
     return 0;
 }
 
-void core::buswr9_oam(u32 addr, u8 sz, u32 access, u32 val)
+void core::buswr9_oam(u32 addr, u8 sz, u8 access, u32 val)
 {
     addr &= 0x7FF;
     if (addr < 0x400) return cW[sz](ppu.eng2d[0].mem.oam, addr & 0x3FF, val);
@@ -224,28 +224,28 @@ void core::buswr9_oam(u32 addr, u8 sz, u32 access, u32 val)
     //buswr9_invalid(addr, sz, access, val);
 }
 
-u32 core::busrd9_oam(u32 addr, u8 sz, u32 access, bool has_effect)
+u32 core::busrd9_oam(u32 addr, u8 sz, u8 access, bool has_effect)
 {
     addr &= 0x7FF;
     if (addr < 0x400) return cR[sz](ppu.eng2d[0].mem.oam, addr & 0x3FF);
     else return cR[sz](ppu.eng2d[1].mem.oam, addr & 0x3FF);
 }
 
-u32 core::busrd7_bios7(u32 addr, u8 sz, u32 access, bool has_effect)
+u32 core::busrd7_bios7(u32 addr, u8 sz, u8 access, bool has_effect)
 {
     return cR[sz](mem.bios7, addr & 0x3FFF);
 }
 
-void core::buswr7_bios7(u32 addr, u8 sz, u32 access, u32 val)
+void core::buswr7_bios7(u32 addr, u8 sz, u8 access, u32 val)
 {
 }
 
-u32 core::busrd7_main(u32 addr, u8 sz, u32 access, bool has_effect)
+u32 core::busrd7_main(u32 addr, u8 sz, u8 access, bool has_effect)
 {
     return cR[sz](mem.RAM, addr & 0x3FFFFF);
 }
 
-void core::buswr7_main(u32 addr, u8 sz, u32 access, u32 val)
+void core::buswr7_main(u32 addr, u8 sz, u8 access, u32 val)
 {
     cW[sz](mem.RAM, addr & 0x3FFFFF, val);
 }
@@ -259,7 +259,7 @@ static u32 DMA_CH_NUM(u32 addr)
     return 3;
 }
 
-u32 core::busrd7_io8(u32 addr, u8 sz, u32 access, bool has_effect)
+u32 core::busrd7_io8(u32 addr, u8 sz, u8 access, bool has_effect)
 {
     u32 v;
     switch(addr) {
@@ -593,7 +593,7 @@ void core::sqrt_calc()
     io.sqrt.result.u = res;
 }
 
-void core::buswr7_io8(u32 addr, u8 sz, u32 access, u32 val)
+void core::buswr7_io8(u32 addr, u8 sz, u8 access, u32 val)
 {
     switch(addr) {
         case R_RCNT+0:
@@ -863,7 +863,7 @@ void core::buswr7_io8(u32 addr, u8 sz, u32 access, u32 val)
 }
 
 // --------------
-u32 core::busrd9_io8(u32 addr, u8 sz, u32 access, bool has_effect)
+u32 core::busrd9_io8(u32 addr, u8 sz, u8 access, bool has_effect)
 {
     if (((addr >= 0x04000000) && (addr < 0x04000070)) || ((addr >= 0x04001000) && (addr < 0x04001070))) {
         return ppu.read9_io(addr, sz, access, has_effect);
@@ -1166,7 +1166,7 @@ u32 core::busrd9_io8(u32 addr, u8 sz, u32 access, bool has_effect)
     return 0;
 }
 
-void core::buswr9_io8(u32 addr, u8 sz, u32 access, u32 val)
+void core::buswr9_io8(u32 addr, u8 sz, u8 access, u32 val)
 {
     switch(addr) {
         case R_ROMCMD+0:
@@ -1538,7 +1538,7 @@ void core::buswr9_io8(u32 addr, u8 sz, u32 access, u32 val)
 
 // -----
 
-static u32 busrd9_apu(u32 addr, u8 sz, u32 access, bool has_effect){
+static u32 busrd9_apu(u32 addr, u8 sz, u8 access, bool has_effect){
     static int already_did = 0;
     if (!already_did) {
         already_did = 1;
@@ -1547,7 +1547,7 @@ static u32 busrd9_apu(u32 addr, u8 sz, u32 access, bool has_effect){
     return 0;
 }
 
-u32 core::busrd9_io(u32 addr, u8 sz, u32 access, bool has_effect)
+u32 core::busrd9_io(u32 addr, u8 sz, u8 access, bool has_effect)
 {
     u32 v;
     if (((addr >= 0x04000000) && (addr < 0x04000070)) || ((addr >= 0x04001000) && (addr < 0x04001070))) {
@@ -1608,7 +1608,7 @@ u32 core::busrd9_io(u32 addr, u8 sz, u32 access, bool has_effect)
     return v;
 }
 
-static void buswr9_apu(u32 addr, u8 sz, u32 access, u32 val) {
+static void buswr9_apu(u32 addr, u8 sz, u8 access, u32 val) {
     static int already_did = 0;
     if (!already_did) {
         already_did = 1;
@@ -1617,7 +1617,7 @@ static void buswr9_apu(u32 addr, u8 sz, u32 access, u32 val) {
 }
 
 
-void core::buswr9_io(u32 addr, u8 sz, u32 access, u32 val)
+void core::buswr9_io(u32 addr, u8 sz, u8 access, u32 val)
 {
     if (((addr >= 0x04000000) && (addr < 0x04000070)) || ((addr >= 0x04001000) && (addr < 0x04001070))) {
         ppu.write9_io(addr, sz, access, val);
@@ -1695,7 +1695,7 @@ void core::buswr9_io(u32 addr, u8 sz, u32 access, u32 val)
     }
 }
 
-u32 core::busrd7_wifi(u32 addr, u8 sz, u32 access, bool has_effect) {
+u32 core::busrd7_wifi(u32 addr, u8 sz, u8 access, bool has_effect) {
     // 0x04804000 and 0x480C000 are the two 8KB RAM sections, oops!
     if (addr < 0x04810000) return cR[sz](mem.wifi, addr & 0x1FFF);
     static int a = 1;
@@ -1706,7 +1706,7 @@ u32 core::busrd7_wifi(u32 addr, u8 sz, u32 access, bool has_effect) {
     return 0;
 }
 
-void core::buswr7_wifi(u32 addr, u8 sz, u32 access, u32 val)
+void core::buswr7_wifi(u32 addr, u8 sz, u8 access, u32 val)
 {
     if (addr < 0x04810000) return cW[sz](mem.wifi, addr & 0x1FFF, val);
 
@@ -1719,7 +1719,7 @@ void core::buswr7_wifi(u32 addr, u8 sz, u32 access, u32 val)
 }
 
 
-u32 core::busrd7_io(u32 addr, u8 sz, u32 access, bool has_effect)
+u32 core::busrd7_io(u32 addr, u8 sz, u8 access, bool has_effect)
 {
     if (((addr >= 0x04000000) && (addr < 0x04000070)) || ((addr >= 0x04001000) && (addr < 0x04001070))) {
         return ppu.read7_io(addr, sz, access, has_effect);
@@ -1784,7 +1784,7 @@ u32 core::busrd7_io(u32 addr, u8 sz, u32 access, bool has_effect)
     return v;
 }
 
-void core::buswr7_io(u32 addr, u8 sz, u32 access, u32 val)
+void core::buswr7_io(u32 addr, u8 sz, u8 access, u32 val)
 {
     if (((addr >= 0x04000000) && (addr < 0x04000070)) || ((addr >= 0x04001000) && (addr < 0x04001070))) {
         ppu.write7_io(addr, sz, access, val);
@@ -1880,47 +1880,7 @@ void core::reset() {
     }
 }
 
-core::core() :
-    clock{&this->waitstates.current_transaction},
-    scheduler{&clock.master_cycle_count7},
-    arm7{&clock.master_cycle_count7, &waitstates.current_transaction, &scheduler}, arm9{&scheduler, &clock.master_cycle_count9, &waitstates.current_transaction}, ppu{this}, ge{this, &scheduler},
-    re{this}, apu{this, &scheduler},
-    cart{this}
-{
-    re.ge = &ge;
-    ge.re = &re;
-    for (u32 i = 0; i < 16; i++) {
-        mem.rw[0].read[i] = &core::busrd7_invalid;
-        mem.rw[0].write[i] = &core::buswr7_invalid;
-        mem.rw[1].read[i] = &core::busrd9_invalid;
-        mem.rw[1].write[i] = &core::buswr9_invalid;
-    }
-    memset(dbg_info.mgba.str, 0, sizeof(dbg_info.mgba.str));
-#define BND9(page, func) { mem.rw[1].read[page] = &core::busrd9_##func; mem.rw[1].write[page] = &core::buswr9_##func; }
-    BND9(0x2, main);
-    BND9(0x3, shared);
-    BND9(0x4, io);
-    BND9(0x5, obj_and_palette);
-    BND9(0x6, vram);
-    BND9(0x7, oam);
-    BND9(0x8, gba_cart);
-    BND9(0x9, gba_cart);
-    BND9(0xA, gba_sram);
-#undef BND9
-
-#define BND7(page, func) { mem.rw[0].read[page] = &core::busrd7_##func; mem.rw[0].write[page] = &core::buswr7_##func; }
-    BND7(0x0, bios7);
-    BND7(0x2, main);
-    BND7(0x3, shared);
-    BND7(0x4, io);
-    BND7(0x6, vram);
-    BND7(0x8, gba_cart);
-    BND7(0x9, gba_cart);
-    BND7(0xA, gba_sram);
-#undef BND7
-}
-
-u32 core::mainbus_read7(void *ptr, u32 addr, u8 sz, u32 access, bool has_effect)
+u32 core::mainbus_read7(void *ptr, u32 addr, u8 sz, u8 access, bool has_effect)
 {
     addr &= maskalign[sz];
     auto *th = static_cast<core *>(ptr);
@@ -1940,7 +1900,7 @@ u32 core::rd9_bios(u32 addr, u8 sz) const {
     return cR[sz](mem.bios9, addr & 0xFFF);
 }
 
-u32 core::mainbus_read9(void *ptr, u32 addr, u8 sz, u32 access, bool has_effect)
+u32 core::mainbus_read9(void *ptr, u32 addr, u8 sz, u8 access, bool has_effect)
 {
     auto *th = static_cast<core *>(ptr);
     th->waitstates.current_transaction++;
@@ -1956,7 +1916,7 @@ u32 core::mainbus_read9(void *ptr, u32 addr, u8 sz, u32 access, bool has_effect)
     return v;
 }
 
-u32 core::mainbus_fetchins9(void *ptr, u32 addr, u8 sz, u32 access)
+u32 core::mainbus_fetchins9(void *ptr, u32 addr, u8 sz, u8 access)
 {
     auto *th = static_cast<core *>(ptr);
     u32 v = th->mainbus_read9(ptr, addr, sz, access, true);
@@ -1972,7 +1932,7 @@ u32 core::mainbus_fetchins9(void *ptr, u32 addr, u8 sz, u32 access)
 }
 
 
-u32 core::mainbus_fetchins7(void *ptr, u32 addr, u8 sz, u32 access)
+u32 core::mainbus_fetchins7(void *ptr, u32 addr, u8 sz, u8 access)
 {
     auto *th = static_cast<core *>(ptr);
     u32 v = mainbus_read7(ptr, addr, sz, access, true);
@@ -1987,7 +1947,7 @@ u32 core::mainbus_fetchins7(void *ptr, u32 addr, u8 sz, u32 access)
     return v;
 }
 
-void core::mainbus_write7(void *ptr, u32 addr, u8 sz, u32 access, u32 val)
+void core::mainbus_write7(void *ptr, u32 addr, u8 sz, u8 access, u32 val)
 {
     addr &= maskalign[sz];
     auto *th = static_cast<core *>(ptr);
@@ -2004,7 +1964,7 @@ void core::mainbus_write7(void *ptr, u32 addr, u8 sz, u32 access, u32 val)
     th->buswr7_invalid(addr, sz, access, val);
 }
 
-void core::mainbus_write9(void *ptr, u32 addr, u8 sz, u32 access, u32 val)
+void core::mainbus_write9(void *ptr, u32 addr, u8 sz, u8 access, u32 val)
 {
     auto *th = static_cast<core *>(ptr);
     th->waitstates.current_transaction++;

@@ -155,7 +155,7 @@ struct jsm_debug_read_trace {
 
     u32 (*read_trace)(void *, u32){};
 
-    u32 (*read_trace_arm)(void*, u32, u32){};
+    u32 (*read_trace_arm)(void*, u32, u8){};
 
     u32 (*read_trace_m68k)(void *, u32, u32, u32){};
 };

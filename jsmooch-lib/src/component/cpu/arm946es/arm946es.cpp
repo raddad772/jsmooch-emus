@@ -344,7 +344,7 @@ void core::idle(u32 num)
     *waitstates += num;
 }
 
-u32 core::do_fetch_ins(u32 addr, u8 sz, u32 access)
+u32 core::do_fetch_ins(u32 addr, u8 sz, u8 access)
 {
     addr &= maskalign[sz];
     if (addr_in_itcm(addr) && cp15.regs.control.itcm_enable && !cp15.regs.control.itcm_load_mode) {
@@ -354,7 +354,7 @@ u32 core::do_fetch_ins(u32 addr, u8 sz, u32 access)
     return v;
 }
 
-u32 core::read(u32 addr, u8 sz, u32 access, bool has_effect) {
+u32 core::read(u32 addr, u8 sz, u8 access, bool has_effect) {
     u32 v;
     addr &= maskalign[sz];
 
@@ -369,7 +369,7 @@ u32 core::read(u32 addr, u8 sz, u32 access, bool has_effect) {
     return v;
 }
 
-void core::write(u32 addr, u8 sz, u32 access, u32 val)
+void core::write(u32 addr, u8 sz, u8 access, u32 val)
 {
     addr &= maskalign[sz];
     if (addr_in_itcm(addr) && cp15.regs.control.itcm_enable) {

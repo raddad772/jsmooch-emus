@@ -148,7 +148,7 @@ Clears 200h bytes of RAM (containing stacks, and BIOS IRQ vector/flags)
     cpu.regs.R_irq[1] = 0;
     cpu.regs.SPSR_svc = 0;
     cpu.regs.SPSR_irq = 0;
-    cpu.regs.CPSR.mode = ARM7TDMI::ARM7_system;
+    cpu.regs.CPSR.mode = ARM7TDMI::M_system;
     cpu.fill_regmap();
     /*
 Host  sp_svc    sp_irq    sp_svc    zerofilled area       return address

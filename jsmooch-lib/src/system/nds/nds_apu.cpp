@@ -470,7 +470,7 @@ void core::write8(u32 addr, u32 val, MCH &ch)
     }
 }
 
-u32 core::read(u32 addr, u8 sz, u32 access)
+u32 core::read(u32 addr, u8 sz, u8 access)
 {
     u32 v = read8(addr);
     if (sz >= 2) {
@@ -483,7 +483,7 @@ u32 core::read(u32 addr, u8 sz, u32 access)
     return v;
 }
 
-void core::write(u32 addr, u8 sz, u32 access, u32 val)
+void core::write(u32 addr, u8 sz, u8 access, u32 val)
 {
     u32 chn=0;
     if (addr < 0x04000500) {

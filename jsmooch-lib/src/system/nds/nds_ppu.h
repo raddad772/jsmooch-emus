@@ -279,18 +279,20 @@ struct core {
     void write_2d_bg_palette(u32 eng_num, u32 addr, u8 sz, u32 val);
     void write_2d_obj_palette(u32 eng_num, u32 addr, u8 sz, u32 val);
 
-    void write7_io(u32 addr, u8 sz, u32 access, u32 val);
-    void write7_io8(u32 addr, u8 sz, u32 access, u32 val);
+    void write7_io(u32 addr, u8 sz, u8 access, u32 val);
+    void write7_io8(u32 addr, u8 sz, u8 access, u32 val);
 
-    void write9_io(u32 addr, u8 sz, u32 access, u32 val);
-    void write9_io8(u32 addr, u8 sz, u32 access, u32 val);
+    void write9_io(u32 addr, u8 sz, u8 access, u32 val);
+    void write9_io8(u32 addr, u8 sz, u8 access, u32 val);
 
-    u32 read9_io(u32 addr, u8 sz, u32 access, bool has_effect);
-    u32 read9_io8(u32 addr, u8 sz, u32 access, bool has_effect);
+    u32 read9_io(u32 addr, u8 sz, u8 access, bool has_effect);
+    u32 read9_io8(u32 addr, u8 sz, u8 access, bool has_effect);
 
+    [[nodiscard]] u32 read7_io(u32 addr, u8 sz, u8 access, bool has_effect) const;
+    [[nodiscard]] u32 read7_io8(u32 addr, u8 sz, u8 access, bool has_effect) const;
 
-    u32 read7_io(u32 addr, u8 sz, u32 access, bool has_effect) const;
-    u32 read7_io8(u32 addr, u8 sz, u32 access, bool has_effect) const;
+    static void vblank(void *ptr, u64 key, u64 clock, u32 jitter);
+    static void hblank(void *ptr, u64 key, u64 clock, u32 jitter);
 
     u32 *cur_output{};
     cvec_ptr<physical_io_device> display_ptr{};
