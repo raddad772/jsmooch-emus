@@ -9,5 +9,5 @@
 #include "helpers/int.h"
 #include "helpers/sys_interface.h"
 
-jsm_system *NDS_new(jsm_system*);
+jsm_system *NDS_new();
 void NDS_delete(jsm_system*);

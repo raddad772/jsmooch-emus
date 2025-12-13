@@ -143,21 +143,21 @@ void MCH::update_len()
 
 void MCH::run_pcm8()
 {
-    sample = static_cast<i16>(apu->bus->mainbus_read7(io.source_addr + (status.pos & 0xFFFFFFFC), 1, 0, 0) << 8);
+    sample = static_cast<i16>(NDS::core::mainbus_read7(apu->bus, io.source_addr + (status.pos & 0xFFFFFFFC), 1, 0, false) << 8);
     status.pos++;
 }
 
 void MCH::run_pcm16()
 {
     // addr, sz, access, effect
-    sample = mainbus_read7(io.source_addr + ((status.pos >> 1) << 2), 2, 0, 0);
+    sample = NDS::core::mainbus_read7(apu->bus, io.source_addr + ((status.pos >> 1) << 2), 2, 0, false);
     status.pos++;
 }
 
 void MCH::run_ima_adpcm()
 {
     if ((status.pos & 7) == 0) {
-        adpcm.data = apu->bus->mainbus_read7(io.source_addr + ((status.pos >> 3) << 2) + 4, 4, 0, 0);
+        adpcm.data = NDS::core::mainbus_read7(apu->bus, io.source_addr + ((status.pos >> 3) << 2) + 4, 4, 0, false);
     }
     const u32 nibble = adpcm.data & 15;
     adpcm.data >>= 4;
@@ -277,7 +277,7 @@ void MCH::probe_trigger(u32 old_status)
     // Trigger channel!
     // TODO: supposed to wait 1-3 0 samples
     if (io.format == FMT_ima_adpcm) {
-        u32 adpcm_header = apu->bus->mainbus_read7(io.source_addr, 4, 0, 0);
+        u32 adpcm_header = NDS::core::mainbus_read7(apu->bus, io.source_addr, 4, 0, false);
 
         adpcm.sample = sample = static_cast<i16>(adpcm_header & 0xFFFF);
         adpcm.tbl_idx = (adpcm_header >> 16) & 0x7F;
@@ -545,8 +545,7 @@ void core::master_sample_callback(void *ptr, u64 nothing, u64 cur_clock, u32 jit
 
     i32 left = 0, right = 0;
     i32 spkr = 0;
-    for (u32 chn = 0; chn < 16; chn++) {
-        MCH &ch = th->CH[chn];
+    for (auto &ch : th->CH) {
         //i32 smp = ch.sample; //
         i32 smp = ((static_cast<i32>(ch.sample) * static_cast<i32>(ch.io.real_vol)) >> 7) >> ch.io.vol_rshift;
         // Current range, 16 bits.

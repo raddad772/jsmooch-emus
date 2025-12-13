@@ -198,7 +198,7 @@ static void setup_dbglog(core &th, debugger_interface &dbgr)
     dbglog_view &dv = dview->dbglog;
     th.dbg.dvptr = &dv;
     snprintf(dv.name, sizeof(dv.name), "Trace");
-    dv.has_extra = 1;
+    dv.has_extra = true;
 
     static constexpr u32 cpu_color = 0x8080FF;
 
@@ -279,7 +279,7 @@ void core::setup_debugger_interface(debugger_interface &intf) {
     dbg.interface = &intf;
     auto *dbgr = dbg.interface;
 
-    dbgr->supported_by_core = 1;
+    dbgr->supported_by_core = true;
     dbgr->smallest_step = 8;
     dbgr->views.reserve(15);
 

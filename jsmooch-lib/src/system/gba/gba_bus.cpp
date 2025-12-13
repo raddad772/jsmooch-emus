@@ -11,7 +11,7 @@
 #include "helpers/multisize_memaccess.cpp"
 
 namespace GBA {
-static u32 read_trace_cpu(void *ptr, u32 addr, u32 sz) {
+static u32 read_trace_cpu(void *ptr, u32 addr, u8 sz) {
     auto *th = static_cast<GBA::core *>(ptr);
     return core::mainbus_read(ptr, addr, sz, th->io.cpu.open_bus_data, false);
 }

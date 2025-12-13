@@ -5,7 +5,7 @@
 #include "sys_interface.h"
 //#include "system/gb/gb.h"
 #include "system/nes/nes.h"
-//#include "system/nds/nds.h"
+#include "system/nds/nds.h"
 #include "system/cosmac_vip/cosmac_vip.h"
 #include "system/snes/snes.h"
 #include "system/sms_gg/sms_gg.h"
@@ -30,9 +30,9 @@ jsm_system* new_system(jsm::systems which)
         case jsm::systems::GBA:
             out = GBA_new();
             break;
-        /*case jsm::systems::NDS:
-            NDS_new(out);
-            break;*/
+        case jsm::systems::NDS:
+            out = NDS_new();
+            break;
         case jsm::systems::COMMODORE64:
             out = Commodore64_new(which);
             break;

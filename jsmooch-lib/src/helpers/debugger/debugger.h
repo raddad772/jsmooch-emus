@@ -336,7 +336,7 @@ struct dbglog_view {
     dbglog_category_node *id_to_category[MAX_DBGLOG_IDS]{};
     u32 id_to_color[MAX_DBGLOG_IDS]{};
     u32 updated{};
-    u32 has_extra{};
+    bool has_extra{};
 
     struct {
         dbglog_entry data[MAX_DBGLOG_LINES]{};

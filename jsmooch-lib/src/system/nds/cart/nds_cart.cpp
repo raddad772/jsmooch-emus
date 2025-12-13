@@ -121,7 +121,7 @@ u32 ridge::read_rom(u32 addr, u8 sz)
         cmd.sz_out = 0;
 
         if (io.transfer_ready_irq) {
-            NDS_update_IFs_card(IRQ_CART_DATA_READY);
+            bus->update_IFs_card(IRQ_CART_DATA_READY);
         }
     } else {
         rom_busy_until = bus->clock.current7() + rom_transfer_time(io.romctrl.transfer_clk_rate, 4);
@@ -211,14 +211,14 @@ void ridge::handle_cmd()
         bus->scheduler.add_or_run_abs(rom_busy_until, ANB_after_read, this, &ridge::check_transfer, &sch_sch);
     }
     else if(io.transfer_ready_irq) {
-        NDS_update_IFs_card(IRQ_CART_DATA_READY);
+        bus->update_IFs_card(IRQ_CART_DATA_READY);
     }
 }
 
 void ridge::after_read()
 {
     io.romctrl.data_ready = 1;
-    if (bus->io.rights.nds_slot_is7) NDS_trigger_dma7_if(2);
+    if (bus->io.rights.nds_slot_is7) bus->trigger_dma7_if(2);
     else bus->trigger_dma9_if(DMA_DS_CART_SLOT);
 }
 
@@ -342,10 +342,10 @@ void ridge::detect_kind(u32 from, u32 val)
                     case 0: // none
                         break;
                     case 1: // eeprom
-                        NDS_eeprom_setup();
+                        eeprom_setup();
                         break;
                     case 2: // flash
-                        NDS_flash_setup();
+                        flash_setup();
                         break;
                     case 3: // fram
                         printf("\nFRAM IMPLEMENT!");

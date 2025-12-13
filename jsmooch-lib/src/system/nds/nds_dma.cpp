@@ -37,7 +37,7 @@ void core::dma7_go_ch(DMA_ch &ch) {
         if (ch.op.sz == 2) {
             u16 value;
             if (ch.op.src_addr >= 0x02000000) {
-                value = mainbus_read7(ch.op.src_addr, 2, ch.op.src_access, 1);
+                value = mainbus_read7(this, ch.op.src_addr, 2, ch.op.src_access, true);
                 ch.io.open_bus = (value << 16) | value;
             } else {
                 if (ch.op.dest_addr & 2) {
@@ -48,15 +48,15 @@ void core::dma7_go_ch(DMA_ch &ch) {
                 waitstates.current_transaction++;
             }
 
-            mainbus_write7(ch.op.dest_addr, 2, ch.op.dest_access, value);
+            mainbus_write7(this, ch.op.dest_addr, 2, ch.op.dest_access, value);
             num_transfer++;
         }
         else {
             if (ch.op.src_addr >= 0x02000000)
-                ch.io.open_bus = mainbus_read7(ch.op.src_addr, 4, ch.op.src_access, 1);
+                ch.io.open_bus = mainbus_read7(this, ch.op.src_addr, 4, ch.op.src_access, true);
             else
                 waitstates.current_transaction++;
-            mainbus_write7(ch.op.dest_addr, 4, ch.op.dest_access, ch.io.open_bus);
+            mainbus_write7(this, ch.op.dest_addr, 4, ch.op.dest_access, ch.io.open_bus);
             num_transfer++;
         }
 
@@ -153,7 +153,7 @@ void core::dma9_go_ch(DMA_ch &ch) {
         if (ch.op.sz == 2) {
             u16 value;
             if (ch.op.src_addr >= 0x02000000) {
-                value = mainbus_read9(ch.op.src_addr, 2, ch.op.src_access, 0);
+                value = mainbus_read9(this, ch.op.src_addr, 2, ch.op.src_access, false);
                 ch.io.open_bus = (value << 16) | value;
             } else {
                 if (ch.op.dest_addr & 2) {
@@ -164,16 +164,16 @@ void core::dma9_go_ch(DMA_ch &ch) {
                 waitstates.current_transaction++;
             }
 
-            mainbus_write9(ch.op.dest_addr, 2, ch.op.dest_access, value);
+            mainbus_write9(this, ch.op.dest_addr, 2, ch.op.dest_access, value);
             num_transfer++;
         }
         else {
             if (ch.op.src_addr >= 0x02000000)
-                ch.io.open_bus = mainbus_read9(ch.op.src_addr, 4, ch.op.src_access, 0);
+                ch.io.open_bus = mainbus_read9(this, ch.op.src_addr, 4, ch.op.src_access, false);
             else {
                 waitstates.current_transaction++;
             }
-            mainbus_write9(ch.op.dest_addr, 4, ch.op.dest_access, ch.io.open_bus);
+            mainbus_write9(this, ch.op.dest_addr, 4, ch.op.dest_access, ch.io.open_bus);
             num_transfer++;
         }
 

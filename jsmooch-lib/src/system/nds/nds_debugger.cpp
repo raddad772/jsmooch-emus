@@ -11,22 +11,18 @@
 #include "nds_bus.h"
 #include "nds_debugger.h"
 
-#define JTHIS struct NDS* this = (NDS*)jsm->ptr
-#define JSM struct jsm_system* jsm
-
-#define THIS struct NDS* this
-
+namespace NDS {
 #define PAL_BOX_SIZE 10
 #define PAL_BOX_SIZE_W_BORDER 11
 
 static void render_image_view_palette(debugger_interface *dbgr, debugger_view *dview, void *ptr, u32 out_width) {
-    struct NDS *this = (NDS *) ptr;
-    if (this->clock.master_frame == 0) return;
-    struct image_view *iv = &dview->image;
+    auto *th = static_cast<core *>(ptr);
+    if (th->clock.master_frame == 0) return;
+    image_view *iv = &dview->image;
     iv->draw_which_buf ^= 1;
-    u32 *outbuf = iv->img_buf[iv->draw_which_buf].ptr;
+    u32 *outbuf = static_cast<u32 *>(iv->img_buf[iv->draw_which_buf].ptr);
     memset(outbuf, 0, out_width * (((16 * PAL_BOX_SIZE_W_BORDER) * 5) + 2));
-    u32 which = ((debugger_widget *)cvec_get(&dview->options, 0))->radiogroup.value;
+    u32 which = dview->options[0].radiogroup.value;
 
     // We get a 32x32 playground, ish.
     // That's 1000 colors, but extended palettes have 4000.
@@ -34,7 +30,7 @@ static void render_image_view_palette(debugger_interface *dbgr, debugger_view *d
     if (which == 0) {
 
         for (u32 eng_num = 0; eng_num < 2; eng_num++) {
-            struct NDSENG2D *eng = &this->ppu.eng2d[eng_num];
+            auto &eng = th->ppu.eng2d[eng_num];
             u32 upper_row = 0;
             u32 offset = 0;
             u32 y_offset = 0;
@@ -42,7 +38,7 @@ static void render_image_view_palette(debugger_interface *dbgr, debugger_view *d
             // iv->width = ((16 * PAL_BOX_SIZE_W_BORDER * 2) + 2);
 
             for (u32 lohi = 0; lohi < 0x200; lohi += 0x100) { // lohi = bg or OBJ palettes
-                u16 *curpal = lohi == 0 ? (u16 *) eng->mem.bg_palette : (u16 *) eng->mem.obj_palette;
+                u16 *curpal = lohi == 0 ? reinterpret_cast<u16 *>(eng.mem.bg_palette) : reinterpret_cast<u16 *>(eng.mem.obj_palette);
                 for (u32 palette = 0; palette < 16; palette++) {
                     for (u32 color = 0; color < 16; color++) {
                         u32 y_top = y_offset + offset + upper_row;
@@ -75,32 +71,31 @@ static void render_image_view_palette(debugger_interface *dbgr, debugger_view *d
 #define PAL_BOX_SIZE 10
 #define PAL_BOX_SIZE_W_BORDER 11
 
-static void setup_image_view_palettes(NDS* this, debugger_interface *dbgr)
+static void setup_image_view_palettes(core *th, debugger_interface *dbgr)
 {
-    struct debugger_view *dview;
-    this->dbg.image_views.palettes = debugger_view_new(dbgr, dview_image);
-    dview = cpg(this->dbg.image_views.palettes);
-    struct image_view *iv = &dview->image;
+    debugger_view *dview;
+    th->dbg.image_views.palettes = dbgr->make_view(dview_image);
+    dview = &th->dbg.image_views.palettes.get();
+    image_view *iv = &dview->image;
 
     iv->width = (64 * PAL_BOX_SIZE_W_BORDER) + 10;
     iv->height = (64 * PAL_BOX_SIZE_W_BORDER) + 10;
 
     iv->viewport.exists = 1;
     iv->viewport.enabled = 1;
-    iv->viewport.p[0] = (ivec2){ 0, 0 };
-    iv->viewport.p[1] = (ivec2){ iv->width, iv->height };
+    iv->viewport.p[0] = ivec2( 0, 0 );
+    iv->viewport.p[1] = ivec2( iv->width, iv->height );
 
-    iv->update_func.ptr = this;
+    iv->update_func.ptr = th;
     iv->update_func.func = &render_image_view_palette;
     snprintf(iv->label, sizeof(iv->label), "Palettes Viewer");
 
-    struct debugger_widget *rg = debugger_widgets_add_radiogroup(&dview->options, "Which", 1, 0, 0);
-    debugger_widget_radiogroup_add_button(rg, "Regular", 0, 1);
-    debugger_widget_radiogroup_add_button(rg, "EngA Ext.BG", 1, 1);
-    debugger_widget_radiogroup_add_button(rg, "EngA Ext.OBJ", 2, 1);
-    debugger_widget_radiogroup_add_button(rg, "EngB Ext.BG", 3, 1);
-    debugger_widget_radiogroup_add_button(rg, "EngB Ext.OBJ", 4, 1);
-
+    debugger_widget &rg = debugger_widgets_add_radiogroup(dview->options, "Which", 1, 0, 0);
+    rg.radiogroup.add_button("Regular", 0, 1);
+    rg.radiogroup.add_button("EngA Ext.BG", 1, 1);
+    rg.radiogroup.add_button("EngA Ext.OBJ", 2, 1);
+    rg.radiogroup.add_button("EngB Ext.BG", 3, 1);
+    rg.radiogroup.add_button("EngB Ext.OBJ", 4, 1);
 }
 
 static void draw_line(u32 *outbuf, u32 out_width, u32 out_height, i32 x0, i32 y0, i32 x1, i32 y1)
@@ -119,30 +114,30 @@ static void draw_line(u32 *outbuf, u32 out_width, u32 out_height, i32 x0, i32 y0
 }
 
 static void render_image_view_re_wireframe(debugger_interface *dbgr, debugger_view *dview, void *ptr, u32 out_width) {
-    struct NDS *this = (NDS *) ptr;
-    if (this->clock.master_frame == 0) return;
+    auto *th = static_cast<core *>(ptr);
+    if (th->clock.master_frame == 0) return;
 
-    struct image_view *iv = &dview->image;
+    image_view *iv = &dview->image;
     iv->draw_which_buf ^= 1;
-    u32 *outbuf = iv->img_buf[iv->draw_which_buf].ptr;
+    u32 *outbuf = static_cast<u32 *>(iv->img_buf[iv->draw_which_buf].ptr);
     memset(outbuf, 0, out_width * 4 * 192);
-    struct NDS_GE_BUFFERS *b = &this->ge.buffers[this->ge.ge_has_buffer ^ 1];
+    auto *b = &th->ge.buffers[th->ge.ge_has_buffer ^ 1];
 
-    struct debugger_widget_textbox *tb = &((debugger_widget *)cvec_get(&dview->options, 0))->textbox;
-    debugger_widgets_textbox_clear(tb);
-    debugger_widgets_textbox_sprintf(tb, "#poly:%d", b->polygon_index);
+    debugger_widget_textbox *tb = &dview->options[0].textbox;
+    tb->clear();
+    tb->sprintf( "#poly:%d", b->polygon_index);
 
     for (u32 i = 0; i < b->polygon_index; i++) {
-        struct POLY *p = &b->polygon[i];
+        auto *p = &b->polygon[i];
         if (p->attr.mode > 2) continue;
-        struct VTX_list_node *v0, *v1;
+        GFX::VTX_list_node *v0, *v1;
         v1 = p->vertex_list.first;
         for (u32 vn = 1; vn < p->vertex_list.len+1; vn++) {
             v0 = v1;
             v1 = v1->next;
             if (!v1) v1 = p->vertex_list.first;
 
-            struct VTX_list_node *n0, *n1;
+            GFX::VTX_list_node *n0, *n1;
             if (v0->data.xyzw[1] < v1->data.xyzw[1]) {
                 n0 = v0;
                 n1 = v1;
@@ -162,17 +157,17 @@ static inline u32 C18to15(u32 c)
 }
 
 static void render_image_view_re_output(debugger_interface *dbgr, debugger_view *dview, void *ptr, u32 out_width) {
-    struct NDS *this = (NDS *) ptr;
-    if (this->clock.master_frame == 0) return;
+    auto *th = static_cast<core *>(ptr);
+    if (th->clock.master_frame == 0) return;
 
-    struct image_view *iv = &dview->image;
+    image_view *iv = &dview->image;
     iv->draw_which_buf ^= 1;
-    u32 *outbuf = iv->img_buf[iv->draw_which_buf].ptr;
+    u32 *outbuf = static_cast<u32 *>(iv->img_buf[iv->draw_which_buf].ptr);
     memset(outbuf, 0, out_width * 4 * 192);
-    struct NDS_GE_BUFFERS *b = &this->ge.buffers[this->ge.ge_has_buffer ^ 1];
+    auto *b = &th->ge.buffers[th->ge.ge_has_buffer ^ 1];
 
     for (u32 y = 0; y < 192; y++) {
-        struct LINEBUFFER *lbuf = &this->re.out.linebuffer[y];
+        auto *lbuf = &th->re.out.linebuffer[y];
         u32 *out_line = outbuf + (y * out_width);
         for (u32 x = 0; x < 256; x++) {
             out_line[x] = nds_to_screen(lbuf->rgb[x]);
@@ -184,19 +179,19 @@ static void set_info_A(char *mapstr, u32 mst, u32 ofs, u32 *mapaddr_start, u32 *
 {
     switch(mst) {
         case 0:
-            sprintf(mapstr, "arm9");
+            snprintf(mapstr, 50, "arm9");
             *mapaddr_start = 0x06800000;
             break;
         case 1:
-            sprintf(mapstr, "arm9+engA BG VRAM");
+            snprintf(mapstr, 50, "arm9+engA BG VRAM");
             *mapaddr_start = 0x20000 * ofs;
             break;
         case 2:
-            sprintf(mapstr, "arm9+engA OBJ VRAM");
+            snprintf(mapstr, 50, "arm9+engA OBJ VRAM");
             *mapaddr_start = 0x20000 * (ofs & 1);
             break;
         case 3:
-            sprintf(mapstr, "3d texture");
+            snprintf(mapstr, 50, "3d texture");
             *mapaddr_start = 0x20000 * ofs;
             break;
     }
@@ -206,19 +201,19 @@ static void set_info_A(char *mapstr, u32 mst, u32 ofs, u32 *mapaddr_start, u32 *
 static void set_info_B(char *mapstr, u32 mst, u32 ofs, u32 *mapaddr_start, u32 *mapaddr_end) {
     switch (mst) {
         case 0:
-            sprintf(mapstr, "arm9");
+            snprintf(mapstr, 50, "arm9");
             *mapaddr_start = 0x06820000;
             break;
         case 1:
-            sprintf(mapstr, "arm9+engA BG VRAM");
+            snprintf(mapstr, 50, "arm9+engA BG VRAM");
             *mapaddr_start = 0x20000 * ofs;
             break;
         case 2:
-            sprintf(mapstr, "arm9+engA OBJ VRAM");
+            snprintf(mapstr, 50, "arm9+engA OBJ VRAM");
             *mapaddr_start = 0x20000 * (ofs & 1);
             break;
         case 3:
-            sprintf(mapstr, "3d texture");
+            snprintf(mapstr, 50, "3d texture");
             *mapaddr_start = 0x20000 * ofs;
             break;
     }
@@ -228,23 +223,23 @@ static void set_info_B(char *mapstr, u32 mst, u32 ofs, u32 *mapaddr_start, u32 *
 static void set_info_C(char *mapstr, u32 mst, u32 ofs, u32 *mapaddr_start, u32 *mapaddr_end) {
     switch (mst) {
         case 0:
-            sprintf(mapstr, "arm9");
+            snprintf(mapstr, 50, "arm9");
             *mapaddr_start = 0x06840000;
             break;
         case 1:
-            sprintf(mapstr, "arm9+engA BG VRAM");
+            snprintf(mapstr, 50, "arm9+engA BG VRAM");
             *mapaddr_start = 0x20000 * ofs;
             break;
         case 2:
-            sprintf(mapstr, "arm7");
+            snprintf(mapstr, 50, "arm7");
             *mapaddr_start = 0x06000000 + (0x20000 * (ofs & 1));
             break;
         case 3:
-            sprintf(mapstr, "3d texture");
+            snprintf(mapstr, 50, "3d texture");
             *mapaddr_start = 0x20000 * ofs;
             break;
         case 4:
-            sprintf(mapstr, "arm9+engB BG VRAM");
+            snprintf(mapstr, 50, "arm9+engB BG VRAM");
             *mapaddr_start = 0;
             break;
     }
@@ -254,23 +249,23 @@ static void set_info_C(char *mapstr, u32 mst, u32 ofs, u32 *mapaddr_start, u32 *
 static void set_info_D(char *mapstr, u32 mst, u32 ofs, u32 *mapaddr_start, u32 *mapaddr_end) {
     switch (mst) {
         case 0:
-            sprintf(mapstr, "arm9");
+            snprintf(mapstr, 50, "arm9");
             *mapaddr_start = 0x06860000;
             break;
         case 1:
-            sprintf(mapstr, "arm9+engA BG VRAM");
+            snprintf(mapstr, 50, "arm9+engA BG VRAM");
             *mapaddr_start = 0x20000 * ofs;
             break;
         case 2:
-            sprintf(mapstr, "arm7");
+            snprintf(mapstr, 50, "arm7");
             *mapaddr_start = 0x06000000 + (0x20000 * (ofs & 1));
             break;
         case 3:
-            sprintf(mapstr, "3d texture");
+            snprintf(mapstr, 50, "3d texture");
             *mapaddr_start = 0x20000 * ofs;
             break;
         case 4:
-            sprintf(mapstr, "arm9+engB OBJ VRAM");
+            snprintf(mapstr, 50, "arm9+engB OBJ VRAM");
             *mapaddr_start = 0;
             break;
     }
@@ -280,23 +275,23 @@ static void set_info_D(char *mapstr, u32 mst, u32 ofs, u32 *mapaddr_start, u32 *
 static void set_info_E(char *mapstr, u32 mst, u32 ofs, u32 *mapaddr_start, u32 *mapaddr_end) {
     switch (mst) {
         case 0:
-            sprintf(mapstr, "arm9");
+            snprintf(mapstr, 50, "arm9");
             *mapaddr_start = 0x06880000;
             break;
         case 1:
-            sprintf(mapstr, "arm9+engA BG VRAM");
+            snprintf(mapstr, 50, "arm9+engA BG VRAM");
             *mapaddr_start = 0;
             break;
         case 2:
-            sprintf(mapstr, "arm9+engA OBJ VRAM");
+            snprintf(mapstr, 50, "arm9+engA OBJ VRAM");
             *mapaddr_start = 0;
             break;
         case 3:
-            sprintf(mapstr, "3d palette 0-3");
+            snprintf(mapstr, 50, "3d palette 0-3");
             *mapaddr_start = 0;
             break;
         case 4:
-            sprintf(mapstr, "engA BG extended palette 0-3");
+            snprintf(mapstr, 50, "engA BG extended palette 0-3");
             *mapaddr_start = 0;
             *mapaddr_end = 0x7FFF;
             return;
@@ -307,35 +302,35 @@ static void set_info_E(char *mapstr, u32 mst, u32 ofs, u32 *mapaddr_start, u32 *
 static void set_info_F(char *mapstr, u32 mst, u32 ofs, u32 *mapaddr_start, u32 *mapaddr_end) {
     switch (mst) {
         case 0:
-            sprintf(mapstr, "arm9");
+            snprintf(mapstr, 50, "arm9");
             *mapaddr_start = 0x06890000;
             break;
         case 1:
-            sprintf(mapstr, "arm9+engA BG VRAM");
+            snprintf(mapstr, 50, "arm9+engA BG VRAM");
             *mapaddr_start =  (0x4000*(ofs & 1)) + (0x10000 * ((ofs >> 1) & 1));
             break;
         case 2:
-            sprintf(mapstr, "arm9+engA OBJ VRAM");
+            snprintf(mapstr, 50, "arm9+engA OBJ VRAM");
             *mapaddr_start = (0x4000*(ofs & 1)) + (0x10000 * ((ofs >> 1) & 1));
             break;
         case 3:
-            sprintf(mapstr, "3d palette %d", (ofs & 1) + ((ofs & 2) << 1));
+            snprintf(mapstr, 50, "3d palette %d", (ofs & 1) + ((ofs & 2) << 1));
             *mapaddr_start = 0x4000 * ((ofs & 1) + ((ofs & 2) << 1));
             break;
         case 4: {
             char *ptr = mapstr;
-            ptr += sprintf(ptr, "engA BG extended palette ");
+            ptr += snprintf(ptr, 50-(ptr-mapstr), "engA BG extended palette ");
             if ((ofs & 1) == 0) {
-                ptr += sprintf(ptr, "slot 0-1");
+                ptr += snprintf(ptr, 50-(ptr-mapstr), "slot 0-1");
                 *mapaddr_start = 0;
             }
             else {
-                ptr += sprintf(ptr, "slot 2-3");
+                ptr += snprintf(ptr, 50-(ptr-mapstr), "slot 2-3");
                 *mapaddr_start = 0x4000;
             }
             break; }
         case 5:
-            sprintf(mapstr, "engA OBJ extended palette");
+            snprintf(mapstr, 50, "engA OBJ extended palette");
             *mapaddr_start = 0;
             *mapaddr_end = 0x1FFF;
             return;
@@ -346,35 +341,35 @@ static void set_info_F(char *mapstr, u32 mst, u32 ofs, u32 *mapaddr_start, u32 *
 static void set_info_G(char *mapstr, u32 mst, u32 ofs, u32 *mapaddr_start, u32 *mapaddr_end) {
     switch (mst) {
         case 0:
-            sprintf(mapstr, "arm9");
+            snprintf(mapstr, 50, "arm9");
             *mapaddr_start = 0x06894000;
             break;
         case 1:
-            sprintf(mapstr, "arm9+engA BG VRAM");
+            snprintf(mapstr, 50, "arm9+engA BG VRAM");
             *mapaddr_start =  (0x4000 * (ofs & 1)) + (0x10000 * ((ofs >> 1) & 1));
             break;
         case 2:
-            sprintf(mapstr, "arm9+engA OBJ VRAM");
+            snprintf(mapstr, 50, "arm9+engA OBJ VRAM");
             *mapaddr_start = (0x4000 * (ofs & 1)) + (0x10000 * ((ofs >> 1) & 1));
             break;
         case 3:
-            sprintf(mapstr, "3d palette %d", ((ofs & 1) + ((ofs & 2) << 1)));
+            snprintf(mapstr, 50, "3d palette %d", ((ofs & 1) + ((ofs & 2) << 1)));
             *mapaddr_start = 0x4000 * ((ofs & 1) + ((ofs & 2) << 1));
             break;
         case 4: {
             char *ptr = mapstr;
-            ptr += sprintf(ptr, "engA BG extended palette ");
+            ptr += snprintf(ptr, 50-(ptr-mapstr), "engA BG extended palette ");
             if ((ofs & 1) == 0) {
-                ptr += sprintf(ptr, "slot 0-1");
+                ptr += snprintf(ptr, 50-(ptr-mapstr), "slot 0-1");
                 *mapaddr_start = 0;
             }
             else {
-                ptr += sprintf(ptr, "slot 2-3");
+                ptr += snprintf(ptr, 50-(ptr-mapstr), "slot 2-3");
                 *mapaddr_start = 0x4000;
             }
             break; }
         case 5:
-            sprintf(mapstr, "engA OBJ extended palette");
+            snprintf(mapstr, 50, "engA OBJ extended palette");
             *mapaddr_start = 0;
             *mapaddr_end = 0x1FFF;
             return;
@@ -385,15 +380,15 @@ static void set_info_G(char *mapstr, u32 mst, u32 ofs, u32 *mapaddr_start, u32 *
 static void set_info_H(char *mapstr, u32 mst, u32 ofs, u32 *mapaddr_start, u32 *mapaddr_end) {
     switch (mst) {
         case 0:
-            sprintf(mapstr, "arm9");
+            snprintf(mapstr, 50, "arm9");
             *mapaddr_start = 0x06898000;
             break;
         case 1:
-            sprintf(mapstr, "arm9+engB BG VRAM");
+            snprintf(mapstr, 50, "arm9+engB BG VRAM");
             *mapaddr_start =  0;
             break;
         case 2:
-            sprintf(mapstr, "engB BG extended palette 0-3");
+            snprintf(mapstr, 50, "engB BG extended palette 0-3");
             *mapaddr_start = 0;
             break;
     }
@@ -403,19 +398,19 @@ static void set_info_H(char *mapstr, u32 mst, u32 ofs, u32 *mapaddr_start, u32 *
 static void set_info_I(char *mapstr, u32 mst, u32 ofs, u32 *mapaddr_start, u32 *mapaddr_end) {
     switch (mst) {
         case 0:
-            sprintf(mapstr, "arm9");
+            snprintf(mapstr, 50, "arm9");
             *mapaddr_start = 0x068A0000;
             break;
         case 1:
-            sprintf(mapstr, "arm9+engB BG VRAM");
+            snprintf(mapstr, 50, "arm9+engB BG VRAM");
             *mapaddr_start =  0x8000;
             break;
         case 2:
-            sprintf(mapstr, "arm9+engB OBJ VRAM");
+            snprintf(mapstr, 50, "arm9+engB OBJ VRAM");
             *mapaddr_start =  0;
             break;
         case 3:
-            sprintf(mapstr, "engB OBJ extended palette");
+            snprintf(mapstr, 50, "engB OBJ extended palette");
             *mapaddr_start = 0;
             *mapaddr_end = 0x1FFF;
             return;
@@ -423,11 +418,11 @@ static void set_info_I(char *mapstr, u32 mst, u32 ofs, u32 *mapaddr_start, u32 *
     *mapaddr_end = *mapaddr_start + 0x3FFF;
 }
 
-static void classify_bg_kind(NDS *this, NDSENG2D *eng, u32 bgnum, jsm_string *js)
+static void classify_bg_kind(core *th, PPU::ENG2D *eng, u32 bgnum, jsm_string *js)
 {
-    struct NDS_PPU_bg *bg = &eng->bg[bgnum];
+    auto *bg = &eng->BG[bgnum];
 
-#define cl(...) { jsm_string_sprintf(js, __VA_ARGS__); return; }
+#define cl(...) { js->sprintf(__VA_ARGS__); return; }
     if ((eng->num == 0) && (bgnum == 0) && (bg->do3d)) cl("3d")
     if (bgnum < 2) cl("text")
     if (bgnum == 2) {
@@ -463,58 +458,58 @@ static void classify_bg_kind(NDS *this, NDSENG2D *eng, u32 bgnum, jsm_string *js
 #undef cl
 }
 
-static void print_layer_info(NDS *this, NDSENG2D *eng, u32 bgnum, debugger_widget_textbox *tb)
+static void print_layer_info(core *th, PPU::ENG2D *eng, u32 bgnum, debugger_widget_textbox *tb)
 {
     if (bgnum < 4) {
-        struct NDS_PPU_bg *bg = &eng->bg[bgnum];
-        debugger_widgets_textbox_sprintf(tb, "\n-BG%d:", bgnum);
-        if (bg->enable) debugger_widgets_textbox_sprintf(tb, "on ");
-        else debugger_widgets_textbox_sprintf(tb, "off");
-        debugger_widgets_textbox_sprintf(tb, "  kind:");
-        classify_bg_kind(this, eng, bgnum, &tb->contents);
-        debugger_widgets_textbox_sprintf(tb, "  mosaic:%d  screen_size:%d  8bpp:%d", bg->enable,bg->mosaic_enable, bg->screen_size, bg->bpp8);
-        debugger_widgets_textbox_sprintf(tb, "\n---hscroll:%d  vscroll:%d  mos.x,y:%d,%d  ", bg->hscroll, bg->vscroll, this->ppu.eng2d[0].mosaic.bg.hsize, this->ppu.eng2d[0].mosaic.bg.vsize);
+        auto *bg = &eng->BG[bgnum];
+        tb->sprintf( "\n-BG%d:", bgnum);
+        if (bg->enable) tb->sprintf( "on ");
+        else tb->sprintf( "off");
+        tb->sprintf( "  kind:");
+        classify_bg_kind(th, eng, bgnum, &tb->contents);
+        tb->sprintf( "  mosaic:%d  screen_size:%d  8bpp:%d", bg->enable,bg->mosaic_enable, bg->screen_size, bg->bpp8);
+        tb->sprintf( "\n---hscroll:%d  vscroll:%d  mos.x,y:%d,%d  ", bg->hscroll, bg->vscroll, th->ppu.eng2d[0].mosaic.bg.hsize, th->ppu.eng2d[0].mosaic.bg.vsize);
         if (bgnum < 2) {
-            debugger_widgets_textbox_sprintf(tb, "ext_palette:%d", bg->ext_pal_slot);
+            tb->sprintf( "ext_palette:%d", bg->ext_pal_slot);
         }
         else {
-            debugger_widgets_textbox_sprintf(tb, "disp_overflow:%d", bg->display_overflow);
+            tb->sprintf( "disp_overflow:%d", bg->display_overflow);
         }
-        debugger_widgets_textbox_sprintf(tb, "  priority:%d",  bg->priority);
+        tb->sprintf( "  priority:%d",  bg->priority);
     }
     else {
-        debugger_widgets_textbox_sprintf(tb, "\n-OBJ  on:%d  mosaic:%d", eng->obj.enable, eng->mosaic.obj.enable);
-        debugger_widgets_textbox_sprintf(tb, "\n---ext_palettes:%d  tile_1d:%d  bitmap_1d:%d", eng->io.obj.extended_palettes, eng->io.obj.tile.map_1d, eng->io.obj.bitmap.map_1d);
+        tb->sprintf( "\n-OBJ  on:%d  mosaic:%d", eng->obj.enable, eng->mosaic.obj.enable);
+        tb->sprintf( "\n---ext_palettes:%d  tile_1d:%d  bitmap_1d:%d", eng->io.obj.extended_palettes, eng->io.obj.tile.map_1d, eng->io.obj.bitmap.map_1d);
     }
 }
 
 static void render_image_view_sys_info(debugger_interface *dbgr, debugger_view *dview, void *ptr, u32 out_width) {
-    struct NDS *this = (NDS *) ptr;
+    auto *th = static_cast<core *>(ptr);
     //memset(ptr, 0, out_width * 4 * 10);
-    struct debugger_widget_textbox *tb = &((debugger_widget *)cvec_get(&dview->options, 0))->textbox;
-    debugger_widgets_textbox_clear(tb);
+    debugger_widget_textbox *tb = &dview->options[0].textbox;
+    tb->clear();
     for (u32 ppun = 0; ppun < 2; ppun++) {
-        struct NDSENG2D *eng = &this->ppu.eng2d[ppun];
-        debugger_widgets_textbox_sprintf(tb, "eng%c  display_mode:%d  bg_mode:%d  bg_ext_pal:%d", ppun == 0 ? 'A' : 'B', eng->io.display_mode, eng->io.bg_mode, eng->io.bg.extended_palettes);
-        debugger_widgets_textbox_sprintf(tb, "\n");
-        if (ppun ^ this->ppu.io.display_swap) debugger_widgets_textbox_sprintf(tb, "top   ");
-        else debugger_widgets_textbox_sprintf(tb, "bottom");
-        if (ppun == 0) debugger_widgets_textbox_sprintf(tb, "  do_3d:%d", eng->io.bg.do_3d);
+        auto &eng = th->ppu.eng2d[ppun];
+        tb->sprintf( "eng%c  display_mode:%d  bg_mode:%d  bg_ext_pal:%d", ppun == 0 ? 'A' : 'B', eng.io.display_mode, eng.io.bg_mode, eng.io.bg.extended_palettes);
+        tb->sprintf( "\n");
+        if (ppun ^ th->ppu.io.display_swap) tb->sprintf( "top   ");
+        else tb->sprintf( "bottom");
+        if (ppun == 0) tb->sprintf( "  do_3d:%d", eng.io.bg.do_3d);
 
         for (u32 bgnum = 0; bgnum < 5; bgnum++) {
-            print_layer_info(this, eng, bgnum, tb);
+            print_layer_info(th, &eng, bgnum, tb);
         }
 
 
-        debugger_widgets_textbox_sprintf(tb, "\n\n");
+        tb->sprintf( "\n\n");
     }
 
     // Now do VRAM mappings
     char mapstr[50];
     u32 mapaddr_start, mapaddr_end;
     for (u32 bnum = 0; bnum < 9; bnum++) {
-        u32 mst = this->mem.vram.io.bank[bnum].mst;
-        u32 ofs = this->mem.vram.io.bank[bnum].ofs;
+        u32 mst = th->mem.vram.io.bank[bnum].mst;
+        u32 ofs = th->mem.vram.io.bank[bnum].ofs;
 
         switch(bnum) {
             case 0:
@@ -545,48 +540,48 @@ static void render_image_view_sys_info(debugger_interface *dbgr, debugger_view *
                 set_info_I(mapstr, mst, ofs, &mapaddr_start, &mapaddr_end);
                 break;
         }
-        debugger_widgets_textbox_sprintf(tb, "\nVRAM %c  MST:%d  OFS:%d  mapping:%s  start:%x  end:%x", 'A' + bnum, mst, ofs, mapstr, mapaddr_start, mapaddr_end);
+        tb->sprintf( "\nVRAM %c  MST:%d  OFS:%d  mapping:%s  start:%x  end:%x", 'A' + bnum, mst, ofs, mapstr, mapaddr_start, mapaddr_end);
 
     }
-    debugger_widgets_textbox_sprintf(tb, "\n\nTimers ARM9:");
+    tb->sprintf( "\n\nTimers ARM9:");
     for (u32 i = 0; i < 4; i++) {
-        float period_f = ((float)this->timer9[i].reload_ticks / 33000000.0f);
-        debugger_widgets_textbox_sprintf(tb,  "\n%d: %f", i, period_f);
+        float period_f = ((float)th->timer9[i].reload_ticks / 33000000.0f);
+        tb->sprintf(  "\n%d: %f", i, period_f);
     }
 
-    debugger_widgets_textbox_sprintf(tb, "\n\nTimers ARM7:");
+    tb->sprintf( "\n\nTimers ARM7:");
     for (u32 i = 0; i < 4; i++) {
-        float period_f = ((float)this->timer7[i].reload_ticks / 33000000.0f);
-        debugger_widgets_textbox_sprintf(tb,  "\n%d: %f", i, period_f);
+        float period_f = ((float)th->timer7[i].reload_ticks / 33000000.0f);
+        tb->sprintf(  "\n%d: %f", i, period_f);
     }
 
 }
 
 static void render_image_view_dispcap(debugger_interface *dbgr, debugger_view *dview, void *ptr, u32 out_width)
 {
-    struct NDS *this = (NDS *) ptr;
-    if (this->clock.master_frame == 0) return;
+    auto *th = static_cast<core *>(ptr);
+    if (th->clock.master_frame == 0) return;
 
-    struct debugger_widget_radiogroup *engrg = &((debugger_widget *)cvec_get(&dview->options, 0))->radiogroup;
-    struct debugger_widget_textbox *tb = &((debugger_widget *)cvec_get(&dview->options, 1))->textbox;
+    debugger_widget_radiogroup *engrg = &dview->options[0].radiogroup;
+    debugger_widget_textbox *tb = &dview->options[1].textbox;
 
-    struct image_view *iv = &dview->image;
+    image_view *iv = &dview->image;
     iv->draw_which_buf ^= 1;
-    u32 *outbuf = iv->img_buf[iv->draw_which_buf].ptr;
+    u32 *outbuf = static_cast<u32 *>(iv->img_buf[iv->draw_which_buf].ptr);
     memset(outbuf, 0, out_width * 4 * 192);
 
     static const int csize[4][2] = {{128, 128}, {256, 64}, {256, 128}, {256, 192} };
-    union NDS_DISPCAPCNT dc = this->ppu.io.DISPCAPCNT;
+    auto dc = th->ppu.io.DISPCAPCNT;
 
-    debugger_widgets_textbox_sprintf(tb, "DISPCAP stats:");
-    debugger_widgets_textbox_sprintf(tb, "\ncap_size:%d(%dx%d)   eva:%d  evb:%d", dc.capture_size, csize[dc.capture_size][0], csize[dc.capture_size][1], dc.eva, dc.evb);
-    debugger_widgets_textbox_sprintf(tb, "\ncap_size:%d(%dx%d)", dc.capture_size, csize[dc.capture_size][0], csize[dc.capture_size][1]);
+    tb->sprintf( "DISPCAP stats:");
+    tb->sprintf( "\ncap_size:%d(%dx%d)   eva:%d  evb:%d", dc.capture_size, csize[dc.capture_size][0], csize[dc.capture_size][1], dc.eva, dc.evb);
+    tb->sprintf( "\ncap_size:%d(%dx%d)", dc.capture_size, csize[dc.capture_size][0], csize[dc.capture_size][1]);
 
 
-    debugger_widgets_textbox_clear(tb);
+    tb->clear();
     for (u32 y = 0; y < 192; y++) {
         u32 *out_line = outbuf + (y * out_width);
-        u16 *in_line = this->dbg_info.eng[0].line[y].dispcap_px;
+        u16 *in_line = th->dbg_info.eng[0].line[y].dispcap_px;
         for (u32 x = 0; x < 256; x++) {
             out_line[x] = gba_to_screen(in_line[x]);
         }
@@ -595,31 +590,31 @@ static void render_image_view_dispcap(debugger_interface *dbgr, debugger_view *d
 
 static void render_image_view_ppu_layers(debugger_interface *dbgr, debugger_view *dview, void *ptr, u32 out_width)
 {
-    struct NDS *this = (NDS *) ptr;
-    if (this->clock.master_frame == 0) return;
-    struct debugger_widget_radiogroup *engrg = &((debugger_widget *)cvec_get(&dview->options, 0))->radiogroup;
-    struct debugger_widget_radiogroup *layernum = &((debugger_widget *)cvec_get(&dview->options, 1))->radiogroup;
-    struct debugger_widget_radiogroup *attrkind = &((debugger_widget *)cvec_get(&dview->options, 2))->radiogroup;
-    struct debugger_widget_textbox *tb = &((debugger_widget *)cvec_get(&dview->options, 3))->textbox;
+    auto *th = static_cast<core *>(ptr);
+    if (th->clock.master_frame == 0) return;
+    debugger_widget_radiogroup *engrg = &dview->options[0].radiogroup;
+    debugger_widget_radiogroup *layernum = &dview->options[1].radiogroup;
+    debugger_widget_radiogroup *attrkind = &dview->options[2].radiogroup;
+    debugger_widget_textbox *tb = &dview->options[3].textbox;
 
-    struct image_view *iv = &dview->image;
+    image_view *iv = &dview->image;
     iv->draw_which_buf ^= 1;
-    u32 *outbuf = iv->img_buf[iv->draw_which_buf].ptr;
+    u32 *outbuf = static_cast<u32 *>(iv->img_buf[iv->draw_which_buf].ptr);
     memset(outbuf, 0, out_width * 4 * 192);
 
-    debugger_widgets_textbox_clear(tb);
-    struct NDSENG2D *eng = &this->ppu.eng2d[engrg->value];
-    print_layer_info(this, eng, layernum->value, tb);
+    tb->clear();
+    auto &eng = th->ppu.eng2d[engrg->value];
+    print_layer_info(th, &eng, layernum->value, tb);
 
     for (u32 y = 0; y < 192; y++) {
-        //struct LINEBUFFER *lbuf = &this->re.out.linebuffer[y];
+        //LINEBUFFER *lbuf = &th->re.out.linebuffer[y];
         u32 *out_line = outbuf + (y * out_width);
-        union NDS_PX *px_line;
+        PPU::PX *px_line;
         if (layernum->value < 4) {
-            px_line = this->dbg_info.eng[engrg->value].line[y].bg[layernum->value].buf;
+            px_line = th->dbg_info.eng[engrg->value].line[y].bg[layernum->value].buf;
         }
         else {
-            px_line = this->dbg_info.eng[engrg->value].line[y].sprite_buf;
+            px_line = th->dbg_info.eng[engrg->value].line[y].sprite_buf;
         }
         for (u32 x = 0; x < 256; x++) {
             switch(attrkind->value) {
@@ -670,9 +665,9 @@ static void render_image_view_ppu_layers(debugger_interface *dbgr, debugger_view
 
 
 static void render_image_view_re_attr(debugger_interface *dbgr, debugger_view *dview, void *ptr, u32 out_width) {
-    struct NDS *this = (NDS *) ptr;
-    if (this->clock.master_frame == 0) return;
-    struct debugger_widget_radiogroup *attr_kind = &((debugger_widget *)cvec_get(&dview->options, 0))->radiogroup;
+    auto *th = static_cast<core *>(ptr);
+    if (th->clock.master_frame == 0) return;
+    debugger_widget_radiogroup *attr_kind = &dview->options[0].radiogroup;
 
     u32 tm_colors[8] = {
             0xFF000000, // no texture/color
@@ -685,59 +680,59 @@ static void render_image_view_re_attr(debugger_interface *dbgr, debugger_view *d
             0xFFFFFFFF, // color 7, white
     };
 
-    struct debugger_widget_colorkey *colorkey = &((debugger_widget *)cvec_get(&dview->options, 1))->colorkey;
+    debugger_widget_colorkey *colorkey = &dview->options[1].colorkey;
 
     switch(attr_kind->value) {
         case 0: // Texture format
-            debugger_widgets_colorkey_set_title(colorkey, "Texture Format");
-            debugger_widgets_colorkey_add_item(colorkey, "No texture", tm_colors[0]);
-            debugger_widgets_colorkey_add_item(colorkey, "A3I5", tm_colors[1]);
-            debugger_widgets_colorkey_add_item(colorkey, "2bpp", tm_colors[2]);
-            debugger_widgets_colorkey_add_item(colorkey, "4bpp", tm_colors[3]);
-            debugger_widgets_colorkey_add_item(colorkey, "8bpp", tm_colors[4]);
-            debugger_widgets_colorkey_add_item(colorkey, "Compressed", tm_colors[5]);
-            debugger_widgets_colorkey_add_item(colorkey, "A5I3", tm_colors[6]);
-            debugger_widgets_colorkey_add_item(colorkey, "Direct color", tm_colors[7]);
+            colorkey->set_title("Texture Format");
+            colorkey->add_item("No texture", tm_colors[0]);
+            colorkey->add_item("A3I5", tm_colors[1]);
+            colorkey->add_item("2bpp", tm_colors[2]);
+            colorkey->add_item("4bpp", tm_colors[3]);
+            colorkey->add_item("8bpp", tm_colors[4]);
+            colorkey->add_item("Compressed", tm_colors[5]);
+            colorkey->add_item("A5I3", tm_colors[6]);
+            colorkey->add_item("Direct color", tm_colors[7]);
             break;
         case 1: // Vertex submit mode
-            debugger_widgets_colorkey_set_title(colorkey, "Vertex submission mode");
-            debugger_widgets_colorkey_add_item(colorkey, "Triangle", tm_colors[1]);
-            debugger_widgets_colorkey_add_item(colorkey, "Quad", tm_colors[2]);
-            debugger_widgets_colorkey_add_item(colorkey, "Triangle strip", tm_colors[3]);
-            debugger_widgets_colorkey_add_item(colorkey, "Quad strip", tm_colors[4]);
+            colorkey->set_title("Vertex submission mode");
+            colorkey->add_item("Triangle", tm_colors[1]);
+            colorkey->add_item("Quad", tm_colors[2]);
+            colorkey->add_item("Triangle strip", tm_colors[3]);
+            colorkey->add_item("Quad strip", tm_colors[4]);
             break;
         case 2: // Pixel shading mode
-            debugger_widgets_colorkey_set_title(colorkey, "Pixel shading mode");
-            debugger_widgets_colorkey_add_item(colorkey, "Untextured", tm_colors[1]);
-            debugger_widgets_colorkey_add_item(colorkey, "Modulation", tm_colors[2]);
-            debugger_widgets_colorkey_add_item(colorkey, "Decal", tm_colors[3]);
-            debugger_widgets_colorkey_add_item(colorkey, "Toon", tm_colors[4]);
-            debugger_widgets_colorkey_add_item(colorkey, "Highlight", tm_colors[5]);
-            debugger_widgets_colorkey_add_item(colorkey, "Shadow", tm_colors[6]);
+            colorkey->set_title("Pixel shading mode");
+            colorkey->add_item("Untextured", tm_colors[1]);
+            colorkey->add_item("Modulation", tm_colors[2]);
+            colorkey->add_item("Decal", tm_colors[3]);
+            colorkey->add_item("Toon", tm_colors[4]);
+            colorkey->add_item("Highlight", tm_colors[5]);
+            colorkey->add_item("Shadow", tm_colors[6]);
             break;
     }
 
-    struct image_view *iv = &dview->image;
+    image_view *iv = &dview->image;
     iv->draw_which_buf ^= 1;
-    u32 *outbuf = iv->img_buf[iv->draw_which_buf].ptr;
+    u32 *outbuf = static_cast<u32 *>(iv->img_buf[iv->draw_which_buf].ptr);
     memset(outbuf, 0, out_width * 4 * 192);
 
     for (u32 y = 0; y < 192; y++) {
-        struct LINEBUFFER *lbuf = &this->re.out.linebuffer[y];
+        auto *lbuf = &th->re.out.linebuffer[y];
         u32 *out_line = outbuf + (y * out_width);
         for (u32 x = 0; x < 256; x++) {
             switch(attr_kind->value) {
                 case 0: {
-                    union TEX_PARAM tp = lbuf->tex_param[x];
+                    auto tp = lbuf->tex_param[x];
                     out_line[x] = tm_colors[tp.format];
                     break; }
                 case 1: {
-                    union NDS_RE_EXTRA_ATTR ea = lbuf->extra_attr[x];
+                    auto ea = lbuf->extra_attr[x];
                     if (ea.has_px)
                         out_line[x] = tm_colors[ea.vertex_mode];
                     break; }
                 case 2: {
-                    union NDS_RE_EXTRA_ATTR ea = lbuf->extra_attr[x];
+                    auto ea = lbuf->extra_attr[x];
                     if (ea.has_px)
                         out_line[x] = tm_colors[ea.shading_mode];
                     break; }
@@ -749,66 +744,71 @@ static void render_image_view_re_attr(debugger_interface *dbgr, debugger_view *d
 }
 
 
-static void setup_cpu_trace(debugger_interface *dbgr, NDS *this)
+static void setup_cpu_trace(debugger_interface *dbgr, core *th)
 {
-    struct cvec_ptr p = debugger_view_new(dbgr, dview_trace);
-    struct debugger_view *dview = cpg(p);
-    struct trace_view *tv = &dview->trace;
+    cvec_ptr p = dbgr->make_view(dview_trace);
+    debugger_view *dview = &p.get();
+    trace_view *tv = &dview->trace;
     snprintf(tv->name, sizeof(tv->name), "Trace");
-    trace_view_add_col(tv, "Arch", 5);
-    trace_view_add_col(tv, "Cycle#", 10);
-    trace_view_add_col(tv, "Addr", 8);
-    trace_view_add_col(tv, "Opcode", 8);
-    trace_view_add_col(tv, "Disassembly", 45);
-    trace_view_add_col(tv, "Context", 32);
+    tv->add_col("Arch", 5);
+    tv->add_col("Cycle#", 10);
+    tv->add_col("Addr", 8);
+    tv->add_col("Opcode", 8);
+    tv->add_col("Disassembly", 45);
+    tv->add_col("Context", 32);
     tv->autoscroll = 1;
     tv->display_end_top = 0;
 
-    this->arm7.dbg.tvptr = tv;
-    this->arm9.dbg.tvptr = tv;
+    th->arm7.dbg.tvptr = tv;
+    th->arm9.dbg.tvptr = tv;
 }
 
-static void setup_dbglog(debugger_interface *dbgr, NDS *this)
+static void setup_dbglog(debugger_interface *dbgr, core *th)
 {
-    struct cvec_ptr p = debugger_view_new(dbgr, dview_dbglog);
-    struct debugger_view *dview = cpg(p);
-    struct dbglog_view *dv = &dview->dbglog;
-    this->dbg.dvptr = dv;
-    snprintf(dv->name, sizeof(dv->name), "Trace");
-    dv->has_extra = 1;
+    cvec_ptr p = dbgr->make_view(dview_dbglog);
+    debugger_view *dview = &p.get();
+    dbglog_view &dv = dview->dbglog;
+    th->dbg.dvptr = &dv;
+    snprintf(dv.name, sizeof(dv.name), "Trace");
+    dv.has_extra = true;
 
-    struct dbglog_category_node *root = dbglog_category_get_root(dv);
-    struct dbglog_category_node *arm7 = dbglog_category_add_node(dv, root, "ARM7TDMI", nullptr, 0, 0);
-    dbglog_category_add_node(dv, arm7, "Instruction Trace", "ARM7", NDS_CAT_ARM7_INSTRUCTION, 0x80FF80);
-    this->arm7.trace.dbglog.view = dv;
-    this->arm7.trace.dbglog.id = NDS_CAT_ARM7_INSTRUCTION;
-    dbglog_category_add_node(dv, arm7, "Halt", "ARM7.H", NDS_CAT_ARM7_HALT, 0xA0AF80);
+    dbglog_category_node &root = dv.get_category_root();
+    root.children.reserve(10);
+    dbglog_category_node &arm7 = root.add_node(dv, "ARM7TDMI", nullptr, 0, 0);
+    arm7.children.reserve(10);
+    arm7.add_node(dv, "Instruction Trace", "ARM7", NDS_CAT_ARM7_INSTRUCTION, 0x80FF80);
+    th->arm7.trace.dbglog.view = &dv;
+    th->arm7.trace.dbglog.id = NDS_CAT_ARM7_INSTRUCTION;
+    arm7.add_node(dv, "Halt", "ARM7.H", NDS_CAT_ARM7_HALT, 0xA0AF80);
 
-    struct dbglog_category_node *arm9 = dbglog_category_add_node(dv, root, "ARM946ES", nullptr, 0, 0);
-    dbglog_category_add_node(dv, arm9, "Instruction Trace", "ARM9", NDS_CAT_ARM9_INSTRUCTION, 0x8080FF);
-    this->arm9.dbg.dvptr = dv;
-    this->arm9.dbg.dv_id = NDS_CAT_ARM9_INSTRUCTION;
+    dbglog_category_node &arm9 = root.add_node(dv, "ARM946ES", nullptr, 0, 0);
+    arm9.children.reserve(10);
+    arm9.add_node(dv, "Instruction Trace", "ARM9", NDS_CAT_ARM9_INSTRUCTION, 0x8080FF);
+    th->arm9.dbg.dvptr = &dv;
+    th->arm9.dbg.dv_id = NDS_CAT_ARM9_INSTRUCTION;
+    dbglog_category_node &cart = root.add_node(dv, "Cart", nullptr, 0, 0);
+    cart.children.reserve(10);
+    cart.add_node(dv, "Read Start", "Cart.read", NDS_CAT_CART_READ_START, 0xFFFFFF);
+    cart.add_node(dv, "Read Complete", "Cart.read.", NDS_CAT_CART_READ_COMPLETE, 0xFFFFFF);
 
-    struct dbglog_category_node *cart = dbglog_category_add_node(dv, root, "Cart", nullptr, 0, 0);
-    dbglog_category_add_node(dv, cart, "Read Start", "Cart.read", NDS_CAT_CART_READ_START, 0xFFFFFF);
-    dbglog_category_add_node(dv, cart, "Read Complete", "Cart.read.", NDS_CAT_CART_READ_COMPLETE, 0xFFFFFF);
+    dbglog_category_node &dma = root.add_node(dv, "DMA", nullptr, 0, 0);
+    dma.children.reserve(10);
+    dma.add_node(dv, "DMA Start", "dma.start", NDS_CAT_DMA_START, 0xFFFFFF);
 
-    struct dbglog_category_node *dma = dbglog_category_add_node(dv, root, "DMA", nullptr, 0, 0);
-    dbglog_category_add_node(dv, dma, "DMA Start", "dma.start", NDS_CAT_DMA_START, 0xFFFFFF);
-
-    struct dbglog_category_node *ppu = dbglog_category_add_node(dv, root, "PPU", nullptr, 0, 0);
-    dbglog_category_add_node(dv, ppu, "Register Writes", "PPU.regw", NDS_CAT_PPU_REG_WRITE, 0xFFFFFF);
-    dbglog_category_add_node(dv, ppu, "BG mode changes", "PPU.BG+", NDS_CAT_PPU_BG_MODE, 0xFFFFFF);
-    dbglog_category_add_node(dv, ppu, "Misc.", "PPU.misc", NDS_CAT_PPU_MISC, 0xFFFFFF);
+    dbglog_category_node &ppu = root.add_node(dv, "PPU", nullptr, 0, 0);
+    ppu.children.reserve(10);
+    ppu.add_node(dv, "Register Writes", "PPU.regw", NDS_CAT_PPU_REG_WRITE, 0xFFFFFF);
+    ppu.add_node(dv, "BG mode changes", "PPU.BG+", NDS_CAT_PPU_BG_MODE, 0xFFFFFF);
+    ppu.add_node(dv, "Misc.", "PPU.misc", NDS_CAT_PPU_MISC, 0xFFFFFF);
 }
 
 
-static void setup_image_view_re_wireframe(NDS* this, debugger_interface *dbgr)
+static void setup_image_view_re_wireframe(core *th, debugger_interface *dbgr)
 {
-    struct debugger_view *dview;
-    this->dbg.image_views.re_wireframe = debugger_view_new(dbgr, dview_image);
-    dview = cpg(this->dbg.image_views.re_wireframe);
-    struct image_view *iv = &dview->image;
+    debugger_view *dview;
+    th->dbg.image_views.re_wireframe = dbgr->make_view(dview_image);
+    dview = &th->dbg.image_views.re_wireframe.get();
+    image_view *iv = &dview->image;
 
     iv->width = 256;
     iv->height = 192;
@@ -817,20 +817,20 @@ static void setup_image_view_re_wireframe(NDS* this, debugger_interface *dbgr)
     iv->viewport.p[0] = (ivec2){ 0, 0 };
     iv->viewport.p[1] = (ivec2){ 256, 192 };
 
-    iv->update_func.ptr = this;
+    iv->update_func.ptr = th;
     iv->update_func.func = &render_image_view_re_wireframe;
 
     snprintf(iv->label, sizeof(iv->label), "RE Wireframe");
 
-    debugger_widgets_add_textbox(&dview->options, "# poly:0", 1);
+    debugger_widgets_add_textbox(dview->options, "# poly:0", 1);
 
 }
 
-static void setup_image_view_dispcap(NDS *this, debugger_interface *dbgr) {
-    struct debugger_view *dview;
-    this->dbg.image_views.dispcap = debugger_view_new(dbgr, dview_image);
-    dview = cpg(this->dbg.image_views.dispcap);
-    struct image_view *iv = &dview->image;
+static void setup_image_view_dispcap(core *th, debugger_interface *dbgr) {
+    debugger_view *dview;
+    th->dbg.image_views.dispcap = dbgr->make_view(dview_image);
+    dview = &th->dbg.image_views.dispcap.get();
+    image_view *iv = &dview->image;
 
     iv->width = 256;
     iv->height = 192;
@@ -839,22 +839,22 @@ static void setup_image_view_dispcap(NDS *this, debugger_interface *dbgr) {
     iv->viewport.p[0] = (ivec2) {0, 0};
     iv->viewport.p[1] = (ivec2) {256, 192};
 
-    iv->update_func.ptr = this;
+    iv->update_func.ptr = th;
     iv->update_func.func = &render_image_view_dispcap;
     snprintf(iv->label, sizeof(iv->label), "DISPCAP view");
 
-    struct debugger_widget *rg = debugger_widgets_add_radiogroup(&dview->options, "Eng", 1, 0, 0);
-    debugger_widget_radiogroup_add_button(rg, "EngA", 0, 1);
-    debugger_widget_radiogroup_add_button(rg, "EngB", 1, 1);
-    debugger_widgets_add_textbox(&dview->options, "Default!", 0);
+    debugger_widget &rg = debugger_widgets_add_radiogroup(dview->options, "Eng", 1, 0, 0);
+    rg.radiogroup.add_button("EngA", 0, 1);
+    rg.radiogroup.add_button("EngB", 1, 1);
+    debugger_widgets_add_textbox(dview->options, "Default!", 0);
 }
 
-static void setup_image_view_ppu_layers(NDS *this, debugger_interface *dbgr)
+static void setup_image_view_ppu_layers(core *th, debugger_interface *dbgr)
 {
-    struct debugger_view *dview;
-    this->dbg.image_views.ppu_layers = debugger_view_new(dbgr, dview_image);
-    dview = cpg(this->dbg.image_views.ppu_layers);
-    struct image_view *iv = &dview->image;
+    debugger_view *dview;
+    th->dbg.image_views.ppu_layers = dbgr->make_view(dview_image);
+    dview = &th->dbg.image_views.ppu_layers.get();
+    image_view *iv = &dview->image;
 
     iv->width = 256;
     iv->height = 192;
@@ -863,38 +863,38 @@ static void setup_image_view_ppu_layers(NDS *this, debugger_interface *dbgr)
     iv->viewport.p[0] = (ivec2){ 0, 0 };
     iv->viewport.p[1] = (ivec2){ 256, 192 };
 
-    iv->update_func.ptr = this;
+    iv->update_func.ptr = th;
     iv->update_func.func = &render_image_view_ppu_layers;
     snprintf(iv->label, sizeof(iv->label), "PPU Layer View");
 
-    struct debugger_widget *rg = debugger_widgets_add_radiogroup(&dview->options, "Eng", 1, 0, 0);
-    debugger_widget_radiogroup_add_button(rg, "EngA", 0, 1);
-    debugger_widget_radiogroup_add_button(rg, "EngB", 1, 1);
+    debugger_widget *rg = &debugger_widgets_add_radiogroup(dview->options, "Eng", 1, 0, 0);
+    rg->radiogroup.add_button("EngA", 0, 1);
+    rg->radiogroup.add_button("EngB", 1, 1);
 
-    rg = debugger_widgets_add_radiogroup(&dview->options, "Layer", 1, 0, 0);
-    debugger_widget_radiogroup_add_button(rg, "BG0", 0, 1);
-    debugger_widget_radiogroup_add_button(rg, "BG1", 1, 1);
-    debugger_widget_radiogroup_add_button(rg, "BG2", 2, 1);
-    debugger_widget_radiogroup_add_button(rg, "BG3", 3, 1);
-    debugger_widget_radiogroup_add_button(rg, "OBJ", 4, 1);
+    rg = &debugger_widgets_add_radiogroup(dview->options, "Layer", 1, 0, 0);
+    rg->radiogroup.add_button("BG0", 0, 1);
+    rg->radiogroup.add_button("BG1", 1, 1);
+    rg->radiogroup.add_button("BG2", 2, 1);
+    rg->radiogroup.add_button("BG3", 3, 1);
+    rg->radiogroup.add_button("OBJ", 4, 1);
 
-    rg = debugger_widgets_add_radiogroup(&dview->options, "View", 1, 0, 0);
-    debugger_widget_radiogroup_add_button(rg, "RGB", 0, 1);
-    debugger_widget_radiogroup_add_button(rg, "Has", 1, 1);
-    debugger_widget_radiogroup_add_button(rg, "Priority", 2, 1);
-    debugger_widget_radiogroup_add_button(rg, "Mode", 3, 1);
-    debugger_widget_radiogroup_add_button(rg, "Sp.Trnslcnt.", 4, 0);
-    debugger_widget_radiogroup_add_button(rg, "BPP", 5, 1);
+    rg = &debugger_widgets_add_radiogroup(dview->options, "View", 1, 0, 0);
+    rg->radiogroup.add_button("RGB", 0, 1);
+    rg->radiogroup.add_button("Has", 1, 1);
+    rg->radiogroup.add_button("Priority", 2, 1);
+    rg->radiogroup.add_button("Mode", 3, 1);
+    rg->radiogroup.add_button("Sp.Trnslcnt.", 4, 0);
+    rg->radiogroup.add_button("BPP", 5, 1);
 
-    debugger_widgets_add_textbox(&dview->options, "Layer Info", 0);
+    debugger_widgets_add_textbox(dview->options, "Layer Info", 0);
 }
 
-static void setup_image_view_ppu_info(NDS *this, debugger_interface *dbgr)
+static void setup_image_view_ppu_info(core *th, debugger_interface *dbgr)
 {
-    struct debugger_view *dview;
-    this->dbg.image_views.ppu_info = debugger_view_new(dbgr, dview_image);
-    dview = cpg(this->dbg.image_views.ppu_info);
-    struct image_view *iv = &dview->image;
+    debugger_view *dview;
+    th->dbg.image_views.ppu_info = dbgr->make_view(dview_image);
+    dview = &th->dbg.image_views.ppu_info.get();
+    image_view *iv = &dview->image;
 
     iv->width = 10;
     iv->height = 10;
@@ -903,20 +903,20 @@ static void setup_image_view_ppu_info(NDS *this, debugger_interface *dbgr)
     iv->viewport.p[0] = (ivec2){ 0, 0 };
     iv->viewport.p[1] = (ivec2){ 10, 10 };
 
-    iv->update_func.ptr = this;
+    iv->update_func.ptr = th;
     iv->update_func.func = &render_image_view_sys_info;
 
     snprintf(iv->label, sizeof(iv->label), "Sys Info View");
 
-    debugger_widgets_add_textbox(&dview->options, "blah!", 1);
+    debugger_widgets_add_textbox(dview->options, "blah!", 1);
 }
 
-static void setup_image_view_re_attr(NDS* this, debugger_interface *dbgr)
+static void setup_image_view_re_attr(core *th, debugger_interface *dbgr)
 {
-    struct debugger_view *dview;
-    this->dbg.image_views.re_attr = debugger_view_new(dbgr, dview_image);
-    dview = cpg(this->dbg.image_views.re_attr);
-    struct image_view *iv = &dview->image;
+    debugger_view *dview;
+    th->dbg.image_views.re_attr = dbgr->make_view(dview_image);
+    dview = &th->dbg.image_views.re_attr.get();
+    image_view *iv = &dview->image;
 
     iv->width = 256;
     iv->height = 192;
@@ -925,25 +925,25 @@ static void setup_image_view_re_attr(NDS* this, debugger_interface *dbgr)
     iv->viewport.p[0] = (ivec2){ 0, 0 };
     iv->viewport.p[1] = (ivec2){ 256, 192 };
 
-    iv->update_func.ptr = this;
+    iv->update_func.ptr = th;
     iv->update_func.func = &render_image_view_re_attr;
 
     snprintf(iv->label, sizeof(iv->label), "RE Attr View");
 
-    struct debugger_widget *rg = debugger_widgets_add_radiogroup(&dview->options, "Attr. to show", 1, 0, 1);
-    debugger_widget_radiogroup_add_button(rg, "Texture Format", 0, 1);
-    debugger_widget_radiogroup_add_button(rg, "Vertex Submit Mode", 1, 1);
-    debugger_widget_radiogroup_add_button(rg, "Pixel Shading Mode", 2, 0);
-    struct debugger_widget *key = debugger_widgets_add_color_key(&dview->options, "Key", 1);
+    debugger_widget *rg = &debugger_widgets_add_radiogroup(dview->options, "Attr. to show", 1, 0, 1);
+    rg->radiogroup.add_button("Texture Format", 0, 1);
+    rg->radiogroup.add_button("Vertex Submit Mode", 1, 1);
+    rg->radiogroup.add_button("Pixel Shading Mode", 2, 0);
+    debugger_widgets_add_color_key(dview->options, "Key", 1);
 }
 
 
-static void setup_image_view_re_output(NDS* this, debugger_interface *dbgr)
+static void setup_image_view_re_output(core *th, debugger_interface *dbgr)
 {
-    struct debugger_view *dview;
-    this->dbg.image_views.re_wireframe = debugger_view_new(dbgr, dview_image);
-    dview = cpg(this->dbg.image_views.re_wireframe);
-    struct image_view *iv = &dview->image;
+    debugger_view *dview;
+    th->dbg.image_views.re_wireframe = dbgr->make_view(dview_image);
+    dview = &th->dbg.image_views.re_wireframe.get();
+    image_view *iv = &dview->image;
 
     iv->width = 256;
     iv->height = 192;
@@ -952,21 +952,21 @@ static void setup_image_view_re_output(NDS* this, debugger_interface *dbgr)
     iv->viewport.p[0] = (ivec2){ 0, 0 };
     iv->viewport.p[1] = (ivec2){ 256, 192 };
 
-    iv->update_func.ptr = this;
+    iv->update_func.ptr = th;
     iv->update_func.func = &render_image_view_re_output;
     snprintf(iv->label, sizeof(iv->label), "RE Raw Output");
 }
 
 
-void NDSJ_setup_debugger_interface(JSM, debugger_interface *dbgr) {
-    JTHIS;
-    this->dbg.interface = dbgr;
+void core::setup_debugger_interface(debugger_interface &intf) {
+    dbg.interface = &intf;
+    auto *dbgr = dbg.interface;
 
-    dbgr->supported_by_core = 0;
+    dbgr->supported_by_core = true;
     dbgr->smallest_step = 1;
-    cvec_lock_reallocs(&dbgr->views);
+    dbgr->views.reserve(30);
 
-    //setup_cpu_trace(dbgr, this);
+    //setup_cpu_trace(dbgr, th);
 
     setup_dbglog(dbgr, this);
     setup_image_view_re_output(this, dbgr);
@@ -976,4 +976,5 @@ void NDSJ_setup_debugger_interface(JSM, debugger_interface *dbgr) {
     setup_image_view_ppu_info(this, dbgr);
     setup_image_view_ppu_layers(this, dbgr);
     setup_image_view_dispcap(this, dbgr);
+}
 }
