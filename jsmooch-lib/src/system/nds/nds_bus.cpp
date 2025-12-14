@@ -493,7 +493,6 @@ void core::start_sqrt()
 void core::div_calc()
 {
     io.div.needs_calc = false;
-    printf("\nDIV MODE %d", io.div.mode);
     switch (io.div.mode) {
         case 0: {
             i32 num = static_cast<i32>(io.div.numer.data32[0]);
@@ -1663,7 +1662,7 @@ void core::buswr9_io(u32 addr, u8 sz, u8 access, u32 val)
         case R_IPCFIFOSEND+2:
         case R_IPCFIFOSEND+3:
             // All writes are only 32 bits here
-            printf("\nIPCIFOSEND!");
+            //printf("\nIPCIFOSEND!");
             if (io.ipc.arm9.fifo_enable) {
                 if (sz == 2) {
                     val &= 0xFFFF;

@@ -35,7 +35,6 @@ void my_texture::setup(SDL_GPUDevice *in_device, const char *label, u32 twidth, 
     tex.ptr = create_texture(device, width, height);
     assert(tex.ptr);
     snprintf(store_label, sizeof(store_label), "%s", label);
-    printf("\nSETUP TEXTURE %s", store_label);
     is_good = 1;
 }
 

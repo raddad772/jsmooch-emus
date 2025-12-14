@@ -358,8 +358,8 @@ void c64_present(physical_io_device &device, void *out_buf, u32 out_width, u32 o
 
 void NDS_present(physical_io_device &device, void *out_buf, u32 out_width, u32 out_height, u32 is_event_view_present)
 {
-    u32 *gbao = (u32 *)device.display.output[device.display.last_written ^ 1];
-    u32 *img32 = (u32 *) out_buf;
+    u32 *gbao = static_cast<u32 *>(device.display.output[device.display.last_written ^ 1]);
+    u32 *img32 = static_cast<u32 *>(out_buf);
 
     for (u32 ry = 0; ry < 384; ry++) {
         u32 y = ry;
@@ -369,7 +369,7 @@ void NDS_present(physical_io_device &device, void *out_buf, u32 out_width, u32 o
             u32 di = ((y * 256) + x);
             u32 c = gbao[di];
             //if (c == 0xBBE) printf("\nTO SCREEN: %08x", nds_to_screen(c));
-
+            //if (rx == 10) *line_out_ptr++ = 0xFFFFFFFF;
             *(line_out_ptr++) = nds_to_screen(c);
             //*(line_out_ptr++) = 0xFF808080;
         }

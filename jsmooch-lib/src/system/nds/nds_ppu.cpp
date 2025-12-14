@@ -884,7 +884,8 @@ void ENG2D::output_pixel(u32 x, bool obj_enable, bool bg_enables[4]) {
             output_color = nds_darken(output_color, static_cast<i32>(blend.use_bldy));
         }
     }
-    line_px[x] = output_color;
+    if (output_color != 0) printf("\nOUTPUT %d", output_color);
+    else line_px[x] = output_color;
 }
 
 void ENG2D::draw_line0(DBG_line *l)
