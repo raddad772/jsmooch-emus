@@ -787,6 +787,7 @@ void full_system::load_default_ROM()
             //worked = grab_ROM(&ROMs, which, "libnds/2Dplus3D.nds", nullptr);
             //worked = grab_ROM(&ROMs, which, "libnds/bitmap_sprites.nds", nullptr);
             //worked = grab_ROM(&ROMs, which, "3d_demos/libnds3d/3d_ortho_projection.nds", nullptr);
+            //worked = grab_ROM(&ROMs, which, "3d_demos/libnds3d/3d_box_test.nds", nullptr);
             //worked = grab_ROM(&ROMs, which, "3d_demos/gl2d/gl2d_spriteset.nds", nullptr);
             //worked = grab_ROM(&ROMs, which, "3d_demos/nitro-engine/font_from_ram.nds", nullptr);
             //worked = grab_ROM(&ROMs, which, "3d_compressed_texture.nds", nullptr);
@@ -886,7 +887,7 @@ void full_system::load_default_ROM()
             //worked = grab_ROM(&ROMs, which, "doom2.gba", nullptr); // works great!
             //worked = grab_ROM(&ROMs, which, "duke3d.gba", nullptr); // works great!
             //worked = grab_ROM(&ROMs, which, "fzero.gba", nullptr); // works great!
-            worked = grab_ROM(&ROMs, which, "mariokart.gba", nullptr); // works great!
+            //worked = grab_ROM(&ROMs, which, "mariokart.gba", nullptr); // works great!
             //worked = grab_ROM(&ROMs, which, "superstar.gba", nullptr); // works great!
             //worked = grab_ROM(&ROMs, which, "sma4.gba", nullptr);
             //worked = grab_ROM(&ROMs, which, "sma3.gba", nullptr); // works!
@@ -899,7 +900,7 @@ void full_system::load_default_ROM()
             //worked = grab_ROM(&ROMs, which, "goldensun.gba", nullptr);
             //worked = grab_ROM(&ROMs, which, "goldensun2.gba", nullptr);
             //worked = grab_ROM(&ROMs, which, "wario4.gba", nullptr);
-            //worked = grab_ROM(&ROMs, which, "suite.gba", nullptr);
+            worked = grab_ROM(&ROMs, which, "suite.gba", nullptr);
             //worked = grab_ROM(&ROMs, which, "suite_built.gba", nullptr);
             //worked = grab_ROM(&ROMs, which, "oh my gah.gba", nullptr);
             //worked = grab_ROM(&ROMs, which, "aging_cart.gba", nullptr);

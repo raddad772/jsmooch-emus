@@ -242,7 +242,6 @@ struct LINEBUFFER {
     u32 rgb[256]{};
     u16 alpha[256]{};
     u16 poly_id[256]{};
-    u32 shadow_drawn{};
     EXTRA_ATTR extra_attr[256]{};
     TEX_PARAM tex_param[256]{};
     u32 depth[256]{};

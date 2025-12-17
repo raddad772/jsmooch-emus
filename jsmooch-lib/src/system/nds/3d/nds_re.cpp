@@ -201,7 +201,7 @@ void find_closest_points_marked(BUFFERS *b, POLY *p, u32 comp_y, EDGE *edges)
 
 void INTERP::set_x(i32 x_in)
 {
-    x -= x0;
+    x_in -= x0;
     x = x_in;
     if (xdiff != 0 && !linear)
     {
@@ -230,7 +230,7 @@ i32 INTERP::interpolate(const i32 y0, const i32 y1) const {
     }
 }
 
-void interpolate_edge_to_vertex(EDGE *e, VERTEX *v, i32 y, u32 do_tex) {
+void interpolate_edge_to_vertex(EDGE *e, VERTEX *v, i32 y, bool do_tex) {
     /*struct VTX_list_node *t = e->v[0];
     e->v[0] = e->v[1];
     e->v[1] = t;*/
@@ -684,6 +684,8 @@ void RE::render_line(BUFFERS *b, i32 line_num)
 
         i32 depth_l, depth_r;
         if (b->depth_buffering_w) {
+            //depth_l = left->ww;
+            //depth_r = right->ww;
             depth_l = left->original_w;
             depth_r = right->original_w;
         } else {
@@ -695,13 +697,13 @@ void RE::render_line(BUFFERS *b, i32 line_num)
 
         for (u32 x = left->xx; x < rside; x++) {
             interp.set_x(x);
-            u32 comparison, depth;
-            depth = interp.interpolate(depth_l, depth_r);
+            u32 depth = interp.interpolate(depth_l, depth_r);
+            bool comparison;
 
             if (p->attr.depth_test_mode == 0) comparison = depth < line->depth[x];
-            else comparison = (u32) depth == line->depth[x];
-            u32 shading_mode = 1;
+            else comparison = depth == line->depth[x];
             if (comparison) {
+                u32 shading_mode = 1;
                 u32 pix_r6, pix_g6, pix_b6, pix_a5;
                 u32 vr6, vg6, vb6;
                 vr6 = interp.interpolate(left->color[0], right->color[0]) >> 3;

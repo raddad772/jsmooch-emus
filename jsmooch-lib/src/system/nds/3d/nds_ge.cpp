@@ -1363,7 +1363,7 @@ static i32 box_test_clip_verts(VTX_list_node *vertices, int nverts)
 
 void GE::cmd_BOX_TEST()
 {
-    printf("\nBOX TEST!");
+    //printf("\nBOX TEST!");
     VTX_list_node box[8];
     VTX_list_node face[10];
 
