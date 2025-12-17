@@ -483,6 +483,39 @@ static void print_layer_info(core *th, PPU::ENG2D *eng, u32 bgnum, debugger_widg
     }
 }
 
+static void pprint_irqs(debugger_widget_textbox *tb, u32 ie) {
+    for (u32 i = 0; i < 23; i++) {
+        bool bit = (ie >> i) & 1;
+        if (!bit) continue;
+#define CC(num, str) case num: tb->sprintf("\n" str); break
+        switch (i) {
+            CC(0, "VBlank");
+            CC(1, "HBlank");
+            CC(2, "VMatch");
+            CC(3, "Timer0");
+            CC(4, "Timer1");
+            CC(5, "Timer2");
+            CC(6, "Timer3");
+            CC(7, "Serial");
+            CC(8, "DMA0");
+            CC(9, "DMA1");
+            CC(10, "DMA2");
+            CC(11, "DMA3");
+            CC(12, "KEYPAD");
+            CC(16, "IPC SYNC");
+            CC(17, "IPC SEND EMPTY");
+            CC(18, "IPC RECV NOT EMPTY");
+            CC(19, "CART DATA READY");
+            CC(21, "GFX FIFO");
+            CC(23, "SPI");
+            default:
+            tb->sprintf("\nUnknown bit %d", i);
+            break;
+        }
+    }
+#undef CC
+}
+
 static void render_image_view_sys_info(debugger_interface *dbgr, debugger_view *dview, void *ptr, u32 out_width) {
     auto *th = static_cast<core *>(ptr);
     //memset(ptr, 0, out_width * 4 * 10);
@@ -554,6 +587,11 @@ static void render_image_view_sys_info(debugger_interface *dbgr, debugger_view *
         float period_f = ((float)th->timer7[i].reload_ticks / 33000000.0f);
         tb->sprintf(  "\n%d: %f", i, period_f);
     }
+
+    tb->sprintf("\n\nInterrupts ARM9:");
+    pprint_irqs(tb, th->io.arm9.IE);
+    tb->sprintf("\n\nInterrupts ARM7:");
+    pprint_irqs(tb, th->io.arm7.IE);
 
 }
 

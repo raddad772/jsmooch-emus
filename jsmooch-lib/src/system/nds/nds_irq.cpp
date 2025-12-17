@@ -68,13 +68,15 @@ void core::update_IF7(u32 bitnum)
     if (old_IF != io.arm7.IF) {
         eval_irqs_7();
     }
-    arm7.IRQcheck(arm7_ins);
 }
 
 void core::update_IF9(u32 bitnum)
 {
     u32 old_IF = io.arm9.IF;
     io.arm9.IF |= 1 << bitnum;
+    if (old_IF != io.arm9.IF) {
+        //printf("\nARM9 IF:%05x  ANY:%05x", io.arm9.IF, io.arm9.IE & io.arm9.IF);
+    }
     eval_irqs_9();
 }
 

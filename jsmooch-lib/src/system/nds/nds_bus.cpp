@@ -712,6 +712,7 @@ void core::buswr7_io8(u32 addr, u8 sz, u8 access, u32 val)
             if (send_irq) printf("\nIPC IRQ REQUEST!");
 
             if (send_irq && io.ipc.arm9sync.enable_irq_from_remote) {
+                printf("\nARM7 SEND IPC SYNC");
                 update_IF9(IRQ_IPC_SYNC);
             }
             io.ipc.arm7sync.enable_irq_from_remote = (val >> 6) & 1;
@@ -1241,6 +1242,7 @@ void core::buswr9_io8(u32 addr, u8 sz, u8 access, u32 val)
             io.ipc.arm7sync.dinput = io.ipc.arm9sync.doutput = val & 15;
             u32 send_irq = (val >> 5) & 1;
             if (send_irq && io.ipc.arm7sync.enable_irq_from_remote) {
+                printf("\nARM9 SEND IPC SYNC");
                 update_IF7(IRQ_IPC_SYNC);
             }
             io.ipc.arm9sync.enable_irq_from_remote = (val >> 6) & 1;
@@ -1662,7 +1664,6 @@ void core::buswr9_io(u32 addr, u8 sz, u8 access, u32 val)
         case R_IPCFIFOSEND+2:
         case R_IPCFIFOSEND+3:
             // All writes are only 32 bits here
-            //printf("\nIPCIFOSEND!");
             if (io.ipc.arm9.fifo_enable) {
                 if (sz == 2) {
                     val &= 0xFFFF;
@@ -1697,7 +1698,9 @@ void core::buswr9_io(u32 addr, u8 sz, u8 access, u32 val)
 
 u32 core::busrd7_wifi(u32 addr, u8 sz, u8 access, bool has_effect) {
     // 0x04804000 and 0x480C000 are the two 8KB RAM sections, oops!
-    if (addr < 0x04810000) return cR[sz](mem.wifi, addr & 0x1FFF);
+    // 4804000..4804fff
+    if ((addr >= 0x04804000) && (addr < 0x04805000)) return cR[sz](mem.wifi, addr & 0x1FFF);
+    //if (addr < 0x04810000) return cR[sz](mem.wifi, addr & 0x1FFF);
     static int a = 1;
     if (a) {
         a = 0;
@@ -1708,7 +1711,8 @@ u32 core::busrd7_wifi(u32 addr, u8 sz, u8 access, bool has_effect) {
 
 void core::buswr7_wifi(u32 addr, u8 sz, u8 access, u32 val)
 {
-    if (addr < 0x04810000) return cW[sz](mem.wifi, addr & 0x1FFF, val);
+    if ((addr >= 0x04804000) && (addr < 0x04805000)) return cW[sz](mem.wifi, addr & 0x1FFF, val);
+    //if (addr < 0x04810000) return cW[sz](mem.wifi, addr & 0x1FFF, val);
 
     static int a = 1;
     if (a) {
@@ -1891,6 +1895,7 @@ u32 core::mainbus_read9(void *ptr, u32 addr, u8 sz, u8 access, bool has_effect)
     auto *th = static_cast<core *>(ptr);
     th->waitstates.current_transaction++;
     u32 v;
+    if (::dbg.trace_on) printf("\nREAD %08x", addr);
 
     if (addr < 0x10000000) v = (th->*(th->mem.rw[1].read[(addr >> 24) & 15]))(addr, sz, access, has_effect);
     else if ((addr & 0xFFFF0000) == 0xFFFF0000) v = th->rd9_bios(addr, sz);

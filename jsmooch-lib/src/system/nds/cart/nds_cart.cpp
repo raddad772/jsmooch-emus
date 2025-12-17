@@ -315,7 +315,7 @@ void ridge::detect_kind(u32 from, u32 val)
 {
     // subsystem tag (bits 0-4) and the data portion (bits 6-31)
     u32 subsystem = val & 0x1F;
-    printf("\nARM9 subsystem %1x", subsystem);
+    //printf("\nARM9 subsystem %1x", subsystem);
     if (!backup.detect.done) {
         u32 reset = 1;
         if (subsystem == FS_SUBSYS) {
