@@ -142,10 +142,10 @@ bool core::condition_passes(const condition_codes which) const {
 
 void core::reload_pipeline()
 {
-    if (regs.PC == 0xFFFF07CE) {
+    /*if (regs.PC == 0xFFFF07CE) {
         printf("\nYO!");
         dbg_break("arm9 ffff07ce", 0);
-    }
+    }*/
     pipeline.flushed = false;
     if (regs.CPSR.T) {
         pipeline.access = ARM9P_code | ARM9P_nonsequential;

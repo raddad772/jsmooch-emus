@@ -1700,6 +1700,11 @@ u32 core::busrd7_wifi(u32 addr, u8 sz, u8 access, bool has_effect) {
     // 0x04804000 and 0x480C000 are the two 8KB RAM sections, oops!
     // 4804000..4804fff
     if ((addr >= 0x04804000) && (addr < 0x04805000)) return cR[sz](mem.wifi, addr & 0x1FFF);
+    switch (addr) {
+        case 0x0480803C:
+            return 0x200; // wifi power off!
+    }
+    // TODO: stub W_BB_CNT and pals
     //if (addr < 0x04810000) return cR[sz](mem.wifi, addr & 0x1FFF);
     static int a = 1;
     if (a) {
@@ -1895,7 +1900,6 @@ u32 core::mainbus_read9(void *ptr, u32 addr, u8 sz, u8 access, bool has_effect)
     auto *th = static_cast<core *>(ptr);
     th->waitstates.current_transaction++;
     u32 v;
-    if (::dbg.trace_on) printf("\nREAD %08x", addr);
 
     if (addr < 0x10000000) v = (th->*(th->mem.rw[1].read[(addr >> 24) & 15]))(addr, sz, access, has_effect);
     else if ((addr & 0xFFFF0000) == 0xFFFF0000) v = th->rd9_bios(addr, sz);

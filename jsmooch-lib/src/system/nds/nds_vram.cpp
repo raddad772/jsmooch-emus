@@ -263,20 +263,30 @@ static void set_bankF(core *th, u32 mst, u32 ofs, u8 *ptr)
     // MST 4, EngA BG-extended. OFS=0 slot 0-1, OFS=1 slot 2-3
     // MST 5, EngA OBJ-extended, lower 8K used
     // other MSTs are not allowed
-    u32 offset;
+    u32 offset, offset2;
     switch(mst) {
         case 0: // ARM9 06890000
             map_arm9(th, 0x06890000, 0x06893FFF, ptr, NVF);
             break;
         case 1: // ARM9&EngA BG-VRAM + 06000000+(4000h*OFS.0)+(10000h*OFS.1)
             offset = (0x4000*(ofs & 1)) + (0x10000 * ((ofs >> 1) & 1));
+            offset2 = 0x4000*(ofs & 1) + 0x10000;
             map_arm9(th, 0x06000000+offset, 0x06003FFF+offset, ptr, NVF);
             map_eng2d_bg_vram(th, ENG_A, offset, 0x3FFF+offset, ptr);
+            if (offset != offset2) {
+                map_arm9(th, 0x06000000+offset2, 0x06003FFF+offset2, ptr, NVF);
+                map_eng2d_bg_vram(th, ENG_A, offset2, 0x3FFF+offset2, ptr);
+            }
             break;
         case 2: // ARM9&EngA OBJ-VRAM + 6400000h+(4000h*OFS.0)+(10000h*OFS.1)
             offset = (0x4000*(ofs & 1)) + (0x10000 * ((ofs >> 1) & 1));
+            offset2 = 0x4000*(ofs & 1) + 0x10000;
             map_arm9(th, 0x06400000+offset, 0x06403FFF+offset, ptr, NVF);
             map_eng2d_obj_vram(th, ENG_A, offset, 0x3FFF+offset, ptr);
+            if (offset2 != offset) {
+                map_arm9(th, 0x06400000+offset2, 0x06403FFF+offset2, ptr, NVF);
+                map_eng2d_obj_vram(th, ENG_A, offset2, 0x3FFF+offset2, ptr);
+            }
             break;
         case 3: // 3DE texture palette Slot (OFS.0*1)+(OFS.1*4) 0, 1, 4, or 5
             offset = (ofs & 1) + ((ofs & 2) << 1);
@@ -297,20 +307,30 @@ static void set_bankG(core *th, u32 mst, u32 ofs, u8 *ptr)
 {
     // 16KB
     // other MSTs are not allowed
-    u32 offset;
+    u32 offset, offset2;
     switch(mst) {
         case 0: // ARM9 06894000
             map_arm9(th, 0x06894000, 0x06897FFF, ptr, NVG);
             break;
         case 1: // ARM9&EngA BG-VRAM + 06000000+(4000h*OFS.0)+(10000h*OFS.1)
             offset = (0x4000 * (ofs & 1)) + (0x10000 * ((ofs >> 1) & 1));
+            offset2 = 0x4000*(ofs & 1) + 0x10000;
             map_arm9(th, 0x06000000 + offset, 0x06003FFF + offset, ptr, NVG);
             map_eng2d_bg_vram(th, ENG_A, offset, 0x3FFF + offset, ptr);
+            if (offset != offset2) {
+                map_arm9(th, 0x06000000 + offset2, 0x06003FFF + offset2, ptr, NVG);
+                map_eng2d_bg_vram(th, ENG_A, offset2, 0x3FFF + offset2, ptr);
+            }
             break;
         case 2: // ARM9&EngA OBJ-VRAM + 6400000h+(4000h*OFS.0)+(10000h*OFS.1)
             offset = (0x4000 * (ofs & 1)) + (0x10000 * ((ofs >> 1) & 1));
+            offset2 = 0x4000*(ofs & 1) + 0x10000;
             map_arm9(th, 0x06400000 + offset, 0x06403FFF + offset, ptr, NVG);
             map_eng2d_obj_vram(th, ENG_A, offset, 0x3FFF + offset, ptr);
+            if (offset != offset2) {
+                map_arm9(th, 0x06400000 + offset2, 0x06403FFF + offset2, ptr, NVG);
+                map_eng2d_obj_vram(th, ENG_A, offset2, 0x3FFF + offset2, ptr);
+            }
             break;
         case 3: // 3DE texture palette slot (OFS.0*1)+(OFS.1*4) 0, 1, 4, or 5
             offset = (ofs & 1) + ((ofs & 2) << 1);
@@ -334,14 +354,16 @@ static void set_bankH(core *th, u32 mst, u32 ofs, u8 *ptr)
     // MST 1, ARM9&EngB BG-VRAM 6200000h
     // MST 2, EngB BG extended palette slots 0-3
     // other MST not allowed
-    u32 offset;
+    u32 offset, offset2;
     switch(mst) {
         case 0: // ARM9 06898000
             map_arm9(th, 0x06898000, 0x0689FFFF, ptr, NVH);
             break;
         case 1: // ARM9&EngB BG-VRAM 6200000h
             map_arm9(th, 0x06200000, 0x06207FFF, ptr, NVH);
+            map_arm9(th, 0x06210000, 0x06217FFF, ptr, NVH);
             map_eng2d_bg_vram(th, ENG_B, 0x0000, 0x7FFF, ptr);
+            map_eng2d_bg_vram(th, ENG_B, 0x10000, 0x17FFF, ptr);
             break;
         case 2: // EngB BG extended palette slots 0-3
             map_eng2d_bg_extended_palette8k(th, ENG_B, 0, 3, ptr);
@@ -363,12 +385,17 @@ static void set_bankI(core *th, u32 mst, u32 ofs, u8 *ptr)
             break;
         case 1: // ARM9&EngB BG-VRAM 6208000h
             map_arm9(th, 0x06208000, 0x0620BFFF, ptr, NVI);
+            map_arm9(th, 0x06218000, 0x0621BFFF, ptr, NVI);
             map_eng2d_bg_vram(th, ENG_B, 0x8000, 0xBFFF, ptr);
+            map_eng2d_bg_vram(th, ENG_B, 0x18000, 0x1BFFF, ptr);
             break;
-        case 2: // ARM9&EngB OBJ-VRAM 06600000h
-            map_arm9(th, 0x06600000, 0x06603FFF, ptr, NVI);
-            map_eng2d_obj_vram(th, ENG_B, 0, 0x3FFF, ptr);
-            break;
+        case 2: {// ARM9&EngB OBJ-VRAM 06600000h
+            for (u32 i = 0; i < 8; i++) {
+                u32 offset = i * 0x4000;
+                map_arm9(th, 0x06600000+offset, 0x06603FFF+offset, ptr, NVI);
+                map_eng2d_obj_vram(th, ENG_B, 0+offset, 0x3FFF+offset, ptr);
+            }
+            break; }
         case 3: // EngB OBJ extended palette
             map_eng2d_obj_extended_palette(th, ENG_B, ptr);
             break;
