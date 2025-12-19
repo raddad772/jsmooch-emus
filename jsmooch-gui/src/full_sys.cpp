@@ -770,7 +770,7 @@ void full_system::load_default_ROM()
             //worked = grab_ROM(&ROMs, which, "libnds/print_both_screens.nds", nullptr);
             //worked = grab_ROM(&ROMs, which, "armwrestler-2.nds", nullptr);
             //worked = grab_ROM(&ROMs, which, "libnds/hello_world.nds", nullptr);
-            //worked = grab_ROM(&ROMs, which, "libnds/print_both_screens.nds", nullptr);
+            //worked = grab_ROM(&ROMs, which, "libnds/3D_Both_Screens.nds", nullptr);
             //worked = grab_ROM(&ROMs, which, "libnds/lesson02.nds", nullptr);
             //worked = grab_ROM(&ROMs, which, "libnds/lesson03.nds", nullptr);
             //worked = grab_ROM(&ROMs, which, "libnds/lesson04.nds", nullptr);
@@ -794,7 +794,7 @@ void full_system::load_default_ROM()
             //worked = grab_ROM(&ROMs, which, "pokemon_diamond.nds", nullptr);
             //worked = grab_ROM(&ROMs, which, "pmdbrt.nds", nullptr);
             //worked = grab_ROM(&ROMs, which, "pmdes.nds", nullptr);
-            //worked = grab_ROM(&ROMs, which, "mariokart.nds", nullptr);
+            worked = grab_ROM(&ROMs, which, "mariokart.nds", nullptr);
             //worked = grab_ROM(&ROMs, which, "phoenixwright.nds", nullptr);
             //worked = grab_ROM(&ROMs, which, "sm64.nds", nullptr);
             //worked = grab_ROM(&ROMs, which, "nintendogs.nds", nullptr);
@@ -811,7 +811,9 @@ void full_system::load_default_ROM()
             //worked = grab_ROM(&ROMs, which, "tony_hawk.nds", nullptr);
             //worked = grab_ROM(&ROMs, which, "poke_black_1.nds", nullptr);
             //worked = grab_ROM(&ROMs, which, "infinite_space.nds", nullptr);
-            worked = grab_ROM(&ROMs, which, "nsmb.nds", nullptr);
+            //worked = grab_ROM(&ROMs, which, "nsmb.nds", nullptr);
+            //worked = grab_ROM(&ROMs, which, "animal_crossing_ww.nds", nullptr);
+            //worked = grab_ROM(&ROMs, which, "castlevania_dos.nds", nullptr);
             //worked = grab_ROM(&ROMs, which, "examples/graphics_2d/sprites_ext_palette.nds", nullptr);
 
             // NEXT: basic PPU mode 3, 5
@@ -842,7 +844,7 @@ void full_system::load_default_ROM()
             //worked = grab_ROM(&ROMs, which, "PSX/GTE/GTETransfer/GTETransfer.exe", nullptr);
             break;
         case jsm::systems::GBA:
-            //worked = grab_ROM(&ROMs, which, "panda.gba", nullptr);
+            worked = grab_ROM(&ROMs, which, "panda.gba", nullptr);
             //worked = grab_ROM(&ROMs, which, "armwrestler-gba-fixed.gba", nullptr);
             //worked = grab_ROM(&ROMs, which, "arm.gba", nullptr);
             //worked = grab_ROM(&ROMs, which, "thumb.gba", nullptr);

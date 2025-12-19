@@ -424,7 +424,10 @@ static void classify_bg_kind(core *th, PPU::ENG2D *eng, u32 bgnum, jsm_string *j
 
 #define cl(...) { js->sprintf(__VA_ARGS__); return; }
     if ((eng->num == 0) && (bgnum == 0) && (bg->do3d)) cl("3d")
-    if (bgnum < 2) cl("text")
+    if (bgnum < 2) {
+        cl("text");
+        return;
+    }
     if (bgnum == 2) {
         switch(eng->io.bg_mode) {
             case 0:

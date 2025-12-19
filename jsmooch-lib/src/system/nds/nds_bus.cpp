@@ -1533,7 +1533,6 @@ void core::buswr9_io8(u32 addr, u8 sz, u8 access, u32 val)
             io.rights.nds_slot_is7 = ((val >> 3) & 1);
             io.rights.main_memory = ((val >> 7) & 1);
             return;
-
     }
     printf("\nUnhandled BUSWR9IO8 addr:%08x val:%08x", addr, val);
 }

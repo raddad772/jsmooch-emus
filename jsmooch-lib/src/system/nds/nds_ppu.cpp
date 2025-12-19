@@ -31,11 +31,13 @@ static inline u32 c15to18(u32 color)
 core::core(NDS::core *parent) : bus(parent)
 {
     for (auto & eng : eng2d) {
+
         for (u32 bgnum = 0; bgnum < 4; bgnum++) {
             eng.BG[bgnum].num = bgnum;
         }
     }
     eng2d[0].io.bg.do_3d = false;
+    eng2d[1].num = 1;
 }
 
 void core::reset()
@@ -567,13 +569,14 @@ void ENG2D::affine_rotodc(MBG &bg, i32 x, i32 y, PX &out, void *xtra) const
     auto &xd = *static_cast<affine_normal_xtradata *>(xtra);
 
     u32 color = read_vram_bg(bg.screen_base_block + (y * xd.width + x) * 2, 2);
+    //printf("\nY:%d x:%d addr:%04x", y, x, bg.screen_base_block + (y * xd.width + x) * 2);
     if (color & 0x8000) {
         out.has = 1;
         out.color = c15to18(color & 0x7FFF);
         out.priority = bg.priority;
-    } else {
-        out.has = 0;
-    }
+    }// else {
+    //    out.has = 0;
+    //}
 }
 
 void ENG2D::affine_rotobpp8(MBG &bg, i32 x, i32 y, PX &out, void *xtra) const
@@ -643,6 +646,7 @@ void ENG2D::draw_bg_line_extended(u32 bgnum)
     }
     else {
         // rotoscale 16bpp
+        printf("\n16BPP!");
         i32 size = 128 << bg.screen_size;
         i32 block_width = 16 << bg.screen_size;
         xtra.block_width = block_width;
@@ -885,7 +889,7 @@ void ENG2D::output_pixel(u32 x, bool obj_enable, bool bg_enables[4]) {
         }
     }
     //if (output_color != 0) printf("\nOUTPUT %d", output_color);
-    line_px[x] = output_color;
+    line_px[x] = 0x80000 | output_color;
 }
 
 void ENG2D::draw_line0(DBG_line *l)
@@ -1038,15 +1042,16 @@ void core::run_dispcap()
 
     // Get source A and B
     ENG2D &eng = eng2d[0];
-    static constexpr int needab[4][2] = {{1, 0}, {0, 1}, {1, 1}, {1, 1}};
-    u32 need_a = needab[io.DISPCAPCNT.capture_source][0];
-    u32 need_b = needab[io.DISPCAPCNT.capture_source][1];
+    static constexpr bool needab[4][2] = {{true, false}, {false, true}, {true, true}, {true, true}};
+    bool need_a = needab[io.DISPCAPCNT.capture_source][0];
+    bool need_b = needab[io.DISPCAPCNT.capture_source][1];
     if (need_a) {
         // 0 = full PPUA output  eng.line_px
         // 1 = RE output only re->output 6 to 5
         if (!io.DISPCAPCNT.source_a) { // full PPUA output
             for (u32 x = 0; x < 256; x++) {
-                line_a[x] = C18to15(eng.line_px[x]);
+                line_a[x] = C18to15(eng.line_px[x]) | ((eng.line_px[x] >> 4) & 0x8000);;
+
             }
         }
         else {
@@ -1064,7 +1069,6 @@ void core::run_dispcap()
             a = 0;
         }
     }
-
     u16 *src;
     if (need_a) {
         src = line_a;

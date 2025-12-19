@@ -238,7 +238,7 @@ union EXTRA_ATTR {
 
 struct LINEBUFFER {
     u8 stencil[256]{};
-    u32 has[256]{};
+    bool has[256]{};
     u32 rgb[256]{};
     u16 alpha[256]{};
     u16 poly_id[256]{};
