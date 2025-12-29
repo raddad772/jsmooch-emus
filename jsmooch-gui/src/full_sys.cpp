@@ -794,9 +794,9 @@ void full_system::load_default_ROM()
             //worked = grab_ROM(&ROMs, which, "pokemon_diamond.nds", nullptr);
             //worked = grab_ROM(&ROMs, which, "pmdbrt.nds", nullptr);
             //worked = grab_ROM(&ROMs, which, "pmdes.nds", nullptr);
-            worked = grab_ROM(&ROMs, which, "mariokart.nds", nullptr);
+            //worked = grab_ROM(&ROMs, which, "mariokart.nds", nullptr);
             //worked = grab_ROM(&ROMs, which, "phoenixwright.nds", nullptr);
-            //worked = grab_ROM(&ROMs, which, "sm64.nds", nullptr);
+            worked = grab_ROM(&ROMs, which, "sm64.nds", nullptr);
             //worked = grab_ROM(&ROMs, which, "nintendogs.nds", nullptr);
             //worked = grab_ROM(&ROMs, which, "dbz2.nds", nullptr);
             //worked = grab_ROM(&ROMs, which, "rayman.nds", nullptr);
@@ -982,7 +982,7 @@ void full_system::load_default_ROM()
             //worked = grab_ROM(&ROMs, which, "screen_dim.pce", nullptr);
             //worked = grab_ROM(&ROMs, which, "cpu_test.pce", nullptr);
             //worked = grab_ROM(&ROMs, which, "wavy_sky.pce", nullptr);
-            //worked = grab_ROM(&ROMs, which, "magical_chase.pce", nullptr); // works
+            worked = grab_ROM(&ROMs, which, "magical_chase.pce", nullptr); // works
             //worked = grab_ROM(&ROMs, which, "rtype.pce", nullptr); // seems perfect
             //worked = grab_ROM(&ROMs, which, "airzonk.pce", nullptr); // seems to work
             //worked = grab_ROM(&ROMs, which, "alien_crush.pce", nullptr); // does nothing
@@ -1026,7 +1026,7 @@ void full_system::load_default_ROM()
             //worked = grab_ROM(&ROMs, which, "castlevania_b.md", nullptr); // works!
             //worked = grab_ROM(&ROMs, which, "contra_hc_jp.md", nullptr); // works great!
             //worked = grab_ROM(&ROMs, which, "sor2.md", nullptr); // works fine
-            worked = grab_ROM(&ROMs, which, "s1built.bin", nullptr); // works!
+            //worked = grab_ROM(&ROMs, which, "s1built.bin", nullptr); // works!
             //worked = grab_ROM(&ROMs, which, "batman.md", nullptr); // works!
             //worked = grab_ROM(&ROMs, which, "gen_test_ym.bin", nullptr); // works!
             //worked = grab_ROM(&ROMs, which, "outrun2019.bin", nullptr); // works!

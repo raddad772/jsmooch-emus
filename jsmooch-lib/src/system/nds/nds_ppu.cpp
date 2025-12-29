@@ -646,7 +646,6 @@ void ENG2D::draw_bg_line_extended(u32 bgnum)
     }
     else {
         // rotoscale 16bpp
-        printf("\n16BPP!");
         i32 size = 128 << bg.screen_size;
         i32 block_width = 16 << bg.screen_size;
         xtra.block_width = block_width;

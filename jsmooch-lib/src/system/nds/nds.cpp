@@ -206,13 +206,13 @@ void core::run_block(void *ptr, u64 num_cycles, u64 clock, u32 jitter)
 
     th->arm7_ins = true;
     while (static_cast<i64>(th->clock.master_cycle_count7) < th->clock.cycles7) {
+        th->arm7.run_noIRQcheck();
+        th->clock.master_cycle_count7 += th->waitstates.current_transaction;
+        th->waitstates.current_transaction = 0;
         if (th->io.arm7.halted) {
             th->clock.master_cycle_count7 = th->clock.cycles7;
             break;
         }
-        th->arm7.run_noIRQcheck();
-        th->clock.master_cycle_count7 += th->waitstates.current_transaction;
-        th->waitstates.current_transaction = 0;
     }
     th->arm7_ins = false;
 

@@ -877,7 +877,7 @@ void core::ins_STC_LDC(const u32 opcode)
 
 void core::ins_CDP(const u32 opcode)
 {
-    UNIMPLEMENTED;
+    //UNIMPLEMENTED;
 }
 
 void core::undefined_exception()
@@ -963,7 +963,7 @@ void core::ins_SWI(const u32 opcode)
 
 void core::ins_INVALID(const u32 opcode)
 {
-    UNIMPLEMENTED;
+    //UNIMPLEMENTED;
 }
 
 void core::ins_PLD(const u32 opcode)
