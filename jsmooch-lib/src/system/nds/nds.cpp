@@ -294,6 +294,7 @@ void core::populate_opts()
 void core::read_opts() {
     debugger_widget *w = &opts.at(0);
     ge.debug_cam.enabled = w->checkbox.value;
+    if (ge.debug_cam.enabled) update_debug_cam_matrix();
 }
 
 void core::get_framevars(framevars& out)

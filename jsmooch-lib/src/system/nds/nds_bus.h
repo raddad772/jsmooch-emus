@@ -69,6 +69,7 @@ struct core : jsm_system {
     void sample_audio();
 
     void populate_opts();
+    void update_debug_cam_matrix();
     void read_opts();
     void skip_BIOS();
     void setup_lcd(JSM_DISPLAY &d);
@@ -492,6 +493,7 @@ struct core : jsm_system {
             MDBG_IMAGE_VIEW(ppu_layers)
             MDBG_IMAGE_VIEW(dispcap)
             MDBG_IMAGE_VIEW(re_output)
+            MDBG_IMAGE_VIEW(debug_cam)
         DBG_IMAGE_VIEWS_END
         DBG_WAVEFORM_START1
             DBG_WAVEFORM_MAIN

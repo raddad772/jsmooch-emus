@@ -1014,12 +1014,11 @@ void imgui_jsmooch_app::render_image_views()
         managed_window *mw = register_managed_window(0x500 + (i++), mwk_debug_image, myv.view->image.label, IMAGE_VIEW_DEFAULT_ENABLE);
         if (mw->enabled) {
             if (ImGui::Begin(myv.view->image.label)) {
-                if (ImGui::IsWindowFocused(ImGuiFocusedFlags_ChildWindows) && myv.view->image.FPS_controls.enable) {
+                if (ImGui::IsWindowFocused(ImGuiFocusedFlags_RootAndChildWindows) && myv.view->image.FPS_controls.enable) {
                     window_steal_input = true;
                     // TODO: get inputs here!
-                    printf("\nPRE-ROT: %f", myv.view->image.FPS_controls.rot[0]);
-                    myv.view->image.FPS_controls.rot[0] += 0.1f;
-                    printf("\nROT: %f",  myv.view->image.FPS_controls.rot[0]);
+                    //printf("\nPRE-ROT: %f", myv.view->image.FPS_controls.rot[1]);
+                    myv.view->image.FPS_controls.rot[1] += 0.00625f;
                 }
                 render_debugger_widgets(myv.view->options);
                 fsys.image_view_present(*myv.view, myv.texture);

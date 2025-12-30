@@ -173,22 +173,9 @@ static inline float wrap_angle(float a)
     return a;
 }
 
-static void render_image_view_debug_cam(debugger_interface *dbgr, debugger_view *dview, void *ptr, u32 out_width) {
-    auto *th = static_cast<core *>(ptr);
-    if (th->clock.master_frame == 0) return;
+void core::update_debug_cam_matrix() {
+    auto *dview = &dbg.image_views.debug_cam.get();
     image_view *iv = &dview->image;
-    iv->draw_which_buf ^= 1;
-    u32 *outbuf = static_cast<u32 *>(iv->img_buf[iv->draw_which_buf].ptr);
-    memset(outbuf, 0, out_width * 4 * 192);
-    u32 bnum = th->ge.ge_has_buffer ^ 1;
-    for (u32 y = 0; y < 192; y++) {
-        auto *lbuf = &th->re.out.debug_linebuffer[y];
-        u32 *out_line = outbuf + (y * out_width);
-        for (u32 x = 0; x < 256; x++) {
-            out_line[x] = nds_to_screen(lbuf->rgb[x]);
-        }
-    }
-
     auto *c = &iv->FPS_controls;
     float pitch = c->rot[0] * TWO_PI;
     float yaw   = c->rot[1] * TWO_PI;
@@ -233,7 +220,26 @@ static void render_image_view_debug_cam(debugger_interface *dbgr, debugger_view 
     m[8]  = -fx;  m[9]  = -fy;  m[10] = -fz;  m[11] =  (fx*px + fy*py + fz*pz);
     m[12] =  0.0f; m[13] = 0.0f; m[14] = 0.0f; m[15] = 1.0f;
     for (u32 i = 0; i < 16; i++) {
-        th->ge.debug_cam.mtx[i] = static_cast<i32>(lround(m[i] * 4096.0f));
+        ge.debug_cam.mtx[i] = static_cast<i32>(lround(m[i] * 4096.0f));
+    }
+
+}
+
+
+static void render_image_view_debug_cam(debugger_interface *dbgr, debugger_view *dview, void *ptr, u32 out_width) {
+    auto *th = static_cast<core *>(ptr);
+    if (th->clock.master_frame == 0) return;
+    image_view *iv = &dview->image;
+    iv->draw_which_buf ^= 1;
+    u32 *outbuf = static_cast<u32 *>(iv->img_buf[iv->draw_which_buf].ptr);
+    memset(outbuf, 0, out_width * 4 * 192);
+    u32 bnum = th->ge.ge_has_buffer ^ 1;
+    for (u32 y = 0; y < 192; y++) {
+        auto *lbuf = &th->re.out.debug_linebuffer[y];
+        u32 *out_line = outbuf + (y * out_width);
+        for (u32 x = 0; x < 256; x++) {
+            out_line[x] = nds_to_screen(lbuf->rgb[x]);
+        }
     }
 }
 
@@ -1061,8 +1067,8 @@ static void setup_image_view_re_attr(core *th, debugger_interface *dbgr)
 
 static void setup_image_view_debug_cam(core *th, debugger_interface *dbgr) {
     debugger_view *dview;
-    th->dbg.image_views.re_wireframe = dbgr->make_view(dview_image);
-    dview = &th->dbg.image_views.re_wireframe.get();
+    th->dbg.image_views.debug_cam = dbgr->make_view(dview_image);
+    dview = &th->dbg.image_views.debug_cam.get();
     image_view *iv = &dview->image;
 
     iv->width = 256;

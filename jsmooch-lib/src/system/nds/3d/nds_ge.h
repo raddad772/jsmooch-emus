@@ -3,10 +3,9 @@
 //
 
 #pragma once
-
-#include "component/gpu/cdp1861/cdp1861.h"
 #include "helpers/int.h"
 #include "helpers/scheduler.h"
+#include "helpers/debugger/debugger.h"
 
 namespace NDS {
 struct core;
@@ -236,6 +235,7 @@ struct DEBUG_CAM {
     bool enabled{true};
     BUFFERS buffers[2];
     MATRIX cam{};
+    cvec_ptr<debugger_view> dview;
     i32 mtx[16] { 1 << 12, 0, 0, 0, 0, 1 << 12, 0, 0, 0, 0, 1 << 12, 0, 0, 0, 0, 1 << 12 };
 };
 

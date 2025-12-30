@@ -875,8 +875,9 @@ void RE::copy_and_sort_list(BUFFERS *b, POLY_LIST *rl)
 void RE::render_to(BUFFERS *b, LINEBUFFER *lb, POLY_LIST *r) {
 
     copy_and_sort_list(b, r);
-    for (u32 i = 0; i < 192; i++)
+    for (u32 i = 0; i < 192; i++) {
         render_line(b, i, &lb[i], r);
+    }
 }
 
 void RE::render_frame()

@@ -97,10 +97,10 @@ void core::set_audiobuf(audiobuf *ab)
 
 void core::populate_opts()
 {
-    debugger_widgets_add_checkbox(opts, "VDP: Enable Layer A", 1, 1, 0);
-    debugger_widgets_add_checkbox(opts, "VDP: Enable Layer B", 1, 1, 0);
-    debugger_widgets_add_checkbox(opts, "VDP: Enable Sprites", 1, 1, 0);
-    debugger_widgets_add_checkbox(opts, "VDP: trace", 1, 0, 0);
+    debugger_widgets_add_checkbox(opts, "VDP: Enable Layer A", true, true, false);
+    debugger_widgets_add_checkbox(opts, "VDP: Enable Layer B", true, true, false);
+    debugger_widgets_add_checkbox(opts, "VDP: Enable Sprites", true, true, false);
+    debugger_widgets_add_checkbox(opts, "VDP: trace", true, false, false);
 }
 
 void core::read_opts()
