@@ -36,6 +36,7 @@ struct managed_windows {
 
 struct RenderResources;
 struct imgui_jsmooch_app {
+    bool window_steal_input{false};
     void render_source_list_view(bool update_dasm_scroll);
     managed_windows windows{};
     managed_window *register_managed_window(u32 id, enum managed_window_kind kind, const char *name, u32 default_enabled);

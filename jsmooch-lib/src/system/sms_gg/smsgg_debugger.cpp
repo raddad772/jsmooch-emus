@@ -361,8 +361,8 @@ static void setup_debugger_view_nametables(SMSGG::core* th, debugger_interface &
 
     iv->width = 256;
     iv->height = 240;
-    iv->viewport.exists = 1;
-    iv->viewport.enabled = 1;
+    iv->viewport.exists = true;
+    iv->viewport.enabled = true;
     iv->viewport.p[0] = (ivec2){ 0, 0 };
     iv->viewport.p[1] = (ivec2){ 255, 239 };
 

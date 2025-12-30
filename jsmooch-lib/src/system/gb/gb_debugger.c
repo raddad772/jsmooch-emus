@@ -263,8 +263,8 @@ static void setup_debugger_view_tiles(GB* this, debugger_interface *dbgr) {
     iv->width = 8 * 16;
     iv->height = 8 * 16 * 3;
     if (this->variant == GBC) iv->width = (iv->width * 2) + 4;
-    iv->viewport.exists = 1;
-    iv->viewport.enabled = 1;
+    iv->viewport.exists = true;
+    iv->viewport.enabled = true;
 
     iv->update_func.ptr = this;
     iv->update_func.func = &render_image_view_tiles;
@@ -279,8 +279,8 @@ static void setup_debugger_view_sprites(GB* this, debugger_interface *dbgr)
     struct image_view *iv = &dview->image;
     iv->width = 160;
     iv->height = 144;
-    iv->viewport.exists = 1;
-    iv->viewport.enabled = 1;
+    iv->viewport.exists = true;
+    iv->viewport.enabled = true;
 
     iv->update_func.ptr = this;
     iv->update_func.func = &render_image_view_sprites;
@@ -297,8 +297,8 @@ static void setup_debugger_view_nametables(GB* this, debugger_interface *dbgr)
 
     iv->width = 256;
     iv->height = 513;
-    iv->viewport.exists = 1;
-    iv->viewport.enabled = 1;
+    iv->viewport.exists = true;
+    iv->viewport.enabled = true;
 
     iv->update_func.ptr = this;
     iv->update_func.func = &render_image_view_nametables;

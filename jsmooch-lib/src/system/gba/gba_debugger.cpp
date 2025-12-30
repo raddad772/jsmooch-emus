@@ -976,8 +976,8 @@ static void setup_image_view_tiles(core* th, debugger_interface *dbgr)
 
     iv->width = 256;
     iv->height = 256;
-    iv->viewport.exists = 1;
-    iv->viewport.enabled = 1;
+    iv->viewport.exists = true;
+    iv->viewport.enabled = true;
     iv->viewport.p[0] = ivec2(0, 0);
     iv->viewport.p[1] = (ivec2){ 256, 256 };
 
@@ -996,8 +996,8 @@ static void setup_image_view_sprites(core* th, debugger_interface *dbgr)
     iv->width = 240;
     iv->height = 160;
 
-    iv->viewport.exists = 1;
-    iv->viewport.enabled = 1;
+    iv->viewport.exists = true;
+    iv->viewport.enabled = true;
     iv->viewport.p[0] = ivec2(0, 0);
     iv->viewport.p[1] = ivec2(iv->width, iv->height);
 
@@ -1033,8 +1033,8 @@ static void setup_image_view_palettes(core* th, debugger_interface *dbgr)
     iv->width = 16 * PAL_BOX_SIZE_W_BORDER;
     iv->height = ((16 * PAL_BOX_SIZE_W_BORDER) * 2) + 2;
 
-    iv->viewport.exists = 1;
-    iv->viewport.enabled = 1;
+    iv->viewport.exists = true;
+    iv->viewport.enabled = true;
     iv->viewport.p[0] = ivec2(0, 0);
     iv->viewport.p[1] = ivec2(iv->width, iv->height);
 
@@ -1067,8 +1067,8 @@ static void setup_image_view_bgmap(core* th, debugger_interface *dbgr, u32 wnum)
     image_view *iv = &dview->image;
     iv->width = 1024;
     iv->height = 1024;
-    iv->viewport.exists = 1;
-    iv->viewport.enabled = 1;
+    iv->viewport.exists = true;
+    iv->viewport.enabled = true;
     iv->viewport.p[0] = ivec2(0, 0);
     iv->viewport.p[1] = (ivec2){ 256, 256 };
 
@@ -1134,8 +1134,8 @@ static void setup_image_view_bg(core* th, debugger_interface *dbgr, u32 wnum)
 
     iv->width = 240;
     iv->height = 160;
-    iv->viewport.exists = 1;
-    iv->viewport.enabled = 1;
+    iv->viewport.exists = true;
+    iv->viewport.enabled = true;
     iv->viewport.p[0] = ivec2(0, 0);
     iv->viewport.p[1] = (ivec2){ 240, 160 };
 
@@ -1226,8 +1226,8 @@ static void setup_image_view_window(core* th, debugger_interface *dbgr, u32 wnum
 
     iv->width = 240;
     iv->height = 160;
-    iv->viewport.exists = 1;
-    iv->viewport.enabled = 1;
+    iv->viewport.exists = true;
+    iv->viewport.enabled = true;
     iv->viewport.p[0] = ivec2(0, 0);
     iv->viewport.p[1] = (ivec2){ 240, 160 };
 
@@ -1319,8 +1319,8 @@ static void setup_image_view_sys_info(core *th, debugger_interface *dbgr)
 
     iv->width = 10;
     iv->height = 10;
-    iv->viewport.exists = 1;
-    iv->viewport.enabled = 1;
+    iv->viewport.exists = true;
+    iv->viewport.enabled = true;
     iv->viewport.p[0] = ivec2(0, 0);
     iv->viewport.p[1] = (ivec2){ 10, 10 };
 

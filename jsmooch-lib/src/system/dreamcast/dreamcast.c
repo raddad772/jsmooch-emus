@@ -2,6 +2,10 @@
 // Created by Dave on 2/11/2024.
 //
 
+// chu chu rocket
+// AICA stub
+// It'll try to read the 32-bit word @ 0x8000F8 and expect it to have the value 0x43455845, it just hangs if that address contains anything else
+
 #include <cassert>
 #include "stdio.h"
 #include <cstdlib>

@@ -14,6 +14,7 @@
 #define PC R[15]
 
 //#define TRACE
+#define TRACEOFF
 static constexpr u32 masksz[5] = { 0, 0xFF, 0xFFFF, 0, 0xFFFFFFFF };
 static constexpr u32 maskalign[5] = {0, 0xFFFFFFFF, 0xFFFFFFFE, 0, 0xFFFFFFFC};
 
@@ -247,7 +248,9 @@ void core::decode_and_exec_arm(u32 opcode, u32 opcode_addr)
 #ifdef TRACE
     armv5_trace_format(opcode, opcode_addr, 0, 1);
 #else
+#ifndef TRACEOFF
     armv5_trace_format(opcode, opcode_addr, false, true);
+#endif
 #endif
     u32 decode = ((opcode >> 4) & 15) | ((opcode >> 16) & 0xFF0);
     arm_ins = &opcode_table_arm[decode];
@@ -314,7 +317,9 @@ void core::run_noIRQcheck()
 #ifdef TRACE
                 armv5_trace_format(opcode, opcode_addr, 0, 1);
 #else
+#ifndef TRACEOFF
                 armv5_trace_format(opcode, opcode_addr, false, true);
+#endif
 #endif
                 u32 decode = ((opcode >> 4) & 15) | ((opcode >> 16) & 0xFF0);
                 arm_ins = &opcode_table_arm_never[decode];
@@ -330,7 +335,9 @@ void core::run_noIRQcheck()
 #ifdef TRACE
                 armv5_trace_format(opcode, opcode_addr, 0, 0);
 #else
+#ifndef TRACEOFF
                 armv5_trace_format(opcode, opcode_addr, false, false);
+#endif
 #endif
                 pipeline.access = ARM9P_code | ARM9P_sequential;
                 regs.PC += 4;

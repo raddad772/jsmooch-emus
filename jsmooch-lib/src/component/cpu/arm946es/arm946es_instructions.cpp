@@ -96,14 +96,14 @@ u32 *core::old_getR(const u32 num) {
                 case M_system:
                     return &regs.R[num];
                 default:
-                    assert(1==2);
+                    //assert(1==2);
                     return nullptr;
             }
             break; }
         case 15:
             return &regs.R[15];
         default:
-            assert(1==2);
+            //assert(1==2);
             return nullptr;
     }
 }

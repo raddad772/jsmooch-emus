@@ -637,9 +637,8 @@ static void fill_tex_sampler(POLY *p)
     }
 }
 
-void RE::render_line(BUFFERS *b, i32 line_num)
+void RE::render_line(BUFFERS *b, i32 line_num, LINEBUFFER *line, POLY_LIST *plist)
 {
-    LINEBUFFER *line = &out.linebuffer[line_num];
     //printf("\n\nLine num %d", line_num);
     clear_line(line);
     u32 test_byte = line_num >> 3;
@@ -651,7 +650,7 @@ void RE::render_line(BUFFERS *b, i32 line_num)
 
     EDGE edges[2];
     for (u32 poly_num = 0; poly_num < b->polygon_index; poly_num++) {
-        POLY *p = render_list.items[poly_num];
+        POLY *p = plist->items[poly_num];
         u32 tex_enable = global_tex_enable && (p->tex_param.format != 0);
 
         // Polygon does not intersect this line
@@ -848,37 +847,44 @@ int poly_comparator(const void *a, const void *b)
     return ((POLY *)a)->sorting_key - ((POLY *)b)->sorting_key;
 }
 
-void RE::copy_and_sort_list(BUFFERS *b)
+void RE::copy_and_sort_list(BUFFERS *b, POLY_LIST *rl)
 {
-    render_list.len = 0;
-    render_list.num_opaque = 0;
-    render_list.num_translucent = 0;
+    rl->len = 0;
+    rl->num_opaque = 0;
+    rl->num_translucent = 0;
     for (u32 i = 0; i < b->polygon_index; i++) {
         POLY *p = &b->polygon[i];
-        render_list.num_opaque += p->is_translucent ^ 1;
-        render_list.num_translucent += p->is_translucent;
+        rl->num_opaque += p->is_translucent ^ 1;
+        rl->num_translucent += p->is_translucent;
     }
 
     u32 opaque_index = 0;
-    u32 transparent_index = render_list.num_opaque;
+    u32 transparent_index = rl->num_opaque;
     for (u32 i = 0; i < b->polygon_index; i++) {
         POLY *p = &b->polygon[i];
         if (p->is_translucent)
-            render_list.items[transparent_index++] = p;
+            rl->items[transparent_index++] = p;
         else
-            render_list.items[opaque_index++] = p;
+            rl->items[opaque_index++] = p;
     }
-    u32 num_to_sort = b->translucent_y_sorting_manual ? render_list.num_opaque : b->polygon_index;
+    u32 num_to_sort = b->translucent_y_sorting_manual ? rl->num_opaque : b->polygon_index;
 
-    qsort(render_list.items, num_to_sort, sizeof(render_list.items[0]), &poly_comparator);
+    qsort(rl->items, num_to_sort, sizeof(rl->items[0]), &poly_comparator);
+}
+
+void RE::render_to(BUFFERS *b, LINEBUFFER *lb, POLY_LIST *r) {
+
+    copy_and_sort_list(b, r);
+    for (u32 i = 0; i < 192; i++)
+        render_line(b, i, &lb[i], r);
 }
 
 void RE::render_frame()
 {
-    BUFFERS *b = &ge->buffers[ge->ge_has_buffer ^ 1];
-    copy_and_sort_list(b);
-    for (u32 i = 0; i < 192; i++)
-        render_line(b, i);
+    render_to(&ge->buffers[ge->ge_has_buffer ^ 1], out.linebuffer, &render_list);
+    if (ge->debug_cam.enabled) {
+        render_to(&ge->debug_cam.buffers[ge->ge_has_buffer ^ 1], out.debug_linebuffer, &debug_render_list);
+    }
 }
 
 void NDS_RE_init()

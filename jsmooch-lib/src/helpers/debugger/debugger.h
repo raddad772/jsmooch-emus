@@ -475,20 +475,27 @@ struct waveform_view {
 
 
 struct image_view {
-    char label[50];
-    u32 ready_for_display;
-    u32 width, height;
-    u32 draw_which_buf;
+    char label[50]{};
+    u32 ready_for_display{};
+    u32 width{}, height{};
+    u32 draw_which_buf{};
 
     struct {
-        u32 exists;
-        u32 enabled;
-        ivec2 p[2];
-    } viewport;
+        bool enable{false};
+        float pos[3]{}; // x,y,z. no real bound
+        float rot[2]{}; // 0=x, 1=y, range 0...1
+    } FPS_controls;
 
-    debugger_update_func update_func;
 
-    buf img_buf[2];
+    struct {
+        bool exists{};
+        bool enabled{};
+        ivec2 p[2]{};
+    } viewport{};
+
+    debugger_update_func update_func{};
+
+    buf img_buf[2]{};
 };
 
 
@@ -511,7 +518,7 @@ struct debugger_widget_button
 struct debugger_widget_checkbox
 {
     char text[100]{};
-    u32 value{};
+    bool value{};
 };
 
 struct debugger_widget;
@@ -566,7 +573,7 @@ struct debugger_widget {
     }
 
     JSMD_widgets kind = JSMD_textbox;
-    u32 same_line{}, enabled{}, visible{};
+    bool same_line{}, enabled{}, visible{};
 
     union {
         debugger_widget_button button;
@@ -641,7 +648,7 @@ void debugger_interface_dirty_mem(debugger_interface *dbgr, u32 mem_bus, u32 add
 debugger_widget &debugger_widgets_add_radiogroup(std::vector<debugger_widget> &widgets, const char *text, u32 enabled, u32 default_value, u32 same_line);
 void debugger_widgets_add_textbox(std::vector<debugger_widget> &widgets, const char *text, u32 same_line);
 void debugger_widgets_add_button(std::vector<debugger_widget> &widgets, const char *text, u32 enabled, u32 same_line);
-void debugger_widgets_add_checkbox(std::vector<debugger_widget> &widgets, const char *text, u32 enabled, u32 default_value, u32 same_line);
+void debugger_widgets_add_checkbox(std::vector<debugger_widget> &widgets, const char *text, bool enabled, bool default_value, bool same_line);
 void memory_view_get_line(memory_view_module *mm, u32 addr, char *out);
 debugger_widget &debugger_widgets_add_color_key(std::vector<debugger_widget> &widgets, const char *default_text, u32 default_visible);
 

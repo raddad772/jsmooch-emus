@@ -245,7 +245,7 @@ void debugger_widgets_add_button(std::vector<debugger_widget> &widgets, const ch
 }
 
 
-void debugger_widgets_add_checkbox(std::vector<debugger_widget> &widgets, const char *text, u32 enabled, u32 default_value, u32 same_line)
+void debugger_widgets_add_checkbox(std::vector<debugger_widget> &widgets, const char *text, bool enabled, bool default_value, bool same_line)
 {
     debugger_widget &w = widgets.emplace_back();
     w.make(JSMD_checkbox);
@@ -253,7 +253,7 @@ void debugger_widgets_add_checkbox(std::vector<debugger_widget> &widgets, const 
     snprintf(w.checkbox.text, sizeof(w.checkbox.text), "%s", text);
     w.enabled = enabled;
     w.checkbox.value = default_value;
-    w.visible = 1;
+    w.visible = true;
 }
 
 debugger_widget &debugger_widgets_add_color_key(std::vector<debugger_widget> &widgets, const char *default_text, u32 default_visible)

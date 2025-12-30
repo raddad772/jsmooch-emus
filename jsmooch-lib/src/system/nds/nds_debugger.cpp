@@ -5,6 +5,7 @@
 #include <cstring>
 #include <cassert>
 #include <cstdlib>
+#include <cmath>
 
 #include "helpers/color.h"
 #include "nds.h"
@@ -81,8 +82,8 @@ static void setup_image_view_palettes(core *th, debugger_interface *dbgr)
     iv->width = (64 * PAL_BOX_SIZE_W_BORDER) + 10;
     iv->height = (64 * PAL_BOX_SIZE_W_BORDER) + 10;
 
-    iv->viewport.exists = 1;
-    iv->viewport.enabled = 1;
+    iv->viewport.exists = true;
+    iv->viewport.enabled = true;
     iv->viewport.p[0] = ivec2( 0, 0 );
     iv->viewport.p[1] = ivec2( iv->width, iv->height );
 
@@ -155,6 +156,87 @@ static inline u32 C18to15(u32 c)
 {
     return (((c >> 13) & 0x1F) << 10) | (((c >> 7) & 0x1F) << 5) | ((c >> 1) & 0x1F);
 }
+
+#define PI        3.14159265358979323846f
+#define TWO_PI    (2.0f * PI)
+#define MAX_PITCH (PI * 0.495f)
+
+static inline float clampf(float v, float lo, float hi)
+{
+    return v < lo ? lo : (v > hi ? hi : v);
+}
+
+static inline float wrap_angle(float a)
+{
+    while (a < 0.0f)     a += TWO_PI;
+    while (a >= TWO_PI)  a -= TWO_PI;
+    return a;
+}
+
+static void render_image_view_debug_cam(debugger_interface *dbgr, debugger_view *dview, void *ptr, u32 out_width) {
+    auto *th = static_cast<core *>(ptr);
+    if (th->clock.master_frame == 0) return;
+    image_view *iv = &dview->image;
+    iv->draw_which_buf ^= 1;
+    u32 *outbuf = static_cast<u32 *>(iv->img_buf[iv->draw_which_buf].ptr);
+    memset(outbuf, 0, out_width * 4 * 192);
+    u32 bnum = th->ge.ge_has_buffer ^ 1;
+    for (u32 y = 0; y < 192; y++) {
+        auto *lbuf = &th->re.out.debug_linebuffer[y];
+        u32 *out_line = outbuf + (y * out_width);
+        for (u32 x = 0; x < 256; x++) {
+            out_line[x] = nds_to_screen(lbuf->rgb[x]);
+        }
+    }
+
+    auto *c = &iv->FPS_controls;
+    float pitch = c->rot[0] * TWO_PI;
+    float yaw   = c->rot[1] * TWO_PI;
+
+    /* Clamp pitch, wrap yaw */
+    pitch = clampf(pitch, -MAX_PITCH, MAX_PITCH);
+    yaw   = wrap_angle(yaw);
+
+    /* Write back normalized values (optional but useful) */
+    c->rot[0] = pitch / TWO_PI;
+    c->rot[1] = yaw   / TWO_PI;
+
+    float cp = cosf(pitch);
+    float sp = sinf(pitch);
+    float cy = cosf(yaw);
+    float sy = sinf(yaw);
+
+    /* Forward vector */
+    float fx =  cp * sy;
+    float fy =  sp;
+    float fz = -cp * cy;
+
+    /* Right vector */
+    float rx =  cy;
+    float ry =  0.0f;
+    float rz =  sy;
+
+    /* Up vector (cross(right, forward)) */
+    float ux = -sp * sy;
+    float uy =  cp;
+    float uz =  sp * cy;
+
+    float px = c->pos[0];
+    float py = c->pos[1];
+    float pz = c->pos[2];
+
+    float m[16];
+
+    /* Row-major VIEW matrix */
+    m[0]  =  rx;  m[1]  =  ry;  m[2]  =  rz;  m[3]  = -(rx*px + ry*py + rz*pz);
+    m[4]  =  ux;  m[5]  =  uy;  m[6]  =  uz;  m[7]  = -(ux*px + uy*py + uz*pz);
+    m[8]  = -fx;  m[9]  = -fy;  m[10] = -fz;  m[11] =  (fx*px + fy*py + fz*pz);
+    m[12] =  0.0f; m[13] = 0.0f; m[14] = 0.0f; m[15] = 1.0f;
+    for (u32 i = 0; i < 16; i++) {
+        th->ge.debug_cam.mtx[i] = static_cast<i32>(lround(m[i] * 4096.0f));
+    }
+}
+
 
 static void render_image_view_re_output(debugger_interface *dbgr, debugger_view *dview, void *ptr, u32 out_width) {
     auto *th = static_cast<core *>(ptr);
@@ -618,7 +700,6 @@ static void render_image_view_dispcap(debugger_interface *dbgr, debugger_view *d
     tb->sprintf( "\ncap_size:%d(%dx%d)   eva:%d  evb:%d", dc.capture_size, csize[dc.capture_size][0], csize[dc.capture_size][1], dc.eva, dc.evb);
     tb->sprintf( "\ncap_size:%d(%dx%d)", dc.capture_size, csize[dc.capture_size][0], csize[dc.capture_size][1]);
 
-
     tb->clear();
     for (u32 y = 0; y < 192; y++) {
         u32 *out_line = outbuf + (y * out_width);
@@ -853,8 +934,8 @@ static void setup_image_view_re_wireframe(core *th, debugger_interface *dbgr)
 
     iv->width = 256;
     iv->height = 192;
-    iv->viewport.exists = 1;
-    iv->viewport.enabled = 1;
+    iv->viewport.exists = true;
+    iv->viewport.enabled = true;
     iv->viewport.p[0] = (ivec2){ 0, 0 };
     iv->viewport.p[1] = (ivec2){ 256, 192 };
 
@@ -875,8 +956,8 @@ static void setup_image_view_dispcap(core *th, debugger_interface *dbgr) {
 
     iv->width = 256;
     iv->height = 192;
-    iv->viewport.exists = 1;
-    iv->viewport.enabled = 1;
+    iv->viewport.exists = true;
+    iv->viewport.enabled = true;
     iv->viewport.p[0] = (ivec2) {0, 0};
     iv->viewport.p[1] = (ivec2) {256, 192};
 
@@ -899,8 +980,8 @@ static void setup_image_view_ppu_layers(core *th, debugger_interface *dbgr)
 
     iv->width = 256;
     iv->height = 192;
-    iv->viewport.exists = 1;
-    iv->viewport.enabled = 1;
+    iv->viewport.exists = true;
+    iv->viewport.enabled = true;
     iv->viewport.p[0] = (ivec2){ 0, 0 };
     iv->viewport.p[1] = (ivec2){ 256, 192 };
 
@@ -939,8 +1020,8 @@ static void setup_image_view_ppu_info(core *th, debugger_interface *dbgr)
 
     iv->width = 10;
     iv->height = 10;
-    iv->viewport.exists = 1;
-    iv->viewport.enabled = 1;
+    iv->viewport.exists = true;
+    iv->viewport.enabled = true;
     iv->viewport.p[0] = (ivec2){ 0, 0 };
     iv->viewport.p[1] = (ivec2){ 10, 10 };
 
@@ -961,8 +1042,8 @@ static void setup_image_view_re_attr(core *th, debugger_interface *dbgr)
 
     iv->width = 256;
     iv->height = 192;
-    iv->viewport.exists = 1;
-    iv->viewport.enabled = 1;
+    iv->viewport.exists = true;
+    iv->viewport.enabled = true;
     iv->viewport.p[0] = (ivec2){ 0, 0 };
     iv->viewport.p[1] = (ivec2){ 256, 192 };
 
@@ -978,6 +1059,25 @@ static void setup_image_view_re_attr(core *th, debugger_interface *dbgr)
     debugger_widgets_add_color_key(dview->options, "Key", 1);
 }
 
+static void setup_image_view_debug_cam(core *th, debugger_interface *dbgr) {
+    debugger_view *dview;
+    th->dbg.image_views.re_wireframe = dbgr->make_view(dview_image);
+    dview = &th->dbg.image_views.re_wireframe.get();
+    image_view *iv = &dview->image;
+
+    iv->width = 256;
+    iv->height = 192;
+    iv->viewport.exists = true;
+    iv->viewport.enabled = true;
+    iv->viewport.p[0] = (ivec2){ 0, 0 };
+    iv->viewport.p[1] = (ivec2){ 256, 192 };
+
+    iv->FPS_controls.enable = true;
+
+    iv->update_func.ptr = th;
+    iv->update_func.func = &render_image_view_debug_cam;
+    snprintf(iv->label, sizeof(iv->label), "Debug Cam");
+}
 
 static void setup_image_view_re_output(core *th, debugger_interface *dbgr)
 {
@@ -988,8 +1088,8 @@ static void setup_image_view_re_output(core *th, debugger_interface *dbgr)
 
     iv->width = 256;
     iv->height = 192;
-    iv->viewport.exists = 1;
-    iv->viewport.enabled = 1;
+    iv->viewport.exists = true;
+    iv->viewport.enabled = true;
     iv->viewport.p[0] = (ivec2){ 0, 0 };
     iv->viewport.p[1] = (ivec2){ 256, 192 };
 
@@ -1010,6 +1110,7 @@ void core::setup_debugger_interface(debugger_interface &intf) {
     //setup_cpu_trace(dbgr, th);
 
     setup_dbglog(dbgr, this);
+    setup_image_view_debug_cam(this, dbgr);
     setup_image_view_re_output(this, dbgr);
     setup_image_view_re_wireframe(this, dbgr);
     setup_image_view_re_attr(this, dbgr);

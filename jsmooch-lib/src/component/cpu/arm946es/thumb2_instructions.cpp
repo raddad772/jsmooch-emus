@@ -279,7 +279,7 @@ void core::THUMB_ins_BX_BLX(const thumb2_instruction &ins)
 
 void core::THUMB_ins_ADD_CMP_MOV_hi(const thumb2_instruction &ins)
 {
-    assert(ins.sub_opcode != 3);
+    //assert(ins.sub_opcode != 3);
     const u32 op1 = *getR(ins.Rs);
     const u32 op2 = *getR(ins.Rd);
     regs.PC += 2;

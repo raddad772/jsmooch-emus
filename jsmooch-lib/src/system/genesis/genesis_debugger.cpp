@@ -1176,8 +1176,8 @@ static void setup_image_view_plane(core* th, debugger_interface *dbgr, int plane
         default:
             NOGOHERE;
     }
-    iv->viewport.exists = 1;
-    iv->viewport.enabled = 1;
+    iv->viewport.exists = true;
+    iv->viewport.enabled = true;
 
     // Up to 2048 tiles
     // 8x8
@@ -1208,8 +1208,8 @@ static void setup_image_view_tilemap(core* th, debugger_interface *dbgr)
 
     iv->width = 512;
     iv->height = 256;
-    iv->viewport.exists = 1;
-    iv->viewport.enabled = 1;
+    iv->viewport.exists = true;
+    iv->viewport.enabled = true;
     iv->viewport.p[0] = (ivec2){ 0, 0 };
     iv->viewport.p[1] = (ivec2){ 512, 256 };
 
@@ -1230,8 +1230,8 @@ static void setup_image_view_output(core* th, debugger_interface *dbgr)
 
     iv->width = 1280;
     iv->height = 240;
-    iv->viewport.exists = 1;
-    iv->viewport.enabled = 1;
+    iv->viewport.exists = true;
+    iv->viewport.enabled = true;
     iv->viewport.p[0] = ivec2( 0, 0 );
     iv->viewport.p[1] = ivec2( iv->width, iv->height );
 
@@ -1264,8 +1264,8 @@ static void setup_image_view_sprites(core* th, debugger_interface *dbgr)
 
     iv->width = 512;
     iv->height = 512;
-    iv->viewport.exists = 1;
-    iv->viewport.enabled = 1;
+    iv->viewport.exists = true;
+    iv->viewport.enabled = true;
     iv->viewport.p[0] = ivec2( 0, 0 );
     iv->viewport.p[1] = ivec2( iv->width, iv->height );
 
@@ -1291,8 +1291,8 @@ static void setup_image_view_palette(core* th, debugger_interface *dbgr)
 
     iv->width = 16 * PAL_BOX_SIZE_W_BORDER;
     iv->height = 4 * PAL_BOX_SIZE_W_BORDER;
-    iv->viewport.exists = 1;
-    iv->viewport.enabled = 1;
+    iv->viewport.exists = true;
+    iv->viewport.enabled = true;
     iv->viewport.p[0] = ivec2( 0, 0 );
     iv->viewport.p[1] = ivec2( iv->width, iv->height );
 
@@ -1357,8 +1357,8 @@ static void setup_image_view_ym_info(core *th, debugger_interface *dbgr)
 
     iv->width = 10;
     iv->height = 10;
-    iv->viewport.exists = 1;
-    iv->viewport.enabled = 1;
+    iv->viewport.exists = true;
+    iv->viewport.enabled = true;
     iv->viewport.p[0] = (ivec2){ 0, 0 };
     iv->viewport.p[1] = (ivec2){ 10, 10 };
 

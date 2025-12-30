@@ -188,6 +188,8 @@ static void copy_vertex_list_into(VTX_list *dest, VTX_list *src)
 
 GE::GE(NDS::core *parent, scheduler_t *scheduler_in) : bus(parent), scheduler(scheduler_in) {
     ge_has_buffer = 0;
+    debug_cam.buffers[0].is_debug = true;
+    debug_cam.buffers[1].is_debug = true;
     for (u32 i = 0; i < 0xFF; i++) {
         tbl_num_params[i] = 0;
         tbl_num_cycles[i] = 0;
@@ -837,25 +839,21 @@ void GE::clip_verts(POLY *out) {
     clip_verts_on_plane(0, true, &out->vertex_list);
 }
 
-static u32 determine_needs_clipping(VTX_list_node *v)
+static bool determine_needs_clipping(VTX_list_node *v)
 {
-    if (v->data.processed) return 0;
+    if (v->data.processed) return false;
     i32 w = v->data.xyzw[3];
 
     for (int i = 0; i < 3; i++) {
         if (v->data.xyzw[i] < -w || v->data.xyzw[i] > w) {
-            return 1;
+            return true;
         }
     }
-    return 0;
+    return false;
 }
 
-u32 GE::commit_vertex(VTX_list_node *v, i32 xx, i32 yy, i32 zz, i32 ww, i32 *uv, u32 cr, u32 cg, u32 cb)
+u32 GE::commit_vertex(VTX_list_node *v, i32 xx, i32 yy, i32 zz, i32 ww, i32 *uv, u32 cr, u32 cg, u32 cb, BUFFERS *b)
 {
-    BUFFERS *b = &buffers[ge_has_buffer];
-    if (ge_has_buffer > 1) {
-        printf("\nWOAH! cyc:%lld", bus->clock.master_cycle_count7+bus->waitstates.current_transaction);
-    }
     u32 addr = b->vertex_index;
 
     /*b->vertex_index++;
@@ -930,11 +928,8 @@ static void normalize_w(POLY *out)
     }
 }
 
-void GE::finalize_verts_and_get_first_addr(POLY *poly)
+void GE::finalize_verts_and_get_first_addr(POLY *poly, BUFFERS *b)
 {
-    // Final transform to screen and write into vertex buffer
-    BUFFERS *b = &buffers[ge_has_buffer];
-
     //printf("\nFinalzie verts");
     // Go thru verts...
     VTX_list_node *first_node = poly->vertex_list.first;
@@ -970,7 +965,7 @@ void GE::finalize_verts_and_get_first_addr(POLY *poly)
             posX = posX & 0x1FF;
             posY = posY & 0xFF;
 
-            node->data.vram_ptr = commit_vertex(node, posX, posY, node->data.xyzw[2], node->data.xyzw[3], node->data.uv, node->data.color[0], node->data.color[1], node->data.color[2]);
+            node->data.vram_ptr = commit_vertex(node, posX, posY, node->data.xyzw[2], node->data.xyzw[3], node->data.uv, node->data.color[0], node->data.color[1], node->data.color[2], b);
         }
         node = node->next;
     }
@@ -1024,9 +1019,8 @@ static u32 determine_winding_order(POLY *poly, BUFFERS *b)
     return CCW;
 }
 
-void GE::evaluate_edges(POLY *poly, u32 expected_winding_order)
+void GE::evaluate_edges(POLY *poly, u32 expected_winding_order, BUFFERS *b)
 {
-    BUFFERS *b = &buffers[ge_has_buffer];
     VTX_list_node *v[2];
     v[1] = poly->vertex_list.first;
     u32 edgenum = 0;
@@ -1053,8 +1047,7 @@ static void list_reverse(VTX_list *l)
     }
 }
 
-void GE::ingest_poly(u32 in_winding_order) {
-    BUFFERS *b = &buffers[ge_has_buffer];
+void GE::ingest_poly(u32 in_winding_order, BUFFERS *b) {
     u32 addr = b->polygon_index;
 
     POLY *out = &b->polygon[addr];
@@ -1063,23 +1056,36 @@ void GE::ingest_poly(u32 in_winding_order) {
     out->attr.u = params.poly.current.attr.u;
     out->tex_param.u = params.poly.current.tex_param.u;
     out->pltt_base = params.poly.current.pltt_base;
-    // TODO: add all relavent attributes to structure here
 
     copy_vertex_list_into(&out->vertex_list, &VTX_LIST);
     if (params.vtx_strip.mode == QUAD_STRIP) {
         vertex_list_swap_last_two(&out->vertex_list);
     }
 
-    VTX_list_node *v0 = out->vertex_list.first;
-    VTX_list_node *v1 = v0->next;
-    VTX_list_node *v2 = v1->next;
+    if (b->is_debug) {
+        auto *v = out->vertex_list.first;
+        for (u32 i = 0; i < out->vertex_list.len; i++) {
+            i64 tmp[4] = {static_cast<i64>(v->data.xyzw[0]), static_cast<i64>(v->data.xyzw[1]), v->data.xyzw[2], v->data.xyzw[3]};
+            v->data.xyzw[0] = static_cast<i32>((tmp[0] * debug_cam.mtx[0] + tmp[1] * debug_cam.mtx[4] + tmp[2] * debug_cam.mtx[8] + tmp[3] * debug_cam.mtx[12]) >> 12);
+            v->data.xyzw[1] = static_cast<i32>((tmp[0] * debug_cam.mtx[1] + tmp[1] * debug_cam.mtx[5] + tmp[2] * debug_cam.mtx[9] + tmp[3] * debug_cam.mtx[13]) >> 12);
+            v->data.xyzw[2] = static_cast<i32>((tmp[0] * debug_cam.mtx[2] + tmp[1] * debug_cam.mtx[6] + tmp[2] * debug_cam.mtx[10] + tmp[3] * debug_cam.mtx[14]) >> 12);
+            v->data.xyzw[3] = static_cast<i32>((tmp[0] * debug_cam.mtx[3] + tmp[1] * debug_cam.mtx[7] + tmp[2] * debug_cam.mtx[11] + tmp[3] * debug_cam.mtx[15]) >> 12);
 
-    i64 normalX = ((i64) (v0->data.xyzw[1] - v1->data.xyzw[1]) * (v2->data.xyzw[3] - v1->data.xyzw[3]))
-                  - ((i64) (v0->data.xyzw[3] - v1->data.xyzw[3]) * (v2->data.xyzw[1] - v1->data.xyzw[1]));
-    i64 normalY = ((i64) (v0->data.xyzw[3] - v1->data.xyzw[3]) * (v2->data.xyzw[0] - v1->data.xyzw[0]))
-                  - ((i64) (v0->data.xyzw[0] - v1->data.xyzw[0]) * (v2->data.xyzw[3] - v1->data.xyzw[3]));
-    i64 normalZ = ((i64) (v0->data.xyzw[0] - v1->data.xyzw[0]) * (v2->data.xyzw[1] - v1->data.xyzw[1]))
-                  - ((i64) (v0->data.xyzw[1] - v1->data.xyzw[1]) * (v2->data.xyzw[0] - v1->data.xyzw[0]));
+            v = v->next;
+        }
+        // Multiply vertex list by in-built debug matrix
+    }
+
+    const VTX_list_node *v0 = out->vertex_list.first;
+    const VTX_list_node *v1 = v0->next;
+    const VTX_list_node *v2 = v1->next;
+
+    i64 normalX = (static_cast<i64>(v0->data.xyzw[1] - v1->data.xyzw[1]) * (v2->data.xyzw[3] - v1->data.xyzw[3]))
+                  - (static_cast<i64>(v0->data.xyzw[3] - v1->data.xyzw[3]) * (v2->data.xyzw[1] - v1->data.xyzw[1]));
+    i64 normalY = (static_cast<i64>(v0->data.xyzw[3] - v1->data.xyzw[3]) * (v2->data.xyzw[0] - v1->data.xyzw[0]))
+                  - (static_cast<i64>(v0->data.xyzw[0] - v1->data.xyzw[0]) * (v2->data.xyzw[3] - v1->data.xyzw[3]));
+    i64 normalZ = (static_cast<i64>(v0->data.xyzw[0] - v1->data.xyzw[0]) * (v2->data.xyzw[1] - v1->data.xyzw[1]))
+                  - (static_cast<i64>(v0->data.xyzw[1] - v1->data.xyzw[1]) * (v2->data.xyzw[0] - v1->data.xyzw[0]));
 
     // shift until both zero or 1
     while ((((normalX >> 31) ^ (normalX >> 63)) != 0) ||
@@ -1090,8 +1096,8 @@ void GE::ingest_poly(u32 in_winding_order) {
         normalZ >>= 4;
     }
 
-    i64 dot = ((i64) v1->data.xyzw[0] * normalX) + ((i64) v1->data.xyzw[1] * normalY) +
-              ((i64) v1->data.xyzw[3] * normalZ);
+    i64 dot = (static_cast<i64>(v1->data.xyzw[0]) * normalX) + (static_cast<i64>(v1->data.xyzw[1]) * normalY) +
+              (static_cast<i64>(v1->data.xyzw[3]) * normalZ);
 
     out->front_facing = (dot <= 0);
 
@@ -1105,7 +1111,7 @@ void GE::ingest_poly(u32 in_winding_order) {
     }
 
     // Now clip...
-    u32 needs_clipping = 0;
+    bool needs_clipping = false;
     VTX_list_node *n = out->vertex_list.first;
     while (n) {
         needs_clipping = determine_needs_clipping(n);
@@ -1129,14 +1135,13 @@ void GE::ingest_poly(u32 in_winding_order) {
         return;
     }
 
-    finalize_verts_and_get_first_addr(out);
+    finalize_verts_and_get_first_addr(out, b);
     normalize_w(out);
     if (re->io.DISP3DCNT.poly_vtx_ram_overflow) {
         return;
     }
 
-
-    evaluate_edges(out, in_winding_order);
+    evaluate_edges(out, in_winding_order, b);
 
     b->polygon_index++;
     if (b->polygon_index >= 2048) {
@@ -1161,7 +1166,8 @@ void GE::ingest_vertex() {
             if (VTX_LIST.len >= 3) {
                 printfcd("\nDO POLY SEPARATE TRI");
                 winding_order = 0;
-                ingest_poly(CCW);
+                ingest_poly(CCW, &buffers[ge_has_buffer]);
+                if (debug_cam.enabled) ingest_poly(CCW, &debug_cam.buffers[ge_has_buffer]);
                 // clear the cache
                 VTX_LIST.init();
             }
@@ -1170,13 +1176,15 @@ void GE::ingest_vertex() {
             if (VTX_LIST.len >= 4) {
                 printfcd("\nDO POLY SEPARATE QUAD");
                 winding_order = 0;
-                ingest_poly(CCW);
+                ingest_poly(CCW, &buffers[ge_has_buffer]);
+                if (debug_cam.enabled) ingest_poly(CCW, &debug_cam.buffers[ge_has_buffer]);
                 VTX_LIST.init();
             }
             break;
         case TRIANGLE_STRIP:
             if (VTX_LIST.len >= 3) {
-                ingest_poly(winding_order);
+                ingest_poly(winding_order, &buffers[ge_has_buffer]);
+                if (debug_cam.enabled) ingest_poly(winding_order, &debug_cam.buffers[ge_has_buffer]);
                 winding_order ^= 1;
                 vertex_list_delete_first(&VTX_LIST);
             }
@@ -1184,7 +1192,8 @@ void GE::ingest_vertex() {
         case QUAD_STRIP:
             if (VTX_LIST.len >= 4) {
                 winding_order = 0;
-                ingest_poly(winding_order);
+                ingest_poly(winding_order, &buffers[ge_has_buffer]);
+                if (debug_cam.enabled) ingest_poly(winding_order, &debug_cam.buffers[ge_has_buffer]);
                 vertex_list_delete_first(&VTX_LIST);
                 vertex_list_delete_first(&VTX_LIST);
             }
@@ -1473,6 +1482,10 @@ void GE::cmd_SWAP_BUFFERS()
     io.swap_buffers = 1;
     buffers[ge_has_buffer].translucent_y_sorting_manual = DATA[0] & 1;
     buffers[ge_has_buffer].depth_buffering_w = (DATA[0] >> 1) & 1;
+    if (debug_cam.enabled) {
+        debug_cam.buffers[ge_has_buffer].translucent_y_sorting_manual = DATA[0] & 1;
+        debug_cam.buffers[ge_has_buffer].depth_buffering_w = (DATA[0] >> 1) & 1;
+    }
 }
 
 void GE::cmd_POLYGON_ATTR()
@@ -2034,6 +2047,8 @@ static void do_swap_buffers(void *ptr, u64 key, u64 current_clock, u32 jitter)
     th->ge_has_buffer ^= 1;
     th->buffers[th->ge_has_buffer].polygon_index = 0;
     th->buffers[th->ge_has_buffer].vertex_index = 0;
+    th->debug_cam.buffers[th->ge_has_buffer].polygon_index = 0;
+    th->debug_cam.buffers[th->ge_has_buffer].vertex_index = 0;
     th->re->io.DISP3DCNT.poly_vtx_ram_overflow = 0;
     th->re->render_frame();
     th->handle_cmd();

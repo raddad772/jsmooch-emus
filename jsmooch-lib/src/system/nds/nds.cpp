@@ -49,6 +49,7 @@ core::core() :
     has.set_audiobuf = true;
     re.ge = &ge;
     ge.re = &re;
+    populate_opts();
     for (u32 i = 0; i < 16; i++) {
         mem.rw[0].read[i] = &core::busrd7_invalid;
         mem.rw[0].write[i] = &core::buswr7_invalid;
@@ -266,6 +267,7 @@ void core::sample_audio()
 
 u32 core::finish_frame()
 {
+    read_opts();
     u64 total = 0;
     scheduler.run_til_tag(1);
     sample_audio();
@@ -282,6 +284,16 @@ void core::pause()
 
 void core::stop()
 {
+}
+
+void core::populate_opts()
+{
+    debugger_widgets_add_checkbox(opts, "Enable Debug Cam", true, false, 0);
+}
+
+void core::read_opts() {
+    debugger_widget *w = &opts.at(0);
+    ge.debug_cam.enabled = w->checkbox.value;
 }
 
 void core::get_framevars(framevars& out)
@@ -431,7 +443,7 @@ void core::reset()
 
 u32 core::finish_scanline()
 {
-    
+    read_opts();
 
     u64 scanline_cycle = clock.current7() - clock.ppu.scanline_start;
     assert(scanline_cycle < clock.timing.scanline.cycles_total);
@@ -448,6 +460,7 @@ u32 core::finish_scanline()
 u32 core::step_master(u32 howmany)
 {
     
+    read_opts();
     scheduler.run_for_cycles(howmany);
     return ppu.display->last_written;
 }

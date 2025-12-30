@@ -217,6 +217,7 @@ struct VERTEX { // 24 bytes
 };
 
 struct BUFFERS {
+    bool is_debug{false};
     POLY polygon[2048]{};
     VERTEX vertex[6144]{};
     u32 polygon_index{};
@@ -224,6 +225,18 @@ struct BUFFERS {
 
     bool translucent_y_sorting_manual{};
     bool depth_buffering_w{};
+};
+
+struct DEBUG_POLY {
+    VTX_list_node_data vertices[10]{};
+    u8 num_vertices{};
+};
+
+struct DEBUG_CAM {
+    bool enabled{true};
+    BUFFERS buffers[2];
+    MATRIX cam{};
+    i32 mtx[16] { 1 << 12, 0, 0, 0, 0, 1 << 12, 0, 0, 0, 0, 1 << 12, 0, 0, 0, 0, 1 << 12 };
 };
 
 union EXTRA_ATTR {
@@ -259,14 +272,16 @@ struct RE {
     explicit RE(NDS::core *parent) : bus(parent) {}
     NDS::core *bus;
     void render_frame();
-    void copy_and_sort_list(BUFFERS *b);
-    GE *ge;
+    void render_to(BUFFERS *b, LINEBUFFER *lb, POLY_LIST *r);
+    void copy_and_sort_list(BUFFERS *b, POLY_LIST *r);
+    GE *ge{};
     void reset();
     void clear_line(LINEBUFFER *l);
-    void render_line(BUFFERS *b, i32 line_num);
+    void render_line(BUFFERS *b, i32 line_num, LINEBUFFER *line, POLY_LIST *plist);
 
     u32 enable{};
     POLY_LIST render_list{};
+    POLY_LIST debug_render_list{};
     struct {
         struct {
             u32 COLOR{};
@@ -315,6 +330,7 @@ struct RE {
 
     struct {
         LINEBUFFER linebuffer[192]{};
+        LINEBUFFER debug_linebuffer[192]{};
     } out{};
 };
 
@@ -386,6 +402,7 @@ struct GE {
     void write_toon_table(u32 addr, u8 sz, u32 val);
 
     BUFFERS buffers[2]{};
+    DEBUG_CAM debug_cam{};
     scheduler_t *scheduler;
     bool enable{};
     u8 ge_has_buffer{};
@@ -560,10 +577,10 @@ public:
     void clip_verts_on_plane(u32 comp, u32 attribs, VTX_list *vertices);
     void clip_verts(POLY *out);
     void calculate_clip_matrix();
-    u32 commit_vertex(VTX_list_node *v, i32 xx, i32 yy, i32 zz, i32 ww, i32 *uv, u32 cr, u32 cg, u32 cb);
-    void finalize_verts_and_get_first_addr(POLY *poly);
-    void evaluate_edges(POLY *poly, u32 expected_winding_order);
-    void ingest_poly(u32 in_winding_order);
+    u32 commit_vertex(VTX_list_node *v, i32 xx, i32 yy, i32 zz, i32 ww, i32 *uv, u32 cr, u32 cg, u32 cb, BUFFERS *b);
+    void finalize_verts_and_get_first_addr(POLY *poly, BUFFERS *b);
+    void evaluate_edges(POLY *poly, u32 expected_winding_order, BUFFERS *b);
+    void ingest_poly(u32 in_winding_order, BUFFERS *b);
     void ingest_vertex();
 };
 

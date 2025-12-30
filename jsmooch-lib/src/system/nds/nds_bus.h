@@ -68,6 +68,8 @@ struct core : jsm_system {
 
     void sample_audio();
 
+    void populate_opts();
+    void read_opts();
     void skip_BIOS();
     void setup_lcd(JSM_DISPLAY &d);
     void setup_audio();

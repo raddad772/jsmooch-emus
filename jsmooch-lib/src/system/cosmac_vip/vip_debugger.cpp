@@ -243,8 +243,8 @@ static void setup_image_view_video(core& th, debugger_interface &dbgr)
     iv->width = 64;
     iv->height = 128;
 
-    iv->viewport.exists = 1;
-    iv->viewport.enabled = 1;
+    iv->viewport.exists = true;
+    iv->viewport.enabled = true;
     iv->viewport.p[0] = (ivec2){ 0, 0 };
     iv->viewport.p[1] = ivec2(static_cast<i32>(iv->width), static_cast<i32>(iv->height));
 

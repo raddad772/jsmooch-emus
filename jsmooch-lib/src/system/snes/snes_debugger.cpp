@@ -292,8 +292,8 @@ static void setup_image_view_palettes(SNES::core& th, debugger_interface &dbgr)
     iv->width = 16 * PAL_BOX_SIZE_W_BORDER;
     iv->height = ((16 * PAL_BOX_SIZE_W_BORDER) * 2) + 2;
 
-    iv->viewport.exists = 1;
-    iv->viewport.enabled = 1;
+    iv->viewport.exists = true;
+    iv->viewport.enabled = true;
     iv->viewport.p[0] = (ivec2){ 0, 0 };
     iv->viewport.p[1] = ivec2(static_cast<i32>(iv->width), static_cast<i32>(iv->height));
 
@@ -347,8 +347,8 @@ static void setup_image_view_ppu_obj_tiles(SNES::core &th, debugger_interface &d
 
     iv->width = 542;
     iv->height = 256;
-    iv->viewport.exists = 1;
-    iv->viewport.enabled = 1;
+    iv->viewport.exists = true;
+    iv->viewport.enabled = true;
     iv->viewport.p[0] = (ivec2) {0, 0};
     iv->viewport.p[1] = (ivec2) {542, 256};
 
@@ -378,8 +378,8 @@ static void setup_image_view_ppu_tilemaps(SNES::core &th, debugger_interface &db
 
     iv->width = 1024;
     iv->height = 1024;
-    iv->viewport.exists = 1;
-    iv->viewport.enabled = 1;
+    iv->viewport.exists = true;
+    iv->viewport.enabled = true;
     iv->viewport.p[0] = (ivec2) {0, 0};
     iv->viewport.p[1] = (ivec2) {1024, 1024};
 
@@ -402,8 +402,8 @@ static void setup_image_view_ppu_layers(SNES::core &th, debugger_interface &dbgr
 
     iv->width = 256;
     iv->height = 224;
-    iv->viewport.exists = 1;
-    iv->viewport.enabled = 1;
+    iv->viewport.exists = true;
+    iv->viewport.enabled = true;
     iv->viewport.p[0] = (ivec2){ 0, 0 };
     iv->viewport.p[1] = (ivec2){ 256, 224 };
 
