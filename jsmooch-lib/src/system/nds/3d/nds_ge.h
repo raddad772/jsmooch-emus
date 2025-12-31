@@ -417,16 +417,17 @@ struct GE {
     struct {
         struct {
             i32 projection_ptr{};
-            i32 position_vector_ptr{};
+            i32 view_vector_ptr{};
             i32 texture_ptr{};
 
-            MATRIX position[32]{};
+            MATRIX view[32]{};
             MATRIX vector[32]{};
             MATRIX projection[16]{};
             MATRIX texture[16]{};
         } stacks{};
-        MATRIX position{}, texture{}, projection{}, vector{};
+        MATRIX view{}, texture{}, projection{}, vector{};
         MATRIX clip{};
+        MATRIX debug_view{}, debug_clip{};
     } matrices{};
 
     struct {
@@ -453,7 +454,7 @@ struct GE {
                 u32 test_busy : 1;
                 u32 box_test_result : 1;
                 u32 _r1 : 6;
-                u32 position_vector_matrix_stack_level: 5;
+                u32 view_vector_matrix_stack_level: 5;
                 u32 projection_matrix_stack_level : 1;
                 u32 matrix_stack_busy : 1;
                 u32 matrix_stack_over_or_underflow_error : 1;
@@ -503,7 +504,7 @@ struct GE {
             i16 original_uv[2]{};
             i16 x{},y{},z{},w{};
 
-            VTX_list input_list{};
+            VTX_list input_list{}, debug_input_list{};
         } vtx{};
 
         struct {
@@ -573,14 +574,14 @@ public:
 
     void terminate_poly_strip();
 
-    void transform_vertex_on_ingestion(VTX_list_node *node);
+    void transform_vertex_on_ingestion(VTX_list_node *node, i32 *clipmatrix);
     void clip_verts_on_plane(u32 comp, u32 attribs, VTX_list *vertices);
     void clip_verts(POLY *out);
     void calculate_clip_matrix();
     u32 commit_vertex(VTX_list_node *v, i32 xx, i32 yy, i32 zz, i32 ww, i32 *uv, u32 cr, u32 cg, u32 cb, BUFFERS *b);
     void finalize_verts_and_get_first_addr(POLY *poly, BUFFERS *b);
     void evaluate_edges(POLY *poly, u32 expected_winding_order, BUFFERS *b);
-    void ingest_poly(u32 in_winding_order, BUFFERS *b);
+    void ingest_poly(u32 in_winding_order, BUFFERS *b, VTX_list *vtx_list);
     void ingest_vertex();
 };
 

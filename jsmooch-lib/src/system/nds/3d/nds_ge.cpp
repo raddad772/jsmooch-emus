@@ -55,18 +55,22 @@ static void pprint_matrix(const char *n, i32 *s) {
 #define DATA cur_cmd.data
 
 #define VTX_LIST params.vtx.input_list
-#define MS_POSITION_VECTOR_PTR matrices.stacks.position_vector_ptr
+#define DEBUG_VTX_LIST params.vtx.debug_input_list
+#define MS_view_vector_PTR matrices.stacks.view_vector_ptr
 #define MS_TEXTURE_PTR matrices.stacks.texture_ptr
 #define MS_PROJECTION_PTR matrices.stacks.projection_ptr
-#define MS_POSITION matrices.stacks.position
+#define MS_VIEW matrices.stacks.view
 #define MS_TEXTURE matrices.stacks.texture
 #define MS_PROJECTION matrices.stacks.projection
 #define MS_VECTOR matrices.stacks.vector
-#define M_POSITION matrices.position
+#define M_VIEW matrices.view
+#define M_VIEW_DEBUG matrices.debug_view
+
 #define M_TEXTURE matrices.texture
 #define M_PROJECTION matrices.projection
 #define M_VECTOR matrices.vector
 #define M_CLIP matrices.clip
+#define M_CLIP_DEBUG matrices.debug_clip
 #define M_SZ sizeof(MATRIX)
 #define GXSTAT io.GXSTAT
 
@@ -250,10 +254,13 @@ void GE::reset()
     // Load identity matrices everywhere
     identity_matrix(M_PROJECTION);
     identity_matrix(M_CLIP);
-    identity_matrix(M_POSITION);
+    identity_matrix(M_CLIP_DEBUG);
+    identity_matrix(M_VIEW);
+    identity_matrix(M_VIEW_DEBUG);
     identity_matrix(M_TEXTURE);
     identity_matrix(M_VECTOR);
     VTX_LIST.init();
+    DEBUG_VTX_LIST.init();
     fifo.head = fifo.tail = fifo.len = 0;
     fifo.pausing_cpu = 0;
     printfifo("\nWAITING CMD=1 (reset)");
@@ -327,7 +334,12 @@ void GE::calculate_clip_matrix()
     clip_mtx_dirty = false;
     // Clip matrix = projection * position
     memcpy(M_CLIP, M_PROJECTION, M_SZ);
-    matrix_multiply_4x4(M_CLIP, M_POSITION);
+    matrix_multiply_4x4(M_CLIP, M_VIEW);
+    if (debug_cam.enabled) {
+        memcpy(M_CLIP_DEBUG, M_PROJECTION, M_SZ);
+        matrix_multiply_4x4(M_CLIP_DEBUG, debug_cam.mtx);
+        matrix_multiply_4x4(M_CLIP_DEBUG, M_VIEW);
+    }
 }
 
 void GE::cmd_MTX_PUSH()
@@ -343,11 +355,11 @@ void GE::cmd_MTX_PUSH()
             break;
         case 1:
         case 2:
-            GXSTAT.matrix_stack_over_or_underflow_error |= MS_POSITION_VECTOR_PTR > 30;
-            memcpy(&MS_POSITION[MS_POSITION_VECTOR_PTR & 31], &M_POSITION, M_SZ);
-            memcpy(&MS_VECTOR[MS_POSITION_VECTOR_PTR & 31], &M_VECTOR, M_SZ);
-            MS_POSITION_VECTOR_PTR = (MS_POSITION_VECTOR_PTR + 1) & 63;
-            GXSTAT.position_vector_matrix_stack_level = MS_POSITION_VECTOR_PTR;
+            GXSTAT.matrix_stack_over_or_underflow_error |= MS_view_vector_PTR > 30;
+            memcpy(&MS_VIEW[MS_view_vector_PTR & 31], &M_VIEW, M_SZ);
+            memcpy(&MS_VECTOR[MS_view_vector_PTR & 31], &M_VECTOR, M_SZ);
+            MS_view_vector_PTR = (MS_view_vector_PTR + 1) & 63;
+            GXSTAT.view_vector_matrix_stack_level = MS_view_vector_PTR;
             break;
         case 3:
             memcpy(&MS_TEXTURE[MS_TEXTURE_PTR], &M_TEXTURE, M_SZ);
@@ -373,12 +385,12 @@ void GE::cmd_MTX_POP()
             break;
         case 1:
         case 2: {
-            i32 n = ((i32)DATA[0] << 26) >> 26;
-            MS_POSITION_VECTOR_PTR = (MS_POSITION_VECTOR_PTR - n) & 63;
-            GXSTAT.matrix_stack_over_or_underflow_error |= (MS_POSITION_VECTOR_PTR) > 30;
-            GXSTAT.position_vector_matrix_stack_level = MS_POSITION_VECTOR_PTR;
-            memcpy(&M_POSITION, &MS_POSITION[MS_POSITION_VECTOR_PTR], M_SZ);
-            memcpy(&M_VECTOR, &MS_VECTOR[MS_POSITION_VECTOR_PTR], M_SZ);
+            i32 n = (static_cast<i32>(DATA[0]) << 26) >> 26;
+            MS_view_vector_PTR = (MS_view_vector_PTR - n) & 63;
+            GXSTAT.matrix_stack_over_or_underflow_error |= (MS_view_vector_PTR) > 30;
+            GXSTAT.view_vector_matrix_stack_level = MS_view_vector_PTR;
+            memcpy(&M_VIEW, &MS_VIEW[MS_view_vector_PTR], M_SZ);
+            memcpy(&M_VECTOR, &MS_VECTOR[MS_view_vector_PTR], M_SZ);
             clip_mtx_dirty = true;
             break; }
         case 3:
@@ -402,7 +414,7 @@ void GE::cmd_MTX_STORE()
             u32 n = DATA[0] & 0x1F;
             GXSTAT.matrix_stack_over_or_underflow_error |= n > 30;
             memcpy(&MS_VECTOR[n], &M_VECTOR, M_SZ);
-            memcpy(&MS_POSITION[n], &M_POSITION, M_SZ);
+            memcpy(&MS_VIEW[n], &M_VIEW, M_SZ);
             break; }
         case 3:
             memcpy(&MS_TEXTURE[0], &M_TEXTURE, M_SZ);
@@ -423,7 +435,7 @@ void GE::cmd_MTX_RESTORE()
             u32 n = DATA[0] & 0x1F;
             GXSTAT.matrix_stack_over_or_underflow_error |= n > 30;
             memcpy(&M_VECTOR, &MS_VECTOR[n], M_SZ);
-            memcpy(&M_POSITION, &MS_POSITION[n], M_SZ);
+            memcpy(&M_VIEW, &MS_VIEW[n], M_SZ);
             clip_mtx_dirty = true;
             break; }
         case 3:
@@ -440,11 +452,11 @@ void GE::cmd_MTX_IDENTITY()
             clip_mtx_dirty = true;
             return;
         case 1:
-            identity_matrix(M_POSITION);
+            identity_matrix(M_VIEW);
             clip_mtx_dirty = true;
             return;
         case 2:
-            identity_matrix(M_POSITION);
+            identity_matrix(M_VIEW);
             identity_matrix(M_VECTOR);
             clip_mtx_dirty = true;
             return;
@@ -462,11 +474,11 @@ void GE::cmd_MTX_LOAD_4x4()
             clip_mtx_dirty = true;
             return;
         case 1:
-            matrix_load_4x4(M_POSITION, (i32 *) DATA);
+            matrix_load_4x4(M_VIEW, (i32 *) DATA);
             clip_mtx_dirty = true;
             return;
         case 2:
-            matrix_load_4x4(M_POSITION, (i32 *) DATA);
+            matrix_load_4x4(M_VIEW, (i32 *) DATA);
             matrix_load_4x4(M_VECTOR, (i32 *) DATA);
             clip_mtx_dirty = true;
             return;
@@ -484,11 +496,11 @@ void GE::cmd_MTX_LOAD_4x3()
             clip_mtx_dirty = true;
             return;
         case 1:
-            matrix_load_4x3(M_POSITION, (i32 *) DATA);
+            matrix_load_4x3(M_VIEW, (i32 *) DATA);
             clip_mtx_dirty = true;
             return;
         case 2:
-            matrix_load_4x3(M_POSITION, (i32 *) DATA);
+            matrix_load_4x3(M_VIEW, (i32 *) DATA);
             matrix_load_4x3(M_VECTOR, (i32 *) DATA);
             clip_mtx_dirty = true;
             return;
@@ -517,11 +529,11 @@ void GE::cmd_MTX_MULT_4x4()
             clip_mtx_dirty = true;
             return;
         case 1: //  pos/coord matrix
-            matrix_multiply_4x4(M_POSITION, (i32 *)DATA);
+            matrix_multiply_4x4(M_VIEW, (i32 *)DATA);
             clip_mtx_dirty = true;
             return;
         case 2: // both pos/coord and dir/vector matrices
-            matrix_multiply_4x4(M_POSITION, (i32 *)DATA);
+            matrix_multiply_4x4(M_VIEW, (i32 *)DATA);
             matrix_multiply_4x4(M_VECTOR, (i32 *)DATA);
             clip_mtx_dirty = true;
             return;
@@ -539,11 +551,11 @@ void GE::cmd_MTX_MULT_4x3()
             clip_mtx_dirty = true;
             return;
         case 1: //  pos/coord matrix
-            matrix_multiply_4x3(M_POSITION, (i32 *)DATA);
+            matrix_multiply_4x3(M_VIEW, (i32 *)DATA);
             clip_mtx_dirty = true;
             return;
         case 2: // both pos/coord and dir/vector matrices
-            matrix_multiply_4x3(M_POSITION, (i32 *)DATA);
+            matrix_multiply_4x3(M_VIEW, (i32 *)DATA);
             matrix_multiply_4x3(M_VECTOR, (i32 *)DATA);
             clip_mtx_dirty = true;
             return;
@@ -562,11 +574,11 @@ void GE::cmd_MTX_MULT_3x3()
             clip_mtx_dirty = true;
             return;
         case 1: //  pos/coord matrix
-            matrix_multiply_3x3(M_POSITION, (i32 *)DATA);
+            matrix_multiply_3x3(M_VIEW, (i32 *)DATA);
             clip_mtx_dirty = true;
             return;
         case 2: // both pos/coord and dir/vector matrices
-            matrix_multiply_3x3(M_POSITION, (i32 *)DATA);
+            matrix_multiply_3x3(M_VIEW, (i32 *)DATA);
             matrix_multiply_3x3(M_VECTOR, (i32 *)DATA);
             clip_mtx_dirty = true;
             return;
@@ -585,7 +597,7 @@ void GE::cmd_MTX_SCALE()
             return;
         case 1:
         case 2:
-            matrix_scale(M_POSITION, (i32 *)DATA);
+            matrix_scale(M_VIEW, (i32 *)DATA);
             clip_mtx_dirty = true;
             return;
         case 3:
@@ -602,11 +614,11 @@ void GE::cmd_MTX_TRANS()
             clip_mtx_dirty = true;
             return;
         case 1:
-            matrix_translate(M_POSITION, (i32 *)DATA);
+            matrix_translate(M_VIEW, (i32 *)DATA);
             clip_mtx_dirty = true;
             return;
         case 2:
-            matrix_translate(M_POSITION, (i32 *)DATA);
+            matrix_translate(M_VIEW, (i32 *)DATA);
             matrix_translate(M_VECTOR, (i32 *)DATA);
             clip_mtx_dirty = true;
             return;
@@ -716,7 +728,7 @@ static inline u32 C5to18(u32 c) {
     return c ? ((c << 12) + 0xFFF) : 0;
 }
 
-void GE::transform_vertex_on_ingestion(VTX_list_node *node)
+void GE::transform_vertex_on_ingestion(VTX_list_node *node, i32 *clipmatrix)
 {
     if (clip_mtx_dirty) calculate_clip_matrix();
     node->data.color[0] = C5to18(params.vtx.color[0]);
@@ -725,10 +737,10 @@ void GE::transform_vertex_on_ingestion(VTX_list_node *node)
     node->data.processed = 0;
 
     i64 tmp[4] = {static_cast<i64>(params.vtx.x), static_cast<i64>(params.vtx.y), static_cast<i64>(params.vtx.z), 1 << 12};
-    node->data.xyzw[0] = static_cast<i32>((tmp[0] * M_CLIP[0] + tmp[1] * M_CLIP[4] + tmp[2] * M_CLIP[8] + tmp[3] * M_CLIP[12]) >> 12);
-    node->data.xyzw[1] = static_cast<i32>((tmp[0] * M_CLIP[1] + tmp[1] * M_CLIP[5] + tmp[2] * M_CLIP[9] + tmp[3] * M_CLIP[13]) >> 12);
-    node->data.xyzw[2] = static_cast<i32>((tmp[0] * M_CLIP[2] + tmp[1] * M_CLIP[6] + tmp[2] * M_CLIP[10] + tmp[3] * M_CLIP[14]) >> 12);
-    node->data.xyzw[3] = static_cast<i32>((tmp[0] * M_CLIP[3] + tmp[1] * M_CLIP[7] + tmp[2] * M_CLIP[11] + tmp[3] * M_CLIP[15]) >> 12);
+    node->data.xyzw[0] = static_cast<i32>((tmp[0] * clipmatrix[0] + tmp[1] * clipmatrix[4] + tmp[2] * clipmatrix[8] + tmp[3] * clipmatrix[12]) >> 12);
+    node->data.xyzw[1] = static_cast<i32>((tmp[0] * clipmatrix[1] + tmp[1] * clipmatrix[5] + tmp[2] * clipmatrix[9] + tmp[3] * clipmatrix[13]) >> 12);
+    node->data.xyzw[2] = static_cast<i32>((tmp[0] * clipmatrix[2] + tmp[1] * clipmatrix[6] + tmp[2] * clipmatrix[10] + tmp[3] * clipmatrix[14]) >> 12);
+    node->data.xyzw[3] = static_cast<i32>((tmp[0] * clipmatrix[3] + tmp[1] * clipmatrix[7] + tmp[2] * clipmatrix[11] + tmp[3] * clipmatrix[15]) >> 12);
 
     if (params.poly.current.tex_param.texture_coord_transform_mode == NDS_TCTM_vertex) {
         node->data.uv[0] = ((tmp[0]*M_TEXTURE[0] + tmp[1]*M_TEXTURE[4] + tmp[2]*M_TEXTURE[8]) >> 24) + params.vtx.original_uv[0];
@@ -1047,7 +1059,7 @@ static void list_reverse(VTX_list *l)
     }
 }
 
-void GE::ingest_poly(u32 in_winding_order, BUFFERS *b) {
+void GE::ingest_poly(u32 in_winding_order, BUFFERS *b, VTX_list *vtx_list) {
     u32 addr = b->polygon_index;
 
     POLY *out = &b->polygon[addr];
@@ -1057,23 +1069,22 @@ void GE::ingest_poly(u32 in_winding_order, BUFFERS *b) {
     out->tex_param.u = params.poly.current.tex_param.u;
     out->pltt_base = params.poly.current.pltt_base;
 
-    copy_vertex_list_into(&out->vertex_list, &VTX_LIST);
+    copy_vertex_list_into(&out->vertex_list, vtx_list);
     if (params.vtx_strip.mode == QUAD_STRIP) {
         vertex_list_swap_last_two(&out->vertex_list);
     }
 
     if (b->is_debug) {
-        auto *v = out->vertex_list.first;
+        // Multiply vertex list by in-built debug matrix
+        /*auto *v = out->vertex_list.first;
         for (u32 i = 0; i < out->vertex_list.len; i++) {
             i64 tmp[4] = {static_cast<i64>(v->data.xyzw[0]), static_cast<i64>(v->data.xyzw[1]), v->data.xyzw[2], v->data.xyzw[3]};
             v->data.xyzw[0] = static_cast<i32>((tmp[0] * debug_cam.mtx[0] + tmp[1] * debug_cam.mtx[4] + tmp[2] * debug_cam.mtx[8] + tmp[3] * debug_cam.mtx[12]) >> 12);
             v->data.xyzw[1] = static_cast<i32>((tmp[0] * debug_cam.mtx[1] + tmp[1] * debug_cam.mtx[5] + tmp[2] * debug_cam.mtx[9] + tmp[3] * debug_cam.mtx[13]) >> 12);
             v->data.xyzw[2] = static_cast<i32>((tmp[0] * debug_cam.mtx[2] + tmp[1] * debug_cam.mtx[6] + tmp[2] * debug_cam.mtx[10] + tmp[3] * debug_cam.mtx[14]) >> 12);
             v->data.xyzw[3] = static_cast<i32>((tmp[0] * debug_cam.mtx[3] + tmp[1] * debug_cam.mtx[7] + tmp[2] * debug_cam.mtx[11] + tmp[3] * debug_cam.mtx[15]) >> 12);
-
             v = v->next;
-        }
-        // Multiply vertex list by in-built debug matrix
+        }*/
     }
 
     const VTX_list_node *v0 = out->vertex_list.first;
@@ -1144,7 +1155,7 @@ void GE::ingest_poly(u32 in_winding_order, BUFFERS *b) {
     evaluate_edges(out, in_winding_order, b);
 
     b->polygon_index++;
-    if (b->polygon_index >= 2048) {
+    if (b->polygon_index >= 2048 && !b->is_debug) {
         re->io.DISP3DCNT.poly_vtx_ram_overflow = 1;
     }
     //printf("\npoly %d sides:%d front_facing:%d", addr, out->num_vertices, out->front_facing);
@@ -1159,43 +1170,54 @@ void GE::ingest_vertex() {
 
     // Add to vertex cache
     VTX_list_node *o = vertex_list_add_to_end(&VTX_LIST, 0);
-    transform_vertex_on_ingestion(o);
+    transform_vertex_on_ingestion(o, M_CLIP);
+    if (debug_cam.enabled) {
+        VTX_list_node *o2 = vertex_list_add_to_end(&DEBUG_VTX_LIST, 0);
+        transform_vertex_on_ingestion(o2, M_CLIP_DEBUG);
+    }
 
     switch(params.vtx_strip.mode) {
         case SEPERATE_TRIANGLES:
             if (VTX_LIST.len >= 3) {
                 printfcd("\nDO POLY SEPARATE TRI");
                 winding_order = 0;
-                ingest_poly(CCW, &buffers[ge_has_buffer]);
-                if (debug_cam.enabled) ingest_poly(CCW, &debug_cam.buffers[ge_has_buffer]);
+                ingest_poly(CCW, &buffers[ge_has_buffer], &VTX_LIST);
+                if (debug_cam.enabled) ingest_poly(CCW, &debug_cam.buffers[ge_has_buffer], &DEBUG_VTX_LIST);
                 // clear the cache
                 VTX_LIST.init();
+                if (debug_cam.enabled) DEBUG_VTX_LIST.init();
             }
             break;
         case SEPERATE_QUADS:
             if (VTX_LIST.len >= 4) {
                 printfcd("\nDO POLY SEPARATE QUAD");
                 winding_order = 0;
-                ingest_poly(CCW, &buffers[ge_has_buffer]);
-                if (debug_cam.enabled) ingest_poly(CCW, &debug_cam.buffers[ge_has_buffer]);
+                ingest_poly(CCW, &buffers[ge_has_buffer], &VTX_LIST);
+                if (debug_cam.enabled) ingest_poly(CCW, &debug_cam.buffers[ge_has_buffer], &DEBUG_VTX_LIST);
                 VTX_LIST.init();
+                if (debug_cam.enabled) DEBUG_VTX_LIST.init();
             }
             break;
         case TRIANGLE_STRIP:
             if (VTX_LIST.len >= 3) {
-                ingest_poly(winding_order, &buffers[ge_has_buffer]);
-                if (debug_cam.enabled) ingest_poly(winding_order, &debug_cam.buffers[ge_has_buffer]);
+                ingest_poly(winding_order, &buffers[ge_has_buffer], &VTX_LIST);
+                if (debug_cam.enabled) ingest_poly(winding_order, &debug_cam.buffers[ge_has_buffer], &DEBUG_VTX_LIST);
                 winding_order ^= 1;
                 vertex_list_delete_first(&VTX_LIST);
+                if (debug_cam.enabled) vertex_list_delete_first(&DEBUG_VTX_LIST);
             }
             break;
         case QUAD_STRIP:
             if (VTX_LIST.len >= 4) {
                 winding_order = 0;
-                ingest_poly(winding_order, &buffers[ge_has_buffer]);
-                if (debug_cam.enabled) ingest_poly(winding_order, &debug_cam.buffers[ge_has_buffer]);
+                ingest_poly(winding_order, &buffers[ge_has_buffer], &VTX_LIST);
+                if (debug_cam.enabled) ingest_poly(winding_order, &debug_cam.buffers[ge_has_buffer], &DEBUG_VTX_LIST);
                 vertex_list_delete_first(&VTX_LIST);
                 vertex_list_delete_first(&VTX_LIST);
+                if (debug_cam.enabled) {
+                    vertex_list_delete_first(&DEBUG_VTX_LIST);
+                    vertex_list_delete_first(&DEBUG_VTX_LIST);
+                }
             }
             break;
     }
@@ -1497,6 +1519,7 @@ void GE::cmd_POLYGON_ATTR()
 void GE::terminate_poly_strip()
 {
     VTX_LIST.init();
+    if (debug_cam.enabled) DEBUG_VTX_LIST.init();
     winding_order = 0;
 }
 
@@ -1905,7 +1928,7 @@ void GE::write(u32 addr, u8 sz, u32 val)
             if (val & 0x8000) {
                 GXSTAT.matrix_stack_over_or_underflow_error = 0;
                 GXSTAT.projection_matrix_stack_level = 0;
-                matrices.stacks.position_vector_ptr = 0;
+                matrices.stacks.view_vector_ptr = 0;
                 matrices.stacks.texture_ptr = 0;
             }
             GXSTAT.cmd_fifo_irq_mode = (val >> 30) & 3;

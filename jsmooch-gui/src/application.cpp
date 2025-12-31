@@ -1017,7 +1017,6 @@ void imgui_jsmooch_app::render_image_views()
                 if (ImGui::IsWindowFocused(ImGuiFocusedFlags_RootAndChildWindows) && myv.view->image.FPS_controls.enable) {
                     window_steal_input = true;
                     // TODO: get inputs here!
-                    //printf("\nPRE-ROT: %f", myv.view->image.FPS_controls.rot[1]);
                     myv.view->image.FPS_controls.rot[1] += 0.00625f;
                 }
                 render_debugger_widgets(myv.view->options);

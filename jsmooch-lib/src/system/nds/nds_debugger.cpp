@@ -180,11 +180,11 @@ void core::update_debug_cam_matrix() {
     float pitch = c->rot[0] * TWO_PI;
     float yaw   = c->rot[1] * TWO_PI;
 
-    /* Clamp pitch, wrap yaw */
+    // Clamp pitch, wrap yaw
     pitch = clampf(pitch, -MAX_PITCH, MAX_PITCH);
     yaw   = wrap_angle(yaw);
 
-    /* Write back normalized values (optional but useful) */
+    // Write back normalized values
     c->rot[0] = pitch / TWO_PI;
     c->rot[1] = yaw   / TWO_PI;
 
@@ -193,17 +193,17 @@ void core::update_debug_cam_matrix() {
     float cy = cosf(yaw);
     float sy = sinf(yaw);
 
-    /* Forward vector */
+    // Forward vector
     float fx =  cp * sy;
     float fy =  sp;
     float fz = -cp * cy;
 
-    /* Right vector */
+    // Right vector
     float rx =  cy;
     float ry =  0.0f;
     float rz =  sy;
 
-    /* Up vector (cross(right, forward)) */
+    // Up vector (cross(right, forward))
     float ux = -sp * sy;
     float uy =  cp;
     float uz =  sp * cy;
@@ -214,7 +214,7 @@ void core::update_debug_cam_matrix() {
 
     float m[16];
 
-    /* Row-major VIEW matrix */
+    // Row-major VIEW matrix
     m[0]  =  rx;  m[1]  =  ry;  m[2]  =  rz;  m[3]  = -(rx*px + ry*py + rz*pz);
     m[4]  =  ux;  m[5]  =  uy;  m[6]  =  uz;  m[7]  = -(ux*px + uy*py + uz*pz);
     m[8]  = -fx;  m[9]  = -fy;  m[10] = -fz;  m[11] =  (fx*px + fy*py + fz*pz);
