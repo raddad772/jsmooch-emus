@@ -162,8 +162,15 @@ struct memory_view_module {
     u32 addr_start{}, addr_end{};
     u32 addr_digits{};
     u32 id{};
+    struct {
+        char names[50][50]{};
+        u32 current{};
+        u32 num{};
+    } text_views{};
     void *read_mem16_ptr{};
     void (*read_mem16)(void *ptr, u32 addr, void *dest){};
+    void *render_ascii_ptr{};
+    u8 (*render_ascii)(void *ptr, u32 interp_kind, u8 ch){};
     char name[50]{};
     char *input_buf{};
 };

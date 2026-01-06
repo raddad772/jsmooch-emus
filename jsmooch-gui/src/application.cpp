@@ -256,6 +256,7 @@ void imgui_jsmooch_app::render_memory_view() {
                     mv->display_start_addr &= (1 << (4 * mm->addr_digits)) - 1;
                 }
 
+
                 char format_string[20];
                 snprintf(format_string, 20, "%%0%dx", mm->addr_digits);
 
@@ -274,6 +275,24 @@ void imgui_jsmooch_app::render_memory_view() {
 
                 u32 old_top_displayed_line = mv->display_start_addr << 4;
 
+                int item_selected_text = mm->text_views.current;
+                if (mm->text_views.num > 1) {
+                    if (ImGui::BeginCombo("Text Interp", mm->text_views.names[mm->text_views.current], flags)) {
+                        for (int n = 0; n < mm->text_views.num; n++) {
+                            const bool is_selected = (item_selected_text == n);
+                            if (ImGui::Selectable(mm->text_views.names[n], is_selected))
+                                item_selected_text = n;
+
+                            // Set the initial focus when opening the combo (scrolling + keyboard navigation focus)
+                            if (is_selected)
+                                ImGui::SetItemDefaultFocus();
+                        }
+                        ImGui::EndCombo();
+                    }
+
+                }
+
+
                 // OK start clipper
                 static ImGuiTableFlags itflags =
                         ImGuiTableFlags_ScrollY | ImGuiTableFlags_RowBg | ImGuiTableFlags_BordersOuter |
@@ -284,7 +303,7 @@ void imgui_jsmooch_app::render_memory_view() {
                     ImGui::TableSetupScrollFreeze(0, 1); // Make top row always visible
                     ImGui::TableSetupColumn("Addr", ImGuiTableColumnFlags_None, mm->addr_digits);
                     ImGui::TableSetupColumn("Data", ImGuiTableColumnFlags_None, 32 + 16);
-                    ImGui::TableSetupColumn("ASCII", ImGuiTableColumnFlags_None, 17);
+                    ImGui::TableSetupColumn("Text", ImGuiTableColumnFlags_None, 17);
                     ImGui::TableHeadersRow();
                     ImGuiListClipper clipper;
                     u32 num_lines = ((mm->addr_end - mm->addr_start) + 1) >> 4;
@@ -314,11 +333,16 @@ void imgui_jsmooch_app::render_memory_view() {
                                 snprintf(hp, 50 - (i * 3), "%02X ", db);
                                 hp += 3;
 
-                                if ((db >= 32) && (db <= 126)) {
-
+                                if (mm->render_ascii) {
+                                    db = mm->render_ascii(mm->render_ascii_ptr, item_selected_text, db);
                                 }
                                 else {
-                                    db = '.';
+                                    if ((db >= 32) && (db <= 126)) {
+
+                                    }
+                                    else {
+                                        db = '.';
+                                    }
                                 }
                                 snprintf(ap, 18 - i, "%c", db);
                                 ap++;

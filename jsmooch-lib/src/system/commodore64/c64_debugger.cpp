@@ -212,11 +212,43 @@ static void setup_dbglog(core &th, debugger_interface &dbgr)
     cpucat.add_node(dv, "Writes", "cpu.write", C64_CAT_CPU_WRITE, cpu_color);
 }
 
+u8 petscii_to_ascii(u8 db) {
+    db &= 0x7F;
+    if (db == 0) return 32;
+    if (db < 0x20) return db + 0x40;
+    if ((db >= 0x20) && (db < 0x40)) return db;
+    return '.';
+}
+
+static u8 render_mv_ascii(void *ptr, u32 kind, u8 db) {
+    switch (kind) {
+        case 0: // PETSCII
+            db = petscii_to_ascii(db);
+            break;
+        default: // ASCII
+            if ((db >= 32) && (db <= 126)) {
+
+            }
+            else {
+                db = '.';
+            }
+            break;
+    }
+    return db;
+}
+
+
 static void setup_memory_view(core& th, debugger_interface &dbgr) {
     th.dbg.memory = dbgr.make_view(dview_memory);
     debugger_view *dview = &th.dbg.memory.get();
     memory_view *mv = &dview->memory;
     mv->add_module("CPU Memory", 0, 4, 0, 0x7FFF, &th, &readcpumem);
+    auto *mm = mv->get_module(0);
+    mm->text_views.num = 2;
+    snprintf(mm->text_views.names[0], sizeof(mm->text_views.names[0]), "CHARGEN");
+    snprintf(mm->text_views.names[1], sizeof(mm->text_views.names[1]), "ASCII");
+    mm->render_ascii_ptr = nullptr;
+    mm->render_ascii = &render_mv_ascii;
 }
 
 static void setup_waveforms(core& th, debugger_interface *dbgr)
