@@ -90,14 +90,26 @@ static void fill_disassembly_view(void *nesptr, disassembly_view &dview)
     th->dbg.dasm.P->int8_data = th->cpu.regs.P.getbyte();
 }
 
-    
+
+static void readram(void *ptr, u32 addr, void *dest)
+{
+    // Read 16 bytes from addr into dest
+    auto *out = static_cast<u8 *>(dest);
+    auto *th = static_cast<core *>(ptr);
+    for (u32 i = 0; i < 16; i++) {
+        *out = th->mem.RAM[(addr + i) & 0xFFFF];
+        out++;
+    }
+}
+
+
 static void readcpumem(void *ptr, u32 addr, void *dest)
 {
     // Read 16 bytes from addr into dest
     auto *out = static_cast<u8 *>(dest);
     auto *th = static_cast<core *>(ptr);
     for (u32 i = 0; i < 16; i++) {
-        *out = th->mem.read_main_bus((addr + i) & 0x7FFF, 0, false);
+        *out = th->mem.read_main_bus((addr + i) & 0xFFFF, 0, false);
         out++;
     }
 }
@@ -212,9 +224,9 @@ static void setup_dbglog(core &th, debugger_interface &dbgr)
     cpucat.add_node(dv, "Writes", "cpu.write", C64_CAT_CPU_WRITE, cpu_color);
 }
 
-u8 petscii_to_ascii(u8 db) {
+static u8 chargen_to_ascii(u8 db) {
     db &= 0x7F;
-    if (db == 0) return 32;
+    if (db == 0) return '@';
     if (db < 0x20) return db + 0x40;
     if ((db >= 0x20) && (db < 0x40)) return db;
     return '.';
@@ -222,8 +234,8 @@ u8 petscii_to_ascii(u8 db) {
 
 static u8 render_mv_ascii(void *ptr, u32 kind, u8 db) {
     switch (kind) {
-        case 0: // PETSCII
-            db = petscii_to_ascii(db);
+        case 0: // CHARGEN
+            db = chargen_to_ascii(db);
             break;
         default: // ASCII
             if ((db >= 32) && (db <= 126)) {
@@ -242,13 +254,23 @@ static void setup_memory_view(core& th, debugger_interface &dbgr) {
     th.dbg.memory = dbgr.make_view(dview_memory);
     debugger_view *dview = &th.dbg.memory.get();
     memory_view *mv = &dview->memory;
-    mv->add_module("CPU Memory", 0, 4, 0, 0x7FFF, &th, &readcpumem);
+    mv->add_module("CPU Main Bus", 0, 4, 0, 0xFFFF, &th, &readcpumem);
+    mv->add_module("RAM", 1, 4, 0, 0xFFFF, &th, &readram);
+
     auto *mm = mv->get_module(0);
     mm->text_views.num = 2;
     snprintf(mm->text_views.names[0], sizeof(mm->text_views.names[0]), "CHARGEN");
     snprintf(mm->text_views.names[1], sizeof(mm->text_views.names[1]), "ASCII");
     mm->render_ascii_ptr = nullptr;
     mm->render_ascii = &render_mv_ascii;
+
+    mm = mv->get_module(1);
+    mm->text_views.num = 2;
+    snprintf(mm->text_views.names[0], sizeof(mm->text_views.names[0]), "CHARGEN");
+    snprintf(mm->text_views.names[1], sizeof(mm->text_views.names[1]), "ASCII");
+    mm->render_ascii_ptr = nullptr;
+    mm->render_ascii = &render_mv_ascii;
+
 }
 
 static void setup_waveforms(core& th, debugger_interface *dbgr)

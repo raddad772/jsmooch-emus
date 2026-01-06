@@ -277,7 +277,7 @@ void imgui_jsmooch_app::render_memory_view() {
 
                 int item_selected_text = mm->text_views.current;
                 if (mm->text_views.num > 1) {
-                    if (ImGui::BeginCombo("Text Interp", mm->text_views.names[mm->text_views.current], flags)) {
+                    if (ImGui::BeginCombo("Text Char. Set", mm->text_views.names[mm->text_views.current], flags)) {
                         for (int n = 0; n < mm->text_views.num; n++) {
                             const bool is_selected = (item_selected_text == n);
                             if (ImGui::Selectable(mm->text_views.names[n], is_selected))
