@@ -289,7 +289,7 @@ void imgui_jsmooch_app::render_memory_view() {
                         }
                         ImGui::EndCombo();
                     }
-
+                    mm->text_views.current = item_selected_text;
                 }
 
 
