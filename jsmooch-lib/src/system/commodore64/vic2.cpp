@@ -13,7 +13,6 @@
 namespace VIC2 {
 
 core::core(C64::core *parent) : bus(parent) {
-    setup_timing();
     for (u32 i = 0; i < 16; i++) {
         palette[i] = color::pepto::get_abgr(i, 1, 50.0f, 100.0f, 100.0f);
     }
@@ -279,17 +278,20 @@ void core::do_g_access() {
     // if ECM is set, address lines 9 and 10 are held low
     u16 addr = rc | ((mtx & 0xFF) << 3) | io.ptr.CB;
     if (io.CR1.ECM) addr &= ~0b11000000000;
-    //if (bad_line) printf("\nV:%d X:%d addr:%04x", vpos, hpos, addr);
+    //if (vpos == 78) printf("\nG V:%d X:%d addr:%04x mtx:%02x", vpos, hpos, addr, mtx & 0xFF);
     g_access = open_bus = read_mem(read_mem_ptr, addr);
 }
 
 void core::mem_access() {
     u32 lcyc = hpos >> 3;
     g_access = 0;
-    if ((lcyc >= 16) && (lcyc <= 55) && state == displaying) {
+    //assert(vc<1000);
+    u32 colo = COLOR[vc];
+    if ((lcyc >= 16) && (lcyc <= 55) && (state == displaying)) {
         do_g_access();
         vmli++;
         vc++;
+        if (vc == 1000) vc = 0;
     }
     else {
         g_access = 0;
@@ -301,19 +303,26 @@ void core::mem_access() {
         signals.AEC = signals.BA;
         u16 addr = vc | io.ptr.VM;
         if (io.CR1.ECM) addr &= ~0b11000000000;
-        //if (bad_line) printf ("\nC V:%d X:%d addr:%04x", vpos, hpos, addr);
-        SCREEN_MTX[vmli] = open_bus = read_mem(read_mem_ptr, addr);
+        //if (vpos == 78) printf ("\n\nC V:%d X:%d addr:%04x VMLI:%d LC:%d", vpos, hpos, addr, vmli, lcyc);
+        assert(vmli < 40);
+        if (bad_line) SCREEN_MTX[vmli] = open_bus = read_mem(read_mem_ptr, addr);
     }
-    mtx = SCREEN_MTX[vmli] | (COLOR[vc] << 8);
+    mtx = SCREEN_MTX[vmli] | (colo << 8);
+    //if (vpos == 78) printf("\nV:%d X:%d val:%03x", vpos, hpos, mtx);
     //if (vc == 50) mtx = SCREEN_MTX[vmli] | (10 << 8);
 }
 
 void core::reload_shifter() {
     u32 reverse = 0;
+    //if (vpos == 78) printf("\nRELOAD SHIFTER %d %02x", hpos, g_access);
     for (u32 i = 0; i < 8; i++) {
         u8 bit = (g_access >> i) & 1;
         reverse |= bit << (7 - i);
     }
+    /*if ((vpos == 78) && (hpos == 432)) {
+        printf("\nFAKE RELOAD!");
+        reverse = 0b11000011;
+    }*/
     px_shifter |= reverse << shift_size;
     shift_size += 8;
     assert(shift_size < 32);
@@ -325,7 +334,6 @@ u8 core::get_color() {
         bg_collide = px_shifter & 1;
         px_shifter >>= 1;
         shift_size = (shift_size > 0) ? shift_size - 1 : 0;
-        //out = bg_collide ? (mtx >> 8) : io.BC[0];
         out = bg_collide ? (mtx >> 8) : io.BC[0];
     }
     else if ((io.CR1.ECM == io.CR1.BMM == 0) && (io.CR2.MCM == 1)) {
@@ -353,7 +361,6 @@ u8 core::get_color() {
     }
     return out;
 }
-
 
 void core::output_px() {
     if (hpos == timing.line.first_col) hborder_on = false;
@@ -397,7 +404,7 @@ void core::cycle() {
             signals.BA = false;
             signals.AEC = false;
             break;
-        case 57:
+        case 58:
             if (rc == 7) {
                 vcbase = vc;
                 if (bad_line) {
@@ -517,7 +524,8 @@ void core::schedule_first() {
 void core::setup_timing() {
     //printf("\nDISPLAY STANDARD %d", bus->display_standard);
     switch (bus->display_standard) {
-        case jsm::NTSC: {
+        case jsm::display_standards::NTSC: {
+            printf("\nNTSC SETUP");
             timing.line.cycles_per = 65;
             timing.line.pixels_per = 520;
             timing.frame.lines_per = 263;
@@ -528,7 +536,8 @@ void core::setup_timing() {
             //  pixels are 412-489-396;
             break;
         }
-        case jsm::PAL: {
+        case jsm::display_standards::PAL: {
+            printf("\nPAL SETUP");
             timing.line.cycles_per = 63;
             timing.line.pixels_per = 504;
             timing.frame.lines_per = 312;
@@ -538,10 +547,11 @@ void core::setup_timing() {
             timing.second.frames_per = 50;
             // pixels are 404-480-380
             break;
-        }
         default:
+            printf("\nCRAP WRONG SETUP");
             assert(1==2);
             return;
+        }
     }
     timing.frame.num_pixels = timing.frame.lines_per * timing.line.pixels_per;
     timing.frame.cycles_per = timing.line.cycles_per * timing.line.pixels_per;

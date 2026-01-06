@@ -54,7 +54,7 @@ struct core : jsm_system {
     u8 open_bus{};
     jsm::systems kind{};
     jsm::regions region{};
-    jsm::display_standards display_standard{};
+    jsm::display_standards display_standard{jsm::display_standards::NTSC};
     u64 master_clock{};
 
     u8 read_io1(u8 addr, u8 old, bool has_effect);

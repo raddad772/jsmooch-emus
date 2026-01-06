@@ -90,7 +90,10 @@ core::core(jsm::regions in_region) : mem(this), vic2(this), region(in_region) {
         case jsm::regions::EUROPE:
             display_standard = jsm::display_standards::PAL;
             break;
+        default:
+            printf("\nREGION? %d", region);
     }
+    vic2.setup_timing();
     vic2.read_mem_ptr = this;
     vic2.read_mem = &read_vic2;
 

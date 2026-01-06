@@ -32,7 +32,7 @@ struct sprite {
 
 struct core {
     explicit core(C64::core *parent);
-    jsm::display_standards display_standard=jsm::display_standards::NTSC;
+    jsm::display_standards display_standard{jsm::display_standards::NTSC};
     void setup_timing();
     void reset();
     void do_raster_compare();

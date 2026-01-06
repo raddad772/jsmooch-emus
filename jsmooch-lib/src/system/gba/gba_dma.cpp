@@ -102,7 +102,7 @@ bool DMA_ch::go() {
     return false;
 }
 
-static constexpr u32 hipri[16] = {
+static constexpr u8 hipri[16] = {
         0, // 0000
         0, // 0001
         1, // 0010
@@ -138,7 +138,7 @@ void block_step_cpu(void *ptr, u64 key, u64 clock, u32 jitter)
 void block_step_dma(void *ptr, u64 key, u64 clock, u32 jitter)
 {
     auto *th = static_cast<GBA::core *>(ptr);
-    u32 chn = hipri[th->dma.bit_mask.normal];
+    const u8 chn = hipri[th->dma.bit_mask.normal];
     th->dma.channel[chn].go();
 }
 
