@@ -16,6 +16,10 @@ core::core(C64::core *parent) : bus(parent) {
     for (u32 i = 0; i < 16; i++) {
         palette[i] = color::pepto::get_abgr(i, 1, 50.0f, 100.0f, 100.0f);
     }
+    for (u32 i = 0; i < 8; i++) {
+        sprites[i].num = i;
+        sprites[i].bit = 1 << i;
+    }
 }
 
 void core::update_IRQs() {
@@ -152,11 +156,8 @@ void core::write_IO(u16 addr, u8 val) {
             update_IRQs();
             return;
         case 0xD013: // LPX
-            printf("\nWARN WRITE LPX!? WHAT TO DO?");
-            // TODO: write?
             return;
         case 0xD014: // LPY
-            printf("\nWARN WRITE LPY!? WHAT TO DO?");
             return;
         case 0xD015:
             io.ME = val;
@@ -325,7 +326,10 @@ void core::reload_shifter() {
     }*/
     px_shifter |= reverse << shift_size;
     shift_size += 8;
-    assert(shift_size < 32);
+    //assert(shift_size < 32);
+    if (shift_size >= 33) {
+        shift_size = 32;
+    }
 }
 
 u8 core::get_color() {
@@ -357,12 +361,51 @@ u8 core::get_color() {
         }
     }
     else {
+        static int a = 1;
+        if (a) {
+            a = 0;
+            // ECM/BMM/MCM
+            printf("\n\n!!!WARN gfx config: %d %d %d", io.CR1.ECM, io.CR1.BMM, io.CR2.MCM);
+        }
         out = 15;
     }
     return out;
 }
 
+void core::shift_sprites() {
+    for (auto &sp : sprites) {
+        if (sp.displaying && sp.shifter.bits_left) {
+            if (sp.shifter.bits_left > 24) {
+                // Countdown til real shift out start
+                sp.shifter.bits_left--;
+                continue;
+            }
+            if (sp.x_expand_flipflop) {
+                if (sp.multicolor) {
+                    sp.shifter.color_latch = (sp.shifter.data >> 30) & 3;
+                    sp.shifter.bits_left -= 2;
+                    sp.shifter.data <<= 2;
+                }
+                else {
+                    sp.shifter.color_latch = (sp.shifter.data >> 31) & 1;
+                    sp.shifter.bits_left -= 1;
+                    sp.shifter.data <<= 1;
+                }
+            }
+            sp.x_expand_flipflop ^= sp.x_expand;
+            if (sp.shifter.bits_left == 0) {
+                sprites_shifting &= ~sp.bit;
+                sp.dma = false;
+                sp.displaying = false;
+            }
+        }
+    }
+}
+
 void core::output_px() {
+    if (sprites_shifting != 0) {
+        shift_sprites();
+    }
     if (hpos == timing.line.first_col) hborder_on = false;
     if (hpos == timing.line.last_col) hborder_on = true;
     if (hpos>timing.line.pixels_per) {
@@ -374,12 +417,37 @@ void core::output_px() {
         shift_size = (shift_size > 0) ? shift_size - 1 : 0;
     }
     else {
-        // TODO: add in color data?
         line_output[hpos] = get_color();
         //line_output[hpos] = state == displaying ? 15 : 9;
         hpos++;
     }
 
+}
+
+void core::sprite_ptr_num(u8 num) {
+    auto &sp = sprites[num];
+    sp.pointer = read_mem(read_mem_ptr, io.ptr.VM | (1000 + num)) << 6;
+    // TODO: signals to pause CPU for sprite data reads
+    if (sp.dma) {
+        u32 addr = sp.pointer | sp.mc;
+        sp.mc = (sp.mc + 3) & 0x3F;
+        sp.shifter.bits_left = 24;
+        sp.shifter.data = (read_mem(read_mem_ptr, addr) << 24) | (read_mem(read_mem_ptr, (addr + 1) & 0x3FFF) << 16) | (read_mem(read_mem_ptr, (addr + 2) & 0x3FFF) << 8);
+    }
+}
+
+void core::check_sprite_shifts() {
+    // Check if any sprites are due to start in the next 8 pixels
+    for (auto &sp : sprites) {
+        if (sp.enabled && sp.displaying) {
+            if (sp.line_x_counter <= 7) {
+                sp.shifter.bits_left += sp.line_x_counter;
+                sprites_shifting |= sp.bit;
+            }
+            else
+                sp.line_x_counter -= 8;
+        }
+    }
 }
 
 void core::cycle() {
@@ -391,7 +459,17 @@ void core::cycle() {
     mem_access();
 
     u32 lcyc = hpos >> 3;
+    // (0-based)
+    // 57, 59, 61 = sprite 0, 1, 2
+    // 0, 2, 4, 6, 8 = sprite 3, 4, 5, 6, 7 pointers
     switch (lcyc) {
+        case 0:
+        case 2:
+        case 4:
+        case 6:
+        case 8:
+            sprite_ptr_num((lcyc >> 1) + 3);
+            break;
         case 11:
             if (bad_line) signals.BA = true;
             break;
@@ -400,11 +478,22 @@ void core::cycle() {
             vmli = 0;
             if (bad_line) rc = 0;
             break;
+        case 14: sprites_15(); break;
+        case 15: sprites_16(); break;
         case 53:
             signals.BA = false;
             signals.AEC = false;
             break;
-        case 58:
+        case 54: sprites_55(); break;
+        case 55: sprites_56(); break;
+        case 57:
+            sprites_58();
+        case 59:
+        case 61:
+            sprite_ptr_num((lcyc - 57) >> 1);
+            break;
+
+            case 58:
             if (rc == 7) {
                 vcbase = vc;
                 if (bad_line) {
@@ -421,6 +510,8 @@ void core::cycle() {
     }
 
     reload_shifter();
+
+    check_sprite_shifts();
 
     for (u32 i = 0; i < 8; i++) {
         output_px();
@@ -474,6 +565,67 @@ void core::update_raster_compare(u16 val) {
     do_raster_compare();
 }
 
+void core::sprites_55() {
+    for (auto & sp : sprites) {
+        if (sp.y_expand) sp.y_expand_flipflop ^= 1;
+    }
+}
+
+/*
+   In the first phases of cycle 55 and 56, the VIC checks for every sprite
+   if the corresponding MxE bit in register $d015 is set and the Y
+   coordinate of the sprite (odd registers $d001-$d00f) match the lower 8
+   bits of RASTER. If this is the case and the DMA for the sprite is still
+   off, the DMA is switched on, MCBASE is cleared, and if the MxYE bit is
+   set the expansion flip flip is reset.
+   */
+void core::sprites_56() {
+    for (auto & sp: sprites) {
+        if (!sp.enabled) continue;
+        if (sp.y == (vpos & 0xFF) && !sp.dma) {
+            sp.dma = true;
+            sp.mcbase = 0;
+            if (sp.y_expand) sp.y_expand_flipflop = 0;
+        }
+    }
+}
+
+/*
+    In the first phase of cycle 58, the MC of every sprite is loaded from
+       its belonging MCBASE (MCBASE->MC) and it is checked if the DMA for the
+       sprite is turned on and the Y coordinate of the sprite matches the lower
+       8 bits of RASTER. If this is the case, the display of the sprite is
+       turned on. */
+void core::sprites_15() {
+    for (auto &sp : sprites) {
+        if (sp.y_expand_flipflop) {
+            sp.mcbase = (sp.mcbase + 2) & 63;
+        }
+    }
+}
+
+void core::sprites_16() {
+    for (auto &sp : sprites) {
+        if (sp.y_expand_flipflop) {
+            sp.mcbase = (sp.mcbase + 1) & 63;
+            if (sp.mcbase == 63) {
+                sp.dma = false;
+                sp.displaying = false;
+            }
+        }
+    }
+}
+
+void core::sprites_58() {
+    for (auto &sp : sprites) {
+        sp.mc = sp.mcbase;
+        if (sp.dma && (sp.y == (vpos & 0xFF))) {
+            sp.displaying = true;
+        }
+        sp.x_expand_flipflop = 1;
+    }
+}
+
 void core::update_vpos(u16 val) {
     vpos = val;
     do_raster_compare();
@@ -500,6 +652,8 @@ void core::new_scanline() {
     if (bus->dbg.events.view.vec) {
         debugger_report_line(bus->dbg.interface, vpos);
     }
+
+
     /*
     A Bad Line Condition is given at any arbitrary clock cycle if, at the
     negative edge of ϕ0 at the beginning of the cycle, RASTER >= $30 and RASTER

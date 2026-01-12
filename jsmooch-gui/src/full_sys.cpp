@@ -701,7 +701,7 @@ void full_system::load_default_ROM()
             //worked = grab_ROM(&ROMs, which, "mm3.gb", nullptr);
             //worked = grab_ROM(&ROMs, which, "toystory.gb", nullptr);
             //worked = grab_ROM(&ROMs, which, "dmg-acid2.gb", nullptr);
-            //worked = grab_ROM(&ROMs, which, "prehistorik.gb", nullptr);
+            worked = grab_ROM(&ROMs, which, "prehistorik.gb", nullptr);
             //worked = grab_ROM(&ROMs, which, "marioland2.gb", nullptr);
             //worked = grab_ROM(&ROMs, which, "tennis.gb", nullptr);
             //worked = grab_ROM(&ROMs, which, "link.gb", nullptr);
@@ -739,7 +739,10 @@ void full_system::load_default_ROM()
             worked = 1;
             break;
         case jsm::systems::COMMODORE64:
-            worked = grab_ROM(&ROMs, which, "capture_tester.prg", nullptr);
+            //worked = grab_ROM(&ROMs, which, "capture_tester.prg", nullptr);
+            //worked = grab_ROM(&ROMs, which, "enduro_racer.prg", nullptr);
+            //worked = grab_ROM(&ROMs, which, "stun_runner.prg", nullptr);
+            worked = grab_ROM(&ROMs, which, "they_are_spraying.prg", nullptr);
             break;
         case jsm::systems::COSMAC_VIP_2k:
         case jsm::systems::COSMAC_VIP_4k:

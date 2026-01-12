@@ -24,10 +24,25 @@ typedef u8 (*read_mem_func)(void *ptr, u16 addr);
 
 struct sprite {
     u16 x{};
+    i32 line_x_counter{};
     u8 y{};
-    bool enabled;
-    bool on_line;
-    bool x_expand, y_expand;
+    u8 num{};
+    u8 bit{};
+    bool multicolor{};
+    bool enabled{};
+    bool displaying{};
+    bool x_expand{}, y_expand{};
+    bool dma{};
+    u8 mc{}, mcbase{};
+    u8 y_expand_flipflop{};
+    u8 x_expand_flipflop{};
+
+    u16 pointer;
+    struct {
+        u32 data{};
+        i32 bits_left{};
+        u8 color_latch{};
+    } shifter{};
 };
 
 struct core {
@@ -45,7 +60,17 @@ struct core {
     void cycle();
     void reload_shifter();
     void do_g_access();
+    void sprites_15();
+    void sprites_16();
+    void sprites_55();
+    void sprites_56();
+    void sprites_58();
+    void sprite_ptr_num(u8 num);
+    void check_sprite_shifts();
+    void shift_sprites();
     u8 get_color();
+
+    u8 sprites_shifting{};
 
     u8 bg_collide;
     model model;

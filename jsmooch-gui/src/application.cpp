@@ -1158,7 +1158,7 @@ int imgui_jsmooch_app::do_setup_before_mainloop()
     //which = jsm::systems::ATARI2600;
     //which = jsm::systems::GBC;
     //which = jsm::systems::APPLEIIe;
-    //which = jsm::systems::DMG;
+    which = jsm::systems::DMG;
     //which = jsm::systems::PS1;
     //which = jsm::systems::SMS2;
     //which = jsm::systems::GG;
@@ -1177,7 +1177,7 @@ int imgui_jsmooch_app::do_setup_before_mainloop()
     //which = jsm::systems::NDS;
     //which = jsm::systems::TURBOGRAFX16;
     //which = jsm::systems::NES;
-    which = jsm::systems::COMMODORE64;
+    //which = jsm::systems::COMMODORE64;
     //which = jsm::systems::GALAKSIJA;
     //dbg_enable_trace();
 #endif
