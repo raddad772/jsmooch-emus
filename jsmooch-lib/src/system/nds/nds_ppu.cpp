@@ -349,10 +349,16 @@ void ENG2D::draw_3d_line(u32 bgnum)
     memset(bg.line, 0, sizeof(bg.line));
     auto &re_line = ppu->bus->re.out.linebuffer[line_num];
     for (u32 x = 0; x < 256; x++) {
-        bg.line[x].color = re_line.rgb[x];
-        bg.line[x].has = re_line.has[x];
-        bg.line[x].priority = bg.priority;
-        bg.line[x].alpha = re_line.alpha[x];
+        u32 sx = (bg.hscroll + x) & 511;
+        if (sx < 256) {
+            bg.line[x].color = re_line.rgb[sx];
+            bg.line[x].has = re_line.has[sx];
+            bg.line[x].priority = bg.priority;
+            bg.line[x].alpha = re_line.alpha[sx];
+        }
+        else {
+            bg.line[x].has = false;
+        }
     }
 }
 
