@@ -2,24 +2,17 @@
 // Created by . on 12/7/24.
 //
 
-#ifndef JSMOOCH_EMUS_GB_SERIALIZE_H
-#define JSMOOCH_EMUS_GB_SERIALIZE_H
+#pragma once
 
-enum GBSS_kinds {
-    GBSS_console,
-    GBSS_ppu,
-    GBSS_apu,
-    GBSS_sm83,
-    GBSS_clock,
-    GBSS_cartridge
+namespace GB {
+enum SS_kinds {
+    SS_console,
+    SS_ppu,
+    SS_apu,
+    SS_sm83,
+    SS_clock,
+    SS_cartridge
 };
 
+}
 
-struct jsm_system;
-struct serialized_state;
-struct deserialize_ret;
-void GBJ_save_state(jsm_system *, serialized_state *state);
-void GBJ_load_state(jsm_system *, serialized_state *state, deserialize_ret *ret);
-
-
-#endif //JSMOOCH_EMUS_GB_SERIALIZE_H

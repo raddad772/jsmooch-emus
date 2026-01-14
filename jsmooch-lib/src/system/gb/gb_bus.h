@@ -1,69 +1,130 @@
-#ifndef _GB_BUS_H
-#define _GB_BUS_H
-
+#pragma once
 #include "helpers/int.h"
 #include "helpers/cvec.h"
 #include "helpers/debugger/debuggerdefs.h"
 #include "helpers/sram.h"
+#include "helpers/sys_interface.h"
+#include "gb_ppu.h"
+#include "gb_clock.h"
+#include "gb_cpu.h"
+#include "component/audio/gb_apu/gb_apu.h"
+#include "mappers/mapper.h"
 
-#ifndef NULL
-#define NULL 0
-#endif
-
-struct GB;
-struct GB_bus {
-	struct GB_cart* cart;
-	struct GB_mapper* mapper;
-	struct GB_PPU* ppu;
-	struct GB_CPU* cpu;
-    struct GB_APU* apu;
-    struct GB_clock* clock;
-    struct GB* gb;
-
-    struct {
-        u8 WRAM[8192 * 8];
-        u8 HRAM[128];
-        u8 VRAM[16384];
-
-        u32 VRAM_bank_offset;
-        u32 WRAM_bank_offset;
-        u32 BIOS_big;
-    } generic_mapper;
-
-
-    u32 VRAM_bank;
-    u32 WRAM_bank;
-
-	// Provided by mapper
-	//u32 (*CPU_read)(GB_bus*, u32, u32);
-	//void (*CPU_write)(GB_bus*, u32, u32);
-	//u32 (*PPU_read)(GB_bus*, u32);
-
-	// Provided by gb_cpu
-	u32 (*read_IO)(GB_bus*, u32, u32);
-	void (*write_IO)(GB_bus*, u32, u32);
-
-	// Provided by gb_ppu
-	u32 (*read_OAM)(GB_bus*, u32);
-	void (*write_OAM)(GB_bus*, u32, u32);
-
-	// Provided by gb.c?
-	u32 (*DMA_read)(GB_bus*, u32);
-	void (*IRQ_vblank_up)(GB_bus*);
-	void (*IRQ_vblank_down)(GB_bus*);
-
-    DBG_EVENT_VIEW_ONLY;
-
-    // Pointer to BIOS, owned by GB
-	u8* BIOS;
+namespace GB {
+struct inputs {
+	u32 a{};
+	u32 b{};
+	u32 start{};
+	u32 select{};
+	u32 up{};
+	u32 down{};
+	u32 left{};
+	u32 right{};
 };
 
-void GB_bus_init(GB_bus*, GB_clock *clock);
-void GB_bus_delete(GB_bus *);
-void GB_bus_reset(GB_bus *);
-u32 GB_bus_PPU_read(GB_bus*, u32 addr);
-u32 GB_bus_CPU_read(GB_bus*, u32 addr, u32 val, u32 has_effect);
-void GB_bus_CPU_write(GB_bus*, u32 addr, u32 val);
-void GB_bus_set_cart(GB_bus*, GB_cart* cart);
+struct DBGGBROW {
+	struct {
+		u32 SCX{}, SCY{}, wx{}, wy{}, bg_tile_map_base{}, window_tile_map_base{}, window_enable{}, bg_window_tile_data_base{};
+	} io{};
+	u16 sprite_pixels[160]{};
+};
 
-#endif
+struct core : jsm_system {
+	explicit core(variants variant_in);
+	u32 CPU_read(u32 addr, u32 val, bool has_effect);
+	void CPU_write(u32 addr, u32 val);
+	u32 PPU_read(u32 addr);
+	void generic_mapper_reset();
+
+	void write_IO(u32 addr, u32 val);
+	u32 read_IO(u32 addr, u32 val);
+	void set_BIOS(u8 *BIOSbuf, u32 sz);
+
+	clock clock{};
+	CPU cpu;
+	PPU::core ppu;
+	GB_APU::core apu{};
+	variants variant{};
+	mapper *mapper{};
+
+	bool described_inputs{};
+
+	cart cart;
+	inputs controller_in{};
+	i32 cycles_left{};
+
+	buf BIOS{};
+
+	struct {
+		double master_cycles_per_audio_sample{};
+		double next_sample_cycle{};
+		audiobuf *buf{};
+	} audio{};
+
+	u32 VRAM_bank{};
+	u32 WRAM_bank{};
+
+	// Provided by gb_cpu
+	/*u32 (*read_IO)(core*, u32, u32){};
+	void (*write_IO)(core*, u32, u32){};
+
+	// Provided by gb.c?
+	u32 (*DMA_read)(core*, u32){};
+	void (*IRQ_vblank_up)(core*){};
+	void (*IRQ_vblank_down)(core*){};*/
+
+	struct {
+		DBGGBROW rows[144]{};
+		DBGGBROW *row{};
+	} dbg_data{};
+
+	struct {
+		u8 WRAM[8192 * 8]{};
+		u8 HRAM[128]{};
+		u8 VRAM[16384]{};
+
+		u32 VRAM_bank_offset{};
+		u32 WRAM_bank_offset{0x1000};
+		u32 BIOS_big{};
+	} generic_mapper{};
+
+	DBG_START
+	DBG_CPU_REG_START1 *A{}, *X{}, *Y{}, *P{}, *S{}, *PC{} DBG_CPU_REG_END1
+	DBG_EVENT_VIEW
+
+	DBG_IMAGE_VIEWS_START
+	MDBG_IMAGE_VIEW(nametables)
+	MDBG_IMAGE_VIEW(sprites)
+	MDBG_IMAGE_VIEW(tiles)
+	DBG_IMAGE_VIEWS_END
+
+	DBG_WAVEFORM_START1
+		DBG_WAVEFORM_MAIN
+		DBG_WAVEFORM_CHANS(4)
+	DBG_WAVEFORM_END1
+
+	DBG_END
+
+public:
+	void play() final;
+	void pause() final;
+	void stop() final;
+	void get_framevars(framevars& out) final;
+	void reset() final;
+	void killall(){};
+	u32 finish_frame() final;
+	u32 finish_scanline() final;
+	u32 step_master(u32 howmany) final;
+	void load_BIOS(multi_file_set& mfs) final;
+	void enable_tracing(){};
+	void disable_tracing(){};
+	void describe_io() final;
+	void save_state(serialized_state &state) final;
+	void load_state(serialized_state &state, deserialize_ret &ret) final;
+	void set_audiobuf(audiobuf *ab) final;
+	void setup_debugger_interface(debugger_interface &intf) final;
+	//void sideload(multi_file_set& mfs) final;
+
+};
+
+}

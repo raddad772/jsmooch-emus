@@ -13,7 +13,7 @@
 #include "mappers/mapper.h"
 
 static void serialize_console(GB *this, serialized_state *state) {
-    serialized_state_new_section(state, "console", GBSS_console, 1);
+    serialized_state_new_section(state, "console", SS_console, 1);
 #define S(x) Sadd(state, &(this->bus. x), sizeof(this->bus. x))
     S(generic_mapper.WRAM);
     S(generic_mapper.HRAM);
@@ -29,7 +29,7 @@ static void serialize_console(GB *this, serialized_state *state) {
 }
 
 static void serialize_cartridge(GB *this, serialized_state *state) {
-    serialized_state_new_section(state, "cartridge", GBSS_cartridge, 1);
+    serialized_state_new_section(state, "cartridge", SS_cartridge, 1);
 
     // First, serialize SRAM
     u32 sz = this->cart.SRAM->actual_size;
@@ -44,7 +44,7 @@ static void serialize_cartridge(GB *this, serialized_state *state) {
 
 
 static void serialize_clock(GB *this, serialized_state *state) {
-    serialized_state_new_section(state, "clock", GBSS_clock, 1);
+    serialized_state_new_section(state, "clock", SS_clock, 1);
 #define S(x) Sadd(state, &(this->clock. x), sizeof(this->clock. x))
     S(frames_since_restart);
     S(master_frame);
@@ -72,7 +72,7 @@ static void serialize_clock(GB *this, serialized_state *state) {
 
 static void serialize_cpu(GB* this, serialized_state *state)
 {
-    serialized_state_new_section(state, "sm83", GBSS_sm83, 1);
+    serialized_state_new_section(state, "sm83", SS_sm83, 1);
     SM83_serialize(&this->cpu.cpu, state);
 #define S(x) Sadd(state, &(this->cpu. x), sizeof(this->cpu. x))
     S(FFregs);
@@ -162,7 +162,7 @@ static void deserialize_fifo(GB_FIFO *this, GB *gb, serialized_state *state)
 }
 
 static void serialize_apu(GB* this, serialized_state *state) {
-    serialized_state_new_section(state, "APU", GBSS_apu, 1);
+    serialized_state_new_section(state, "APU", SS_apu, 1);
 #define S(x) Sadd(state, &(this->apu. x), sizeof(this->apu. x))
     S(channels);
     S(io);
@@ -171,7 +171,7 @@ static void serialize_apu(GB* this, serialized_state *state) {
 }
 
 static void serialize_ppu(GB* this, serialized_state *state) {
-    serialized_state_new_section(state, "PPU", GBSS_ppu, 1);
+    serialized_state_new_section(state, "PPU", SS_ppu, 1);
 #define S(x) Sadd(state, &(this->ppu.slice_fetcher. x), sizeof(this->ppu.slice_fetcher. x))
     S(fetch_cycle);
     S(fetch_addr);
@@ -383,22 +383,22 @@ void GBJ_load_state(jsm_system *jsm, serialized_state *state, deserialize_ret *r
         struct serialized_state_section *sec = cvec_get(&state->sections, i);
         state->iter.offset = sec->offset;
         switch (sec->kind) {
-            case GBSS_console:
+            case SS_console:
                 deserialize_console(this, state);
                 break;
-            case GBSS_ppu:
+            case SS_ppu:
                 deserialize_ppu(this, state);
                 break;
-            case GBSS_apu:
+            case SS_apu:
                 deserialize_apu(this, state);
                 break;
-            case GBSS_clock:
+            case SS_clock:
                 deserialize_clock(this, state);
                 break;
-            case GBSS_sm83:
+            case SS_sm83:
                 deserialize_cpu(this, state);
                 break;
-            case GBSS_cartridge:
+            case SS_cartridge:
                 deserialize_cartridge(this, state);
                 break;
             default: NOGOHERE;

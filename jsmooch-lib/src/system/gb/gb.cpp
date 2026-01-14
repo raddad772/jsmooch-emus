@@ -4,7 +4,6 @@
 
 #include "helpers/sys_interface.h"
 #include "helpers/physical_io.h"
-#include "fail"
 
 #include "component/audio/gb_apu/gb_apu.h"
 
@@ -17,33 +16,9 @@
 #include "gb_debugger.h"
 #include "gb_serialize.h"
 
-#define JTHIS struct GB* this = (GB*)jsm->ptr
-#define JSM struct jsm_system* jsm
-
-#define THIS struct GB* this
-
 #define GB_QUICK_BOOT true
 
-u32 GB_bus_DMA_read(GB_bus* this, u32 addr);
-void GB_bus_IRQ_vblank_up(GB_bus* this);
-void GB_bus_IRQ_vblank_down(GB_bus* this);
-void GBJ_play(JSM);
-void GBJ_pause(JSM);
-void GBJ_stop(JSM);
-void GBJ_get_framevars(JSM, framevars* out);
-void GBJ_reset(JSM);
-void GBJ_killall(JSM);
-u32 GBJ_finish_frame(JSM);
-u32 GBJ_finish_scanline(JSM);
-u32 GBJ_step_master(JSM, u32 howmany);
-void GBJ_load_BIOS(JSM, multi_file_set* mfs);
-void GB_write_IO(GB_bus* bus, u32 addr, u32 val);
-u32 GB_read_IO(GB_bus* bus, u32 addr, u32 val);
-void GBJ_enable_tracing(JSM);
-void GBJ_disable_tracing(JSM);
-void GBJ_describe_io(JSM, cvec* IOs);
-static void GBIO_unload_cart(JSM);
-static void GBIO_load_cart(JSM, multi_file_set *mfs, physical_io_device *pio);
+namespace GB {
 
 #define MASTER_CYCLES_PER_FRAME GB_CYCLES_PER_FRAME
 static void setup_debug_waveform(debug_waveform *dw)
@@ -139,7 +114,7 @@ u32 GB_read_IO(GB_bus* bus, u32 addr, u32 val) {
     return out;
 }
 
-void GB_write_IO(GB_bus* bus, u32 addr, u32 val) {
+void core::write_IO(u32 addr, u32 val) {
     GB_CPU_bus_write_IO(bus, addr, val);
     GB_PPU_bus_write_IO(bus, addr, val);
 }
@@ -445,4 +420,5 @@ static void GBIO_unload_cart(JSM){
 void GBJ_load_BIOS(JSM, multi_file_set* mfs) {
 	JTHIS;
     buf_copy(&this->BIOS, &mfs->files[0].buf);
+}
 }

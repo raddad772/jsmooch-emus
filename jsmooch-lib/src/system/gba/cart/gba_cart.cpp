@@ -173,8 +173,6 @@ u32 core::read_wait2(GBA::core *gba, u32 addr, u8 sz, u8 access, bool has_effect
     return th->read(addr, sz, access, has_effect, 2);
 }
 
-
-
 u32 core::read_sram(GBA::core *gba, u32 addr, u8 sz, u8 access, bool has_effect)
 {
     auto *th = &gba->cart;
@@ -217,9 +215,6 @@ void core::write(GBA::core *gba, u32 addr, u8 sz, u8 access, u32 val)
     th->prefetch.cycles_banked = 0;
     printf("\nWARNING write cart addr %08x", addr);
 }
-
-
-
 
 void core::write_sram(GBA::core *gba, u32 addr, u8 sz, u8 access, u32 val)
 {

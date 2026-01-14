@@ -1,21 +1,23 @@
-#ifndef _GB_ENUMS_H
-#define _GB_ENUMS_H
+#pragma once
 
-enum GB_variants {
+namespace GB {
+
+enum variants {
     DMG,
     GBC,
     SGB
 };
 
+namespace PPU {
+    enum modes {
+        HBLANK,
+        VBLANK,
+        OAM_search,
+        pixel_transfer
+    };
+}
 
-enum GB_PPU_modes {
-    HBLANK,
-    VBLANK,
-    OAM_search,
-    pixel_transfer
-};
-
-enum GB_mappers {
+enum mappers {
     NONE,
     MBC1,
     MBC2,
@@ -31,4 +33,4 @@ enum GB_mappers {
 };
 
 
-#endif
+}

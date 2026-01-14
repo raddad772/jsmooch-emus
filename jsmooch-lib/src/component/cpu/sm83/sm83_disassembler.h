@@ -2,11 +2,10 @@
 // Created by Dave on 1/30/2024.
 //
 
-#ifndef JSMOOCH_EMUS_SM83_DISASSEMBLER_H
-#define JSMOOCH_EMUS_SM83_DISASSEMBLER_H
+#pragma once
 
 #include "helpers/int.h"
+namespace SM83 {
+u32 disassemble(u32 PC, u32 (*peek)(u32), char *w, size_t sz);
+}
 
-u32 SM83_disassemble(u32 PC, u32 (*peek)(u32), char *w, size_t sz);
-
-#endif //JSMOOCH_EMUS_SM83_DISASSEMBLER_H

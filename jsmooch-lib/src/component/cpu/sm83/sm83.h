@@ -1,101 +1,102 @@
-#ifndef _SM83_H
-#define _SM83_H
+#pragma once
 
 #include "helpers/int.h"
 #include "helpers/debug.h"
 #include "helpers/cvec.h"
 #include "helpers/debugger/debuggerdefs.h"
+#include "helpers/serialize/serialize.h"
 
 #include "sm83_misc.h"
 
-struct SM83_regs_F {
-	u32 Z;
-	u32 N;
-	u32 H;
-	u32 C;
+namespace SM83 {
+
+struct regs_F {
+	u8 Z{};
+	u8 N{};
+	u8 H{};
+	u8 C{};
+
+	u8 getbyte() const;
+	void setbyte(u8 val);
 };
 
-struct SM83_regs {
-	u32 A;
-	struct SM83_regs_F F;
-	u32 B;
-	u32 C;
-	u32 D;
-	u32 E;
-	u32 H;
-	u32 L;
-	u32 SP;
-	u32 PC;
+struct regs {
+	void serialize(serialized_state &state);
+	void deserialize(serialized_state &state);
+	u32 A{};
+	regs_F F{};
+	u32 B{};
+	u32 C{};
+	u32 D{};
+	u32 E{};
+	u32 H{};
+	u32 L{};
+	u32 SP{};
+	u32 PC{};
 
-	i32 IV;  // Interrupt vector to execute
-	i32 IME_DELAY;
+	i32 IV{};  // Interrupt vector to execute
+	i32 IME_DELAY{};
 
-	u32 IE; // Enable interrupt?
-	u32 IF; // Interrupt flag
-	u32 HLT;
-	u32 STP;
-	u32 IME; // Global enable interrupt
+	u32 IE{}; // Enable interrupt?
+	u32 IF{}; // Interrupt flag
+	u32 HLT{};
+	u32 STP{};
+	u32 IME{}; // Global enable interrupt
 
-	u32 halt_bug;
+	u32 halt_bug{};
 
-	u32 interrupt_latch;
-	u32 interrupt_flag;
+	u32 interrupt_latch{};
+	u32 interrupt_flag{};
 
     // internal/speculative
-	u32 TCU; // "Timing Control Unit" basically kind cycle of an op we're on
-	u32 IR; // "Instruction Register" currently-executing register
+	u32 TCU{}; // "Timing Control Unit" basically kind cycle of an op we're on
+	u32 IR{}; // "Instruction Register" currently-executing register
 
-	u32 TR; // Temporary Register
-	u32 TA; // Temporary Address
-	u32 RR; // Remporary Register
+	u32 TR{}; // Temporary Register
+	u32 TA{}; // Temporary Address
+	u32 RR{}; // Remporary Register
 
-	u32 prefix;
-	_Bool poll_IRQ;
+	u32 prefix{};
+	bool poll_IRQ{};
 };
 
-struct SM83_pins {
-	u32 RD; // External read request
-	u32 WR; // External write request
-	u32 MRQ; // External memory request
+struct pins {
+	void serialize(serialized_state &state);
+	void deserialize(serialized_state &state);
+	bool RD{}; // External read request
+	bool WR{}; // External write request
+	bool MRQ{}; // External memory request
 
-	u32 D; // 8 Data pins
-	u32 Addr; // 16 Address pins
+	u8 D{}; // 8 Data pins
+	u16 Addr{}; // 16 Address pins
 };
 
-struct SM83 {
-	struct SM83_regs regs;
-	struct SM83_pins pins;
+struct core {
+	core();
+	regs regs{};
+	pins pins{};
 
-    u32 trace_on;
-    u64 trace_cycles;
+	void cycle();
+	void reset();
+	void ins_cycles();
+	void enable_tracing(jsm_debug_read_trace *dbg_read_trace);
+	void disable_tracing();
+    bool trace_on{};
+    u64 trace_cycles{};
+	void serialize(serialized_state &state);
+	void deserialize(serialized_state &state);
 
-    u32 last_decoded_opcode;
-    SM83_ins_func current_instruction;
+    u32 last_decoded_opcode{INS_RESET};
+    ins_func current_instruction{decoded_opcodes[INS_RESET]};
 
-    struct jsm_debug_read_trace read_trace;
+    jsm_debug_read_trace read_trace{};
 
     DBG_EVENT_VIEW_ONLY_START
-    IRQ_vblank, IRQ_stat,
-    IRQ_joypad, IRQ_timer,
-    IRQ_serial, HALT_end
+    IRQ_vblank{}, IRQ_stat{},
+    IRQ_joypad{}, IRQ_timer{},
+    IRQ_serial{}, HALT_end{}
     DBG_EVENT_VIEW_ONLY_END
 };
 
-void SM83_regs_F_setbyte(SM83_regs_F*, u32 val);
-u32 SM83_regs_F_getbyte(SM83_regs_F*);
-void SM83_regs_F_init(SM83_regs_F*);
-void SM83_regs_init(SM83_regs*);
-void SM83_pins_init(SM83_pins*);
 
-void SM83_init(SM83*); // Initializes SM83 processor struct. Use before using the struct
-void SM83_cycle(SM83*); // Runs SM83 cycle
-void SM83_reset(SM83*); // Resets SM83 processor
-void SM83_enable_tracing(SM83*, jsm_debug_read_trace *dbg_read_trace);
-void SM83_disable_tracing(SM83*);
-
-struct serialized_state;
-void SM83_serialize(SM83*, serialized_state *state);
-void SM83_deserialize(SM83*, serialized_state *state);
-
-
-#endif
+};
