@@ -5,6 +5,11 @@
 #include "helpers/debugger/debuggerdefs.h"
 #include "gb_bus.h"
 
+namespace GB {
+    struct clock;
+    struct core;
+}
+
 namespace GB::PPU {
 struct pixel_slice_fetcher;
 struct sprite;
@@ -30,6 +35,9 @@ struct FIFO_item {
 };
 
 struct FIFO {
+    void serialize(GB::core *gb, serialized_state &state);
+    void deserialize(GB::core *gb, serialized_state &state);
+
     explicit FIFO(variants variant_in, u32 max_in   );
     FIFO_item *pop();
     FIFO_item *push();

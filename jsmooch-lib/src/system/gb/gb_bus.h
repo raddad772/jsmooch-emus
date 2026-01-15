@@ -1,9 +1,9 @@
 #pragma once
 #include "helpers/int.h"
+#include "helpers/sys_interface.h"
 #include "helpers/cvec.h"
 #include "helpers/debugger/debuggerdefs.h"
 #include "helpers/sram.h"
-#include "helpers/sys_interface.h"
 #include "gb_ppu.h"
 #include "gb_clock.h"
 #include "gb_cpu.h"
@@ -41,7 +41,7 @@ struct core : jsm_system {
 	void set_BIOS(u8 *BIOSbuf, u32 sz);
 
 	clock clock{};
-	CPU cpu;
+	GB::CPU cpu;
 	PPU::core ppu;
 	GB_APU::core apu{};
 	variants variant{};
@@ -105,19 +105,44 @@ struct core : jsm_system {
 
 	DBG_END
 
+private:
+	void setup_debug_waveform(debug_waveform *dw);
+	void serialize_console(serialized_state &state);
+	void serialize_cartridge(serialized_state &state);
+	void serialize_clock(serialized_state &state);
+	void serialize_cpu(serialized_state &state);
+	void serialize_apu(serialized_state &state);
+	void serialize_ppu(serialized_state &state);
+	void deserialize_console(serialized_state &state);
+	void deserialize_cartridge(serialized_state &state);
+	void deserialize_clock(serialized_state &state);
+	void deserialize_cpu(serialized_state &state);
+	void deserialize_apu(serialized_state &state);
+	void deserialize_ppu(serialized_state &state);
+	void setup_audio();
+	void sample_audio();
+
+
+public:
+	void serialize_sp_obj_pointer(GB::PPU::sprite *fo, serialized_state &state);
+	void deserialize_sp_obj_pointer(GB::PPU::sprite **fo, serialized_state &state);
+	u32 DMA_read(u32 addr);
+	void IRQ_vblank_up();
+	void IRQ_vblank_down();
+
 public:
 	void play() final;
 	void pause() final;
 	void stop() final;
 	void get_framevars(framevars& out) final;
 	void reset() final;
-	void killall(){};
+	void killall();
 	u32 finish_frame() final;
 	u32 finish_scanline() final;
 	u32 step_master(u32 howmany) final;
 	void load_BIOS(multi_file_set& mfs) final;
-	void enable_tracing(){};
-	void disable_tracing(){};
+	void enable_tracing();
+	void disable_tracing();
 	void describe_io() final;
 	void save_state(serialized_state &state) final;
 	void load_state(serialized_state &state, deserialize_ret &ret) final;

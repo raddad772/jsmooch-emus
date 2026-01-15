@@ -1,7 +1,6 @@
 #include <cassert>
 #include <cstdio>
 
-#include "gb_cpu.h"
 #include "component/cpu/sm83/sm83.h"
 #include "gb_bus.h"
 #include "gb_clock.h"
@@ -176,13 +175,13 @@ void CPU::dma_eval() {
         clock->CPU_can_OAM = clock->old_OAM_can;
         return;
     }
-    bus->write_OAM(bus, 0xFE00 | dma.index, bus->CPU_read(dma.high | dma.index, 0, 1));
+    bus->ppu.write_OAM(0xFE00 | dma.index, bus->CPU_read(dma.high | dma.index, 0, 1));
     dma.index++;
 }
 
 u32 CPU::hdma_run() {
     // If we're enabled and in the right lines
-    if (((clock->ppu_mode == HBLANK) && (clock->ly < 144)) || (!bus->ppu->enabled)) {
+    if (((clock->ppu_mode == PPU::HBLANK) && (clock->ly < 144)) || (!bus->ppu.enabled)) {
         // If we're in the middle of a 16-byte block, or we have been notified of HBLANK
         if (((hdma.dest_index & 0x0F) != 0) || (hdma.notify_hblank)) {
             hdma.til_next_byte--;
@@ -508,7 +507,7 @@ void CPU::write_IO(u32 addr, u32 val)
             if (GB_INSTANT_OAM) {
                 dma.high = (val << 8);
                 for (u32 i = 0; i < 160; i++) {
-                    bus->write_OAM(bus, 0xFE00 | i, bus->CPU_read(dma.high | i, 0, 1));
+                    bus->ppu.write_OAM(0xFE00 | i, bus->CPU_read(dma.high | i, 0, 1));
                 }
             } else {
                 dma.cycles_til = 2;
@@ -558,7 +557,7 @@ void CPU::write_IO(u32 addr, u32 val)
             if (!clock->cgb_enable) return;
             //console.log('HDMA5 TRANSFER START', clock->trace_cycles, hex2(val));
             // if LCD ON...
-            if (bus->ppu->enabled) {
+            if (bus->ppu.enabled) {
                 hdma.notify_hblank = (clock->ppu_mode == 0);
             } else {// if LCD OFF... {
                 hdma.notify_hblank = true;

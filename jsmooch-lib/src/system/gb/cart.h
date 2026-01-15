@@ -9,11 +9,13 @@
 
 namespace GB {
 
+struct mapper;
+
 struct cart {
 	explicit cart(variants variant_in, core* parent);
 	~cart();
 	void read_ROM(u8 *inp, u64 size);
-	void load_ROM_from_RAM(void* ibuf, u64 size, physical_io_device *pio);
+	void load_ROM_from_RAM(void* ibuf, u64 size, physical_io_device &pio);
 	void setup_mapper();
 
 	variants variant{};

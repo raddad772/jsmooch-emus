@@ -63,10 +63,10 @@ void GB_mapper_MBC3_new(GB_mapper *parent, GB_clock *clock, GB_bus *bus)
     struct GB_mapper_MBC3 *this = (GB_mapper_MBC3 *)malloc(sizeof(GB_mapper_MBC3));
     parent->ptr = (void *)this;
 
-    this->ROM = NULL;
+    this->ROM = nullptr;
     this->bus = bus;
     this->clock = clock;
-    this->cart = NULL;
+    this->cart = nullptr;
 
     parent->CPU_read = &GBMBC3_CPU_read;
     parent->CPU_write = &GBMBC3_CPU_write;
@@ -85,18 +85,18 @@ void GB_mapper_MBC3_new(GB_mapper *parent, GB_clock *clock, GB_bus *bus)
     for (u32 i = 0; i < 5; i++) {
         this->regs.RTC_latched[i] = 0;
     }
-    this->regs.RTC_start = time(NULL);
+    this->regs.RTC_start = time(nullptr);
     this->RAM_bank_offset = 0;
 }
 
 void GB_mapper_MBC3_delete(GB_mapper *parent)
 {
-    if (parent->ptr == NULL) return;
+    if (parent->ptr == nullptr) return;
     THIS;
 
-    if(this->ROM != NULL) {
+    if(this->ROM != nullptr) {
         free(this->ROM);
-        this->ROM = NULL;
+        this->ROM = nullptr;
     }
 
     free(parent->ptr);
@@ -206,7 +206,7 @@ void GBMBC3_set_cart(GB_mapper* parent, GB_cart* cart)
     this->cart = cart;
     GB_bus_set_cart(this->bus, cart);
 
-    if (this->ROM != NULL) free(this->ROM);
+    if (this->ROM != nullptr) free(this->ROM);
     this->ROM = malloc(cart->header.ROM_size);
     memcpy(this->ROM, cart->ROM, cart->header.ROM_size);
 

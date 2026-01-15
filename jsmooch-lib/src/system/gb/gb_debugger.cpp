@@ -10,17 +10,14 @@
 #include <cstring>
 #include <cstdlib>
 
-#include "fail"
-
 #include "component/cpu/sm83/sm83.h"
 #include "component/cpu/sm83/sm83_disassembler.h"
 
-#include "gb.h"
+#include "gb_bus.h"
 #include "gb_debugger.h"
 
-#define JTHIS struct GB* this = (GB*)jsm->ptr
-#define JSM struct jsm_system* jsm
-static void render_image_view_nametables_DMG(GB* this, debugger_interface *dbgr, debugger_view *dview, u32 out_width, u32 cgb_enable)
+/*
+void render_image_view_nametables_DMG(debugger_interface *dbgr, debugger_view *dview, u32 out_width, u32 cgb_enable)
 {
     struct image_view *iv = &dview->image;
     iv->draw_which_buf ^= 1;
@@ -173,7 +170,7 @@ static void setup_events_view(GB* this, debugger_interface *dbgr)
     for (u32 i = 0; i < 2; i++) {
         ev->display[i].width = 456;
         ev->display[i].height = 155;
-        ev->display[i].buf = NULL;
+        ev->display[i].buf = nullptr;
         ev->display[i].frame_num = 0;
     }
     ev->associated_display = this->ppu.display_ptr;
@@ -365,3 +362,4 @@ void GBJ_setup_debugger_interface(JSM, debugger_interface *dbgr)
     setup_debugger_view_tiles(this, dbgr);
     setup_waveforms(this, dbgr);
 }
+*/

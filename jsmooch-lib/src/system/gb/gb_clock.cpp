@@ -4,7 +4,7 @@
 namespace GB {
 
 void clock::reset() {
-    ppu_mode = OAM_search;
+    ppu_mode = PPU::OAM_search;
     frames_since_restart = 0;
     master_clock = 0;
     cpu_master_clock = 0;
@@ -16,8 +16,8 @@ void clock::reset() {
     cpu_frame_cycle = 0;
     CPU_can_VRAM = true;
     CPU_can_OAM = false;
-    bootROM_enabled = TRUE;
-    turbo = FALSE;
+    bootROM_enabled = true;
+    turbo = false;
 }
 
 void clock::setCPU_can_OAM(bool to) {

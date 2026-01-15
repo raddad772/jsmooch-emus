@@ -15,6 +15,23 @@ core::core(variants variant_in) :
     cart(variant_in, this),
     variant(variant_in)
     {
+    has.load_BIOS = true;
+    has.max_loaded_files = 0;
+    has.max_loaded_folders = 0;
+    has.save_state = true;
+    has.set_audiobuf = true;
+    switch(variant) {
+        case DMG:
+            snprintf(label, sizeof(label), "Nintendo GameBoy");
+            break;
+        case GBC:
+            snprintf(label, sizeof(label), "Nintendo GameBoy Color");
+            break;
+        case SGB:
+            snprintf(label, sizeof(label), "Nintendo Super GameBoy");
+            break;
+    }
+
 }
 
 void core::generic_mapper_reset()

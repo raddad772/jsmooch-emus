@@ -2,10 +2,11 @@
 #include <cstdio>
 #include <cstdlib>
 #include "helpers/int.h"
+#include "gb_bus.h"
+
 #include "cart.h"
 #include "system/gb/gb_clock.h"
 #include "system/gb/mappers/mapper.h"
-#include "gb_bus.h"
 
 namespace GB {
 static u32 NUM_ROMBANKS(u32 inp) {
@@ -66,9 +67,9 @@ void cart::setup_mapper()
     mapper->set_cart(mapper, this);
 }
 
-void cart::load_ROM_from_RAM(void* ibuf, u64 size, physical_io_device *pio)
+void cart::load_ROM_from_RAM(void* ibuf, u64 size, physical_io_device &pio)
 {
-    SRAM = &pio->cartridge_port.SRAM;
+    SRAM = &pio.cartridge_port.SRAM;
     SRAM->ready_to_use = false;
     SRAM->requested_size = 0;
 

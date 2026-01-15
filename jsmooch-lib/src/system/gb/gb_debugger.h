@@ -2,8 +2,7 @@
 // Created by . on 8/12/24.
 //
 
-#ifndef JSMOOCH_EMUS_GB_DEBUGGER_H
-#define JSMOOCH_EMUS_GB_DEBUGGER_H
+#pragma once
 
 #include "helpers/debugger/debugger.h"
 #include "helpers/sys_interface.h"
@@ -32,6 +31,3 @@
 
 #define DBG_GB_EVENT_MAX 15
 
-void GBJ_setup_debugger_interface(jsm_system *, debugger_interface *dbgr);
-
-#endif //JSMOOCH_EMUS_GB_DEBUGGER_H

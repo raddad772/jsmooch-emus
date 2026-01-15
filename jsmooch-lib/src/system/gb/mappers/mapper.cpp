@@ -13,7 +13,7 @@ struct GB_mapper* new_GB_mapper(GB_clock* clock, GB_bus* bus, enum GB_mappers wh
 {
 	struct GB_mapper* mapper = malloc(sizeof(GB_mapper));
 	mapper->which = which;
-    mapper->ptr = NULL;
+    mapper->ptr = nullptr;
 	switch (which) {
 	case NONE: // No mapper!
 		GB_mapper_none_new(mapper, clock, bus);

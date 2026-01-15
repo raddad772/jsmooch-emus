@@ -45,11 +45,11 @@ void GB_mapper_MBC2_new(GB_mapper *parent, GB_clock *clock, GB_bus *bus)
     struct GB_mapper_MBC2 *this = (GB_mapper_MBC2 *)malloc(sizeof(GB_mapper_MBC2));
     parent->ptr = (void *)this;
 
-    this->ROM = NULL;
+    this->ROM = nullptr;
     this->bus = bus;
     this->clock = clock;
     this->RAM_mask = 0;
-    this->cart = NULL;
+    this->cart = nullptr;
 
     parent->CPU_read = &GBMBC2_CPU_read;
     parent->CPU_write = &GBMBC2_CPU_write;
@@ -67,12 +67,12 @@ void GB_mapper_MBC2_new(GB_mapper *parent, GB_clock *clock, GB_bus *bus)
 
 void GB_mapper_MBC2_delete(GB_mapper *parent)
 {
-    if (parent->ptr == NULL) return;
+    if (parent->ptr == nullptr) return;
     THIS;
 
-    if(this->ROM != NULL) {
+    if(this->ROM != nullptr) {
         free(this->ROM);
-        this->ROM = NULL;
+        this->ROM = nullptr;
     }
 
     free(parent->ptr);
@@ -150,7 +150,7 @@ void GBMBC2_set_cart(GB_mapper* parent, GB_cart* cart)
     this->cart = cart;
     GB_bus_set_cart(this->bus, cart);
 
-    if (this->ROM != NULL) free(this->ROM);
+    if (this->ROM != nullptr) free(this->ROM);
     this->ROM = malloc(cart->header.ROM_size);
     memcpy(this->ROM, cart->ROM, cart->header.ROM_size);
 
