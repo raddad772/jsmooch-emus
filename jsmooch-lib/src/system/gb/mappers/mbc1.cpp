@@ -10,15 +10,14 @@
 #include "helpers/serialize/serialize.h"
 #include "mbc1.h"
 
+#define SELF GB_mapper_MBC1* self = static_cast<GB_mapper_MBC1*>(parent->ptr)
+namespace GB {
+static void GBMBC1_update_banks(GB_mapper_MBC1 *self);
 
-#define THIS struct GB_mapper_MBC1* this = (GB_mapper_MBC1*)parent->ptr
-
-static void GBMBC1_update_banks(GB_mapper_MBC1 *this);
-
-static void serialize(GB_mapper *parent, serialized_state *state)
+static void serialize(MAPPER *parent, serialized_state &state)
 {
-    THIS;
-#define S(x) Sadd(state, &(this-> x), sizeof(this-> x))
+    SELF;
+#define S(x) Sadd(state, &(self->x), sizeof(self->x))
     S(ROM_bank_lo_offset);
     S(ROM_bank_hi_offset);
     S(regs.banking_mode);
@@ -29,10 +28,10 @@ static void serialize(GB_mapper *parent, serialized_state *state)
 #undef S
 }
 
-static void deserialize(GB_mapper *parent, serialized_state *state)
+static void deserialize(MAPPER *parent, serialized_state &state)
 {
-    THIS;
-#define L(x) Sload(state, &(this-> x), sizeof(this-> x))
+    SELF;
+#define L(x) Sload(state, &(self-> x), sizeof(self-> x))
     L(ROM_bank_lo_offset);
     L(ROM_bank_hi_offset);
     L(regs.banking_mode);
@@ -45,17 +44,17 @@ static void deserialize(GB_mapper *parent, serialized_state *state)
 
 
 
-void GB_mapper_MBC1_new(GB_mapper *parent, GB_clock *clock, GB_bus *bus)
+void GB_mapper_MBC1_new(MAPPER *parent, clock *clock, core *bus)
 {
-    struct GB_mapper_MBC1 *this = (GB_mapper_MBC1 *)malloc(sizeof(GB_mapper_MBC1));
-    parent->ptr = (void *)this;
+    GB_mapper_MBC1 *self = (GB_mapper_MBC1 *)malloc(sizeof(GB_mapper_MBC1));
+    parent->ptr = (void *)self;
 
-    this->ROM = nullptr;
-    this->bus = bus;
-    this->clock = clock;
-    this->RAM_mask = 0;
-    this->has_RAM = false;
-    this->cart = nullptr;
+    self->ROM = nullptr;
+    self->bus = bus;
+    self->clock = clock;
+    self->RAM_mask = 0;
+    self->has_RAM = false;
+    self->cart = nullptr;
 
     parent->CPU_read = &GBMBC1_CPU_read;
     parent->CPU_write = &GBMBC1_CPU_write;
@@ -64,45 +63,45 @@ void GB_mapper_MBC1_new(GB_mapper *parent, GB_clock *clock, GB_bus *bus)
     parent->serialize = &serialize;
     parent->deserialize = &deserialize;
 
-    this->ROM_bank_lo_offset = 0;
-    this->ROM_bank_hi_offset = 16384;
+    self->ROM_bank_lo_offset = 0;
+    self->ROM_bank_hi_offset = 16384;
 
-    this->num_ROM_banks = 0;
-    this->num_RAM_banks = 1;
-    this->regs.banking_mode = 0;
-    this->regs.BANK1 = 1;
-    this->regs.BANK2 = 0;
-    this->cartRAM_offset = 0;
-    this->regs.ext_RAM_enable = 0;
+    self->num_ROM_banks = 0;
+    self->num_RAM_banks = 1;
+    self->regs.banking_mode = 0;
+    self->regs.BANK1 = 1;
+    self->regs.BANK2 = 0;
+    self->cartRAM_offset = 0;
+    self->regs.ext_RAM_enable = 0;
 }
 
-void GB_mapper_MBC1_delete(GB_mapper *parent)
+void GB_mapper_MBC1_delete(MAPPER *parent)
 {
     if (parent->ptr == nullptr) return;
-    THIS;
+    SELF;
 
-    if(this->ROM != nullptr) {
-        free(this->ROM);
-        this->ROM = nullptr;
+    if(self->ROM != nullptr) {
+        free(self->ROM);
+        self->ROM = nullptr;
     }
 
     free(parent->ptr);
 }
 
-void GBMBC1_reset(GB_mapper* parent)
+void GBMBC1_reset(MAPPER* parent)
 {
-    THIS;
-    this->ROM_bank_lo_offset = 0;
-    this->ROM_bank_hi_offset = 16384;
+    SELF;
+    self->ROM_bank_lo_offset = 0;
+    self->ROM_bank_hi_offset = 16384;
 
-    this->num_ROM_banks = 0;
-    this->num_RAM_banks = 1;
-    this->regs.banking_mode = 0;
-    this->regs.BANK1 = 1;
-    this->regs.BANK2 = 0;
-    this->regs.ext_RAM_enable = 0;
-    this->cartRAM_offset = 0;
-    GBMBC1_update_banks(this);
+    self->num_ROM_banks = 0;
+    self->num_RAM_banks = 1;
+    self->regs.banking_mode = 0;
+    self->regs.BANK1 = 1;
+    self->regs.BANK2 = 0;
+    self->regs.ext_RAM_enable = 0;
+    self->cartRAM_offset = 0;
+    GBMBC1_update_banks(self);
 }
 
 #if defined(_MSC_VER)
@@ -110,87 +109,87 @@ void GBMBC1_reset(GB_mapper* parent)
 #pragma warning(disable: 4724) // warning C4724: potential mod by 0
 #endif
 
-static void GBMBC1_update_banks(GB_mapper_MBC1 *this)
+static void GBMBC1_update_banks(GB_mapper_MBC1 *self)
 {
-    if (this->regs.banking_mode == 0) {
+    if (self->regs.banking_mode == 0) {
         // Mode 0, easy-mode
-        this->ROM_bank_lo_offset = 0;
-        this->cartRAM_offset = 0;
+        self->ROM_bank_lo_offset = 0;
+        self->cartRAM_offset = 0;
     } else {
         // Mode 1, hard-mode!
-        this->ROM_bank_lo_offset = ((this->regs.BANK2 << 5) % this->num_ROM_banks) << 14;
-        this->cartRAM_offset = (this->regs.BANK2 % this->num_RAM_banks) << 13;
+        self->ROM_bank_lo_offset = ((self->regs.BANK2 << 5) % self->num_ROM_banks) << 14;
+        self->cartRAM_offset = (self->regs.BANK2 % self->num_RAM_banks) << 13;
     }
-    this->ROM_bank_hi_offset = (((this->regs.BANK2 << 5) | this->regs.BANK1) % this->num_ROM_banks) << 14;
+    self->ROM_bank_hi_offset = (((self->regs.BANK2 << 5) | self->regs.BANK1) % self->num_ROM_banks) << 14;
 }
 
 #if defined(_MSC_VER)
 #pragma warning(pop)
 #endif
 
-u32 GBMBC1_CPU_read(GB_mapper* parent, u32 addr, u32 val, u32 has_effect)
+u32 GBMBC1_CPU_read(MAPPER* parent, u32 addr, u32 val, u32 has_effect)
 {
-    THIS;
+    SELF;
     if (addr < 0x4000) // ROM lo bank
-        return this->ROM[addr + this->ROM_bank_lo_offset];
+        return self->ROM[addr + self->ROM_bank_lo_offset];
     if (addr < 0x8000) // ROM hi bank
-        return this->ROM[(addr & 0x3FFF) + this->ROM_bank_hi_offset];
+        return self->ROM[(addr & 0x3FFF) + self->ROM_bank_hi_offset];
     if ((addr >= 0xA000) && (addr < 0xC000)) {
-        if ((!this->has_RAM) || (!this->regs.ext_RAM_enable))
+        if ((!self->has_RAM) || (!self->regs.ext_RAM_enable))
             return 0xFF;
-        return ((u8 *)this->cart->SRAM->data)[((addr - 0xA000) & this->RAM_mask) + this->cartRAM_offset];
+        return static_cast<u8 *>(self->cart->SRAM->data)[((addr - 0xA000) & self->RAM_mask) + self->cartRAM_offset];
     }
     assert(1!=0);
     return 0xFF;
 }
 
-void GBMBC1_CPU_write(GB_mapper* parent, u32 addr, u32 val)
+void GBMBC1_CPU_write(MAPPER* parent, u32 addr, u32 val)
 {
-    THIS;
+    SELF;
     if (addr < 0x8000) {
         switch (addr & 0xE000) {
             case 0x0000: // RAM write enable
-                this->regs.ext_RAM_enable = +((val & 0x0F) == 0x0A);
+                self->regs.ext_RAM_enable = +((val & 0x0F) == 0x0A);
                 return;
             case 0x2000: // ROM bank number
                 val &= 0x1F; // 5 bits
                 if (val == 0) val = 1; // can't be 0
-                this->regs.BANK1 = val;
-                GBMBC1_update_banks(this);
+                self->regs.BANK1 = val;
+                GBMBC1_update_banks(self);
                 return;
             case 0x4000: // RAM or ROM banks...
-                this->regs.BANK2 = val & 3;
-                GBMBC1_update_banks(this);
+                self->regs.BANK2 = val & 3;
+                GBMBC1_update_banks(self);
                 return;
             case 0x6000: // Control
-                this->regs.banking_mode = val & 1;
-                GBMBC1_update_banks(this);
+                self->regs.banking_mode = val & 1;
+                GBMBC1_update_banks(self);
                 return;
         }
     }
     if ((addr >= 0xA000) && (addr < 0xC000)) { // cart RAM
-        if (this->has_RAM && this->regs.ext_RAM_enable) {
-            ((u8 *) this->cart->SRAM->data)[((addr - 0xA000) & this->RAM_mask) + this->cartRAM_offset] = val;
-            this->cart->SRAM->dirty = true;
+        if (self->has_RAM && self->regs.ext_RAM_enable) {
+            static_cast<u8 *>(self->cart->SRAM->data)[((addr - 0xA000) & self->RAM_mask) + self->cartRAM_offset] = val;
+            self->cart->SRAM->dirty = true;
         }
         return;
     }
 }
 
-void GBMBC1_set_cart(GB_mapper* parent, GB_cart* cart)
+void GBMBC1_set_cart(MAPPER* parent, cart* cart)
 {
-    THIS;
-    this->cart = cart;
-    GB_bus_set_cart(this->bus, cart);
+    SELF;
+    self->cart = cart;
 
-    if (this->ROM != nullptr) free(this->ROM);
-    this->ROM = malloc(cart->header.ROM_size);
-    memcpy(this->ROM, cart->ROM, cart->header.ROM_size);
+    if (self->ROM != nullptr) free(self->ROM);
+    self->ROM = static_cast<u8 *>(malloc(cart->header.ROM_size));
+    memcpy(self->ROM, cart->ROM, cart->header.ROM_size);
 
-    this->num_RAM_banks = (cart->header.RAM_size / 8192);
+    self->num_RAM_banks = (cart->header.RAM_size / 8192);
 
-    this->RAM_mask = cart->header.RAM_mask;
-    this->has_RAM = cart->header.RAM_size > 0;
+    self->RAM_mask = cart->header.RAM_mask;
+    self->has_RAM = cart->header.RAM_size > 0;
 
-    this->num_ROM_banks = cart->header.ROM_size / 16384;
+    self->num_ROM_banks = cart->header.ROM_size / 16384;
+}
 }

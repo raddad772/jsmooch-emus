@@ -4,42 +4,42 @@
 
 #include "helpers/serialize/serialize.h"
 
-#include "system/gb/mappers/mapper.h"
-#include "system/gb/mappers/no_mapper.h"
 #include "../gb_clock.h"
 #include "../gb_bus.h"
 #include "../cart.h"
+#include "system/gb/mappers/mapper.h"
+#include "system/gb/mappers/no_mapper.h"
 
-#define THIS struct GB_mapper_none* this = (GB_mapper_none*)parent->ptr
-
-static void serialize(GB_mapper *parent, serialized_state *state)
+#define SELF struct GB_mapper_none* self = (GB_mapper_none*)parent->ptr
+namespace GB {
+static void serialize(MAPPER *parent, serialized_state &state)
 {
-    THIS;
-#define S(x) Sadd(state, &(this-> x), sizeof(this-> x))
+    SELF;
+#define S(x) Sadd(state, &(self-> x), sizeof(self-> x))
     S(ROM_bank_offset);
 #undef S
 }
 
-static void deserialize(GB_mapper *parent, serialized_state *state)
+static void deserialize(MAPPER *parent, serialized_state &state)
 {
-    THIS;
-#define L(x) Sload(state, &(this-> x), sizeof(this-> x))
+    SELF;
+#define L(x) Sload(state, &(self-> x), sizeof(self-> x))
     L(ROM_bank_offset);
 #undef L
 }
 
 
-void GB_mapper_none_new(GB_mapper *parent, GB_clock *clock, GB_bus *bus)
+void GB_mapper_none_new(MAPPER *parent, clock *clock, core *bus)
 {
-    struct GB_mapper_none *this = (GB_mapper_none *)malloc(sizeof(GB_mapper_none));
-    parent->ptr = (void *)this;
-    this->ROM = nullptr;
-    this->bus = bus;
-    this->clock = clock;
-    this->ROM_bank_offset = 16384;
-    this->RAM_mask = 0;
-    this->has_RAM = false;
-    this->cart = nullptr;
+    auto *self = static_cast<GB_mapper_none *>(malloc(sizeof(GB_mapper_none)));
+    parent->ptr = static_cast<void *>(self);
+    self->ROM = nullptr;
+    self->bus = bus;
+    self->clock = clock;
+    self->ROM_bank_offset = 16384;
+    self->RAM_mask = 0;
+    self->has_RAM = false;
+    self->cart = nullptr;
 
     parent->CPU_read = &GBMN_CPU_read;
     parent->CPU_write = &GBMN_CPU_write;
@@ -49,61 +49,61 @@ void GB_mapper_none_new(GB_mapper *parent, GB_clock *clock, GB_bus *bus)
     parent->deserialize = &deserialize;
 }
 
-void GB_mapper_none_delete(GB_mapper *parent)
+void GB_mapper_none_delete(MAPPER *parent)
 {
     if (parent->ptr == nullptr) return;
-    THIS;
+    SELF;
 
-    if(this->ROM != nullptr) {
-        free(this->ROM);
-        this->ROM = nullptr;
+    if(self->ROM != nullptr) {
+        free(self->ROM);
+        self->ROM = nullptr;
     }
 
     free(parent->ptr);
 }
 
-void GBMN_reset(GB_mapper* parent)
+void GBMN_reset(MAPPER* parent)
 {
-    THIS;
-    this->ROM_bank_offset = 16384;
-    GB_bus_reset(this->bus);
+    SELF;
+    self->ROM_bank_offset = 16384;
+    //self->bus->reset();
 }
 
-void GBMN_set_cart(GB_mapper* parent, GB_cart* cart)
+void GBMN_set_cart(MAPPER* parent, cart* cart)
 {
-    THIS;
-    this->cart = cart;
-    GB_bus_set_cart(this->bus, cart);
+    SELF;
+    self->cart = cart;
 
-    if (this->ROM != nullptr) free(this->ROM);
-    this->ROM = malloc(cart->header.ROM_size);
-    memcpy(this->ROM, cart->ROM, cart->header.ROM_size);
+    if (self->ROM != nullptr) free(self->ROM);
+    self->ROM = static_cast<u8 *>(malloc(cart->header.ROM_size));
+    memcpy(self->ROM, cart->ROM, cart->header.ROM_size);
 
-    this->has_RAM = cart->header.RAM_size > 0;
+    self->has_RAM = cart->header.RAM_size > 0;
 }
 
-u32 GBMN_CPU_read(GB_mapper* parent, u32 addr, u32 val, u32 has_effect)
+u32 GBMN_CPU_read(MAPPER* parent, u32 addr, u32 val, u32 has_effect)
 {
-    THIS;
+    SELF;
     if (addr < 0x4000) { // ROM lo bank
-        return this->ROM[addr];
+        return self->ROM[addr];
     }
     if (addr < 0x8000) // ROM hi bank
-        return this->ROM[(addr & 0x3FFF) + this->ROM_bank_offset];
+        return self->ROM[(addr & 0x3FFF) + self->ROM_bank_offset];
     if ((addr >= 0xA000) && (addr < 0xC000)) { // // cart RAM if it's there
-        if (!this->has_RAM) return 0xFF;
-        return ((u8 *)this->cart->SRAM->data)[(addr - 0xA000) & this->RAM_mask];
+        if (!self->has_RAM) return 0xFF;
+        return static_cast<u8 *>(self->cart->SRAM->data)[(addr - 0xA000) & self->RAM_mask];
     }
     return val;
 }
 
-void GBMN_CPU_write(GB_mapper* parent, u32 addr, u32 val)
+void GBMN_CPU_write(MAPPER* parent, u32 addr, u32 val)
 {
-    THIS;
+    SELF;
     if ((addr >= 0xA000) && (addr < 0xC000)) { // cart RAM
-        if (!this->has_RAM) return;
-        ((u8 *)this->cart->SRAM->data)[(addr - 0xA000) & this->RAM_mask] = val;
-        this->cart->SRAM->dirty = true;
+        if (!self->has_RAM) return;
+        static_cast<u8 *>(self->cart->SRAM->data)[(addr - 0xA000) & self->RAM_mask] = val;
+        self->cart->SRAM->dirty = true;
         return;
     }
+}
 }

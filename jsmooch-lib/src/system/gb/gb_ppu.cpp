@@ -4,10 +4,9 @@
 
 #include "helpers/int.h"
 
-#include "gb.h"
+#include "gb_bus.h"
 #include "gb_ppu.h"
 #include "gb_enums.h"
-#include "gb_bus.h"
 #include "gb_cpu.h"
 #include "gb_clock.h"
 #include "gb_debugger.h"
@@ -386,14 +385,6 @@ void core::reset()
     set_mode(PPU::OAM_search);
 }
 
-u32 core::bus_read_OAM(u32 addr) {
-    return read_OAM(bus->ppu, addr);
-}
-
-void core::bus_write_OAM(u32 addr, u32 val) {
-    write_OAM(bus->ppu, addr, val);
-}
-
 core::core(GB::variants variant_in, GB::clock *clock_in, GB::core *parent) :
     variant(variant_in),
     clock(clock_in),
@@ -737,7 +728,7 @@ void core::set_mode(modes which) {
         clock->setCPU_can_OAM(false);
         clock->CPU_can_VRAM = true;
         if (enabled) {
-            bus->IRQ_vblank_down(bus);
+            bus->IRQ_vblank_down();
             IRQ_mode0_down();
             IRQ_mode1_down();
             IRQ_mode2_up();
@@ -838,7 +829,7 @@ void core::run_cycles(u32 howmany)
         if (cycles_til_vblank) {
             cycles_til_vblank--;
             if (cycles_til_vblank == 0)
-                bus->IRQ_vblank_up(bus);
+                bus->IRQ_vblank_up();
         }
         if (enabled) {
             cycle();
@@ -856,9 +847,9 @@ void core::quick_boot()
         enabled = true;
         //let val = 0xFC;
         //clock->ly = 90;
-        bus->write_IO(bus, 0xFF47, 0xFC);
-        bus->write_IO(bus, 0xFF40, 0x91);
-        bus->write_IO(bus, 0xFF41, 0x85);
+        bus->write_IO(0xFF47, 0xFC);
+        bus->write_IO(0xFF40, 0x91);
+        bus->write_IO(0xFF41, 0x85);
         io.lyc = 0;
         io.SCX = io.SCY = 0;
 
@@ -868,9 +859,9 @@ void core::quick_boot()
         for (u32 i = 0; i < 0x3F; i++) {
             bg_CRAM[i] = 0xFF;
         }
-        bus->write_IO(bus, 0xFF47, 0xFC);
-        bus->write_IO(bus, 0xFF40, 0x91);
-        bus->write_IO(bus, 0xFF41, 0x85);
+        bus->write_IO(0xFF47, 0xFC);
+        bus->write_IO(0xFF40, 0x91);
+        bus->write_IO(0xFF41, 0x85);
         io.lyc = 0;
         io.SCX = io.SCY = 0;
 

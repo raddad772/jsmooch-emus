@@ -38,6 +38,7 @@ struct timer {
     u32 read_IO(u32 addr) const;
 };
 
+struct core;
 
 struct CPU {
     explicit CPU(core* parent, GB::clock *clock_in, variants variant_in);

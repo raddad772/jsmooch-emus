@@ -4,12 +4,12 @@
 #include "helpers/physical_io.h"
 #include "helpers/sram.h"
 #include "gb_clock.h"
-#include "gb_bus.h"
 #include "mappers/mapper.h"
 
 namespace GB {
 
-struct mapper;
+struct MAPPER;
+struct core;
 
 struct cart {
 	explicit cart(variants variant_in, core* parent);
@@ -26,7 +26,7 @@ struct cart {
 	u64 ROM_size{};
     persistent_store *SRAM{};
 
-	mapper* mapper{};
+	MAPPER* mapper{};
 	struct {
 		u32 ROM_banks{};
 		u32 ROM_size{};

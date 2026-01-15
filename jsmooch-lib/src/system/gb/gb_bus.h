@@ -28,6 +28,8 @@ struct DBGGBROW {
 	} io{};
 	u16 sprite_pixels[160]{};
 };
+struct MAPPER;
+struct cart;
 
 struct core : jsm_system {
 	explicit core(variants variant_in);
@@ -45,7 +47,7 @@ struct core : jsm_system {
 	PPU::core ppu;
 	GB_APU::core apu{};
 	variants variant{};
-	mapper *mapper{};
+	MAPPER *mapper{};
 
 	bool described_inputs{};
 

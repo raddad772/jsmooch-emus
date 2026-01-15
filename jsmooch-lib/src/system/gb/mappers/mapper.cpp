@@ -2,6 +2,7 @@
 #include <cstdio>
 #include <cassert>
 
+#include "../cart.h"
 #include "mapper.h"
 #include "no_mapper.h"
 #include "mbc1.h"
@@ -9,30 +10,35 @@
 #include "mbc3.h"
 #include "mbc5.h"
 
-struct GB_mapper* new_GB_mapper(GB_clock* clock, GB_bus* bus, enum GB_mappers which)
+
+namespace GB {
+struct clock;
+struct core;
+
+MAPPER* new_GB_mapper(clock* clock_in, core* bus_in, mappers which)
 {
-	struct GB_mapper* mapper = malloc(sizeof(GB_mapper));
+	MAPPER* mapper = static_cast<MAPPER *>(malloc(sizeof(MAPPER)));
 	mapper->which = which;
     mapper->ptr = nullptr;
 	switch (which) {
 	case NONE: // No mapper!
-		GB_mapper_none_new(mapper, clock, bus);
+		GB_mapper_none_new(mapper, clock_in, bus_in);
         printf("\nNO MAPPER!");
 		break;
     case MBC1:
-        GB_mapper_MBC1_new(mapper, clock, bus);
+        GB_mapper_MBC1_new(mapper, clock_in, bus_in);
         printf("\nMBC1");
         break;
     case MBC2:
-        GB_mapper_MBC2_new(mapper, clock, bus);
+        GB_mapper_MBC2_new(mapper, clock_in, bus_in);
         printf("\nMBC2");
         break;
     case MBC3:
-        GB_mapper_MBC3_new(mapper, clock, bus);
+        GB_mapper_MBC3_new(mapper, clock_in, bus_in);
         printf("\nMBC3");
         break;
     case MBC5:
-        GB_mapper_MBC5_new(mapper, clock, bus);
+        GB_mapper_MBC5_new(mapper, clock_in, bus_in);
         printf("\nMBC5");
         break;
 	default:
@@ -43,22 +49,22 @@ struct GB_mapper* new_GB_mapper(GB_clock* clock, GB_bus* bus, enum GB_mappers wh
 	return mapper;
 }
 
-void delete_GB_mapper(GB_mapper* whom)
+void delete_GB_mapper(MAPPER* whom)
 {
 	switch (whom->which) {
-	case NONE: // No-mapper!
+	case mappers::NONE: // No-mapper!
 		GB_mapper_none_delete(whom);
 		break;
-    case MBC1:
+    case mappers::MBC1:
         GB_mapper_MBC1_delete(whom);
         break;
-    case MBC2:
+    case mappers::MBC2:
         GB_mapper_MBC2_delete(whom);
         break;
-    case MBC3:
+    case mappers::MBC3:
         GB_mapper_MBC3_delete(whom);
         break;
-    case MBC5:
+    case mappers::MBC5:
         GB_mapper_MBC5_delete(whom);
         break;
     default:
@@ -66,4 +72,5 @@ void delete_GB_mapper(GB_mapper* whom)
         break;
 	}
     free(whom);
+}
 }
