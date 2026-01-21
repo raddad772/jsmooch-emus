@@ -25,7 +25,7 @@ struct sprite {
 };
 
 struct FIFO_item {
-    FIFO_item();
+    //FIFO_item();
     void init(u32 pixel, u32 palette, u32 cgb_priority, u32 sprite_priority);
     u32 pixel{};
     u32 palette{};

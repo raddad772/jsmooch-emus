@@ -38,7 +38,7 @@ cart::~cart() {
         ROM = nullptr;
     }
     if (mapper != nullptr) {
-        delete_mapper(mapper);
+        delete_GB_mapper(mapper);
         mapper = nullptr;
     }
 }
@@ -59,9 +59,9 @@ void cart::read_ROM(u8 *inp, u64 size)
 
 void cart::setup_mapper()
 {
-    mapper = new_mapper(clock, bus, header.mapper);
+    mapper = new_GB_mapper(clock, bus, header.mapper);
     if (bus->mapper != nullptr) {
-        delete_mapper(bus->mapper);
+        delete_GB_mapper(bus->mapper);
     }
     bus->mapper = mapper;
     mapper->set_cart(mapper, this);

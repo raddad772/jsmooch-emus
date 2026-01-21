@@ -278,6 +278,8 @@ void core::reset()
     clock.reset();
     cpu.reset();
     ppu.reset();
+    generic_mapper_reset();
+    if (mapper) mapper->reset(mapper);
 	if (GB_QUICK_BOOT) {
 		ppu.quick_boot();
 		cpu.quick_boot();

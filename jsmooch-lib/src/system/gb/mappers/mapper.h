@@ -26,7 +26,7 @@ struct MAPPER {
     void (*CPU_write)(MAPPER*, u32, u32);
 };
 
-MAPPER* new_mapper(clock* clock, core* bus, mappers which);
-void delete_mapper(MAPPER* whom);
+MAPPER* new_GB_mapper(clock* clock, core* bus, mappers which);
+void delete_GB_mapper(MAPPER* whom);
 
 }

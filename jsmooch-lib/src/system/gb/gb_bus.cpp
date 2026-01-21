@@ -40,11 +40,6 @@ void core::generic_mapper_reset()
     generic_mapper.WRAM_bank_offset = 0x1000;
 }
 
-void core::reset()
-{
-    generic_mapper_reset();
-}
-
 u32 core::PPU_read(u32 addr)
 {
     if ((addr < 0x8000) || (addr >= 0xC000)) {

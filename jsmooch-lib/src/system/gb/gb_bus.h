@@ -126,6 +126,7 @@ private:
 
 
 public:
+	void render_image_view_nametables_DMG(debugger_interface *dbgr, debugger_view *dview, u32 out_width, bool cgb_enable);
 	void serialize_sp_obj_pointer(GB::PPU::sprite *fo, serialized_state &state);
 	void deserialize_sp_obj_pointer(GB::PPU::sprite **fo, serialized_state &state);
 	u32 DMA_read(u32 addr);

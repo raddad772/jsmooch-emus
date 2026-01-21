@@ -47,6 +47,8 @@ static inline u32 GB_sp_tile_addr(u32 tn, u32 y, u32 big_sprites, u32 attr, u32 
     return (0x8000 | (tn << 4) | (y << 1)) + hbits;
 }
 
+
+
 void FIFO_item::init(u32 pixel_in, u32 palette_in, u32 cgb_priority_in, u32 sprite_priority_in) {
     pixel = pixel_in;
     palette = palette_in;

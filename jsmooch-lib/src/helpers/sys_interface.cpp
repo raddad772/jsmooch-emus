@@ -3,7 +3,7 @@
 #include <cstdlib>
 
 #include "sys_interface.h"
-//#include "system/gb/gb.h"
+#include "system/gb/gb.h"
 #include "system/nes/nes.h"
 #include "system/nds/nds.h"
 #include "system/cosmac_vip/cosmac_vip.h"
@@ -20,6 +20,7 @@
 #include "helpers/debug.h"
 #include "system/gba/gba.h"
 //#include "system/galaksija/galaksija.h"
+#include "system/gb/gb_enums.h"
 #include "system/tg16/tg16.h"
 
 jsm_system* new_system(jsm::systems which)
@@ -49,13 +50,13 @@ jsm_system* new_system(jsm::systems which)
             break;
         /*case jsm::systems::ATARI2600:
             atari2600_new(out);
-            break;
+            break;*/
 		case jsm::systems::DMG:
-			GB_new(out, DMG);
+			out = GB_new(GB::variants::DMG);
 			break;
         case jsm::systems::GBC:
-            GB_new(out, GBC);
-            break;*/
+            out = GB_new(GB::variants::GBC);
+            break;
         case jsm::systems::MAC128K:
             out = mac_new(mac::mac128k);
             break;
