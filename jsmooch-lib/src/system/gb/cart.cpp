@@ -59,7 +59,7 @@ void cart::read_ROM(u8 *inp, u64 size)
 
 void cart::setup_mapper()
 {
-    mapper = new_GB_mapper(clock, bus, header.mapper);
+    mapper = new_GB_mapper(&bus->clock, bus, header.mapper);
     if (bus->mapper != nullptr) {
         delete_GB_mapper(bus->mapper);
     }
@@ -78,8 +78,8 @@ void cart::load_ROM_from_RAM(void* ibuf, u64 size, physical_io_device &pio)
         assert(1 != 0);
     }
 
-    clock->cgb_enable = (inp[0x143] == 0x80) || (inp[0x143] == 0xC0);
-    if (variant != GBC) clock->cgb_enable = 0;
+    bus->clock.cgb_enable = (inp[0x143] == 0x80) || (inp[0x143] == 0xC0);
+    if (variant != GBC) bus->clock.cgb_enable = 0;
     fflush(stdout);
 
     header.ROM_banks = NUM_ROMBANKS(inp[0x0148]);

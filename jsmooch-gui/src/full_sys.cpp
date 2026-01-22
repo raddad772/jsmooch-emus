@@ -630,7 +630,7 @@ void full_system::load_default_ROM()
             //worked = grab_ROM(&ROMs, which, "apu_test.nes", nullptr);
             //NROM
             //worked = grab_ROM(&ROMs, which, "drmario.nes", nullptr);
-            //worked = grab_ROM(&ROMs, which, "mario.nes", nullptr);
+            worked = grab_ROM(&ROMs, which, "mario.nes", nullptr);
             //worked = grab_ROM(&ROMs, which, "dkong.nes", nullptr);
 
             // MMC3
@@ -667,7 +667,7 @@ void full_system::load_default_ROM()
             //worked = grab_ROM(&ROMs, which, "crisisforce.nes", nullptr);
 
             // UxROM
-            worked = grab_ROM(&ROMs, which, "castlevania.nes", nullptr);
+            //worked = grab_ROM(&ROMs, which, "castlevania.nes", nullptr);
             //worked = grab_ROM(&ROMs, which, "contra.nes", nullptr);
 
             // SunSoft 5
@@ -717,8 +717,8 @@ void full_system::load_default_ROM()
             //worked = grab_ROM(&ROMs, which, "cutedemo.gbc", nullptr);
             //worked = grab_ROM(&ROMs, which, "aitd.gbc", nullptr);
             //worked = grab_ROM(&ROMs, which, "mgs.gbc", nullptr);
-            //worked = grab_ROM(&ROMs, which, "rayman.gbc", nullptr);
-            worked = grab_ROM(&ROMs, which, "tokitori.gbc", nullptr);
+            worked = grab_ROM(&ROMs, which, "rayman.gbc", nullptr);
+            //worked = grab_ROM(&ROMs, which, "tokitori.gbc", nullptr);
             //worked = grab_ROM(&ROMs, which, "m3_bgp_change_sprites.gb", nullptr);
             break;
         case jsm::systems::ATARI2600:

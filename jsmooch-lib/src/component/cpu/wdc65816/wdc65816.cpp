@@ -6,6 +6,7 @@
 #include <cstring>
 #include "wdc65816.h"
 #include "wdc65816_disassembler.h"
+// TODO: don't poll IRQs for some instructions
 /*
  * interrupt notes
 During WAI, When the Status Register I

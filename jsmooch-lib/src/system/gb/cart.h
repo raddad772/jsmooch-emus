@@ -19,7 +19,6 @@ struct cart {
 	void setup_mapper();
 
 	variants variant{};
-	clock* clock{};
 	core* bus{};
 
 	u8* ROM{};
