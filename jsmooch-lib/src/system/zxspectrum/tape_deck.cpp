@@ -4,59 +4,43 @@
 
 #include <cstring>
 #include <cassert>
-#include <cstdio>
 
 #include "tape_deck.h"
 #include "zxspectrum.h"
+#include "zxspectrum_bus.h"
 
-#define BTHIS struct ZXSpectrum_tape_deck* this = &bus->tape_deck
-
-
-void ZXSpectrum_tape_deck_rewind(ZXSpectrum *bus)
+namespace ZXSpectrum {
+void TAPE_DECK::rewind()
 {
-    BTHIS;
-    this->head_pos = 0;
-    this->state = td_stopped;
-    this->play_pause_cycle = this->play_start_cycle = 0;
+    
+    head_pos = 0;
+    state = td_stopped;
+    play_pause_cycle = play_start_cycle = 0;
 }
 
-void ZXSpectrum_tape_deck_remove(ZXSpectrum *bus)
+void TAPE_DECK::remove()
 {
-    BTHIS;
-    this->kind = tdk_none;
-    this->state = td_stopped;
-    this->head_pos = 0;
-    cvec_clear(&this->TAPE_pulses);
+    kind = tdk_none;
+    state = td_stopped;
+    head_pos = 0;
+    TAPE_pulses.clear();
 }
 
-void ZXSpectrum_tape_deck_init(ZXSpectrum* bus)
-{
-    BTHIS;
-    buf_init(&this->TAPE_binary);
-    cvec_init(&this->TAPE_pulses, sizeof(zxs_pulse), 2000000);
-    this->kind = tdk_none;
-    this->state = td_stopped;
-    this->head_pos = 0;
+TAPE_DECK::TAPE_DECK(core *parent) : bus(parent)
+    {
 }
 
-void ZXSpectrum_tape_deck_delete(ZXSpectrum* bus)
-{
-    BTHIS;
-    buf_delete(&this->TAPE_binary);
-    cvec_delete(&this->TAPE_pulses);
-}
-
-void ZXSpectrum_tape_deck_load_pzx(ZXSpectrum* bus, multi_file_set* mfs) {
-    BTHIS;
-    this->kind = tdk_none;
-    this->state = td_stopped;
-    this->play_pause_cycle = this->play_start_cycle = 0;
-    cvec_clear(&this->TAPE_pulses);
+void TAPE_DECK::load_pzx(multi_file_set& mfs) {
+    
+    kind = tdk_none;
+    state = td_stopped;
+    play_pause_cycle = play_start_cycle = 0;
+    TAPE_pulses.clear();
 
     u32 pulses[2][256];
 
-    u8 *ptr = (u8 *) mfs->files[0].buf.ptr;
-    u8 *end = ptr + mfs->files[0].buf.size;
+    u8 *ptr = static_cast<u8 *>(mfs.files[0].buf.ptr);
+    u8 *end = ptr + mfs.files[0].buf.size;
     u64 current_cycle = 0;
     while (ptr < end) {
 #define G8 *ptr; ptr += 1
@@ -100,7 +84,7 @@ void ZXSpectrum_tape_deck_load_pzx(ZXSpectrum* bus, multi_file_set* mfs) {
                             pulse_level ^= 1;
                             continue;
                         }
-                        struct zxs_pulse *p = cvec_push_back(&this->TAPE_pulses);
+                        zxs_pulse *p = &TAPE_pulses.emplace_back();
                         p->start = current_cycle;
                         p->level = pulse_level;
                         p->duration = duration;
@@ -127,7 +111,7 @@ void ZXSpectrum_tape_deck_load_pzx(ZXSpectrum* bus, multi_file_set* mfs) {
                 i32 shift = 7;
                 u8 byte = G8;
                 if (count < 8) {
-                    shift = (i32) count - 1;
+                    shift = static_cast<i32>(count) - 1;
                 }
                 for (u32 i = 0; i < count; i++) {
                     if (shift == -1) {
@@ -137,7 +121,7 @@ void ZXSpectrum_tape_deck_load_pzx(ZXSpectrum* bus, multi_file_set* mfs) {
                     u32 bit = (byte >> shift) & 1;
                     for (u32 j = 0; j < num_bits[bit]; j++) {
                         u32 duration = pulses[bit][j];
-                        struct zxs_pulse *p = cvec_push_back(&this->TAPE_pulses);
+                        zxs_pulse *p = &TAPE_pulses.emplace_back();
                         p->start = current_cycle;
                         p->level = pulse_level;
                         p->duration = duration;
@@ -145,7 +129,7 @@ void ZXSpectrum_tape_deck_load_pzx(ZXSpectrum* bus, multi_file_set* mfs) {
                         pulse_level ^= 1;
                     }
 
-                    struct zxs_pulse *p = cvec_push_back(&this->TAPE_pulses);
+                    zxs_pulse *p = &TAPE_pulses.emplace_back();
                     p->start = current_cycle;
                     p->level = pulse_level;
                     p->duration = tail_len;
@@ -155,7 +139,7 @@ void ZXSpectrum_tape_deck_load_pzx(ZXSpectrum* bus, multi_file_set* mfs) {
                 break;
             }
             case 0x53554150: { // PAUS
-                struct zxs_pulse *p = cvec_push_back(&this->TAPE_pulses);
+                zxs_pulse *p = &TAPE_pulses.emplace_back();
                 u32 duration = G32;
                 p->start = current_cycle;
                 p->level = (duration >> 31) & 1;
@@ -184,61 +168,61 @@ void ZXSpectrum_tape_deck_load_pzx(ZXSpectrum* bus, multi_file_set* mfs) {
 #undef G32
 #undef G16
 #undef G8
-    this->kind = tdk_pulses;
+    kind = tdk_pulses;
 }
 
-void ZXSpectrum_tape_deck_play(ZXSpectrum* bus)
+void TAPE_DECK::play()
 {
-    BTHIS;
-    if (this->kind != tdk_pulses) {
+    
+    if (kind != tdk_pulses) {
         printf("\nError play not supported for this tape type");
         return;
     }
     printf("\nPlaying tape!");
-    this->state = td_playing;
+    state = td_playing;
     // Play from stop without eject
-    if ((this->play_pause_cycle > this->play_start_cycle) && (this->play_start_cycle > 0)) {
-        u64 r = bus->clock.master_cycles - this->play_pause_cycle;
-        this->play_pause_cycle = 0;
-        this->play_start_cycle += r;
+    if ((play_pause_cycle > play_start_cycle) && (play_start_cycle > 0)) {
+        u64 r = bus->clock.master_cycles - play_pause_cycle;
+        play_pause_cycle = 0;
+        play_start_cycle += r;
     }
     else { // Play from scratch
-        this->play_pause_cycle = 0;
-        this->play_start_cycle = bus->clock.master_cycles;
-        this->pulse_block = 0;
+        play_pause_cycle = 0;
+        play_start_cycle = bus->clock.master_cycles;
+        pulse_block = 0;
     }
 }
 
-void ZXSpectrum_tape_deck_stop(ZXSpectrum* bus)
+void TAPE_DECK::stop()
 {
-    BTHIS;
-    if (this->kind != tdk_pulses) {
+    
+    if (kind != tdk_pulses) {
         printf("\nStop not supported for this tape type!");
         return;
     }
     printf("\nStopping tape...");
     // We were playing...we're pausing
-    if ((this->play_start_cycle > 0) && (this->state == td_playing)) {
-        this->play_pause_cycle = bus->clock.master_cycles;
+    if ((play_start_cycle > 0) && (state == td_playing)) {
+        play_pause_cycle = bus->clock.master_cycles;
     }
     else { // We're just stopped already
-        this->play_start_cycle = 0;
-        this->play_pause_cycle = 0;
+        play_start_cycle = 0;
+        play_pause_cycle = 0;
     }
-    this->state = td_stopped;
+    state = td_stopped;
 }
 
 
-void ZXSpectrum_tape_deck_load(ZXSpectrum* bus, multi_file_set* mfs) {
-    BTHIS;
-    this->kind = tdk_binary;
-    this->state = td_stopped;
-    struct buf* b = &mfs->files[0].buf;
+void TAPE_DECK::load(multi_file_set& mfs) {
+    
+    kind = tdk_binary;
+    state = td_stopped;
+    buf* b = &mfs.files[0].buf;
 
-    u8* ubi = b->ptr;
+    u8* ubi = static_cast<u8 *>(b->ptr);
     u32 pos = 0;
     u32 total_size = 0;
-    struct buf blocks[512];
+    buf blocks[512];
     u32 blocks_len=0;
     while(pos<(b->size-1)) {
         // Fetch block size
@@ -246,8 +230,7 @@ void ZXSpectrum_tape_deck_load(ZXSpectrum* bus, multi_file_set* mfs) {
         pos += 2;
         // Allocate and copy block
         total_size += block_size;
-        buf_init(&blocks[blocks_len]);
-        buf_allocate(&blocks[blocks_len], block_size);
+        blocks[blocks_len].allocate(block_size);
         memcpy(blocks[blocks_len].ptr, ubi+pos, block_size);
         blocks_len++;
         pos += block_size;
@@ -256,13 +239,13 @@ void ZXSpectrum_tape_deck_load(ZXSpectrum* bus, multi_file_set* mfs) {
     }
 
     printf("\nJust parsed %d blocks of total size %d", blocks_len, total_size);
-    buf_allocate(&this->TAPE_binary, total_size);
+    TAPE_binary.allocate(total_size);
     u32 tpos = 0;
     for (u32 i = 0; i < blocks_len; i++) {
         for (u32 j = 0; j < blocks[i].size; j++) {
-            ((u8 *)this->TAPE_binary.ptr)[tpos] = *((u8*)blocks[i].ptr + j);
+            static_cast<u8 *>(TAPE_binary.ptr)[tpos] = *(static_cast<u8 *>(blocks[i].ptr) + j);
             tpos++;
         }
-        buf_delete(&blocks[i]);
     }
+}
 }

@@ -2,12 +2,13 @@
 // Created by . on 5/2/24.
 //
 
-#ifndef JSMOOCH_EMUS_TAPE_DECK_H
-#define JSMOOCH_EMUS_TAPE_DECK_H
+#pragma once
 
 #include "helpers/int.h"
 #include "helpers/physical_io.h"
 #include "helpers/pack.h"
+
+namespace ZXSpectrum {
 
 enum td_states {
     td_stopped = 0,
@@ -16,9 +17,9 @@ enum td_states {
 
 PACK_BEGIN
 struct zxs_pulse {
-    u64 start;
-    u32 duration;
-    u32 level;
+    u64 start{};
+    u32 duration{};
+    u32 level{};
 } PACK_END;
 
 enum td_kinds {
@@ -26,30 +27,29 @@ enum td_kinds {
     tdk_binary = 1,
     tdk_pulses = 2
 };
+struct core;
 
-struct ZXSpectrum_tape_deck {
-    struct cvec* IOs;
-    u32 tape_deck_index;
+struct TAPE_DECK {
+    explicit TAPE_DECK(core *parent);
+    void rewind();
+    void remove();
+    void load_pzx(multi_file_set& mfs);
+    void play();
+    void stop();
+    void load(multi_file_set& mfs);
 
-    enum td_states state;
-    enum td_kinds kind;
-    struct buf TAPE_binary;
-    struct cvec TAPE_pulses;
+    core *bus;
+    u32 tape_deck_index{};
 
-    u64 play_start_cycle;
-    u64 play_pause_cycle;
-    u32 pulse_block;
-    u32 head_pos;
+    td_states state{td_stopped};
+    td_kinds kind{tdk_none};
+    buf TAPE_binary{};
+    std::vector<zxs_pulse> TAPE_pulses{};
 
+    u64 play_start_cycle{};
+    u64 play_pause_cycle{};
+    u32 pulse_block{};
+    u32 head_pos{};
 };
 
-struct ZXSpectrum;
-void ZXSpectrum_tape_deck_init(ZXSpectrum* bus);
-void ZXSpectrum_tape_deck_delete(ZXSpectrum* bus);
-void ZXSpectrum_tape_deck_load(ZXSpectrum* bus, multi_file_set* mfs);
-void ZXSpectrum_tape_deck_load_pzx(ZXSpectrum* bus, multi_file_set* mfs);
-void ZXSpectrum_tape_deck_rewind(ZXSpectrum *bus);
-void ZXSpectrum_tape_deck_remove(ZXSpectrum *bus);
-void ZXSpectrum_tape_deck_play(ZXSpectrum* bus);
-void ZXSpectrum_tape_deck_stop(ZXSpectrum* bus);
-#endif //JSMOOCH_EMUS_TAPE_DECK_H
+}

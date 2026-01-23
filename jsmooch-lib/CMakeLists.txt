@@ -66,6 +66,14 @@ set(SOURCE_LIST
         "src/component/cpu/wdc65816/wdc65816_disassembler.cpp"
         "src/component/cpu/wdc65816/wdc65816_disassembler.h"
         "src/component/cpu/wdc65816/wdc65816_generated_opcodes.cpp"
+        "src/system/zxspectrum/tape_deck.cpp"
+        "src/system/zxspectrum/tape_deck.h"
+        "src/system/zxspectrum/ula.cpp"
+        "src/system/zxspectrum/ula.h"
+        "src/system/zxspectrum/zxspectrum.cpp"
+        "src/system/zxspectrum/zxspectrum.h"
+        "src/system/zxspectrum/zxspectrum_bus.cpp"
+        "src/system/zxspectrum/zxspectrum_bus.h"
         "src/system/nes/nes.h"
         "src/system/nes/nes.cpp"
         "src/system/nes/nes_clock.cpp"
@@ -444,6 +452,12 @@ set(SOURCE_LIST
         src/helpers/debugger/source_list.cpp
         src/helpers/debugger/source_list.h
         src/system/nds/nds_serialize.cpp
+        src/system/zxspectrum/zxspectrum_bus.cpp
+        src/system/zxspectrum/zxspectrum_bus.h
+        src/system/zxspectrum/zxspectrum_debugger.cpp
+        src/system/zxspectrum/zxspectrum_debugger.h
+        src/system/zxspectrum/clock.cpp
+        src/system/zxspectrum/clock.h
 )
 
 # TODO: Fix elf-parser repo for windows

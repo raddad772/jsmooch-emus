@@ -13,7 +13,7 @@
 //#include "system/dreamcast/dreamcast.h"
 //#include "system/ps1/ps1.h"
 //#include "system/atari2600/atari2600.h"
-//#include "system/zxspectrum/zxspectrum.h"
+#include "system/zxspectrum/zxspectrum.h"
 #include "system/genesis/genesis.h"
 //#include "system/apple2/apple2.h"
 #include "system/mac/mac.h"
@@ -87,16 +87,16 @@ jsm_system* new_system(jsm::systems which)
             break;
         case jsm::systems::APPLEIIe:
             apple2_new(out);
-            break;
-        case jsm::systems::ZX_SPECTRUM_48K:
-            ZXSpectrum_new(out, ZXS_spectrum48);
-            break;
-        case jsm::systems::GALAKSIJA:
-            galaksija_new(out);
-            break;
-        case jsm::systems::ZX_SPECTRUM_128K:
-            ZXSpectrum_new(out, ZXS_spectrum128);
             break;*/
+        case jsm::systems::ZX_SPECTRUM_48K:
+            out = ZXSpectrum_new(ZXSpectrum::variants::spectrum48);
+            break;
+        /*case jsm::systems::GALAKSIJA:
+            galaksija_new(out);
+            break;*/
+        case jsm::systems::ZX_SPECTRUM_128K:
+            out = ZXSpectrum_new(ZXSpectrum::variants::spectrum128);
+            break;
         default:
             printf("CREATE UNKNOWN SYSTEM!");
             break;
