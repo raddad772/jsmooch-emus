@@ -57,7 +57,6 @@ core::core(variants variant_in) :
     ROM_mask = ROM_size - 1;
     RAM_mask = RAM_size - 1;
 
-    memset(&clock, 0, sizeof(clock));
     clock.flash.count = 16;
     /*
         this.master_clocks_per_line = 448;
@@ -531,7 +530,7 @@ u32 core::finish_scanline()
 
 void core::CPU_cycle()
 {
-    if (clock.contended && ((cpu.pins.Addr - 0x4000) < 0x4000)) return;
+    //if (clock.contended && ((cpu.pins.Addr - 0x4000) < 0x4000)) return;
     cpu.cycle();
     if (cpu.pins.RD) {
         if (cpu.pins.MRQ) {// read ROM/RAM

@@ -56,6 +56,7 @@ void ULA::scanline_border_top()
     if ((screen_x >= 0) && (screen_x < 352)) {
         u64 bo = (352 * screen_y) + screen_x;
         cur_output[bo] = io.border_color;
+        //cur_output[bo] = 12;
     }
 }
 
@@ -206,7 +207,6 @@ void ULA::new_scanline()
     bus->clock.ula_x = 0;
     display->scan_x = 0;
     display->scan_y++;
-    printf("\nNEW SCANLINE Y:%d X:%d", display->scan_y, screen_x);
     screen_x = -96;
     bus->clock.ula_y++;
     screen_y++;
@@ -216,6 +216,7 @@ void ULA::new_scanline()
         bus->clock.ula_frame_cycle = 0;
         screen_y = -8;
         bus->clock.frames_since_restart++;
+        bus->clock.master_frame++;
         bus->clock.flash.count--;
         if (bus->clock.flash.count <= 0) {
             bus->clock.flash.count = 16;
@@ -260,6 +261,12 @@ void ULA::new_scanline()
 void ULA::cycle()
 {
     (this->*scanline_func)();
+    if (false) {
+        u64 bo = (352 * screen_y) + screen_x;
+        //cur_output[bo] = io.border_color;
+        if (screen_x == 100)
+            cur_output[bo] = 12;
+    }
     bus->clock.ula_x++;
     screen_x++;
     display->scan_x++;

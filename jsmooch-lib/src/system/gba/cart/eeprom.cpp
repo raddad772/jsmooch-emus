@@ -131,7 +131,7 @@ void core::write_eeprom(u32 addr, u8 sz, u8 access, u32 val)
         e.serial_add(val);
         if (e.serial.sz == e.addr_bus_size) {
             // Address get!
-            e.cmd.cur_bit_addr = ((e.serial.data * 8) & 0x1FFF) * 8;
+            e.cmd.cur_bit_addr = ((e.serial.data << 3) & 0x1FFF) << 3;
             e.mode &= ~STATE_GET_ADDR;
             e.serial_clear();
             if (e.mode & STATE_READ) {

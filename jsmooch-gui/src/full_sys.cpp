@@ -880,7 +880,8 @@ void full_system::load_default_ROM()
             //worked = grab_ROM(&ROMs, which, "memory.gba", nullptr);
             //worked = grab_ROM(&ROMs, which, "bios.gba", nullptr);
 
-            worked = grab_ROM(&ROMs, which, "castlevania_hod.gba", nullptr); // works!
+            worked = grab_ROM(&ROMs, which, "alttp.gba", nullptr); // works!
+            //worked = grab_ROM(&ROMs, which, "castlevania_hod.gba", nullptr); // works!
 
             //worked = grab_ROM(&ROMs, which, "kirby.gba", nullptr); // works!
             //worked = grab_ROM(&ROMs, which, "pokemon_ruby.gba", nullptr); // needs work! RTC, flash

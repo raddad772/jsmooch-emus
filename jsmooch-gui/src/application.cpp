@@ -18,7 +18,7 @@
 #include <SDL3/SDL.h>
 
 #include "helpers/cvec.h"
-#define FRAME_MULTI 10
+#define FRAME_MULTI 100
 
 
 #ifdef JSM_OPENGL
