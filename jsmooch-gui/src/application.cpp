@@ -1178,7 +1178,7 @@ int imgui_jsmooch_app::do_setup_before_mainloop()
     //which = jsm::systems::TURBOGRAFX16;
     //which = jsm::systems::NES;
     //which = jsm::systems::COMMODORE64;
-    which = jsm::systems::GALAKSIJA;
+    //which = jsm::systems::GALAKSIJA;
     //dbg_enable_trace();
 #endif
 

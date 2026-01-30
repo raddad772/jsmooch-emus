@@ -127,12 +127,11 @@ void core::describe_io()
     // controllers
     physical_io_device *d = &IOs.emplace_back();
     d->init(HID_CONTROLLER, true, true, true, false);
-
     snprintf(d->controller.name, sizeof(d->controller.name), "%s", "GameBoy");
     d->id = 0;
     d->kind = HID_CONTROLLER;
     d->connected = true;
-    d->enabled = false;
+    d->enabled = true;
 
     JSM_CONTROLLER* cnt = &d->controller;
 

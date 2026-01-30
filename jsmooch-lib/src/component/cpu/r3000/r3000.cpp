@@ -65,9 +65,9 @@ struct R3000_pipeline_item *R3000_pipe_move_forward(R3000_pipeline *this)
 
 static void do_decode_table(R3000 *this) {
     for (u32 op1 = 0; op1 < 0x3F; op1++) {
-        struct R3000_opcode *mo = &this->decode_table[op1];
+        struct OPCODE *mo = &this->decode_table[op1];
         R3000_ins o = &R3000_fNA;
-        enum R3000_MN m = R3000_MN_NA;
+        enum MN m = MN_NA;
         i32 a = 0;
         switch (op1) {
             case 0: {// SPECIAL
@@ -75,119 +75,119 @@ static void do_decode_table(R3000 *this) {
                     a = 0;
                     switch (op2) {
                         case 0: // SLL
-                            m = R3000_MN_J;
+                            m = MN_J;
                             o = &R3000_fSLL;
                             break;
                         case 0x02: // SRL
-                            m = R3000_MN_SRL;
+                            m = MN_SRL;
                             o = &R3000_fSRL;
                             break;
                         case 0x03: // SRA
-                            m = R3000_MN_SRA;
+                            m = MN_SRA;
                             o = &R3000_fSRA;
                             break;
                         case 0x4: // SLLV
-                            m = R3000_MN_SLLV;
+                            m = MN_SLLV;
                             o = &R3000_fSLLV;
                             break;
                         case 0x06: // SRLV
-                            m = R3000_MN_SRLV;
+                            m = MN_SRLV;
                             o = &R3000_fSRLV;
                             break;
                         case 0x07: // SRAV
-                            m = R3000_MN_SRAV;
+                            m = MN_SRAV;
                             o = &R3000_fSRAV;
                             break;
                         case 0x08: // JR
-                            m = R3000_MN_JR;
+                            m = MN_JR;
                             o = &R3000_fJR;
                             break;
                         case 0x09: // JALR
-                            m = R3000_MN_JALR;
+                            m = MN_JALR;
                             o = &R3000_fJALR;
                             break;
                         case 0x0C: // SYSCALL
-                            m = R3000_MN_SYSCALL;
+                            m = MN_SYSCALL;
                             o = &R3000_fSYSCALL;
                             break;
                         case 0x0D: // BREAK
-                            m = R3000_MN_BREAK;
+                            m = MN_BREAK;
                             o = &R3000_fBREAK;
                             break;
                         case 0x10: // MFHI
-                            m = R3000_MN_MFHI;
+                            m = MN_MFHI;
                             o = &R3000_fMFHI;
                             break;
                         case 0x11: // MTHI
-                            m = R3000_MN_MTHI;
+                            m = MN_MTHI;
                             o = &R3000_fMTHI;
                             break;
                         case 0x12: // MFLO
-                            m = R3000_MN_MFLO;
+                            m = MN_MFLO;
                             o = &R3000_fMFLO;
                             break;
                         case 0x13: // MTLO
-                            m = R3000_MN_MTLO;
+                            m = MN_MTLO;
                             o = &R3000_fMTLO;
                             break;
                         case 0x18: // MULT
-                            m = R3000_MN_MULT;
+                            m = MN_MULT;
                             o = &R3000_fMULT;
                             break;
                         case 0x19: // MULTU
-                            m = R3000_MN_MULTU;
+                            m = MN_MULTU;
                             o = &R3000_fMULTU;
                             break;
                         case 0x1A: // DIV
-                            m = R3000_MN_DIV;
+                            m = MN_DIV;
                             o = &R3000_fDIV;
                             break;
                         case 0x1B: // DIVU
-                            m = R3000_MN_DIVU;
+                            m = MN_DIVU;
                             o = &R3000_fDIVU;
                             break;
                         case 0x20: // ADD
-                            m = R3000_MN_ADD;
+                            m = MN_ADD;
                             o = &R3000_fADD;
                             break;
                         case 0x21: // ADDU
-                            m = R3000_MN_ADDU;
+                            m = MN_ADDU;
                             o = &R3000_fADDU;
                             break;
                         case 0x22: // SUB
-                            m = R3000_MN_SUB;
+                            m = MN_SUB;
                             o = &R3000_fSUB;
                             break;
                         case 0x23: // SUBU
-                            m = R3000_MN_SUBU;
+                            m = MN_SUBU;
                             o = &R3000_fSUBU;
                             break;
                         case 0x24: // AND
-                            m = R3000_MN_AND;
+                            m = MN_AND;
                             o = &R3000_fAND;
                             break;
                         case 0x25: // OR
-                            m = R3000_MN_OR;
+                            m = MN_OR;
                             o = &R3000_fOR;
                             break;
                         case 0x26: // XOR
-                            m = R3000_MN_XOR;
+                            m = MN_XOR;
                             o = &R3000_fXOR;
                             break;
                         case 0x27: // NOR
-                            m = R3000_MN_NOR;
+                            m = MN_NOR;
                             o = &R3000_fNOR;
                             break;
                         case 0x2A: // SLT
-                            m = R3000_MN_SLT;
+                            m = MN_SLT;
                             o = &R3000_fSLT;
                             break;
                         case 0x2B: // SLTU
-                            m = R3000_MN_SLTU;
+                            m = MN_SLTU;
                             o = &R3000_fSLTU;
                             break;
                         default:
-                            m = R3000_MN_NA;
+                            m = MN_NA;
                             o = &R3000_fNA;
                             break;
                     }
@@ -200,126 +200,126 @@ static void do_decode_table(R3000 *this) {
                 continue;
             }
             case 0x01: // BcondZ
-                m = R3000_MN_BcondZ;
+                m = MN_BcondZ;
                 o = &R3000_fBcondZ;
                 break;
             case 0x02: // J
-                m = R3000_MN_J;
+                m = MN_J;
                 o = &R3000_fJ;
                 break;
             case 0x03: // JAL
-                m = R3000_MN_JAL;
+                m = MN_JAL;
                 o = &R3000_fJAL;
                 break;
             case 0x04: // BEQ
-                m = R3000_MN_BEQ;
+                m = MN_BEQ;
                 o = &R3000_fBEQ;
                 break;
             case 0x05: // BNE
-                m = R3000_MN_BNE;
+                m = MN_BNE;
                 o = &R3000_fBNE;
                 break;
             case 0x06: // BLEZ
-                m = R3000_MN_BLEZ;
+                m = MN_BLEZ;
                 o = &R3000_fBLEZ;
                 break;
             case 0x07: // BGTZ
-                m = R3000_MN_BGTZ;
+                m = MN_BGTZ;
                 o = &R3000_fBGTZ;
                 break;
             case 0x08: // ADDI
-                m = R3000_MN_ADDI;
+                m = MN_ADDI;
                 o = &R3000_fADDI;
                 break;
             case 0x09: // ADDIU
-                m = R3000_MN_ADDIU;
+                m = MN_ADDIU;
                 o = &R3000_fADDIU;
                 break;
             case 0x0A: // SLTI
-                m = R3000_MN_SLTI;
+                m = MN_SLTI;
                 o = &R3000_fSLTI;
                 break;
             case 0x0B: // SLTIU
-                m = R3000_MN_SLTIU;
+                m = MN_SLTIU;
                 o = &R3000_fSLTIU;
                 break;
             case 0x0C: // ANDI
-                m = R3000_MN_ANDI;
+                m = MN_ANDI;
                 o = &R3000_fANDI;
                 break;
             case 0x0D: // ORI
-                m = R3000_MN_ORI;
+                m = MN_ORI;
                 o = &R3000_fORI;
                 break;
             case 0x0E: // XORI
-                m = R3000_MN_XORI;
+                m = MN_XORI;
                 o = &R3000_fXORI;
                 break;
             case 0x0F: // LUI
-                m = R3000_MN_LUI;
+                m = MN_LUI;
                 o = &R3000_fLUI;
                 break;
             case 0x13: // COP3
             case 0x12: // COP2
             case 0x11: // COP1
             case 0x10: // COP0
-                m = R3000_MN_COPx;
+                m = MN_COPx;
                 o = &R3000_fCOP;
                 a = (op1 - 0x10);
                 break;
             case 0x20: // LB
-                m = R3000_MN_LB;
+                m = MN_LB;
                 o = &R3000_fLB;
                 break;
             case 0x21: // LH
-                m = R3000_MN_LH;
+                m = MN_LH;
                 o = &R3000_fLH;
                 break;
             case 0x22: // LWL
-                m = R3000_MN_LWL;
+                m = MN_LWL;
                 o = &R3000_fLWL;
                 break;
             case 0x23: // LW
-                m = R3000_MN_LW;
+                m = MN_LW;
                 o = &R3000_fLW;
                 break;
             case 0x24: // LBU
-                m = R3000_MN_LBU;
+                m = MN_LBU;
                 o = &R3000_fLBU;
                 break;
             case 0x25: // LHU
-                m = R3000_MN_LHU;
+                m = MN_LHU;
                 o = &R3000_fLHU;
                 break;
             case 0x26: // LWR
-                m = R3000_MN_LWR;
+                m = MN_LWR;
                 o = &R3000_fLWR;
                 break;
             case 0x28: // SB
-                m = R3000_MN_SB;
+                m = MN_SB;
                 o = &R3000_fSB;
                 break;
             case 0x29: // SH
-                m = R3000_MN_SH;
+                m = MN_SH;
                 o = &R3000_fSH;
                 break;
             case 0x2A: // SWL
-                m = R3000_MN_SWL;
+                m = MN_SWL;
                 o = &R3000_fSWL;
                 break;
             case 0x2B: // SW
-                m = R3000_MN_SW;
+                m = MN_SW;
                 o = &R3000_fSW;
                 break;
             case 0x2E: // SWR
-                m = R3000_MN_SWR;
+                m = MN_SWR;
                 o = &R3000_fSWR;
                 break;
             case 0x33: // LWC3
             case 0x32: // LWC2
             case 0x31: // LWC1
             case 0x30: // LWC0
-                m = R3000_MN_LWCx;
+                m = MN_LWCx;
                 o = &R3000_fLWC;
                 a = op1 - 0x30;
                 break;
@@ -327,7 +327,7 @@ static void do_decode_table(R3000 *this) {
             case 0x3A: // SWC2
             case 0x39: // SWC1
             case 0x38: // SWC0
-                m = R3000_MN_SWCx;
+                m = MN_SWCx;
                 o = &R3000_fSWC;
                 a = op1 - 0x38;
                 break;
