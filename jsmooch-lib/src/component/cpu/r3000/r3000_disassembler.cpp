@@ -8,28 +8,22 @@
 
 #include "r3000_disassembler.h"
 
-#if defined(_MSC_VER)
-#pragma warning(push)
-#pragma warning(disable: 4334) // warning C4334: '<<': result of 32-bit shift implicitly converted to 64 bits (was 64-bit shift intended?)
-#pragma warning(disable: 4293) // warning C4293: '<<': shift count negative or too big, undefined behavior
-#endif
-
-static void add_r_context(ctxt *t, u32 rnum)
+static void add_r_context(R3000::ctxt *t, u32 rnum)
 {
     if (t) t->regs |= (1L << rnum);
 }
 
-static void add_PC_context(ctxt *t, u32 rnum)
+static void add_PC_context(R3000::ctxt *t, u32 rnum)
 {
     t->regs |= (1L << 32);
 }
 
-static void add_gte_context(ctxt *t, u32 rnum)
+static void add_gte_context(R3000::ctxt *t, u32 rnum)
 {
     t->gte |= (1L << rnum);
 }
 
-static void add_cop_context(ctxt *t, u32 rnum)
+static void add_cop_context(R3000::ctxt *t, u32 rnum)
 {
     t->cop |= (1L << rnum);
 }
@@ -38,7 +32,7 @@ static void add_cop_context(ctxt *t, u32 rnum)
 #pragma warning(pop)
 #endif
 
-static const char GTE_reg_alias_arr[65][12] = {
+static constexpr char GTE_reg_alias_arr[65][12] = {
         "vxy0", "vz0", "vxy1", "vz1", "vxy2", "vz2", "rgbc", "otz",
         "ir0", "ir1", "ir2", "ir3", "sxy0", "sxy1", "sxy2", "sxyp",
         "sz0", "sz1", "sz2", "sz3", "rgb0", "rgb1", "rgb2", "res1",
@@ -50,7 +44,7 @@ static const char GTE_reg_alias_arr[65][12] = {
         "unknown reg"
 };
 
-static const char reg_alias_arr[33][12] = {
+static constexpr char reg_alias_arr[33][12] = {
         "r0", "at", "v0", "v1",
         "a0", "a1", "a2", "a3",
         "t0", "t1", "t2", "t3",
@@ -67,84 +61,84 @@ const char *GTE_reg_alias(int reg) {
     return GTE_reg_alias_arr[64];
 }
 
-void disassemble_GTE(u32 opcode, jsm_string *out, ctxt *ctxt) {
+void disassemble_GTE(u32 opcode, jsm_string *out, R3000::ctxt *ctxt) {
     u32 sf = (opcode >> 19) & 1;
     switch(opcode & 0x3F) {
         case 0x00: // N/A
-            jsm_string_sprintf(out, "%s", "GTE NA0");
+            out->sprintf("%s", "GTE NA0");
             return;
         case 0x01: //
-            jsm_string_sprintf(out, "%s", "RTPS");
+            out->sprintf("%s", "RTPS");
             return;
         case 0x06:
-            jsm_string_sprintf(out, "%s", "NCLIP");
+            out->sprintf("%s", "NCLIP");
             return;
         case 0x0C:
-            jsm_string_sprintf(out, "%s", "OP(%d)", sf);
+            out->sprintf("%s", "OP(%d)", sf);
             return;
         case 0x10:
-            jsm_string_sprintf(out, "%s", "DPCS");
+            out->sprintf("%s", "DPCS");
             return;
         case 0x11:
-            jsm_string_sprintf(out, "%s", "INTPL");
+            out->sprintf("%s", "INTPL");
             return;
         case 0x12:
-            jsm_string_sprintf(out, "%s", "MVMVA");
+            out->sprintf("%s", "MVMVA");
             return;
         case 0x13:
-            jsm_string_sprintf(out, "%s", "NCDS");
+            out->sprintf("%s", "NCDS");
             return;
         case 0x14:
-            jsm_string_sprintf(out, "%s", "CDP");
+            out->sprintf("%s", "CDP");
             return;
         case 0x16:
-            jsm_string_sprintf(out, "%s", "NCDT");
+            out->sprintf("%s", "NCDT");
             return;
         case 0x1B:
-            jsm_string_sprintf(out, "%s", "NCCS");
+            out->sprintf("%s", "NCCS");
             return;
         case 0x1C:
-            jsm_string_sprintf(out, "%s", "CC");
+            out->sprintf("%s", "CC");
             return;
         case 0x1E:
-            jsm_string_sprintf(out, "%s", "NCS");
+            out->sprintf("%s", "NCS");
             return;
         case 0x20:
-            jsm_string_sprintf(out, "%s", "NCT");
+            out->sprintf("%s", "NCT");
             return;
         case 0x28:
-            jsm_string_sprintf(out, "%s", "SQRT(%d)", sf);
+            out->sprintf("%s", "SQRT(%d)", sf);
             return;
         case 0x29:
-            jsm_string_sprintf(out, "%s", "DCPL");
+            out->sprintf("%s", "DCPL");
             return;
         case 0x2A:
-            jsm_string_sprintf(out, "%s", "DPCT");
+            out->sprintf("%s", "DPCT");
             return;
         case 0x2D:
-            jsm_string_sprintf(out, "%s", "AVSZ3");
+            out->sprintf("%s", "AVSZ3");
             return;
         case 0x2E:
-            jsm_string_sprintf(out, "%s", "AVSZ4");
+            out->sprintf("%s", "AVSZ4");
             return;
         case 0x30:
-            jsm_string_sprintf(out, "%s", "RTPT");
+            out->sprintf("%s", "RTPT");
             return;
         case 0x3D:
-            jsm_string_sprintf(out, "%s", "GPF(%d)5", sf);
+            out->sprintf("%s", "GPF(%d)5", sf);
             return;
         case 0x3E:
-            jsm_string_sprintf(out, "%s", "GPL(%d)5", sf);
+            out->sprintf("%s", "GPL(%d)5", sf);
             return;
         case 0x3F:
-            jsm_string_sprintf(out, "%s", "NCCT");
+            out->sprintf("%s", "NCCT");
             return;
         default:
-            jsm_string_sprintf(out, "%s", "GTE NA%01x", opcode & 0x0F);
+            out->sprintf("%s", "GTE NA%01x", opcode & 0x0F);
     }
 }
 
-static void disassemble_COP(u32 opcode, jsm_string *out, ctxt *ctxt)
+static void disassemble_COP(u32 opcode, jsm_string *out, R3000::ctxt *ctxt)
 {
     u32 copnum = (opcode >> 26) & 3;
     if (copnum == 2) {
@@ -165,81 +159,81 @@ static void disassemble_COP(u32 opcode, jsm_string *out, ctxt *ctxt)
                 case 0:
                     switch(bits5) {
                         case 0: // MFCN rt, rd
-                            jsm_string_sprintf(out, "MFC%d %s, COP%dd%d", copnum, reg_alias_arr[rt], copnum, rd);
+                            out->sprintf("MFC%d %s, COP%dd%d", copnum, reg_alias_arr[rt], copnum, rd);
                             add_cop_context(ctxt, rd);
                             add_r_context(ctxt, rt);
                             return;
                         case 2: // CFCn rt, rd
-                            jsm_string_sprintf(out, "CFC%d %s, COP%dc%d", copnum, reg_alias_arr[rt], copnum, rd);
+                            out->sprintf("CFC%d %s, COP%dc%d", copnum, reg_alias_arr[rt], copnum, rd);
                             add_r_context(ctxt, rt);
                             add_cop_context(ctxt, rd);
                             return;
                         case 4: // MTCn rt, rd
-                            jsm_string_sprintf(out, "MTC%d COP%dd%d, %s", copnum, copnum, rd, reg_alias_arr[rt]);
+                            out->sprintf("MTC%d COP%dd%d, %s", copnum, copnum, rd, reg_alias_arr[rt]);
                             add_cop_context(ctxt, rd);
                             add_r_context(ctxt, rt);
                             return;
                         case 5: // CTCn rt, rd
-                            jsm_string_sprintf(out, "CTC%d COP%dc%d, %s", copnum, copnum, rd, reg_alias_arr[rt]);
+                            out->sprintf("CTC%d COP%dc%d, %s", copnum, copnum, rd, reg_alias_arr[rt]);
                             add_cop_context(ctxt, rd);
                             add_r_context(ctxt, rt);
                             return;
                         case 8: // rt=0 BCnF, rt=1 BCnT
                             if (rt == 0)
-                                jsm_string_sprintf(out, "BC%dF #$%04x", copnum, imm16);
+                                out->sprintf("BC%dF #$%04x", copnum, imm16);
                             else
-                                jsm_string_sprintf(out, "BC%dT #$%04x", copnum, imm16);
+                                out->sprintf("BC%dT #$%04x", copnum, imm16);
                             return;
                         default:
-                                jsm_string_sprintf(out, "BADCOP8");
+                                out->sprintf("BADCOP8");
                                 return;
                     }
                 case 1: // // Immediate 25-bit or some COP0 instructions
                     if ((bits5 == 0x10) && (copnum == 0)) {
                         switch(opcode & 0x1F) {
                             case 1:
-                                jsm_string_sprintf(out, "tlbr");
+                                out->sprintf("tlbr");
                                 return;
                             case 2:
-                                jsm_string_sprintf(out, "tlbwi");
+                                out->sprintf("tlbwi");
                                 return;
                             case 6:
-                                jsm_string_sprintf(out, "tlbwr");
+                                out->sprintf("tlbwr");
                                 return;
                             case 8:
-                                jsm_string_sprintf(out, "tlbp");
+                                out->sprintf("tlbp");
                                 return;
                             case 0x10:
-                                jsm_string_sprintf(out, "rfe");
+                                out->sprintf("rfe");
                                 return;
                             default:
-                                jsm_string_sprintf(out, "BADCOP0");
+                                out->sprintf("BADCOP0");
                                 return;
                         }
                     }
-                    jsm_string_sprintf(out, "COP%dd #$%04x, %d", copnum, imm25, bits5);
+                    out->sprintf("COP%dd #$%04x, %d", copnum, imm25, bits5);
                     return;
             }
-            jsm_string_sprintf(out, "COPWHAT?");
+            out->sprintf("COPWHAT?");
             return;
         case 0x0C: // LWCn rt_dat, [rs+imm]
-            jsm_string_sprintf(out, "LWC%d COP%dd%d, [%s+#$%04x]", copnum, copnum,  rt, reg_alias_arr[rs], imm16);
+            out->sprintf("LWC%d COP%dd%d, [%s+#$%04x]", copnum, copnum,  rt, reg_alias_arr[rs], imm16);
             return;
         case 0x0E: // SWCn rt_dat, [rs+imm]
-            jsm_string_sprintf(out, "SWC%d COP%dd%d [%s+#$%04x]", copnum, copnum, rt, reg_alias_arr[rs], imm16);
+            out->sprintf("SWC%d COP%dd%d [%s+#$%04x]", copnum, copnum, rt, reg_alias_arr[rs], imm16);
             return;
         default:
-            jsm_string_sprintf(out, "UNKNOWN COP INS!");
+            out->sprintf("UNKNOWN COP INS!");
             return;
     }
     NOGOHERE;
 }
 
-void R3000_disassemble(u32 opcode, jsm_string *out, i64 ins_addr, ctxt *ct)
+void R3000_disassemble(u32 opcode, jsm_string &out, i64 ins_addr, R3000::ctxt *ct)
 {
-    jsm_string_quickempty(out);
+    out.quickempty();
     if (opcode == 0) {
-        jsm_string_sprintf(out, "nop        ");
+        out.sprintf("nop        ");
         return;
     }
 
@@ -567,7 +561,7 @@ void R3000_disassemble(u32 opcode, jsm_string *out, i64 ins_addr, ctxt *ct)
         case 0x12: // COP2
         case 0x11: // COP1
         case 0x10: // COP0
-            disassemble_COP(opcode, out, ct);
+            disassemble_COP(opcode, &out, ct);
             return;
         case 0x20: // LB
             snprintf(ostr1, sizeof(ostr1), "lb");
@@ -671,9 +665,9 @@ void R3000_disassemble(u32 opcode, jsm_string *out, i64 ins_addr, ctxt *ct)
     *ptr = 0;
 
     if (strlen(ostr2) > 0) {
-        jsm_string_sprintf(out, "%s%s", ostr1, ostr2);
+        out.sprintf("%s%s", ostr1, ostr2);
     }
     else {
-        jsm_string_sprintf(out, "%s", ostr1);
+        out.sprintf("%s", ostr1);
     }
 }
