@@ -2,15 +2,11 @@
 // Created by . on 2/13/25.
 //
 
-#ifndef JSMOOCH_EMUS_GALAKSIJA_H
-#define JSMOOCH_EMUS_GALAKSIJA_H
-
+#pragma once
 #include "helpers/enums.h"
 #include "helpers/debug.h"
 #include "helpers/int.h"
 #include "helpers/sys_interface.h"
 
-void galaksija_new(jsm_system* system);
+jsm_system *galaksija_new();
 void galaksija_delete(jsm_system* system);
-
-#endif //JSMOOCH_EMUS_GALAKSIJA_H

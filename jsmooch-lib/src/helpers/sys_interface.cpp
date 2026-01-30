@@ -19,7 +19,7 @@
 #include "system/mac/mac.h"
 #include "helpers/debug.h"
 #include "system/gba/gba.h"
-//#include "system/galaksija/galaksija.h"
+#include "system/galaksija/galaksija.h"
 #include "system/gb/gb_enums.h"
 #include "system/tg16/tg16.h"
 
@@ -91,9 +91,9 @@ jsm_system* new_system(jsm::systems which)
         case jsm::systems::ZX_SPECTRUM_48K:
             out = ZXSpectrum_new(ZXSpectrum::variants::spectrum48);
             break;
-        /*case jsm::systems::GALAKSIJA:
-            galaksija_new(out);
-            break;*/
+        case jsm::systems::GALAKSIJA:
+            out = galaksija_new();
+            break;
         case jsm::systems::ZX_SPECTRUM_128K:
             out = ZXSpectrum_new(ZXSpectrum::variants::spectrum128);
             break;
