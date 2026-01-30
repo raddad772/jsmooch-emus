@@ -2,18 +2,16 @@
 // Created by . on 2/12/25.
 //
 
-#ifndef JSMOOCH_EMUS_R3000_DISASSEMBLER_H
-#define JSMOOCH_EMUS_R3000_DISASSEMBLER_H
+#pragma once
 #include "helpers/int.h"
 #include "helpers/debug.h"
 #include "helpers/debugger/debugger.h"
-
-struct R3000ctxt {
+namespace R3000 {
+struct ctxt {
     u64 regs; // bits 0-31: regs 0-31. bit 32: PC
     u64 gte; // bits 0-63: GTE regs
     u64 cop; // bits 0-63: COP regs
 };
+}
 
-void R3000_disassemble(u32 opcode, jsm_string *out, i64 ins_addr, R3000ctxt *ct);
-
-#endif //JSMOOCH_EMUS_R3000_DISASSEMBLER_H
+void R3000_disassemble(u32 opcode, jsm_string &out, i64 ins_addr, R3000::ctxt *ct);

@@ -13,8 +13,8 @@
 #define BADINS printf("\nUNIMPLEMENTED INSTRUCTION!"); assert(1==2)
 
 // ranch_delay and cop0 default to 0
-
-static const char reg_alias_arr[33][12] = {
+namespace R3000 {
+static constexpr char reg_alias_arr[33][12] = {
         "r0", "at", "v0", "v1",
         "a0", "a1", "a2", "a3",
         "t0", "t1", "t2", "t3",
@@ -26,36 +26,31 @@ static const char reg_alias_arr[33][12] = {
         "unknown reg"
 };
 
-static inline u64 R3000_current_clock(R3000 *core)
-{
-    return *core->clock + *core->waitstates;
-}
-
-static void COP_write_reg(R3000 *core, u32 COP, u32 num, u32 val)
+void core::COP_write_reg(u32 COP, u32 num, u32 val)
 {
     switch(COP) {
         case 0:
             // TODO: add 1-cycle delay
-            core->regs.COP0[num] = val;
+            regs.COP0[num] = val;
             if (num == 12) {
-                if (core->update_sr) core->update_sr(core->update_sr_ptr, core, val);
+                if (update_sr) update_sr(update_sr_ptr, this, val);
             }
             return;
         case 2:
-            GTE_write_reg(&core->gte, num, val);
+            gte.write_reg(num, val);
             return;
         default:
             printf("\nwrite to unimplemented COP %d", COP);
     }
 }
 
-static u32 COP_read_reg(R3000 *core, u32 COP, u32 num)
+u32 core::COP_read_reg(u32 COP, u32 num)
 {
     switch(COP) {
         case 0:
-            return core->regs.COP0[num];
+            return regs.COP0[num];
         case 2:
-            return GTE_read_reg(&core->gte, num);
+            return gte.read_reg(num);
         default:
             printf("\nread from unimplemented COP %d", COP);
             return 0xFF;
@@ -64,69 +59,46 @@ static u32 COP_read_reg(R3000 *core, u32 COP, u32 num)
 
 
 // default link reg to 31
-static inline void R3000_fs_reg_write(R3000 *core, u32 target, u32 value)
-{
-    if (target != 0) core->regs.R[target] = value;
 
-    //if (core->trace_on) core->debug_reg_list.push(target);
-
-    // cancel in-pipeline write to register
-    struct R3000_pipeline_item *p = &core->pipe.current;
-    if (p->target == target) p->target = -1;
-}
-
-static inline void R3000_branch(R3000 *core, i64 rel, u32 doit, u32 link, u32 link_reg)
+void core::branch(i64 rel, u32 doit, u32 link, u32 link_reg)
 {
     if (doit) {
-        if (core->pipe.current.new_PC != 0xFFFFFFFF)
-            core->pipe.item0.new_PC = core->pipe.current.new_PC + rel;
+        if (pipe.current.new_PC != 0xFFFFFFFF)
+            pipe.item0.new_PC = pipe.current.new_PC + rel;
         else
-            core->pipe.item0.new_PC = core->regs.PC + rel;
+            pipe.item0.new_PC = regs.PC + rel;
     }
 
     if (link)
-        R3000_fs_reg_write(core, link_reg, core->regs.PC+4);
+        fs_reg_write(link_reg, regs.PC+4);
 }
 
-static inline void R3000_jump(R3000 *core, u32 new_addr, u32 doit, u32 link, u32 link_reg)
+void core::jump(u32 new_addr, u32 doit, u32 link, u32 link_reg)
 {
-    core->pipe.item0.new_PC = new_addr;
+    pipe.item0.new_PC = new_addr;
 
     if (link)
-        R3000_fs_reg_write(core, link_reg, core->regs.PC+4);
+        fs_reg_write(link_reg, regs.PC+4);
 }
 
-
-static inline u32 R3000_fs_reg_delay_read(R3000 *core, i32 target) {
-    struct R3000_pipeline_item *p = &core->pipe.current;
+u32 core::fs_reg_delay_read(i32 target) {
+    auto *p = &pipe.current;
     if (p->target == target) {
         p->target = -1;
         return p->value;
     }
     else {
-        return core->regs.R[target];
+        return regs.R[target];
     }
 }
-
-static inline void R3000_fs_reg_delay(R3000 *core, i32 target, u32 value)
+    
+void core::fNA(u32 opcode, OPCODE *op)
 {
-    struct R3000_pipeline_item *p = &core->pipe.item0;
-    p->target = target;
-    p->value = value;
-
-    if (core->pipe.current.target == target) {
-        core->pipe.current.target = -1;
-    }
-}
-
-
-void R3000_fNA(u32 opcode, OPCODE *op, R3000 *core)
-{
-    printf("\nBAD INSTRUCTION %08x AT PC(+4) %08x cycle:%lld", opcode, core->regs.PC, R3000_current_clock(core));
+    printf("\nBAD INSTRUCTION %08x AT PC(+4) %08x cycle:%lld", opcode, regs.PC, current_clock());
     dbg_break("BAD INSTRUCTIONN", 0);
 }
 
-void R3000_fSLL(u32 opcode, OPCODE *op, R3000 *core)
+void core::fSLL(u32 opcode, OPCODE *op)
 {
     if (opcode == 0) {
         return;
@@ -135,130 +107,130 @@ void R3000_fSLL(u32 opcode, OPCODE *op, R3000 *core)
     u32 rd = (opcode >> 11) & 0x1F;
     u32 imm5 = (opcode >> 6) & 0x1F;
 
-    R3000_fs_reg_write(core, rd, core->regs.R[rt] << imm5);
+    fs_reg_write(rd, regs.R[rt] << imm5);
 }
 
-void R3000_fSRL(u32 opcode, OPCODE *op, R3000 *core)
+void core::fSRL(u32 opcode, OPCODE *op)
 {
     u32 rt = (opcode >> 16) & 0x1F;
     u32 rd = (opcode >> 11) & 0x1F;
     u32 imm5 = (opcode >> 6) & 0x1F;
 
-    R3000_fs_reg_write(core, rd, core->regs.R[rt] >> imm5);
+    fs_reg_write(rd, regs.R[rt] >> imm5);
 }
 
-void R3000_fSRA(u32 opcode, OPCODE *op, R3000 *core)
+void core::fSRA(u32 opcode, OPCODE *op)
 {
     u32 rt = (opcode >> 16) & 0x1F;
     u32 rd = (opcode >> 11) & 0x1F;
     u32 imm5 = (opcode >> 6) & 0x1F;
 
-    R3000_fs_reg_write(core, rd, (u32)(((i32)core->regs.R[rt]) >> imm5));
+    fs_reg_write(rd, static_cast<u32>(static_cast<i32>(regs.R[rt]) >> imm5));
 }
 
-void R3000_fSLLV(u32 opcode, OPCODE *op, R3000 *core)
+void core::fSLLV(u32 opcode, OPCODE *op)
 {
     u32 rs = (opcode >> 21) & 0x1F;
     u32 rt = (opcode >> 16) & 0x1F;
     u32 rd = (opcode >> 11) & 0x1F;
 
-    R3000_fs_reg_write(core, rd, core->regs.R[rt] << (core->regs.R[rs] & 0x1F));
+    fs_reg_write(rd, regs.R[rt] << (regs.R[rs] & 0x1F));
 }
 
-void R3000_fSRLV(u32 opcode, OPCODE *op, R3000 *core)
+void core::fSRLV(u32 opcode, OPCODE *op)
 {
     u32 rs = (opcode >> 21) & 0x1F;
     u32 rt = (opcode >> 16) & 0x1F;
     u32 rd = (opcode >> 11) & 0x1F;
 
-    R3000_fs_reg_write(core, rd, core->regs.R[rt] >> (core->regs.R[rs] & 0x1F));
+    fs_reg_write(rd, regs.R[rt] >> (regs.R[rs] & 0x1F));
 }
 
-void R3000_fSRAV(u32 opcode, OPCODE *op, R3000 *core)
+void core::fSRAV(u32 opcode, OPCODE *op)
 {
     u32 rs = (opcode >> 21) & 0x1F;
     u32 rt = (opcode >> 16) & 0x1F;
     u32 rd = (opcode >> 11) & 0x1F;
 
-    R3000_fs_reg_write(core, rd, (u32)(((i32)core->regs.R[rt]) >> (core->regs.R[rs] & 0x1F)));
+    fs_reg_write(rd, static_cast<u32>(static_cast<i32>(regs.R[rt]) >> (regs.R[rs] & 0x1F)));
 }
 
 #define DEFAULT_LINKREG 31
 
-void R3000_fJR(u32 opcode, OPCODE *op, R3000 *core)
+void core::fJR(u32 opcode, OPCODE *op)
 {
     u32 rs = (opcode >> 21) & 0x1F;
-    R3000_jump(core, core->regs.R[rs], 1, 0, DEFAULT_LINKREG);
+    jump(regs.R[rs], 1, 0, DEFAULT_LINKREG);
 }
 
-void R3000_fJALR(u32 opcode, OPCODE *op, R3000 *core)
+void core::fJALR(u32 opcode, OPCODE *op)
 {
     u32 rs = (opcode >> 21) & 0x1F;
     u32 rd = (opcode >> 11) & 0x1F;
-    R3000_jump(core, core->regs.R[rs], 1, 1, rd);
+    jump(regs.R[rs], 1, 1, rd);
 }
 
-void R3000_fSYSCALL(u32 opcode, OPCODE *op, R3000 *core)
+void core::fSYSCALL(u32 opcode, OPCODE *op)
 {
-    R3000_exception(core, 8, 0, 0);
+    exception(8, 0, 0);
 }
 
-void R3000_fBREAK(u32 opcode, OPCODE *op, R3000 *core)
+void core::fBREAK(u32 opcode, OPCODE *op)
 {
-    R3000_exception(core, 9, 0, 0);
+    exception(9, 0, 0);
 }
 
-static void wait_for(R3000 *core, u64 timecode)
+void core::wait_for(u64 timecode)
 {
-    u64 current = *core->clock + *core->waitstates;
+    u64 current = *clock + *waitstates;
     if (current < timecode) {
-        *core->waitstates += (timecode - current) - 1;
+        *waitstates += (timecode - current) - 1;
     }
 }
 
-void R3000_fMFHI(u32 opcode, OPCODE *op, R3000 *core)
+void core::fMFHI(u32 opcode, OPCODE *op)
 {
     u32 rd = (opcode >> 11) & 0x1F;
 
-    // TODO: add delay here until core->multiplier.clock_end
-    wait_for(core, core->multiplier.clock_end);
-    R3000_multiplier_finish(&core->multiplier);
-    R3000_fs_reg_write(core, rd, core->multiplier.hi);
+    // TODO: add delay here until multiplier.clock_end
+    wait_for(multiplier.clock_end);
+    multiplier.finish();
+    fs_reg_write(rd, multiplier.hi);
 }
 
-void R3000_fMFLO(u32 opcode, OPCODE *op, R3000 *core)
+void core::fMFLO(u32 opcode, OPCODE *op)
 {
     u32 rd = (opcode >> 11) & 0x1F;
 
-    wait_for(core, core->multiplier.clock_end);
-    R3000_multiplier_finish(&core->multiplier);
-    R3000_fs_reg_write(core, rd, core->multiplier.lo);
+    wait_for(multiplier.clock_end);
+    multiplier.finish();
+    fs_reg_write(rd, multiplier.lo);
 }
 
-void R3000_fMTHI(u32 opcode, OPCODE *op, R3000 *core)
+void core::fMTHI(u32 opcode, OPCODE *op)
 {
     u32 rs = (opcode >> 21) & 0x1F;
 
     // TODO: interrupt multiplier?
-    core->multiplier.hi = core->regs.R[rs];
+    multiplier.hi = regs.R[rs];
 }
 
-void R3000_fMTLO(u32 opcode, OPCODE *op, R3000 *core)
+void core::fMTLO(u32 opcode, OPCODE *op)
 {
     u32 rs = (opcode >> 21) & 0x1F;
 
     // TODO: interrupt multiplier?
-    core->multiplier.lo = core->regs.R[rs];
+    multiplier.lo = regs.R[rs];
 }
 
-void R3000_fMULT(u32 opcode, OPCODE *op, R3000 *core)
+void core::fMULT(u32 opcode, OPCODE *op)
 {
     // SIGNED multiply
     u32 rs = (opcode >> 21) & 0x1F;
     u32 rt = (opcode >> 16) & 0x1F;
     u32 spd = 0;
 
-    i32 o1 = (i32)core->regs.R[rs];
+    i32 o1 = static_cast<i32>(regs.R[rs]);
 
     // TODO: make this a little more correct
     if (abs(o1) < 0x800)
@@ -268,16 +240,16 @@ void R3000_fMULT(u32 opcode, OPCODE *op, R3000 *core)
     else
         spd = 12;
 
-    R3000_multiplier_set(&core->multiplier, 0, 0, (u32)o1, core->regs.R[rt], 0, spd, R3000_current_clock(core));
+    multiplier.set(0, 0, static_cast<u32>(o1), regs.R[rt], 0, spd, current_clock());
 }
 
-void R3000_fMULTU(u32 opcode, OPCODE *op, R3000 *core)
+void core::fMULTU(u32 opcode, OPCODE *op)
 {
     // UNSIGNED multiply
     u32 rs = (opcode >> 21) & 0x1F;
     u32 rt = (opcode >> 16) & 0x1F;
     u32 spd = 0;
-    u32 o1 = core->regs.R[rs];
+    u32 o1 = regs.R[rs];
 
     // TODO: make this a little more correct
     if (o1 < 0x800)
@@ -287,137 +259,137 @@ void R3000_fMULTU(u32 opcode, OPCODE *op, R3000 *core)
     else
         spd = 12;
 
-    R3000_multiplier_set(&core->multiplier, 0, 0, o1, core->regs.R[rt], 1, spd, R3000_current_clock(core));
+    multiplier.set(0, 0, o1, regs.R[rt], 1, spd, current_clock());
 }
 
-void R3000_fDIV(u32 opcode, OPCODE *op, R3000 *core)
+void core::fDIV(u32 opcode, OPCODE *op)
 {
     // SIGNED divide
     u32 rs = (opcode >> 21) & 0x1F;
     u32 rt = (opcode >> 16) & 0x1F;
 
-    R3000_multiplier_set(&core->multiplier, 0, 0, core->regs.R[rs], core->regs.R[rt], 2, 35, R3000_current_clock(core));
+    multiplier.set(0, 0, regs.R[rs], regs.R[rt], 2, 35, current_clock());
 }
 
-void R3000_fDIVU(u32 opcode, OPCODE *op, R3000 *core)
+void core::fDIVU(u32 opcode, OPCODE *op)
 {
     // UNSIGNED divide
     u32 rs = (opcode >> 21) & 0x1F;
     u32 rt = (opcode >> 16) & 0x1F;
 
-    R3000_multiplier_set(&core->multiplier, 0, 0, core->regs.R[rs], core->regs.R[rt], 3, 35, R3000_current_clock(core));
+    multiplier.set(0, 0, regs.R[rs], regs.R[rt], 3, 35, current_clock());
 }
 
-void R3000_fADD(u32 opcode, OPCODE *op, R3000 *core)
+void core::fADD(u32 opcode, OPCODE *op)
 {
     //   001xxx | rs   | rt   | <--immediate16bit--> | alu-imm
     u32 rs = (opcode >> 21) & 0x1F;
     u32 rt = (opcode >> 16) & 0x1F;
     u32 rd = (opcode >> 11) & 0x1F;
     int r;
-    if (sadd_overflow(core->regs.R[rs], core->regs.R[rt], &r)) {
-        R3000_exception(core, 0xC, 0, 0);
+    if (sadd_overflow(regs.R[rs], regs.R[rt], &r)) {
+        exception(0xC, 0, 0);
         return;
     }
-    R3000_fs_reg_write(core, rd, r);
+    fs_reg_write(rd, r);
 
 }
 
-void R3000_fADDU(u32 opcode, OPCODE *op, R3000 *core)
+void core::fADDU(u32 opcode, OPCODE *op)
 {
     //   001xxx | rs   | rt   | <--immediate16bit--> | alu-imm
     u32 rs = (opcode >> 21) & 0x1F;
     u32 rt = (opcode >> 16) & 0x1F;
     u32 rd = (opcode >> 11) & 0x1F;
 
-    R3000_fs_reg_write(core, rd, core->regs.R[rs] + core->regs.R[rt]);
+    fs_reg_write(rd, regs.R[rs] + regs.R[rt]);
 }
 
-void R3000_fSUB(u32 opcode, OPCODE *op, R3000 *core)
+void core::fSUB(u32 opcode, OPCODE *op)
 {
     //   001xxx | rs   | rt   | <--immediate16bit--> | alu-imm
     u32 rs = (opcode >> 21) & 0x1F;
     u32 rt = (opcode >> 16) & 0x1F;
     u32 rd = (opcode >> 11) & 0x1F;
     int r;
-    if (ssub_overflow(core->regs.R[rs], core->regs.R[rt], &r)) {
-        R3000_exception(core, 0xC, 0, 0);
+    if (ssub_overflow(regs.R[rs], regs.R[rt], &r)) {
+        exception(0xC, 0, 0);
         return;
     }
 
-    R3000_fs_reg_write(core, rd, r);
+    fs_reg_write(rd, r);
 }
 
-void R3000_fSUBU(u32 opcode, OPCODE *op, R3000 *core)
+void core::fSUBU(u32 opcode, OPCODE *op)
 {
     //   001xxx | rs   | rt   | <--immediate16bit--> | alu-imm
     u32 rs = (opcode >> 21) & 0x1F;
     u32 rt = (opcode >> 16) & 0x1F;
     u32 rd = (opcode >> 11) & 0x1F;
 
-    R3000_fs_reg_write(core, rd, core->regs.R[rs] - (i32)core->regs.R[rt]);
+    fs_reg_write(rd, regs.R[rs] - static_cast<i32>(regs.R[rt]));
 }
 
-void R3000_fAND(u32 opcode, OPCODE *op, R3000 *core)
+void core::fAND(u32 opcode, OPCODE *op)
 {
     u32 rs = (opcode >> 21) & 0x1F;
     u32 rt = (opcode >> 16) & 0x1F;
     u32 rd = (opcode >> 11) & 0x1F;
 
-    R3000_fs_reg_write(core, rd, core->regs.R[rs] & core->regs.R[rt]);
+    fs_reg_write(rd, regs.R[rs] & regs.R[rt]);
 }
 
-void R3000_fOR(u32 opcode, OPCODE *op, R3000 *core)
+void core::fOR(u32 opcode, OPCODE *op)
 {
     u32 rs = (opcode >> 21) & 0x1F;
     u32 rt = (opcode >> 16) & 0x1F;
     u32 rd = (opcode >> 11) & 0x1F;
 
-    R3000_fs_reg_write(core, rd, core->regs.R[rs] | core->regs.R[rt]);
+    fs_reg_write(rd, regs.R[rs] | regs.R[rt]);
 }
 
-void R3000_fXOR(u32 opcode, OPCODE *op, R3000 *core)
+void core::fXOR(u32 opcode, OPCODE *op)
 {
     u32 rs = (opcode >> 21) & 0x1F;
     u32 rt = (opcode >> 16) & 0x1F;
     u32 rd = (opcode >> 11) & 0x1F;
 
-    R3000_fs_reg_write(core, rd, core->regs.R[rs] ^ core->regs.R[rt]);
+    fs_reg_write(rd, regs.R[rs] ^ regs.R[rt]);
 }
 
-void R3000_fNOR(u32 opcode, OPCODE *op, R3000 *core) {
+void core::fNOR(u32 opcode, OPCODE *op) {
     u32 rs = (opcode >> 21) & 0x1F;
     u32 rt = (opcode >> 16) & 0x1F;
     u32 rd = (opcode >> 11) & 0x1F;
 
-    R3000_fs_reg_write(core, rd, (core->regs.R[rs] | core->regs.R[rt]) ^ 0xFFFFFFFF);
+    fs_reg_write(rd, (regs.R[rs] | regs.R[rt]) ^ 0xFFFFFFFF);
 }
 
-void R3000_fSLT(u32 opcode, OPCODE *op, R3000 *core)
+void core::fSLT(u32 opcode, OPCODE *op)
 {
     u32 rs = (opcode >> 21) & 0x1F;
     u32 rt = (opcode >> 16) & 0x1F;
     u32 rd = (opcode >> 11) & 0x1F;
 
-    R3000_fs_reg_write(core, rd, +(((i32)core->regs.R[rs]) < ((i32)core->regs.R[rt])));
+    fs_reg_write(rd, +(static_cast<i32>(regs.R[rs]) < static_cast<i32>(regs.R[rt])));
 }
 
-void R3000_fSLTU(u32 opcode, OPCODE *op, R3000 *core)
+void core::fSLTU(u32 opcode, OPCODE *op)
 {
     u32 rs = (opcode >> 21) & 0x1F;
     u32 rt = (opcode >> 16) & 0x1F;
     u32 rd = (opcode >> 11) & 0x1F;
 
-    R3000_fs_reg_write(core, rd, +(core->regs.R[rs] < core->regs.R[rt]));
+    fs_reg_write(rd, +(regs.R[rs] < regs.R[rt]));
 }
 
-void R3000_fBcondZ(u32 opcode, OPCODE *op, R3000 *core) {
+void core::fBcondZ(u32 opcode, OPCODE *op) {
     u32 rs = (opcode >> 21) & 0x1F;
     u32 w = (opcode >> 16) & 0x1F;
     if ((w < 0x10) || (w > 0x11)) w &= 1;
     i32 imm = opcode & 0xFFFF;
     imm = SIGNe16to32(imm);
-    u32 take = core->regs.R[rs] >> 31;
+    u32 take = regs.R[rs] >> 31;
     switch (w) {
         case 0: // BLTZ
             break;
@@ -425,68 +397,68 @@ void R3000_fBcondZ(u32 opcode, OPCODE *op, R3000 *core) {
             take ^= 1;
             break;
         case 0x10: // BLTZAL
-            R3000_fs_reg_write(core, 31, core->regs.PC + 4);
+            fs_reg_write(31, regs.PC + 4);
             break;
         case 0x11: // BGEZAL
             take ^= 1;
-            R3000_fs_reg_write(core, 31, core->regs.PC + 4);
+            fs_reg_write(31, regs.PC + 4);
             break;
         default:
             printf("\nBad B..Z instruction! %08x", opcode);
             return;
     }
-    R3000_branch(core, imm * 4, take, 0, DEFAULT_LINKREG);
+    branch(imm * 4, take, 0, DEFAULT_LINKREG);
 }
 
-void R3000_fJ(u32 opcode, OPCODE *op, R3000 *core)
+void core::fJ(u32 opcode, OPCODE *op)
 {
 //  00001x | <---------immediate26bit---------> | j/jal
-    R3000_jump(core, (core->regs.PC & 0xF0000000) + ((opcode & 0x3FFFFFF) << 2), 1, 0, DEFAULT_LINKREG);
+    jump((regs.PC & 0xF0000000) + ((opcode & 0x3FFFFFF) << 2), 1, 0, DEFAULT_LINKREG);
 }
 
-void R3000_fJAL(u32 opcode, OPCODE *op, R3000 *core)
+void core::fJAL(u32 opcode, OPCODE *op)
 {
 
 //  00001x | <---------immediate26bit---------> | j/jal
-    R3000_jump(core, (core->regs.PC & 0xF0000000) + ((opcode & 0x3FFFFFF) << 2), 1, 1, DEFAULT_LINKREG);
+    jump((regs.PC & 0xF0000000) + ((opcode & 0x3FFFFFF) << 2), 1, 1, DEFAULT_LINKREG);
 }
 
-void R3000_fBEQ(u32 opcode, OPCODE *op, R3000 *core)
+void core::fBEQ(u32 opcode, OPCODE *op)
 {
-    R3000_branch(core,
-                 ((u32)((i16)(opcode & 0xFFFF))*4),
-                 core->regs.R[(opcode >> 21) & 0x1F] == core->regs.R[(opcode >> 16) & 0x1F],
+    branch(
+                 (static_cast<u32>(static_cast<i16>(opcode & 0xFFFF))*4),
+                 regs.R[(opcode >> 21) & 0x1F] == regs.R[(opcode >> 16) & 0x1F],
                  0, DEFAULT_LINKREG);
 }
 
-void R3000_fBNE(u32 opcode, OPCODE *op, R3000 *core)
-{
-    // 00010x | rs   | rt   | <--immediate16bit--> |
-    R3000_branch(core,
-                 ((u32)((i16)(opcode & 0xFFFF))*4),
-                 core->regs.R[(opcode >> 21) & 0x1F] != core->regs.R[(opcode >> 16) & 0x1F],
-                 0, DEFAULT_LINKREG);
-}
-
-void R3000_fBLEZ(u32 opcode, OPCODE *op, R3000 *core)
+void core::fBNE(u32 opcode, OPCODE *op)
 {
     // 00010x | rs   | rt   | <--immediate16bit--> |
-    R3000_branch(core,
-                 ((u32)((i16)(opcode & 0xFFFF))*4),
-                 ((i32)core->regs.R[(opcode >> 21) & 0x1F]) <= 0,
+    branch(
+                 (static_cast<u32>(static_cast<i16>(opcode & 0xFFFF))*4),
+                 regs.R[(opcode >> 21) & 0x1F] != regs.R[(opcode >> 16) & 0x1F],
                  0, DEFAULT_LINKREG);
 }
 
-void R3000_fBGTZ(u32 opcode, OPCODE *op, R3000 *core)
+void core::fBLEZ(u32 opcode, OPCODE *op)
 {
     // 00010x | rs   | rt   | <--immediate16bit--> |
-    R3000_branch(core,
-                 ((u32)((i16)(opcode & 0xFFFF))*4),
-                 ((i32)core->regs.R[(opcode >> 21) & 0x1F])  > 0,
+    branch(
+                 (static_cast<u32>(static_cast<i16>(opcode & 0xFFFF))*4),
+                 static_cast<i32>(regs.R[(opcode >> 21) & 0x1F]) <= 0,
                  0, DEFAULT_LINKREG);
 }
 
-void R3000_fADDI(u32 opcode, OPCODE *op, R3000 *core)
+void core::fBGTZ(u32 opcode, OPCODE *op)
+{
+    // 00010x | rs   | rt   | <--immediate16bit--> |
+    branch(
+                 (static_cast<u32>(static_cast<i16>(opcode & 0xFFFF))*4),
+                 static_cast<i32>(regs.R[(opcode >> 21) & 0x1F])  > 0,
+                 0, DEFAULT_LINKREG);
+}
+
+void core::fADDI(u32 opcode, OPCODE *op)
 {
     //   001xxx | rs   | rt   | <--immediate16bit--> | alu-imm
     u32 rs = (opcode >> 21) & 0x1F;
@@ -494,111 +466,111 @@ void R3000_fADDI(u32 opcode, OPCODE *op, R3000 *core)
     u32 imm = opcode & 0xFFFF;
     imm = SIGNe16to32(imm);
     int r;
-    if (sadd_overflow(core->regs.R[rs], imm, &r)) {
-        R3000_exception(core, 0xC, 0, 0);
+    if (sadd_overflow(regs.R[rs], imm, &r)) {
+        exception(0xC, 0, 0);
         return;
     }
 
     // TODO: add overflow trap
-    R3000_fs_reg_write(core, rt, core->regs.R[rs] + imm);
+    fs_reg_write(rt, regs.R[rs] + imm);
 }
 
-void R3000_fADDIU(u32 opcode, OPCODE *op, R3000 *core) {
+void core::fADDIU(u32 opcode, OPCODE *op) {
     //   001xxx | rs   | rt   | <--immediate16bit--> | alu-imm
     u32 rs = (opcode >> 21) & 0x1F;
     u32 rt = (opcode >> 16) & 0x1F;
-    u32 imm = (u32)((i16)(opcode & 0xFFFF));
+    u32 imm = static_cast<u32>(static_cast<i16>(opcode & 0xFFFF));
 
-    R3000_fs_reg_write(core, rt, core->regs.R[rs] + (u32)imm);
+    fs_reg_write(rt, regs.R[rs] + (u32)imm);
 }
 
-void R3000_fSLTI(u32 opcode, OPCODE *op, R3000 *core)
+void core::fSLTI(u32 opcode, OPCODE *op)
 {
     u32 rs = (opcode >> 21) & 0x1F;
     u32 rt = (opcode >> 16) & 0x1F;
-    i32 imm16 = ((i16)(opcode & 0xFFFF)); // sign-extend
+    i32 imm16 = static_cast<i16>(opcode & 0xFFFF); // sign-extend
 
-    R3000_fs_reg_write(core, rt, +((i32)core->regs.R[rs] < imm16));
+    fs_reg_write(rt, +(static_cast<i32>(regs.R[rs]) < imm16));
 }
 
-void R3000_fSLTIU(u32 opcode, OPCODE *op, R3000 *core)
+void core::fSLTIU(u32 opcode, OPCODE *op)
 {
     u32 rs = (opcode >> 21) & 0x1F;
     u32 rt = (opcode >> 16) & 0x1F;
-    u32 imm16 = (u32)((i16)(opcode & 0xFFFF)); // sign-extend
+    u32 imm16 = static_cast<u32>(static_cast<i16>(opcode & 0xFFFF)); // sign-extend
 
     // unary operator converts to 0/1
-    R3000_fs_reg_write(core, rt, +(core->regs.R[rs] < imm16));
+    fs_reg_write(rt, +(regs.R[rs] < imm16));
 }
 
-void R3000_fANDI(u32 opcode, OPCODE *op, R3000 *core)
+void core::fANDI(u32 opcode, OPCODE *op)
 {
     u32 rs = (opcode >> 21) & 0x1F;
     u32 rt = (opcode >> 16) & 0x1F;
     u32 imm16 = opcode & 0xFFFF;
 
-    R3000_fs_reg_write(core, rt, imm16 & core->regs.R[rs]);
+    fs_reg_write(rt, imm16 & regs.R[rs]);
 }
 
-void R3000_fORI(u32 opcode, OPCODE *op, R3000 *core)
+void core::fORI(u32 opcode, OPCODE *op)
 {
     u32 rs = (opcode >> 21) & 0x1F;
     u32 rt = (opcode >> 16) & 0x1F;
     u32 imm16 = opcode & 0xFFFF;
 
-    R3000_fs_reg_write(core, rt, imm16 | core->regs.R[rs]);
+    fs_reg_write(rt, imm16 | regs.R[rs]);
 }
 
-void R3000_fXORI(u32 opcode, OPCODE *op, R3000 *core)
+void core::fXORI(u32 opcode, OPCODE *op)
 {
     u32 rs = (opcode >> 21) & 0x1F;
     u32 rt = (opcode >> 16) & 0x1F;
     u32 imm16 = opcode & 0xFFFF;
 
-    R3000_fs_reg_write(core, rt, imm16 ^ core->regs.R[rs]);
+    fs_reg_write(rt, imm16 ^ regs.R[rs]);
 }
 
-void R3000_fLUI(u32 opcode, OPCODE *op, R3000 *core)
+void core::fLUI(u32 opcode, OPCODE *op)
 {
     u32 rt = (opcode >> 16) & 0x1F;
     u32 imm16 = opcode & 0xFFFF;
 
-    R3000_fs_reg_write(core, rt, imm16 << 16);
+    fs_reg_write(rt, imm16 << 16);
 }
 
-static void R3000_fMFC(u32 opcode, OPCODE *op, R3000 *core, u32 copnum)
+void core::fMFC(u32 opcode, OPCODE *op, u32 copnum)
 {
     // move FROM co
     // rt = cop[rd]
-    *core->clock += 6;
+    *clock += 6;
     u32 rt = (opcode >> 16) & 0x1F;
     u32 rd = (opcode >> 11) & 0x1F;
-    R3000_fs_reg_delay(core, rt, COP_read_reg(core, copnum, rd));
+    fs_reg_delay(rt, COP_read_reg(copnum, rd));
 }
 
-static void R3000_fMTC(u32 opcode, OPCODE *op, R3000 *core, u32 copnum)
+void core::fMTC(u32 opcode, OPCODE *op, u32 copnum)
 {
     // move TO co
     u32 rt = (opcode >> 16) & 0x1F;
     u32 rd = (opcode >> 11) & 0x1F;
     // cop[rd] = reg[rt]
-    COP_write_reg(core, copnum, rd, core->regs.R[rt]);
+    COP_write_reg(copnum, rd, regs.R[rt]);
 }
 
-static void R3000_fCOP0_RFE(u32 opcode, OPCODE *op, R3000 *core)
+void core::fCOP0_RFE(u32 opcode, OPCODE *op)
 {
     // move FROM co
     // rt = cop[rd]
     // The RFE opcode moves some bits in cop0r12 (SR): bit2-3 are copied to bit0-1, all other bits (including bit4-5) are left unchanged.
-    u32 r12 = COP_read_reg(core, 0, RCR_SR);
+    u32 r12 = COP_read_reg(0, RCR_SR);
     // bit4-5 are copied to bit2-3
     u32 b23 = (r12 >> 2) & 0x0C; // Move from 4-5 to 2-3
     u32 b01 = (r12 >> 2) & 3; // Move from 2-3 to 0-1
-    COP_write_reg(core, 0, 12, (r12 & 0xFFFFFFF0) | b01 | b23);
-    if (core->update_sr) core->update_sr(core->update_sr_ptr, core, core->regs.COP0[RCR_SR]);
+    COP_write_reg(0, 12, (r12 & 0xFFFFFFF0) | b01 | b23);
+    if (update_sr) update_sr(update_sr_ptr, this, regs.COP0[RCR_SR]);
 }
 
-void R3000_fCOP(u32 opcode, OPCODE *op, R3000 *core)
+void core::fCOP(u32 opcode, OPCODE *op)
 {
     u32 copnum = (opcode >> 26) & 3;
 
@@ -614,13 +586,13 @@ void R3000_fCOP(u32 opcode, OPCODE *op, R3000 *core)
         if (opc == 0x10) {
             switch (rs) {
                 case 0:
-                    R3000_fMFC(opcode, op, core, 0);
+                    fMFC(opcode, op, 0);
                     return;
                 case 4:
-                    R3000_fMTC(opcode, op, core, 0);
+                    fMTC(opcode, op, 0);
                     return;
                 case 0x10:
-                    R3000_fCOP0_RFE(opcode, op, core);
+                    fCOP0_RFE(opcode, op);
                     return;
             }
         }
@@ -632,7 +604,7 @@ void R3000_fCOP(u32 opcode, OPCODE *op, R3000 *core)
             return;
         }
         if (opcode & 0x2000000) {
-            GTE_command(&core->gte, opcode, R3000_current_clock(core));
+            gte.command(opcode, current_clock());
             return;
         }
         u32 bits5 = (opcode >> 21) & 0x1F;
@@ -643,16 +615,16 @@ void R3000_fCOP(u32 opcode, OPCODE *op, R3000 *core)
         }
         switch(bits5) {
             case 0: // MFCn rt = dat
-                if (rt != 0) core->regs.R[rt] = GTE_read_reg(&core->gte, rd);
+                if (rt != 0) regs.R[rt] = gte.read_reg(rd);
                 return;
             case 2: // CFCn rt = cnt
-                if (rt != 0) core->regs.R[rt] = GTE_read_reg(&core->gte, rd+32);
+                if (rt != 0) regs.R[rt] = gte.read_reg(rd+32);
                 return;
             case 4: // MTCn  dat = rt
-                GTE_write_reg(&core->gte, rd, core->regs.R[rt]);
+                gte.write_reg(rd, regs.R[rt]);
                 return;
             case 6: // CTCn  cnt = rt
-                GTE_write_reg(&core->gte, rd+32, core->regs.R[rt]);
+                gte.write_reg(rd+32, regs.R[rt]);
                 return;
             default:
                 printf("\nUNKNOWN COP INSTRUCTION %08x", opcode);
@@ -660,51 +632,51 @@ void R3000_fCOP(u32 opcode, OPCODE *op, R3000 *core)
     }
 }
 
-void R3000_fLB(u32 opcode, OPCODE *op, R3000 *core)
+void core::fLB(u32 opcode, OPCODE *op)
 {
     //lb  rt,imm(rs)    rt=[imm+rs]  ;byte sign-extended
     u32 rs = (opcode >> 21) & 0x1F;
     u32 rt = (opcode >> 16) & 0x1F;
-    u32 imm16 = (u32)((i16)(opcode & 0xFFFF));
-    u32 addr = core->regs.R[rs] + imm16;
+    u32 imm16 = static_cast<u32>(static_cast<i16>(opcode & 0xFFFF));
+    u32 addr = regs.R[rs] + imm16;
 
-    u32 rd = core->read(core->read_ptr, addr, 1, 1) & 0xFF;
+    u32 rd = read(read_ptr, addr, 1, 1) & 0xFF;
     rd = SIGNe8to32(rd);
-    R3000_fs_reg_delay(core, rt, (u32)rd);
+    fs_reg_delay(rt, (u32)rd);
 }
 
-void R3000_fLH(u32 opcode, OPCODE *op, R3000 *core)
+void core::fLH(u32 opcode, OPCODE *op)
 {
     //lb  rt,imm(rs)    rt=[imm+rs]  ;byte sign-extended
     u32 rs = (opcode >> 21) & 0x1F;
     u32 rt = (opcode >> 16) & 0x1F;
-    u32 imm16 = (u32)((i16)(opcode & 0xFFFF));
-    u32 addr = core->regs.R[rs] + imm16;
+    u32 imm16 = static_cast<u32>(static_cast<i16>(opcode & 0xFFFF));
+    u32 addr = regs.R[rs] + imm16;
 
     if (addr & 1) {
-        R3000_exception(core, 4, 0, 0);
+        exception(4, 0, 0);
         return;
     }
 
-    u32 rd = core->read(core->read_ptr, addr, 2, 1) & 0xFFFF;
+    u32 rd = read(read_ptr, addr, 2, 1) & 0xFFFF;
     rd = SIGNe16to32(rd);
 
     //rd = (u32)((rd << 16) >> 16);
-    R3000_fs_reg_delay(core, rt, rd);
+    fs_reg_delay(rt, rd);
 }
 
-void R3000_fLWL(u32 opcode, OPCODE *op, R3000 *core)
+void core::fLWL(u32 opcode, OPCODE *op)
 {
     u32 rs = (opcode >> 21) & 0x1F;
     u32 rt = (opcode >> 16) & 0x1F;
-    u32 imm16 = (u32)((i16)(opcode & 0xFFFF));
-    u32 addr = core->regs.R[rs] + imm16;
+    u32 imm16 = static_cast<u32>(static_cast<i16>(opcode & 0xFFFF));
+    u32 addr = regs.R[rs] + imm16;
 
     // Fetch register from delay if it's there, and also clobber it
-    u32 cur_v = R3000_fs_reg_delay_read(core, rt);
+    u32 cur_v = fs_reg_delay_read(rt);
 
     u32 aligned_addr = addr & 0xFFFFFFFC;
-    u32 aligned_word = core->read(core->read_ptr, aligned_addr, 4, 1);
+    u32 aligned_word = read(read_ptr, aligned_addr, 4, 1);
     u32 fv = 0;
     switch(addr & 3) {
         case 0:
@@ -720,63 +692,63 @@ void R3000_fLWL(u32 opcode, OPCODE *op, R3000 *core)
             fv = aligned_word;
             break;
     }
-    R3000_fs_reg_delay(core, rt, fv);
+    fs_reg_delay(rt, fv);
 }
 
-void R3000_fLW(u32 opcode, OPCODE *op, R3000 *core)
+void core::fLW(u32 opcode, OPCODE *op)
 {
     u32 rs = (opcode >> 21) & 0x1F;
     u32 rt = (opcode >> 16) & 0x1F;
-    u32 imm16 = (u32)((i16)(opcode & 0xFFFF));
-    u32 addr = core->regs.R[rs] + imm16;
+    u32 imm16 = static_cast<u32>(static_cast<i16>(opcode & 0xFFFF));
+    u32 addr = regs.R[rs] + imm16;
 
     if (addr & 3) {
-        R3000_exception(core, 4, 0, 0);
+        exception(4, 0, 0);
         return;
     }
 
     //printf("\nLW imm16:%04x addr:%08x", imm16, addr);
-    R3000_fs_reg_delay(core, rt, core->read(core->read_ptr, addr, 4, 1));
+    fs_reg_delay(rt, read(read_ptr, addr, 4, 1));
 }
 
-void R3000_fLBU(u32 opcode, OPCODE *op, R3000 *core)
+void core::fLBU(u32 opcode, OPCODE *op)
 {
     u32 rs = (opcode >> 21) & 0x1F;
     u32 rt = (opcode >> 16) & 0x1F;
-    u32 imm16 = (u32)((i16)(opcode & 0xFFFF));
-    u32 addr = core->regs.R[rs] + imm16;
+    u32 imm16 = static_cast<u32>(static_cast<i16>(opcode & 0xFFFF));
+    u32 addr = regs.R[rs] + imm16;
 
-    u32 rd = core->read(core->read_ptr, addr, 1, 1);
-    R3000_fs_reg_delay(core, rt, rd&0xFF);
+    u32 rd = read(read_ptr, addr, 1, 1);
+    fs_reg_delay(rt, rd&0xFF);
 }
 
-void R3000_fLHU(u32 opcode, OPCODE *op, R3000 *core)
+void core::fLHU(u32 opcode, OPCODE *op)
 {
     u32 rs = (opcode >> 21) & 0x1F;
     u32 rt = (opcode >> 16) & 0x1F;
-    u32 imm16 = (u32)((i16)(opcode & 0xFFFF));
-    u32 addr = core->regs.R[rs] + imm16;
+    u32 imm16 = static_cast<u32>(static_cast<i16>(opcode & 0xFFFF));
+    u32 addr = regs.R[rs] + imm16;
     if (addr & 1) {
-        R3000_exception(core, 4, 0, 0);
+        exception(4, 0, 0);
         return;
     }
 
-    u32 rd = core->read(core->read_ptr, addr, 2, 1);
-    R3000_fs_reg_delay(core, rt, rd&0xFFFF);
+    u32 rd = read(read_ptr, addr, 2, 1);
+    fs_reg_delay(rt, rd&0xFFFF);
 }
 
-void R3000_fLWR(u32 opcode, OPCODE *op, R3000 *core)
+void core::fLWR(u32 opcode, OPCODE *op)
 {
     u32 rs = (opcode >> 21) & 0x1F;
     u32 rt = (opcode >> 16) & 0x1F;
-    u32 imm16 = (u32)((i16)(opcode & 0xFFFF));
-    u32 addr = core->regs.R[rs] + imm16;
+    u32 imm16 = static_cast<u32>(static_cast<i16>(opcode & 0xFFFF));
+    u32 addr = regs.R[rs] + imm16;
 
     // Fetch register from delay if it's there, and also clobber it
-    u32 cur_v = R3000_fs_reg_delay_read(core, rt);
+    u32 cur_v = fs_reg_delay_read(rt);
 
     u32 aligned_addr = addr & 0xFFFFFFFC;
-    u32 aligned_word = core->read(core->read_ptr, aligned_addr, 4, 1);
+    u32 aligned_word = read(read_ptr, aligned_addr, 4, 1);
     u32 fv = 0;
     switch(addr & 3) {
         case 0:
@@ -792,46 +764,46 @@ void R3000_fLWR(u32 opcode, OPCODE *op, R3000 *core)
             fv = ((cur_v & 0xFFFFFF00) | (aligned_word >> 24));
             break;
     }
-    R3000_fs_reg_delay(core, rt, fv);
+    fs_reg_delay(rt, fv);
 }
 
-void R3000_fSB(u32 opcode, OPCODE *op, R3000 *core)
+void core::fSB(u32 opcode, OPCODE *op)
 {
     //lb  rt,imm(rs)    rt=[imm+rs]  ;byte sign-extended
     u32 rs = (opcode >> 21) & 0x1F;
     u32 rt = (opcode >> 16) & 0x1F;
-    u32 imm16 = (u32)((i16)(opcode & 0xFFFF));
-    u32 addr = core->regs.R[rs] + imm16;
+    u32 imm16 = static_cast<u32>(static_cast<i16>(opcode & 0xFFFF));
+    u32 addr = regs.R[rs] + imm16;
 
-    core->write(core->write_ptr, addr, 1, core->regs.R[rt] & 0xFF);
+    write(write_ptr, addr, 1, regs.R[rt] & 0xFF);
 }
 
-void R3000_fSH(u32 opcode, OPCODE *op, R3000 *core)
+void core::fSH(u32 opcode, OPCODE *op)
 {
     //lb  rt,imm(rs)    rt=[imm+rs]  ;byte sign-extended
     u32 rs = (opcode >> 21) & 0x1F;
     u32 rt = (opcode >> 16) & 0x1F;
-    u32 imm16 = (u32)((i16)(opcode & 0xFFFF));
-    u32 addr = core->regs.R[rs] + imm16;
+    u32 imm16 = static_cast<u32>(static_cast<i16>(opcode & 0xFFFF));
+    u32 addr = regs.R[rs] + imm16;
     if (addr & 1) {
-        R3000_exception(core, 5, 0, 0);
+        exception(5, 0, 0);
         return;
     }
 
-    core->write(core->write_ptr, addr, 2, core->regs.R[rt] & 0xFFFF);
+    write(write_ptr, addr, 2, regs.R[rt] & 0xFFFF);
 }
 
-void R3000_fSWL(u32 opcode, OPCODE *op, R3000 *core)
+void core::fSWL(u32 opcode, OPCODE *op)
 {
     u32 rs = (opcode >> 21) & 0x1F;
     u32 rt = (opcode >> 16) & 0x1F;
-    u32 imm16 = (u32)((i16)(opcode & 0xFFFF));
-    u32 addr = core->regs.R[rs] + imm16;
+    u32 imm16 = static_cast<u32>(static_cast<i16>(opcode & 0xFFFF));
+    u32 addr = regs.R[rs] + imm16;
 
-    u32 v = core->regs.R[rt];
+    u32 v = regs.R[rt];
 
     u32 aligned_addr = (addr & 0xFFFFFFFC)>>0;
-    u32 cur_mem = core->read(core->read_ptr, aligned_addr, 4, 1);
+    u32 cur_mem = read(read_ptr, aligned_addr, 4, 1);
 
     switch(addr & 3) {
         case 0: // upper 8
@@ -847,35 +819,35 @@ void R3000_fSWL(u32 opcode, OPCODE *op, R3000 *core)
             cur_mem = v;
             break;
     }
-    core->write(core->write_ptr, aligned_addr, 4, cur_mem);
+    write(write_ptr, aligned_addr, 4, cur_mem);
 }
 
-void R3000_fSW(u32 opcode, OPCODE *op, R3000 *core)
+void core::fSW(u32 opcode, OPCODE *op)
 {
     //lb  rt,imm(rs)    rt=[imm+rs]  ;byte sign-extended
     u32 rs = (opcode >> 21) & 0x1F;
     u32 rt = (opcode >> 16) & 0x1F;
-    u32 imm16 = (u32)((i16)(opcode & 0xFFFF));
-    u32 addr = core->regs.R[rs] + imm16;
+    u32 imm16 = static_cast<u32>(static_cast<i16>(opcode & 0xFFFF));
+    u32 addr = regs.R[rs] + imm16;
 
     if (addr & 3) {
-        R3000_exception(core, 5, 0, 0);
+        exception(5, 0, 0);
         return;
     }
 
-    core->write(core->write_ptr, addr, 4, core->regs.R[rt]);
+    write(write_ptr, addr, 4, regs.R[rt]);
 }
 
-void R3000_fSWR(u32 opcode, OPCODE *op, R3000 *core)
+void core::fSWR(u32 opcode, OPCODE *op)
 {
     u32 rs = (opcode >> 21) & 0x1F;
     u32 rt = (opcode >> 16) & 0x1F;
-    u32 imm16 = (u32)((i16)(opcode & 0xFFFF));
-    u32 addr = core->regs.R[rs] + imm16;
-    u32 v = core->regs.R[rt];
+    u32 imm16 = static_cast<u32>(static_cast<i16>(opcode & 0xFFFF));
+    u32 addr = regs.R[rs] + imm16;
+    u32 v = regs.R[rt];
 
     u32 aligned_addr = (addr & 0xFFFFFFFC)>>0;
-    u32 cur_mem = core->read(core->read_ptr, aligned_addr, 4, 1);
+    u32 cur_mem = read(read_ptr, aligned_addr, 4, 1);
 
     switch(addr & 3) {
         case 0: // upper 8
@@ -891,32 +863,33 @@ void R3000_fSWR(u32 opcode, OPCODE *op, R3000 *core)
             cur_mem = ((cur_mem & 0x00FFFFFF) | (v << 24));
             break;
     }
-    core->write(core->write_ptr, aligned_addr, 4, cur_mem);
+    write(write_ptr, aligned_addr, 4, cur_mem);
 }
 
-void R3000_fLWC(u32 opcode, OPCODE *op, R3000 *core)
+void core::fLWC(u32 opcode, OPCODE *op)
 {
     // ;cop#dat_rt = [rs+imm]  ;word
     u32 rs = (opcode >> 21) & 0x1F;
     u32 rt = (opcode >> 16) & 0x1F;
-    u32 imm16 = (u32)((i16)(opcode & 0xFFFF));
-    u32 addr = core->regs.R[rs] + imm16;
+    u32 imm16 = static_cast<u32>(static_cast<i16>(opcode & 0xFFFF));
+    u32 addr = regs.R[rs] + imm16;
 
-    u32 rd = core->read(core->read_ptr, addr, 4, 1);
+    u32 rd = read(read_ptr, addr, 4, 1);
     // TODO: add the 1-cycle delay to this
-    COP_write_reg(core, op->arg, rt, rd);
-    R3000_idle(core, 1);
+    COP_write_reg(op->arg, rt, rd);
+    idle(1);
 }
 
-void R3000_fSWC(u32 opcode, OPCODE *op, R3000 *core)
+void core::fSWC(u32 opcode, OPCODE *op)
 {
     // ;cop#dat_rt = [rs+imm]  ;word
     u32 rs = (opcode >> 21) & 0x1F;
     u32 rt = (opcode >> 16) & 0x1F;
-    u32 imm16 = (u32)((i16)(opcode & 0xFFFF));
-    u32 addr = core->regs.R[rs] + imm16;
+    u32 imm16 = static_cast<u32>(static_cast<i16>(opcode & 0xFFFF));
+    u32 addr = regs.R[rs] + imm16;
 
-    u32 rd = COP_read_reg(core, op->arg, rt);
+    u32 rd = COP_read_reg(op->arg, rt);
     // TODO: add the 1-cycle delay to this
-    core->write(core->write_ptr, addr, 4, rd);
+    write(write_ptr, addr, 4, rd);
+}
 }

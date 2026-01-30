@@ -2,11 +2,9 @@
 // Created by . on 2/11/25.
 //
 
-#ifndef JSMOOCH_EMUS_R3000_MULTIPLIER_H
-#define JSMOOCH_EMUS_R3000_MULTIPLIER_H
-
+#pragma once
 #include "helpers/int.h"
-
+namespace R3000 {
 /*
 export class R3000_multiplier_t {
     clock: PS1_clock
@@ -58,12 +56,11 @@ export class R3000_multiplier_t {
     }
 }
  */
-struct R3000_multiplier {
-    u32 hi, lo, op1, op2, op_going, op_kind;
-    u64 clock_start, clock_end;
+struct multiplier {
+    void set(u32 hi_in, u32 lo_in, u32 op1_in, u32 op2_in, u32 op_kind_in, u32 cycles_in, u64 current_clock_in);
+    void finish();
+    u32 hi{}, lo{}, op1{}, op2{}, op_kind{};
+    bool op_going{};
+    u64 clock_start{}, clock_end{};
 };
-
-void R3000_multiplier_set(R3000_multiplier *, u32 hi, u32 lo, u32 op1, u32 op2, u32 op_kind, u32 cycles, u64 current_clock);
-void R3000_multiplier_finish(R3000_multiplier *);
-
-#endif //JSMOOCH_EMUS_R3000_MULTIPLIER_H
+}

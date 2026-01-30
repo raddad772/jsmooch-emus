@@ -3,13 +3,14 @@
 //
 #include <cstdlib>
 #include <cstring>
+#include <cassert>
 #include <cstdio> // printf
 
 #include "r3000_instructions.h"
 #include "r3000.h"
 #include "r3000_disassembler.h"
-
-static const char reg_alias_arr[33][12] = {
+namespace R3000 {
+static constexpr char reg_alias_arr[33][12] = {
         "r0", "at", "v0", "v1",
         "a0", "a1", "a2", "a3",
         "t0", "t1", "t2", "t3",
@@ -21,53 +22,52 @@ static const char reg_alias_arr[33][12] = {
         "unknown reg"
 };
 
-static struct R3000_pipeline_item *pipe_push(R3000_pipeline *this)
+pipeline_item *pipeline::push()
 {
-    if (this->num_items == 2) return &this->empty_item;
-    this->num_items++;
-    switch(this->num_items) {
+    if (num_items == 2) return &empty_item;
+    num_items++;
+    switch(num_items) {
         case 1:
-            return &this->item0;
+            return &item0;
         case 2:
-            return &this->item1;
+            return &item1;
         default:
             NOGOHERE;
-            return 0;
     }
 }
 
-static void pipe_item_clear(R3000_pipeline_item *this)
+void pipeline_item::clear()
 {
-    this->target = -1;
-    this->value = 0;
-    this->new_PC = 0xFFFFFFFF;
+    target = -1;
+    value = 0;
+    new_PC = 0xFFFFFFFF;
 }
 
-static void pipe_clear(R3000_pipeline *this)
+void pipeline::clear()
 {
-    pipe_item_clear(&this->item0);
-    pipe_item_clear(&this->item1);
-    pipe_item_clear(&this->current);
-    this->num_items = 0;
+    item0.clear();
+    item1.clear();
+    current.clear();
+    num_items = 0;
 }
 
-struct R3000_pipeline_item *R3000_pipe_move_forward(R3000_pipeline *this)
+pipeline_item *pipeline::move_forward()
 {
-    if (this->num_items == 0) return &this->empty_item;
-    this->current = this->item0;
-    this->item0 = this->item1;
+    if (num_items == 0) return &empty_item;
+    current = item0;
+    item0 = item1;
 
-    pipe_item_clear(&this->item1);
-    this->num_items--;
+    item1.clear();
+    num_items--;
 
-    return &this->current;
+    return &current;
 }
 
-static void do_decode_table(R3000 *this) {
+void core::do_decode_table() {
     for (u32 op1 = 0; op1 < 0x3F; op1++) {
-        struct OPCODE *mo = &this->decode_table[op1];
-        R3000_ins o = &R3000_fNA;
-        enum MN m = MN_NA;
+        OPCODE *mo = &decode_table[op1];
+        insfunc o = &core::fNA;
+        MN m = MN_NA;
         i32 a = 0;
         switch (op1) {
             case 0: {// SPECIAL
@@ -76,122 +76,122 @@ static void do_decode_table(R3000 *this) {
                     switch (op2) {
                         case 0: // SLL
                             m = MN_J;
-                            o = &R3000_fSLL;
+                            o = &core::fSLL;
                             break;
                         case 0x02: // SRL
                             m = MN_SRL;
-                            o = &R3000_fSRL;
+                            o = &core::fSRL;
                             break;
                         case 0x03: // SRA
                             m = MN_SRA;
-                            o = &R3000_fSRA;
+                            o = &core::fSRA;
                             break;
                         case 0x4: // SLLV
                             m = MN_SLLV;
-                            o = &R3000_fSLLV;
+                            o = &core::fSLLV;
                             break;
                         case 0x06: // SRLV
                             m = MN_SRLV;
-                            o = &R3000_fSRLV;
+                            o = &core::fSRLV;
                             break;
                         case 0x07: // SRAV
                             m = MN_SRAV;
-                            o = &R3000_fSRAV;
+                            o = &core::fSRAV;
                             break;
                         case 0x08: // JR
                             m = MN_JR;
-                            o = &R3000_fJR;
+                            o = &core::fJR;
                             break;
                         case 0x09: // JALR
                             m = MN_JALR;
-                            o = &R3000_fJALR;
+                            o = &core::fJALR;
                             break;
                         case 0x0C: // SYSCALL
                             m = MN_SYSCALL;
-                            o = &R3000_fSYSCALL;
+                            o = &core::fSYSCALL;
                             break;
                         case 0x0D: // BREAK
                             m = MN_BREAK;
-                            o = &R3000_fBREAK;
+                            o = &core::fBREAK;
                             break;
                         case 0x10: // MFHI
                             m = MN_MFHI;
-                            o = &R3000_fMFHI;
+                            o = &core::fMFHI;
                             break;
                         case 0x11: // MTHI
                             m = MN_MTHI;
-                            o = &R3000_fMTHI;
+                            o = &core::fMTHI;
                             break;
                         case 0x12: // MFLO
                             m = MN_MFLO;
-                            o = &R3000_fMFLO;
+                            o = &core::fMFLO;
                             break;
                         case 0x13: // MTLO
                             m = MN_MTLO;
-                            o = &R3000_fMTLO;
+                            o = &core::fMTLO;
                             break;
                         case 0x18: // MULT
                             m = MN_MULT;
-                            o = &R3000_fMULT;
+                            o = &core::fMULT;
                             break;
                         case 0x19: // MULTU
                             m = MN_MULTU;
-                            o = &R3000_fMULTU;
+                            o = &core::fMULTU;
                             break;
                         case 0x1A: // DIV
                             m = MN_DIV;
-                            o = &R3000_fDIV;
+                            o = &core::fDIV;
                             break;
                         case 0x1B: // DIVU
                             m = MN_DIVU;
-                            o = &R3000_fDIVU;
+                            o = &core::fDIVU;
                             break;
                         case 0x20: // ADD
                             m = MN_ADD;
-                            o = &R3000_fADD;
+                            o = &core::fADD;
                             break;
                         case 0x21: // ADDU
                             m = MN_ADDU;
-                            o = &R3000_fADDU;
+                            o = &core::fADDU;
                             break;
                         case 0x22: // SUB
                             m = MN_SUB;
-                            o = &R3000_fSUB;
+                            o = &core::fSUB;
                             break;
                         case 0x23: // SUBU
                             m = MN_SUBU;
-                            o = &R3000_fSUBU;
+                            o = &core::fSUBU;
                             break;
                         case 0x24: // AND
                             m = MN_AND;
-                            o = &R3000_fAND;
+                            o = &core::fAND;
                             break;
                         case 0x25: // OR
                             m = MN_OR;
-                            o = &R3000_fOR;
+                            o = &core::fOR;
                             break;
                         case 0x26: // XOR
                             m = MN_XOR;
-                            o = &R3000_fXOR;
+                            o = &core::fXOR;
                             break;
                         case 0x27: // NOR
                             m = MN_NOR;
-                            o = &R3000_fNOR;
+                            o = &core::fNOR;
                             break;
                         case 0x2A: // SLT
                             m = MN_SLT;
-                            o = &R3000_fSLT;
+                            o = &core::fSLT;
                             break;
                         case 0x2B: // SLTU
                             m = MN_SLTU;
-                            o = &R3000_fSLTU;
+                            o = &core::fSLTU;
                             break;
                         default:
                             m = MN_NA;
-                            o = &R3000_fNA;
+                            o = &core::fNA;
                             break;
                     }
-                    mo = &this->decode_table[op2 + 0x3F];
+                    mo = &decode_table[op2 + 0x3F];
                     mo->func = o;
                     mo->opcode = op2;
                     mo->mn = m;
@@ -201,126 +201,126 @@ static void do_decode_table(R3000 *this) {
             }
             case 0x01: // BcondZ
                 m = MN_BcondZ;
-                o = &R3000_fBcondZ;
+                o = &core::fBcondZ;
                 break;
             case 0x02: // J
                 m = MN_J;
-                o = &R3000_fJ;
+                o = &core::fJ;
                 break;
             case 0x03: // JAL
                 m = MN_JAL;
-                o = &R3000_fJAL;
+                o = &core::fJAL;
                 break;
             case 0x04: // BEQ
                 m = MN_BEQ;
-                o = &R3000_fBEQ;
+                o = &core::fBEQ;
                 break;
             case 0x05: // BNE
                 m = MN_BNE;
-                o = &R3000_fBNE;
+                o = &core::fBNE;
                 break;
             case 0x06: // BLEZ
                 m = MN_BLEZ;
-                o = &R3000_fBLEZ;
+                o = &core::fBLEZ;
                 break;
             case 0x07: // BGTZ
                 m = MN_BGTZ;
-                o = &R3000_fBGTZ;
+                o = &core::fBGTZ;
                 break;
             case 0x08: // ADDI
                 m = MN_ADDI;
-                o = &R3000_fADDI;
+                o = &core::fADDI;
                 break;
             case 0x09: // ADDIU
                 m = MN_ADDIU;
-                o = &R3000_fADDIU;
+                o = &core::fADDIU;
                 break;
             case 0x0A: // SLTI
                 m = MN_SLTI;
-                o = &R3000_fSLTI;
+                o = &core::fSLTI;
                 break;
             case 0x0B: // SLTIU
                 m = MN_SLTIU;
-                o = &R3000_fSLTIU;
+                o = &core::fSLTIU;
                 break;
             case 0x0C: // ANDI
                 m = MN_ANDI;
-                o = &R3000_fANDI;
+                o = &core::fANDI;
                 break;
             case 0x0D: // ORI
                 m = MN_ORI;
-                o = &R3000_fORI;
+                o = &core::fORI;
                 break;
             case 0x0E: // XORI
                 m = MN_XORI;
-                o = &R3000_fXORI;
+                o = &core::fXORI;
                 break;
             case 0x0F: // LUI
                 m = MN_LUI;
-                o = &R3000_fLUI;
+                o = &core::fLUI;
                 break;
             case 0x13: // COP3
             case 0x12: // COP2
             case 0x11: // COP1
             case 0x10: // COP0
                 m = MN_COPx;
-                o = &R3000_fCOP;
+                o = &core::fCOP;
                 a = (op1 - 0x10);
                 break;
             case 0x20: // LB
                 m = MN_LB;
-                o = &R3000_fLB;
+                o = &core::fLB;
                 break;
             case 0x21: // LH
                 m = MN_LH;
-                o = &R3000_fLH;
+                o = &core::fLH;
                 break;
             case 0x22: // LWL
                 m = MN_LWL;
-                o = &R3000_fLWL;
+                o = &core::fLWL;
                 break;
             case 0x23: // LW
                 m = MN_LW;
-                o = &R3000_fLW;
+                o = &core::fLW;
                 break;
             case 0x24: // LBU
                 m = MN_LBU;
-                o = &R3000_fLBU;
+                o = &core::fLBU;
                 break;
             case 0x25: // LHU
                 m = MN_LHU;
-                o = &R3000_fLHU;
+                o = &core::fLHU;
                 break;
             case 0x26: // LWR
                 m = MN_LWR;
-                o = &R3000_fLWR;
+                o = &core::fLWR;
                 break;
             case 0x28: // SB
                 m = MN_SB;
-                o = &R3000_fSB;
+                o = &core::fSB;
                 break;
             case 0x29: // SH
                 m = MN_SH;
-                o = &R3000_fSH;
+                o = &core::fSH;
                 break;
             case 0x2A: // SWL
                 m = MN_SWL;
-                o = &R3000_fSWL;
+                o = &core::fSWL;
                 break;
             case 0x2B: // SW
                 m = MN_SW;
-                o = &R3000_fSW;
+                o = &core::fSW;
                 break;
             case 0x2E: // SWR
                 m = MN_SWR;
-                o = &R3000_fSWR;
+                o = &core::fSWR;
                 break;
             case 0x33: // LWC3
             case 0x32: // LWC2
             case 0x31: // LWC1
             case 0x30: // LWC0
                 m = MN_LWCx;
-                o = &R3000_fLWC;
+                o = &core::fLWC;
                 a = op1 - 0x30;
                 break;
             case 0x3B: // SWC3
@@ -328,7 +328,7 @@ static void do_decode_table(R3000 *this) {
             case 0x39: // SWC1
             case 0x38: // SWC0
                 m = MN_SWCx;
-                o = &R3000_fSWC;
+                o = &core::fSWC;
                 a = op1 - 0x38;
                 break;
         }
@@ -339,277 +339,257 @@ static void do_decode_table(R3000 *this) {
     }
 }
 
-void R3000_init(R3000 *this, u64 *master_clock, u64 *waitstates, scheduler_t *scheduler, IRQ_multiplexer_b *IRQ_multiplexer)
+core::core(u64 *master_clock_in, u64 *waitstates_in, scheduler_t *scheduler_in, IRQ_multiplexer_b *IRQ_multiplexer_in) :
+    clock(master_clock_in),
+    scheduler(scheduler_in),
+    waitstates(waitstates_in)
 {
-    memset(this, 0, sizeof(*this));
-    this->clock = master_clock;
-    this->scheduler = scheduler;
-    this->waitstates = waitstates;
-    this->io.I_STAT = IRQ_multiplexer;
+    io.I_STAT = IRQ_multiplexer_in;
 
-    do_decode_table(this);
+    do_decode_table();
 
-    pipe_clear(&this->pipe);
-
-    jsm_string_init(&this->console, 200);
-    jsm_string_init(&this->trace.str, 100);
-
-    GTE_init(&this->gte);
+    pipe.clear();
 }
 
-void R3000_delete(R3000 *this)
+void core::setup_tracing(jsm_debug_read_trace &strct, u64 *trace_cycle_pointer, i32 source_id)
 {
-    jsm_string_delete(&this->console);
-    jsm_string_delete(&this->trace.str);
+    trace.strct.read_trace_m68k = strct.read_trace_m68k;
+    trace.strct.ptr = strct.ptr;
+    trace.strct.read_trace = strct.read_trace;
+    trace.ok = true;
+    trace.source_id = source_id;
 }
 
-void R3000_setup_tracing(R3000 *this, jsm_debug_read_trace *strct, u64 *trace_cycle_pointer, i32 source_id)
+void core::reset()
 {
-    this->trace.strct.read_trace_m68k = strct->read_trace_m68k;
-    this->trace.strct.ptr = strct->ptr;
-    this->trace.strct.read_trace = strct->read_trace;
-    this->trace.ok = 1;
-    this->trace.source_id = source_id;
+    pipe.clear();
+    regs.PC = 0xBFC00000;
 }
 
-void R3000_reset(R3000 *this)
+void core::add_to_console(u32 ch)
 {
-    pipe_clear(&this->pipe);
-    this->regs.PC = 0xBFC00000;
-}
-
-static void add_to_console(R3000 *this, u32 ch)
-{
-    if (this->dbg.console) {
-        console_view_add_char(this->dbg.console, ch);
-    }
-    /*if (ch == '\n') {
-        printf("\n%s", this->console.ptr);
-        jsm_string_quickempty(&this->console);
+    /*if (dbg.console) {
+        console_view_add_char(dbg.console, ch);
+    }*/
+    if (ch == '\n') {
+        printf("\n(CONSOLE) %s", console.ptr);
+        console.quickempty();
     } else
-        jsm_string_sprintf(&this->console, "%c", ch);*/
+        console.sprintf("%c", ch);
 }
 
-static void delay_slots(R3000 *this, R3000_pipeline_item *which)
+void core::delay_slots(pipeline_item &which)
 {
     // Load delay slot from instruction before this one
-    if (which->target > 0) {// R0 stays 0
-        this->regs.R[which->target] = which->value;
-        //printf("\nDelay slot %s set to %08x", reg_alias_arr[which->target], which->value);
-        which->target = -1;
+    if (which.target > 0) {// R0 stays 0
+        regs.R[which.target] = which.value;
+        //printf("\nDelay slot %s set to %08x", reg_alias_arr[which.target], which.value);
+        which.target = -1;
     }
 
     // Branch delay slot
-    if (which->new_PC != 0xFFFFFFFF) {
-        this->regs.PC = which->new_PC;
-        if ((this->regs.PC == 0xA0 && this->regs.R[9] == 0x3C) || (this->regs.PC == 0xB0 && this->regs.R[9] == 0x3D)) {
-            if (this->regs.R[9] == 0x3D) {
-                add_to_console(this, this->regs.R[4]);
+    if (which.new_PC != 0xFFFFFFFF) {
+        regs.PC = which.new_PC;
+        if ((regs.PC == 0xA0 && regs.R[9] == 0x3C) || (regs.PC == 0xB0 && regs.R[9] == 0x3D)) {
+            if (regs.R[9] == 0x3D) {
+                add_to_console(regs.R[4]);
             }
         }
-        which->new_PC = 0xFFFFFFFF;
+        which.new_PC = 0xFFFFFFFF;
     }
 
 }
 
-void R3000_flush_pipe(R3000 *this)
+void core::flush_pipe()
 {
-    delay_slots(this, &this->pipe.current);
-    delay_slots(this, &this->pipe.item0);
-    delay_slots(this, &this->pipe.item1);
-    R3000_pipe_move_forward(&this->pipe);
-    R3000_pipe_move_forward(&this->pipe);
+    delay_slots(pipe.current);
+    delay_slots(pipe.item0);
+    delay_slots(pipe.item1);
+    pipe.move_forward();
+    pipe.move_forward();
 }
 
-void R3000_exception(R3000 *this, u32 code, u32 branch_delay, u32 cop0)
+void core::exception(u32 code, u32 branch_delay, u32 cop0)
 {
     code <<= 2;
     u32 vector = 0x80000080;
-    if (this->regs.COP0[RCR_SR] & 0x400000) {
+    if (regs.COP0[RCR_SR] & 0x400000) {
         vector = 0xBFC00180;
     }
     u32 raddr;
     if (!branch_delay)
-        raddr = this->regs.PC - 4;
+        raddr = regs.PC - 4;
     else
     {
-        raddr = this->regs.PC;
+        raddr = regs.PC;
         code |= 0x80000000;
     }
-    this->regs.COP0[RCR_EPC] = raddr;
-    R3000_flush_pipe(this);
+    regs.COP0[RCR_EPC] = raddr;
+    flush_pipe();
 
     if (cop0)
         vector -= 0x40;
 
-    this->regs.PC = vector;
-    this->regs.COP0[RCR_Cause] = code;
-    u32 lstat = this->regs.COP0[RCR_SR];
-    this->regs.COP0[RCR_SR] = (lstat & 0xFFFFFFC0) | ((lstat & 0x0F) << 2);
+    regs.PC = vector;
+    regs.COP0[RCR_Cause] = code;
+    u32 lstat = regs.COP0[RCR_SR];
+    regs.COP0[RCR_SR] = (lstat & 0xFFFFFFC0) | ((lstat & 0x0F) << 2);
 }
 
-static inline void decode(R3000 *this, u32 IR, R3000_pipeline_item *current)
+void core::decode(u32 IR, pipeline_item &current)
 {
     u32 p1 = (IR & 0xFC000000) >> 26;
 
     if (p1 == 0) {
-        current->op = &this->decode_table[0x3F + (IR & 0x3F)];
+        current.op = &decode_table[0x3F + (IR & 0x3F)];
     }
     else {
-        current->op = &this->decode_table[p1];
+        current.op = &decode_table[p1];
     }
 }
 
-static void fetch_and_decode(R3000 *this)
+void core::fetch_and_decode()
 {
-    if (this->regs.PC & 3) {
-        R3000_exception(this, 4, 0, 0);
+    if (regs.PC & 3) {
+        exception(4, 0, 0);
     }
-    u32 IR = this->read(this->read_ptr, this->regs.PC, 4, 1);
-    struct R3000_pipeline_item *current = pipe_push(&this->pipe);
-    decode(this, IR, current);
-    current->opcode = IR;
-    current->addr = this->regs.PC;
-    this->regs.PC += 4;
+    u32 IR = read(read_ptr, regs.PC, 4, 1);
+    auto &current = *pipe.push();
+    decode(IR, current);
+    current.opcode = IR;
+    current.addr = regs.PC;
+    regs.PC += 4;
 }
 
-#ifdef _MSC_VER
-#pragma warning(push)
-#pragma warning(disable: 4334) // warning C4334: '<<': result of 32-bit shift implicitly converted to 64 bits (was 64-bit shift intended?)
-#endif
-
-static void R3000_print_context(R3000 *this, R3000ctxt *ct, jsm_string *out)
+void core::print_context(ctxt &ct, jsm_string &out)
 {
-    jsm_string_quickempty(out);
+    out.quickempty();
     u32 needs_commaspace = 0;
     for (u32 i = 1; i < 32; i++) {
-        if (ct->regs & (1 << i)) {
+        if (ct.regs & (1 << i)) {
             if (needs_commaspace) {
-                jsm_string_sprintf(out, ", ");
+                out.sprintf(", ");
             }
             needs_commaspace = 1;
-            jsm_string_sprintf(out, "%s:%08x", reg_alias_arr[i], this->regs.R[i]);
+            out.sprintf("%s:%08x", reg_alias_arr[i], regs.R[i]);
         }
     }
 }
 
-#ifdef _MSC_VER
-#pragma warning(pop)
-#endif
-
-static void lycoder_trace_format(R3000 *this, jsm_string *out)
+void core::lycoder_trace_format(jsm_string &out)
 {
-    struct R3000ctxt ct;
+    ctxt ct{};
     ct.cop = 0;
     ct.regs = 0;
     ct.gte = 0;
-    dbg_printf("\n%08x: %08x cyc:%lld", this->pipe.current.addr, this->pipe.current.opcode, *this->clock);
-    R3000_disassemble(this->pipe.current.opcode, out, this->pipe.current.addr, &ct);
-    dbg_printf("     %s", out->ptr);
-    jsm_string_quickempty(out);
-    R3000_print_context(this, &ct, out);
-    if ((out->cur - out->ptr) > 1) {
-        dbg_printf("             \t; %s", out->ptr);
+    dbg_printf("\n%08x: %08x cyc:%lld", pipe.current.addr, pipe.current.opcode, *clock);
+    R3000_disassemble(pipe.current.opcode, out, pipe.current.addr, &ct);
+    dbg_printf("     %s", out.ptr);
+    out.quickempty();
+    print_context(ct, out);
+    if ((out.cur - out.ptr) > 1) {
+        dbg_printf("             \t; %s", out.ptr);
     }
 }
 
-void R3000_trace_format(R3000 *this, jsm_string *out)
+void core::trace_format(jsm_string &out)
 {
-    struct R3000ctxt ct;
+    ctxt ct{};
     ct.cop = 0;
     ct.regs = 0;
     ct.gte = 0;
-    //dbg_printf("\n%08x: %08x cyc:%lld", this->pipe.current.addr, this->pipe.current.opcode, *this->clock);
-    R3000_disassemble(this->pipe.current.opcode, out, this->pipe.current.addr, &ct);
-    printf("\n%08x  (%08x)   %s", this->pipe.current.addr, this->pipe.current.opcode, out->ptr);
-    jsm_string_quickempty(out);
-    R3000_print_context(this, &ct, out);
-    if ((out->cur - out->ptr) > 1) {
-        printf("           \t%s", out->ptr);
+    //dbg_printf("\n%08x: %08x cyc:%lld", pipe.current.addr, pipe.current.opcode, *clock);
+    R3000_disassemble(pipe.current.opcode, out, pipe.current.addr, &ct);
+    printf("\n%08x  (%08x)   %s", pipe.current.addr, pipe.current.opcode, out.ptr);
+    out.quickempty();
+    print_context(ct, out);
+    if ((out.cur - out.ptr) > 1) {
+        printf("           \t%s", out.ptr);
     }
 }
 
-void R3000_check_IRQ(R3000 *this)
+void core::check_IRQ()
 {
-    if (this->pins.IRQ && (this->regs.COP0[12] & 0x400) && (this->regs.COP0[12] & 1)) {
+    if (pins.IRQ && (regs.COP0[12] & 0x400) && (regs.COP0[12] & 1)) {
         //printf("\nDO IRQ!");
-        R3000_exception(this, 0, this->pipe.item0.new_PC != 0xFFFFFFFF, 0);
+        exception(0, pipe.item0.new_PC != 0xFFFFFFFF, 0);
         //dbg_enable_trace();
         //dbg_break("YO", 0);
     }
 }
 
-void R3000_cycle(R3000 *this, i32 howmany)
+void core::cycle(i32 howmany)
 {
     i64 cycles_left = howmany;
-    assert(this->regs.R[0] == 0);
+    assert(regs.R[0] == 0);
     while(cycles_left > 0) {
-        if (this->pipe.num_items < 1)
-            fetch_and_decode(this);
-        struct R3000_pipeline_item *current = R3000_pipe_move_forward(&this->pipe);
+        if (pipe.num_items < 1)
+            fetch_and_decode();
+        auto *current = pipe.move_forward();
 
 #ifdef LYCODER
-        lycoder_trace_format(this, &this->trace.str);
+        lycoder_trace_format(&trace.str);
 #else
-        if (dbg.trace_on && dbg.traces.r3000.instruction) {
-            R3000_trace_format(this, &this->trace.str);
-            //console.log(hex8(this->regs.PC) + ' ' + R3000_disassemble(current.opcode));
-            //dbg.traces.add(D_RESOURCE_TYPES.R3000, this->clock.trace_cycles-1, this->trace_format(R3000_disassemble(current.opcode), current.addr))
+        if (::dbg.trace_on && ::dbg.traces.r3000.instruction) {
+            trace_format(trace.str);
+            //console.log(hex8(regs.PC) + ' ' + R3000_disassemble(current.opcode));
+            //dbg.traces.add(D_RESOURCE_TYPES.R3000, clock.trace_cycles-1, trace_format(R3000_disassemble(current.opcode), current.addr))
         }
 #endif
-        current->op->func(current->opcode, current->op, this);
+        (this->*current->op->func)(current->opcode, current->op);
 
-        delay_slots(this, current);
+        delay_slots(*current);
 
-        pipe_item_clear(current);
+        current->clear();
 
-        fetch_and_decode(this);
+        fetch_and_decode();
 
-        cycles_left -= *this->waitstates;
-        (*this->clock) += *(this->waitstates);
-        (*this->waitstates) = 0;
+        cycles_left -= *waitstates;
+        (*clock) += *(waitstates);
+        (*waitstates) = 0;
 
-        if (dbg.do_break) break;
+        if (::dbg.do_break) break;
     }
 }
 
-void R3000_update_I_STAT(R3000 *this)
+void core::update_I_STAT()
 {
-    this->pins.IRQ = (this->io.I_STAT->IF & this->io.I_MASK) != 0;
+    pins.IRQ = (io.I_STAT->IF & io.I_MASK) != 0;
 }
 
-void R3000_write_reg(R3000 *this, u32 addr, u32 sz, u32 val)
+void core::write_reg(u32 addr, u32 sz, u32 val)
 {
     switch(addr) {
         case 0x1F801070: // I_STAT write
-            //printf("\nwrite I_STAT %04x current:%04llx", val, this->io.I_STAT->IF);
-            IRQ_multiplexer_b_mask(this->io.I_STAT, val);
-            R3000_update_I_STAT(this);
-            //printf("\nnew I_STAT: %04llx", this->io.I_STAT->IF);
+            //printf("\nwrite I_STAT %04x current:%04llx", val, io.I_STAT->IF);
+            io.I_STAT->mask(val);
+            update_I_STAT();
+            //printf("\nnew I_STAT: %04llx", io.I_STAT->IF);
             return;
         case 0x1F801074: // I_MASK write
-            this->io.I_MASK = val;
+            io.I_MASK = val;
             //printf("\nwrite I_MASK %04x", val);
-            R3000_update_I_STAT(this);
+            update_I_STAT();
             return;
     }
     printf("\nUnhandled CPU write %08x (%d): %08x", addr, sz, val);
 }
 
-u32 R3000_read_reg(R3000 *this, u32 addr, u32 sz)
+u32 core::read_reg(u32 addr, u32 sz)
 {
     switch(addr) {
         case 0x1F801070: // I_STAT read
-            return this->io.I_STAT->IF;
+            return io.I_STAT->IF;
         case 0x1F801074: // I_MASK read
-            return this->io.I_MASK;
+            return io.I_MASK;
     }
     printf("\nUnhandled CPU read %08x (%d)", addr, sz);
-    static const u32 mask[5] = {0, 0xFF, 0xFFFF, 0, 0xFFFFFFFF};
+    static constexpr u32 mask[5] = {0, 0xFF, 0xFFFF, 0, 0xFFFFFFFF};
     return mask[sz];
 }
 
-void R3000_idle(R3000 *this, u32 howlong)
+void core::idle(u32 howlong)
 {
-    (*this->waitstates) += howlong;
+    (*waitstates) += howlong;
+}
 }

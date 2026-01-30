@@ -5,39 +5,39 @@
 #include <cstdlib>
 #include <cassert>
 #include "r3000_multiplier.h"
-
-void R3000_multiplier_set(R3000_multiplier *this, u32 hi, u32 lo, u32 op1, u32 op2, u32 op_kind, u32 cycles, u64 current_clock)
+namespace R3000 {
+void multiplier::set(u32 hi_in, u32 lo_in, u32 op1_in, u32 op2_in, u32 op_kind_in, u32 cycles_in, u64 current_clock_in)
 {
-    this->hi = hi;
-    this->lo = lo;
-    this->op1 = op1;
-    this->op2 = op2;
+    hi = hi_in;
+    lo = lo_in;
+    op1 = op1_in;
+    op2 = op2_in;
 
-    this->op_going = 1;
-    this->op_kind = op_kind;
-    this->clock_start = current_clock;
-    this->clock_end = (current_clock + cycles) - 1;
+    op_going = true;
+    op_kind = op_kind_in;
+    clock_start = current_clock_in;
+    clock_end = (current_clock_in + cycles_in) - 1;
 }
 
-static inline void u32_multiply(u32 a, u32 b, u32 *hi, u32 *lo)
+static void u32_multiply(u32 a, u32 b, u32 *hi, u32 *lo)
 {
-    u64 c = (u64)a;
-    u64 d = (u64)b;
+    u64 c = a;
+    u64 d = b;
     u64 e = c * d;
-    *hi = (u32)(e >> 32);
-    *lo = (u32)e;
+    *hi = static_cast<u32>(e >> 32);
+    *lo = static_cast<u32>(e);
 }
 
-static inline void i32_multiply(u32 a, u32 b, u32 *hi, u32 *lo)
+static void i32_multiply(u32 a, u32 b, u32 *hi, u32 *lo)
 {
-    i64 c = (i64)(i32)a;
-    i64 d = (i64)(i32)b;
+    i64 c = static_cast<i32>(a);
+    i64 d = static_cast<i32>(b);
     i64 e = c * d;
-    *hi = (u32)(e >> 32);
-    *lo = (u32)e;
+    *hi = static_cast<u32>(e >> 32);
+    *lo = static_cast<u32>(e);
 }
 
-static inline void u32_divide(u32 a, u32 b, u32 *hi, u32 *lo)
+static void u32_divide(u32 a, u32 b, u32 *hi, u32 *lo)
 {
     if (b == 0) {
         *hi = a;
@@ -49,15 +49,10 @@ static inline void u32_divide(u32 a, u32 b, u32 *hi, u32 *lo)
     }
 }
 
-#ifdef _MSC_VER
-#pragma warning(push)
-#pragma warning(disable: 4146) // unary minus operator applied to unsigned type, result still unsigned
-#endif
-
-static inline void i32_divide(u32 a, u32 b, u32 *hi, u32 *lo)
+static void i32_divide(u32 a, u32 b, u32 *hi, u32 *lo)
 {
-    i32 c = (i32)a;
-    i32 d = (i32)b;
+    i32 c = static_cast<i32>(a);
+    i32 d = static_cast<i32>(b);
     if (d == 0) {
         if (c >= 0) {
             *hi = a;
@@ -78,33 +73,30 @@ static inline void i32_divide(u32 a, u32 b, u32 *hi, u32 *lo)
     }
 }
 
-#ifdef _MSC_VER
-#pragma warning(pop)
-#endif
-
-void R3000_multiplier_finish(R3000_multiplier *this)
+void multiplier::finish()
 {
-    if (!this->op_going)
+    if (!op_going)
         return;
 
-    switch(this->op_kind) {
+    switch(op_kind) {
         case 0: // signed multiply
-            i32_multiply(this->op1, this->op2, &this->hi, &this->lo);
+            i32_multiply(op1, op2, &hi, &lo);
             break;
         case 1: // unsigned multiply
-            u32_multiply(this->op1, this->op2, &this->hi, &this->lo);
+            u32_multiply(op1, op2, &hi, &lo);
             break;
         case 2: // signed divide
-            i32_divide(this->op1, this->op2, &this->hi, &this->lo);
+            i32_divide(op1, op2, &hi, &lo);
             break;
         case 3: // unsigned divide
-            u32_divide(this->op1, this->op2, &this->hi, &this->lo);
+            u32_divide(op1, op2, &hi, &lo);
             break;
         default:
             NOGOHERE;
     }
 
-    this->op_going = 0;
+    op_going = false;
 }
 
 
+}
