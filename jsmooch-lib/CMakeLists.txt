@@ -282,6 +282,32 @@ set(SOURCE_LIST
         "src/helpers/debugger/waveform.h"
         "src/helpers/cvec.cpp"
         "src/helpers/cvec.h"
+        src/system/ps1/ps1.cpp
+        src/system/ps1/ps1.h
+        src/system/ps1/ps1_bus.cpp
+        src/system/ps1/ps1_bus.h
+        src/system/ps1/ps1_debugger.cpp
+        src/system/ps1/ps1_debugger.h
+        src/system/ps1/ps1_dma.cpp
+        src/system/ps1/ps1_dma.h
+        src/system/ps1/ps1_spu.cpp
+        src/system/ps1/ps1_spu.h
+        src/system/ps1/ps1_timers.cpp
+        src/system/ps1/ps1_timers.h
+        src/system/ps1/cdrom/ps1_cdrom.cpp
+        src/system/ps1/cdrom/ps1_cdrom.h
+        src/system/ps1/gpu/ps1_gpu.cpp
+        src/system/ps1/gpu/ps1_gpu.h
+        src/system/ps1/gpu/pixel_helpers.cpp
+        src/system/ps1/gpu/pixel_helpers.h
+        src/system/ps1/gpu/rasterize_line.cpp
+        src/system/ps1/gpu/rasterize_line.h
+        src/system/ps1/gpu/rasterize_tri.cpp
+        src/system/ps1/gpu/rasterize_tri.h
+        src/system/ps1/peripheral/ps1_digital_pad.cpp
+        src/system/ps1/peripheral/ps1_digital_pad.h
+        src/system/ps1/peripheral/ps1_sio.cpp
+        src/system/ps1/peripheral/ps1_sio.h
         src/system/nds/nds.cpp
         src/system/nds/nds.h
         src/system/nds/nds_apu.cpp

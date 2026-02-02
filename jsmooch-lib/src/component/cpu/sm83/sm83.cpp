@@ -84,60 +84,60 @@ void core::cycle() {
 			regs.IME = 1;
 		}
 	}
-	if ((regs.IR == INS_HALT) ||
-		((regs.IR == INS_DECODE) && (regs.TCU == 1) && (regs.poll_IRQ))) {
-		bool is_halt = ((regs.IR == INS_HALT) && (regs.IME == 0));
-		regs.poll_IRQ = false;
-		if ((regs.IME) || is_halt) {
-			u32 imask = 0xFF;
-			u32 mask = regs.IE & regs.IF & 0x1F;
-			regs.IV = -1;
-			if (mask & 1) { // VBLANK interrupt
-                DBG_EVENT(dbg.events.IRQ_vblank);
-				imask = 0xFE;
-				regs.IV = 0x40;
+if ((regs.IR == INS_HALT) ||
+	((regs.IR == INS_DECODE) && (regs.TCU == 1) && (regs.poll_IRQ))) {
+	bool is_halt = ((regs.IR == INS_HALT) && (regs.IME == 0));
+	regs.poll_IRQ = false;
+	if ((regs.IME) || is_halt) {
+		u32 imask = 0xFF;
+		u32 mask = regs.IE & regs.IF & 0x1F;
+		regs.IV = -1;
+		if (mask & 1) { // VBLANK interrupt
+            DBG_EVENT(dbg.events.IRQ_vblank);
+			imask = 0xFE;
+			regs.IV = 0x40;
+		}
+		else if (mask & 2) { // STAT interrupt
+            DBG_EVENT(dbg.events.IRQ_stat);
+			imask = 0xFD;
+			regs.IV = 0x48;
+		}
+		else if (mask & 4) { // Timer interrupt
+            DBG_EVENT(dbg.events.IRQ_timer);
+			imask = 0xFB;
+			regs.IV = 0x50;
+		}
+		else if (mask & 8) { // Serial interrupt
+            DBG_EVENT(dbg.events.IRQ_serial);
+			imask = 0xF7;
+			regs.IV = 0x58;
+		}
+		else if (mask & 0x10) { // Joypad interrupt
+            DBG_EVENT(dbg.events.IRQ_joypad);
+            imask = 0xEF;
+			regs.IV = 0x60;
+		}
+		if (regs.IV > 0) {
+			if (is_halt && (regs.IME == 0)) {
+                DBG_EVENT(dbg.events.HALT_end);
+                regs.HLT = 0;
+				regs.TCU++;
 			}
-			else if (mask & 2) { // STAT interrupt
-                DBG_EVENT(dbg.events.IRQ_stat);
-				imask = 0xFD;
-				regs.IV = 0x48;
-			}
-			else if (mask & 4) { // Timer interrupt
-                DBG_EVENT(dbg.events.IRQ_timer);
-				imask = 0xFB;
-				regs.IV = 0x50;
-			}
-			else if (mask & 8) { // Serial interrupt
-                DBG_EVENT(dbg.events.IRQ_serial);
-				imask = 0xF7;
-				regs.IV = 0x58;
-			}
-			else if (mask & 0x10) { // Joypad interrupt
-                DBG_EVENT(dbg.events.IRQ_joypad);
-                imask = 0xEF;
-				regs.IV = 0x60;
-			}
-			if (regs.IV > 0) {
-				if (is_halt && (regs.IME == 0)) {
-                    DBG_EVENT(dbg.events.HALT_end);
-                    regs.HLT = 0;
-					regs.TCU++;
+			else {
+				// Right herethe STAT is not supposed to be cleared if LCD disabled
+				if (regs.HLT) {
+					regs.PC = (regs.PC + 1) & 0xFFFF;
 				}
-				else {
-					// Right herethe STAT is not supposed to be cleared if LCD disabled
-					if (regs.HLT) {
-						regs.PC = (regs.PC + 1) & 0xFFFF;
-					}
-					//printf("\nIRQ at cycle:%llu to IV:%04x"trace_cyclesregs.IV);
-                    regs.IF &= imask;
-					regs.HLT = 0;
-					regs.IR = INS_IRQ;
-                    last_decoded_opcode = INS_IRQ;
-					current_instruction = decoded_opcodes[INS_IRQ];
-				}
+				//printf("\nIRQ at cycle:%llu to IV:%04x"trace_cyclesregs.IV);
+                regs.IF &= imask;
+				regs.HLT = 0;
+				regs.IR = INS_IRQ;
+                last_decoded_opcode = INS_IRQ;
+				current_instruction = decoded_opcodes[INS_IRQ];
 			}
 		}
 	}
+}
 
 	if (regs.IR == INS_DECODE) {
         ins_cycles();

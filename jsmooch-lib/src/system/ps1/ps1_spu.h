@@ -2,19 +2,13 @@
 // Created by . on 2/20/25.
 //
 
-#ifndef JSMOOCH_EMUS_PS1_SPU_H
-#define JSMOOCH_EMUS_PS1_SPU_H
-
+#pragma once
 #include "helpers/int.h"
 
-struct PS1_SPU {
-    u32 val[0x400];
+namespace PS1 {
+struct SPU {
+    void write(u32 addr, u32 sz, u32 val);
+    u32 read(u32 addr, u32 sz, bool has_effect);
+    u32 val[0x400]{};
 };
-
-struct PS1;
-void PS1_SPU_init(PS1 *);
-
-void PS1_SPU_write(PS1_SPU *, u32 addr, u32 sz, u32 val);
-u32 PS1_SPU_read(PS1_SPU *, u32 addr, u32 sz, u32 has_effect);
-
-#endif //JSMOOCH_EMUS_PS1_SPU_H
+}

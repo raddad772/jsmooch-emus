@@ -6,43 +6,124 @@
 
 #include "ps1_bus.h"
 #include "ps1_dma.h"
-#include "helpers/multisize_memaccess.c"
+#include "peripheral/ps1_sio.h"
+#include "peripheral/ps1_digital_pad.h"
+#include "helpers/multisize_memaccess.cpp"
 
 #define deKSEG(addr) ((addr) & 0x1FFFFFFF)
 #define DEFAULT_WAITSTATES 1
-
-
-void PS1_bus_init(PS1 *this)
+namespace PS1 {
+static u32 read_trace_cpu(void *ptr, u32 addr, u8 sz)
 {
-    this->dma.control = 0x7654321;
-    for (u32 i = 0; i < 7; i++) {
-        this->dma.channels[i].num = i;
-        this->dma.channels[i].step = PS1D_increment;
-        this->dma.channels[i].sync = PS1D_manual;
-        this->dma.channels[i].direction = PS1D_to_ram;
+    auto *th = static_cast<core *>(ptr);
+    return th->mainbus_read(addr, sz, false);
+}
+
+static u32 mainbus_fetchins(void *ptr, u32 addr, u32 sz)
+{
+    auto *th = static_cast<core *>(ptr);
+    return th->mainbus_read(addr, sz, true);
+}
+
+static void run_block(void *bound_ptr, u64 num, u64 current_clock, u32 jitter)
+{
+    auto *th = static_cast<core *>(bound_ptr);
+    th->cycles_left += static_cast<i64>(num);
+    th->cpu.check_IRQ();
+    th->cpu.cycle(num);
+}
+
+static u32 snoop_read(void *ptr, u32 addr, u32 sz, u32 has_effect)
+{
+    auto *th = static_cast<core *>(ptr);
+    u32 r = th->mainbus_read(addr, sz, has_effect);
+    //printf("\nread %08x (%d): %08x", addr, sz, r);
+    return r;
+}
+
+static void snoop_write(void *ptr, u32 addr, u32 sz, u32 val)
+{
+    auto *th = static_cast<core *>(ptr);
+    //printf("\nwrite %08x (%d): %08x", addr, sz, val);
+    th->mainbus_write(addr, sz, val);
+}
+
+static void update_SR(void *ptr, R3000::core *cpucore, u32 val)
+{
+    auto *th = static_cast<PS1::core *>(ptr);
+    th->mem.cache_isolated = (val & 0x10000) == 0x10000;
+    //printf("\nNew SR: %04x", core->regs.COP0[12] & 0xFFFF);
+}
+
+core::core() :
+    IRQ_multiplexer(15),
+    clock(true),
+    scheduler(&clock.master_cycle_count),
+    cpu(&clock.master_cycle_count, &clock.waitstates, &scheduler, &IRQ_multiplexer),
+    sio0(this),
+    gpu(this),
+    dma(this),
+    io{ false, SIO::digital_gamepad(this) }
+    {
+    for (u32 i = 0; i < 3; i++) {
+        timers[i].num = i;
+        timers[i].bus = this;
     }
+    dma.control = 0x7654321;
+    for (u32 i = 0; i < 7; i++) {
+        dma.channels[i].num = i;
+        dma.channels[i].step = D_increment;
+        dma.channels[i].sync = D_manual;
+        dma.channels[i].direction = D_to_ram;
+    }
+    has.load_BIOS = true;
+    has.max_loaded_files = 0;
+    has.max_loaded_folders = 0;
+    has.save_state = false;
+    has.set_audiobuf = false;
+
+    scheduler.max_block_size = 30;
+
+    scheduler.run.func = &run_block;
+    scheduler.run.ptr = this;
+
+    setup_IRQs();
+
+    cpu.read_ptr = this;
+    cpu.write_ptr = this;
+    cpu.read = &snoop_read;
+    //cpu.read = &PS1_mainbus_read;
+    cpu.write = &snoop_write;
+    //cpu.write = &PS1_mainbus_write;
+    cpu.fetch_ptr = this;
+    cpu.fetch_ins = &mainbus_fetchins;
+    cpu.update_sr_ptr = this;
+    cpu.update_sr = &update_SR;
+
+    snprintf(label, sizeof(label), "PlayStation");
+    jsm_debug_read_trace dt;
+    dt.read_trace_arm = &read_trace_cpu;
+    dt.ptr = this;
+    cpu.setup_tracing(dt, &clock.master_cycle_count, 1);
+
+    jsm.described_inputs = false;
+    jsm.cycles_left = 0;
 }
 
-void PS1_bus_reset(PS1 *this)
-{
-    this->io.cached_isolated = 0;
-}
+static constexpr u32 alignmask[5] = { 0, 0xFFFFFFFF, 0xFFFFFFFE, 0, 0xFFFFFFFC };
 
-static const u32 alignmask[5] = { 0, 0xFFFFFFFF, 0xFFFFFFFE, 0, 0xFFFFFFFC };
-
-u32 PS1_mainbus_read(void *ptr, u32 addr, u32 sz, u32 has_effect)
+u32 core::mainbus_read(u32 addr, u32 sz, bool has_effect)
 {
-    struct PS1* this = (PS1*)ptr;
-    this->clock.waitstates += DEFAULT_WAITSTATES;
+    clock.waitstates += DEFAULT_WAITSTATES;
 
     addr = deKSEG(addr) & alignmask[sz];
     // 2MB MRAM mirrored 4 times
     if (addr < 0x00800000) {
-        return cR[sz](this->mem.MRAM, addr & 0x1FFFFF);
+        return cR[sz](mem.MRAM, addr & 0x1FFFFF);
     }
     // 1F800000 1024kb of scratchpad
     if ((addr >= 0x1F800000) && (addr < 0x1F800400)) {
-        return cR[sz](this->mem.scratchpad, addr & 0x3FF);
+        return cR[sz](mem.scratchpad, addr & 0x3FF);
     }
     /*if ((addr >= 0x1F800000) && (addr < 0x1F803000)) {
         // TODO: stub: IO area
@@ -50,23 +131,23 @@ u32 PS1_mainbus_read(void *ptr, u32 addr, u32 sz, u32 has_effect)
     }*/
     // 1FC00000h 512kb BIOS
     if ((addr >= 0x1FC00000) && (addr < 0x1FC80000)) {
-        return cR[sz](this->mem.BIOS, addr & 0x7FFFF);
+        return cR[sz](mem.BIOS, addr & 0x7FFFF);
     }
 
     if ((addr >= 0x1F801070) && (addr <= 0x1F801074)) {
-        return R3000_read_reg(&this->cpu, addr, sz);
+        return cpu.read_reg(addr, sz);
     }
 
     if ((addr >= 0x1F801080) && (addr <= 0x1F8010FF)) {
-        return PS1_DMA_read(this, addr, sz);
+        return dma.read(addr, sz);
     }
 
     if ((addr >= 0x1F801040) && (addr < 0x1F801050)) {
-        return PS1_SIO0_read(this, addr, sz);
+        return sio0.read(addr, sz);
     }
 
     if ((addr >= 0x1F801C00) && (addr < 0x1F801E00)) {
-        return PS1_SPU_read(&this->spu, addr, sz, has_effect);
+        return spu.read(addr, sz, has_effect);
     }
 
     switch(addr) {
@@ -83,20 +164,20 @@ u32 PS1_mainbus_read(void *ptr, u32 addr, u32 sz, u32 has_effect)
             return 0x00070777;
         case 0x1F8010A8: // DMA2 GPU thing
         case 0x1F801810: // GP0/GPUREAD
-            return PS1_GPU_get_gpuread(&this->gpu);
+            return gpu.get_gpuread();
         case 0x1F801814: // GPUSTAT Read GPU Status Register
-            return PS1_GPU_get_gpustat(&this->gpu);
+            return gpu.get_gpustat();
         case 0x1F000084: // PIO
             //console.log('PIO READ!');
             return 0;
     }
 
-    if ((addr >= 0x1F801100) && (addr < 0x1F801130)) return PS1_timers_read(this, addr, sz);
+    if ((addr >= 0x1F801100) && (addr < 0x1F801130)) return timers_read(addr, sz);
 
     static u32 e = 0;
     printf("\nUNHANDLED MAINBUS READ sz %d addr %08x", sz, addr);
     e++;
-    if (e > 10) dbg_break("TOO MANY BAD READ", this->clock.master_cycle_count+this->clock.waitstates);
+    if (e > 10) dbg_break("TOO MANY BAD READ", clock.master_cycle_count+clock.waitstates);
     switch(sz) {
         case 1:
             return 0xFF;
@@ -108,42 +189,41 @@ u32 PS1_mainbus_read(void *ptr, u32 addr, u32 sz, u32 has_effect)
     return 0;
 }
 
-void PS1_mainbus_write(void *ptr, u32 addr, u32 sz, u32 val)
+void core::mainbus_write(u32 addr, u32 sz, u32 val)
 {
-    struct PS1* this = (PS1*)ptr;
-    this->clock.waitstates += DEFAULT_WAITSTATES;
-    if (this->mem.cache_isolated) return;
+    clock.waitstates += DEFAULT_WAITSTATES;
+    if (mem.cache_isolated) return;
     addr = deKSEG(addr) & alignmask[sz];
     /*if (addr == 0) {
         printf("\nWRITE %08x:%08x ON cycle %lld", addr, val, ((PS1 *)ptr)->clock.master_cycle_count);
         dbg_break("GHAHA", 0);
     }*/
-    if ((addr < 0x00800000) && !this->mem.cache_isolated) {
-        cW[sz](this->mem.MRAM, addr & 0x1FFFFF, val);
+    if ((addr < 0x00800000) && !mem.cache_isolated) {
+        cW[sz](mem.MRAM, addr & 0x1FFFFF, val);
         return;
     }
-    if (((addr >= 0x1F800000) && (addr <= 0x1F800400)) && !this->mem.cache_isolated) {
-        cW[sz](this->mem.scratchpad, addr & 0x3FF, val);
+    if (((addr >= 0x1F800000) && (addr <= 0x1F800400)) && !mem.cache_isolated) {
+        cW[sz](mem.scratchpad, addr & 0x3FF, val);
         return;
     }
 
     if ((addr >= 0x1F801070) && (addr <= 0x1F801074)) {
-        R3000_write_reg(&this->cpu, addr, sz, val);
+        cpu.write_reg(addr, sz, val);
         return;
     }
 
     if ((addr >= 0x1F801080) && (addr <= 0x1F8010FF)) {
-        PS1_DMA_write(this, addr, sz, val);
+        dma.write(addr, sz, val);
         return;
     }
 
     if ((addr >= 0x1F801040) && (addr < 0x1F801050)) {
-        PS1_SIO0_write(this, addr, sz, val);
+        sio0.write(addr, sz, val);
         return;
     }
 
     if ((addr >= 0x1F801C00) && (addr < 0x1F801E00)) {
-        PS1_SPU_write(&this->spu, addr, sz, val);
+        spu.write(addr, sz, val);
         return;
     }
 
@@ -166,10 +246,10 @@ void PS1_mainbus_write(void *ptr, u32 addr, u32 sz, u32 val)
             //printf("\nWRITE POST STATUS! %d", val);
             return;
         case 0x1F801810: // GP0 Send GP0 Commands/Packets (Rendering and VRAM Access)
-            PS1_GPU_write_gp0(&this->gpu, val);
+            gpu.write_gp0(val);
             return;
         case 0x1F801814: // GP1
-            PS1_GPU_write_gp1(&this->gpu, val);
+            gpu.write_gp1(val);
             return;
         case 0x1F801000: // Expansion 1 base addr
         case 0x1F801004: // Expansion 2 base addr
@@ -199,26 +279,21 @@ void PS1_mainbus_write(void *ptr, u32 addr, u32 sz, u32 val)
     }
 
     if ((addr >= 0x1F801100) && (addr < 0x1F801130)) {
-        PS1_timers_write(this, addr, sz, val);
+        timers_write(addr, sz, val);
         return;
     }
 
     printf("\nUNHANDLED MAINBUS WRITE %08x: %08x", addr, val);
 }
 
-u32 PS1_mainbus_fetchins(void *ptr, u32 addr, u32 sz)
+void core::set_irq(IRQ from, u32 level)
 {
-    struct PS1 *this = (PS1 *)ptr;
-    return PS1_mainbus_read(ptr, addr, sz, 1);
+    IRQ_multiplexer.set_level(from, level);
+    cpu.update_I_STAT();
 }
 
-void PS1_set_irq(PS1 *this, enum PS1_IRQ from, u32 level)
+u64 core::clock_current() const
 {
-    IRQ_multiplexer_b_set_level(&this->IRQ_multiplexer, from, level);
-    R3000_update_I_STAT(&this->cpu);
+    return clock.master_cycle_count + clock.waitstates;
 }
-
-u64 PS1_clock_current(PS1 *this)
-{
-    return this->clock.master_cycle_count + this->clock.waitstates;
 }

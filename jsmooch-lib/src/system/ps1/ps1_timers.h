@@ -2,12 +2,29 @@
 // Created by . on 3/4/25.
 //
 
-#ifndef JSMOOCH_EMUS_PS1_TIMERS_H
-#define JSMOOCH_EMUS_PS1_TIMERS_H
+#pragma once
 
 #include "helpers/int.h"
-
-struct PS1_TIMERS {
+namespace PS1 {
+struct core;
+struct TIMER {
+    u32 read_clk(u64 clk) const;
+    u64 get_clock_source();
+    void setup();
+    void reset(u32 reset_to);
+    void enable();
+    void disable();
+    void reschedule();
+    void reset();
+    void vblank(u64 key);
+    void hblank(u64 key);
+    void deschedule();
+    void write(u32 val, u32 sz);
+    void write_target(u32 val, u32 sz);
+    void write_mode(u32 val, u32 sz);
+    u32 read();
+    core *bus; // TODO: fill this in!
+    u32 num; // TODO: fill this in!
     struct {
         u64 sched_id;
         u64 sch_cycle;
@@ -21,7 +38,6 @@ struct PS1_TIMERS {
     } start;
 
     u32 on_system_clock;
-
 
     u32 target;
     u32 running;
@@ -44,14 +60,4 @@ struct PS1_TIMERS {
     } mode;
 };
 
-struct PS1;
-u64 PS1_dotclock(PS1 *);
-void PS1_timers_hblank(PS1 *, u64 key);
-u32 PS1_timers_read(PS1 *, u32 addr, u32 sz);
-void PS1_timers_write(PS1 *, u32 addr, u32 sz, u32 val);
-void PS1_timers_vblank(PS1 *, u64 key);
-void PS1_disable_timer(PS1 *, u32 timer_num);
-void PS1_enable_timer(PS1 *, u32 timer_num);
-void PS1_timers_reset(PS1 *);
-
-#endif //JSMOOCH_EMUS_PS1_TIMERS_H
+}

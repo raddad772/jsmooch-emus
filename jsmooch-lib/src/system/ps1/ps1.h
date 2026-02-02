@@ -2,15 +2,13 @@
 // Created by . on 2/11/25.
 //
 
-#ifndef JSMOOCH_EMUS_PS1_H
-#define JSMOOCH_EMUS_PS1_H
-
+#pragma once
 #include "helpers/enums.h"
 #include "helpers/debug.h"
 #include "helpers/int.h"
 #include "helpers/sys_interface.h"
 
-void PS1_new(jsm_system*);
+jsm_system* PS1_new();
 void PS1_delete(jsm_system* system);
 
-#endif //JSMOOCH_EMUS_PS1_H
+

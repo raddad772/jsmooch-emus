@@ -1,30 +1,27 @@
 //
 // Created by . on 2/20/25.
 //
-
+#include <cassert>
 #include "ps1_spu.h"
-#include "../ps1_bus.h"
+#include "ps1_bus.h"
 
-void PS1_SPU_init(PS1 *this)
-{
-
-}
-
-void PS1_SPU_write(PS1_SPU *this, u32 addr, u32 sz, u32 val)
+namespace PS1 {
+void SPU::write(u32 addr, u32 sz, u32 wval)
 {
     addr -= 0x1F801C00;
     addr <<= 1;
     assert(addr < 0x400);
-    this->val[addr] = val & 0xFFFF;
-    if (sz == 4) this->val[addr+1] = val >> 16;
+    val[addr] = wval & 0xFFFF;
+    if (sz == 4) val[addr+1] = wval >> 16;
 }
 
-u32 PS1_SPU_read(PS1_SPU *this, u32 addr, u32 sz, u32 has_effect)
+u32 SPU::read(u32 addr, u32 sz, bool has_effect)
 {
     addr -= 0x1F801C00;
     addr <<= 1;
     assert(addr < 0x400);
-    u32 r = this->val[addr];
-    if (sz == 4) r |= (this->val[addr+1] << 16);
+    u32 r = val[addr];
+    if (sz == 4) r |= (val[addr+1] << 16);
     return r;
+}
 }

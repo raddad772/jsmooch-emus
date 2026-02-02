@@ -4,45 +4,57 @@
 #include <cstdlib>
 #include <cstring>
 #include <math.h>
+#include <cassert>
 
 #include "pixel_helpers.h"
 #include "../ps1_bus.h"
-#include "../timers/ps1_timers.h"
+#include "../ps1_timers.h"
 #include "ps1_gpu.h"
 #include "rasterize_line.h"
 
-#include "helpers/multisize_memaccess.c"
+#include "helpers/multisize_memaccess.cpp"
 
 //#define LOG_GP0
 //#define DBG_GP0
+namespace PS1 {
+void core::setup_dotclock()
+{
+    if (gpu.hr2) {
+        gpu.hres = 368;
+    }
+    else {
+        static constexpr u32 table[4] =  {256, 320, 512, 640};
+        gpu.hres = table[gpu.hr1];
+    }
+    float cycles_per_line = (static_cast<float>(clock.timing.gpu.hz) / clock.timing.fps) / static_cast<float>(clock.timing.frame.lines);
+    float cycles_per_px = cycles_per_line / static_cast<float>(gpu.hres);
 
-static void gp0_cmd(PS1_GPU *this, u32 cmd);
+    clock.dot.horizontal_px = (((gpu.display_horiz_end-gpu.display_horiz_start)/(u32)cycles_per_px)+2) & ~3;
+    clock.dot.vertical_px = clock.timing.frame.lines - clock.timing.frame.vblank.start_on_line;
 
-static inline void xy_from_cmd(RT_POINT2D *this, u32 cmd){
-    this->x = (i32)(cmd & 0xFFFF);
-    this->y = (i32)(cmd >> 16);
+    clock.dot.ratio.cpu_to_gpu = static_cast<float>(clock.timing.gpu.hz) / (float)clock.timing.cpu.hz;
+    clock.dot.ratio.cpu_to_dotclock = clock.dot.ratio.cpu_to_gpu / cycles_per_px;
 }
 
-static inline void color24_from_cmd(RT_POINT2D *this, u32 cmd)
+void core::dotclock_change()
 {
-    this->r = cmd & 0xFF;
-    this->g = (cmd >> 8) & 0xFF;
-    this->b = (cmd >> 16) & 0xFF;
+    clock.dot.start.value = dotclock();
+    clock.dot.start.time = clock_current();
+    setup_dotclock();
 }
 
-static inline void uv_from_cmd(RT_POINT2D *this, u32 cmd)
-{
-    this->u = cmd & 0xFF;
-    this->v = (cmd >> 8) & 0xFF;
+
 }
 
-void PS1_GPU_texture_sampler_new(PS1_GPU_TEXTURE_SAMPLER *this, u32 page_x, u32 page_y, u32 clut_addr, PS1_GPU *ctrl)
+namespace PS1::GPU {
+
+void TEXTURE_SAMPLER::mk_new(u32 page_x_in, u32 page_y_in, u32 clut_addr_in, core *bus)
 {
-    this->page_x = (page_x & 0x0F) << 6; // * 64
-    this->page_y = (page_y & 1) * 256;
-    this->base_addr = (this->page_y * 2048) + (this->page_x * 2);
-    this->clut_addr = clut_addr;
-    this->VRAM = ctrl->VRAM;
+    page_x = (page_x & 0x0F) << 6; // * 64
+    page_y = (page_y & 1) * 256;
+    base_addr = (page_y * 2048) + (page_x * 2);
+    clut_addr = clut_addr_in;
+    VRAM = bus->VRAM;
 }
 
 #define R_GPUSTAT 0
@@ -52,97 +64,40 @@ void PS1_GPU_texture_sampler_new(PS1_GPU_TEXTURE_SAMPLER *this, u32 page_x, u32 
 #define R_GPUREAD 4
 #define R_LASTUSED 23
 
-void PS1_GPU_init(PS1 *this)
+core::core(PS1::core *parent) : bus(parent)
 {
-    memset(this->gpu.VRAM, 0, 1024*1024);
-    this->gpu.scheduler = &this->scheduler;
-
-    this->gpu.display_horiz_start = 0x200;
-    this->gpu.display_horiz_end = 0xC00;
-    this->gpu.display_line_start = 0x10;
-    this->gpu.display_line_end = 0x100;
-    this->gpu.handle_gp0 = &gp0_cmd;
+    display_horiz_start = 0x200;
+    display_horiz_end = 0xC00;
+    display_line_start = 0x10;
+    display_line_end = 0x100;
+    handle_gp0 = &core::core::gp0_cmd;
 }
 
-static void ins_null(PS1_GPU *this)
-{
-
-}
-
-static inline void unready_cmd(PS1_GPU *this)
+void core::unready_cmd()
 {
     //static u32 e = 0;
     //e++;
     //printf("\nUNREADY CMD %d", e);
-    this->io.GPUSTAT &= 0xFBFFFFFF;
+    io.GPUSTAT &= 0xFBFFFFFF;
 }
 
-static inline void unready_recv_dma(PS1_GPU *this)
+void core::cmd02_quick_rect()
 {
-    //dbg_printf("\nUNREADY DMA");
-    this->io.GPUSTAT &= 0xEFFFFFFF;
-}
-
-static inline void unready_vram_to_CPU(PS1_GPU *this)
-{
-    //printf("\nUNREADY VRAM_TO_CPU");
-    this->io.GPUSTAT &= 0xF7FFFFFF;
-}
-
-static inline void unready_all(PS1_GPU *this)
-{
-    unready_cmd(this);
-    unready_recv_dma(this);
-    unready_vram_to_CPU(this);
-}
-
-static inline void ready_cmd(PS1_GPU *this)
-{
-    //printf("\nREADY CMD");
-    this->io.GPUSTAT |= 0x4000000;
-}
-
-static inline void ready_recv_dma(PS1_GPU *this)
-{
-    //dbg_printf("\nREADY DMA");
-    this->io.GPUSTAT |= 0x10000000;
-}
-
-static inline void ready_vram_to_CPU(PS1_GPU *this)
-{
-    //printf("\nREADY VRAM_TO_CPU");
-    this->io.GPUSTAT |= 0x8000000;
-}
-
-static inline void ready_all(PS1_GPU *this)
-{
-    ready_cmd(this);
-    ready_recv_dma(this);
-    ready_vram_to_CPU(this);
-}
-
-static void cmd02_quick_rect(PS1_GPU *this)
-{
-    unready_all(this);
-    u32 ysize = (this->cmd[2] >> 16) & 0xFFFF;
-    u32 xsize = (this->cmd[2]) & 0xFFFF;
-    u32 BGR = BGR24to15(this->cmd[0] & 0xFFFFFF);
-    u32 start_y = (this->cmd[1] >> 16) & 0xFFFF;
-    u32 start_x = (this->cmd[1]) & 0xFFFF;
+    unready_all();
+    u32 ysize = (CMD[2] >> 16) & 0xFFFF;
+    u32 xsize = (CMD[2]) & 0xFFFF;
+    u32 BGR = BGR24to15(CMD[0] & 0xFFFFFF);
+    u32 start_y = (CMD[1] >> 16) & 0xFFFF;
+    u32 start_x = (CMD[1]) & 0xFFFF;
     //if (LOG_DRAW_QUADS) console.log('QUICKRECT! COLOR', hex4(BGR), 'X Y', start_x, start_y, 'SZ X SZ Y', xsize, ysize);
     for (u32 y = start_y; y < (start_y+ysize); y++) {
         for (u32 x = start_x; x < (start_x + xsize); x++) {
             u32 addr = (2048*y)+(x*2);
-            cW[2](this->VRAM, addr, BGR);
+            cW[2](VRAM, addr, BGR);
         }
     }
 
-    ready_all(this);
-}
-
-static inline i32 mksigned16(u32 v)
-{
-    return SIGNe16to32(v);
+    ready_all();
 }
 
 static inline i32 mksigned11(u32 v)
@@ -150,24 +105,24 @@ static inline i32 mksigned11(u32 v)
     return SIGNe11to32(v);
 }
 
-static void cmd28_draw_flat4untex(PS1_GPU *this)
+void core::cmd28_draw_flat4untex()
 {
     // Flat 4-vertex untextured poly
-    xy_from_cmd(&this->v0, this->cmd[1]);
-    xy_from_cmd(&this->v1, this->cmd[2]);
-    xy_from_cmd(&this->v2, this->cmd[3]);
-    xy_from_cmd(&this->v3, this->cmd[4]);
+    V0.xy_from_cmd(CMD[1]);
+    V1.xy_from_cmd(CMD[2]);
+    V2.xy_from_cmd(CMD[3]);
+    V3.xy_from_cmd(CMD[4]);
 
-    u32 color = BGR24to15(this->cmd[0] & 0xFFFFFF);
+    u32 color = BGR24to15(CMD[0] & 0xFFFFFF);
 #ifdef LOG_DRAW_QUADS
     printf("\nflat4untex %d %d %d %d %d %d %06x", x0, y0, x1, y1, x2, y2, color);
 #endif
-    RT_draw_flat_triangle(this, &this->v0, &this->v1, &this->v2, color);
-    RT_draw_flat_triangle(this, &this->v1, &this->v2, &this->v3, color);
+    RT_draw_flat_triangle(&V0, &V1, &V2, color);
+    RT_draw_flat_triangle(&V1, &V2, &V3, color);
 }
 
 
-static u16 sample_tex_4bit(PS1_GPU_TEXTURE_SAMPLER *ts, i32 u, i32 v)
+static u16 sample_tex_4bit(TEXTURE_SAMPLER *ts, i32 u, i32 v)
 {
     u32 addr = ts->base_addr;
     addr += ((v&0xFF)*2048); // 2048 bytes per line
@@ -182,19 +137,19 @@ static u16 sample_tex_4bit(PS1_GPU_TEXTURE_SAMPLER *ts, i32 u, i32 v)
     return r;
 }
 
-static u16 sample_tex_8bit(PS1_GPU_TEXTURE_SAMPLER *ts, i32 u, i32 v)
+static u16 sample_tex_8bit(TEXTURE_SAMPLER *ts, i32 u, i32 v)
 {
     u32 d = ts->VRAM[(ts->base_addr + ((v&0xFF)<<11) + (u&0x7F)) & 0xFFFFF];
     return cR16(ts->VRAM, (ts->clut_addr + (d*2)) & 0xFFFFF);
 }
 
-static u16 sample_tex_15bit(PS1_GPU_TEXTURE_SAMPLER *ts, i32 u, i32 v)
+static u16 sample_tex_15bit(TEXTURE_SAMPLER *ts, i32 u, i32 v)
 {
     u32 addr = ts->base_addr + ((v&0xFF)<<11) + ((u&0x7F)<<1);
     return cR16(ts->VRAM, addr & 0xFFFFF);
 }
 
-static void get_texture_sampler_from_texpage_and_palette(PS1_GPU *this, u32 texpage, u32 palette, PS1_GPU_TEXTURE_SAMPLER *ts)
+void core::get_texture_sampler_from_texpage_and_palette(u32 texpage, u32 palette, TEXTURE_SAMPLER *ts)
 {
     u32 clx = (palette & 0x3F) << 4;
     u32 cly = (palette >> 6) & 0x1FF;
@@ -203,7 +158,7 @@ static void get_texture_sampler_from_texpage_and_palette(PS1_GPU *this, u32 texp
 
     u32 tx_x = texpage & 15;
     u32 tx_y = (texpage >> 4) & 1;
-    PS1_GPU_texture_sampler_new(ts, tx_x, tx_y, clut_addr, this);
+    ts->mk_new(tx_x, tx_y, clut_addr, this);
     ts->semi_mode = (texpage >> 5) & 3;
     u32 tdepth = (texpage >> 7) & 3;
     switch(tdepth) {
@@ -221,32 +176,32 @@ static void get_texture_sampler_from_texpage_and_palette(PS1_GPU *this, u32 texp
     }
 }
 
-static void cmd20_tri_flat(PS1_GPU *this)
+void core::cmd20_tri_flat()
 {
-    xy_from_cmd(&this->v0, this->cmd[1]);
-    xy_from_cmd(&this->v1, this->cmd[2]);
-    xy_from_cmd(&this->v2, this->cmd[3]);
-    u32 color = BGR24to15(this->cmd[0] & 0xFFFFFF);
+    V0.xy_from_cmd(CMD[1]);
+    V1.xy_from_cmd(CMD[2]);
+    V2.xy_from_cmd(CMD[3]);
+    u32 color = BGR24to15(CMD[0] & 0xFFFFFF);
 #ifdef LOG_GP0
     printf("\nGP0_20 flat tri %f,%f %f,%f %f,%f color:%04x", x0, y0, x1, y1, x2, y2, color);
 #endif
-    RT_draw_flat_triangle(this, &this->v0, &this->v1, &this->v2, color);
+    RT_draw_flat_triangle(&V0, &V1, &V2, color);
 }
 
-static void cmd22_tri_flat_semi_transparent(PS1_GPU *this)
+void core::cmd22_tri_flat_semi_transparent()
 {
-    xy_from_cmd(&this->v0, this->cmd[1]);
-    xy_from_cmd(&this->v1, this->cmd[2]);
-    xy_from_cmd(&this->v2, this->cmd[3]);
-    color24_from_cmd(&this->v0, this->cmd[0]);
-    u32 color = BGR24to15(this->cmd[0] & 0xFFFFFF);
+    V0.xy_from_cmd(CMD[1]);
+    V1.xy_from_cmd(CMD[2]);
+    V2.xy_from_cmd(CMD[3]);
+    V0.color24_from_cmd(CMD[0]);
+    u32 color = BGR24to15(CMD[0] & 0xFFFFFF);
 #ifdef LOG_GP0
     printf("\nGP0_20 flat tri %f,%f %f,%f %f,%f color:%04x", x0, y0, x1, y1, x2, y2, color);
 #endif
-    RT_draw_flat_triangle_semi(this, &this->v0, &this->v1, &this->v2, this->v0.r, this->v0.g, this->v0.b);
+    RT_draw_flat_triangle_semi(&V0, &V1, &V2, V0.r, V0.g, V0.b);
 }
 
-static void cmd24_tri_raw_modulated(PS1_GPU *this)
+void core::cmd24_tri_raw_modulated()
 {
     /*
   0 WRIOW GP0,(0x24<<24)+(COLOR&0xFFFFFF)        ; Write GP0 Command Word (Color+Command)
@@ -256,21 +211,21 @@ static void cmd24_tri_raw_modulated(PS1_GPU *this)
   4 WRIOW GP0,(TEX<<16)+((V2&0xFF)<<8)+(U2&0xFF) ; Write GP0  Packet Word (Texcoord2+Texpage)
   5 WRIOW GP0,(Y3<<16)+(X3&0xFFFF)               ; Write GP0  Packet Word (Vertex3)
   6 WRIOW GP0,((V3&0xFF)<<8)+(U3&0xFF)           ; Write GP0  Packet Word (Texcoord3)     */
-    xy_from_cmd(&this->v0, this->cmd[1]);
-    xy_from_cmd(&this->v1, this->cmd[3]);
-    xy_from_cmd(&this->v2, this->cmd[5]);
-    uv_from_cmd(&this->v0, this->cmd[2]);
-    uv_from_cmd(&this->v1, this->cmd[4]);
-    uv_from_cmd(&this->v2, this->cmd[6]);
-    u16 texpage = this->cmd[4] >> 16;
-    u16 palette = this->cmd[2] >> 16;
-    u32 color = this->cmd[0] & 0xFFFFFF;
-    struct PS1_GPU_TEXTURE_SAMPLER ts;
-    get_texture_sampler_from_texpage_and_palette(this, texpage, palette, &ts);
-    RT_draw_flat_tex_triangle_modulated(this, &this->v0, &this->v1, &this->v2, color, &ts);
+    V0.xy_from_cmd(CMD[1]);
+    V1.xy_from_cmd(CMD[3]);
+    V2.xy_from_cmd(CMD[5]);
+    V0.uv_from_cmd(CMD[2]);
+    V1.uv_from_cmd(CMD[4]);
+    V2.uv_from_cmd(CMD[6]);
+    u16 texpage = CMD[4] >> 16;
+    u16 palette = CMD[2] >> 16;
+    u32 color = CMD[0] & 0xFFFFFF;
+    TEXTURE_SAMPLER ts{};
+    get_texture_sampler_from_texpage_and_palette(texpage, palette, &ts);
+    RT_draw_flat_tex_triangle_modulated(&V0, &V1, &V2, color, &ts);
 }
 
-static void cmd25_tri_raw(PS1_GPU *this)
+void core::cmd25_tri_raw()
 {
     /*
   0 WRIOW GP0,(0x25<<24)                         ; Write GP0 Command Word (Command)
@@ -281,20 +236,20 @@ static void cmd25_tri_raw(PS1_GPU *this)
   5 WRIOW GP0,(Y3<<16)+(X3&0xFFFF)               ; Write GP0  Packet Word (Vertex3)
   6 WRIOW GP0,((V3&0xFF)<<8)+(U3&0xFF)           ; Write GP0  Packet Word (Texcoord3)
      */
-    xy_from_cmd(&this->v0, this->cmd[1]);
-    xy_from_cmd(&this->v1, this->cmd[3]);
-    xy_from_cmd(&this->v2, this->cmd[5]);
-    uv_from_cmd(&this->v0, this->cmd[2]);
-    uv_from_cmd(&this->v1, this->cmd[4]);
-    uv_from_cmd(&this->v2, this->cmd[6]);
-    u16 texpage = this->cmd[4] >> 16;
-    u16 palette = this->cmd[2] >> 16;
-    struct PS1_GPU_TEXTURE_SAMPLER ts;
-    get_texture_sampler_from_texpage_and_palette(this, texpage, palette, &ts);
-    RT_draw_flat_tex_triangle(this, &this->v0, &this->v1, &this->v2, &ts);
+    V0.xy_from_cmd(CMD[1]);
+    V1.xy_from_cmd(CMD[3]);
+    V2.xy_from_cmd(CMD[5]);
+    V0.uv_from_cmd(CMD[2]);
+    V1.uv_from_cmd(CMD[4]);
+    V2.uv_from_cmd(CMD[6]);
+    u16 texpage = CMD[4] >> 16;
+    u16 palette = CMD[2] >> 16;
+    TEXTURE_SAMPLER ts;
+    get_texture_sampler_from_texpage_and_palette(texpage, palette, &ts);
+    RT_draw_flat_tex_triangle(&V0, &V1, &V2, &ts);
 }
 
-static void cmd26_tri_modulated_semi_transparent(PS1_GPU *this)
+void core::cmd26_tri_modulated_semi_transparent()
 {
     /*
   0 WRIOW GP0,(0x26<<24)+(COLOR&0xFFFFFF)        ; Write GP0 Command Word (Color+Command)
@@ -305,21 +260,21 @@ static void cmd26_tri_modulated_semi_transparent(PS1_GPU *this)
   5 WRIOW GP0,(Y3<<16)+(X3&0xFFFF)               ; Write GP0  Packet Word (Vertex3)
   6 WRIOW GP0,((V3&0xFF)<<8)+(U3&0xFF)           ; Write GP0  Packet Word (Texcoord3)
      */
-    xy_from_cmd(&this->v0, this->cmd[1]);
-    xy_from_cmd(&this->v1, this->cmd[3]);
-    xy_from_cmd(&this->v2, this->cmd[5]);
-    uv_from_cmd(&this->v0, this->cmd[2]);
-    uv_from_cmd(&this->v1, this->cmd[4]);
-    uv_from_cmd(&this->v2, this->cmd[6]);
-    u16 texpage = this->cmd[4] >> 16;
-    u16 palette = this->cmd[2] >> 16;
-    u32 color = this->cmd[0] & 0xFFFFFF;
-    struct PS1_GPU_TEXTURE_SAMPLER ts;
-    get_texture_sampler_from_texpage_and_palette(this, texpage, palette, &ts);
-    RT_draw_flat_tex_triangle_modulated_semi(this, &this->v0, &this->v1, &this->v2, color, &ts);
+    V0.xy_from_cmd(CMD[1]);
+    V1.xy_from_cmd(CMD[3]);
+    V2.xy_from_cmd(CMD[5]);
+    V0.uv_from_cmd(CMD[2]);
+    V1.uv_from_cmd(CMD[4]);
+    V2.uv_from_cmd(CMD[6]);
+    u16 texpage = CMD[4] >> 16;
+    u16 palette = CMD[2] >> 16;
+    u32 color = CMD[0] & 0xFFFFFF;
+    TEXTURE_SAMPLER ts;
+    get_texture_sampler_from_texpage_and_palette(texpage, palette, &ts);
+    RT_draw_flat_tex_triangle_modulated_semi(&V0, &V1, &V2, color, &ts);
 }
 
-static void cmd27_tri_raw_semi_transparent(PS1_GPU *this)
+void core::cmd27_tri_raw_semi_transparent()
 {
     /*
   0 WRIOW GP0,(0x27<<24)                         ; Write GP0 Command Word (Command)
@@ -329,37 +284,37 @@ static void cmd27_tri_raw_semi_transparent(PS1_GPU *this)
   4 WRIOW GP0,(TEX<<16)+((V2&0xFF)<<8)+(U2&0xFF) ; Write GP0  Packet Word (Texcoord2+Texpage)
   5 WRIOW GP0,(Y3<<16)+(X3&0xFFFF)               ; Write GP0  Packet Word (Vertex3)
   6 WRIOW GP0,((V3&0xFF)<<8)+(U3&0xFF)           ; Write GP0  Packet Word (Texcoord3)     */
-    xy_from_cmd(&this->v0, this->cmd[1]);
-    xy_from_cmd(&this->v1, this->cmd[3]);
-    xy_from_cmd(&this->v2, this->cmd[5]);
-    uv_from_cmd(&this->v0, this->cmd[2]);
-    uv_from_cmd(&this->v1, this->cmd[4]);
-    uv_from_cmd(&this->v2, this->cmd[6]);
-    u16 texpage = this->cmd[4] >> 16;
-    u16 palette = this->cmd[2] >> 16;
-    struct PS1_GPU_TEXTURE_SAMPLER ts;
-    get_texture_sampler_from_texpage_and_palette(this, texpage, palette, &ts);
-    RT_draw_flat_tex_triangle_semi(this, &this->v0, &this->v1, &this->v2, &ts);
+    V0.xy_from_cmd(CMD[1]);
+    V1.xy_from_cmd(CMD[3]);
+    V2.xy_from_cmd(CMD[5]);
+    V0.uv_from_cmd(CMD[2]);
+    V1.uv_from_cmd(CMD[4]);
+    V2.uv_from_cmd(CMD[6]);
+    u16 texpage = CMD[4] >> 16;
+    u16 palette = CMD[2] >> 16;
+    TEXTURE_SAMPLER ts;
+    get_texture_sampler_from_texpage_and_palette(texpage, palette, &ts);
+    RT_draw_flat_tex_triangle_semi(&V0, &V1, &V2, &ts);
 }
 
 
-static void cmd2a_quad_flat_semi_transparent(PS1_GPU *this)
+void core::cmd2a_quad_flat_semi_transparent()
 {
-    xy_from_cmd(&this->v0, this->cmd[1]);
-    xy_from_cmd(&this->v1, this->cmd[2]);
-    xy_from_cmd(&this->v2, this->cmd[3]);
-    xy_from_cmd(&this->v3, this->cmd[4]);
-    color24_from_cmd(&this->v0, this->cmd[0]);
+    V0.xy_from_cmd(CMD[1]);
+    V1.xy_from_cmd(CMD[2]);
+    V2.xy_from_cmd(CMD[3]);
+    V3.xy_from_cmd(CMD[4]);
+    V0.color24_from_cmd(CMD[0]);
 
 #ifdef LOG_GP0
     printf("\ncmd2a quad flat semi v0:%d,%d v1:%d,%d v2:%d,%d v3:%d,%d color:%04x", v0.x, v0.y, v1.x, v1.y, v2.x, v2.y, v3.x, v3.y, color);
 #endif
-    RT_draw_flat_triangle_semi(this, &this->v0, &this->v1, &this->v2, this->v0.r, this->v0.g, this->v0.b);
-    RT_draw_flat_triangle_semi(this, &this->v1, &this->v2, &this->v3, this->v0.r, this->v0.g, this->v0.b);
+    RT_draw_flat_triangle_semi(&V0, &V1, &V2, V0.r, V0.g, V0.b);
+    RT_draw_flat_triangle_semi(&V1, &V2, &V3, V0.r, V0.g, V0.b);
 }
 
 
-static void cmd2c_quad_opaque_flat_textured_modulated(PS1_GPU *this) {
+void core::cmd2c_quad_opaque_flat_textured_modulated() {
     // 0 WRIOW GP0,(0x2C<<24)+(COLOR&0xFFFFFF)        ; Write GP0 Command Word (Color+Command)
     // 1 WRIOW GP0,(Y1<<16)+(X1&0xFFFF)               ; Write GP0  Packet Word (Vertex1)
     // 2 WRIOW GP0,(PAL<<16)+((V1&0xFF)<<8)+(U1&0xFF) ; Write GP0  Packet Word (Texcoord1+Palette)
@@ -369,27 +324,27 @@ static void cmd2c_quad_opaque_flat_textured_modulated(PS1_GPU *this) {
     // 6 WRIOW GP0,((V3&0xFF)<<8)+(U3&0xFF)           ; Write GP0  Packet Word (Texcoord3)
     // 7 WRIOW GP0,(Y4<<16)+(X4&0xFFFF)               ; Write GP0  Packet Word (Vertex4)
     // 8 WRIOW GP0,((V4&0xFF)<<8)+(U4&0xFF)           ; Write GP0  Packet Word (Texcoord4)
-    xy_from_cmd(&this->t1, this->cmd[1]);
-    xy_from_cmd(&this->t2, this->cmd[3]);
-    xy_from_cmd(&this->t3, this->cmd[5]);
-    xy_from_cmd(&this->t4, this->cmd[7]);
-    uv_from_cmd(&this->t1, this->cmd[2]);
-    uv_from_cmd(&this->t2, this->cmd[4]);
-    uv_from_cmd(&this->t3, this->cmd[6]);
-    uv_from_cmd(&this->t4, this->cmd[8]);
+    T1.xy_from_cmd(CMD[1]);
+    T2.xy_from_cmd(CMD[3]);
+    T3.xy_from_cmd(CMD[5]);
+    T4.xy_from_cmd(CMD[7]);
+    T1.uv_from_cmd(CMD[2]);
+    T2.uv_from_cmd(CMD[4]);
+    T3.uv_from_cmd(CMD[6]);
+    T4.uv_from_cmd(CMD[8]);
 
-    u32 palette = this->cmd[2] >> 16;
-    u32 tx_page = this->cmd[4] >> 16;
-    u32 col = this->cmd[0] & 0xFFFFFF;
+    u32 palette = CMD[2] >> 16;
+    u32 tx_page = CMD[4] >> 16;
+    u32 col = CMD[0] & 0xFFFFFF;
 
-    struct PS1_GPU_TEXTURE_SAMPLER ts;
-    get_texture_sampler_from_texpage_and_palette(this, tx_page, palette, &ts);
+    TEXTURE_SAMPLER ts;
+    get_texture_sampler_from_texpage_and_palette(tx_page, palette, &ts);
 
-    RT_draw_flat_tex_triangle_modulated(this, &this->t1, &this->t2, &this->t3, col, &ts);
-    RT_draw_flat_tex_triangle_modulated(this, &this->t2, &this->t3, &this->t4, col, &ts);
+    RT_draw_flat_tex_triangle_modulated(&T1, &T2, &T3, col, &ts);
+    RT_draw_flat_tex_triangle_modulated(&T2, &T3, &T4, col, &ts);
 }
 
-static void cmd2d_quad_opaque_flat_textured(PS1_GPU *this) {
+void core::cmd2d_quad_opaque_flat_textured() {
     /*
 WRIOW GP0,(0x2D<<24)                         ; Write GP0 Command Word (Command)
   WRIOW GP0,(Y1<<16)+(X1&0xFFFF)               ; Write GP0  Packet Word (Vertex1)
@@ -401,27 +356,27 @@ WRIOW GP0,(0x2D<<24)                         ; Write GP0 Command Word (Command)
   WRIOW GP0,(Y4<<16)+(X4&0xFFFF)               ; Write GP0  Packet Word (Vertex4)
   WRIOW GP0,((V4&0xFF)<<8)+(U4&0xFF)           ; Write GP0  Packet Word (Texcoord4)
      */
-    xy_from_cmd(&this->t1, this->cmd[1]);
-    xy_from_cmd(&this->t2, this->cmd[3]);
-    xy_from_cmd(&this->t3, this->cmd[5]);
-    xy_from_cmd(&this->t4, this->cmd[7]);
+    T1.xy_from_cmd(CMD[1]);
+    T2.xy_from_cmd(CMD[3]);
+    T3.xy_from_cmd(CMD[5]);
+    T4.xy_from_cmd(CMD[7]);
 
-    uv_from_cmd(&this->t1, this->cmd[2]);
-    uv_from_cmd(&this->t2, this->cmd[4]);
-    uv_from_cmd(&this->t3, this->cmd[6]);
-    uv_from_cmd(&this->t4, this->cmd[8]);
+    T1.uv_from_cmd(CMD[2]);
+    T2.uv_from_cmd(CMD[4]);
+    T3.uv_from_cmd(CMD[6]);
+    T4.uv_from_cmd(CMD[8]);
 
-    u32 palette = this->cmd[2] >> 16;
-    u32 tx_page = this->cmd[4] >> 16;
+    u32 palette = CMD[2] >> 16;
+    u32 tx_page = CMD[4] >> 16;
 
-    struct PS1_GPU_TEXTURE_SAMPLER ts;
-    get_texture_sampler_from_texpage_and_palette(this, tx_page, palette, &ts);
+    TEXTURE_SAMPLER ts;
+    get_texture_sampler_from_texpage_and_palette(tx_page, palette, &ts);
 
-    RT_draw_flat_tex_triangle(this, &this->t1, &this->t2, &this->t3, &ts);
-    RT_draw_flat_tex_triangle(this, &this->t2, &this->t3, &this->t4, &ts);
+    RT_draw_flat_tex_triangle(&T1, &T2, &T3, &ts);
+    RT_draw_flat_tex_triangle(&T2, &T3, &T4, &ts);
 }
 
-static void cmd2e_quad_flat_textured_modulated(PS1_GPU *this) {
+void core::cmd2e_quad_flat_textured_modulated() {
 /*
   WRIOW GP0,(0x2E<<24)+(COLOR&0xFFFFFF)        ; Write GP0 Command Word (Color+Command)
   WRIOW GP0,(Y1<<16)+(X1&0xFFFF)               ; Write GP0  Packet Word (Vertex1)
@@ -433,27 +388,27 @@ static void cmd2e_quad_flat_textured_modulated(PS1_GPU *this) {
   WRIOW GP0,(Y4<<16)+(X4&0xFFFF)               ; Write GP0  Packet Word (Vertex4)
   WRIOW GP0,((V4&0xFF)<<8)+(U4&0xFF)           ; Write GP0  Packet Word (Texcoord4)
  */
-    xy_from_cmd(&this->t1, this->cmd[1]);
-    xy_from_cmd(&this->t2, this->cmd[3]);
-    xy_from_cmd(&this->t3, this->cmd[5]);
-    xy_from_cmd(&this->t4, this->cmd[7]);
-    uv_from_cmd(&this->t1, this->cmd[2]);
-    uv_from_cmd(&this->t2, this->cmd[4]);
-    uv_from_cmd(&this->t3, this->cmd[6]);
-    uv_from_cmd(&this->t4, this->cmd[8]);
+    T1.xy_from_cmd(CMD[1]);
+    T2.xy_from_cmd(CMD[3]);
+    T3.xy_from_cmd(CMD[5]);
+    T4.xy_from_cmd(CMD[7]);
+    T1.uv_from_cmd(CMD[2]);
+    T2.uv_from_cmd(CMD[4]);
+    T3.uv_from_cmd(CMD[6]);
+    T4.uv_from_cmd(CMD[8]);
 
-    u32 col = this->cmd[0] & 0xFFFFFF;
-    u32 palette = this->cmd[2] >> 16;
-    u32 tx_page = this->cmd[4] >> 16;
+    u32 col = CMD[0] & 0xFFFFFF;
+    u32 palette = CMD[2] >> 16;
+    u32 tx_page = CMD[4] >> 16;
 
-    struct PS1_GPU_TEXTURE_SAMPLER ts;
-    get_texture_sampler_from_texpage_and_palette(this, tx_page, palette, &ts);
+    TEXTURE_SAMPLER ts;
+    get_texture_sampler_from_texpage_and_palette(tx_page, palette, &ts);
 
-    RT_draw_flat_tex_triangle_modulated_semi(this, &this->t1, &this->t2, &this->t3, col, &ts);
-    RT_draw_flat_tex_triangle_modulated_semi(this, &this->t2, &this->t3, &this->t4, col, &ts);
+    RT_draw_flat_tex_triangle_modulated_semi(&T1, &T2, &T3, col, &ts);
+    RT_draw_flat_tex_triangle_modulated_semi(&T2, &T3, &T4, col, &ts);
 }
 
-static void cmd2f_quad_flat_textured_semi(PS1_GPU *this) {
+void core::cmd2f_quad_flat_textured_semi() {
 /*
   WRIOW GP0,(0x2F<<24)                         ; Write GP0 Command Word (Command)
   WRIOW GP0,(Y1<<16)+(X1&0xFFFF)               ; Write GP0  Packet Word (Vertex1)
@@ -465,27 +420,27 @@ static void cmd2f_quad_flat_textured_semi(PS1_GPU *this) {
   WRIOW GP0,(Y4<<16)+(X4&0xFFFF)               ; Write GP0  Packet Word (Vertex4)
   WRIOW GP0,((V4&0xFF)<<8)+(U4&0xFF)           ; Write GP0  Packet Word (Texcoord4)
   */
-    xy_from_cmd(&this->t1, this->cmd[1]);
-    xy_from_cmd(&this->t2, this->cmd[3]);
-    xy_from_cmd(&this->t3, this->cmd[5]);
-    xy_from_cmd(&this->t4, this->cmd[7]);
-    uv_from_cmd(&this->t1, this->cmd[2]);
-    uv_from_cmd(&this->t2, this->cmd[4]);
-    uv_from_cmd(&this->t3, this->cmd[6]);
-    uv_from_cmd(&this->t4, this->cmd[8]);
+    T1.xy_from_cmd(CMD[1]);
+    T2.xy_from_cmd(CMD[3]);
+    T3.xy_from_cmd(CMD[5]);
+    T4.xy_from_cmd(CMD[7]);
+    T1.uv_from_cmd(CMD[2]);
+    T2.uv_from_cmd(CMD[4]);
+    T3.uv_from_cmd(CMD[6]);
+    T4.uv_from_cmd(CMD[8]);
 
-    u32 palette = this->cmd[2] >> 16;
-    u32 tx_page = this->cmd[4] >> 16;
+    u32 palette = CMD[2] >> 16;
+    u32 tx_page = CMD[4] >> 16;
 
-    struct PS1_GPU_TEXTURE_SAMPLER ts;
-    get_texture_sampler_from_texpage_and_palette(this, tx_page, palette, &ts);
+    TEXTURE_SAMPLER ts;
+    get_texture_sampler_from_texpage_and_palette(tx_page, palette, &ts);
 
-    RT_draw_flat_tex_triangle_semi(this, &this->t1, &this->t2, &this->t3, &ts);
-    RT_draw_flat_tex_triangle_semi(this, &this->t2, &this->t3, &this->t4, &ts);
+    RT_draw_flat_tex_triangle_semi(&T1, &T2, &T3, &ts);
+    RT_draw_flat_tex_triangle_semi(&T2, &T3, &T4, &ts);
 }
 
 
-static void cmd30_tri_shaded_opaque(PS1_GPU *this)
+void core::cmd30_tri_shaded_opaque()
 {
     // 0 WRIOW GP0,(0x30<<24)+(COLOR1&0xFFFFFF)       ; Write GP0 Command Word (Color1+Command)
     // 1 WRIOW GP0,(Y1<<16)+(X1&0xFFFF)               ; Write GP0  Packet Word (Vertex1)
@@ -493,22 +448,22 @@ static void cmd30_tri_shaded_opaque(PS1_GPU *this)
     // 3 WRIOW GP0,(Y2<<16)+(X2&0xFFFF)               ; Write GP0  Packet Word (Vertex2)
     // 4 WRIOW GP0,(COLOR3&0xFFFFFF)                  ; Write GP0  Packet Word (Color3)
     // 5 WRIOW GP0,(Y3<<16)+(X3&0xFFFF)               ; Write GP0  Packet Word (Vertex3)
-    xy_from_cmd(&this->v1, this->cmd[1]);
-    xy_from_cmd(&this->v2, this->cmd[3]);
-    xy_from_cmd(&this->v3, this->cmd[5]);
-    color24_from_cmd(&this->v1, this->cmd[0]);
-    color24_from_cmd(&this->v2, this->cmd[2]);
-    color24_from_cmd(&this->v3, this->cmd[4]);
+    V1.xy_from_cmd(CMD[1]);
+    V2.xy_from_cmd(CMD[3]);
+    V3.xy_from_cmd(CMD[5]);
+    V1.color24_from_cmd(CMD[0]);
+    V2.color24_from_cmd(CMD[2]);
+    V3.color24_from_cmd(CMD[4]);
 #ifdef LOG_GP0
     printf("\ntri_shaded_opaque ");
-    print_v(&this->v1);
-    print_v(&this->v2);
-    print_v(&this->v3);
+    print_v(&V1);
+    print_v(&V2);
+    print_v(&V3);
 #endif
-    RT_draw_shaded_triangle(this, &this->v1, &this->v2, &this->v3);
+    RT_draw_shaded_triangle(&V1, &V2, &V3);
 }
 
-static void cmd34_tri_shaded_opaque_tex_modulated(PS1_GPU *this)
+void core::cmd34_tri_shaded_opaque_tex_modulated()
 {
     // 0 WRIOW GP0,(0x34<<24)+(COLOR1&0xFFFFFF)       ; Write GP0 Command Word (Color1+Command)
     // 1 WRIOW GP0,(Y1<<16)+(X1&0xFFFF)               ; Write GP0  Packet Word (Vertex1)
@@ -518,24 +473,24 @@ static void cmd34_tri_shaded_opaque_tex_modulated(PS1_GPU *this)
     // 5 WRIOW GP0,(TEX<<16)+((V2&0xFF)<<8)+(U2&0xFF) ; Write GP0  Packet Word (Texcoord2+Texpage)
     // 6 WRIOW GP0,(COLOR3&0xFFFFFF)                  ; Write GP0  Packet Word (Color3)
     // 7 WRIOW GP0,(Y3<<16)+(X3&0xFFFF)               ; Write GP0  Packet Word (Vertex3)
-    // 8 WRIOW GP0,((V3&0xFF)<<8)+(U3&0xFF)           ; Write GP0  Packet Word (Texcoord    xy_from_cmd(&this->v1, this->cmd[1]);
-    xy_from_cmd(&this->v1, this->cmd[1]);
-    xy_from_cmd(&this->v2, this->cmd[4]);
-    xy_from_cmd(&this->v3, this->cmd[7]);
-    color24_from_cmd(&this->v1, this->cmd[0]);
-    color24_from_cmd(&this->v2, this->cmd[3]);
-    color24_from_cmd(&this->v3, this->cmd[6]);
-    uv_from_cmd(&this->v1, this->cmd[2]);
-    uv_from_cmd(&this->v2, this->cmd[5]);
-    uv_from_cmd(&this->v3, this->cmd[8]);
-    u16 texpage = this->cmd[5] >> 16;
-    u16 palette = this->cmd[2] >> 16;
-    struct PS1_GPU_TEXTURE_SAMPLER ts;
-    get_texture_sampler_from_texpage_and_palette(this, texpage, palette, &ts);
-    RT_draw_shaded_tex_triangle_modulated(this, &this->v1, &this->v2, &this->v3, &ts);
+    // 8 WRIOW GP0,((V3&0xFF)<<8)+(U3&0xFF)           ; Write GP0  Packet Word (Texcoord    V1.xy_from_cmd(CMD[1]);
+    V1.xy_from_cmd(CMD[1]);
+    V2.xy_from_cmd(CMD[4]);
+    V3.xy_from_cmd(CMD[7]);
+    V1.color24_from_cmd(CMD[0]);
+    V2.color24_from_cmd(CMD[3]);
+    V3.color24_from_cmd(CMD[6]);
+    V1.uv_from_cmd(CMD[2]);
+    V2.uv_from_cmd(CMD[5]);
+    V3.uv_from_cmd(CMD[8]);
+    u16 texpage = CMD[5] >> 16;
+    u16 palette = CMD[2] >> 16;
+    TEXTURE_SAMPLER ts;
+    get_texture_sampler_from_texpage_and_palette(texpage, palette, &ts);
+    RT_draw_shaded_tex_triangle_modulated(&V1, &V2, &V3, &ts);
 }
 
-static void cmd36_tri_shaded_opaque_tex_modulated_semi(PS1_GPU *this)
+void core::cmd36_tri_shaded_opaque_tex_modulated_semi()
 {
     // 0 WRIOW GP0,(0x34<<24)+(COLOR1&0xFFFFFF)       ; Write GP0 Command Word (Color1+Command)
     // 1 WRIOW GP0,(Y1<<16)+(X1&0xFFFF)               ; Write GP0  Packet Word (Vertex1)
@@ -545,25 +500,25 @@ static void cmd36_tri_shaded_opaque_tex_modulated_semi(PS1_GPU *this)
     // 5 WRIOW GP0,(TEX<<16)+((V2&0xFF)<<8)+(U2&0xFF) ; Write GP0  Packet Word (Texcoord2+Texpage)
     // 6 WRIOW GP0,(COLOR3&0xFFFFFF)                  ; Write GP0  Packet Word (Color3)
     // 7 WRIOW GP0,(Y3<<16)+(X3&0xFFFF)               ; Write GP0  Packet Word (Vertex3)
-    // 8 WRIOW GP0,((V3&0xFF)<<8)+(U3&0xFF)           ; Write GP0  Packet Word (Texcoord    xy_from_cmd(&this->v1, this->cmd[1]);
-    xy_from_cmd(&this->v1, this->cmd[1]);
-    xy_from_cmd(&this->v2, this->cmd[4]);
-    xy_from_cmd(&this->v3, this->cmd[7]);
-    color24_from_cmd(&this->v1, this->cmd[0]);
-    color24_from_cmd(&this->v2, this->cmd[3]);
-    color24_from_cmd(&this->v3, this->cmd[6]);
-    uv_from_cmd(&this->v1, this->cmd[2]);
-    uv_from_cmd(&this->v2, this->cmd[5]);
-    uv_from_cmd(&this->v3, this->cmd[8]);
-    u16 texpage = this->cmd[5] >> 16;
-    u16 palette = this->cmd[2] >> 16;
-    struct PS1_GPU_TEXTURE_SAMPLER ts;
-    get_texture_sampler_from_texpage_and_palette(this, texpage, palette, &ts);
+    // 8 WRIOW GP0,((V3&0xFF)<<8)+(U3&0xFF)           ; Write GP0  Packet Word (Texcoord    V1.xy_from_cmd(CMD[1]);
+    V1.xy_from_cmd(CMD[1]);
+    V2.xy_from_cmd(CMD[4]);
+    V3.xy_from_cmd(CMD[7]);
+    V1.color24_from_cmd(CMD[0]);
+    V2.color24_from_cmd(CMD[3]);
+    V3.color24_from_cmd(CMD[6]);
+    V1.uv_from_cmd(CMD[2]);
+    V2.uv_from_cmd(CMD[5]);
+    V3.uv_from_cmd(CMD[8]);
+    u16 texpage = CMD[5] >> 16;
+    u16 palette = CMD[2] >> 16;
+    TEXTURE_SAMPLER ts;
+    get_texture_sampler_from_texpage_and_palette(texpage, palette, &ts);
 
-    RT_draw_shaded_tex_triangle_modulated_semi(this, &this->v1, &this->v2, &this->v3, &ts);
+    RT_draw_shaded_tex_triangle_modulated_semi(&V1, &V2, &V3, &ts);
 }
 
-static void cmd32_tri_shaded_semi_transparent(PS1_GPU *this)
+void core::cmd32_tri_shaded_semi_transparent()
 {
     // 0 WRIOW GP0,(0x30<<24)+(COLOR1&0xFFFFFF)       ; Write GP0 Command Word (Color1+Command)
     // 1 WRIOW GP0,(Y1<<16)+(X1&0xFFFF)               ; Write GP0  Packet Word (Vertex1)
@@ -571,26 +526,26 @@ static void cmd32_tri_shaded_semi_transparent(PS1_GPU *this)
     // 3 WRIOW GP0,(Y2<<16)+(X2&0xFFFF)               ; Write GP0  Packet Word (Vertex2)
     // 4 WRIOW GP0,(COLOR3&0xFFFFFF)                  ; Write GP0  Packet Word (Color3)
     // 5 WRIOW GP0,(Y3<<16)+(X3&0xFFFF)               ; Write GP0  Packet Word (Vertex3)
-    /*struct PS1_GPU_COLOR_SAMPLER *c1 = &this->color1;
-    struct PS1_GPU_COLOR_SAMPLER *c2 = &this->color2;
-    struct PS1_GPU_COLOR_SAMPLER *c3 = &this->color3;*/
-    xy_from_cmd(&this->v1, this->cmd[1]);
-    xy_from_cmd(&this->v2, this->cmd[3]);
-    xy_from_cmd(&this->v3, this->cmd[5]);
-    color24_from_cmd(&this->v1, this->cmd[0]);
-    color24_from_cmd(&this->v2, this->cmd[2]);
-    color24_from_cmd(&this->v3, this->cmd[4]);
+    /*struct COLOR_SAMPLER *c1 = &core::color1;
+    struct COLOR_SAMPLER *c2 = &core::color2;
+    struct COLOR_SAMPLER *c3 = &core::color3;*/
+    V1.xy_from_cmd(CMD[1]);
+    V2.xy_from_cmd(CMD[3]);
+    V3.xy_from_cmd(CMD[5]);
+    V1.color24_from_cmd(CMD[0]);
+    V2.color24_from_cmd(CMD[2]);
+    V3.color24_from_cmd(CMD[4]);
 #ifdef LOG_GP0
     printf("\ntri_shaded_opaque ");
-    print_v(&this->v1);
-    print_v(&this->v2);
-    print_v(&this->v3);
+    print_v(&V1);
+    print_v(&V2);
+    print_v(&V3);
 #endif
-    RT_draw_shaded_triangle_semi(this, &this->v1, &this->v2, &this->v3);
+    RT_draw_shaded_triangle_semi(&V1, &V2, &V3);
 }
 
 
-static void cmd38_quad_shaded_opaque(PS1_GPU *this)
+void core::cmd38_quad_shaded_opaque()
 {
     // WRIOW GP0,(0x38<<24)+(COLOR1&0xFFFFFF)       ; Write GP0 Command Word (Color1+Command)
     // WRIOW GP0,(Y1<<16)+(X1&0xFFFF)               ; Write GP0  Packet Word (Vertex1)
@@ -600,28 +555,28 @@ static void cmd38_quad_shaded_opaque(PS1_GPU *this)
     // WRIOW GP0,(Y3<<16)+(X3&0xFFFF)               ; Write GP0  Packet Word (Vertex3)
     // WRIOW GP0,(COLOR4&0xFFFFFF)                  ; Write GP0  Packet Word (Color4)
     // WRIOW GP0,(Y4<<16)+(X4&0xFFFF)               ; Write GP0  Packet Word (Vertex4)
-    color24_from_cmd(&this->t1, this->cmd[0]);
-    xy_from_cmd(&this->t1, this->cmd[1]);
-    color24_from_cmd(&this->t2, this->cmd[2]);
-    xy_from_cmd(&this->t2, this->cmd[3]);
-    color24_from_cmd(&this->t3, this->cmd[4]);
-    xy_from_cmd(&this->t3, this->cmd[5]);
-    color24_from_cmd(&this->t4, this->cmd[6]);
-    xy_from_cmd(&this->t4, this->cmd[7]);
+    T1.color24_from_cmd(CMD[0]);
+    T1.xy_from_cmd(CMD[1]);
+    T2.color24_from_cmd(CMD[2]);
+    T2.xy_from_cmd(CMD[3]);
+    T3.color24_from_cmd(CMD[4]);
+    T3.xy_from_cmd(CMD[5]);
+    T4.color24_from_cmd(CMD[6]);
+    T4.xy_from_cmd(CMD[7]);
 
 #ifdef LOG_DRAW_QUADS
     printf("\nquad_shaded ");
-    draw_vd(&this->t1);
-    draw_vd(&this->t2);
-    draw_vd(&this->t3);
-    draw_vd(&this->t4);
+    draw_vd(&T1);
+    draw_vd(&T2);
+    draw_vd(&T3);
+    draw_vd(&T4);
 #endif
     
-    RT_draw_shaded_triangle(this, &this->t1, &this->t2, &this->t3);
-    RT_draw_shaded_triangle(this, &this->t2, &this->t3, &this->t4);
+    RT_draw_shaded_triangle(&T1, &T2, &T3);
+    RT_draw_shaded_triangle(&T2, &T3, &T4);
 }
 
-static void cmd3a_quad_shaded_semi_transparent(PS1_GPU *this)
+void core::cmd3a_quad_shaded_semi_transparent()
 {
     // WRIOW GP0,(0x38<<24)+(COLOR1&0xFFFFFF)       ; Write GP0 Command Word (Color1+Command)
     // WRIOW GP0,(Y1<<16)+(X1&0xFFFF)               ; Write GP0  Packet Word (Vertex1)
@@ -631,28 +586,28 @@ static void cmd3a_quad_shaded_semi_transparent(PS1_GPU *this)
     // WRIOW GP0,(Y3<<16)+(X3&0xFFFF)               ; Write GP0  Packet Word (Vertex3)
     // WRIOW GP0,(COLOR4&0xFFFFFF)                  ; Write GP0  Packet Word (Color4)
     // WRIOW GP0,(Y4<<16)+(X4&0xFFFF)               ; Write GP0  Packet Word (Vertex4)
-    color24_from_cmd(&this->t1, this->cmd[0]);
-    xy_from_cmd(&this->t1, this->cmd[1]);
-    color24_from_cmd(&this->t2, this->cmd[2]);
-    xy_from_cmd(&this->t2, this->cmd[3]);
-    color24_from_cmd(&this->t3, this->cmd[4]);
-    xy_from_cmd(&this->t3, this->cmd[5]);
-    color24_from_cmd(&this->t4, this->cmd[6]);
-    xy_from_cmd(&this->t4, this->cmd[7]);
+    T1.color24_from_cmd(CMD[0]);
+    T1.xy_from_cmd(CMD[1]);
+    T2.color24_from_cmd(CMD[2]);
+    T2.xy_from_cmd(CMD[3]);
+    T3.color24_from_cmd(CMD[4]);
+    T3.xy_from_cmd(CMD[5]);
+    T4.color24_from_cmd(CMD[6]);
+    T4.xy_from_cmd(CMD[7]);
 
 #ifdef LOG_DRAW_QUADS
     printf("\nquad_shaded ");
-    draw_vd(&this->t1);
-    draw_vd(&this->t2);
-    draw_vd(&this->t3);
-    draw_vd(&this->t4);
+    draw_vd(&T1);
+    draw_vd(&T2);
+    draw_vd(&T3);
+    draw_vd(&T4);
 #endif
 
-    RT_draw_shaded_triangle_semi(this, &this->t1, &this->t2, &this->t3);
-    RT_draw_shaded_triangle_semi(this, &this->t2, &this->t3, &this->t4);
+    RT_draw_shaded_triangle_semi(&T1, &T2, &T3);
+    RT_draw_shaded_triangle_semi(&T2, &T3, &T4);
 }
 
-static void cmd3c_quad_opaque_shaded_textured_modulated(PS1_GPU *this) {
+void core::cmd3c_quad_opaque_shaded_textured_modulated() {
     //  0 WRIOW GP0,(0x3C<<24)+(COLOR1&0xFFFFFF)       ; Write GP0 Command Word (Color1+Command)
     //  1 WRIOW GP0,(Y1<<16)+(X1&0xFFFF)               ; Write GP0  Packet Word (Vertex1)
     //  2 WRIOW GP0,(PAL<<16)+((V1&0xFF)<<8)+(U1&0xFF) ; Write GP0  Packet Word (Texcoord1+Palette)
@@ -665,31 +620,31 @@ static void cmd3c_quad_opaque_shaded_textured_modulated(PS1_GPU *this) {
     //  9 WRIOW GP0,(COLOR4&0xFFFFFF)                  ; Write GP0  Packet Word (Color4)
     //  10 WRIOW GP0,(Y4<<16)+(X4&0xFFFF)               ; Write GP0  Packet Word (Vertex4)
     //  11 WRIOW GP0,((V4&0xFF)<<8)+(U4&0xFF)           ; Write GP0  Packet Word (Texcoord4)
-    xy_from_cmd(&this->t1, this->cmd[1]);
-    xy_from_cmd(&this->t2, this->cmd[4]);
-    xy_from_cmd(&this->t3, this->cmd[7]);
-    xy_from_cmd(&this->t4, this->cmd[10]);
+    T1.xy_from_cmd(CMD[1]);
+    T2.xy_from_cmd(CMD[4]);
+    T3.xy_from_cmd(CMD[7]);
+    T4.xy_from_cmd(CMD[10]);
 
-    uv_from_cmd(&this->t1, this->cmd[2]);
-    uv_from_cmd(&this->t2, this->cmd[5]);
-    uv_from_cmd(&this->t3, this->cmd[8]);
-    uv_from_cmd(&this->t4, this->cmd[11]);
+    T1.uv_from_cmd(CMD[2]);
+    T2.uv_from_cmd(CMD[5]);
+    T3.uv_from_cmd(CMD[8]);
+    T4.uv_from_cmd(CMD[11]);
 
-    color24_from_cmd(&this->t1, this->cmd[0]);
-    color24_from_cmd(&this->t2, this->cmd[3]);
-    color24_from_cmd(&this->t3, this->cmd[6]);
-    color24_from_cmd(&this->t4, this->cmd[9]);
+    T1.color24_from_cmd(CMD[0]);
+    T2.color24_from_cmd(CMD[3]);
+    T3.color24_from_cmd(CMD[6]);
+    T4.color24_from_cmd(CMD[9]);
 
-    u16 texpage = this->cmd[5] >> 16;
-    u16 palette = this->cmd[2] >> 16;
-    struct PS1_GPU_TEXTURE_SAMPLER ts;
-    get_texture_sampler_from_texpage_and_palette(this, texpage, palette, &ts);
+    u16 texpage = CMD[5] >> 16;
+    u16 palette = CMD[2] >> 16;
+    TEXTURE_SAMPLER ts;
+    get_texture_sampler_from_texpage_and_palette(texpage, palette, &ts);
 
-    RT_draw_shaded_tex_triangle_modulated(this, &this->t1, &this->t2, &this->t3, &ts);
-    RT_draw_shaded_tex_triangle_modulated(this, &this->t2, &this->t3, &this->t4, &ts);
+    RT_draw_shaded_tex_triangle_modulated(&T1, &T2, &T3, &ts);
+    RT_draw_shaded_tex_triangle_modulated(&T2, &T3, &T4, &ts);
 }
 
-static void cmd3e_quad_opaque_shaded_textured_modulated_semi(PS1_GPU *this) {
+void core::cmd3e_quad_opaque_shaded_textured_modulated_semi() {
     //  0 WRIOW GP0,(0x3C<<24)+(COLOR1&0xFFFFFF)       ; Write GP0 Command Word (Color1+Command)
     //  1 WRIOW GP0,(Y1<<16)+(X1&0xFFFF)               ; Write GP0  Packet Word (Vertex1)
     //  2 WRIOW GP0,(PAL<<16)+((V1&0xFF)<<8)+(U1&0xFF) ; Write GP0  Packet Word (Texcoord1+Palette)
@@ -702,50 +657,50 @@ static void cmd3e_quad_opaque_shaded_textured_modulated_semi(PS1_GPU *this) {
     //  9 WRIOW GP0,(COLOR4&0xFFFFFF)                  ; Write GP0  Packet Word (Color4)
     //  10 WRIOW GP0,(Y4<<16)+(X4&0xFFFF)               ; Write GP0  Packet Word (Vertex4)
     //  11 WRIOW GP0,((V4&0xFF)<<8)+(U4&0xFF)           ; Write GP0  Packet Word (Texcoord4)
-    xy_from_cmd(&this->t1, this->cmd[1]);
-    xy_from_cmd(&this->t2, this->cmd[4]);
-    xy_from_cmd(&this->t3, this->cmd[7]);
-    xy_from_cmd(&this->t4, this->cmd[10]);
+    T1.xy_from_cmd(CMD[1]);
+    T2.xy_from_cmd(CMD[4]);
+    T3.xy_from_cmd(CMD[7]);
+    T4.xy_from_cmd(CMD[10]);
 
-    uv_from_cmd(&this->t1, this->cmd[2]);
-    uv_from_cmd(&this->t2, this->cmd[5]);
-    uv_from_cmd(&this->t3, this->cmd[8]);
-    uv_from_cmd(&this->t4, this->cmd[11]);
+    T1.uv_from_cmd(CMD[2]);
+    T2.uv_from_cmd(CMD[5]);
+    T3.uv_from_cmd(CMD[8]);
+    T4.uv_from_cmd(CMD[11]);
 
-    color24_from_cmd(&this->t1, this->cmd[0]);
-    color24_from_cmd(&this->t2, this->cmd[3]);
-    color24_from_cmd(&this->t3, this->cmd[6]);
-    color24_from_cmd(&this->t4, this->cmd[9]);
+    T1.color24_from_cmd(CMD[0]);
+    T2.color24_from_cmd(CMD[3]);
+    T3.color24_from_cmd(CMD[6]);
+    T4.color24_from_cmd(CMD[9]);
 
-    u16 texpage = this->cmd[5] >> 16;
-    u16 palette = this->cmd[2] >> 16;
-    struct PS1_GPU_TEXTURE_SAMPLER ts;
-    get_texture_sampler_from_texpage_and_palette(this, texpage, palette, &ts);
+    u16 texpage = CMD[5] >> 16;
+    u16 palette = CMD[2] >> 16;
+    TEXTURE_SAMPLER ts;
+    get_texture_sampler_from_texpage_and_palette(texpage, palette, &ts);
 
-    RT_draw_shaded_tex_triangle_modulated_semi(this, &this->t1, &this->t2, &this->t3, &ts);
-    RT_draw_shaded_tex_triangle_modulated_semi(this, &this->t2, &this->t3, &this->t4, &ts);
+    RT_draw_shaded_tex_triangle_modulated_semi(&T1, &T2, &T3, &ts);
+    RT_draw_shaded_tex_triangle_modulated_semi(&T2, &T3, &T4, &ts);
 }
 
-static void cmd40_line_opaque(PS1_GPU *this) {
+void core::cmd40_line_opaque() {
     // WRIOW GP0,(0x40<<24)+(COLOR&0xFFFFFF)  ; Write GP0 Command Word (Color+Command)
     // WRIOW GP0,(Y1<<16)+(X1&0xFFFF)         ; Write GP0  Packet Word (Vertex1)
     // WRIOW GP0,(Y2<<16)+(X2&0xFFFF)         ; Write GP0  Packet Word (Vertex2)
-    u32 color = BGR24to15(this->cmd[0] & 0xFFFFFF);
-    xy_from_cmd(&this->v0, this->cmd[1]);
-    xy_from_cmd(&this->v1, this->cmd[2]);
-    bresenham_opaque(this, &this->v0, &this->v1, color);
+    u32 color = BGR24to15(CMD[0] & 0xFFFFFF);
+    V0.xy_from_cmd(CMD[1]);
+    V1.xy_from_cmd(CMD[2]);
+    bresenham_opaque(&V0, &V1, color);
 }
 
-static void cmd60_rect_opaque_flat(PS1_GPU *this)
+void core::cmd60_rect_opaque_flat()
 {
-    u32 color = BGR24to15(this->cmd[0] & 0xFFFFFF);
-    u32 xstart = this->cmd[1] & 0xFFFF;
-    u32 ystart = this->cmd[1] >> 16;
-    u32 xsize = this->cmd[2] & 0xFFFF;
-    u32 ysize = this->cmd[2] >> 16;
+    u32 color = BGR24to15(CMD[0] & 0xFFFFFF);
+    u32 xstart = CMD[1] & 0xFFFF;
+    u32 ystart = CMD[1] >> 16;
+    u32 xsize = CMD[2] & 0xFFFF;
+    u32 ysize = CMD[2] >> 16;
 
 #ifdef LOG_GP0
-    printf("\n60_rect_opaque_flat %d %d %d %d %06x", xstart, ystart, xsize, ysize, this->cmd[0] & 0xFFFFFF);
+    printf("\n60_rect_opaque_flat %d %d %d %d %06x", xstart, ystart, xsize, ysize, CMD[0] & 0xFFFFFF);
 #endif
 
     u32 xend = (xstart + xsize);
@@ -756,33 +711,33 @@ static void cmd60_rect_opaque_flat(PS1_GPU *this)
 
     for (u32 y = ystart; y < yend; y++) {
         for (u32 x = xstart; x < xend; x++) {
-            setpix(this, y, x, color, 0, 0);
+            setpix(y, x, color, 0, 0);
         }
     }
 }
 
-static void cmd64_rect_opaque_flat_textured_modulated(PS1_GPU *this)
+void core::cmd64_rect_opaque_flat_textured_modulated()
 {
     // WRIOW GP0,(0x64<<24)+(COLOR&0xFFFFFF)      ; Write GP0 Command Word (Color+Command)
 
     // WRIOW GP0,(Y<<16)+(X&0xFFFF)               ; Write GP0  Packet Word (Vertex)
-    u32 ystart = (this->cmd[1] & 0xFFFF0000) >> 16;
-    u32 xstart = ((this->cmd[1] & 0xFFFF) << 16) >> 16;
+    u32 ystart = (CMD[1] & 0xFFFF0000) >> 16;
+    u32 xstart = ((CMD[1] & 0xFFFF) << 16) >> 16;
 
-    u32 col = this->cmd[0] & 0xFFFFFF;
+    u32 col = CMD[0] & 0xFFFFFF;
     const static float mm = 1.0f / 128.0f;
     float mr = ((float)(col & 0xFF)) * mm;
     float mg = ((float)((col >> 8) & 0xFF)) * mm;
     float mb = ((float)((col >> 16) & 0xFF)) * mm;
 
     // WRIOW GP0,(PAL<<16)+((V&0xFF)<<8)+(U&0xFF) ; Write GP0  Packet Word (Texcoord+Palette)
-    u32 clut = (this->cmd[2] >> 16) & 0xFFFF;
-    u32 v = (this->cmd[2] >> 8) & 0xFF;
-    u32 ustart = this->cmd[2] & 0xFF;
+    u32 clut = (CMD[2] >> 16) & 0xFFFF;
+    u32 v = (CMD[2] >> 8) & 0xFF;
+    u32 ustart = CMD[2] & 0xFF;
 
     // WRIOW GP0,(HEIGHT<<16)+(WIDTH&0xFFFF)      ; Write GP0  Packet Word (Width+Height)
-    u32 height = (this->cmd[3] >> 16) & 0xFFFF;
-    u32 width = this->cmd[3] & 0xFFFF;
+    u32 height = (CMD[3] >> 16) & 0xFFFF;
+    u32 width = CMD[3] & 0xFFFF;
 
     u32 xend = (xstart + width);
     u32 yend = (ystart + height);
@@ -792,8 +747,8 @@ static void cmd64_rect_opaque_flat_textured_modulated(PS1_GPU *this)
     printf("\nrect_opaque_flat %d %d %d %d", xstart, ystart, width, height);
 #endif
 
-    struct PS1_GPU_TEXTURE_SAMPLER ts;
-    get_texture_sampler_from_texpage_and_palette(this, this->io.GPUSTAT, clut, &ts);
+    TEXTURE_SAMPLER ts;
+    get_texture_sampler_from_texpage_and_palette(io.GPUSTAT, clut, &ts);
     for (u32 y = ystart; y < yend; y++) {
         u32 u = ustart;
         for (u32 x = xstart; x < xend; x++) {
@@ -808,29 +763,29 @@ static void cmd64_rect_opaque_flat_textured_modulated(PS1_GPU *this)
             if (b > 31.0f) b = 31.0f;
             u32 lbit = ((u32)r) | ((u32)g << 5) | ((u32)b << 10);
 
-            setpix(this, y, x, lbit, 1, hbit);
+            setpix(y, x, lbit, 1, hbit);
             u++;
         }
         v++;
     }
 }
 
-static void cmd65_rect_opaque_flat_textured(PS1_GPU *this)
+void core::cmd65_rect_opaque_flat_textured()
 {
     // 0 WRIOW GP0,(0x64<<24)+(COLOR&0xFFFFFF)      ; Write GP0 Command Word (Color+Command)
     // 1 WRIOW GP0,(Y<<16)+(X&0xFFFF)               ; Write GP0  Packet Word (Vertex)
     // 2 WRIOW GP0,(PAL<<16)+((V&0xFF)<<8)+(U&0xFF) ; Write GP0  Packet Word (Texcoord+Palette)
     // 3 WRIOW GP0,(HEIGHT<<16)+(WIDTH&0xFFFF)      ; Write GP0  Packet Word (Width+Height)
 
-    u32 ystart = (this->cmd[1] & 0xFFFF0000) >> 16;
-    u32 xstart = ((this->cmd[1] & 0xFFFF) << 16) >> 16;
+    u32 ystart = (CMD[1] & 0xFFFF0000) >> 16;
+    u32 xstart = ((CMD[1] & 0xFFFF) << 16) >> 16;
 
-    u32 clut = (this->cmd[2] >> 16) & 0xFFFF;
-    u32 v = (this->cmd[2] >> 8) & 0xFF;
-    u32 ustart = this->cmd[2] & 0xFF;
+    u32 clut = (CMD[2] >> 16) & 0xFFFF;
+    u32 v = (CMD[2] >> 8) & 0xFF;
+    u32 ustart = CMD[2] & 0xFF;
 
-    u32 height = (this->cmd[3] >> 16) & 0xFFFF;
-    u32 width = this->cmd[3] & 0xFFFF;
+    u32 height = (CMD[3] >> 16) & 0xFFFF;
+    u32 width = CMD[3] & 0xFFFF;
 
     u32 xend = (xstart + width);
     u32 yend = (ystart + height);
@@ -840,44 +795,44 @@ static void cmd65_rect_opaque_flat_textured(PS1_GPU *this)
     printf("\nrect_opaque_flat %d %d %d %d", xstart, ystart, width, height);
 #endif
 
-    struct PS1_GPU_TEXTURE_SAMPLER ts;
-    //get_texture_sampler_clut(this, this->texture_depth, this->page_base_x, this->page_base_y, clut, &ts);
-    get_texture_sampler_from_texpage_and_palette(this, this->io.GPUSTAT, clut, &ts);
+    TEXTURE_SAMPLER ts;
+    //get_texture_sampler_clut(texture_depth, page_base_x, page_base_y, clut, &ts);
+    get_texture_sampler_from_texpage_and_palette(io.GPUSTAT, clut, &ts);
     for (u32 y = ystart; y < yend; y++) {
         u32 u = ustart;
         for (u32 x = xstart; x < xend; x++) {
             u16 color = ts.sample(&ts, u, v);
             u32 hbit = color & 0x8000;
             u32 lbit = color & 0x7FFF;
-            setpix(this, y, x, lbit, 1, hbit);
+            setpix(y, x, lbit, 1, hbit);
             u++;
         }
         v++;
     }
 }
 
-static void cmd66_rect_semi_flat_textured_modulated(PS1_GPU *this)
+void core::cmd66_rect_semi_flat_textured_modulated()
 {
     // WRIOW GP0,(0x64<<24)+(COLOR&0xFFFFFF)      ; Write GP0 Command Word (Color+Command)
 
     // WRIOW GP0,(Y<<16)+(X&0xFFFF)               ; Write GP0  Packet Word (Vertex)
-    u32 ystart = (this->cmd[1] & 0xFFFF0000) >> 16;
-    u32 xstart = ((this->cmd[1] & 0xFFFF) << 16) >> 16;
+    u32 ystart = (CMD[1] & 0xFFFF0000) >> 16;
+    u32 xstart = ((CMD[1] & 0xFFFF) << 16) >> 16;
 
-    u32 col = this->cmd[0] & 0xFFFFFF;
+    u32 col = CMD[0] & 0xFFFFFF;
     const static float mm = 1.0f / 128.0f;
     float mr = ((float)(col & 0xFF)) * mm;
     float mg = ((float)((col >> 8) & 0xFF)) * mm;
     float mb = ((float)((col >> 16) & 0xFF)) * mm;
 
     // WRIOW GP0,(PAL<<16)+((V&0xFF)<<8)+(U&0xFF) ; Write GP0  Packet Word (Texcoord+Palette)
-    u32 clut = (this->cmd[2] >> 16) & 0xFFFF;
-    u32 v = (this->cmd[2] >> 8) & 0xFF;
-    u32 ustart = this->cmd[2] & 0xFF;
+    u32 clut = (CMD[2] >> 16) & 0xFFFF;
+    u32 v = (CMD[2] >> 8) & 0xFF;
+    u32 ustart = CMD[2] & 0xFF;
 
     // WRIOW GP0,(HEIGHT<<16)+(WIDTH&0xFFFF)      ; Write GP0  Packet Word (Width+Height)
-    u32 height = (this->cmd[3] >> 16) & 0xFFFF;
-    u32 width = this->cmd[3] & 0xFFFF;
+    u32 height = (CMD[3] >> 16) & 0xFFFF;
+    u32 width = CMD[3] & 0xFFFF;
 
     u32 xend = (xstart + width);
     u32 yend = (ystart + height);
@@ -887,8 +842,8 @@ static void cmd66_rect_semi_flat_textured_modulated(PS1_GPU *this)
     printf("\nrect_opaque_flat %d %d %d %d", xstart, ystart, width, height);
 #endif
 
-    struct PS1_GPU_TEXTURE_SAMPLER ts;
-    get_texture_sampler_from_texpage_and_palette(this, this->io.GPUSTAT, clut, &ts);
+    TEXTURE_SAMPLER ts;
+    get_texture_sampler_from_texpage_and_palette(io.GPUSTAT, clut, &ts);
     for (u32 y = ystart; y < yend; y++) {
         u32 u = ustart;
         for (u32 x = xstart; x < xend; x++) {
@@ -904,7 +859,7 @@ static void cmd66_rect_semi_flat_textured_modulated(PS1_GPU *this)
             if (b > 31.0f) b = 31.0f;
             lbit = ((u32)r) | ((u32)g << 5) | ((u32)b << 10);
 
-            semipix(this, y, x, lbit, 1, hbit);
+            semipix(y, x, lbit, 1, hbit);
             u++;
         }
         v++;
@@ -912,22 +867,22 @@ static void cmd66_rect_semi_flat_textured_modulated(PS1_GPU *this)
 }
 
 
-static void cmd67_rect_semi_flat_textured(PS1_GPU *this)
+void core::cmd67_rect_semi_flat_textured()
 {
     // 0 WRIOW GP0,(0x64<<24)+(COLOR&0xFFFFFF)      ; Write GP0 Command Word (Color+Command)
     // 1 WRIOW GP0,(Y<<16)+(X&0xFFFF)               ; Write GP0  Packet Word (Vertex)
     // 2 WRIOW GP0,(PAL<<16)+((V&0xFF)<<8)+(U&0xFF) ; Write GP0  Packet Word (Texcoord+Palette)
     // 3 WRIOW GP0,(HEIGHT<<16)+(WIDTH&0xFFFF)      ; Write GP0  Packet Word (Width+Height)
 
-    u32 ystart = (this->cmd[1] & 0xFFFF0000) >> 16;
-    u32 xstart = ((this->cmd[1] & 0xFFFF) << 16) >> 16;
+    u32 ystart = (CMD[1] & 0xFFFF0000) >> 16;
+    u32 xstart = ((CMD[1] & 0xFFFF) << 16) >> 16;
 
-    u32 clut = (this->cmd[2] >> 16) & 0xFFFF;
-    u32 v = (this->cmd[2] >> 8) & 0xFF;
-    u32 ustart = this->cmd[2] & 0xFF;
+    u32 clut = (CMD[2] >> 16) & 0xFFFF;
+    u32 v = (CMD[2] >> 8) & 0xFF;
+    u32 ustart = CMD[2] & 0xFF;
 
-    u32 height = (this->cmd[3] >> 16) & 0xFFFF;
-    u32 width = this->cmd[3] & 0xFFFF;
+    u32 height = (CMD[3] >> 16) & 0xFFFF;
+    u32 width = CMD[3] & 0xFFFF;
 
     u32 xend = (xstart + width);
     u32 yend = (ystart + height);
@@ -937,56 +892,56 @@ static void cmd67_rect_semi_flat_textured(PS1_GPU *this)
     printf("\nrect_opaque_flat %d %d %d %d", xstart, ystart, width, height);
 #endif
 
-    struct PS1_GPU_TEXTURE_SAMPLER ts;
-    //get_texture_sampler_clut(this, this->texture_depth, this->page_base_x, this->page_base_y, clut, &ts);
-    get_texture_sampler_from_texpage_and_palette(this, this->io.GPUSTAT, clut, &ts);
+    TEXTURE_SAMPLER ts;
+    //get_texture_sampler_clut(texture_depth, page_base_x, page_base_y, clut, &ts);
+    get_texture_sampler_from_texpage_and_palette(io.GPUSTAT, clut, &ts);
     for (u32 y = ystart; y < yend; y++) {
         u32 u = ustart;
         for (u32 x = xstart; x < xend; x++) {
             u16 color = ts.sample(&ts, u, v);
             u32 hbit = color & 0x8000;
             u32 lbit = color & 0x7FFF;
-            semipix(this, y, x, lbit, 1, hbit);
+            semipix(y, x, lbit, 1, hbit);
             u++;
         }
         v++;
     }
 }
 
-static void cmd68_rect_1x1(PS1_GPU *this)
+void core::cmd68_rect_1x1()
 {
-    u32 y = (this->cmd[1] & 0xFFFF0000) >> 16;
-    u32 x = ((this->cmd[1] & 0xFFFF) << 16) >> 16;
-    u32 color = BGR24to15(this->cmd[0] & 0xFFFFFF);
-    setpix(this, y, x, color, 0, 0);
+    u32 y = (CMD[1] & 0xFFFF0000) >> 16;
+    u32 x = ((CMD[1] & 0xFFFF) << 16) >> 16;
+    u32 color = BGR24to15(CMD[0] & 0xFFFFFF);
+    setpix(y, x, color, 0, 0);
 }
 
-static void cmd6d_rect_1x1_tex(PS1_GPU *this)
+void core::cmd6d_rect_1x1_tex()
 {
-    u32 y = (this->cmd[1] & 0xFFFF0000) >> 16;
-    u32 x = ((this->cmd[1] & 0xFFFF) << 16) >> 16;
-    u32 v = (this->cmd[2] & 0xFF00) >> 8;
-    u32 u = (this->cmd[2] & 0xFF);
-    u32 palette = (this->cmd[2] >> 16);
-    struct PS1_GPU_TEXTURE_SAMPLER ts;
-    get_texture_sampler_from_texpage_and_palette(this, this->io.GPUSTAT, palette, &ts);
+    u32 y = (CMD[1] & 0xFFFF0000) >> 16;
+    u32 x = ((CMD[1] & 0xFFFF) << 16) >> 16;
+    u32 v = (CMD[2] & 0xFF00) >> 8;
+    u32 u = (CMD[2] & 0xFF);
+    u32 palette = (CMD[2] >> 16);
+    TEXTURE_SAMPLER ts;
+    get_texture_sampler_from_texpage_and_palette(io.GPUSTAT, palette, &ts);
     u32 color = ts.sample(&ts, u, v);
-    setpix(this, y, x, color & 0x7FFF, 1, color & 0x8000);
+    setpix(y, x, color & 0x7FFF, 1, color & 0x8000);
 }
 
-static void cmd6c_rect_1x1_tex_modulated(PS1_GPU *this)
+void core::cmd6c_rect_1x1_tex_modulated()
 {
-    u32 y = (this->cmd[1] & 0xFFFF0000) >> 16;
-    u32 x = ((this->cmd[1] & 0xFFFF) << 16) >> 16;
-    u32 v = (this->cmd[2] & 0xFF00) >> 8;
-    u32 u = (this->cmd[2] & 0xFF);
-    u32 palette = (this->cmd[2] >> 16);
-    struct PS1_GPU_TEXTURE_SAMPLER ts;
-    get_texture_sampler_from_texpage_and_palette(this, this->io.GPUSTAT, palette, &ts);
+    u32 y = (CMD[1] & 0xFFFF0000) >> 16;
+    u32 x = ((CMD[1] & 0xFFFF) << 16) >> 16;
+    u32 v = (CMD[2] & 0xFF00) >> 8;
+    u32 u = (CMD[2] & 0xFF);
+    u32 palette = (CMD[2] >> 16);
+    TEXTURE_SAMPLER ts;
+    get_texture_sampler_from_texpage_and_palette(io.GPUSTAT, palette, &ts);
     u32 color = ts.sample(&ts, u, v);
     u32 hbit = color & 0x8000;
 
-    u32 tc = this->cmd[0] & 0xFFFFFF;
+    u32 tc = CMD[0] & 0xFFFFFF;
     static const float mm = 1.0f / 128.0f;
     float rm = (float)(tc & 0xFF) * mm;
     float gm = (float)((tc >> 8) & 0xFF) * mm;
@@ -1001,22 +956,22 @@ static void cmd6c_rect_1x1_tex_modulated(PS1_GPU *this)
 
     color = ((u32)r) | ((u32)g << 5) | ((u32)b << 10);
 
-    setpix(this, y, x, color & 0x7FFF, 1, hbit);
+    setpix(y, x, color & 0x7FFF, 1, hbit);
 }
 
-static void cmd6e_rect_1x1_tex_semi_modulated(PS1_GPU *this)
+void core::cmd6e_rect_1x1_tex_semi_modulated()
 {
-    u32 y = (this->cmd[1] & 0xFFFF0000) >> 16;
-    u32 x = ((this->cmd[1] & 0xFFFF) << 16) >> 16;
-    u32 v = (this->cmd[2] & 0xFF00) >> 8;
-    u32 u = (this->cmd[2] & 0xFF);
-    u32 palette = (this->cmd[2] >> 16);
-    struct PS1_GPU_TEXTURE_SAMPLER ts;
-    get_texture_sampler_from_texpage_and_palette(this, this->io.GPUSTAT, palette, &ts);
+    u32 y = (CMD[1] & 0xFFFF0000) >> 16;
+    u32 x = ((CMD[1] & 0xFFFF) << 16) >> 16;
+    u32 v = (CMD[2] & 0xFF00) >> 8;
+    u32 u = (CMD[2] & 0xFF);
+    u32 palette = (CMD[2] >> 16);
+    TEXTURE_SAMPLER ts;
+    get_texture_sampler_from_texpage_and_palette(io.GPUSTAT, palette, &ts);
     u32 color = ts.sample(&ts, u, v);
     u32 hbit = color & 0x8000;
 
-    u32 tc = this->cmd[0] & 0xFFFFFF;
+    u32 tc = CMD[0] & 0xFFFFFF;
     static const float mm = 1.0f / 128.0f;
     float rm = (float)(tc & 0xFF) * mm;
     float gm = (float)((tc >> 8) & 0xFF) * mm;
@@ -1028,32 +983,32 @@ static void cmd6e_rect_1x1_tex_semi_modulated(PS1_GPU *this)
 
     color = ((u32)r) | ((u32)g << 5) | ((u32)b << 10);
 
-    semipix(this, y, x, color & 0x7FFF, 1, hbit);
+    semipix(y, x, color & 0x7FFF, 1, hbit);
 }
 
 
-static void cmd6f_rect_1x1_tex_semi(PS1_GPU *this)
+void core::cmd6f_rect_1x1_tex_semi()
 {
-    u32 y = (this->cmd[1] & 0xFFFF0000) >> 16;
-    u32 x = ((this->cmd[1] & 0xFFFF) << 16) >> 16;
-    u32 v = (this->cmd[2] & 0xFF00) >> 8;
-    u32 u = (this->cmd[2] & 0xFF);
-    u32 palette = (this->cmd[2] >> 16);
-    struct PS1_GPU_TEXTURE_SAMPLER ts;
-    get_texture_sampler_from_texpage_and_palette(this, this->io.GPUSTAT, palette, &ts);
+    u32 y = (CMD[1] & 0xFFFF0000) >> 16;
+    u32 x = ((CMD[1] & 0xFFFF) << 16) >> 16;
+    u32 v = (CMD[2] & 0xFF00) >> 8;
+    u32 u = (CMD[2] & 0xFF);
+    u32 palette = (CMD[2] >> 16);
+    TEXTURE_SAMPLER ts;
+    get_texture_sampler_from_texpage_and_palette(io.GPUSTAT, palette, &ts);
     u32 color = ts.sample(&ts, u, v);
-    semipix(this, y, x, color & 0x7FFF, 1, color & 0x8000);
+    semipix(y, x, color & 0x7FFF, 1, color & 0x8000);
 }
 
 
-static void cmd80_vram_copy(PS1_GPU *this)
+void core::cmd80_vram_copy()
 {
-    u32 y1 = this->cmd[1] >> 16;
-    u32 x1 = this->cmd[1] & 0xFFFF;
-    u32 y2 = this->cmd[2] >> 16;
-    u32 x2 = this->cmd[2] & 0xFFFF;
-    u32 height = this->cmd[3] >> 16;
-    u32 width = this->cmd[3] & 0xFFFF;
+    u32 y1 = CMD[1] >> 16;
+    u32 x1 = CMD[1] & 0xFFFF;
+    u32 y2 = CMD[2] >> 16;
+    u32 x2 = CMD[2] & 0xFFFF;
+    u32 height = CMD[3] >> 16;
+    u32 width = CMD[3] & 0xFFFF;
 #ifdef LOG_GP0
     printf("\nGP0 cmd80 copy from %d,%d to %d,%d size:%d,%d", x1, y1, x2, y2, width, height);
 #endif
@@ -1062,32 +1017,32 @@ static void cmd80_vram_copy(PS1_GPU *this)
         for (u32 ix = 0; ix < width; ix++) {
             u32 get_addr = ((ix+x1) & 1023) * 2;
             get_addr += ((iy+y1) & 511) * 2048; // 2048 bytes per 1024-pixel row
-            if (this->preserve_masked_pixels) {
-                u16 t = cR16(this->VRAM, (((iy + y2) & 511) * 2048) + (((ix + x2) & 1023) * 2));
+            if (preserve_masked_pixels) {
+                u16 t = cR16(VRAM, (((iy + y2) & 511) * 2048) + (((ix + x2) & 1023) * 2));
                 if (t & 0x8000) continue;
             }
 
-            u16 v = cR16(this->VRAM, get_addr & 0xFFFFF);
-            setpix(this, iy+y2, ix+x2, v & 0x7FFF, 1, v & 0x8000);
+            u16 v = cR16(VRAM, get_addr & 0xFFFFF);
+            setpix(iy+y2, ix+x2, v & 0x7FFF, 1, v & 0x8000);
         }
     }
 
     //printf("\nCOPY VRAM %d,%d to %d,%d size:%d,%d")
 }
 
-static void rect_opaque_flat_textured_modulated_xx(PS1_GPU *this, u32 wh)
+void core::rect_opaque_flat_textured_modulated_xx(u32 wh)
 {
     // WRIOW GP0,(0x64<<24)+(COLOR&0xFFFFFF)      ; Write GP0 Command Word (Color+Command)
-    //let color24 = this->cmd[0] & 0xFFFFFF;
+    //let color24 = CMD[0] & 0xFFFFFF;
 
     // WRIOW GP0,(Y<<16)+(X&0xFFFF)               ; Write GP0  Packet Word (Vertex)
-    u32 ystart = (this->cmd[1] & 0xFFFF0000) >> 16;
-    u32 xstart = ((this->cmd[1] & 0xFFFF) << 16) >> 16;
+    u32 ystart = (CMD[1] & 0xFFFF0000) >> 16;
+    u32 xstart = ((CMD[1] & 0xFFFF) << 16) >> 16;
 
     // WRIOW GP0,(PAL<<16)+((V&0xFF)<<8)+(U&0xFF) ; Write GP0  Packet Word (Texcoord+Palette)
-    u32 clut = (this->cmd[2] >> 16) & 0xFFFF;
-    u32 v = (this->cmd[2] >> 8) & 0xFF;
-    u32 ustart = this->cmd[2] & 0xFF;
+    u32 clut = (CMD[2] >> 16) & 0xFFFF;
+    u32 v = (CMD[2] >> 8) & 0xFF;
+    u32 ustart = CMD[2] & 0xFF;
 
     // WRIOW GP0,(HEIGHT<<16)+(WIDTH&0xFFFF)      ; Write GP0  Packet Word (Width+Height)
     u32 height = wh;
@@ -1101,14 +1056,14 @@ static void rect_opaque_flat_textured_modulated_xx(PS1_GPU *this, u32 wh)
     printf("\nrect_opaque_flat %d %d %d %d", xstart, ystart, width, height);
 #endif
 
-    u32 tc = this->cmd[0] & 0xFFFFFF;
+    u32 tc = CMD[0] & 0xFFFFFF;
     static const float mm = 1.0f / 128.0f;
     float rm = (float)(tc & 0xFF) * mm;
     float gm = (float)((tc >> 8) & 0xFF) * mm;
     float bm = (float)((tc >> 16) & 0xFF) * mm;
 
-    struct PS1_GPU_TEXTURE_SAMPLER ts;
-    get_texture_sampler_from_texpage_and_palette(this, this->io.GPUSTAT, clut, &ts);
+    TEXTURE_SAMPLER ts;
+    get_texture_sampler_from_texpage_and_palette(io.GPUSTAT, clut, &ts);
     for (u32 y = ystart; y < yend; y++) {
         u32 u = ustart;
         for (u32 x = xstart; x < xend; x++) {
@@ -1122,36 +1077,36 @@ static void rect_opaque_flat_textured_modulated_xx(PS1_GPU *this, u32 wh)
             if (g > 31.0f) g = 31.0f;
             if (b > 31.0f) b = 31.0f;
 
-            setpix_split(this, y, x, (u32)r, (u32)g, (u32)b, 1, hbit);
+            setpix_split(y, x, (u32)r, (u32)g, (u32)b, 1, hbit);
             u++;
         }
         v++;
     }
 }
 
-static void cmd7c_rect_opaque_flat_textured_modulated_16x16(PS1_GPU *this)
+void core::cmd7c_rect_opaque_flat_textured_modulated_16x16()
 {
-    rect_opaque_flat_textured_modulated_xx(this, 16);
+    rect_opaque_flat_textured_modulated_xx(16);
 }
 
-static void cmd74_rect_opaque_flat_textured_modulated_8x8(PS1_GPU *this)
+void core::cmd74_rect_opaque_flat_textured_modulated_8x8()
 {
-    rect_opaque_flat_textured_modulated_xx(this, 8);
+    rect_opaque_flat_textured_modulated_xx(8);
 }
 
-static void rect_opaque_flat_textured_xx(PS1_GPU *this, u32 wh)
+void core::rect_opaque_flat_textured_xx(u32 wh)
 {
     // WRIOW GP0,(0x64<<24)+(COLOR&0xFFFFFF)      ; Write GP0 Command Word (Color+Command)
-    //let color24 = this->cmd[0] & 0xFFFFFF;
+    //let color24 = CMD[0] & 0xFFFFFF;
 
     // WRIOW GP0,(Y<<16)+(X&0xFFFF)               ; Write GP0  Packet Word (Vertex)
-    u32 ystart = (this->cmd[1] & 0xFFFF0000) >> 16;
-    u32 xstart = ((this->cmd[1] & 0xFFFF) << 16) >> 16;
+    u32 ystart = (CMD[1] & 0xFFFF0000) >> 16;
+    u32 xstart = ((CMD[1] & 0xFFFF) << 16) >> 16;
 
     // WRIOW GP0,(PAL<<16)+((V&0xFF)<<8)+(U&0xFF) ; Write GP0  Packet Word (Texcoord+Palette)
-    u32 clut = (this->cmd[2] >> 16) & 0xFFFF;
-    u32 v = (this->cmd[2] >> 8) & 0xFF;
-    u32 ustart = this->cmd[2] & 0xFF;
+    u32 clut = (CMD[2] >> 16) & 0xFFFF;
+    u32 v = (CMD[2] >> 8) & 0xFF;
+    u32 ustart = CMD[2] & 0xFF;
 
     // WRIOW GP0,(HEIGHT<<16)+(WIDTH&0xFFFF)      ; Write GP0  Packet Word (Width+Height)
     u32 height = wh;
@@ -1165,45 +1120,45 @@ static void rect_opaque_flat_textured_xx(PS1_GPU *this, u32 wh)
     printf("\nrect_opaque_flat %d %d %d %d", xstart, ystart, width, height);
 #endif
 
-    struct PS1_GPU_TEXTURE_SAMPLER ts;
-    get_texture_sampler_from_texpage_and_palette(this, this->io.GPUSTAT, clut, &ts);
+    TEXTURE_SAMPLER ts;
+    get_texture_sampler_from_texpage_and_palette(io.GPUSTAT, clut, &ts);
     for (u32 y = ystart; y < yend; y++) {
         u32 u = ustart;
         for (u32 x = xstart; x < xend; x++) {
             u16 color = ts.sample(&ts, u, v);
             u32 hbit = color & 0x8000;
             u32 lbit = color & 0x7FFF;
-            setpix(this, y, x, lbit, 1, hbit);
+            setpix(y, x, lbit, 1, hbit);
             u++;
         }
         v++;
     }
 }
 
-static void cmd75_rect_opaque_flat_textured_8x8(PS1_GPU *this)
+void core::cmd75_rect_opaque_flat_textured_8x8()
 {
-    rect_opaque_flat_textured_xx(this, 8);
+    rect_opaque_flat_textured_xx(8);
 }
 
-static void cmd7d_rect_opaque_flat_textured_16x16(PS1_GPU *this)
+void core::cmd7d_rect_opaque_flat_textured_16x16()
 {
-    rect_opaque_flat_textured_xx(this, 16);
+    rect_opaque_flat_textured_xx(16);
 }
 
 
-static void rect_semi_flat_textured_modulated_xx(PS1_GPU *this, u32 wh)
+void core::rect_semi_flat_textured_modulated_xx(u32 wh)
 {
     // WRIOW GP0,(0x64<<24)+(COLOR&0xFFFFFF)      ; Write GP0 Command Word (Color+Command)
-    //let color24 = this->cmd[0] & 0xFFFFFF;
+    //let color24 = CMD[0] & 0xFFFFFF;
 
     // WRIOW GP0,(Y<<16)+(X&0xFFFF)               ; Write GP0  Packet Word (Vertex)
-    u32 ystart = (this->cmd[1] & 0xFFFF0000) >> 16;
-    u32 xstart = ((this->cmd[1] & 0xFFFF) << 16) >> 16;
+    u32 ystart = (CMD[1] & 0xFFFF0000) >> 16;
+    u32 xstart = ((CMD[1] & 0xFFFF) << 16) >> 16;
 
     // WRIOW GP0,(PAL<<16)+((V&0xFF)<<8)+(U&0xFF) ; Write GP0  Packet Word (Texcoord+Palette)
-    u32 clut = (this->cmd[2] >> 16) & 0xFFFF;
-    u32 v = (this->cmd[2] >> 8) & 0xFF;
-    u32 ustart = this->cmd[2] & 0xFF;
+    u32 clut = (CMD[2] >> 16) & 0xFFFF;
+    u32 v = (CMD[2] >> 8) & 0xFF;
+    u32 ustart = CMD[2] & 0xFF;
 
     // WRIOW GP0,(HEIGHT<<16)+(WIDTH&0xFFFF)      ; Write GP0  Packet Word (Width+Height)
     u32 height = wh;
@@ -1217,14 +1172,14 @@ static void rect_semi_flat_textured_modulated_xx(PS1_GPU *this, u32 wh)
     printf("\nrect_opaque_flat %d %d %d %d", xstart, ystart, width, height);
 #endif
 
-    u32 tc = this->cmd[0] & 0xFFFFFF;
+    u32 tc = CMD[0] & 0xFFFFFF;
     static const float mm = 1.0f / 128.0f;
     float rm = (float)(tc & 0xFF) * mm;
     float gm = (float)((tc >> 8) & 0xFF) * mm;
     float bm = (float)((tc >> 16) & 0xFF) * mm;
 
-    struct PS1_GPU_TEXTURE_SAMPLER ts;
-    get_texture_sampler_from_texpage_and_palette(this, this->io.GPUSTAT, clut, &ts);
+    TEXTURE_SAMPLER ts;
+    get_texture_sampler_from_texpage_and_palette(io.GPUSTAT, clut, &ts);
     for (u32 y = ystart; y < yend; y++) {
         u32 u = ustart;
         for (u32 x = xstart; x < xend; x++) {
@@ -1238,36 +1193,36 @@ static void rect_semi_flat_textured_modulated_xx(PS1_GPU *this, u32 wh)
             if (g > 31.0f) g = 31.0f;
             if (b > 31.0f) b = 31.0f;
 
-            semipix_split(this, y, x, (u32)r, (u32)g, (u32)b, 1, hbit);
+            semipix_split(y, x, (u32)r, (u32)g, (u32)b, 1, hbit);
             u++;
         }
         v++;
     }
 }
 
-static void cmd76_rect_semi_flat_textured_modulated_8x8(PS1_GPU *this)
+void core::cmd76_rect_semi_flat_textured_modulated_8x8()
 {
-    rect_semi_flat_textured_modulated_xx(this, 8);
+    rect_semi_flat_textured_modulated_xx(8);
 }
 
-static void cmd7e_rect_semi_flat_textured_modulated_16x16(PS1_GPU *this)
+void core::cmd7e_rect_semi_flat_textured_modulated_16x16()
 {
-    rect_semi_flat_textured_modulated_xx(this, 16);
+    rect_semi_flat_textured_modulated_xx(16);
 }
 
-static void rect_semi_flat_textured_xx(PS1_GPU *this, u32 wh)
+void core::rect_semi_flat_textured_xx(u32 wh)
 {
 // WRIOW GP0,(0x64<<24)+(COLOR&0xFFFFFF)      ; Write GP0 Command Word (Color+Command)
-    //let color24 = this->cmd[0] & 0xFFFFFF;
+    //let color24 = CMD[0] & 0xFFFFFF;
 
     // WRIOW GP0,(Y<<16)+(X&0xFFFF)               ; Write GP0  Packet Word (Vertex)
-    u32 ystart = (this->cmd[1] & 0xFFFF0000) >> 16;
-    u32 xstart = ((this->cmd[1] & 0xFFFF) << 16) >> 16;
+    u32 ystart = (CMD[1] & 0xFFFF0000) >> 16;
+    u32 xstart = ((CMD[1] & 0xFFFF) << 16) >> 16;
 
     // WRIOW GP0,(PAL<<16)+((V&0xFF)<<8)+(U&0xFF) ; Write GP0  Packet Word (Texcoord+Palette)
-    u32 clut = (this->cmd[2] >> 16) & 0xFFFF;
-    u32 v = (this->cmd[2] >> 8) & 0xFF;
-    u32 ustart = this->cmd[2] & 0xFF;
+    u32 clut = (CMD[2] >> 16) & 0xFFFF;
+    u32 v = (CMD[2] >> 8) & 0xFF;
+    u32 ustart = CMD[2] & 0xFF;
 
     // WRIOW GP0,(HEIGHT<<16)+(WIDTH&0xFFFF)      ; Write GP0  Packet Word (Width+Height)
     u32 height = wh;
@@ -1281,152 +1236,152 @@ static void rect_semi_flat_textured_xx(PS1_GPU *this, u32 wh)
     printf("\nrect_opaque_flat %d %d %d %d", xstart, ystart, width, height);
 #endif
 
-    struct PS1_GPU_TEXTURE_SAMPLER ts;
-    get_texture_sampler_from_texpage_and_palette(this, this->io.GPUSTAT, clut, &ts);
+    TEXTURE_SAMPLER ts;
+    get_texture_sampler_from_texpage_and_palette(io.GPUSTAT, clut, &ts);
     for (u32 y = ystart; y < yend; y++) {
         u32 u = ustart;
         for (u32 x = xstart; x < xend; x++) {
             u16 color = ts.sample(&ts, u, v);
             u32 hbit = color & 0x8000;
             u32 lbit = color & 0x7FFF;
-            semipix(this, y, x, lbit, 1, hbit);
+            semipix(y, x, lbit, 1, hbit);
             u++;
         }
         v++;
     }
 }
 
-static void cmd77_rect_semi_flat_textured_8x8(PS1_GPU *this)
+void core::cmd77_rect_semi_flat_textured_8x8()
 {
-    rect_semi_flat_textured_xx(this, 8);
+    rect_semi_flat_textured_xx(8);
 }
 
-static void cmd7f_rect_semi_flat_textured_16x16(PS1_GPU *this)
+void core::cmd7f_rect_semi_flat_textured_16x16()
 {
-    rect_semi_flat_textured_xx(this, 16);
+    rect_semi_flat_textured_xx(16);
 }
 
-static void load_buffer_reset(PS1_GPU *this, u32 x, u32 y, u32 width, u32 height)
+void core::load_buffer_reset(u32 x, u32 y, u32 width, u32 height)
 {
-    this->load_buffer.x = x;
-    this->load_buffer.y = y;
-    this->load_buffer.width = width;
-    this->load_buffer.height = height;
-    this->load_buffer.line_ptr = (y * 2048) + x;
-    this->load_buffer.img_x = this->load_buffer.img_y = 0;
+    load_buffer.x = x;
+    load_buffer.y = y;
+    load_buffer.width = width;
+    load_buffer.height = height;
+    load_buffer.line_ptr = (y * 2048) + x;
+    load_buffer.img_x = load_buffer.img_y = 0;
 }
 
-static void gp0_image_load_continue(PS1_GPU *this, u32 cmd)
+void core::gp0_image_load_continue(u32 cmd)
 {
-    /*this->recv_gp0[this->recv_gp0_len] = cmd;
-    this->recv_gp0_len++;
-    if (this->recv_gp0_len >= (1024*1024)) {
+    /*recv_gp0[recv_gp0_len] = cmd;
+    recv_gp0_len++;
+    if (recv_gp0_len >= (1024*1024)) {
         printf("\nWARNING GP0 TRANSFER OVERFLOW!");
-        this->recv_gp0_len--;
+        recv_gp0_len--;
     }*/
     // Put in 2 16-bit pixels
-    //console.log('TRANSFERRING!', this->gp0_transfer_remaining);
+    //console.log('TRANSFERRING!', gp0_transfer_remaining);
     for (u32 i = 0; i < 2; i++) {
         u32 px = cmd & 0xFFFF;
         cmd >>= 16;
-        u32 y = this->load_buffer.y+this->load_buffer.img_y;
-        u32 x = this->load_buffer.x+this->load_buffer.img_x;
+        u32 y = load_buffer.y+load_buffer.img_y;
+        u32 x = load_buffer.x+load_buffer.img_x;
         u32 addr = (2048*y)+(x*2) & 0xFFFFF;
         u32 draw_it = 1;
-        if (this->preserve_masked_pixels) {
-            u16 v = cR16(this->VRAM, addr);
+        if (preserve_masked_pixels) {
+            u16 v = cR16(VRAM, addr);
             if (v & 0x8000) draw_it = 0;
         }
         //if (!((px & 0x8000) || ((px & 0x7FFF) != 0))) draw_it = 0;
         if (draw_it) {
-            cW16(this->VRAM, addr, px);
+            cW16(VRAM, addr, px);
         }
 
-        this->load_buffer.img_x++;
-        if ((x+1) >= (this->load_buffer.width+this->load_buffer.x)) {
-            this->load_buffer.img_x = 0;
-            this->load_buffer.img_y++;
+        load_buffer.img_x++;
+        if ((x+1) >= (load_buffer.width+load_buffer.x)) {
+            load_buffer.img_x = 0;
+            load_buffer.img_y++;
         }
     }
-    this->gp0_transfer_remaining--;
-    if (this->gp0_transfer_remaining == 0) {
+    gp0_transfer_remaining--;
+    if (gp0_transfer_remaining == 0) {
         //printf("\nTRANSFER COMPLETE!");
-        this->current_ins = NULL;
-        this->handle_gp0 = &gp0_cmd;
-        ready_cmd(this);
-        unready_recv_dma(this);
+        current_ins = nullptr;
+        handle_gp0 = &core::gp0_cmd;
+        ready_cmd();
+        unready_recv_dma();
     }
 }
 
-static void gp0_image_load_start(PS1_GPU *this)
+void core::gp0_image_load_start()
 {
-    unready_cmd(this);
-    ready_recv_dma(this);
+    unready_cmd();
+    ready_recv_dma();
     // Top-left corner in VRAM
-    u32 x = this->cmd[1] & 1023;
-    u32 y = (this->cmd[1] >> 16) & 511;
+    u32 x = CMD[1] & 1023;
+    u32 y = (CMD[1] >> 16) & 511;
 
     // Resolution
-    u32 width = this->cmd[2] & 0xFFFF;
-    u32 height = (this->cmd[2] >> 16) & 0xFFFF;
+    u32 width = CMD[2] & 0xFFFF;
+    u32 height = (CMD[2] >> 16) & 0xFFFF;
 
     // Get imgsize, round it
     u32 imgsize = ((width * height) + 1) & 0xFFFFFFFE;
     //printf("\nNEW TRANSFER x,y:%d,%d width,height:%d,%d", x, y, width, height);
 
-    this->gp0_transfer_remaining = imgsize/2;
+    gp0_transfer_remaining = imgsize/2;
 #ifdef LOG_GP0
-    printf("\nTRANSFER IMGSIZE %d X:%d Y:%d WIDTH:%d HEIGHT:%d CMD:%08x", imgsize, x, y, width, height, this->cmd[0]);
+    printf("\nTRANSFER IMGSIZE %d X:%d Y:%d WIDTH:%d HEIGHT:%d CMD:%08x", imgsize, x, y, width, height, CMD[0]);
 #endif
-    if (this->gp0_transfer_remaining > 0) {
-        load_buffer_reset(this, x, y, width, height);
-        this->handle_gp0 = &gp0_image_load_continue;
+    if (gp0_transfer_remaining > 0) {
+        load_buffer_reset(x, y, width, height);
+        handle_gp0 = &core::gp0_image_load_continue;
     } else {
         printf("\nBad size image load: 0?");
-        this->current_ins = NULL;
+        current_ins = nullptr;
     }
 }
 
-static void gp0_cmd_unhandled(PS1_GPU *this)
+void core::gp0_cmd_unhandled()
 {
 
 }
 
-static void GPUSTAT_update(PS1_GPU *this)
+void core::GPUSTAT_update()
 {
-    u32 o = this->page_base_x;
-    o |= (this->page_base_y) << 4;
-    o |= (this->semi_transparency) << 5;
-    o |= (this->texture_depth) << 7;
-    o |= (this->dithering) << 9;
-    o |= (this->draw_to_display) << 10;
-    o |= (this->force_set_mask_bit) >> 4;
-    o |= (this->preserve_masked_pixels) << 12;
-    o |= (this->field) << 14;
-    o |= (this->texture_disable) << 15;
-    o |= this->hres << 16;
-    o |= this->vres << 19;
-    o |= this->vmode << 20;
-    o |= this->display_depth << 21;
-    o |= this->interlaced << 22;
-    o |= this->display_disabled << 23;
+    u32 o = page_base_x;
+    o |= (page_base_y) << 4;
+    o |= (semi_transparency) << 5;
+    o |= (texture_depth) << 7;
+    o |= (dithering) << 9;
+    o |= (draw_to_display) << 10;
+    o |= (force_set_mask_bit) >> 4;
+    o |= (preserve_masked_pixels) << 12;
+    o |= (field) << 14;
+    o |= (texture_disable) << 15;
+    o |= hres << 16;
+    o |= vres << 19;
+    o |= vmode << 20;
+    o |= display_depth << 21;
+    o |= interlaced << 22;
+    o |= display_disabled << 23;
     // interrupt is set at other end where they are scheduled
 
-    o |= this->dma_direction << 29;
+    o |= dma_direction << 29;
 
     u32 dmar;
-    switch(this->dma_direction) {
+    switch(dma_direction) {
         // 0 if FIFO full, 1 otherwise
-        case PS1e_dma_off:
+        case e_dma_off:
             dmar = 0;
             break;
-        case PS1e_dma_fifo:
+        case e_dma_fifo:
             dmar = 0; // set during read on other side
             break;
-        case PS1e_dma_cpu_to_gp0:
+        case e_dma_cpu_to_gp0:
             dmar = (o >> 28) & 1;
             break;
-        case PS1e_dma_vram_to_cpu:
+        case e_dma_vram_to_cpu:
             dmar = (o >> 27) & 1;
             break;
     }
@@ -1434,35 +1389,34 @@ static void GPUSTAT_update(PS1_GPU *this)
     o |= (dmar << 25);
 
     // Preserve GPU ready or not bits
-    this->io.GPUSTAT = o | (this->io.GPUSTAT & 0x1C000000);
+    io.GPUSTAT = o | (io.GPUSTAT & 0x1C000000);
 }
 
-void PS1_GPU_write_gp0(PS1_GPU *this, u32 cmd) {
-    this->handle_gp0(this, cmd);
+void core::write_gp0(u32 cmd) {
+    (this->*handle_gp0)(cmd);
 }
 
-
-static void gp0_cmd(PS1_GPU *this, u32 cmd) {
-    this->gp0_buffer[this->recv_gp0_len] = cmd;
-    this->recv_gp0_len++;
-    assert(this->recv_gp0_len < 256);
+void core::gp0_cmd(u32 cmd) {
+    gp0_buffer[recv_gp0_len] = cmd;
+    recv_gp0_len++;
+    assert(recv_gp0_len < 256);
 
     // Check if we have an instruction..
-    if (this->current_ins) {
-        this->cmd[this->cmd_arg_index++] = cmd;
-        assert(this->cmd_arg_index<32);
-        if (this->cmd_arg_index == this->cmd_arg_num) {
+    if (current_ins) {
+        CMD[cmd_arg_index++] = cmd;
+        assert(cmd_arg_index<32);
+        if (cmd_arg_index == cmd_arg_num) {
             // Execute instruction!
-            this->current_ins(this);
-            this->current_ins = NULL;
-            this->recv_gp0_len = 0;
-            this->cmd_arg_index = 0;
+            (this->*current_ins)();
+            current_ins = nullptr;
+            recv_gp0_len = 0;
+            cmd_arg_index = 0;
         }
     } else {
-        this->cmd[0] = cmd;
-        this->cmd_arg_index = 1;
-        this->ins_special = 0;
-        this->cmd_arg_num = 1;
+        CMD[0] = cmd;
+        cmd_arg_index = 1;
+        ins_special = 0;
+        cmd_arg_num = 1;
         u32 cmdr = cmd >> 24;
 #ifdef LOG_GP0
         printf("\nCMD %02x", cmdr);
@@ -1475,250 +1429,250 @@ static void gp0_cmd(PS1_GPU *this, u32 cmd) {
                 break;
             case 0x02: // Quick Rectangle
                 //console.log('Quick rectangle!');
-                this->current_ins = &cmd02_quick_rect;
-                this->cmd_arg_num = 3;
+                current_ins = &core::cmd02_quick_rect;
+                cmd_arg_num = 3;
                 break;
                 //case 0x21: // ??
                 //    console.log('NOT IMPLEMENT 0x21');
                 //    break;
             case 0x20: // flat-shaded opaque triangle
-                this->current_ins = &cmd20_tri_flat;
-                this->cmd_arg_num = 4;
+                current_ins = &core::cmd20_tri_flat;
+                cmd_arg_num = 4;
                 break;
             case 0x22: // flat-shaded opaque triangle, semi-transparent
-                this->current_ins = &cmd22_tri_flat_semi_transparent;
-                this->cmd_arg_num = 4;
+                current_ins = &core::cmd22_tri_flat_semi_transparent;
+                cmd_arg_num = 4;
                 break;
             case 0x24: // flat-shaded opaque triangle, semi-transparent, textured, modulated
-                this->current_ins = &cmd24_tri_raw_modulated;
-                this->cmd_arg_num = 7;
+                current_ins = &core::cmd24_tri_raw_modulated;
+                cmd_arg_num = 7;
                 break;
             case 0x25: // flat-shaded triangle, opaque, "raw"
-                this->current_ins = &cmd25_tri_raw;
-                this->cmd_arg_num = 7;
+                current_ins = &core::cmd25_tri_raw;
+                cmd_arg_num = 7;
                 break;
             case 0x26: // flat-shaded triangle, opaque, modulated, semi-transparent
-                this->current_ins = &cmd26_tri_modulated_semi_transparent;
-                this->cmd_arg_num = 7;
+                current_ins = &core::cmd26_tri_modulated_semi_transparent;
+                cmd_arg_num = 7;
                 break;
             case 0x27: // Textured Triangle, Semi-Transparent, Raw-Texture
-                this->current_ins = &cmd27_tri_raw_semi_transparent;
-                this->cmd_arg_num = 7;
+                current_ins = &core::cmd27_tri_raw_semi_transparent;
+                cmd_arg_num = 7;
                 break;
             case 0x28: // flat-shaded rectangle
-                this->current_ins = &cmd28_draw_flat4untex;
-                this->cmd_arg_num = 5;
+                current_ins = &core::cmd28_draw_flat4untex;
+                cmd_arg_num = 5;
                 break;
             case 0x2A: // semi-transparent monochrome quad
-                this->current_ins = &cmd2a_quad_flat_semi_transparent;
-                this->cmd_arg_num = 5;
+                current_ins = &core::cmd2a_quad_flat_semi_transparent;
+                cmd_arg_num = 5;
                 break;
             case 0x2C: // polygon, 4 points, textured, flat, modulated
-                this->current_ins = &cmd2c_quad_opaque_flat_textured_modulated;
-                this->cmd_arg_num = 9;
+                current_ins = &core::cmd2c_quad_opaque_flat_textured_modulated;
+                cmd_arg_num = 9;
                 break;
             case 0x2D: // textured quad opaque raw
-                this->current_ins = &cmd2d_quad_opaque_flat_textured;
-                this->cmd_arg_num = 9;
+                current_ins = &core::cmd2d_quad_opaque_flat_textured;
+                cmd_arg_num = 9;
                 break;
             case 0x2E: // textured quad, semi-transparent, modulated
-                this->current_ins = &cmd2e_quad_flat_textured_modulated;
-                this->cmd_arg_num = 9;
+                current_ins = &core::cmd2e_quad_flat_textured_modulated;
+                cmd_arg_num = 9;
                 break;
             case 0x2F: // textured quad, semi-transparent, raw tex
-                this->current_ins = &cmd2f_quad_flat_textured_semi;
-                this->cmd_arg_num = 9;
+                current_ins = &core::cmd2f_quad_flat_textured_semi;
+                cmd_arg_num = 9;
                 break;
             case 0x30: // opaque shaded trinalge
-                this->current_ins = &cmd30_tri_shaded_opaque;
-                this->cmd_arg_num = 6;
+                current_ins = &core::cmd30_tri_shaded_opaque;
+                cmd_arg_num = 6;
                 break;
             case 0x32: // shaded triangle semi-transparent
-                this->current_ins = &cmd32_tri_shaded_semi_transparent;
-                this->cmd_arg_num = 6;
+                current_ins = &core::cmd32_tri_shaded_semi_transparent;
+                cmd_arg_num = 6;
                 break;
             case 0x34: // opaque shaded textured triangle modulated
-                this->current_ins = &cmd34_tri_shaded_opaque_tex_modulated;
-                this->cmd_arg_num = 9;
+                current_ins = &core::cmd34_tri_shaded_opaque_tex_modulated;
+                cmd_arg_num = 9;
                 break;
             case 0x36: // opaque shaded textured semi-transparent triangle modulated
-                this->current_ins = &cmd36_tri_shaded_opaque_tex_modulated_semi;
-                this->cmd_arg_num = 9;
+                current_ins = &core::cmd36_tri_shaded_opaque_tex_modulated_semi;
+                cmd_arg_num = 9;
                 break;
             case 0x38: // polygon, 4 points, gouraud-shaded
-                this->current_ins = &cmd38_quad_shaded_opaque;
-                this->cmd_arg_num = 8;
+                current_ins = &core::cmd38_quad_shaded_opaque;
+                cmd_arg_num = 8;
                 break;
             case 0x3A: // polygon, 4 points, goraud-shaded, semi-transparent
-                this->current_ins = &cmd3a_quad_shaded_semi_transparent;
-                this->cmd_arg_num = 8;
+                current_ins = &core::cmd3a_quad_shaded_semi_transparent;
+                cmd_arg_num = 8;
                 break;
             case 0x3C: // polygon, 4 points, goraud-shaded, textured & modulated
-                this->current_ins = &cmd3c_quad_opaque_shaded_textured_modulated;
-                this->cmd_arg_num = 12;
+                current_ins = &core::cmd3c_quad_opaque_shaded_textured_modulated;
+                cmd_arg_num = 12;
                 break;
             case 0x3E: // polygon, 4 points, goraud-shaded, textured & modulated & semi-transparent
-                this->current_ins = &cmd3e_quad_opaque_shaded_textured_modulated_semi;
-                this->cmd_arg_num = 12;
+                current_ins = &core::cmd3e_quad_opaque_shaded_textured_modulated_semi;
+                cmd_arg_num = 12;
                 break;
             case 0x40: // monochrome line, opaque
-                this->current_ins = &cmd40_line_opaque;
-                this->cmd_arg_num = 3;
+                current_ins = &core::cmd40_line_opaque;
+                cmd_arg_num = 3;
                 break;
             case 0x60: // Rectangle, variable size, opaque
-                this->current_ins = &cmd60_rect_opaque_flat;
-                this->cmd_arg_num = 3;
+                current_ins = &core::cmd60_rect_opaque_flat;
+                cmd_arg_num = 3;
                 break;
             case 0x64: // Rectangle, variable size, textured, flat, opaque, modulated
-                this->current_ins = &cmd64_rect_opaque_flat_textured_modulated;
-                this->cmd_arg_num = 4;
+                current_ins = &core::cmd64_rect_opaque_flat_textured_modulated;
+                cmd_arg_num = 4;
                 break;
             case 0x65: // rectangle, variable size, textured, flat, opaque
-                this->current_ins = &cmd65_rect_opaque_flat_textured;
-                this->cmd_arg_num = 4;
+                current_ins = &core::cmd65_rect_opaque_flat_textured;
+                cmd_arg_num = 4;
                 break;
             case 0x66: // Rectangle, variable size, textured, flat, opaque, modulated
-                this->current_ins = &cmd66_rect_semi_flat_textured_modulated;
-                this->cmd_arg_num = 4;
+                current_ins = &core::cmd66_rect_semi_flat_textured_modulated;
+                cmd_arg_num = 4;
                 break;
             case 0x67: // rectangle, variable size, textured, flat, semi-transparent
-                this->current_ins = &cmd67_rect_semi_flat_textured;
-                this->cmd_arg_num = 4;
+                current_ins = &core::cmd67_rect_semi_flat_textured;
+                cmd_arg_num = 4;
                 break;
             case 0x6A: // Solid 1x1 rect
             case 0x68:
-                this->current_ins = &cmd68_rect_1x1;
-                this->cmd_arg_num = 2;
+                current_ins = &core::cmd68_rect_1x1;
+                cmd_arg_num = 2;
                 break;
             case 0x6C: // 1x1 rect texuted semi-transparent
-                this->current_ins = &cmd6c_rect_1x1_tex_modulated;
-                this->cmd_arg_num = 3;
+                current_ins = &core::cmd6c_rect_1x1_tex_modulated;
+                cmd_arg_num = 3;
                 break;
             case 0x6D: // 1x1 rect texuted opaque
-                this->current_ins = &cmd6d_rect_1x1_tex;
-                this->cmd_arg_num = 3;
+                current_ins = &core::cmd6d_rect_1x1_tex;
+                cmd_arg_num = 3;
                 break;
             case 0x6e: // 1x1 rect texuted semi modulated
-                this->current_ins = &cmd6e_rect_1x1_tex_semi_modulated;
-                this->cmd_arg_num = 3;
+                current_ins = &core::cmd6e_rect_1x1_tex_semi_modulated;
+                cmd_arg_num = 3;
                 break;
             case 0x6F: // 1x1 rect texuted semi-transparent
-                this->current_ins = &cmd6f_rect_1x1_tex_semi;
-                this->cmd_arg_num = 3;
+                current_ins = &core::cmd6f_rect_1x1_tex_semi;
+                cmd_arg_num = 3;
                 break;
             case 0x74: // Rectangle, 8x8, opaque, textured, modulated
-                this->current_ins = &cmd74_rect_opaque_flat_textured_modulated_8x8;
-                this->cmd_arg_num = 3;
+                current_ins = &core::cmd74_rect_opaque_flat_textured_modulated_8x8;
+                cmd_arg_num = 3;
                 break;
             case 0x75: // Rectangle, 8x8, opaque, textured
-                this->current_ins = &cmd75_rect_opaque_flat_textured_8x8;
-                this->cmd_arg_num = 3;
+                current_ins = &core::cmd75_rect_opaque_flat_textured_8x8;
+                cmd_arg_num = 3;
                 break;
             case 0x76: // Rectangle, 8x8, semi-transparent, textured, modulated
-                this->current_ins = &cmd76_rect_semi_flat_textured_modulated_8x8;
-                this->cmd_arg_num = 3;
+                current_ins = &core::cmd76_rect_semi_flat_textured_modulated_8x8;
+                cmd_arg_num = 3;
                 break;
             case 0x77: // Rectangle, 8x8, semi, textured
-                this->current_ins = &cmd77_rect_semi_flat_textured_8x8;
-                this->cmd_arg_num = 3;
+                current_ins = &core::cmd77_rect_semi_flat_textured_8x8;
+                cmd_arg_num = 3;
                 break;
             case 0x7C:// Rectangle, 16x16, opaque, textured, modulated
-                this->current_ins = &cmd7c_rect_opaque_flat_textured_modulated_16x16;
-                this->cmd_arg_num = 3;
+                current_ins = &core::cmd7c_rect_opaque_flat_textured_modulated_16x16;
+                cmd_arg_num = 3;
                 break;
 
             case 0x7D:// Rectangle, 16x16, opaque, textured
-                this->current_ins = &cmd7d_rect_opaque_flat_textured_16x16;
-                this->cmd_arg_num = 3;
+                current_ins = &core::cmd7d_rect_opaque_flat_textured_16x16;
+                cmd_arg_num = 3;
                 break;
             case 0x7E: // Rectangle, 8x8, semi-transparent, textured, modulated
-                this->current_ins = &cmd7e_rect_semi_flat_textured_modulated_16x16;
-                this->cmd_arg_num = 3;
+                current_ins = &core::cmd7e_rect_semi_flat_textured_modulated_16x16;
+                cmd_arg_num = 3;
                 break;
             case 0x7F: // Rectangle, 8x8, semi, textured
-                this->current_ins = &cmd7f_rect_semi_flat_textured_16x16;
-                this->cmd_arg_num = 3;
+                current_ins = &core::cmd7f_rect_semi_flat_textured_16x16;
+                cmd_arg_num = 3;
                 break;
             case 0x80: // Copy from place to place
-                this->current_ins = &cmd80_vram_copy;
-                this->cmd_arg_num = 4;
+                current_ins = &core::cmd80_vram_copy;
+                cmd_arg_num = 4;
                 break;
             case 0xBC:
             case 0xB8:
             case 0xA0: // Image stream to GPU
-                this->current_ins = &gp0_image_load_start;
-                this->cmd_arg_num = 3;
+                current_ins = &core::gp0_image_load_start;
+                cmd_arg_num = 3;
                 break;
             case 0xC0:
                 printf("\nWARNING unhandled GP0 command 0xC0");
-                this->cmd_arg_num = 2;
-                this->current_ins = &gp0_cmd_unhandled;
+                cmd_arg_num = 2;
+                current_ins = &core::gp0_cmd_unhandled;
                 break;
             case 0xE1: // GP0 Draw Mode
 #ifdef DBG_GP0
                 printf("GP0 E1 set draw mode");
 #endif
                 //printf("\nSET DRAW MODE %08x", cmd);
-                this->page_base_x = cmd & 15;
-                this->page_base_y = (cmd >> 4) & 1;
-                this->semi_transparency = (cmd >> 5) & 3;
+                page_base_x = cmd & 15;
+                page_base_y = (cmd >> 4) & 1;
+                semi_transparency = (cmd >> 5) & 3;
                 switch ((cmd >> 7) & 3) {
                     case 0:
-                        this->texture_depth = PS1e_t4bit;
+                        texture_depth = e_t4bit;
                         break;
                     case 1:
-                        this->texture_depth = PS1e_t8bit;
+                        texture_depth = e_t8bit;
                         break;
                     case 2:
-                        this->texture_depth = PS1e_t15bit;
+                        texture_depth = e_t15bit;
                         break;
                     case 3:
                         printf("\nUNHANDLED TEXTAR DEPTH 3!!!");
                         break;
                 }
-                this->dithering = (cmd >> 9) & 1;
-                this->draw_to_display = (cmd >> 10) & 1;
-                this->texture_disable = (cmd >> 1) & 1;
-                GPUSTAT_update(this);
-                this->rect.texture_x_flip = (cmd >> 12) & 1;
-                this->rect.texture_y_flip = (cmd >> 13) & 1;
+                dithering = (cmd >> 9) & 1;
+                draw_to_display = (cmd >> 10) & 1;
+                texture_disable = (cmd >> 1) & 1;
+                GPUSTAT_update();
+                rect.texture_x_flip = (cmd >> 12) & 1;
+                rect.texture_y_flip = (cmd >> 13) & 1;
                 break;
             case 0xE2: // Texture window
 #ifdef DBG_GP0
                 printf("\nGP0 E2 set draw mode");
 #endif
-                this->tx_win_x_mask = cmd & 0x1F;
-                this->tx_win_y_mask = (cmd >> 5) & 0x1F;
-                this->tx_win_x_offset = (cmd >> 10) & 0x1F;
-                this->tx_win_y_offset = (cmd >> 15) & 0x1F;
+                tx_win_x_mask = cmd & 0x1F;
+                tx_win_y_mask = (cmd >> 5) & 0x1F;
+                tx_win_x_offset = (cmd >> 10) & 0x1F;
+                tx_win_y_offset = (cmd >> 15) & 0x1F;
                 break;
             case 0xE3: // Set draw area upper-left corner
-                this->draw_area_top = (cmd >> 10) & 0x3FF;
-                this->draw_area_left = cmd & 0x3FF;
+                draw_area_top = (cmd >> 10) & 0x3FF;
+                draw_area_left = cmd & 0x3FF;
 #ifdef DBG_GP0
-                printf("\nGP0 E3 set draw area UL corner %d, %d", this->draw_area_top, this->draw_area_left);
+                printf("\nGP0 E3 set draw area UL corner %d, %d", draw_area_top, draw_area_left);
 #endif
                 break;
             case 0xE4: // Draw area lower-right corner
-                this->draw_area_bottom = (cmd >> 10) & 0x3FF;
-                this->draw_area_right = cmd & 0x3FF;
+                draw_area_bottom = (cmd >> 10) & 0x3FF;
+                draw_area_right = cmd & 0x3FF;
 #ifdef DBG_GP0
-                printf("\nGP0 E4 set draw area LR corner %d, %d", this->draw_area_right, this->draw_area_bottom);
+                printf("\nGP0 E4 set draw area LR corner %d, %d", draw_area_right, draw_area_bottom);
 #endif
                 break;
             case 0xE5: // Drawing offset
-                this->draw_x_offset = mksigned11(cmd & 0x7FF);
-                this->draw_y_offset = mksigned11((cmd >> 11) & 0x7FF);
+                draw_x_offset = mksigned11(cmd & 0x7FF);
+                draw_y_offset = mksigned11((cmd >> 11) & 0x7FF);
 #ifdef DBG_GP0
-                printf("\nGP0 E5 set drawing offset %d, %d", this->draw_x_offset, this->draw_y_offset);
+                printf("\nGP0 E5 set drawing offset %d, %d", draw_x_offset, draw_y_offset);
 #endif
                 break;
             case 0xE6: // Set Mask Bit setting
 #ifdef DBG_GP0
                 printf("\nGP0 E6 set bit mask");
 #endif
-                this->force_set_mask_bit = (cmd & 1) << 15;
-                this->preserve_masked_pixels = (cmd >> 1) & 1;
+                force_set_mask_bit = (cmd & 1) << 15;
+                preserve_masked_pixels = (cmd >> 1) & 1;
                 break;
             default:
                 printf("\nUnknown GP0 command %08x", cmd);
@@ -1727,82 +1681,57 @@ static void gp0_cmd(PS1_GPU *this, u32 cmd) {
     }
 }
 
-static void setup_dotclock(PS1 *this)
+
+
+void core::reset()
 {
-    if (this->gpu.hr2) {
-        this->gpu.hres = 368;
-    }
-    else {
-        static const u32 table[4] =  {256, 320, 512, 640};
-        this->gpu.hres = table[this->gpu.hr1];
-    }
-    float cycles_per_line = ((float)this->clock.timing.gpu.hz / this->clock.timing.fps) / (float)this->clock.timing.frame.lines;
-    float cycles_per_px = cycles_per_line / (float)this->gpu.hres;
-
-    this->clock.dot.horizontal_px = (((this->gpu.display_horiz_end-this->gpu.display_horiz_start)/(u32)cycles_per_px)+2) & ~3;
-    this->clock.dot.vertical_px = this->clock.timing.frame.lines - this->clock.timing.frame.vblank.start_on_line;
-
-    this->clock.dot.ratio.cpu_to_gpu = (float)this->clock.timing.gpu.hz / (float)this->clock.timing.cpu.hz;
-    this->clock.dot.ratio.cpu_to_dotclock = this->clock.dot.ratio.cpu_to_gpu / cycles_per_px;
+    bus->dotclock_change();
 }
 
-static void dotclock_change(PS1 *this)
-{
-    this->clock.dot.start.value = PS1_dotclock(this);
-    this->clock.dot.start.time = PS1_clock_current(this);
-    setup_dotclock(this);
-}
-
-
-void PS1_GPU_reset(PS1_GPU *this)
-{
-    dotclock_change(this->bus);
-}
-
-void PS1_GPU_write_gp1(PS1_GPU *this, u32 cmd)
+void core::write_gp1(u32 cmd)
 {
     switch(cmd >> 24) {
         case 0:
             printf("\nGP1 soft reset");
             // Soft reset
-            unready_cmd(this);
-            unready_recv_dma(this);
-            unready_vram_to_CPU(this);
-            this->page_base_x = 0;
-            this->page_base_y = 0;
-            this->semi_transparency = 0;
-            this->texture_depth = PS1e_t4bit;
-            this->tx_win_x_mask = this->tx_win_y_mask = 0;
-            this->tx_win_x_offset = this->tx_win_y_offset = 0;
-            this->dithering = 0;
-            this->draw_to_display = 0;
-            this->texture_disable = 0;
-            this->rect.texture_x_flip = this->rect.texture_y_flip = 0;
-            this->draw_area_bottom = this->draw_area_right = this->draw_area_left = this->draw_area_top = 0;
-            this->draw_x_offset = this->draw_y_offset = 0;
-            this->force_set_mask_bit = 0;
-            this->preserve_masked_pixels = 0;
-            this->dma_direction = PS1e_dma_off;
-            this->display_disabled = 1;
-            this->display_vram_x_start = this->display_vram_y_start = 0;
-            this->hres = 0;
-            this->vres = PS1e_y240lines;
-            this->vmode = PS1e_ntsc;
-            this->interlaced = 1;
-            this->display_horiz_start = 0x200;
-            this->display_horiz_end = 0xC00;
-            this->display_line_start = 0x10;
-            this->display_line_end = 0x100;
-            this->display_depth = PS1e_d15bits;
-            this->recv_gp0_len = 0;
-            this->handle_gp0 = &gp0_cmd;
-            this->current_ins = NULL;
-            this->cmd_arg_index = 0;
-            //this->clear_FIFO();
-            GPUSTAT_update(this);
-            ready_cmd(this);
-            ready_recv_dma(this);
-            ready_vram_to_CPU(this);
+            unready_cmd();
+            unready_recv_dma();
+            unready_vram_to_CPU();
+            page_base_x = 0;
+            page_base_y = 0;
+            semi_transparency = 0;
+            texture_depth = e_t4bit;
+            tx_win_x_mask = tx_win_y_mask = 0;
+            tx_win_x_offset = tx_win_y_offset = 0;
+            dithering = 0;
+            draw_to_display = 0;
+            texture_disable = 0;
+            rect.texture_x_flip = rect.texture_y_flip = 0;
+            draw_area_bottom = draw_area_right = draw_area_left = draw_area_top = 0;
+            draw_x_offset = draw_y_offset = 0;
+            force_set_mask_bit = 0;
+            preserve_masked_pixels = 0;
+            dma_direction = e_dma_off;
+            display_disabled = 1;
+            display_vram_x_start = display_vram_y_start = 0;
+            hres = 0;
+            vres = e_y240lines;
+            vmode = e_ntsc;
+            interlaced = 1;
+            display_horiz_start = 0x200;
+            display_horiz_end = 0xC00;
+            display_line_start = 0x10;
+            display_line_end = 0x100;
+            display_depth = e_d15bits;
+            recv_gp0_len = 0;
+            handle_gp0 = &core::gp0_cmd;
+            current_ins = nullptr;
+            cmd_arg_index = 0;
+            //clear_FIFO();
+            GPUSTAT_update();
+            ready_cmd();
+            ready_recv_dma();
+            ready_vram_to_CPU();
             // TODO: remember to flush GPU texture cache
             break;
         case 0x01: // reset CMD FIFO
@@ -1817,47 +1746,47 @@ void PS1_GPU_write_gp1(PS1_GPU *this, u32 cmd)
         case 0x04: // DMA direction
             switch(cmd & 3) {
                 case 0:
-                    this->dma_direction = PS1e_dma_off;
+                    dma_direction = e_dma_off;
                     break;
                 case 1:
-                    this->dma_direction = PS1e_dma_fifo;
+                    dma_direction = e_dma_fifo;
                     break;
                 case 2:
-                    this->dma_direction = PS1e_dma_cpu_to_gp0;
+                    dma_direction = e_dma_cpu_to_gp0;
                     break;
                 case 3:
-                    this->dma_direction = PS1e_dma_vram_to_cpu;
+                    dma_direction = e_dma_vram_to_cpu;
                     break;
             }
-            GPUSTAT_update(this);
+            GPUSTAT_update();
             break;
         case 0x05: // VRAM start
             //console.log('GP1 VRAM start');
-            this->display_vram_x_start = cmd & 0x3FE;
-            this->display_vram_y_start = (cmd >> 10) & 0x1FF;
+            display_vram_x_start = cmd & 0x3FE;
+            display_vram_y_start = (cmd >> 10) & 0x1FF;
             break;
         case 0x06: // Display horizontal range, in output coordinates
-            this->display_horiz_start = cmd & 0xFFF;
-            this->display_horiz_end = (cmd >> 12) & 0xFFF;
-            dotclock_change(this->bus);
+            display_horiz_start = cmd & 0xFFF;
+            display_horiz_end = (cmd >> 12) & 0xFFF;
+            bus->dotclock_change();
             break;
         case 0x07: // Display vertical range, in output coordinates
-            this->display_line_start = cmd & 0x3FF;
-            this->display_line_end = (cmd >> 10) & 0x3FF;
+            display_line_start = cmd & 0x3FF;
+            display_line_end = (cmd >> 10) & 0x3FF;
             break;
         case 0x08: {// Display mode
             //console.log('GP1 display mode');
-            this->hr1 = cmd & 3;
-            this->hr2 = ((cmd >> 6) & 1);
+            hr1 = cmd & 3;
+            hr2 = ((cmd >> 6) & 1);
 
-            this->vres = (cmd & 4) ? PS1e_y480lines : PS1e_y240lines;
-            this->vmode = (cmd & 8) ? PS1e_pal : PS1e_ntsc;
-            this->display_depth = (cmd & 16) ? PS1e_d15bits : PS1e_d24bits;
-            this->interlaced = (cmd >> 5) & 1;
+            vres = (cmd & 4) ? e_y480lines : e_y240lines;
+            vmode = (cmd & 8) ? e_pal : e_ntsc;
+            display_depth = (cmd & 16) ? e_d15bits : e_d24bits;
+            interlaced = (cmd >> 5) & 1;
             if ((cmd & 0x80) != 0) {
                 printf("\nUnsupported display mode!");
             }
-            dotclock_change(this->bus);
+            bus->dotclock_change();
             break; }
         default:
             printf("\nUnknown GP1 command %08x", cmd);
@@ -1865,11 +1794,12 @@ void PS1_GPU_write_gp1(PS1_GPU *this, u32 cmd)
     }
 }
 
-u32 PS1_GPU_get_gpuread(PS1_GPU *this)
+u32 core::get_gpuread() const
 {
-    return this->io.GPUREAD;
+    return io.GPUREAD;
 }
-u32 PS1_GPU_get_gpustat(PS1_GPU *this)
+u32 core::get_gpustat() const
 {
-    return this->io.GPUSTAT | 0x10000000;
+    return io.GPUSTAT | 0x10000000;
+}
 }

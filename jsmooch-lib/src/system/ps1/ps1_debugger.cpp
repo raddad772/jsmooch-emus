@@ -5,30 +5,27 @@
 #include "ps1_debugger.h"
 #include "ps1_bus.h"
 
-#define JTHIS struct PS1* this = (PS1*)jsm->ptr
-#define JSM struct jsm_system* jsm
+namespace PS1 {
 
-#define THIS struct PS1* this
-
-static void setup_console_view(PS1* this, debugger_interface *dbgr)
+void setup_console_view(core* th, debugger_interface *dbgr)
 {
-    struct debugger_view *dview;
-    this->dbg.console_view = debugger_view_new(dbgr, dview_console);
-    dview = (debugger_view *)cvec_get(this->dbg.console_view.vec, this->dbg.console_view.index);
+    th->dbg.console_view = dbgr->make_view(dview_console);
+    debugger_view *dview = &th->dbg.console_view.get();
 
-    struct console_view *cv = &dview->console;
+    console_view *cv = &dview->console;
 
     snprintf(cv->name, sizeof(cv->name), "System Console");
 
-    this->cpu.dbg.console = cv;
+    th->cpu.dbg.console = cv;
 }
 
-void PS1J_setup_debugger_interface(jsm_system *jsm, debugger_interface *dbgr)
+void core::setup_debugger_interface(debugger_interface &dbgr)
 {
-    JTHIS;
-    this->dbg.interface = dbgr;
+    dbg.interface = &dbgr;
+    dbgr.views.reserve(15);
 
-    dbgr->supported_by_core = 1;
-    dbgr->smallest_step = 1;
-    setup_console_view(this, dbgr);
+    dbgr.supported_by_core = true;
+    dbgr.smallest_step = 1;
+    setup_console_view(this, &dbgr);
+}
 }

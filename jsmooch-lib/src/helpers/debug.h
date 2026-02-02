@@ -250,7 +250,7 @@ void jsm_copy_read_trace(jsm_debug_read_trace *dst, jsm_debug_read_trace *src);
 
 #define TRACE_BRK_POS 55
 
-#define printif(x, ...) if (dbg.trace_on && dbg.traces. x) dbg_printf(__VA_ARGS__)
+//#define printif(x, ...) if (::dbg.trace_on && dbg.traces. x) dbg_printf(__VA_ARGS__)
 
 #if defined(__clang__)
 #pragma clang diagnostic push

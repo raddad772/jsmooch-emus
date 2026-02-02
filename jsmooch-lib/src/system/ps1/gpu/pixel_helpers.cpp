@@ -4,48 +4,50 @@
 
 #include "pixel_helpers.h"
 #include "ps1_gpu.h"
-#include "helpers/multisize_memaccess.c"
+#include "helpers/multisize_memaccess.cpp"
 
-void setpix(PS1_GPU *this, i32 y, i32 x, u32 color, u32 is_tex, u32 tex_mask)
+namespace PS1::GPU {
+
+void core::setpix(i32 y, i32 x, u32 color, u32 is_tex, u32 tex_mask)
 {
     // VRAM is 512 1024-wide 16-bit words. so 2048 bytes per line
-    i32 ry = (y & 511) + this->draw_y_offset;
-    i32 rx = (x & 1023) + this->draw_x_offset;
-    if ((ry < this->draw_area_top) || (ry > this->draw_area_bottom)) return;
-    if ((rx < this->draw_area_left) || (rx > this->draw_area_right)) return;
+    i32 ry = (y & 511) + draw_y_offset;
+    i32 rx = (x & 1023) + draw_x_offset;
+    if ((ry < draw_area_top) || (ry > draw_area_bottom)) return;
+    if ((rx < draw_area_left) || (rx > draw_area_right)) return;
     u32 addr = ((2048*ry)+(rx*2)) & 0xFFFFF;
 
-    if (this->preserve_masked_pixels) {
-        u16 v = cR16(this->VRAM, addr);
+    if (preserve_masked_pixels) {
+        u16 v = cR16(VRAM, addr);
         if (v & 0x8000) return;
     }
     if (is_tex) {
         if (!(tex_mask || (color !=0))) return;
     }
-    u32 mask_bit = is_tex * (tex_mask | this->force_set_mask_bit);
-    cW16(this->VRAM, addr, color | mask_bit);
-    //cW16(this->VRAM, addr, color);
+    u32 mask_bit = is_tex * (tex_mask | force_set_mask_bit);
+    cW16(VRAM, addr, color | mask_bit);
+    //cW16(VRAM, addr, color);
 }
 
-void setpix_split(PS1_GPU *this, i32 y, i32 x, u32 r, u32 g, u32 b, u32 is_tex, u32 tex_mask)
+void core::setpix_split(i32 y, i32 x, u32 r, u32 g, u32 b, u32 is_tex, u32 tex_mask)
 {
     // VRAM is 512 1024-wide 16-bit words. so 2048 bytes per line
-    i32 ry = (y & 511) + this->draw_y_offset;
-    i32 rx = (x & 1023) + this->draw_x_offset;
-    if ((ry < this->draw_area_top) || (ry > this->draw_area_bottom)) return;
-    if ((rx < this->draw_area_left) || (rx > this->draw_area_right)) return;
+    i32 ry = (y & 511) + draw_y_offset;
+    i32 rx = (x & 1023) + draw_x_offset;
+    if ((ry < draw_area_top) || (ry > draw_area_bottom)) return;
+    if ((rx < draw_area_left) || (rx > draw_area_right)) return;
     u32 addr = (2048*ry)+(rx*2);
 
-    if (this->preserve_masked_pixels) {
-        u16 v = cR16(this->VRAM, addr);
+    if (preserve_masked_pixels) {
+        u16 v = cR16(VRAM, addr);
         if (v & 0x8000) return;
     }
     u32 color = r | (g << 5) | (b << 10);
     if (is_tex) {
         if (!(tex_mask || (color !=0))) return;
     }
-    u32 mask_bit = is_tex * (tex_mask | this->force_set_mask_bit);
-    cW16(this->VRAM, addr, color | mask_bit);
+    u32 mask_bit = is_tex * (tex_mask | force_set_mask_bit);
+    cW16(VRAM, addr, color | mask_bit);
 }
 
 static inline u32 BLEND1(u32 b, u32 f)
@@ -156,53 +158,53 @@ static u32 blend_semi15_split(u32 mode, u32 b, u32 f_r, u32 f_g, u32 f_b)
 
 
 
-void semipix(PS1_GPU *this, i32 y, i32 x, u32 color, u32 is_tex, u32 tex_mask)
+void core::semipix(i32 y, i32 x, u32 color, u32 is_tex, u32 tex_mask)
 {
     // VRAM is 512 1024-wide 16-bit words. so 2048 bytes per line
-    i32 ry = (y & 511) + this->draw_y_offset;
-    i32 rx = (x & 1023) + this->draw_x_offset;
-    if ((ry < this->draw_area_top) || (ry > this->draw_area_bottom)) return;
-    if ((rx < this->draw_area_left) || (rx > this->draw_area_right)) return;
+    i32 ry = (y & 511) + draw_y_offset;
+    i32 rx = (x & 1023) + draw_x_offset;
+    if ((ry < draw_area_top) || (ry > draw_area_bottom)) return;
+    if ((rx < draw_area_left) || (rx > draw_area_right)) return;
     u32 addr = ((2048*ry)+(rx*2)) & 0xFFFFF;
 
-    if (this->preserve_masked_pixels) {
-        u16 v = cR16(this->VRAM, addr);
+    if (preserve_masked_pixels) {
+        u16 v = cR16(VRAM, addr);
         if (v & 0x8000) return;
     }
 
     if (tex_mask) {
         // First sample...
-        u32 bg = cR16(this->VRAM, addr);
+        u32 bg = cR16(VRAM, addr);
 
         // Then blend...
-        color = blend_semi15(this->semi_transparency, bg, color);
+        color = blend_semi15(semi_transparency, bg, color);
     }
     else {
         if (color == 0) return;
     }
 
     // Now write...
-    u32 mask_bit = is_tex * (tex_mask | this->force_set_mask_bit);
-    cW16(this->VRAM, addr, color | mask_bit);
+    u32 mask_bit = is_tex * (tex_mask | force_set_mask_bit);
+    cW16(VRAM, addr, color | mask_bit);
 }
 
-void semipixm(PS1_GPU *this, i32 y, i32 x, u32 color, u32 mode, u32 is_tex, u32 tex_mask)
+void core::semipixm(i32 y, i32 x, u32 color, u32 mode, u32 is_tex, u32 tex_mask)
 {
     // VRAM is 512 1024-wide 16-bit words. so 2048 bytes per line
-    i32 ry = (y & 511) + this->draw_y_offset;
-    i32 rx = (x & 1023) + this->draw_x_offset;
-    if ((ry < this->draw_area_top) || (ry > this->draw_area_bottom)) return;
-    if ((rx < this->draw_area_left) || (rx > this->draw_area_right)) return;
+    i32 ry = (y & 511) + draw_y_offset;
+    i32 rx = (x & 1023) + draw_x_offset;
+    if ((ry < draw_area_top) || (ry > draw_area_bottom)) return;
+    if ((rx < draw_area_left) || (rx > draw_area_right)) return;
     u32 addr = ((2048*ry)+(rx*2)) & 0xFFFFF;
 
-    if (this->preserve_masked_pixels) {
-        u16 v = cR16(this->VRAM, addr);
+    if (preserve_masked_pixels) {
+        u16 v = cR16(VRAM, addr);
         if (v & 0x8000) return;
     }
 
     if (tex_mask) {
         // First sample...
-        u32 bg = cR16(this->VRAM, addr);
+        u32 bg = cR16(VRAM, addr);
 
         // Then blend...
         color = blend_semi15(mode, bg, color);
@@ -212,31 +214,31 @@ void semipixm(PS1_GPU *this, i32 y, i32 x, u32 color, u32 mode, u32 is_tex, u32 
     }
 
     // Now write...
-    u32 mask_bit = is_tex * (tex_mask | this->force_set_mask_bit);
-    cW16(this->VRAM, addr, color | mask_bit);
+    u32 mask_bit = is_tex * (tex_mask | force_set_mask_bit);
+    cW16(VRAM, addr, color | mask_bit);
 }
 
-void semipix_split(PS1_GPU *this, i32 y, i32 x, u32 r, u32 g, u32 b, u32 is_tex, u32 tex_mask)
+void core::semipix_split(i32 y, i32 x, u32 r, u32 g, u32 b, u32 is_tex, u32 tex_mask)
 {
     // VRAM is 512 1024-wide 16-bit words. so 2048 bytes per line
-    i32 ry = (y & 511) + this->draw_y_offset;
-    i32 rx = (x & 1023) + this->draw_x_offset;
-    if ((ry < this->draw_area_top) || (ry > this->draw_area_bottom)) return;
-    if ((rx < this->draw_area_left) || (rx > this->draw_area_right)) return;
+    i32 ry = (y & 511) + draw_y_offset;
+    i32 rx = (x & 1023) + draw_x_offset;
+    if ((ry < draw_area_top) || (ry > draw_area_bottom)) return;
+    if ((rx < draw_area_left) || (rx > draw_area_right)) return;
     u32 addr = ((2048*ry)+(rx*2)) & 0xFFFFF;
 
-    if (this->preserve_masked_pixels) {
-        u16 v = cR16(this->VRAM, addr);
+    if (preserve_masked_pixels) {
+        u16 v = cR16(VRAM, addr);
         if (v & 0x8000) return;
     }
 
     u32 color;
     if (tex_mask) {
         // First sample...
-        u32 bg = cR16(this->VRAM, addr);
+        u32 bg = cR16(VRAM, addr);
 
         // Then blend...
-        color = blend_semi15_split(this->semi_transparency, bg, r, g, b);
+        color = blend_semi15_split(semi_transparency, bg, r, g, b);
     }
     else {
         color = r | (g << 5) | (b << 10);
@@ -244,7 +246,8 @@ void semipix_split(PS1_GPU *this, i32 y, i32 x, u32 r, u32 g, u32 b, u32 is_tex,
     }
 
     // Now write...
-    u32 mask_bit = is_tex * (tex_mask | this->force_set_mask_bit);
-    cW16(this->VRAM, addr, color | mask_bit);
+    u32 mask_bit = is_tex * (tex_mask | force_set_mask_bit);
+    cW16(VRAM, addr, color | mask_bit);
 }
 
+}

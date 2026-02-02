@@ -2,33 +2,32 @@
 // Created by . on 2/26/25.
 //
 
-#ifndef JSMOOCH_EMUS_PS1_DIGITAL_PAD_H
-#define JSMOOCH_EMUS_PS1_DIGITAL_PAD_H
+#pragma once
 
 #include "helpers/physical_io.h"
 #include "helpers/scheduler.h"
 
 #include "ps1_sio.h"
 
-struct PS1;
+namespace PS1::SIO {
 
-struct PS1_SIO_digital_gamepad {
+struct digital_gamepad {
     // PIO pointer
-    struct physical_io_device *pio;
+    explicit digital_gamepad(PS1::core *parent);
+    void latch_buttons();
+    void schedule_ack(u64 clock_cycle, u64 time, u32 level);
+    physical_io_device *pio{};
 
-    struct PS1 *bus;
+    core *bus;
 
-    struct PS1_SIO_device interface;
+    device interface{};
 
-    u32 protocol_step;
-    u32 selected;
-    u32 cmd;
-    u8 buttons[2];
-    u64 sch_id;
-    u32 still_sched;
+    u32 protocol_step{};
+    u32 selected{};
+    u32 cmd{};
+    u8 buttons[2]{};
+    u64 sch_id{};
+    u32 still_sched{};
 };
 
-void PS1_SIO_digital_gamepad_init(PS1_SIO_digital_gamepad *, PS1 *bus);
-void PS1_SIO_gamepad_setup_pio(physical_io_device *d, u32 num, const char*name, u32 connected);
-
-#endif //JSMOOCH_EMUS_PS1_DIGITAL_PAD_H
+}

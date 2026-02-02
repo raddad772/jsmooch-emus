@@ -7,21 +7,22 @@
 #include "../ps1_bus.h"
 #include "helpers/debug.h"
 
+namespace PS1::SIO {
 enum cmd_kinds {
     PCMD_read,
     PCMD_unknown
 };
 
-static void latch_buttons(PS1_SIO_digital_gamepad *this)
+void digital_gamepad::latch_buttons()
 {
-    struct physical_io_device* p = this->pio;
+    physical_io_device* p = pio;
     if (p->connected) {
-        struct cvec* bl = &p->controller.digital_buttons;
-        struct HID_digital_button* b;
-        this->buttons[0] = 0;
-        this->buttons[1] = 0;
+        HID_digital_button* b;
+        buttons[0] = 0;
+        buttons[1] = 0;
+        auto& bl = pio->controller.digital_buttons;
         // buttons are 0=pressed
-#define B_GET(button_num, byte_num, bit_num) { b = cvec_get(bl, button_num); this->buttons[byte_num] |= (b->state << bit_num); }
+#define B_GET(button_num, byte_num, bit_num) { b = &bl.at(button_num); buttons[byte_num] |= (b->state << bit_num); }
         B_GET(0, 0, 0); // select
         B_GET(1, 0, 3); // start
         B_GET(2, 0, 4); // up
@@ -38,33 +39,33 @@ static void latch_buttons(PS1_SIO_digital_gamepad *this)
         B_GET(13, 1, 7); // square
 #undef B_GET
 
-        this->buttons[0] ^= 0xFF;
-        this->buttons[1] ^= 0xFF;
+        buttons[0] ^= 0xFF;
+        buttons[1] ^= 0xFF;
     }
     else {
-        this->buttons[0] = 0xFF;
-        this->buttons[1] = 0xFF;
+        buttons[0] = 0xFF;
+        buttons[1] = 0xFF;
     }
 }
 
 static void set_CS(void *ptr, u32 level, u64 clock_cycle) {
-    struct PS1_SIO_digital_gamepad *this = (PS1_SIO_digital_gamepad *)ptr;
-    u32 old_CS = this->interface.CS;
-    this->interface.CS = level;
-    if (old_CS != this->interface.CS) {
-        this->selected = 0;
-        this->protocol_step = 0;
-        if (this->interface.CS) {
+    auto *th = static_cast<digital_gamepad *>(ptr);
+    u32 old_CS = th->interface.CS;
+    th->interface.CS = level;
+    if (old_CS != th->interface.CS) {
+        th->selected = 0;
+        th->protocol_step = 0;
+        if (th->interface.CS) {
             printif(ps1.pad, "\npad: CS 0->1");
-            latch_buttons(this);
+            th->latch_buttons();
         }
         else {
             printif(ps1.pad, "\npad: CS 1->0");
-            if (this->interface.ACK) {
-                //if (this->still_sched && this->sch_id)
-                //    scheduler_delete_if_exist(&this->bus->scheduler, this->sch_id);
-                enum PS1_SIO0_port p = this->pio->id == 1 ? PS1S0_controller1 : PS1S0_controller2;
-                PS1_SIO0_update_ACKs(this->bus, p, 0);
+            if (th->interface.ACK) {
+                //if (still_sched && sch_id)
+                //    scheduler_delete_if_exist(&bus->scheduler, sch_id);
+                SIO0_device p = th->pio->id == 1 ? SIO0_controller1 : SIO0_controller2;
+                th->bus->sio0.update_ACKs(p, 0);
             }
         }
     }
@@ -72,89 +73,89 @@ static void set_CS(void *ptr, u32 level, u64 clock_cycle) {
 
 static void scheduler_call(void *ptr, u64 key, u64 current_clock, u32 jitter);
 
-static void schedule_ack(PS1_SIO_digital_gamepad *this, u64 clock_cycle, u64 time, u32 level)
+void digital_gamepad::schedule_ack(u64 clock_cycle, u64 time, u32 level)
 {
     //printf("\ncycle:%lld Schedule ack: %d", clock_cycle, level);
     if (level == 1) {
-        enum PS1_SIO0_port p = this->pio->id == 1 ? PS1S0_controller1 : PS1S0_controller2;
-        PS1_SIO0_update_ACKs(this->bus, p, 1);
+        auto p = pio->id == 1 ? SIO0_controller1 : SIO0_controller2;
+        bus->sio0.update_ACKs(p, 1);
         level = 0;
     }
 
-    this->sch_id = scheduler_add_or_run_abs(&this->bus->scheduler, clock_cycle + time, level, this, &scheduler_call, &this->still_sched);
+    sch_id = bus->scheduler.add_or_run_abs(clock_cycle + time, level, this, &scheduler_call, &still_sched);
 }
 
 static void scheduler_call(void *ptr, u64 key, u64 current_clock, u32 jitter)
 {
-    struct PS1_SIO_digital_gamepad *this = (PS1_SIO_digital_gamepad *)ptr;
-    enum PS1_SIO0_port p = this->pio->id == 1 ? PS1S0_controller1 : PS1S0_controller2;
+    digital_gamepad *th = static_cast<digital_gamepad *>(ptr);
+    auto p = th->pio->id == 1 ? SIO0_controller1 : SIO0_controller2;
     //printf("\ncyc:%lld Callback execute ack: %lld", current_clock, key);
-    PS1_SIO0_update_ACKs(this->bus, p, key);
+    th->bus->sio0.update_ACKs(p, key);
 
     if (key) { // Also schedule to de-assert
-        schedule_ack(this, current_clock-jitter, 75, 0);
+        th->schedule_ack(current_clock-jitter, 75, 0);
     }
-    else this->sch_id = 0;
+    else th->sch_id = 0;
 }
 
 static u8 exchange_byte(void *ptr, u8 byte, u64 clock_cycle) {
-    struct PS1_SIO_digital_gamepad *this = (PS1_SIO_digital_gamepad *)ptr;
-    if (!this->interface.CS) return 0xFF;
+    digital_gamepad *th = static_cast<digital_gamepad *>(ptr);
+    if (!th->interface.CS) return 0xFF;
 
-    if (this->protocol_step == 0) {
+    if (th->protocol_step == 0) {
         if (byte == 0x01) {
-            this->selected = 1;
-            this->protocol_step++;
+            th->selected = 1;
+            th->protocol_step++;
 
             //printf("\nSELECT PAD, DO ACK.");
-            schedule_ack(this, clock_cycle, 100, 1);
+            th->schedule_ack(clock_cycle, 100, 1);
             return 0xFF;
         }
     }
 
     u8 r = 0xFF;
 
-    if (this->selected) {
+    if (th->selected) {
         u32 do_ack = 0;
-        if (this->protocol_step == 1) { // send ID lo, recv Read Command (42h)
+        if (th->protocol_step == 1) { // send ID lo, recv Read Command (42h)
             r = 0x41;
-            this->cmd = (byte == 0x42) ? PCMD_read : PCMD_unknown;
-            if (this->cmd == PCMD_unknown) printf("\nUnknown command %02x to controller %d", byte, this->pio->id);
+            th->cmd = (byte == 0x42) ? PCMD_read : PCMD_unknown;
+            if (th->cmd == PCMD_unknown) printf("\nUnknown command %02x to controller %d", byte, th->pio->id);
             do_ack = 1;
         }
-        else switch (this->protocol_step) {
+        else switch (th->protocol_step) {
                 case 2: // send ID hi, recv TAP (5ah?)
                     r = 0x5A;
                     do_ack = 1;
                     break;
                 case 3: // send bit0...7 of digital switches
-                    if (this->cmd == PCMD_read) r = this->buttons[0];
+                    if (th->cmd == PCMD_read) r = th->buttons[0];
                     do_ack = 1;
                     break;
                 case 4: // send bit8...15 of digital switches
-                    if (this->cmd == PCMD_read) r = this->buttons[1];
+                    if (th->cmd == PCMD_read) r = th->buttons[1];
                     break;
+                default:
             }
-        if (do_ack) schedule_ack(this, clock_cycle, 100, 1);
+        if (do_ack) th->schedule_ack(clock_cycle, 100, 1);
     }
 
-    this->protocol_step++;
+    th->protocol_step++;
     return r;
 }
 
-void PS1_SIO_digital_gamepad_init(PS1_SIO_digital_gamepad *this, PS1 *bus)
+digital_gamepad::digital_gamepad(PS1::core *parent) : bus(parent)
 {
     memset(this, 0, sizeof(*this));
-    this->interface.device_ptr = this;
-    this->interface.kind = PS1DK_digital_pad;
-    this->interface.exchange_byte = &exchange_byte;
-    this->interface.set_CS = &set_CS;
-    this->bus = bus;
+    interface.device_ptr = this;
+    interface.kind = DK_digital_pad;
+    interface.exchange_byte = &exchange_byte;
+    interface.set_CS = &set_CS;
 }
 
-void PS1_SIO_gamepad_setup_pio(physical_io_device *d, u32 num, const char*name, u32 connected)
+void SIO0::gamepad_setup_pio(physical_io_device *d, u32 num, const char*name, u32 connected)
 {
-    physical_io_device_init(d, HID_CONTROLLER, 0, 0, 1, 1);
+    d->init(HID_CONTROLLER, connected, connected, true, false);
 
     snprintf(d->controller.name, sizeof(d->controller.name), "%s", name);
     d->id = num;
@@ -162,7 +163,7 @@ void PS1_SIO_gamepad_setup_pio(physical_io_device *d, u32 num, const char*name, 
     d->connected = connected;
     d->enabled = connected;
 
-    struct JSM_CONTROLLER* cnt = &d->controller;
+    JSM_CONTROLLER* cnt = &d->controller;
 
     // up down left right a b start select. in that order
     pio_new_button(cnt, "select", DBCID_co_select);
@@ -179,4 +180,5 @@ void PS1_SIO_gamepad_setup_pio(physical_io_device *d, u32 num, const char*name, 
     pio_new_button(cnt, "circle", DBCID_co_fire5); // right
     pio_new_button(cnt, "cross", DBCID_co_fire2); // lower
     pio_new_button(cnt, "square", DBCID_co_fire1); // left
+}
 }
