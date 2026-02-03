@@ -50,8 +50,8 @@ namespace PS1::GPU {
 
 void TEXTURE_SAMPLER::mk_new(u32 page_x_in, u32 page_y_in, u32 clut_addr_in, core *bus)
 {
-    page_x = (page_x & 0x0F) << 6; // * 64
-    page_y = (page_y & 1) * 256;
+    page_x = (page_x_in & 0x0F) << 6; // * 64
+    page_y = (page_y_in & 1) * 256;
     base_addr = (page_y * 2048) + (page_x * 2);
     clut_addr = clut_addr_in;
     VRAM = bus->VRAM;
