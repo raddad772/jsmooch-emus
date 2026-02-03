@@ -18,7 +18,7 @@
 #include <SDL3/SDL.h>
 
 #include "helpers/cvec.h"
-#define FRAME_MULTI 100
+#define FRAME_MULTI 10
 
 
 #ifdef JSM_OPENGL
@@ -1159,7 +1159,7 @@ int imgui_jsmooch_app::do_setup_before_mainloop()
     //which = jsm::systems::GBC;
     //which = jsm::systems::APPLEIIe;
     //which = jsm::systems::DMG;
-    //which = jsm::systems::PS1;
+    which = jsm::systems::PS1;
     //which = jsm::systems::SMS2;
     //which = jsm::systems::GG;
     //which = jsm::systems::ZX_SPECTRUM_48K;
@@ -1172,7 +1172,7 @@ int imgui_jsmooch_app::do_setup_before_mainloop()
     //which = jsm::systems::SNES;
     //which = jsm::systems::COSMAC_VIP_2k;
     //which = jsm::systems::COSMAC_VIP_4k;
-    which = jsm::systems::GENESIS_USA;
+    //which = jsm::systems::GENESIS_USA;
     //which = jsm::systems::MEGADRIVE_PAL;
     //which = jsm::systems::NDS;
     //which = jsm::systems::TURBOGRAFX16;

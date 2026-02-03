@@ -421,6 +421,7 @@ void core::describe_io()
     physical_io_device *controller = &IOs.emplace_back();
     sio0.gamepad_setup_pio(controller, 1, "Controller 1", 1);
     io.controller1.pio = controller;
+    io.controller1.bus = this;
     sio0.io.controller1 = &io.controller1.interface;
 
 

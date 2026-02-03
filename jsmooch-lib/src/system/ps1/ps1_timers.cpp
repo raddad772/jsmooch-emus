@@ -116,8 +116,8 @@ u32 TIMER::read_clk(u64 clk) const
 {
     u32 r = start.value;
     if (running) r += clk - start.cycle;
-    assert(r<0x10000);
-    return r;
+    //assert(r<0x10000);
+    return r & 0xFFFF;
 }
 
 u64 TIMER::get_clock_source()
