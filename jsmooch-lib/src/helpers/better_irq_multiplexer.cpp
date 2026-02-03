@@ -8,10 +8,6 @@
 #include "better_irq_multiplexer.h"
 #include "helpers/debug.h"
 
-IRQ_multiplexer_b::IRQ_multiplexer_b() {
-
-}
-
 void IRQ_multiplexer_b::set_level(u32 num, u32 new_level)
 {
     IRQ_multiplexer_b_irq *irq = &irqs[num];

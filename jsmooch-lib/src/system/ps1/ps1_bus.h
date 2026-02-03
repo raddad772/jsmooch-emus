@@ -130,8 +130,8 @@ public:
     void enable_tracing();
     void disable_tracing();
     void describe_io() final;
-    void save_state(serialized_state &state) final;
-    void load_state(serialized_state &state, deserialize_ret &ret) final;
+    //void save_state(serialized_state &state) final;
+    //void load_state(serialized_state &state, deserialize_ret &ret) final;
     void set_audiobuf(audiobuf *ab) final;
     void setup_debugger_interface(debugger_interface &intf) final;
     void sideload(multi_file_set& mfs) final;

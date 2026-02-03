@@ -29,7 +29,7 @@ jsm_system *PS1_new()
     return new PS1::core();
 }
 
-void genesis_delete(jsm_system *sys) {
+void PS1_delete(jsm_system *sys) {
     delete sys;
 }
 
@@ -460,4 +460,7 @@ void core::describe_io()
 
     gpu.display = &gpu.display_ptr.get().display;
 }
+
+void core::stop() {}
+void core::pause() {}
 }

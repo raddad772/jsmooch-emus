@@ -11,7 +11,7 @@
 #include "system/sms_gg/sms_gg.h"
 #include "system/commodore64/commodore64.h"
 //#include "system/dreamcast/dreamcast.h"
-//#include "system/ps1/ps1.h"
+#include "system/ps1/ps1.h"
 //#include "system/atari2600/atari2600.h"
 #include "system/zxspectrum/zxspectrum.h"
 #include "system/genesis/genesis.h"
@@ -73,9 +73,9 @@ jsm_system* new_system(jsm::systems which)
         case jsm::systems::NES:
             out = NES_new();
             break;
-        /*case jsm::systems::PS1:
-            PS1_new(out);
-            break;*/
+        case jsm::systems::PS1:
+            out = PS1_new();
+            break;
         case jsm::systems::SG1000:
         case jsm::systems::SMS1:
         case jsm::systems::SMS2:

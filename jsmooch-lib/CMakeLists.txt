@@ -292,6 +292,8 @@ set(SOURCE_LIST
         src/system/ps1/ps1_dma.h
         src/system/ps1/ps1_spu.cpp
         src/system/ps1/ps1_spu.h
+        src/system/ps1/ps1_clock.cpp
+        src/system/ps1/ps1_clock.h
         src/system/ps1/ps1_timers.cpp
         src/system/ps1/ps1_timers.h
         src/system/ps1/cdrom/ps1_cdrom.cpp
@@ -495,6 +497,8 @@ set(SOURCE_LIST
         src/system/mac/mac_source_list.h
         src/helpers/debugger/source_list.cpp
         src/helpers/debugger/source_list.h
+        src/helpers/better_irq_multiplexer.cpp
+        src/helpers/better_irq_multiplexer.h
         src/system/nds/nds_serialize.cpp
         src/system/zxspectrum/zxspectrum_bus.cpp
         src/system/zxspectrum/zxspectrum_bus.h

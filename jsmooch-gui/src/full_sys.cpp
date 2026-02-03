@@ -1015,7 +1015,7 @@ void full_system::load_default_ROM()
         case jsm::systems::GENESIS_JAP:
         case jsm::systems::MEGADRIVE_PAL:
             //dbg_enable_trace();
-            //worked = grab_ROM(&ROMs, which, "sonic2.md", nullptr); // works!
+            worked = grab_ROM(&ROMs, which, "sonic2.md", nullptr); // works!
             //worked = grab_ROM(&ROMs, which, "sonic3.md", nullptr); // works!
             //worked = grab_ROM(&ROMs, which, "sor3.md", nullptr);
             //worked = grab_ROM(&ROMs, which, "xmen.md", nullptr); // works!
