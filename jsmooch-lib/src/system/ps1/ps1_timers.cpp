@@ -391,6 +391,8 @@ void TIMER::write(u32 val, u8 sz)
 {
     //printf("\nWR COUNT%d:%04x", num, val);
     start.value = val & 0xFFFF;
+    if (on_system_clock) start.cycle = bus->clock_current() + ADDBUS;
+    else start.cycle = get_clock_source();
     reschedule();
 }
 

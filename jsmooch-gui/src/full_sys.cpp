@@ -836,7 +836,10 @@ void full_system::load_default_ROM()
             //worked = grab_ROM(&ROMs, which, "redux_cpu.exe", nullptr);
             //worked = grab_ROM(&ROMs, which, "pad.exe", nullptr);
 #define CTEST(x) worked = grab_ROM(&ROMs, which, "PSX/TIMER/" x "/" x ".exe", nullptr)
-            CTEST("TimerCalib");
+            //CTEST("TimerCalib");
+            //CTEST("TimerHBlank");
+            CTEST("TimerSet");
+            //CTEST("TimerWrap");
 #undef CTEST
 #define CTEST(x) worked = grab_ROM(&ROMs, which, "PSX/BUS/" x "/" x ".exe", nullptr)
             //CTEST("Load816Unalign");
