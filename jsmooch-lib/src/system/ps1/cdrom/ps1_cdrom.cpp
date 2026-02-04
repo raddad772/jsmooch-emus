@@ -4,6 +4,8 @@
 
 #include "ps1_cdrom.h"
 
+#include <stdnoreturn.h>
+
 namespace PS1 {
 
 static u32 constexpr masksz[5] = {0, 0xFF, 0xFFFF, 0, 0xFFFFFFFF };
@@ -107,34 +109,163 @@ void CDROM::result(u32 val) {
     io.RESULT.push(val);
 }
 
-void CDROM::cmd03() {
-    queue_interrupt(3);
-    result(io.stat.u);
-    io.stat.shell_open = 0;
+void CDROM::cmd_start(u64 key, u64 clock) {
+    u32 cmd = io.CMD;
+    if ((cmd >= 0x20) && (cmd <= 0x4F)) cmd = 0;
+    if (cmd >= 0x60) cmd = 0;
+    switch(cmd) {
+        case 0x00:
+        case 0x17:
+        case 0x18:
+            queue_interrupt(5);
+            result(0x11);
+            result(0x40);
+            finish_CMD();
+            return;
+        case 0x58:
+        case 0x59:
+        case 0x5A:
+        case 0x5B:
+        case 0x5C:
+        case 0x5D:
+        case 0x5E:
+        case 0x5F:
+            finish_CMD();
+            return;
+        case 0x01: // NOP
+            queue_interrupt(3);
+            result(io.stat.u);
+            io.stat.shell_open = 0;
+            finish_CMD();
+            return;
+        case 0x02: // SetLoc
+            queue_interrupt(3);
+            result(io.stat.u);
+            cmd_setloc();
+            return;
+        case 0x03: // Play
+            queue_interrupt(3);
+            result(io.stat.u);
+            cmd_play();
+            return;
+        case 0x04: // Forward
+            queue_interrupt(3);
+            result(io.stat.u);
+            cmd_forward();
+            return;
+        case 0x05: // Backward
+            queue_interrupt(3);
+            result(io.stat.u);
+            cmd_backward();
+            return;
+        case 0x06:
+            queue_interrupt(3);
+            result(io.stat.u);
+            cmd_readn();
+            return;
+        case 0x07:
+            queue_interrupt(3);
+            result(io.stat.u);
+            cmd_standby();
+            return;
+        case 0x08:
+            queue_interrupt(3);
+            result(io.stat.u);
+            cmd_stop();
+            return;
+        case 0x09:
+            queue_interrupt(3);
+            result(io.stat.u);
+            cmd_pause();
+            return;
+        case 0x0a:
+            queue_interrupt(3);
+            result(io.stat.u);
+            cmd_init();
+            return;
+
+
+    }
+    printf("\n\nUnhandled CDROM CMD %d\n", io.CMD);
 }
 
+void CDROM::cmd_setloc() {
+    printf("\n(CDROM) CMD SetLoc. NOT IMPL!");
+}
 
-void CDROM::cmd00() {
-    queue_interrupt(5);
-    result(0x11);
-    result(0x40);
-    finish_CMD();
+void CDROM::cmd_play() {
+    printf("\n(CDROM) CMD Play. NOT IMPL!");
+}
+
+void CDROM::cmd_forward() {
+    printf("\n(CDROM) CMD Forward. NOT IMPL!");
+}
+
+void CDROM::cmd_backward() {
+    printf("\n(CDROM) CMD Backward. NOT IMPL!");
+}
+
+void CDROM::cmd_readn() {
+    printf("\n(CDROM) CMD . NOT IMPL!");
+}
+
+void CDROM::cmd_standby() {
+    printf("\n(CDROM) CMD ReadN. NOT IMPL!");
+}
+
+void CDROM::cmd_stop() {
+    printf("\n(CDROM) CMD Stop. NOT IMPL!");
+}
+
+void CDROM::cmd_pause() {
+    printf("\n(CDROM) CMD Pause. NOT IMPL!");
+}
+
+void CDROM::cmd_init() {
+    printf("\n(CDROM) CMD Init. NOT IMPL!");
+}
+
+void CDROM::cmd_() {
+    printf("\n(CDROM) CMD . NOT IMPL!");
+}
+
+void CDROM::cmd_() {
+    printf("\n(CDROM) CMD . NOT IMPL!");
+}
+
+void CDROM::cmd_() {
+    printf("\n(CDROM) CMD . NOT IMPL!");
+}
+
+void CDROM::cmd_() {
+    printf("\n(CDROM) CMD . NOT IMPL!");
+}
+
+void CDROM::cmd_() {
+    printf("\n(CDROM) CMD . NOT IMPL!");
+}
+
+static void scheduled_cmd_start(void *ptr, u64 key, u64 timecode, u32 jitter) {
+    auto *th = static_cast<CDROM *>(ptr);
+    th->cmd_start(key, timecode + jitter);
 }
 
 void CDROM::schedule_CMD() {
-/*#define STD 50401
-#define SC(x,y) CMD.sch_id = scheduler->only_add_abs(scheduler->current_time() + y, 0, this, &CDROM::scheduled_cmd, &CMD.still_sched)
+
+#define SC(y) CMD.sched_id = scheduler->only_add_abs(scheduler->current_time() + y, 0, this, &scheduled_cmd_start, &CMD.still_sched)
     // TODO: this
     switch (io.CMD) {
-        case 0x00: // unused
-            SC(cmd00, STD);
+        case 0x0A: // Init
+        case 0x1E: // ReadTOC
+            SC(81102);
             return;
-        case 0x03:
-            SC(cmd03, STD);
+        default:
+            if (io.stat.motor_fullspeed) SC(50401);
+            else SC(23796);
             return;
     }
     NOGOHERE;
-#undef STD*/
+#undef STD
 }
 
 void CDROM::queue_interrupt(u32 level) {
@@ -174,6 +305,12 @@ void CDROM::write_01(u32 val, u8 sz) {
             return;
     }
 }
+
+
+void CDROM::insert_disc(multi_file_set &mfs) {
+    printf("\nInserting PSX CDROM! DO THIS!!!");
+}
+
 void CDROM::update_IRQs() {
     u32 lvl = io.HINTMSK.u & io.HINTSTS.u & 0b11111;
     set_irq_lvl(set_irq_ptr, lvl);
@@ -197,7 +334,6 @@ void CDROM::write_02(u32 val, u8 sz) {
         case 3: // ATV3 R->L
             io.R_L = val & 0xFF;
             return;
-
     }
 }
 

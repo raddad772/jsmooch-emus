@@ -400,6 +400,41 @@ static void setup_crt(JSM_DISPLAY *d)
     d->pixelometry.overscan.left = d->pixelometry.overscan.right = 0;
     d->pixelometry.overscan.top = d->pixelometry.overscan.bottom = 0;
 }
+/*
+    void (*insert_disc)(jsm_system *ptr, physical_io_device &pio, multi_file_set& mfs){};
+    void (*remove_disc)(jsm_system *ptr){};
+    void (*close_drive)(jsm_system *ptr){};
+    void (*open_drive)(jsm_system *ptr){};
+*/
+
+void IO_insert_disc(jsm_system *ptr, physical_io_device &pio, multi_file_set& mfs) {
+    printf("\nJSM INSERT DISC");
+    auto *th = static_cast<core *>(ptr);
+    th->cdrom.insert_disc(mfs);
+}
+
+void IO_remove_disc(jsm_system *ptr) {
+    printf("\nJSM REMOVE DISC");
+}
+
+void IO_close_drive(jsm_system *ptr) {
+    printf("\nJSM CLOSE DRIVE");
+}
+
+void IO_open_drive(jsm_system *ptr) {
+    printf("\nJSM OPEN DRIVE");
+}
+
+void core::setup_cdrom() {
+    physical_io_device *pio = &IOs.emplace_back();
+    pio->init(HID_DISC_DRIVE, true, true, true, false);
+    cdrom.pio_ptr.make(IOs, IOs.size()-1);
+    cdrom.dd = &pio->disc_drive;
+    cdrom.dd->open_drive = &IO_open_drive;
+    cdrom.dd->remove_disc = &IO_remove_disc;
+    cdrom.dd->insert_disc = &IO_insert_disc;
+    cdrom.dd->close_drive = &IO_close_drive;
+}
 
 void core::setup_audio()
 {
@@ -458,6 +493,7 @@ void core::describe_io()
     gpu.cur_output = static_cast<u16 *>(d->display.output[0]);
 
     setup_audio();
+    setup_cdrom();
 
     gpu.display = &gpu.display_ptr.get().display;
 }

@@ -80,6 +80,7 @@ struct core : jsm_system {
     void skip_BIOS();
     void sideload_EXE(buf *w);
     void setup_audio();
+    void setup_cdrom();
     void sample_audio(u32 num_cycles);
     [[nodiscard]] u64 clock_current() const;
 

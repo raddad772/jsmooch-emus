@@ -55,15 +55,20 @@ static void update_SR(void *ptr, R3000::core *cpucore, u32 val)
     //printf("\nNew SR: %04x", core->regs.COP0[12] & 0xFFFF);
 }
 
+static void set_cdrom_irq_level(void *ptr, u32 lvl) {
+    auto *th = static_cast<PS1::core *>(ptr);
+    th->set_irq(IRQ_CDROM, lvl);
+}
+
 core::core() :
     IRQ_multiplexer(15),
     clock(true),
     scheduler(&clock.master_cycle_count),
     cpu(&clock.master_cycle_count, &clock.waitstates, &scheduler, &IRQ_multiplexer),
     sio0(this),
+    cdrom(&this->scheduler),
     gpu(this),
     dma(this),
-    cdrom(&this->scheduler),
     io{ false, SIO::digital_gamepad(this) }
     {
     for (u32 i = 0; i < 3; i++) {
@@ -109,6 +114,9 @@ core::core() :
 
     jsm.described_inputs = false;
     jsm.cycles_left = 0;
+
+    cdrom.set_irq_lvl = &set_cdrom_irq_level;
+    cdrom.set_irq_ptr = this;
 }
 
 static constexpr u32 alignmask[5] = { 0, 0xFFFFFFFF, 0xFFFFFFFE, 0, 0xFFFFFFFC };

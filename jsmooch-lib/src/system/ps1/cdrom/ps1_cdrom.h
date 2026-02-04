@@ -110,9 +110,15 @@ struct CDROM {
     void write(u32 addr, u32 val, u8 sz);
     u32 read(u32 addr, u8 sz, bool has_effect);
     void update_IRQs();
+    void insert_disc(multi_file_set &mfs);
+
+    void cmd_start(u64 key, u64 clock);
 
     void *set_irq_ptr{};
     void (*set_irq_lvl)(void*, u32){};
+
+    cvec_ptr<physical_io_device> pio_ptr{};
+    JSM_DISC_DRIVE *dd{};
 
     CDROM_IO io{};
 
@@ -144,8 +150,15 @@ private:
     void queue_interrupt(u32 lvl);
     void result(u32 val);
 
-    void cmd00();
-    void cmd03();
+    void cmd_setloc();
+    void cmd_play();
+    void cmd_forward();
+    void cmd_backward();
+    void cmd_readn();
+    void cmd_standby();
+    void cmd_stop();
+    void cmd_pause();
+    void cmd_init();
 
 };
 }

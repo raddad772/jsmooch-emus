@@ -328,6 +328,22 @@ void mfs_add_IP_BIN(multi_file_set* mfs)
     printf("\nLOADED IP.BIN SIZE %04lx", mfs->files[1].buf.size);
 }
 
+u32 grab_cue(multi_file_set* ROMs, jsm::systems which, const char* fname, const char* sec_path) {
+    char BASE_PATH[255];
+    //char ROM_PATH[255];
+    u32 worked = 0;
+
+    GET_HOME_BASE_SYS(BASE_PATH, sizeof(BASE_PATH), which, sec_path, &worked);
+    if (!worked) {
+        printf("\nEARLY QUIT!");
+        return 0;
+    }
+    // TODO: this
+    printf("\nREMEMBER TO IMPLEMENT BASIC CUE LOADER!");
+    return 1;
+
+}
+
 u32 grab_ROM(multi_file_set* ROMs, jsm::systems which, const char* fname, const char* sec_path)
 {
     char BASE_PATH[255];
@@ -895,6 +911,8 @@ void full_system::load_default_ROM()
             //worked = grab_ROM(&ROMs, which, "PSX/GPU/16BPP/MemoryTransfer/MemoryTransfer16BPP.exe", nullptr);
             //worked = grab_ROM(&ROMs, which, "PSX/HelloWorld/16BPP/HelloWorld16BPP.exe", nullptr);
             //worked = grab_ROM(&ROMs, which, "PSX/GTE/GTETransfer/GTETransfer.exe", nullptr);
+
+            worked = grab_cue(&ROMs, which, "mk2.iso", nullptr);
             break;
         case jsm::systems::GBA:
             //worked = grab_ROM(&ROMs, which, "panda.gba", nullptr);
@@ -1163,6 +1181,11 @@ void full_system::load_default_ROM()
 
     switch (which) {
         case jsm::systems::PS1:
+            if (ends_with(ROMs.files[0].name, ".exe"))
+                sys->sideload(ROMs);
+            else
+                load_ROM_into_emu(sys, IOs, ROMs);
+            break;
         case jsm::systems::COSMAC_VIP_2k:
         case jsm::systems::COSMAC_VIP_4k:
         case jsm::systems::COMMODORE64:
