@@ -198,9 +198,6 @@ u32 core::mainbus_read(u32 addr, u8 sz, bool has_effect)
 
 void core::mainbus_write(u32 addr, u8 sz, u32 val)
 {
-    if (addr == 0x1F801104) {
-        printf("\nWRITE addr:%08x sz:%d val:%04x", addr, sz, val);
-    }
     clock.waitstates += DEFAULT_WAITSTATES;
     if (mem.cache_isolated) return;
     addr = deKSEG(addr) & alignmask[sz];
