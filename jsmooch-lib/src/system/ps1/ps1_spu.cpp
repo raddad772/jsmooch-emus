@@ -11,8 +11,8 @@ void SPU::write(u32 addr, u32 sz, u32 wval)
     addr -= 0x1F801C00;
     addr <<= 1;
     assert(addr < 0x400);
-    val[addr] = wval & 0xFFFF;
-    if (sz == 4) val[addr+1] = wval >> 16;
+    RAM[addr] = wval & 0xFFFF;
+    if (sz == 4) RAM[addr+1] = wval >> 16;
 }
 
 u32 SPU::read(u32 addr, u32 sz, bool has_effect)
@@ -20,8 +20,8 @@ u32 SPU::read(u32 addr, u32 sz, bool has_effect)
     addr -= 0x1F801C00;
     addr <<= 1;
     assert(addr < 0x400);
-    u32 r = val[addr];
-    if (sz == 4) r |= (val[addr+1] << 16);
+    u32 r = RAM[addr];
+    if (sz == 4) r |= (RAM[addr+1] << 16);
     return r;
 }
 }

@@ -837,8 +837,8 @@ void full_system::load_default_ROM()
             //worked = grab_ROM(&ROMs, which, "pad.exe", nullptr);
 #define CTEST(x) worked = grab_ROM(&ROMs, which, "PSX/BUS/" x "/" x ".exe", nullptr)
             //CTEST("Load816Unalign");
-            CTEST("LoadStoreReg");
-            //CTEST("LoadStoreRegUnalign8Bit");
+            //CTEST("LoadStoreReg");
+            CTEST("LoadStoreRegUnalign8Bit");
             //CTEST("LoadStoreRegUnalign16Bit");
 #undef CTEST
 #define CTEST(x) worked = grab_ROM(&ROMs, which, "PSX/CPUTest/CPU/" x "/CPU" x ".exe", nullptr)

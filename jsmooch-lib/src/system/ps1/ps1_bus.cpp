@@ -149,6 +149,9 @@ u32 core::mainbus_read(u32 addr, u32 sz, bool has_effect)
     if ((addr >= 0x1F801040) && (addr < 0x1F801050)) {
         return sio0.read(addr, sz);
     }
+    if ((addr >= 0x1F801050) && (addr < 0x1F801060)) {
+        return sio1.read(addr, sz);
+    }
 
     if ((addr >= 0x1F801C00) && (addr < 0x1F801E00)) {
         return spu.read(addr, sz, has_effect);
@@ -222,6 +225,10 @@ void core::mainbus_write(u32 addr, u32 sz, u32 val)
 
     if ((addr >= 0x1F801040) && (addr < 0x1F801050)) {
         sio0.write(addr, sz, val);
+        return;
+    }
+    if ((addr >= 0x1F801050) && (addr < 0x1F801060)) {
+        sio1.write(addr, sz, val);
         return;
     }
     if ((addr >= 0x1F801800) && (addr < 0x1F801804)) {

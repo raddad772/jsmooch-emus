@@ -567,7 +567,7 @@ void core::write_reg(u32 addr, u32 sz, u32 val)
             //printf("\nnew I_STAT: %04llx", io.I_STAT->IF);
             return;
         case 0x1F801074: // I_MASK write
-            io.I_MASK = val;
+            io.I_MASK = val & 0xFFFF07FF;
             //printf("\nwrite I_MASK %04x", val);
             update_I_STAT();
             return;

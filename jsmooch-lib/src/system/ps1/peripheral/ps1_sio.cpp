@@ -102,7 +102,7 @@ void SIO0::send_DTR(u32 port, u32 level)
     if (p.controller) p.controller->set_CS(p.controller->device_ptr, level, bus->clock_current());
 }
 
-void SIO0::write_ctrl(u32 sz, u32 val)
+void SIO0::write_ctrl(u8 sz, u32 val)
 {
     printif(ps1.sio0.rw, "\nport: SIO0 WRITE CTRL %04x", val);
     u32 old_rx_enable = io.SIO_CTRL.rx_enable;
@@ -153,12 +153,12 @@ void SIO0::write_ctrl(u32 sz, u32 val)
     update_IRQs();
 }
 
-void SIO0::write_mode(u32 sz, u32 val)
+void SIO0::write_mode(u8 sz, u32 val)
 {
-    io.SIO_MODE.u = val & 0xFFFF;
+    io.SIO_MODE.u = val & 0x13F;
 }
 
-void SIO0::write_stat(u32 sz, u32 val)
+void SIO0::write_stat(u8 sz, u32 val)
 {
     // read-only! :-D
 }
@@ -242,9 +242,10 @@ void scheduled_exchange_byte(void *ptr, u64 key, u64 clock, u32 jitter)
     th->io.SIO_STAT.rx_fifo_not_empty = th->io.RX_FIFO.num != 0;
 }
 
-void SIO0::write_tx_data(u32 sz, u32 val)
+void SIO0::write_tx_data(u8 sz, u32 val)
 {
     if (!io.SIO_CTRL.tx_enable) return;
+    printf("\nWRITE TX SZ:%d VAL:%02x", sz, val);
     // schedule exchange_byte() for 1023 cycles out!
     io.SIO_STAT.tx_fifo_not_full = 1;
     io.SIO_STAT.tx_idle = 0;
@@ -256,7 +257,9 @@ void SIO0::write_tx_data(u32 sz, u32 val)
     sch_id = bus->scheduler.add_or_run_abs(bus->clock_current() + (io.baud * 8), val & 0xFF, this, &scheduled_exchange_byte, &still_sched);
 }
 
-void SIO0::write(u32 addr, u32 sz, u32 val)
+static constexpr u32 masksz[5] = {0, 0xFF, 0xFFFF, 0, 0xFFFFFFFF};
+
+void SIO0::write(u32 addr, u8 sz, u32 val)
 {
 #define R_RX_DATA 0x1F801040
 #define R_TX_DATA R_RX_DATA
@@ -265,13 +268,13 @@ void SIO0::write(u32 addr, u32 sz, u32 val)
 #define R_SIO_CTRL 0x1F80104A
 #define R_SIO_MISC 0x1F80104C
 #define R_SIO_BAUD 0x1F80104E
+    printf("\nSIO0 ADDR:%04x SZ:%d VAL:%02x", addr, sz, val);
+    //val &= masksz[sz];
     switch(addr) {
         case R_SIO_CTRL:
-            assert(sz==2);
             write_ctrl(sz, val);
             return;
         case R_SIO_MODE:
-            assert(sz==2);
             write_mode(sz, val);
             return;
         case R_SIO_STAT:
@@ -281,34 +284,32 @@ void SIO0::write(u32 addr, u32 sz, u32 val)
             write_tx_data(sz, val);
             return;
         case R_SIO_MISC:
-            assert(sz==2);
             io.misc = val;
             return;
         case R_SIO_BAUD:
-            assert(sz==2);
             io.baud = val & 0xFFFF;
             return;
     }
     printf("\nUnhandled SIO write to %08x (%d): %08x", addr, sz, val);
 }
 
-u32 SIO0::read_ctrl(u32 sz) const
+u32 SIO0::read_ctrl(u8 sz) const
 {
     return io.SIO_CTRL.u;
 }
 
-u32 SIO0::read_mode(u32 sz) const
+u32 SIO0::read_mode(u8 sz) const
 {
     return io.SIO_MODE.u;
 }
 
-u32 SIO0::read_stat(u32 sz) const
+u32 SIO0::read_stat(u8 sz) const
 {
     return io.SIO_STAT.u;
 }
 
 
-u32 SIO0::read_rx_data(u32 sz)
+u32 SIO0::read_rx_data(u8 sz)
 {
     // POP a value from FIFO
     u32 out_val = io.RX_FIFO.buf[io.RX_FIFO.head];
@@ -337,27 +338,59 @@ u32 SIO0::read_rx_data(u32 sz)
     return out_val;
 }
 
-u32 SIO0::read(u32 addr, u32 sz)
+u32 SIO0::read(u32 addr, u8 sz)
 {
     switch(addr) {
         case R_SIO_CTRL:
-            assert(sz==2);
             return read_ctrl(sz);
         case R_SIO_MODE:
-            assert(sz==2);
             return read_mode(sz);
         case R_SIO_STAT:
             return read_stat(sz);
         case R_RX_DATA:
             return read_rx_data(sz);
         case R_SIO_MISC:
-            assert(sz==2);
             return io.misc;
         case R_SIO_BAUD:
-            assert(sz==2);
             return io.baud;
     }
     printf("\nUnhandled SIO read from %08x (%d)", addr, sz);
     return 0;
+}
+
+#undef R_RX_DATA
+#undef R_TX_DATA
+#undef R_SIO_STAT
+#undef R_SIO_MODE
+#undef R_SIO_CTRL
+#undef R_SIO_MISC
+#undef R_SIO_BAUD
+
+#define R_RX_DATA 0x1F801050
+#define R_TX_DATA R_RX_DATA
+#define R_SIO_STAT 0x1F801054
+#define R_SIO_MODE 0x1F801058
+#define R_SIO_CTRL 0x1F80105A
+#define R_SIO_MISC 0x1F80105C
+#define R_SIO_BAUD 0x1F80105E
+
+void SIO1::write(u32 addr, u8 sz, u32 val) {
+    //printf("\nSIO1 ADDR:%04x SZ:%d VAL:%02x", addr, sz, val);
+    val &= 0xFF;
+    switch (addr) {
+        case R_SIO_MODE:
+            io.MODE.u = val & 0xFFFF;
+            return;
+    }
+    printf("\nUnhandled SIO1 write to %08x (%d): %08x", addr, sz, val);
+}
+
+u32 SIO1::read(u32 addr, u8 sz) {
+    switch (addr) {
+        case R_SIO_MODE:
+            return io.MODE.u;
+    }
+    printf("\nUnhandled SIO1 read from %08x (%d)", addr, sz);
+    return 0xFFFFFFFF;
 }
 }

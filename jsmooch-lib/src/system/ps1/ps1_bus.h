@@ -88,6 +88,7 @@ struct core : jsm_system {
     scheduler_t scheduler;
     R3000::core cpu;
     SIO::SIO0 sio0;
+    SIO::SIO1 sio1;
     TIMER timers[3]{};
     CDROM cdrom;
 

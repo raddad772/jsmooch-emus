@@ -53,6 +53,19 @@ struct memport {
     device *memcard, *controller;
 };
 
+union SIOMODE {
+    struct {
+        u32 baud_reload_factor : 2; // bits 0-1
+        u32 character_len : 2; // bits 2-3
+        u32 parity_enable : 1; // bit 4
+        u32 parity_type : 1; // bit 5
+        u32 _unused : 2; // bits 6, 7
+        u32 clock_polarity : 1; // bit 8
+    };
+    u32 u{};
+};
+
+
 struct SIO0 {
     void get_select_port(u32 num, memport *port) const;
     explicit SIO0(PS1::core *parent);
@@ -62,16 +75,16 @@ struct SIO0 {
     void update_rx_signal();
     void update_IRQs();
     void send_DTR(u32 port, u32 level);
-    void write_ctrl(u32 sz, u32 val);
-    void write_mode(u32 sz, u32 val);
-    void write_stat(u32 sz, u32 val);
-    void write_tx_data(u32 sz, u32 val);
-    void write(u32 addr, u32 sz, u32 val);
-    u32 read_ctrl(u32 sz) const;
-    u32 read_mode(u32 sz) const;
-    u32 read_stat(u32 sz) const;
-    u32 read_rx_data(u32 sz);
-    u32 read(u32 addr, u32 sz);
+    void write_ctrl(u8 sz, u32 val);
+    void write_mode(u8 sz, u32 val);
+    void write_stat(u8 sz, u32 val);
+    void write_tx_data(u8 sz, u32 val);
+    void write(u32 addr, u8 sz, u32 val);
+    u32 read_ctrl(u8 sz) const;
+    u32 read_mode(u8 sz) const;
+    u32 read_stat(u8 sz) const;
+    u32 read_rx_data(u8 sz);
+    u32 read(u32 addr, u8 sz);
     u8 do_exchange_byte(u8 tx_byte);
 
     struct {
@@ -93,17 +106,7 @@ struct SIO0 {
             u32 u{};
         } SIO_STAT;
 
-        union {
-            struct {
-                u32 baud_reload_factor : 2; // bits 0-1
-                u32 character_len : 2; // bits 2-3
-                u32 parity_enable : 1; // bit 4
-                u32 parity_type : 1; // bit 5
-                u32 _unused : 2; // bits 6, 7
-                u32 clock_polarity : 1; // bit 8
-            };
-            u32 u{};
-        } SIO_MODE{};
+        SIOMODE SIO_MODE{};
 
         union {
             struct {
@@ -136,5 +139,13 @@ struct SIO0 {
     u64 sch_id{};
     u32 still_sched{};
 };
+
+    struct SIO1 {
+        void write(u32 addr, u8 sz, u32 val);
+        u32 read(u32 addr, u8 sz);
+        struct {
+        SIOMODE MODE{};
+    } io;
+    };
 
 }
