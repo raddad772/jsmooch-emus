@@ -8,6 +8,8 @@
 #include "ps1_bus.h"
 #include "ps1_timers.h"
 
+#define ADDBUS 0
+
 namespace PS1 {
 void TIMER::deschedule()
 {
@@ -122,7 +124,7 @@ u32 TIMER::read_clk(u64 clk) const
 
 u64 TIMER::get_clock_source()
 {
-    if (num == 1) printf("\nTimer %d on system clock: %d. master count:%lld", num, on_system_clock, bus->clock.master_cycle_count);
+    //if (num == 1) printf("\nTimer %d on system clock: %d. master count:%lld", num, on_system_clock, bus->clock.master_cycle_count);
     if (on_system_clock) return bus->clock.master_cycle_count;
     switch(num) {
         case 0:
@@ -130,6 +132,7 @@ u64 TIMER::get_clock_source()
         case 1:
             return bus->clock.hblank_clock;
         case 2:
+            //printf("\nRETURN BUS CLOCK/8 bus->clock.master_cycle_count >> 3 %d", static_cast<u32>(bus->clock.master_cycle_count >> 3));
             return bus->clock.master_cycle_count >> 3;
         default:
             NOGOHERE;
@@ -139,7 +142,10 @@ u64 TIMER::get_clock_source()
 
 u32 TIMER::read() {
     u32 v = read_clk(get_clock_source());
-    if (num == 1) printf("\nREAD timer %d: %04x", num, v);
+    //if (num == 1) printf("\nREAD timer %d: %04x", num, v);
+    static u32 last=0;
+    //printf("\nReading timer num %d: %d diff:%d diffhex:%x @%lld", num, v, v - last, v - last, bus->clock.master_cycle_count);
+    last = v;
     return v;
 }
 
@@ -176,7 +182,6 @@ void core::update_timer_irqs()
 u32 core::timers_read(u32 addr, u8 sz)
 {
     u32 timer_num = (addr >> 4) & 3;
-    printf("\nREAD FROM %08x: %d", addr, timer_num);
     switch(addr & 0x1FFFFFCF) {
         case 0x1F801100: // current counter value
             return timers[timer_num].read() & 0xFFFF;
@@ -238,8 +243,8 @@ u64 core::calculate_timer1_hblank(u32 diff)
 void timer_overflow(void *ptr, u64 timer_num, u64 current_clock, u32 jitter)
 {
     u64 clk = current_clock - jitter;
-    auto *th = static_cast<core *>(ptr);
-    auto *t = &th->timers[timer_num];
+    auto *th = static_cast<TIMER *>(ptr);
+    auto *t = &th->bus->timers[timer_num];
 
     u32 value = t->overflow.at & 0xFFFF;
 
@@ -249,13 +254,13 @@ void timer_overflow(void *ptr, u64 timer_num, u64 current_clock, u32 jitter)
     if (value == t->target) {
         t->mode.reached_target = 1;
     }
-    th->update_timer_irqs();
+    th->bus->update_timer_irqs();
 
     // Now determine if we reset...
     if ((value == 0xFFFF) || ((value == t->target) && t->mode.reset_when)) {
         t->start.value = 0;
     }
-    if (t->on_system_clock) t->start.cycle = th->clock_current() + 2;
+    if (t->on_system_clock) t->start.cycle = th->bus->clock_current() + ADDBUS;
     else t->start.cycle = t->get_clock_source();
 
     // Schedule next overflow...
@@ -325,7 +330,7 @@ void TIMER::enable()
     running = 1;
 
     u64 clk = get_clock_source();
-    if (on_system_clock) start.cycle = bus->clock_current() + 2;
+    if (on_system_clock) start.cycle = bus->clock_current() + ADDBUS;
     else start.cycle = clk;
     reschedule();
 }
@@ -338,7 +343,7 @@ void TIMER::setup() {
 
             // If it is running or not currently,
             running = !(mode.sync_enable && mode.sync_mode == 3); // if so, we pause until hblank occurs...
-            if (on_system_clock) start.cycle = bus->clock_current() + 2;
+            if (on_system_clock) start.cycle = bus->clock_current() + ADDBUS;
             else start.cycle = bus->dotclock();
 
             // Determine overflow timing
@@ -350,7 +355,7 @@ void TIMER::setup() {
 
             // If it is running or not currently,
             running = !(mode.sync_enable && mode.sync_mode == 3); // if so, we pause until vblank occurs...
-            if (on_system_clock) start.cycle = bus->clock_current() + 2;
+            if (on_system_clock) start.cycle = bus->clock_current() + ADDBUS;
             else start.cycle = bus->clock.hblank_clock;
 
             // Determine overflow timing
@@ -366,7 +371,7 @@ void TIMER::setup() {
             }
             else running = 1;
 
-            if (on_system_clock) start.cycle = bus->clock_current() + 2;
+            if (on_system_clock) start.cycle = bus->clock_current() + ADDBUS;
             else start.cycle = bus->clock_current() >> 3;
 
             // Determine overflow timing
@@ -378,30 +383,36 @@ void TIMER::setup() {
 
 void TIMER::reset(u32 reset_to)
 {
-    start.cycle = bus->clock_current() + 2;
+    start.cycle = bus->clock_current() + ADDBUS;
     start.value = reset_to;
 }
 
 void TIMER::write(u32 val, u8 sz)
 {
+    //printf("\nWR COUNT%d:%04x", num, val);
     start.value = val & 0xFFFF;
     reschedule();
 }
 
 void TIMER::write_target(u32 val, u8 sz)
 {
+    //printf("\nWR TARGET%d:%04x", num, val);
     target = val & 0xFFFF;
     reschedule();
 }
 
 void TIMER::write_mode(u32 val, u8 sz)
 {
+    //printf("\nWR MODE%d:%04x @%lld", num, val, bus->clock.master_cycle_count);
+
     val &= 0b1111111111;
     u32 old_mode = mode.u;
     mode.u = (mode.u & 0b1111110000000000) | val;
 
     // Reset to 0
     start.value = 0;
+    if (on_system_clock) start.cycle = bus->clock_current() + ADDBUS;
+    else start.cycle = get_clock_source();
 
     if (old_mode != mode.u)
         setup();

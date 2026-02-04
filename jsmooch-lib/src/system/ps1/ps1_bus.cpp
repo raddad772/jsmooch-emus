@@ -198,6 +198,9 @@ u32 core::mainbus_read(u32 addr, u8 sz, bool has_effect)
 
 void core::mainbus_write(u32 addr, u8 sz, u32 val)
 {
+    if (addr == 0x1F801104) {
+        printf("\nWRITE addr:%08x sz:%d val:%04x", addr, sz, val);
+    }
     clock.waitstates += DEFAULT_WAITSTATES;
     if (mem.cache_isolated) return;
     addr = deKSEG(addr) & alignmask[sz];
@@ -275,15 +278,6 @@ void core::mainbus_write(u32 addr, u8 sz, u32 val)
         case 0x1F80101C: // Expansion 2 delay/size
         case 0x1F801020: // COM_DELAY /size
         case 0x1F801060: // RAM SIZE, 2mb mirrored in first 8mb
-        case 0x1F801100: // Timer 0 dotclock
-        case 0x1F801104: // ...
-        case 0x1F801108: // ...
-        case 0x1F801110: // Timer 1 hor. retrace
-        case 0x1F801114: // ...
-        case 0x1F801118: // ...
-        case 0x1F801120: // Timer 2 1/8 system clock
-        case 0x1F801124: // ...
-        case 0x1F801128: // ...
         case 0x1F801D80: // SPU main vol L
         case 0x1F801D82: // ...R
         case 0x1F801D84: // Reverb output L

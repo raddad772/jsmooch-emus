@@ -29,10 +29,10 @@ void core::setup_dotclock()
     float cycles_per_line = (static_cast<float>(clock.timing.gpu.hz) / clock.timing.fps) / static_cast<float>(clock.timing.frame.lines);
     float cycles_per_px = cycles_per_line / static_cast<float>(gpu.hres);
 
-    clock.dot.horizontal_px = (((gpu.display_horiz_end-gpu.display_horiz_start)/(u32)cycles_per_px)+2) & ~3;
+    clock.dot.horizontal_px = (((gpu.display_horiz_end-gpu.display_horiz_start)/static_cast<u32>(cycles_per_px))+2) & ~3;
     clock.dot.vertical_px = clock.timing.frame.lines - clock.timing.frame.vblank.start_on_line;
 
-    clock.dot.ratio.cpu_to_gpu = static_cast<float>(clock.timing.gpu.hz) / (float)clock.timing.cpu.hz;
+    clock.dot.ratio.cpu_to_gpu = static_cast<float>(clock.timing.gpu.hz) / static_cast<float>(clock.timing.cpu.hz);
     clock.dot.ratio.cpu_to_dotclock = clock.dot.ratio.cpu_to_gpu / cycles_per_px;
 }
 

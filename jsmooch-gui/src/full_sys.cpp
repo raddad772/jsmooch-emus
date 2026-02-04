@@ -835,9 +835,12 @@ void full_system::load_default_ROM()
             //worked = grab_ROM(&ROMs, which, "ps1-tests-built/gte-fuzz/gte-fuzz.exe", nullptr);
             //worked = grab_ROM(&ROMs, which, "redux_cpu.exe", nullptr);
             //worked = grab_ROM(&ROMs, which, "pad.exe", nullptr);
+#define CTEST(x) worked = grab_ROM(&ROMs, which, "PSX/TIMER/" x "/" x ".exe", nullptr)
+            CTEST("TimerCalib");
+#undef CTEST
 #define CTEST(x) worked = grab_ROM(&ROMs, which, "PSX/BUS/" x "/" x ".exe", nullptr)
             //CTEST("Load816Unalign");
-            CTEST("LoadStoreReg");
+            //CTEST("LoadStoreReg");
             //CTEST("LoadStoreRegUnalign8Bit");
             //CTEST("LoadStoreRegUnalign16Bit");
 #undef CTEST
