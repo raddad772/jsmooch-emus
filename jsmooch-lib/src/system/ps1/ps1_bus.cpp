@@ -63,6 +63,7 @@ core::core() :
     sio0(this),
     gpu(this),
     dma(this),
+    cdrom(&this->scheduler),
     io{ false, SIO::digital_gamepad(this) }
     {
     for (u32 i = 0; i < 3; i++) {
@@ -124,6 +125,9 @@ u32 core::mainbus_read(u32 addr, u32 sz, bool has_effect)
     // 1F800000 1024kb of scratchpad
     if ((addr >= 0x1F800000) && (addr < 0x1F800400)) {
         return cR[sz](mem.scratchpad, addr & 0x3FF);
+    }
+    if ((addr >= 0x1F801800) && (addr < 0x1F801804)) {
+        return cdrom.read(addr, sz, has_effect);
     }
     /*if ((addr >= 0x1F800000) && (addr < 0x1F803000)) {
         // TODO: stub: IO area
@@ -206,7 +210,6 @@ void core::mainbus_write(u32 addr, u32 sz, u32 val)
         cW[sz](mem.scratchpad, addr & 0x3FF, val);
         return;
     }
-
     if ((addr >= 0x1F801070) && (addr <= 0x1F801074)) {
         cpu.write_reg(addr, sz, val);
         return;
@@ -219,6 +222,10 @@ void core::mainbus_write(u32 addr, u32 sz, u32 val)
 
     if ((addr >= 0x1F801040) && (addr < 0x1F801050)) {
         sio0.write(addr, sz, val);
+        return;
+    }
+    if ((addr >= 0x1F801800) && (addr < 0x1F801804)) {
+        cdrom.write(addr, val, sz);
         return;
     }
 

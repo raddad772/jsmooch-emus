@@ -601,6 +601,7 @@ void core::fCOP(u32 opcode, OPCODE *op)
     else {
         if (copnum != 2) {
             printf("\nBAD COP INS? %08x", opcode);
+            exception(8, 0, 0);
             return;
         }
         if (opcode & 0x2000000) {
@@ -642,7 +643,7 @@ void core::fLB(u32 opcode, OPCODE *op)
 
     u32 rd = read(read_ptr, addr, 1, 1) & 0xFF;
     rd = SIGNe8to32(rd);
-    fs_reg_delay(rt, (u32)rd);
+    fs_reg_delay(rt, rd);
 }
 
 void core::fLH(u32 opcode, OPCODE *op)
@@ -775,7 +776,7 @@ void core::fSB(u32 opcode, OPCODE *op)
     u32 imm16 = static_cast<u32>(static_cast<i16>(opcode & 0xFFFF));
     u32 addr = regs.R[rs] + imm16;
 
-    write(write_ptr, addr, 1, regs.R[rt] & 0xFF);
+    write(write_ptr, addr, 1, regs.R[rt]);
 }
 
 void core::fSH(u32 opcode, OPCODE *op)
@@ -790,7 +791,7 @@ void core::fSH(u32 opcode, OPCODE *op)
         return;
     }
 
-    write(write_ptr, addr, 2, regs.R[rt] & 0xFFFF);
+    write(write_ptr, addr, 2, regs.R[rt]);
 }
 
 void core::fSWL(u32 opcode, OPCODE *op)
@@ -887,8 +888,19 @@ void core::fSWC(u32 opcode, OPCODE *op)
     u32 rt = (opcode >> 16) & 0x1F;
     u32 imm16 = static_cast<u32>(static_cast<i16>(opcode & 0xFFFF));
     u32 addr = regs.R[rs] + imm16;
+    u32 rd;
+    switch(op->arg) {
+        case 0:
+            rd = regs.COP0[rt];
+            break;
+        case 2:
+            rd = gte.read_reg(rt);
+            break;
+        default:
+            exception(0x0B, 0, 0);
+            return;
+    }
 
-    u32 rd = COP_read_reg(op->arg, rt);
     // TODO: add the 1-cycle delay to this
     write(write_ptr, addr, 4, rd);
 }

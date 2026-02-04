@@ -154,8 +154,8 @@ u32 core::do_RTP(CMD *config, u32 vector_index) {
 
     //xy_fifo[3][0] = (i16)((u16)i32_to_i11_saturate(0, screen_x) & 0x7FF);
     //xy_fifo[3][1] = (i16)((u16)i32_to_i11_saturate(1, screen_y) & 0x7FF);
-    xy_fifo[3][0] = (i16)i32_to_i11_saturate(0, screen_x);
-    xy_fifo[3][1] = (i16)i32_to_i11_saturate(1, screen_y);
+    xy_fifo[3][0] = i32_to_i11_saturate(0, screen_x);
+    xy_fifo[3][1] = i32_to_i11_saturate(1, screen_y);
     xy_fifo[0][0] = xy_fifo[1][0];
     xy_fifo[0][1] = xy_fifo[1][1];
     xy_fifo[1][0] = xy_fifo[2][0];
@@ -168,9 +168,9 @@ u32 core::do_RTP(CMD *config, u32 vector_index) {
 
 void core::depth_queueing(u32 pf)
 {
-    i64 factor = (i64)pf;
-    i64 dqa = (i64)DQA;
-    i64 dqb = (i64)DQB;
+    const i64 factor = pf;
+    const i64 dqa = DQA;
+    const i64 dqb = DQB;
 
     i64 depth = dqb + dqa * factor;
 
@@ -194,7 +194,7 @@ void core::depth_queueing(u32 pf)
 
 void core::cmd_RTPS(CMD *config)
 {
-    u32 pf = do_RTP(config, 0);
+    const u32 pf = do_RTP(config, 0);
     depth_queueing(pf);
 }
 
@@ -350,8 +350,8 @@ void core::multiply_matrix_by_vector(CMD *config, MATRIX mat, u8 vei, control_ve
 {
     i32 vector_index = vei;
     if (mat == MTX_Invalid) {
-        matrices[mat][0][0] = (-((i16)RGB[0])) << 4;
-        matrices[mat][0][1] = ((i16)RGB[0]) << 4;
+        matrices[mat][0][0] = (-static_cast<i16>(RGB[0])) << 4;
+        matrices[mat][0][1] = static_cast<i16>(RGB[0]) << 4;
         matrices[mat][0][2] = IR[0];
         matrices[mat][1][0] = matrices[mat][1][1] = matrices[mat][1][2] = matrices[0][0][2];
         matrices[mat][2][0] = matrices[mat][2][1] = matrices[mat][2][2] = matrices[0][1][1];

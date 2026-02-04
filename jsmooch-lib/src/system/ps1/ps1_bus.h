@@ -21,6 +21,8 @@
 #include "peripheral/ps1_sio.h"
 #include "peripheral/ps1_digital_pad.h"
 #include "ps1_timers.h"
+#include "cdrom/ps1_cdrom.h"
+
 namespace PS1 {
 enum IRQ {
     IRQ_VBlank = 0,
@@ -87,6 +89,7 @@ struct core : jsm_system {
     R3000::core cpu;
     SIO::SIO0 sio0;
     TIMER timers[3]{};
+    CDROM cdrom;
 
     u32 already_scheduled{};
     i64 cycles_left{};

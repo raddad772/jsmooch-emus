@@ -79,9 +79,9 @@ struct scheduler_t {
     void run_til_tag(u32 tag);
     void from_event_adjust_master_clock(i64 howmany);
     void clear();
-
-private:
     [[nodiscard]] inline i64 current_time() const;
+private:
+
     scheduler_event *alloc_event(i64 timecode, u64 key, scheduler_event* next, u64 id);
     static scheduled_bound_function* bind_function(scheduler_callback func, void *ptr);
 };

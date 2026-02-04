@@ -829,17 +829,58 @@ void full_system::load_default_ROM()
             //worked = grab_ROM(&ROMs, which, "psxtest_cpu.exe", nullptr); // slammin'!
             //worked = grab_ROM(&ROMs, which, "psxtest_cpx.exe", nullptr);
             //worked = grab_ROM(&ROMs, which, "psxtest_gte.exe", nullptr);
+            //worked = grab_ROM(&ROMs, which, "ps1-tests-built/cpu/cop/cop.exe", nullptr);
             //worked = grab_ROM(&ROMs, which, "ps1-tests-built/gte/test-all/test-all.exe", nullptr);
             //worked = grab_ROM(&ROMs, which, "ps1-tests-built/timers/timers.exe", nullptr);
             //worked = grab_ROM(&ROMs, which, "ps1-tests-built/gte-fuzz/gte-fuzz.exe", nullptr);
             //worked = grab_ROM(&ROMs, which, "redux_cpu.exe", nullptr);
             //worked = grab_ROM(&ROMs, which, "pad.exe", nullptr);
-            //worked = grab_ROM(&ROMs, which, "PSX/CPUTest/CPU/ADD/CPUADD.exe", nullptr);
+#define CTEST(x) worked = grab_ROM(&ROMs, which, "PSX/BUS/" x "/" x ".exe", nullptr)
+            //CTEST("Load816Unalign");
+            CTEST("LoadStoreReg");
+            //CTEST("LoadStoreRegUnalign8Bit");
+            //CTEST("LoadStoreRegUnalign16Bit");
+#undef CTEST
+#define CTEST(x) worked = grab_ROM(&ROMs, which, "PSX/CPUTest/CPU/" x "/CPU" x ".exe", nullptr)
+            //CTEST("ADD");
+            //CTEST("ADDI");
+            //CTEST("ADDIU");
+            //CTEST("ADDU");
+            //CTEST("AND");
+            //CTEST("ANDI");
+            //CTEST("DIV");
+            //CTEST("DIVU");
+            //CTEST("MULT");
+            //CTEST("MULTU");
+            //CTEST("NOR");
+            //CTEST("OR");
+            //CTEST("ORI");
+            //CTEST("SUB");
+            //CTEST("SUBU");
+            //CTEST("XOR");
+            //CTEST("XORI");
+#undef CTEST
+#define CTEST(x) worked = grab_ROM(&ROMs, which, "PSX/CPUTest/CPU/LOADSTORE/" x "/CPU" x ".exe", nullptr);
+            //CTEST("LB");
+            //CTEST("LH");
+            //CTEST("LW");
+            //CTEST("SB");
+            //CTEST("SH");
+            //CTEST("SW");
+#undef CTEST
+#define CTEST(x) worked = grab_ROM(&ROMs, which, "PSX/CPUTest/CPU/SHIFT/" x "/CPU" x ".exe", nullptr);
+            //CTEST("SLL");
+            //CTEST("SLLV");
+            //CTEST("SRA");
+            //CTEST("SRAV");
+            //CTEST("SRL");
+            //CTEST("SRLV");
+#undef CTEST
             //worked = grab_ROM(&ROMs, which, "PSX/GPU/16BPP/RenderPolygon/RenderPolygon16BPP.exe", nullptr);
             //worked = grab_ROM(&ROMs, which, "PSX/JOY/Joypad/Joypad.exe", nullptr);
             //worked = grab_ROM(&ROMs, which, "PSX/GPU/16BPP/RenderTexturePolygon/CLUT4BPP/RenderTexturePolygonCLUT4BPP.exe", nullptr);
             //worked = grab_ROM(&ROMs, which, "PSX/GPU/16BPP/RenderTexturePolygon/CLUT8BPP/RenderTexturePolygonCLUT8BPP.exe", nullptr);
-            worked = grab_ROM(&ROMs, which, "PSX/GPU/16BPP/RenderTexturePolygon/15BPP/RenderTexturePolygon15BPP.exe", nullptr);
+            //worked = grab_ROM(&ROMs, which, "PSX/GPU/16BPP/RenderTexturePolygon/15BPP/RenderTexturePolygon15BPP.exe", nullptr);
             //worked = grab_ROM(&ROMs, which, "PSX/GPU/16BPP/RenderTexturePolygon/MASK15BPP/RenderTexturePolygonMASK15BPP.exe", nullptr);
             //worked = grab_ROM(&ROMs, which, "PSX/GPU/16BPP/RenderTextureRectangle/CLUT4BPP/RenderTextureRectangleCLUT4BPP.exe", nullptr);
             //worked = grab_ROM(&ROMs, which, "PSX/GPU/16BPP/MemoryTransfer/MemoryTransfer16BPP.exe", nullptr);
