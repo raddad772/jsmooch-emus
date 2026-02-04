@@ -838,8 +838,11 @@ void full_system::load_default_ROM()
 #define CTEST(x) worked = grab_ROM(&ROMs, which, "PSX/TIMER/" x "/" x ".exe", nullptr)
             //CTEST("TimerCalib");
             //CTEST("TimerHBlank");
-            CTEST("TimerSet");
+            //CTEST("TimerSet");
             //CTEST("TimerWrap");
+#undef CTEST
+#define CTEST(x) worked = grab_ROM(&ROMs, which, "PSX/DMA/DMA" x "/DMA" x ".exe", nullptr)
+            //CTEST("Wrap");
 #undef CTEST
 #define CTEST(x) worked = grab_ROM(&ROMs, which, "PSX/BUS/" x "/" x ".exe", nullptr)
             //CTEST("Load816Unalign");
@@ -891,7 +894,7 @@ void full_system::load_default_ROM()
             //worked = grab_ROM(&ROMs, which, "PSX/GPU/16BPP/RenderTextureRectangle/CLUT4BPP/RenderTextureRectangleCLUT4BPP.exe", nullptr);
             //worked = grab_ROM(&ROMs, which, "PSX/GPU/16BPP/MemoryTransfer/MemoryTransfer16BPP.exe", nullptr);
             //worked = grab_ROM(&ROMs, which, "PSX/HelloWorld/16BPP/HelloWorld16BPP.exe", nullptr);
-            //worked = grab_ROM(&ROMs, which, "PSX/GTE/GTETransfer/GTETransfer.exe", nullptr);
+            worked = grab_ROM(&ROMs, which, "PSX/GTE/GTETransfer/GTETransfer.exe", nullptr);
             break;
         case jsm::systems::GBA:
             //worked = grab_ROM(&ROMs, which, "panda.gba", nullptr);
