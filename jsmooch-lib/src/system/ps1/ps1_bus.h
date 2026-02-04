@@ -63,11 +63,11 @@ struct MEM {
 
 struct core : jsm_system {
     core();
-    u32 mainbus_read(u32 addr, u32 sz, bool has_effect);
-    void mainbus_write(u32 addr, u32 sz, u32 val);
+    u32 mainbus_read(u32 addr, u8 sz, bool has_effect);
+    void mainbus_write(u32 addr, u8 sz, u32 val);
     void update_timer_irqs();
     u64 calculate_timer1_hblank(u32 diff);
-    void timers_write(u32 addr, u32 sz, u32 val);
+    void timers_write(u32 addr, u8 sz, u32 val);
     void setup_dotclock();
     void dotclock_change();
     void set_irq(IRQ from, u32 level);
@@ -108,7 +108,7 @@ struct core : jsm_system {
     DMA dma;
 
     u64 dotclock();
-    u32 timers_read(u32 addr, u32 sz);
+    u32 timers_read(u32 addr, u8 sz);
     u64 time_til_next_hblank(u64 clk);
 
     struct {

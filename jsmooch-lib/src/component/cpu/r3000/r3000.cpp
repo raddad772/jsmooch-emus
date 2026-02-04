@@ -557,8 +557,11 @@ void core::update_I_STAT()
     pins.IRQ = (io.I_STAT->IF & io.I_MASK) != 0;
 }
 
-void core::write_reg(u32 addr, u32 sz, u32 val)
+void core::write_reg(u32 addr, u8 sz, u32 val)
 {
+    u32 l3 = addr & 3;
+    addr &= 0xFFFFFFFC;
+    val <<= l3 * 8;
     switch(addr) {
         case 0x1F801070: // I_STAT write
             //printf("\nwrite I_STAT %04x current:%04llx", val, io.I_STAT->IF);
@@ -575,17 +578,25 @@ void core::write_reg(u32 addr, u32 sz, u32 val)
     printf("\nUnhandled CPU write %08x (%d): %08x", addr, sz, val);
 }
 
-u32 core::read_reg(u32 addr, u32 sz)
+u32 core::read_reg(u32 addr, u8 sz)
 {
+    u32 l3 = addr & 3;
+    addr &= 0xFFFFFFFC;
+    i64 v = -1;
     switch(addr) {
         case 0x1F801070: // I_STAT read
-            return io.I_STAT->IF;
+            v = io.I_STAT->IF;
+            break;
         case 0x1F801074: // I_MASK read
-            return io.I_MASK;
+            v = io.I_MASK;
+            break;
     }
-    printf("\nUnhandled CPU read %08x (%d)", addr, sz);
-    static constexpr u32 mask[5] = {0, 0xFF, 0xFFFF, 0, 0xFFFFFFFF};
-    return mask[sz];
+    if (v == -1) {
+        printf("\nUnhandled CPU read %08x", addr);
+        static constexpr u32 mask[5] = {0, 0xFF, 0xFFFF, 0, 0xFFFFFFFF};
+        return mask[sz];
+    }
+    return v >> (l3 * 8);
 }
 
 void core::idle(u32 howlong)

@@ -7,8 +7,8 @@
 
 namespace PS1 {
 struct SPU {
-    void write(u32 addr, u32 sz, u32 val);
-    u32 read(u32 addr, u32 sz, bool has_effect);
-    u32 RAM[0x400]{};
+    void write(u32 addr, u8 sz, u32 val);
+    u32 read(u32 addr, u8 sz, bool has_effect);
+    u16 RAM[0x400]{};
 };
 }

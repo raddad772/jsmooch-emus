@@ -19,9 +19,9 @@ struct TIMER {
     void vblank(u64 key);
     void hblank(u64 key);
     void deschedule();
-    void write(u32 val, u32 sz);
-    void write_target(u32 val, u32 sz);
-    void write_mode(u32 val, u32 sz);
+    void write(u32 val, u8 sz);
+    void write_target(u32 val, u8 sz);
+    void write_mode(u32 val, u8 sz);
     u32 read();
     core *bus; // TODO: fill this in!
     u32 num; // TODO: fill this in!

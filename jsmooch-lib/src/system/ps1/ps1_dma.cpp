@@ -195,8 +195,11 @@ u32 DMA::irq_status()
 
 u32 DMA::read(u32 addr, u32 sz)
 {
+    u32 l3 = addr & 3;
+    addr &= 0xFFFFFFFC;
     u32 ch_num = ((addr - 0x80) & 0x70) >> 4;
     u32 reg = (addr & 0x0F);
+    i64 v = -1;
     switch(ch_num) {
         case 0:
         case 1:
@@ -208,11 +211,14 @@ u32 DMA::read(u32 addr, u32 sz)
             auto *ch = &channels[ch_num];
             switch(reg) {
                 case 0:
-                    return ch->base_addr;
+                    v = ch->base_addr;
+                    break;
                 case 4:
-                    return (ch->block_count << 16) | ch->block_size;
+                    v = (ch->block_count << 16) | ch->block_size;
+                    break;
                 case 8:
-                    return ch->get_control();
+                    v = ch->get_control();
+                    break;
                 default:
                     printf("\nUnimplemented per-channel DMA register: %d %d %08x", ch_num, reg, addr);
                     return 0xFFFFFFFF;
@@ -221,26 +227,34 @@ u32 DMA::read(u32 addr, u32 sz)
         case 7:
             switch(reg) {
                 case 0: // DPCR - DMA control 0x1F8010F0:
-                    return control;
+                    v = control;
+                    break;
                 case 4: // DPIR - DMA interrupt control 0x1F8010F4:
-                    return unknown1 | (irq_force << 15) | (irq_enable_ch << 16) |
+                    v = unknown1 | (irq_force << 15) | (irq_enable_ch << 16) |
                            (irq_enable << 23) | (irq_flags_ch << 24) | (irq_status() << 31);
+                    break;
                 default:
                     printf("\nUnimplemented per-channel DMA register read2 %d %d %08x", ch_num, reg, addr);
                     return 0xFFFFFFFF;
             }
 
         default:
-            printf("\nUnhandled DMA read %08x", addr);
     }
-    return 0xFFFFFFFF;
+    if (v == -1) {
+        printf("\nUnhandled DMA read %08x", addr);
+    }
+    return v >> (l3 * 8);
 }
 
 void DMA::write(u32 addr, u32 sz, u32 val)
 {
+    //printf("\nWR DMA addr:%04x sz:%d val:%04x", addr, sz, val);
+    const u32 l3 = addr & 3;
+    addr &= 0x1FFFFFFC; // 32-bit read/writes only, force-align (and shift after)
     u32 ch_num = ((addr - 0x80) & 0x70) >> 4;
     u32 reg = (addr & 0x0F);
     u32 ch_activated = 0;
+    val <<= (l3 * 8);
     switch(ch_num) {
         case 0:
         case 1:

@@ -83,8 +83,8 @@ struct core {
     void cycle(i32 howmany);
     void reset();
     void update_I_STAT();
-    void write_reg(u32 addr, u32 sz, u32 val);
-    u32 read_reg(u32 addr, u32 sz);
+    void write_reg(u32 addr, u8 sz, u32 val);
+    u32 read_reg(u32 addr, u8 sz);
     void idle(u32 howlong);
 
     REGS regs{};
@@ -118,9 +118,9 @@ struct core {
     OPCODE decode_table[0x7F]{};
 
     void *fetch_ptr{}, *read_ptr{}, *write_ptr{}, *update_sr_ptr{};
-    u32 (*fetch_ins)(void *ptr, u32 addr, u32 sz){};
-    u32 (*read)(void *ptr, u32 addr, u32 sz, u32 has_effect){};
-    void (*write)(void *ptr, u32 addr, u32 sz, u32 val){};
+    u32 (*fetch_ins)(void *ptr, u32 addr, u8 sz){};
+    u32 (*read)(void *ptr, u32 addr, u8 sz, u32 has_effect){};
+    void (*write)(void *ptr, u32 addr, u8 sz, u32 val){};
     void (*update_sr)(void *ptr, core *mcore, u32 val){};
     DBG_START
     console_view *console{};

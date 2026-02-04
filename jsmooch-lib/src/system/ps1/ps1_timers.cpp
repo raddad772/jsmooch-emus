@@ -173,7 +173,7 @@ void core::update_timer_irqs()
     }
 }
 
-u32 core::timers_read(u32 addr, u32 sz)
+u32 core::timers_read(u32 addr, u8 sz)
 {
     u32 timer_num = (addr >> 4) & 3;
     printf("\nREAD FROM %08x: %d", addr, timer_num);
@@ -382,19 +382,19 @@ void TIMER::reset(u32 reset_to)
     start.value = reset_to;
 }
 
-void TIMER::write(u32 val, u32 sz)
+void TIMER::write(u32 val, u8 sz)
 {
     start.value = val & 0xFFFF;
     reschedule();
 }
 
-void TIMER::write_target(u32 val, u32 sz)
+void TIMER::write_target(u32 val, u8 sz)
 {
     target = val & 0xFFFF;
     reschedule();
 }
 
-void TIMER::write_mode(u32 val, u32 sz)
+void TIMER::write_mode(u32 val, u8 sz)
 {
     val &= 0b1111111111;
     u32 old_mode = mode.u;
@@ -412,7 +412,7 @@ void TIMER::write_mode(u32 val, u32 sz)
     bus->update_timer_irqs();
 }
 
-void core::timers_write(u32 addr, u32 sz, u32 val)
+void core::timers_write(u32 addr, u8 sz, u32 val)
 {
     u32 timer_num = (addr >> 4) & 3;
     assert(timer_num < 3);

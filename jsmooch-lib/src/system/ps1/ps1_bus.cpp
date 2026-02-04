@@ -19,7 +19,7 @@ static u32 read_trace_cpu(void *ptr, u32 addr, u8 sz)
     return th->mainbus_read(addr, sz, false);
 }
 
-static u32 mainbus_fetchins(void *ptr, u32 addr, u32 sz)
+static u32 mainbus_fetchins(void *ptr, u32 addr, u8 sz)
 {
     auto *th = static_cast<core *>(ptr);
     return th->mainbus_read(addr, sz, true);
@@ -33,7 +33,7 @@ static void run_block(void *bound_ptr, u64 num, u64 current_clock, u32 jitter)
     th->cpu.cycle(num);
 }
 
-static u32 snoop_read(void *ptr, u32 addr, u32 sz, u32 has_effect)
+static u32 snoop_read(void *ptr, u32 addr, u8 sz, u32 has_effect)
 {
     auto *th = static_cast<core *>(ptr);
     u32 r = th->mainbus_read(addr, sz, has_effect);
@@ -41,7 +41,7 @@ static u32 snoop_read(void *ptr, u32 addr, u32 sz, u32 has_effect)
     return r;
 }
 
-static void snoop_write(void *ptr, u32 addr, u32 sz, u32 val)
+static void snoop_write(void *ptr, u32 addr, u8 sz, u32 val)
 {
     auto *th = static_cast<core *>(ptr);
     //printf("\nwrite %08x (%d): %08x", addr, sz, val);
@@ -113,7 +113,7 @@ core::core() :
 
 static constexpr u32 alignmask[5] = { 0, 0xFFFFFFFF, 0xFFFFFFFE, 0, 0xFFFFFFFC };
 
-u32 core::mainbus_read(u32 addr, u32 sz, bool has_effect)
+u32 core::mainbus_read(u32 addr, u8 sz, bool has_effect)
 {
     clock.waitstates += DEFAULT_WAITSTATES;
 
@@ -138,7 +138,7 @@ u32 core::mainbus_read(u32 addr, u32 sz, bool has_effect)
         return cR[sz](mem.BIOS, addr & 0x7FFFF);
     }
 
-    if ((addr >= 0x1F801070) && (addr <= 0x1F801074)) {
+    if ((addr >= 0x1F801070) && (addr <= 0x1F801077)) {
         return cpu.read_reg(addr, sz);
     }
 
@@ -196,7 +196,7 @@ u32 core::mainbus_read(u32 addr, u32 sz, bool has_effect)
     return 0;
 }
 
-void core::mainbus_write(u32 addr, u32 sz, u32 val)
+void core::mainbus_write(u32 addr, u8 sz, u32 val)
 {
     clock.waitstates += DEFAULT_WAITSTATES;
     if (mem.cache_isolated) return;
@@ -213,7 +213,7 @@ void core::mainbus_write(u32 addr, u32 sz, u32 val)
         cW[sz](mem.scratchpad, addr & 0x3FF, val);
         return;
     }
-    if ((addr >= 0x1F801070) && (addr <= 0x1F801074)) {
+    if ((addr >= 0x1F801070) && (addr <= 0x1F801077)) {
         cpu.write_reg(addr, sz, val);
         return;
     }
