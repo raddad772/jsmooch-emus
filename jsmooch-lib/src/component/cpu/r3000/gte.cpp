@@ -402,9 +402,8 @@ void core::multiply_matrix_by_vector_MVMVA(CMD *config, MATRIX mat, u8 vei, cont
             const i32 product = v * m;
 
             res = i64_to_i44(static_cast<u8>(r), res + static_cast<i64>(product));
-            if (far_color && (c == 0)) {
-                i32_to_i16_saturate(&cfg, r, static_cast<i32>(res >> config->shift));
-                res = 0;
+            if (far_color && c == 0) {
+                i32_to_i16_saturate(config, r, static_cast<i32>(res >> config->shift));
             }
         }
 

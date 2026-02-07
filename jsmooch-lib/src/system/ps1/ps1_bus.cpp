@@ -135,7 +135,7 @@ u32 core::mainbus_read(u32 addr, u8 sz, bool has_effect)
         return cR[sz](mem.scratchpad, addr & 0x3FF);
     }
     if ((addr >= 0x1F801800) && (addr < 0x1F801804)) {
-        return cdrom.read(addr, sz, has_effect);
+        return cdrom.mainbus_read(addr, sz, has_effect);
     }
     /*if ((addr >= 0x1F800000) && (addr < 0x1F803000)) {
         // TODO: stub: IO area
@@ -240,7 +240,7 @@ void core::mainbus_write(u32 addr, u8 sz, u32 val)
         return;
     }
     if ((addr >= 0x1F801800) && (addr < 0x1F801804)) {
-        cdrom.write(addr, val, sz);
+        cdrom.mainbus_write(addr, val, sz);
         return;
     }
 
