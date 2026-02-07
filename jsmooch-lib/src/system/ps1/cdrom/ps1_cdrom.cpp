@@ -9,6 +9,8 @@
 namespace PS1 {
 
 static u32 constexpr masksz[5] = {0, 0xFF, 0xFFFF, 0, 0xFFFFFFFF };
+#define ONEFRAME (33868800/60)
+#define UKN_TIME ONEFRAME
 
 void CD_FIFO::reset() {
     head = tail = len = 0;
@@ -120,7 +122,7 @@ void CDROM::cmd_start(u64 key, u64 clock) {
             queue_interrupt(5);
             result(0x11);
             result(0x40);
-            finish_CMD();
+            finish_CMD(false, 3);
             return;
         case 0x58:
         case 0x59:
@@ -130,67 +132,120 @@ void CDROM::cmd_start(u64 key, u64 clock) {
         case 0x5D:
         case 0x5E:
         case 0x5F:
-            finish_CMD();
+            finish_CMD(false, 3);
             return;
         case 0x01: // NOP
-            queue_interrupt(3);
-            result(io.stat.u);
+            stat_irq();
             io.stat.shell_open = 0;
-            finish_CMD();
+            finish_CMD(false, 3);
             return;
         case 0x02: // SetLoc
-            queue_interrupt(3);
-            result(io.stat.u);
             cmd_setloc();
             return;
         case 0x03: // Play
-            queue_interrupt(3);
-            result(io.stat.u);
             cmd_play();
             return;
         case 0x04: // Forward
-            queue_interrupt(3);
-            result(io.stat.u);
             cmd_forward();
             return;
         case 0x05: // Backward
-            queue_interrupt(3);
-            result(io.stat.u);
+            stat_irq();
             cmd_backward();
             return;
         case 0x06:
-            queue_interrupt(3);
-            result(io.stat.u);
             cmd_readn();
             return;
         case 0x07:
-            queue_interrupt(3);
-            result(io.stat.u);
-            cmd_standby();
+            cmd_motor_on(clock);
             return;
         case 0x08:
-            queue_interrupt(3);
-            result(io.stat.u);
-            cmd_stop();
+            cmd_stop(clock);
             return;
         case 0x09:
-            queue_interrupt(3);
-            result(io.stat.u);
-            cmd_pause();
+            cmd_pause(clock);
+            return;
+        case 0x12:
+            cmd_set_session(clock);
             return;
         case 0x0a:
-            queue_interrupt(3);
-            result(io.stat.u);
-            cmd_init();
+            cmd_init(clock);
             return;
-
-
+        case 0x0D: // setfilter
+            ADPCM.filter.file = io.PARAMETER.pop();
+            ADPCM.filter.channel = io.PARAMETER.pop();
+            finish_CMD(true, 3);
+            return;
+        case 0x0e:
+            cmd_setmode();
+            return;
+        case 0x15: // SeekL
+            cmd_seekl(clock);
+            return;
+        case 0x16:
+            cmd_seekp(clock);
+            return;
+        case 0x1C: // RESET
+            cmd_reset();
+            return;
     }
     printf("\n\nUnhandled CDROM CMD %d\n", io.CMD);
 }
 
+void CDROM::cmd_step3(u64 key, u64 clock) {
+    switch (io.CMD) {
+        case 0x12:
+            queue_interrupt(5);
+            result(0x06);
+            result(0x40);
+            finish_CMD(false, 0);
+            return;
+        default:
+            NOGOHERE;
+    }
+}
+
+void CDROM::cmd_finish(u64 key, u64 clock) {
+    switch (io.CMD) {
+        case 0x07:
+            cmd_motor_on_finish();
+            return;
+        case 0x08: // stop
+            io.stat.motor_fullspeed = 0;
+            finish_CMD(true, 2);
+            return;
+        case 0x09:
+            io.stat.read = 0;
+            finish_CMD(true, 2);
+            return;
+        case 0x0A: // Init
+            finish_CMD(true, 2);
+            return;
+        case 0x12: // SetSession
+            cmd_set_session_finish(clock);
+            return;
+        case 0x15: // SeekL
+            io.stat.seek = 0;
+            finish_CMD(true, 2);
+            return;
+        case 0x16: // SeekP
+            io.stat.seek = 0;
+            finish_CMD(true, 2);
+            return;
+        default:
+            NOGOHERE;
+    }
+}
+
+static u8 decode_bcd(u8 val) {
+    return ((val >> 4) * 10) + (val & 0xF);;
+}
+
 void CDROM::cmd_setloc() {
-    printf("\n(CDROM) CMD SetLoc. NOT IMPL!");
+    printf("\n(CDROM) CMD SetLoc");
+    stat_irq();
+    seek.amm = decode_bcd(io.PARAMETER.pop());
+    seek.ass = decode_bcd(io.PARAMETER.pop());
+    seek.asect = decode_bcd(io.PARAMETER.pop());
 }
 
 void CDROM::cmd_play() {
@@ -206,48 +261,169 @@ void CDROM::cmd_backward() {
 }
 
 void CDROM::cmd_readn() {
-    printf("\n(CDROM) CMD . NOT IMPL!");
-}
-
-void CDROM::cmd_standby() {
     printf("\n(CDROM) CMD ReadN. NOT IMPL!");
 }
 
-void CDROM::cmd_stop() {
-    printf("\n(CDROM) CMD Stop. NOT IMPL!");
+void CDROM::cmd_seekp(u64 clock) {
+    printf("\n(CDROM) CMD SeekP");
+    stat_irq();
+    io.stat.seek = 1;
+    io.stat.read = 0;
+    io.stat.play = 0;
+    head.mode = HM_AUDIO;
+    schedule_seek_finish(clock);
 }
 
-void CDROM::cmd_pause() {
-    printf("\n(CDROM) CMD Pause. NOT IMPL!");
+void CDROM::cmd_seekl(u64 clock) {
+    printf("\n(CDROM) CMD SeekL");
+    stat_irq();
+    io.stat.seek = 1;
+    io.stat.read = 0;
+    head.mode = HM_DATA;
+    schedule_seek_finish(clock);
 }
 
-void CDROM::cmd_init() {
-    printf("\n(CDROM) CMD Init. NOT IMPL!");
+void CDROM::cmd_motor_on(u64 clock) {
+    printf("\n(CDROM) CMD MotorOn");
+    stat_irq();
+    schedule_finish(clock + (ONEFRAME * 60));
 }
 
-void CDROM::cmd_() {
-    printf("\n(CDROM) CMD . NOT IMPL!");
+void CDROM::cmd_motor_on_finish() {
+    if (io.stat.motor_fullspeed) {
+        // Give error INT5!
+        queue_interrupt(5);
+        result(io.stat.u);
+        result(0x20);
+    }
+    else {
+        io.stat.motor_fullspeed = 1;
+        queue_interrupt(2);
+        result(io.stat.u);
+    }
+    finish_CMD(false, 3);
 }
 
-void CDROM::cmd_() {
-    printf("\n(CDROM) CMD . NOT IMPL!");
+void CDROM::cmd_stop(u64 clock) {
+    printf("\n(CDROM) CMD Stop");
+    io.stat.seek = 0;
+    stat_irq();
+    schedule_finish(clock + (ONEFRAME * 60 * 2));
 }
 
-void CDROM::cmd_() {
-    printf("\n(CDROM) CMD . NOT IMPL!");
+void CDROM::cmd_pause(u64 clock) {
+    printf("\n(CDROM) CMD Pause");
+    stat_irq();
+    schedule_finish(clock + ONEFRAME);
 }
 
-void CDROM::cmd_() {
-    printf("\n(CDROM) CMD . NOT IMPL!");
+void CDROM::cmd_init(u64 clock) {
+    printf("\n(CDROM) CMD Init");
+    stat_irq();
+    io.MODE.u = 0x20;
+    io.stat.motor_fullspeed = 1;
+    schedule_finish(clock + UKN_TIME);
 }
 
-void CDROM::cmd_() {
-    printf("\n(CDROM) CMD . NOT IMPL!");
+void CDROM::cmd_setmode() {
+    u8 mode = io.PARAMETER.pop();
+    printf("\n(CDROM) CMD SETMODE %02x", mode);
+    if (!(mode & 0x10)) {
+        io.latch.MODE_sector_size = (mode >> 5) & 1;
+    }
+    io.MODE.u = mode;
+    finish_CMD(true, 3);
 }
+
+void CDROM::cmd_reset() {
+    printf("\n(CDROM) CMD RESET.");
+    finish_CMD(true, 3);
+}
+
+void CDROM::cmd_set_session(u64 clock) {
+    printf("\n(CDROM) CMD SetSession");
+    seek.session = io.PARAMETER.pop();
+    if (seek.session == 0) {
+        queue_interrupt(5);
+        result(0x03);
+        result(0x10);
+        finish_CMD(false, 0);
+        return;
+    }
+    if (io.stat.play || io.stat.read) {
+        queue_interrupt(5);
+        result(0x80);
+    }
+    stat_irq();
+    io.stat.seek = 1;
+    io.stat.read = 0;
+    io.stat.play = 0;
+    schedule_finish(clock + UKN_TIME);
+}
+
+void CDROM::cmd_set_session_finish(u64 clock) {
+    io.stat.seek = 0;
+    if (disk.num_sessions == 1){
+        if (seek.session > 1) {
+            queue_interrupt(5);
+            result(0x06);
+            result(0x40);
+            schedule_step_3(clock + UKN_TIME);
+            io.stat.seek = 1;
+        }
+        else {
+            head.session = seek.session;
+            //read_toc();
+            finish_CMD(true, 2);
+        }
+    }
+    else {
+        if (seek.session >= (disk.num_sessions + 1)) {
+            queue_interrupt(5);
+            result(0x06);
+            result(0x20);
+            finish_CMD(false, 0);
+        }
+        else {
+            head.session = seek.session;
+            //do_seek();
+            //read_toc();
+            finish_CMD(true, 2);
+        }
+    }
+}
+
+//void CDROM::cmd_() {
+//    printf("\n(CDROM) CMD . NOT IMPL!");
+//}
 
 static void scheduled_cmd_start(void *ptr, u64 key, u64 timecode, u32 jitter) {
     auto *th = static_cast<CDROM *>(ptr);
-    th->cmd_start(key, timecode + jitter);
+    th->cmd_start(key, timecode - jitter);
+}
+
+static void scheduled_cmd_end(void *ptr, u64 key, u64 timecode, u32 jitter) {
+    auto *th = static_cast<CDROM *>(ptr);
+    th->cmd_finish(key, timecode - jitter);
+}
+
+static void scheduled_cmd_step3(void *ptr, u64 key, u64 timecode, u32 jitter) {
+    auto *th = static_cast<CDROM *>(ptr);
+    th->cmd_step3(key, timecode - jitter);
+}
+
+
+void CDROM::schedule_finish(u64 clock) {
+    CMD.sched_id = scheduler->only_add_abs(clock, 0, this, &scheduled_cmd_end, &CMD.still_sched);
+}
+
+void CDROM::schedule_step_3(u64 clock) {
+    CMD.sched_id = scheduler->only_add_abs(clock, 0, this, &scheduled_cmd_step3, &CMD.still_sched);
+}
+
+
+void CDROM::schedule_seek_finish(u64 clock) {
+    CMD.sched_id = scheduler->only_add_abs(clock + ONEFRAME, 0, this, &scheduled_cmd_end, &CMD.still_sched);
 }
 
 void CDROM::schedule_CMD() {
@@ -278,8 +454,17 @@ void CDROM::queue_interrupt(u32 level) {
     }
 }
 
-void CDROM::finish_CMD() {
+void CDROM::stat_irq() {
+    queue_interrupt(3);
+    result(io.stat.u);
+}
+
+void CDROM::finish_CMD(bool do_stat_irq, u32 irq_num) {
     io.HSTS.BUSYSTS = 0;
+    if (do_stat_irq) {
+        queue_interrupt(irq_num);
+        result(io.stat.u);
+    }
 }
 
 void CDROM::cancel_CMD() {

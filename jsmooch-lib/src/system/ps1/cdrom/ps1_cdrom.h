@@ -42,15 +42,20 @@ struct CDROM_IO {
     u8 L_L{}, L_R{}, R_L{}, R_R{};
     struct {
         u8 L_L{}, L_R{}, R_L{}, R_R{};
+        u8 MODE_sector_size;
     } latch{};
 
     union {
-        u8 error : 1; // 1=invalid cmd/parameters
-        u8 motor_fullspeed : 1; // 1=motor full speed
-        u8 seek_error : 1; // 1=seek error
-        u8 id_error : 1; // 1=getID denied
-        u8 shell_open : 1; // is/was open
-        u8 read : 1; // reading data sectors
+        struct {
+            u8 error : 1; // 1=invalid cmd/parameters
+            u8 motor_fullspeed : 1; // 1=motor full speed
+            u8 seek_error : 1; // 1=seek error
+            u8 id_error : 1; // 1=getID denied
+            u8 shell_open : 1; // is/was open
+            u8 read : 1; // reading data sectors
+            u8 seek : 1;
+            u8 play : 1;
+        };
         u8 u;
     } stat;
 
@@ -79,6 +84,20 @@ struct CDROM_IO {
 
     union {
         struct {
+            u8 CDDA : 1; // 1=allow CD-DA sectors
+            u8 auto_pause : 1; // 1=auto pause end of track
+            u8 report : 1; // 1=enable report interrupts for audio
+            u8 xa_filter : 1; // 1=process only XA-ADPCM sectors that match SetFilter
+            u8 ignore_bit : 1; // 1=ignore sectroc size and setloc positions
+            u8 sector_size : 1; // 0=800h data_only, 1=924h whole sector except sync bytes
+            u8 xa_adpcm : 1; // 1= send XA-ADPCM sectors to SPU Audio Input
+            u8 speed : 1; // 0=normal/1x, 1=double/2x
+        };
+        u8 u{};
+    } MODE{};
+
+    union {
+        struct {
             u8 ENINT : 3{0}; // enable interrupt on these pins
             u8 ENBFEMPT : 1{0}; // enable interrupt on BFEMPT
             u8 ENBFWRDY : 1{0}; // enable interrupt on BFWRDY
@@ -103,6 +122,9 @@ struct CDROM_IO {
 
     u8 CMD{};
 };
+enum CDHEAD_MODE {
+    HM_AUDIO, HM_DATA
+};
 
 struct CDROM {
     explicit CDROM(scheduler_t *scheduler_in) : scheduler(scheduler_in) {}
@@ -113,6 +135,8 @@ struct CDROM {
     void insert_disc(multi_file_set &mfs);
 
     void cmd_start(u64 key, u64 clock);
+    void cmd_finish(u64 key, u64 clock);
+    void cmd_step3(u64 key, u64 clock);
 
     void *set_irq_ptr{};
     void (*set_irq_lvl)(void*, u32){};
@@ -130,6 +154,28 @@ struct CDROM {
         u64 sched_id{};
     } CMD{};
 
+    struct {
+        struct {
+            u8 file{}, channel{};
+        } filter{};
+    } ADPCM{};
+
+    struct {
+        u8 amm{}, ass{}, asect{};
+        u8 session{};
+    } seek;
+
+    struct {
+        CDHEAD_MODE mode;
+        // can be seeking,
+        // can be reading
+        // can be data or audio mode
+
+        u32 sector{}, session{};
+    } head;
+    struct {
+        u32 num_sessions;
+    } disk;
 
 private:
 
@@ -144,21 +190,30 @@ private:
     void reset(); // TODO: CALL THIS
     void recalc_HSTS();
     void schedule_CMD();
+    void schedule_finish(u64 clock);
+    void schedule_step_3(u64 clock);
+    void schedule_seek_finish(u64 clock);;
     void cancel_CMD();
     void reset_decoder();
-    void finish_CMD();
+    void finish_CMD(bool do_stat_irq, u32 irq_num);
     void queue_interrupt(u32 lvl);
     void result(u32 val);
-
+    void stat_irq();
     void cmd_setloc();
     void cmd_play();
     void cmd_forward();
     void cmd_backward();
     void cmd_readn();
-    void cmd_standby();
-    void cmd_stop();
-    void cmd_pause();
-    void cmd_init();
-
+    void cmd_motor_on(u64 clock);
+    void cmd_motor_on_finish();
+    void cmd_stop(u64 clock);
+    void cmd_pause(u64 clock);
+    void cmd_init(u64 clock);
+    void cmd_setmode();
+    void cmd_reset();
+    void cmd_seekl(u64 clock);
+    void cmd_seekp(u64 clock);
+    void cmd_set_session(u64 clock);
+    void cmd_set_session_finish(u64 clock);
 };
 }

@@ -371,11 +371,12 @@ void core::add_to_console(u32 ch)
     /*if (dbg.console) {
         console_view_add_char(dbg.console, ch);
     }*/
-    if (ch == '\n') {
+    if (ch == '\n' || (console.cur - console.ptr) >= (console.allocated_len-1)) {
         printf("\n(CONSOLE) %s", console.ptr);
         console.quickempty();
     } else
         console.sprintf("%c", ch);
+    //printf("%c", ch);
 }
 
 void core::delay_slots(pipeline_item &which)
@@ -544,6 +545,7 @@ void core::cycle(i32 howmany)
 
         fetch_and_decode();
 
+        *waitstates = 2;
         cycles_left -= *waitstates;
         (*clock) += *(waitstates);
         (*waitstates) = 0;

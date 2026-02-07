@@ -60,6 +60,7 @@ int jsm_string::vsprintf(const char* format, va_list va)
     int num;
     num = vsnprintf(cur, allocated_len - (cur - ptr), format, va);
     cur += num;
+    u32 len = (cur - ptr);
     assert((cur - ptr) < allocated_len);
     return num;
 }

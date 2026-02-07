@@ -18,7 +18,7 @@
 #include <SDL3/SDL.h>
 
 #include "helpers/cvec.h"
-#define FRAME_MULTI 10
+#define FRAME_MULTI 2
 
 
 #ifdef JSM_OPENGL
@@ -1237,8 +1237,8 @@ void imgui_jsmooch_app::mainloop(ImGuiIO& io) {
         fsys.load_state();
     }
     static u32 key_was_down = 0;
-    //u32 frame_multi = ImGui::IsKeyDown(ImGuiKey_GraveAccent) ? FRAME_MULTI : 1;
-    u32 frame_multi = 7;
+    u32 frame_multi = ImGui::IsKeyDown(ImGuiKey_GraveAccent) ? FRAME_MULTI : 1;
+    //u32 frame_multi = 7;
     if (fsys.run_state == FSS_play) {
         if (key_was_down && (frame_multi == 1)) {
             // Discard audio buffers!

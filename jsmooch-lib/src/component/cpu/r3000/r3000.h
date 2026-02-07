@@ -90,7 +90,7 @@ struct core {
     REGS regs{};
     pipeline pipe{};
     multiplier multiplier{};
-    jsm_string console{200};
+    jsm_string console{4096};
 
     scheduler_t *scheduler{};
     u64 *clock{};

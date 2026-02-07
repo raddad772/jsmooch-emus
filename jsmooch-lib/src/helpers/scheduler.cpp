@@ -7,11 +7,6 @@
 #include "scheduler.h"
 #include "helpers/debug.h"
 
-
-inline i64 scheduler_t::current_time() const {
-    return static_cast<i64>(*clock);
-}
-
 void scheduler_t::del_event(scheduler_event *e)
 {
     to_delete.items[to_delete.num++] = e;

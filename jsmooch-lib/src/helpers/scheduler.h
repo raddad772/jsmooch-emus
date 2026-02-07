@@ -79,7 +79,7 @@ struct scheduler_t {
     void run_til_tag(u32 tag);
     void from_event_adjust_master_clock(i64 howmany);
     void clear();
-    [[nodiscard]] inline i64 current_time() const;
+    [[nodiscard]] inline i64 current_time() const { return static_cast<i64>(*clock); };
 private:
 
     scheduler_event *alloc_event(i64 timecode, u64 key, scheduler_event* next, u64 id);

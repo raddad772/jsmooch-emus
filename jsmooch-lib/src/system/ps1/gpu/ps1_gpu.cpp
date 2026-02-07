@@ -161,6 +161,7 @@ void core::get_texture_sampler_from_texpage_and_palette(u32 texpage, u32 palette
     ts->mk_new(tx_x, tx_y, clut_addr, this);
     ts->semi_mode = (texpage >> 5) & 3;
     u32 tdepth = (texpage >> 7) & 3;
+    printf("\nTS format %d", tdepth);
     switch(tdepth) {
         case 0:
             ts->sample = &sample_tex_4bit;
