@@ -268,10 +268,7 @@ void SIO0::write(u32 addr, u8 sz, u32 val)
 #define R_SIO_CTRL 0x1F80104A
 #define R_SIO_MISC 0x1F80104C
 #define R_SIO_BAUD 0x1F80104E
-    u32 l3 = addr & 3;
-    //printf("\nWR SIO0 ADDR:%08x SZ:%d VAL:%08x", addr, sz, val);
-    addr &= 0xFFFFFFFC;
-    val <<= (l3 * 8);
+    printf("\nSIO0 ADDR:%04x SZ:%d VAL:%02x", addr, sz, val);
     //val &= masksz[sz];
     switch(addr) {
         case R_SIO_CTRL:
@@ -343,36 +340,22 @@ u32 SIO0::read_rx_data(u8 sz)
 
 u32 SIO0::read(u32 addr, u8 sz)
 {
-    i64 v = -1;
-    u32 l3 = addr & 3;
-    addr &= 0xFFFFFFFC;
     switch(addr) {
         case R_SIO_CTRL:
-            v = read_ctrl(sz);
-            break;
+            return read_ctrl(sz);
         case R_SIO_MODE:
-            v = read_mode(sz);
-            break;
+            return read_mode(sz);
         case R_SIO_STAT:
-            v = read_stat(sz);
-            break;
+            return read_stat(sz);
         case R_RX_DATA:
-            v = read_rx_data(sz);
-            break;
+            return read_rx_data(sz);
         case R_SIO_MISC:
-            v = io.misc;
-            break;
+            return io.misc;
         case R_SIO_BAUD:
-            v = io.baud;
-            break;
-        default:
+            return io.baud;
     }
-    if (v == -1) {
-        printf("\nUnhandled SIO read from %08x (%d)", addr, sz);
-        return 0;
-    }
-    //printf("\nRD SIO0 ADDR:%08x SZ:%d VAL:%08x", addr + l3, sz, static_cast<u32>(v >> (l3 * 8)));
-    return v >> (l3 * 8);
+    printf("\nUnhandled SIO read from %08x (%d)", addr, sz);
+    return 0;
 }
 
 #undef R_RX_DATA
