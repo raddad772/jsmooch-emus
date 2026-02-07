@@ -380,6 +380,41 @@ void core::multiply_matrix_by_vector(CMD *config, MATRIX mat, u8 vei, control_ve
     mac_to_ir(config);
 }
 
+void core::multiply_matrix_by_vector_MVMVA(CMD *config, MATRIX mat, u8 vei, control_vector crv)
+{
+    i32 vector_index = vei;
+    if (mat == MTX_Invalid) {
+        matrices[mat][0][0] = (-static_cast<i16>(RGB[0])) << 4;
+        matrices[mat][0][1] = static_cast<i16>(RGB[0]) << 4;
+        matrices[mat][0][2] = IR[0];
+        matrices[mat][1][0] = matrices[mat][1][1] = matrices[mat][1][2] = matrices[0][0][2];
+        matrices[mat][2][0] = matrices[mat][2][1] = matrices[mat][2][2] = matrices[0][1][1];
+    }
+
+    const u32 far_color = crv == CV_FarColor;
+
+    for (u32 r = 0; r < 3; r++) {
+        i64 res = static_cast<i64>(control_vectors[crv][r]) << 12;
+        for (u32 c = 0; c < 3; c++) {
+            const i32 v = V[vector_index][c];
+            const i32 m = matrices[mat][r][c];
+
+            const i32 product = v * m;
+
+            res = i64_to_i44(static_cast<u8>(r), res + static_cast<i64>(product));
+            if (far_color && (c == 0)) {
+                i32_to_i16_saturate(&cfg, r, static_cast<i32>(res >> config->shift));
+                res = 0;
+            }
+        }
+
+        MAC[r + 1] = static_cast<i32>(res >> config->shift);
+    }
+
+    mac_to_ir(config);
+}
+
+
 void core::do_ncc(CMD *config, u8 vector_index)
 {
     multiply_matrix_by_vector(config, MTX_Light, vector_index, CV_Zero);
@@ -411,7 +446,7 @@ void core::cmd_MVMVA(CMD *config) {
     V[3][1] = IR[2];
     V[3][2] = IR[3];
 
-    multiply_matrix_by_vector(config, config->matrix, config->vector_mul, config->vector_add);
+    multiply_matrix_by_vector_MVMVA(config, config->matrix, config->vector_mul, config->vector_add);
 }
 
 void core::cmd_NCDS(CMD *config)

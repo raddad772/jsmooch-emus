@@ -35,6 +35,7 @@ struct CMD {
 struct core {
     core();
     void multiply_matrix_by_vector(CMD *config, MATRIX mat, u8 vei, control_vector crv);
+    void multiply_matrix_by_vector_MVMVA(CMD *config, MATRIX mat, u8 vei, control_vector crv);
     void set_flag(int num) { flags |= 1 << num; }
     i16 i32_to_i16_saturate(const CMD *config, const u8 flag, const i32 val) {
         const i32 min = config->clamp_negative ? 0 : -32768;
