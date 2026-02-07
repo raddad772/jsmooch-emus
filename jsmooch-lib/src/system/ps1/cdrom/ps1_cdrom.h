@@ -129,14 +129,17 @@ enum CDHEAD_MODE {
 struct CDROM {
     explicit CDROM(scheduler_t *scheduler_in) : scheduler(scheduler_in) {}
     scheduler_t *scheduler;
-    void write(u32 addr, u32 val, u8 sz);
-    u32 read(u32 addr, u8 sz, bool has_effect);
+    void mainbus_write(u32 addr, u32 val, u8 sz);
+    u32 mainbus_read(u32 addr, u8 sz, bool has_effect);
     void update_IRQs();
     void insert_disc(multi_file_set &mfs);
 
     void cmd_start(u64 key, u64 clock);
     void cmd_finish(u64 key, u64 clock);
     void cmd_step3(u64 key, u64 clock);
+    void sch_read(u64 key, u64 clock);
+    void read_toc();
+    void do_seek();
 
     void *set_irq_ptr{};
     void (*set_irq_lvl)(void*, u32){};
@@ -153,6 +156,11 @@ struct CDROM {
         u32 still_sched{};
         u64 sched_id{};
     } CMD{};
+
+    struct {
+        u32 still_sched{};
+        u64 sched_id{};
+    } read{};
 
     struct {
         struct {
@@ -191,6 +199,7 @@ private:
     void recalc_HSTS();
     void schedule_CMD();
     void schedule_finish(u64 clock);
+    void schedule_read(u64 clock);
     void schedule_step_3(u64 clock);
     void schedule_seek_finish(u64 clock);;
     void cancel_CMD();
@@ -203,7 +212,8 @@ private:
     void cmd_play();
     void cmd_forward();
     void cmd_backward();
-    void cmd_readn();
+    void cmd_readn(u64 clock);
+    void cmd_reads(u64 clock);
     void cmd_motor_on(u64 clock);
     void cmd_motor_on_finish();
     void cmd_stop(u64 clock);
@@ -215,5 +225,7 @@ private:
     void cmd_seekp(u64 clock);
     void cmd_set_session(u64 clock);
     void cmd_set_session_finish(u64 clock);
+    void do_cmd_read(u64 clock);
+    void do_cmd_read_step2(u64 clock);
 };
 }

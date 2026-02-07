@@ -34,7 +34,7 @@ u8 CD_FIFO::pop() {
     return v;
 }
 
-u32 CDROM::read(u32 addr, u8 sz, bool has_effect) {
+u32 CDROM::mainbus_read(u32 addr, u8 sz, bool has_effect) {
     switch (addr) {
         case 0x1F801800: {
             u32 v = io.HSTS.u | (io.HSTS.u << 8) | (io.HSTS.u << 16) | (io.HSTS.u << 24);
@@ -48,7 +48,7 @@ u32 CDROM::read(u32 addr, u8 sz, bool has_effect) {
     NOGOHERE;
 }
 
-void CDROM::write(u32 addr, u32 val, u8 sz) {
+void CDROM::mainbus_write(u32 addr, u32 val, u8 sz) {
     switch (addr) {
         case 0x1F801800: io.HSTS.RA = val & 3; return;
         case 0x1F801801: return write_01(val, sz);
@@ -115,6 +115,7 @@ void CDROM::cmd_start(u64 key, u64 clock) {
     u32 cmd = io.CMD;
     if ((cmd >= 0x20) && (cmd <= 0x4F)) cmd = 0;
     if (cmd >= 0x60) cmd = 0;
+    printf("\n(CDROM) EXEC CMD %02x", io.CMD);;
     switch(cmd) {
         case 0x00:
         case 0x17:
@@ -152,8 +153,8 @@ void CDROM::cmd_start(u64 key, u64 clock) {
             stat_irq();
             cmd_backward();
             return;
-        case 0x06:
-            cmd_readn();
+        case 0x06: // ReadN
+            cmd_reads(clock);
             return;
         case 0x07:
             cmd_motor_on(clock);
@@ -231,6 +232,10 @@ void CDROM::cmd_finish(u64 key, u64 clock) {
             io.stat.seek = 0;
             finish_CMD(true, 2);
             return;
+        case 0x06: // ReadN
+        case 0x1B: // ReadS
+            do_cmd_read_step2(clock);
+            return;
         default:
             NOGOHERE;
     }
@@ -260,8 +265,23 @@ void CDROM::cmd_backward() {
     printf("\n(CDROM) CMD Backward. NOT IMPL!");
 }
 
-void CDROM::cmd_readn() {
-    printf("\n(CDROM) CMD ReadN. NOT IMPL!");
+void CDROM::cmd_reads(u64 clock) {
+    printf("\n(CDROM) CMD ReadS");
+    // Read data!
+    do_cmd_read(clock);
+}
+
+void CDROM::do_cmd_read(u64 clock) {
+    stat_irq();
+    io.stat.seek = 0;
+    io.stat.read = 1;
+    schedule_finish(clock + ONEFRAME);
+}
+
+void CDROM::do_cmd_read_step2(u64 clock) {
+    schedule_read(clock + ONEFRAME);
+    queue_interrupt(1);
+    result(io.stat.u);
 }
 
 void CDROM::cmd_seekp(u64 clock) {
@@ -289,6 +309,10 @@ void CDROM::cmd_motor_on(u64 clock) {
     schedule_finish(clock + (ONEFRAME * 60));
 }
 
+void CDROM::sch_read(u64 key, u64 clock) {
+    printf("\n(CDROM) IMPL ACTUAL DATA READ");
+}
+
 void CDROM::cmd_motor_on_finish() {
     if (io.stat.motor_fullspeed) {
         // Give error INT5!
@@ -314,6 +338,8 @@ void CDROM::cmd_stop(u64 clock) {
 void CDROM::cmd_pause(u64 clock) {
     printf("\n(CDROM) CMD Pause");
     stat_irq();
+    if (read.still_sched) scheduler->delete_if_exist(read.sched_id);
+    io.stat.read = 0;
     schedule_finish(clock + ONEFRAME);
 }
 
@@ -373,7 +399,7 @@ void CDROM::cmd_set_session_finish(u64 clock) {
         }
         else {
             head.session = seek.session;
-            //read_toc();
+            read_toc();
             finish_CMD(true, 2);
         }
     }
@@ -386,11 +412,18 @@ void CDROM::cmd_set_session_finish(u64 clock) {
         }
         else {
             head.session = seek.session;
-            //do_seek();
-            //read_toc();
+            do_seek();
+            read_toc();
             finish_CMD(true, 2);
         }
     }
+}
+void CDROM::read_toc() {
+    printf("\nIMPL READ_TOC");
+}
+
+void CDROM::do_seek() {
+    printf("\nIMPL DO_SEEK");
 }
 
 //void CDROM::cmd_() {
@@ -400,6 +433,11 @@ void CDROM::cmd_set_session_finish(u64 clock) {
 static void scheduled_cmd_start(void *ptr, u64 key, u64 timecode, u32 jitter) {
     auto *th = static_cast<CDROM *>(ptr);
     th->cmd_start(key, timecode - jitter);
+}
+
+static void scheduled_read(void *ptr, u64 key, u64 timecode, u32 jitter) {
+    auto *th = static_cast<CDROM *>(ptr);
+    th->sch_read(key, timecode - jitter);
 }
 
 static void scheduled_cmd_end(void *ptr, u64 key, u64 timecode, u32 jitter) {
@@ -412,6 +450,9 @@ static void scheduled_cmd_step3(void *ptr, u64 key, u64 timecode, u32 jitter) {
     th->cmd_step3(key, timecode - jitter);
 }
 
+void CDROM::schedule_read(u64 clock) {
+    read.sched_id = scheduler->only_add_abs(clock, 0, this, &scheduled_read, &read.still_sched);
+}
 
 void CDROM::schedule_finish(u64 clock) {
     CMD.sched_id = scheduler->only_add_abs(clock, 0, this, &scheduled_cmd_end, &CMD.still_sched);
