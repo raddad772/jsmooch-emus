@@ -41,6 +41,10 @@ static void vblank(void *bound_ptr, u64 key, u64 current_clock, u32 jitter)
 {
     // First function call on a new frame
     auto *th = static_cast<core *>(bound_ptr);
+    static u64 last = 0;
+    u64 diff = current_clock - last;
+    last = current_clock;
+    //printf("\nVBLANK @cycle:%lld diff:%lld val:%lld", th->clock.master_cycle_count, diff, key);
     th->set_irq(IRQ_VBlank, key);
     th->clock.in_vblank = key;
     th->timers[1].vblank(key);
@@ -65,6 +69,7 @@ void do_next_scheduled_frame(void *bound_ptr, u64 key, u64 current_clock, u32 ji
 void core::schedule_frame(u64 start_clock, u32 is_first)
 {
     if (!is_first) {
+        //printf("\nNEW FRAME %lld", clock.master_frame);
         clock.master_frame++;
         clock.frame_cycle_start = start_clock;
     }
@@ -160,17 +165,17 @@ void core::sideload(multi_file_set &fs) {
 
 void core::setup_IRQs()
 {
-    IRQ_multiplexer.setup_irq(0, "vblank", IRQMBK_edge_0_to_1);
-    IRQ_multiplexer.setup_irq(1, "gpu", IRQMBK_edge_0_to_1);
-    IRQ_multiplexer.setup_irq(2, "cdrom", IRQMBK_edge_0_to_1);
-    IRQ_multiplexer.setup_irq(3, "dma", IRQMBK_edge_0_to_1);
-    IRQ_multiplexer.setup_irq(4, "tmr0", IRQMBK_edge_0_to_1);
-    IRQ_multiplexer.setup_irq(5, "tmr1", IRQMBK_edge_0_to_1);
-    IRQ_multiplexer.setup_irq(6, "tmr2", IRQMBK_edge_0_to_1);
-    IRQ_multiplexer.setup_irq(7, "sio0_recv", IRQMBK_edge_0_to_1);
-    IRQ_multiplexer.setup_irq(8, "sio", IRQMBK_edge_0_to_1);
-    IRQ_multiplexer.setup_irq(9, "spu", IRQMBK_edge_0_to_1);
-    IRQ_multiplexer.setup_irq(10, "lightpen_pio_dtl", IRQMBK_edge_0_to_1);
+    IRQ_multiplexer.setup_irq(IRQ_VBlank, "vblank", IRQMBK_edge_0_to_1);
+    IRQ_multiplexer.setup_irq(IRQ_GPU, "gpu", IRQMBK_edge_0_to_1);
+    IRQ_multiplexer.setup_irq(IRQ_CDROM, "cdrom", IRQMBK_edge_0_to_1);
+    IRQ_multiplexer.setup_irq(IRQ_DMA, "dma", IRQMBK_edge_0_to_1);
+    IRQ_multiplexer.setup_irq(IRQ_TMR0, "tmr0", IRQMBK_edge_0_to_1);
+    IRQ_multiplexer.setup_irq(IRQ_TMR1, "tmr1", IRQMBK_edge_0_to_1);
+    IRQ_multiplexer.setup_irq(IRQ_TMR2, "tmr2", IRQMBK_edge_0_to_1);
+    IRQ_multiplexer.setup_irq(IRQ_SIO0, "sio0_recv", IRQMBK_edge_0_to_1);
+    IRQ_multiplexer.setup_irq(IRQ_SIO1, "sio", IRQMBK_edge_0_to_1);
+    IRQ_multiplexer.setup_irq(IRQ_SPU, "spu", IRQMBK_edge_0_to_1);
+    IRQ_multiplexer.setup_irq(IRQ_PIOLightpen, "lightpen_pio_dtl", IRQMBK_edge_0_to_1);
 }
 
 void core::copy_vram()
@@ -192,7 +197,6 @@ u32 core::finish_frame()
 
     copy_vram();
     if (::dbg.do_break) {
-        printf("\nDUMP!");
         ::dbg.trace_on += 1;
         dbg_flush();
         ::dbg.trace_on -= 1;
@@ -304,7 +308,7 @@ void core::reset()
     printf("\nPS1 reset!");
     if (sideloaded.size > 0) {
         sideload_EXE(&sideloaded);
-        amidog_print_console();
+        //amidog_print_console();
     }
 }
 

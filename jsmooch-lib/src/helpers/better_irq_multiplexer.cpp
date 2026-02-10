@@ -18,16 +18,24 @@ void IRQ_multiplexer_b::set_level(u32 num, u32 new_level)
         case IRQMBK_flipflop:
             irq->IF = new_level;
             break;
-        case IRQMBK_edge_0_to_1:
-            printif(better_irq_multiplexer, "\nEdge trigger %d to %d", old_input, irq->input);
+        case IRQMBK_edge_0_to_1: {
+            u32 old = irq->IF;
             irq->IF |= (!old_input) && irq->input;
-            break;
+            if (old != irq->IF) {
+                if (clock) {
+                    printif(better_irq_multiplexer, "\nEdge trigger %s @%lld", irq->name, *clock);
+                }
+                else {
+                    printif(better_irq_multiplexer, "\nEdge trigger %s", irq->name);
+                }
+            }
+            break; }
         case IRQMBK_edge_1_to_0:
             irq->IF |= old_input && (!irq->input);
             break;
     }
     IF |= irq->IF << num;
-    printif(better_irq_multiplexer, "\nirq_multiplexer: %d set to %d, new IF: %lld", num, new_level, IF);
+    //printif(better_irq_multiplexer, "\nirq_multiplexer: %d set to %d, new IF: %lld", num, new_level, IF);
 }
 
 void IRQ_multiplexer_b::reset()
@@ -55,4 +63,5 @@ void IRQ_multiplexer_b::setup_irq(u32 num, const char *name, IRQ_multiplexer_b_k
     assert(num < MAX_IRQS_MULTIPLEXED);
     irqs[num].kind = kind;
     snprintf(irqs[num].name, sizeof(irqs[num].name), "%s", name);
+    //printf("\nSETUP %c FOR NUM %d", name, num);
 }

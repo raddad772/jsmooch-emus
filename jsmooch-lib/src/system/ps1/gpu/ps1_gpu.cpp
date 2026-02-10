@@ -1693,7 +1693,7 @@ void core::write_gp1(u32 cmd)
 {
     switch(cmd >> 24) {
         case 0:
-            printf("\nGP1 soft reset");
+            printf("\nGP1 soft reset %08x", bus->cpu.gte.flags);
             // Soft reset
             unready_cmd();
             unready_recv_dma();

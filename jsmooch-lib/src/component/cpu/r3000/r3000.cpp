@@ -5,6 +5,7 @@
 #include <cstring>
 #include <cassert>
 #include <cstdio> // printf
+#include "helpers/debug.h"
 
 #include "r3000_instructions.h"
 #include "r3000.h"
@@ -412,18 +413,30 @@ void core::flush_pipe()
 
 void core::exception(u32 code, u32 branch_delay, u32 cop0)
 {
+    //if (code == 4) dbg_break("Address Unaligned Error!", *clock);
+    //else if (code == 0) {
+    //            dbg_break("IRQ!", *clock);
+    //}
+        //printf("\nCurrent PC at exception: %08x  Current instruction address:%08x", regs.PC, pipe.current.addr);
+    printf("\nCurrent PC at exception: %08x  Current instruction address:%08x", regs.PC, pipe.current.addr);
+    dbg_break("Exception", *clock);
+    u32 mycode = code;
     code <<= 2;
     u32 vector = 0x80000080;
     if (regs.COP0[RCR_SR] & 0x400000) {
         vector = 0xBFC00180;
     }
     u32 raddr;
-    if (!branch_delay)
-        raddr = regs.PC - 4;
+    if (!branch_delay) {
+        raddr = regs.PC;
+        //printf("\nNOT BRANCH DELAY? SO DO %08x", raddr);
+    }
     else
     {
-        raddr = regs.PC;
+        raddr = regs.PC - 4;
         code |= 0x80000000;
+        //printf("\nBRANCH DELAY!? SO DO %08x", raddr);
+        //dbg_break("BRANCH DELAY", *clock);
     }
     regs.COP0[RCR_EPC] = raddr;
     flush_pipe();
@@ -431,6 +444,7 @@ void core::exception(u32 code, u32 branch_delay, u32 cop0)
     if (cop0)
         vector -= 0x40;
 
+    dbglog_exception(mycode, vector, raddr, branch_delay);
     regs.PC = vector;
     regs.COP0[RCR_Cause] = code;
     u32 lstat = regs.COP0[RCR_SR];
@@ -493,7 +507,42 @@ void core::lycoder_trace_format(jsm_string &out)
     }
 }
 
-void core::trace_format(jsm_string &out)
+void core::dbglog_exception(u32 code, u32 vector, u32 raddr, bool branch_delay) {
+    bool do_dbglog = false;
+    if (dbg.dvptr) {
+        do_dbglog = dbg.dvptr->ids_enabled[trace.exception_id];
+    }
+    if (do_dbglog) {
+        trace.str.quickempty();
+        trace.str.sprintf("Exception. Code:%d Vector:%08x ReturnAddr:%08x Delay:%d", code, vector, raddr, branch_delay);
+        dbg.dvptr->add_printf(trace.exception_id, *clock, DBGLS_TRACE, "%s", trace.str.ptr);
+    }
+}
+
+
+    void core::trace_format() {
+    bool do_dbglog = false;
+    if (dbg.dvptr) {
+        do_dbglog = dbg.dvptr->ids_enabled[dbg.dv_id];
+    }
+    if (do_dbglog) {
+        ctxt ct{};
+        ct.cop = 0;
+        ct.regs = 0;
+        ct.gte = 0;
+        //dbg_printf("\n%08x: %08x cyc:%lld", pipe.current.addr, pipe.current.opcode, *clock);
+        R3000_disassemble(pipe.current.opcode, trace.str, pipe.current.addr, &ct);
+        if (pipe.current.addr == 0xbfc0d8e8) dbg_break("SysBad instruction or whatever", *clock);
+        trace.str2.quickempty();
+        print_context(ct, trace.str2);
+        dbglog_view *dv = dbg.dvptr;
+        dv->add_printf(dbg.dv_id, *clock, DBGLS_TRACE, "%08x  %s", pipe.current.addr, trace.str.ptr);
+        dv->extra_printf("%s", trace.str2.ptr);
+    }
+}
+
+
+void core::trace_format_console(jsm_string &out)
 {
     ctxt ct{};
     ct.cop = 0;
@@ -501,6 +550,7 @@ void core::trace_format(jsm_string &out)
     ct.gte = 0;
     //dbg_printf("\n%08x: %08x cyc:%lld", pipe.current.addr, pipe.current.opcode, *clock);
     R3000_disassemble(pipe.current.opcode, out, pipe.current.addr, &ct);
+    if (pipe.current.addr == 0xbfc0d8e8) dbg_break("SysBad instruction or whatever", *clock);
     printf("\n%08x  (%08x)   %s", pipe.current.addr, pipe.current.opcode, out.ptr);
     out.quickempty();
     print_context(ct, out);
@@ -513,6 +563,7 @@ void core::check_IRQ()
 {
     if (pins.IRQ && (regs.COP0[12] & 0x400) && (regs.COP0[12] & 1)) {
         //printf("\nDO IRQ!");
+        regs.PC -= 4;
         exception(0, pipe.item0.new_PC != 0xFFFFFFFF, 0);
         //dbg_enable_trace();
         //dbg_break("YO", 0);
@@ -532,11 +583,12 @@ void core::cycle(i32 howmany)
         lycoder_trace_format(&trace.str);
 #else
         if (::dbg.trace_on && ::dbg.traces.r3000.instruction) {
-            trace_format(trace.str);
+            trace_format_console(trace.str);
             //console.log(hex8(regs.PC) + ' ' + R3000_disassemble(current.opcode));
             //dbg.traces.add(D_RESOURCE_TYPES.R3000, clock.trace_cycles-1, trace_format(R3000_disassemble(current.opcode), current.addr))
         }
 #endif
+        trace_format();
         (this->*current->op->func)(current->opcode, current->op);
 
         delay_slots(*current);

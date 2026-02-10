@@ -26,16 +26,16 @@
 namespace PS1 {
 enum IRQ {
     IRQ_VBlank = 0,
-    IRQ_GPU,
-    IRQ_CDROM,
-    IRQ_DMA,
-    IRQ_TMR0,
-    IRQ_TMR1,
-    IRQ_TMR2,
-    IRQ_SIO0,
-    IRQ_SIO1,
-    IRQ_SPU,
-    IRQ_PIOLightpen
+    IRQ_GPU = 1,
+    IRQ_CDROM = 2,
+    IRQ_DMA = 3,
+    IRQ_TMR0 = 4,
+    IRQ_TMR1 = 5,
+    IRQ_TMR2 = 6,
+    IRQ_SIO0 = 7,
+    IRQ_SIO1 = 8,
+    IRQ_SPU = 9,
+    IRQ_PIOLightpen = 10
 };
 
 enum DMA_ports {
@@ -119,6 +119,7 @@ struct core : jsm_system {
 
     DBG_START
         cvec_ptr<debugger_view> console_view{};
+        DBG_LOG_VIEW
     DBG_END
 
 public:

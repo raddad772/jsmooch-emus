@@ -179,6 +179,7 @@ struct core {
     void cmd_GPF(CMD *config);
     void cmd_GPL(CMD *config);
     void cmd_NCCT(CMD *config);
+    void check_ir_flag(const CMD *config, u8 r, i64 mac);;
 
     CMD cfg{}, config0{}, config1{};
     u32 op_going{};

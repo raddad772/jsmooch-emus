@@ -88,7 +88,7 @@ core::core() :
     has.save_state = false;
     has.set_audiobuf = false;
 
-    scheduler.max_block_size = 30;
+    scheduler.max_block_size = 2;
 
     scheduler.run.func = &run_block;
     scheduler.run.ptr = this;
@@ -117,6 +117,12 @@ core::core() :
 
     cdrom.set_irq_lvl = &set_cdrom_irq_level;
     cdrom.set_irq_ptr = this;
+    IRQ_multiplexer.clock = &clock.master_cycle_count;
+    //::dbg.trace_on = 1;
+    ::dbg.traces.better_irq_multiplexer = 1;
+
+    //
+    ::dbg.traces.r3000.instruction = 1;
 }
 
 static constexpr u32 alignmask[5] = { 0, 0xFFFFFFFF, 0xFFFFFFFE, 0, 0xFFFFFFFC };

@@ -320,7 +320,8 @@ struct dbglog_category_node {
     char name[100]{};
     char short_name[20]{};
     u32 category_id{};
-    u32 enabled{};
+    bool enabled{};
+    bool break_on_fire{};
 
     std::vector<dbglog_category_node> children{};
 

@@ -380,6 +380,19 @@ void core::multiply_matrix_by_vector(CMD *config, MATRIX mat, u8 vei, control_ve
     mac_to_ir(config);
 }
 
+void core::check_ir_flag(const CMD *config, u8 r, i64 mac)
+{
+    // MAC >> 12 is what hardware checks
+    i64 val = mac >> 12;
+
+    const i64 min = config->clamp_negative ? 0 : -32768;
+    const i64 max = 32767;
+
+    if (val < min || val > max) {
+        set_flag(24 - r);
+    }
+}
+
 void core::multiply_matrix_by_vector_MVMVA(CMD *config, MATRIX mat, u8 vei, control_vector crv)
 {
     i32 vector_index = vei;
@@ -669,13 +682,13 @@ void core::command(u32 opcode, u64 current_clock)
     config->from_command(opcode);
     flags = 0;
     switch(opc) {
-        /*case 0x01: cmd_RTPS(config); cycle_count = 14; break;
+        case 0x01: cmd_RTPS(config); cycle_count = 14; break;
         case 0x06: cmd_NCLIP(); cycle_count = 7; break;
         case 0x0C: cmd_OP(config); cycle_count = 5; break;
         case 0x10: cmd_DPCS(config); cycle_count = 7; break;
-        case 0x11: cmd_INTPL(config); cycle_count = 7; break;*/
+        case 0x11: cmd_INTPL(config); cycle_count = 7; break;
         case 0x12: cmd_MVMVA(config); cycle_count = 7; break;
-        /*case 0x13: cmd_NCDS(config); cycle_count = 18; break;
+        case 0x13: cmd_NCDS(config); cycle_count = 18; break;
         case 0x14: cmd_CDP(config); cycle_count = 13; break;
         case 0x16: cmd_NCDT(config); cycle_count = 43; break;
         case 0x1B: cmd_NCCS(config); cycle_count = 16; break;
@@ -690,7 +703,7 @@ void core::command(u32 opcode, u64 current_clock)
         case 0x30: cmd_RTPT(config); cycle_count = 22; break;
         case 0x3D: cmd_GPF(config); cycle_count = 4; break;
         case 0x3E: cmd_GPL(config); cycle_count = 4; break;
-        case 0x3F: cmd_NCCT(config); cycle_count = 38; break;*/
+        case 0x3F: cmd_NCCT(config); cycle_count = 38; break;
         default:
             printf("\nUnsupported GTE opcode %02x", opc);
             break;

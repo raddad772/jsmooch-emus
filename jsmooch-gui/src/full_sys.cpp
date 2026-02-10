@@ -159,6 +159,7 @@ u32 grab_BIOSes(multi_file_set* BIOSes, jsm::systems which)
             has_bios = 1;
             snprintf(BIOS_PATH, sizeof(BIOS_PATH), "%s/ps1", BASE_PATH);
             BIOSes->add("scph1001.bin", BIOS_PATH);
+            //BIOSes->add("PSXONPSP660.BIN", BIOS_PATH);
             break;
         case jsm::systems::GBA:
             has_bios = 1;
@@ -844,7 +845,7 @@ void full_system::load_default_ROM()
             //RenderPolygon16BPP
             //worked = grab_ROM(&ROMs, which, "psxtest_cpu.exe", nullptr); // slammin'!
             //worked = grab_ROM(&ROMs, which, "psxtest_cpx.exe", nullptr);
-            worked = grab_ROM(&ROMs, which, "psxtest_gte.exe", nullptr);
+            //worked = grab_ROM(&ROMs, which, "psxtest_gte.exe", nullptr);
             //worked = grab_ROM(&ROMs, which, "ps1-tests-built/cpu/cop/cop.exe", nullptr);
             //worked = grab_ROM(&ROMs, which, "ps1-tests-built/gte/test-all/test-all.exe", nullptr);
             //worked = grab_ROM(&ROMs, which, "ps1-tests-built/timers/timers.exe", nullptr);
@@ -912,7 +913,7 @@ void full_system::load_default_ROM()
             //worked = grab_ROM(&ROMs, which, "PSX/HelloWorld/16BPP/HelloWorld16BPP.exe", nullptr);
             //worked = grab_ROM(&ROMs, which, "PSX/GTE/GTETransfer/GTETransfer.exe", nullptr);
 
-            //worked = grab_cue(&ROMs, which, "mk2.cue", nullptr);
+            worked = grab_cue(&ROMs, which, "mk2.cue", nullptr);
             //worked = grab_ROM(&ROMs, which, "VBLANK.exe", nullptr);
             break;
         case jsm::systems::GBA:

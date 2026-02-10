@@ -53,7 +53,7 @@ struct pipeline_item {
     void clear();
     i32 target{};
     u32 value{};
-    u32 opcode{}, new_PC, addr{};
+    u32 opcode{}, new_PC{0xFFFFFFFF}, addr{};
     OPCODE *op{};
 };
 
@@ -78,7 +78,9 @@ struct core {
     void fetch_and_decode();
     void print_context(ctxt &ct, jsm_string &out);
     void lycoder_trace_format(jsm_string &out);
-    void trace_format(jsm_string &out);
+    void trace_format_console(jsm_string &out);
+    void trace_format();
+    void dbglog_exception(u32 code, u32 vector, u32 raddr, bool branch_delay);
     void check_IRQ();
     void cycle(i32 howmany);
     void reset();
@@ -103,9 +105,13 @@ struct core {
     struct {
         jsm_debug_read_trace strct{};
         jsm_string str{100};
+        jsm_string str2{100};
         bool ok{};
         u32 ins_PC{};
         i32 source_id{};
+        u32 irq_id;
+        u32 rfe_id;
+        u32 exception_id;
     } trace;
 
     struct {
@@ -124,6 +130,7 @@ struct core {
     void (*update_sr)(void *ptr, core *mcore, u32 val){};
     DBG_START
     console_view *console{};
+    DBG_LOG_VIEW
     DBG_END
 
 private:

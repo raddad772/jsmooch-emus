@@ -22,6 +22,7 @@ struct IRQ_multiplexer_b {
     void setup_irq(u32 num, const char *name, IRQ_multiplexer_b_kind kind);
     u64 IF{};
     u64 max_irq{};
+    u64 *clock{};
 
     struct IRQ_multiplexer_b_irq {
         u32 input{};
