@@ -38,7 +38,7 @@ struct core {
     void reset();
     void write_gp0(u32 cmd);
     void write_gp1(u32 cmd);
-    [[nodiscard]] u32 get_gpuread() const;
+    [[nodiscard]] u32 get_gpuread();
     [[nodiscard]] u32 get_gpustat() const;
 
     struct {
@@ -139,7 +139,8 @@ struct core {
         VERTEX2 vert[4]{};
     } polygon{};
 
-    u32 gp0_transfer_remaining{};
+    i32 gp0_transfer_remaining{};
+    bool VRAM_to_CPU_in_progress{};
 
     void (core::*handle_gp0)(u32 cmd);
 
@@ -217,6 +218,8 @@ private:
     void load_buffer_reset(u32 x, u32 y, u32 width, u32 height);
     void gp0_image_load_continue(u32 cmd);
     void gp0_image_load_start();
+    void gp0_image_save_start();
+    void gp0_image_save_continue();
     void gp0_cmd_unhandled();
 
     void GPUSTAT_update();

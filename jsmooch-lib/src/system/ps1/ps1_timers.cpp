@@ -169,7 +169,7 @@ void core::update_timer_irqs()
         if ((IRQ_multiplexer.irqs[irq_num].input == 0) && b) {
             // Set up
             set_irq(static_cast<IRQ>(IRQ_TMR0 + i), b);
-            printf("\nTIMER%d IRQ SET!", i);
+            //printf("\nTIMER%d IRQ SET!", i);
 
             // Schedule down-set
             scheduler.only_add_abs(clock_current() + 100, i, this, &timer_irq_down, nullptr);

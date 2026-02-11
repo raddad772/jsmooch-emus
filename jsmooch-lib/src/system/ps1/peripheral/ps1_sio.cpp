@@ -101,7 +101,7 @@ void SIO0::send_DTR(u32 port, u32 level)
 {
     memport p{};
     get_select_port(port, &p);
-    printf("\nSend DTR port:%d level:%d", port, level);
+    //printf("\nSend DTR port:%d level:%d", port, level);
     if (p.memcard) p.memcard->set_CS(p.memcard->device_ptr, level, bus->clock_current());
     if (p.controller) p.controller->set_CS(p.controller->device_ptr, level, bus->clock_current());
 }
@@ -128,15 +128,15 @@ void SIO0::write_ctrl(u8 sz, u32 val)
 
     u32 new_dtr = io.SIO_CTRL.dtr_output;
     u32 new_select = io.SIO_CTRL.sio0_port_sel;
-    printf("\nWRITTEN DTR:%d  CS:%d .   old_DTR:%d  old_CS:%d", new_dtr, new_select, old_dtr, old_select);
+    //printf("\nWRITTEN DTR:%d  CS:%d .   old_DTR:%d  old_CS:%d", new_dtr, new_select, old_dtr, old_select);
 
     if ((new_dtr != old_dtr) || (new_select != old_select)) {
         // If select changed, send DTR=0
         if (new_select != old_select) {
-            printf("\nNEW!=OLD so sending DTR:%d CS:0", old_select);
+            //printf("\nNEW!=OLD so sending DTR:%d CS:0", old_select);
             send_DTR(old_select, 0);
         }
-        printf("\nsending DTR:%d CS:%d", new_dtr, new_select);
+        //printf("\nsending DTR:%d CS:%d", new_dtr, new_select);
         send_DTR(new_select, new_dtr);
     }
 
@@ -254,7 +254,7 @@ void scheduled_exchange_byte(void *ptr, u64 key, u64 clock, u32 jitter)
 void SIO0::write_tx_data(u8 sz, u32 val)
 {
     if (!io.SIO_CTRL.tx_enable) return;
-    printf("\nWRITE TX SZ:%d VAL:%02x", sz, val);
+    //printf("\nWRITE TX SZ:%d VAL:%02x", sz, val);
     // schedule exchange_byte() for 1023 cycles out!
     io.SIO_STAT.tx_fifo_not_full = 1;
     io.SIO_STAT.tx_idle = 0;
@@ -386,7 +386,7 @@ u32 SIO0::read(u32 addr, u8 sz)
 #define R_SIO_BAUD 0x1F80105E
 
 void SIO1::write(u32 addr, u8 sz, u32 val) {
-    printf("\nSIO1 WR ADDR:%04x SZ:%d VAL:%02x", addr, sz, val);
+    //printf("\nSIO1 WR ADDR:%04x SZ:%d VAL:%02x", addr, sz, val);
     val &= 0xFF;
     switch (addr) {
         case R_SIO_MODE:

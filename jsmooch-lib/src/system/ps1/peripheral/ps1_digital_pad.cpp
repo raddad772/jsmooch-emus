@@ -50,7 +50,7 @@ void digital_gamepad::latch_buttons()
 
 static void set_CS(void *ptr, u32 level, u64 clock_cycle) {
     auto *th = static_cast<digital_gamepad *>(ptr);
-    printf("\npad: set CS new:%d  old:%d", level, th->interface.CS);
+    //printf("\npad: set CS new:%d  old:%d", level, th->interface.CS);
     u32 old_CS = th->interface.CS;
     th->interface.CS = level;
     if (old_CS != th->interface.CS) {

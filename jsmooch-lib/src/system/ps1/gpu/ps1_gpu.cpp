@@ -1271,6 +1271,32 @@ void core::load_buffer_reset(u32 x, u32 y, u32 width, u32 height)
     load_buffer.img_x = load_buffer.img_y = 0;
 }
 
+void core::gp0_image_save_continue() {
+    u32 px = 0;
+    for (u32 i = 0; i < 2; i++) {
+        px >>= 16;
+        u32 y = load_buffer.y+load_buffer.img_y;
+        u32 x = load_buffer.x+load_buffer.img_x;
+        u32 addr = (2048*y)+(x*2) & 0xFFFFF;
+        u16 v = cR16(VRAM, addr);
+        px |= (static_cast<u32>(v) << 16);
+        load_buffer.img_x++;
+        if ((x+1) >= (load_buffer.width+load_buffer.x)) {
+            load_buffer.img_x = 0;
+            load_buffer.img_y++;
+        }
+    }
+    io.GPUREAD = px;
+    gp0_transfer_remaining--;
+    if (gp0_transfer_remaining == 0) {
+        printf("\nSAVE COMPLETE!");
+        current_ins = nullptr;
+        handle_gp0 = &core::gp0_cmd;
+        ready_cmd();
+        unready_vram_to_CPU();
+    }
+}
+
 void core::gp0_image_load_continue(u32 cmd)
 {
     /*recv_gp0[recv_gp0_len] = cmd;
@@ -1311,6 +1337,29 @@ void core::gp0_image_load_continue(u32 cmd)
         ready_cmd();
         unready_recv_dma();
     }
+}
+
+void core::gp0_image_save_start() {
+    unready_cmd();
+    ready_vram_to_CPU();
+    u32 x = CMD[1] & 1023;
+    u32 y = (CMD[1] > 16) & 511;
+    u32 width = CMD[2] & 0xFFFF;
+    u32 height = (CMD[2] >> 16) & 0xFFFF;
+
+    // Get imgsize, round it
+    u32 imgsize = ((width * height) + 1) & 0xFFFFFFFE;
+    gp0_transfer_remaining = imgsize/2;
+    printf("\nTo_CPU BLIT SIZE:%d", gp0_transfer_remaining);
+    if (gp0_transfer_remaining > 0) {
+        VRAM_to_CPU_in_progress = true;
+        load_buffer_reset(x, y, width, height);
+        gp0_image_save_continue();
+    } else {
+        printf("\nBad size image save: 0?");
+        current_ins = nullptr;
+    }
+
 }
 
 void core::gp0_image_load_start()
@@ -1606,16 +1655,15 @@ void core::gp0_cmd(u32 cmd) {
                 current_ins = &core::cmd80_vram_copy;
                 cmd_arg_num = 4;
                 break;
+            case 0xC0:
+                current_ins = &core::gp0_image_save_start;
+                cmd_arg_num = 3;
+                break;
             case 0xBC:
             case 0xB8:
             case 0xA0: // Image stream to GPU
                 current_ins = &core::gp0_image_load_start;
                 cmd_arg_num = 3;
-                break;
-            case 0xC0:
-                printf("\nWARNING unhandled GP0 command 0xC0");
-                cmd_arg_num = 2;
-                current_ins = &core::gp0_cmd_unhandled;
                 break;
             case 0xE1: // GP0 Draw Mode
 #ifdef DBG_GP0
@@ -1805,9 +1853,11 @@ void core::write_gp1(u32 cmd)
     }
 }
 
-u32 core::get_gpuread() const
+u32 core::get_gpuread()
 {
-    return io.GPUREAD;
+    u32 v = io.GPUREAD;
+    if (VRAM_to_CPU_in_progress) gp0_image_save_continue();
+    return v;
 }
 u32 core::get_gpustat() const
 {

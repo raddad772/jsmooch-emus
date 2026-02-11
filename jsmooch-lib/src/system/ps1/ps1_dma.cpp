@@ -108,8 +108,7 @@ void DMA_channel::do_block()
                         src_word = (copies == 1) ? 0xFFFFFF : ((addr - 4) & 0x1FFFFF);
                         break;
                     case DP_GPU:
-                        printf("\nunimplemented DMA GPU read");
-                        src_word = 0;
+                        src_word = bus->gpu.get_gpuread();
                         break;
                     case DP_cdrom: {
                         static u32 e = 0;

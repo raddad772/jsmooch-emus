@@ -848,7 +848,7 @@ void full_system::load_default_ROM()
             //worked = grab_ROM(&ROMs, which, "psxtest_gte.exe", nullptr);
             //worked = grab_ROM(&ROMs, which, "ps1-tests-built/cpu/cop/cop.exe", nullptr);
             //worked = grab_ROM(&ROMs, which, "ps1-tests-built/dma/otc-test/otc-test.exe", nullptr);
-            worked = grab_ROM(&ROMs, which, "ps1-tests-built/dma/chain-looping/chain-looping.exe", nullptr);
+            //worked = grab_ROM(&ROMs, which, "ps1-tests-built/dma/chain-looping/chain-looping.exe", nullptr);
             //worked = grab_ROM(&ROMs, which, "ps1-tests-built/gte/test-all/test-all.exe", nullptr);
             //worked = grab_ROM(&ROMs, which, "ps1-tests-built/timers/timers.exe", nullptr);
             //worked = grab_ROM(&ROMs, which, "ps1-tests-built/gte-fuzz/gte-fuzz.exe", nullptr);
