@@ -290,6 +290,7 @@ void core::fADD(u32 opcode, OPCODE *op)
     u32 rd = (opcode >> 11) & 0x1F;
     int r;
     if (sadd_overflow(regs.R[rs], regs.R[rt], &r)) {
+        regs.PC -= 4;
         exception(0xC, 0, 0);
         return;
     }
@@ -315,6 +316,7 @@ void core::fSUB(u32 opcode, OPCODE *op)
     u32 rd = (opcode >> 11) & 0x1F;
     int r;
     if (ssub_overflow(regs.R[rs], regs.R[rt], &r)) {
+        regs.PC -= 4;
         exception(0xC, 0, 0);
         return;
     }
@@ -469,6 +471,7 @@ void core::fADDI(u32 opcode, OPCODE *op)
     imm = SIGNe16to32(imm);
     int r;
     if (sadd_overflow(regs.R[rs], imm, &r)) {
+        regs.PC -= 4;
         exception(0xC, 0, 0);
         return;
     }
@@ -667,6 +670,7 @@ void core::fLH(u32 opcode, OPCODE *op)
     u32 addr = regs.R[rs] + imm16;
 
     if (addr & 1) {
+        regs.PC -= 4;
         exception(4, 0, 0);
         return;
     }
@@ -716,6 +720,7 @@ void core::fLW(u32 opcode, OPCODE *op)
     u32 addr = regs.R[rs] + imm16;
 
     if (addr & 3) {
+        regs.PC -= 4;
         exception(4, 0, 0);
         return;
     }
@@ -742,6 +747,7 @@ void core::fLHU(u32 opcode, OPCODE *op)
     u32 imm16 = static_cast<u32>(static_cast<i16>(opcode & 0xFFFF));
     u32 addr = regs.R[rs] + imm16;
     if (addr & 1) {
+        regs.PC -= 4;
         exception(4, 0, 0);
         return;
     }
@@ -799,6 +805,7 @@ void core::fSH(u32 opcode, OPCODE *op)
     u32 imm16 = static_cast<u32>(static_cast<i16>(opcode & 0xFFFF));
     u32 addr = regs.R[rs] + imm16;
     if (addr & 1) {
+        regs.PC -= 4;
         exception(5, 0, 0);
         return;
     }
@@ -844,6 +851,7 @@ void core::fSW(u32 opcode, OPCODE *op)
     u32 addr = regs.R[rs] + imm16;
 
     if (addr & 3) {
+        regs.PC -= 4;
         exception(5, 0, 0);
         return;
     }
