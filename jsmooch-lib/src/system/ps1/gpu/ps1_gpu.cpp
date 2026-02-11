@@ -1289,7 +1289,6 @@ void core::gp0_image_save_continue() {
     io.GPUREAD = px;
     gp0_transfer_remaining--;
     if (gp0_transfer_remaining == 0) {
-        printf("\nSAVE COMPLETE!");
         current_ins = nullptr;
         handle_gp0 = &core::gp0_cmd;
         ready_cmd();
@@ -1350,7 +1349,6 @@ void core::gp0_image_save_start() {
     // Get imgsize, round it
     u32 imgsize = ((width * height) + 1) & 0xFFFFFFFE;
     gp0_transfer_remaining = imgsize/2;
-    printf("\nTo_CPU BLIT SIZE:%d", gp0_transfer_remaining);
     if (gp0_transfer_remaining > 0) {
         VRAM_to_CPU_in_progress = true;
         load_buffer_reset(x, y, width, height);
