@@ -134,6 +134,10 @@ struct CDROM {
     void update_IRQs();
     void insert_disc(multi_file_set &mfs);
 
+    struct {
+        u32 spinning_up{};
+    } motor{};
+
     void cmd_start(u64 key, u64 clock);
     void cmd_finish(u64 key, u64 clock);
     void cmd_step3(u64 key, u64 clock);
@@ -188,7 +192,8 @@ struct CDROM {
 
     } test{};
     struct {
-        u32 num_sessions;
+        u32 num_sessions{false};
+        bool inserted{true};
     } disk;
 
 private:
@@ -231,6 +236,8 @@ private:
     void cmd_reset();
     void cmd_seekl(u64 clock);
     void cmd_seekp(u64 clock);
+    void cmd_getid(u64 clock);
+    void cmd_getid_finish();
     void cmd_set_session(u64 clock);
     void cmd_set_session_finish(u64 clock);
     void do_cmd_read(u64 clock);

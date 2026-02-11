@@ -5,8 +5,6 @@
 #include "helpers/debug.h"
 #include "ps1_cdrom.h"
 
-#include <queue>
-
 namespace PS1 {
 
 static u32 constexpr masksz[5] = {0, 0xFF, 0xFFFF, 0, 0xFFFFFFFF };
@@ -212,6 +210,9 @@ void CDROM::cmd_start(u64 key, u64 clock) {
         case 0x16:
             cmd_seekp(clock);
             return;
+        case 0x1A:
+            cmd_getid(clock);
+            return;
         case 0x1C: // RESET
             cmd_reset();
             return;
@@ -260,6 +261,9 @@ void CDROM::cmd_finish(u64 key, u64 clock) {
             finish_CMD(true, 2);
             return;
         case 0x06: // ReadN
+        case 0x1A: // GetID
+            cmd_getid_finish();
+            return;
         case 0x1B: // ReadS
             do_cmd_read_step2(clock);
             return;
@@ -369,6 +373,50 @@ void CDROM::do_cmd_read_step2(u64 clock) {
     result(io.stat.u);
 }
 
+void CDROM::cmd_getid(u64 clock) {
+    printf("\n(CDROM) CMD GetID");
+    if (io.stat.shell_open) {
+        queue_interrupt(5);
+        result(0x11);
+        result(0x80);
+        finish_CMD(false, 0);
+        return;
+    }
+    if (motor.spinning_up) {
+        queue_interrupt(5);
+        result(0x01);
+        result(0x80);
+        finish_CMD(false, 0);
+        return;
+    }
+
+    stat_irq();
+    schedule_finish(clock + 0x4AA6);
+}
+
+void CDROM::cmd_getid_finish() {
+    if (!disk.inserted) {
+        queue_interrupt(3);
+        result(0x08);
+        result(0x40);
+        result(0x00);
+        result(0x00);
+        result(0x00);
+        result(0x00);
+        result(0x00);
+        result(0x00);
+        finish_CMD(false, 0);
+        return;
+    }
+    queue_interrupt(2);
+    result(0x02);
+    result(0x00);
+    result(0x20);
+    result(0x00);
+    result_string("SCEA");
+    finish_CMD(false, 0);
+}
+
 void CDROM::cmd_seekp(u64 clock) {
     printf("\n(CDROM) CMD SeekP");
     stat_irq();
@@ -391,6 +439,7 @@ void CDROM::cmd_seekl(u64 clock) {
 void CDROM::cmd_motor_on(u64 clock) {
     printf("\n(CDROM) CMD MotorOn");
     stat_irq();
+    motor.spinning_up = 1;
     schedule_finish(clock + (ONEFRAME * 60));
 }
 
@@ -408,6 +457,7 @@ void CDROM::cmd_motor_on_finish() {
     }
     else {
         io.stat.motor_fullspeed = 1;
+        motor.spinning_up = 0;
         queue_interrupt(2);
         result(io.stat.u);
     }
