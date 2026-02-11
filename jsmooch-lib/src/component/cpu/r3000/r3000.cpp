@@ -530,7 +530,7 @@ void core::dbglog_exception(u32 code, u32 vector, u32 raddr, bool branch_delay) 
         ct.gte = 0;
         //dbg_printf("\n%08x: %08x cyc:%lld", pipe.current.addr, pipe.current.opcode, *clock);
         R3000_disassemble(pipe.current.opcode, trace.str, pipe.current.addr, &ct);
-        if (pipe.current.addr == 0xbfc0d8e8) dbg_break("SysBad instruction or whatever", *clock);
+        //if (pipe.current.addr == 0x80059ddc) dbg_break("SysBad instruction or whatever", *clock);
         trace.str2.quickempty();
         print_context(ct, trace.str2);
         dbglog_view *dv = dbg.dvptr;
@@ -548,7 +548,7 @@ void core::trace_format_console(jsm_string &out)
     ct.gte = 0;
     //dbg_printf("\n%08x: %08x cyc:%lld", pipe.current.addr, pipe.current.opcode, *clock);
     R3000_disassemble(pipe.current.opcode, out, pipe.current.addr, &ct);
-    if (pipe.current.addr == 0xbfc0d8e8) dbg_break("SysBad instruction or whatever", *clock);
+    //if (pipe.current.addr == 0xbfc0d8e8) dbg_break("SysBad instruction or whatever", *clock);
     printf("\n%08x  (%08x)   %s", pipe.current.addr, pipe.current.opcode, out.ptr);
     out.quickempty();
     print_context(ct, out);
@@ -581,7 +581,7 @@ void core::cycle(i32 howmany)
         lycoder_trace_format(&trace.str);
 #else
         if (::dbg.trace_on && ::dbg.traces.r3000.instruction) {
-            //trace_format_console(trace.str);
+            trace_format_console(trace.str);
         }
 #endif
         trace_format();

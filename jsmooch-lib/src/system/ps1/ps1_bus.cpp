@@ -122,7 +122,7 @@ core::core() :
     ::dbg.traces.better_irq_multiplexer = 1;
 
     //
-    //::dbg.traces.r3000.instruction = 1;
+    ::dbg.traces.r3000.instruction = 1;
 }
 
 static constexpr u32 alignmask[5] = { 0, 0xFFFFFFFF, 0xFFFFFFFE, 0, 0xFFFFFFFC };
@@ -220,9 +220,9 @@ void core::mainbus_write(u32 addr, u8 sz, u32 val)
 {
     clock.waitstates += DEFAULT_WAITSTATES;
     if (mem.cache_isolated) return;
-    if (addr == 0x801FFD5C) {
-        printf("\nWrite 0x801FFD5C: %08x (%d) from PC %08x", val, sz, cpu.pipe.current.addr);
-    }
+    //if (addr == 0x801FFD5C) {
+        //printf("\nWrite 0x801FFD5C: %08x (%d) from PC %08x", val, sz, cpu.pipe.current.addr);
+    //}
     addr = deKSEG(addr) & alignmask[sz];
     /*if (addr == 0) {
         printf("\nWRITE %08x:%08x ON cycle %lld", addr, val, ((PS1 *)ptr)->clock.master_cycle_count);

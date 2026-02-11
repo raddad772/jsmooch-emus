@@ -2,6 +2,7 @@
 // Created by . on 3/6/25.
 //
 
+#include "helpers/debug.h"
 #include "ps1_cdrom.h"
 
 #include <stdnoreturn.h>
@@ -35,9 +36,16 @@ u8 CD_FIFO::pop() {
 }
 
 u32 CDROM::mainbus_read(u32 addr, u8 sz, bool has_effect) {
+    printf("\nRD CDROM %08x", addr);
+    static int a = 0;
+    a++;
+    if (a == 10) {
+        dbg_break("CDROM TEST", 0);
+    }
     switch (addr) {
         case 0x1F801800: {
             u32 v = io.HSTS.u | (io.HSTS.u << 8) | (io.HSTS.u << 16) | (io.HSTS.u << 24);
+            printf("\nRETURN %02x", v & 0xFF);
             return v & masksz[sz];
         }
         case 0x1F801801: return read_01(sz, has_effect);
@@ -49,6 +57,7 @@ u32 CDROM::mainbus_read(u32 addr, u8 sz, bool has_effect) {
 }
 
 void CDROM::mainbus_write(u32 addr, u32 val, u8 sz) {
+    printf("\nWR CDROM %08x: %08x", addr, val);
     switch (addr) {
         case 0x1F801800: io.HSTS.RA = val & 3; return;
         case 0x1F801801: return write_01(val, sz);
@@ -553,6 +562,7 @@ void CDROM::write_02(u32 val, u8 sz) {
             u32 old = io.HINTMSK.u;
             io.HINTMSK.u = (val & 0b11111) | 0b11100000;
             if (io.HINTMSK.u != old) update_IRQs();
+            printf("\n(CDROM) HINTMSK write %02x. new HINTMSK %02x", val, io.HINTMSK.u);
             return; }
         case 2: // ATV0 L->L
             io.L_L = val & 0xFF;
@@ -574,13 +584,17 @@ void CDROM::write_03(u32 val, u8 sz) {
                 io.HINTSTS.INTSTS = io.interrupts.pop();
             }
             if (old != io.HINTSTS.u) update_IRQs();
+            printf("\n(CDROM) HCLRCTL write %02x. new HINTSTS %02x", val, io.HINTSTS.u);
             if (val & 0x80) {
+                printf("\n(CDROM) Reset decoder");
                 reset_decoder();
             }
             if (val & 0x40) {
+                printf("\n(CDROM) Clear parameter stack");
                 io.PARAMETER.reset();
             }
              if (val & 0x20) {
+                 printf("\n(CDROM) Clear sound map XA-ADPCM buffer");
                  // Clear sound map XA-ADPCM buffer...!?!?!
              }
             return;
