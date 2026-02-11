@@ -21,8 +21,8 @@ void DMA_channel::do_linked_list()
         printf("\nInvalid DMA dest for linked list mode %d", num);
         return;
     }
-
-    while(1) {
+    i32 lnum = 65536;
+    while(lnum-- > 0) {
         u32 header = bus->mainbus_read(addr, 4, true);
         u32 copies = (header >> 24) & 0xFF;
 
@@ -39,6 +39,7 @@ void DMA_channel::do_linked_list()
             break;
 
         addr = header & 0x1FFFFC;
+        if (lnum == 1) printf("\n(DMA) warning: infinite linked list terminating");
     }
 }
 
