@@ -130,9 +130,14 @@ static constexpr u32 alignmask[5] = { 0, 0xFFFFFFFF, 0xFFFFFFFE, 0, 0xFFFFFFFC }
 u32 core::mainbus_read(u32 addr, u8 sz, bool has_effect)
 {
     clock.waitstates += DEFAULT_WAITSTATES;
+    u32 raddr = addr;
 
     addr = deKSEG(addr) & alignmask[sz];
     // 2MB MRAM mirrored 4 times
+    if (raddr == 0x801FFD5C) {
+        int a = 1;
+        a++;
+    }
     if (addr < 0x00800000) {
         return cR[sz](mem.MRAM, addr & 0x1FFFFF);
     }
@@ -196,10 +201,10 @@ u32 core::mainbus_read(u32 addr, u8 sz, bool has_effect)
     if ((addr >= 0x1F801100) && (addr < 0x1F801130)) return timers_read(addr, sz);
 
     static u32 e = 0;
-    printf("\nUNHANDLED MAINBUS READ sz %d addr %08x", sz, addr);
+    printf("\nUNHANDLED MAINBUS READ sz %d addr %08x", sz, raddr);
     e++;
     if (e > 10) dbg_break("TOO MANY BAD READ", clock.master_cycle_count+clock.waitstates);
-    return 0;
+    //return 0;
     switch(sz) {
         case 1:
             return 0xFF;
@@ -215,6 +220,9 @@ void core::mainbus_write(u32 addr, u8 sz, u32 val)
 {
     clock.waitstates += DEFAULT_WAITSTATES;
     if (mem.cache_isolated) return;
+    if (addr == 0x801FFD5C) {
+        printf("\nWrite 0x801FFD5C: %08x (%d) from PC %08x", val, sz, cpu.pipe.current.addr);
+    }
     addr = deKSEG(addr) & alignmask[sz];
     /*if (addr == 0) {
         printf("\nWRITE %08x:%08x ON cycle %lld", addr, val, ((PS1 *)ptr)->clock.master_cycle_count);

@@ -1365,8 +1365,7 @@ void core::GPUSTAT_update()
     o |= display_depth << 21;
     o |= interlaced << 22;
     o |= display_disabled << 23;
-    // interrupt is set at other end where they are scheduled
-
+    o |= irq1 << 24;
     o |= dma_direction << 29;
 
     u32 dmar;
@@ -1439,6 +1438,12 @@ void core::gp0_cmd(u32 cmd) {
                 //case 0x21: // ??
                 //    console.log('NOT IMPLEMENT 0x21');
                 //    break;
+            case 0x1F: // Set IRQ1
+                printf("\nIRQ1 trigger");
+                irq1 = 1;
+                bus->set_irq(IRQ_GPU, 1);
+                GPUSTAT_update();
+                break;
             case 0x20: // flat-shaded opaque triangle
                 current_ins = &core::cmd20_tri_flat;
                 cmd_arg_num = 4;
@@ -1742,7 +1747,9 @@ void core::write_gp1(u32 cmd)
             //console.log('RESET CMD FIFO NOT IMPLEMENT');
             break;
         case 0x02:
-            printf("\nGPU IRQ RESET; WHAT...");
+            irq1 = 0;
+            bus->set_irq(IRQ_GPU, 0);
+            GPUSTAT_update();
             break;
         case 0x03: // DISPLAY DISABLE
             //TODO: do this

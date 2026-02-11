@@ -36,7 +36,6 @@ void CLOCK::finish_timing()
     // 262-243
     timing.frame.vblank.cycles = static_cast<u64>(timing.frame.vblank.ratio * static_cast<float>(timing.frame.cycles));
     timing.frame.vblank.start_on_line = (timing.frame.cycles - timing.frame.vblank.cycles) / timing.scanline.cycles;
-    printf("\nVBLANK start on line %lld", timing.frame.vblank.start_on_line);
 }
 
 

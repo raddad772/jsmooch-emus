@@ -78,6 +78,7 @@ struct core {
     u32 display_line_start{}, display_line_end{};
 
     u32 page_base_x{}, page_base_y{};
+    u32 irq1{};
     i32 semi_transparency{};
     enum TEX_DEPTH {
         e_t4bit, e_t8bit, e_t15bit

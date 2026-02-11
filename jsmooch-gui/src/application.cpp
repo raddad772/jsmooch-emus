@@ -1246,7 +1246,7 @@ void imgui_jsmooch_app::mainloop(ImGuiIO& io) {
     }
     static u32 key_was_down = 0;
     u32 frame_multi = ImGui::IsKeyDown(ImGuiKey_GraveAccent) ? FRAME_MULTI : 1;
-    frame_multi = FRAME_MULTI;
+    //frame_multi = FRAME_MULTI;
     if (fsys.run_state == FSS_play) {
         if (key_was_down && (frame_multi == 1)) {
             // Discard audio buffers!
