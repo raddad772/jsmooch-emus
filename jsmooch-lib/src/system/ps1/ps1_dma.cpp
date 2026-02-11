@@ -10,7 +10,7 @@
 namespace PS1 {
 void DMA_channel::do_linked_list()
 {
-    printf("\nDo linked list CH%d", num);
+    //printf("\nDo linked list CH%d", num);
     u32 addr = base_addr & 0x1FFFFC;
     if (direction == D_to_ram) {
         printf("\nInvalid DMA direction for linked list mode: to RAM");
@@ -64,7 +64,7 @@ void DMA_channel::do_block()
     u32 mstep = (step == D_increment) ? 4 : -4;
     u32 addr = base_addr;
     u32 copies = transfer_size();;
-    printf("\nDo block ch%d base_addr:%08x copies:%d", num, base_addr, copies);
+    //printf("\nDo block ch%d base_addr:%08x copies:%d", num, base_addr, copies);
     if (copies == -1) {
         printf("\nCouldn't decide DMA transfer size");
         return;
@@ -153,7 +153,7 @@ void DMA_channel::do_dma()
 bool DMA_channel::active()
 {
     u32 menable = (sync == D_manual) ? trigger : 1;
-    return enable && menable;
+    return master_enable && enable && menable;
 }
 
 u32 DMA_channel::get_control() {
@@ -167,7 +167,7 @@ u32 DMA_channel::get_control() {
            (enable << 24) |
            (trigger << 28) |
            (unknown << 29);
-    printf("\nRETURN CTRL: %08x", v);
+    //printf("\nRETURN CTRL: %08x", v);
     return v;
 }
 
@@ -217,6 +217,7 @@ u32 DMA::irq_status()
 
 u32 DMA::read(u32 addr, u32 sz)
 {
+    // 1f8010F0
     u32 l3 = addr & 3;
     addr &= 0xFFFFFFFC;
     u32 ch_num = ((addr - 0x80) & 0x70) >> 4;
@@ -270,7 +271,7 @@ u32 DMA::read(u32 addr, u32 sz)
 
 void DMA::write(u32 addr, u32 sz, u32 val)
 {
-    printf("\nWR DMA addr:%04x sz:%d val:%04x", addr, sz, val);
+    //printf("\nWR DMA addr:%04x sz:%d val:%04x", addr, sz, val);
     const u32 l3 = addr & 3;
     addr &= 0x1FFFFFFC; // 32-bit read/writes only, force-align (and shift after)
     u32 ch_num = ((addr - 0x80) & 0x70) >> 4;
@@ -307,9 +308,14 @@ void DMA::write(u32 addr, u32 sz, u32 val)
             break; }
         case 7: // common registers
             switch(reg) {
-                case 0: // DPCR - DMA Control register 0x1F8010F0:
+                case 0: {// DPCR - DMA Control register 0x1F8010F0:
                     control = val;
-                    return;
+                    i32 bit = 3;
+                    for (u32 ch = 0; ch < 7; ch++) {
+                        channels[ch].master_enable = (val >> bit) & 1;
+                        bit += 4;
+                    }
+                    return; }
                 case 4: // DICR - DMA Interrupt register case 0x1F8010F4:
                     // Low 5 bits are R/w, we don't know what
                     unknown1 = val & 31;

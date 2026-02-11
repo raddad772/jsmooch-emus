@@ -34,6 +34,7 @@ struct DMA_channel {
     [[nodiscard]] u32 transfer_size() const;
     core *bus{};
     u32 num{}, enable{}, trigger{}, chop{};
+    u32 master_enable{1};
     u32 chop_dma_size{}, chop_cpu_size{};
     u32 unknown{};
     u32 base_addr{};
