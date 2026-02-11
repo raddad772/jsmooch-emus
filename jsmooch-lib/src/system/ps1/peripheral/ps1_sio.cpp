@@ -268,7 +268,7 @@ void SIO0::write(u32 addr, u8 sz, u32 val)
 #define R_SIO_CTRL 0x1F80104A
 #define R_SIO_MISC 0x1F80104C
 #define R_SIO_BAUD 0x1F80104E
-    printf("\nSIO0 ADDR:%04x SZ:%d VAL:%02x", addr, sz, val);
+    printf("\nWR SIO0 ADDR:%04x SZ:%d VAL:%02x", addr, sz, val);
     //val &= masksz[sz];
     switch(addr) {
         case R_SIO_CTRL:
@@ -340,6 +340,7 @@ u32 SIO0::read_rx_data(u8 sz)
 
 u32 SIO0::read(u32 addr, u8 sz)
 {
+    printf("\nRD SIO0 ADDR:%04x SZ:%d", addr, sz);
     switch(addr) {
         case R_SIO_CTRL:
             return read_ctrl(sz);
@@ -391,6 +392,6 @@ u32 SIO1::read(u32 addr, u8 sz) {
             return io.MODE.u;
     }
     printf("\nUnhandled SIO1 read from %08x (%d)", addr, sz);
-    return 0xFFFFFFFF;
+    return masksz[sz];
 }
 }

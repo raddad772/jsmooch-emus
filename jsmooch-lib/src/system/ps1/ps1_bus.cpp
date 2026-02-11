@@ -118,11 +118,14 @@ core::core() :
     cdrom.set_irq_lvl = &set_cdrom_irq_level;
     cdrom.set_irq_ptr = this;
     IRQ_multiplexer.clock = &clock.master_cycle_count;
-    //::dbg.trace_on = 1;
-    ::dbg.traces.better_irq_multiplexer = 1;
+    ::dbg.trace_on = 1;
+    //::dbg.traces.better_irq_multiplexer = 1;
 
     //
-    ::dbg.traces.r3000.instruction = 1;
+    //::dbg.traces.r3000.instruction = 1;
+    ::dbg.traces.ps1.sio0.ack = 1;
+    ::dbg.traces.ps1.sio0.irq = 1;
+    ::dbg.traces.ps1.sio0.rw = 1;
 }
 
 static constexpr u32 alignmask[5] = { 0, 0xFFFFFFFF, 0xFFFFFFFE, 0, 0xFFFFFFFC };
