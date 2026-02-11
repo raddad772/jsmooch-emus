@@ -289,7 +289,7 @@ void DMA::write(u32 addr, u32 sz, u32 val)
             auto *ch = &channels[ch_num];
             switch(reg) {
                 case 0:
-                    printf("\nBASE ADDRESS WRITE CH:%d VAL:%08x", ch_num, val);
+                    //printf("\nBASE ADDRESS WRITE CH:%d VAL:%08x", ch_num, val);
                     ch->base_addr = val & 0xFFFFFF;
                     break;
                 case 4:
