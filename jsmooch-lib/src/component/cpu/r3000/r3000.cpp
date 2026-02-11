@@ -392,6 +392,9 @@ void core::delay_slots(pipeline_item &which)
     // Branch delay slot
     if (which.new_PC != 0xFFFFFFFF) {
         regs.PC = which.new_PC;
+        if ((regs.PC & 0x1FFFFFFF) == 0x6BA0) {
+            dbg_break("WOOPSIE", 0);
+        }
         if ((regs.PC == 0xA0 && regs.R[9] == 0x3C) || (regs.PC == 0xB0 && regs.R[9] == 0x3D)) {
             if (regs.R[9] == 0x3D) {
                 add_to_console(regs.R[4]);
@@ -489,6 +492,7 @@ void core::print_context(ctxt &ct, jsm_string &out)
             out.sprintf("%s:%08x", reg_alias_arr[i], regs.R[i]);
         }
     }
+    if (pipe.current.op->func == &core::fSYSCALL) out.sprintf("\nr4:%08x", regs.R[4]);
 }
 
 void core::lycoder_trace_format(jsm_string &out)

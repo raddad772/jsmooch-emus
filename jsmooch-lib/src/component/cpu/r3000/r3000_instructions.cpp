@@ -172,11 +172,13 @@ void core::fJALR(u32 opcode, OPCODE *op)
 
 void core::fSYSCALL(u32 opcode, OPCODE *op)
 {
+    regs.PC -= 4;
     exception(8, 0, 0);
 }
 
 void core::fBREAK(u32 opcode, OPCODE *op)
 {
+    regs.PC -= 4;
     exception(9, 0, 0);
 }
 

@@ -1841,9 +1841,11 @@ void full_system::do_frame() {
 
 void full_system::setup_tracing()
 {
-    dbg.traces.ps1.sio0.irq = 0;
-    dbg.traces.ps1.sio0.rw = 0;
-    dbg.traces.ps1.sio0.ack = 0;
-    dbg.traces.ps1.pad = 0;
+    //::dbg.traces.r3000.instruction = 1;
+    //::dbg.traces.better_irq_multiplexer = 1;
+    //dbg.traces.ps1.sio0.irq = 1;
+    //dbg.traces.ps1.sio0.rw = 1;
+    //dbg.traces.ps1.sio0.ack = 1;
+    //dbg.traces.ps1.pad = 1;
     //dbg_enable_trace();
 }

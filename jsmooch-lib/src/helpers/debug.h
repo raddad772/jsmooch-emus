@@ -56,7 +56,7 @@
 #define M6502_DBG_SUPPORT
 #define SM83_DBG_SUPPORT
 
-#define printif(x, ...) if (dbg.trace_on && dbg.traces. x) dbg_printf(__VA_ARGS__)
+#define printif(x, ...) if (dbg.trace_on && dbg.traces. x) printf(__VA_ARGS__)
 
 #include "helpers/int.h"
 #include "helpers/jsm_string.h"

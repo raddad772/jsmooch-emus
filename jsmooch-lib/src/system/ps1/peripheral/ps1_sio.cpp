@@ -6,6 +6,9 @@
 #include "ps1_sio.h"
 #include "../ps1_bus.h"
 #include <cassert>
+
+#include "system/ps1/ps1_debugger.h"
+
 namespace PS1 {
 
 }
@@ -34,7 +37,7 @@ void SIO0::update_IRQs()
     signal |= io.SIO_CTRL.dsr_irq_enable && io.SIO_STAT.dsr_input;
 
     io.SIO_STAT.irq_request |= signal; // It is only SET by these, not un-set
-    printif(ps1.sio0.irq, "\nport: old IRQ signal:%d new signal:%d", old_signal, io.SIO_STAT.irq_request);
+    printif(ps1.sio0.irq, "\nport: old IRQ signal:%d new signal:%d . CPU IMASK %08x", old_signal, io.SIO_STAT.irq_request, bus->cpu.io.I_MASK);
     if (!old_signal && io.SIO_STAT.irq_request) {
         printif(ps1.sio0.irq, "\nSIO0 IRQ 0->1");
     }
@@ -98,13 +101,16 @@ void SIO0::send_DTR(u32 port, u32 level)
 {
     memport p{};
     get_select_port(port, &p);
+    printf("\nSend DTR port:%d level:%d", port, level);
     if (p.memcard) p.memcard->set_CS(p.memcard->device_ptr, level, bus->clock_current());
     if (p.controller) p.controller->set_CS(p.controller->device_ptr, level, bus->clock_current());
 }
 
 void SIO0::write_ctrl(u8 sz, u32 val)
 {
-    printif(ps1.sio0.rw, "\nport: SIO0 WRITE CTRL %04x", val);
+    //printf("\nTHING:%d  TRACES:%d", ::dbg.traces.ps1.sio0.rw, ::dbg.trace_on);
+    printif(ps1.sio0.rw, "\n\nport: SIO0 WRITE CTRL %04x", val);
+    bus->dbg.dvptr->add_printf(PS1_CAT_R3000_RFE, bus->clock.master_cycle_count, DBGLS_TRACE, "SIO0 WRITE CTRL %04x", val);
     u32 old_rx_enable = io.SIO_CTRL.rx_enable;
     u32 old_dtr = io.SIO_CTRL.dtr_output;
     u32 old_select = io.SIO_CTRL.sio0_port_sel;
@@ -122,13 +128,15 @@ void SIO0::write_ctrl(u8 sz, u32 val)
 
     u32 new_dtr = io.SIO_CTRL.dtr_output;
     u32 new_select = io.SIO_CTRL.sio0_port_sel;
+    printf("\nWRITTEN DTR:%d  CS:%d .   old_DTR:%d  old_CS:%d", new_dtr, new_select, old_dtr, old_select);
 
     if ((new_dtr != old_dtr) || (new_select != old_select)) {
         // If select changed, send DTR=0
         if (new_select != old_select) {
+            printf("\nNEW!=OLD so sending DTR:%d CS:0", old_select);
             send_DTR(old_select, 0);
         }
-
+        printf("\nsending DTR:%d CS:%d", new_dtr, new_select);
         send_DTR(new_select, new_dtr);
     }
 
@@ -156,6 +164,7 @@ void SIO0::write_ctrl(u8 sz, u32 val)
 void SIO0::write_mode(u8 sz, u32 val)
 {
     io.SIO_MODE.u = val & 0x13F;
+    printif(ps1.sio0.rw, "\nMODE: %02x", io.SIO_MODE.u);
 }
 
 void SIO0::write_stat(u8 sz, u32 val)
@@ -268,7 +277,7 @@ void SIO0::write(u32 addr, u8 sz, u32 val)
 #define R_SIO_CTRL 0x1F80104A
 #define R_SIO_MISC 0x1F80104C
 #define R_SIO_BAUD 0x1F80104E
-    printf("\nWR SIO0 ADDR:%04x SZ:%d VAL:%02x", addr, sz, val);
+    //printf("\nWR SIO0 ADDR:%04x SZ:%d VAL:%02x", addr, sz, val);
     //val &= masksz[sz];
     switch(addr) {
         case R_SIO_CTRL:
@@ -288,6 +297,7 @@ void SIO0::write(u32 addr, u8 sz, u32 val)
             return;
         case R_SIO_BAUD:
             io.baud = val & 0xFFFF;
+            printif(ps1.sio0.rw, "\n(SIO0) BAUD:%d", io.baud);
             return;
     }
     printf("\nUnhandled SIO write to %08x (%d): %08x", addr, sz, val);
@@ -340,7 +350,7 @@ u32 SIO0::read_rx_data(u8 sz)
 
 u32 SIO0::read(u32 addr, u8 sz)
 {
-    printf("\nRD SIO0 ADDR:%04x SZ:%d", addr, sz);
+    //printf("\nRD SIO0 ADDR:%04x SZ:%d", addr, sz);
     switch(addr) {
         case R_SIO_CTRL:
             return read_ctrl(sz);
@@ -376,7 +386,7 @@ u32 SIO0::read(u32 addr, u8 sz)
 #define R_SIO_BAUD 0x1F80105E
 
 void SIO1::write(u32 addr, u8 sz, u32 val) {
-    //printf("\nSIO1 ADDR:%04x SZ:%d VAL:%02x", addr, sz, val);
+    printf("\nSIO1 WR ADDR:%04x SZ:%d VAL:%02x", addr, sz, val);
     val &= 0xFF;
     switch (addr) {
         case R_SIO_MODE:
@@ -387,6 +397,7 @@ void SIO1::write(u32 addr, u8 sz, u32 val) {
 }
 
 u32 SIO1::read(u32 addr, u8 sz) {
+    printf("\nSIO1 RD %08x", addr);
     switch (addr) {
         case R_SIO_MODE:
             return io.MODE.u;

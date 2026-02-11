@@ -248,7 +248,7 @@ u32 DMA::read(u32 addr, u32 sz)
 
 void DMA::write(u32 addr, u32 sz, u32 val)
 {
-    //printf("\nWR DMA addr:%04x sz:%d val:%04x", addr, sz, val);
+    printf("\nWR DMA addr:%04x sz:%d val:%04x", addr, sz, val);
     const u32 l3 = addr & 3;
     addr &= 0x1FFFFFFC; // 32-bit read/writes only, force-align (and shift after)
     u32 ch_num = ((addr - 0x80) & 0x70) >> 4;

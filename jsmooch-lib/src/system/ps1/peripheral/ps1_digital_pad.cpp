@@ -50,18 +50,20 @@ void digital_gamepad::latch_buttons()
 
 static void set_CS(void *ptr, u32 level, u64 clock_cycle) {
     auto *th = static_cast<digital_gamepad *>(ptr);
+    printf("\npad: set CS new:%d  old:%d", level, th->interface.CS);
     u32 old_CS = th->interface.CS;
     th->interface.CS = level;
     if (old_CS != th->interface.CS) {
         th->selected = 0;
         th->protocol_step = 0;
         if (th->interface.CS) {
-            printif(ps1.pad, "\npad: CS 0->1");
+            printif(ps1.pad, "\npad: CS 0->1, latch buttons");
             th->latch_buttons();
         }
         else {
             printif(ps1.pad, "\npad: CS 1->0");
             if (th->interface.ACK) {
+                printif(ps1.pad, "\npad: ACK asserted");
                 //if (still_sched && sch_id)
                 //    scheduler_delete_if_exist(&bus->scheduler, sch_id);
                 SIO0_device p = th->pio->id == 1 ? SIO0_controller1 : SIO0_controller2;
