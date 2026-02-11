@@ -7,11 +7,17 @@
 
 namespace PS1 {
 
-enum DMA_e {
+enum DMA_direction {
     D_to_ram,
     D_from_ram,
-    D_increment,
-    D_decrement,
+};
+
+enum DMA_step {
+    D_increment = 0,
+    D_decrement = 1
+};
+
+enum DMA_sync {
     D_manual,
     D_request,
     D_linked_list
@@ -32,7 +38,9 @@ struct DMA_channel {
     u32 unknown{};
     u32 base_addr{};
     u32 block_size{}, block_count{};
-    DMA_e step{D_increment}, sync{D_manual}, direction{D_to_ram};
+    DMA_step step{D_increment};
+    DMA_sync sync{D_manual};
+    DMA_direction direction{D_to_ram};
 };
 
 struct DMA {

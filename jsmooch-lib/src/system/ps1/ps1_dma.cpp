@@ -10,6 +10,7 @@
 namespace PS1 {
 void DMA_channel::do_linked_list()
 {
+    printf("\nDo linked list CH%d", num);
     u32 addr = base_addr & 0x1FFFFC;
     if (direction == D_to_ram) {
         printf("\nInvalid DMA direction for linked list mode: to RAM");
@@ -63,6 +64,7 @@ void DMA_channel::do_block()
     u32 mstep = (step == D_increment) ? 4 : -4;
     u32 addr = base_addr;
     u32 copies = transfer_size();;
+    printf("\nDo block ch%d base_addr:%08x copies:%d", num, base_addr, copies);
     if (copies == -1) {
         printf("\nCouldn't decide DMA transfer size");
         return;
@@ -74,7 +76,7 @@ void DMA_channel::do_block()
         u32 src_word = 0;
         switch(direction) {
             case D_from_ram:
-                src_word = bus->mainbus_read(cur_addr, 4, 1);
+                src_word = bus->mainbus_read(cur_addr, 4, true);
                 switch(num) {
                     case DP_GPU:
                         bus->gpu.write_gp0(src_word);
@@ -124,7 +126,11 @@ void DMA_channel::do_block()
                         src_word = 0;
                         break;
                 }
+                //printf("\nDMA WRITE %08x: %08x", cur_addr, src_word);
                 bus->mainbus_write(cur_addr, 4, src_word);
+                break;
+            default:
+                printf("\nUnsupported direction %d", direction);
                 break;
         }
         addr = (addr + mstep) & 0xFFFFFFFF;
@@ -151,7 +157,8 @@ bool DMA_channel::active()
 }
 
 u32 DMA_channel::get_control() {
-    return direction |
+
+    u32 v = direction |
            (step << 1) |
            (chop << 8) |
            (sync << 9) |
@@ -160,26 +167,41 @@ u32 DMA_channel::get_control() {
            (enable << 24) |
            (trigger << 28) |
            (unknown << 29);
+    printf("\nRETURN CTRL: %08x", v);
+    return v;
 }
 
 void DMA_channel::set_control(u32 val)
 {
+    if (num == 6) {
+        step = D_decrement;
+        enable = (val >> 24) & 1;
+        direction = D_to_ram;
+        chop = 0;
+        sync = D_manual;
+        chop_dma_size = 0;
+        chop_cpu_size = 0;
+        trigger = (val >> 28) & 1;
+        unknown = (val >> 29) & 2;
+        return;
+    }
+
     direction = (val & 1) ? D_from_ram : D_to_ram;
     step = ((val >> 1) & 1) ? D_decrement : D_increment;
     chop = (val >> 8) & 1;
     switch ((val >> 9) & 3) {
         case 0:
             sync = D_manual;
-        break;
+            break;
         case 1:
             sync = D_request;
-        break;
+            break;
         case 2:
             sync = D_linked_list;
-        break;
+            break;
         default:
             printf("\nUnknown DMA mode 3");
-        break;
+            break;
     }
     chop_dma_size = (val >> 16) & 7;
     chop_cpu_size = (val >> 20) & 7;
@@ -266,10 +288,12 @@ void DMA::write(u32 addr, u32 sz, u32 val)
             auto *ch = &channels[ch_num];
             switch(reg) {
                 case 0:
-                    ch->base_addr = val & 0xFFFFF;
+                    printf("\nBASE ADDRESS WRITE CH:%d VAL:%08x", ch_num, val);
+                    ch->base_addr = val & 0xFFFFFF;
                     break;
                 case 4:
                     ch->block_size = val & 0xFFFF;
+                    if (ch->block_size == 0) ch->block_size = 0x10000;
                     ch->block_count = (val >> 16) & 0xFFFF;
                     break;
                 case 8:
