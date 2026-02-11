@@ -343,6 +343,7 @@ struct dbglog_view {
     u32 ids_enabled[MAX_DBGLOG_IDS]{};
     dbglog_category_node *id_to_category[MAX_DBGLOG_IDS]{};
     u32 id_to_color[MAX_DBGLOG_IDS]{};
+    u32 id_break[MAX_DBGLOG_IDS]{};
     u32 updated{};
     bool has_extra{};
 

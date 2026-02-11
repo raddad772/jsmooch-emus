@@ -207,7 +207,7 @@ static void render_emu_window(full_system &fsys, ImGuiIO& io, u32 frame_multi)
 #define DISASM_VIEW_DEFAULT_ENABLE 0
 #define SOURCE_LIST_VIEW_DEFAULT_ENABLE 1
 #define IMAGE_VIEW_DEFAULT_ENABLE 0
-#define DBGLOG_VIEW_DEFAULT_ENABLE 0
+#define DBGLOG_VIEW_DEFAULT_ENABLE 1
 #define SOUND_VIEW_DEFAULT_ENABLE 0
 #define TRACE_VIEW_DEFAULT_ENABLE 0
 #define CONSOLE_VIEW_DEFAULT_ENABLE 0
@@ -428,17 +428,25 @@ void imgui_jsmooch_app::render_event_view()
 }
 
 static bool rn_checkboxes[MAX_DBGLOG_IDS*4];
+static bool rn_checkboxes_break[MAX_DBGLOG_IDS*4];
 
 static void render_node(dbglog_view &view, dbglog_category_node &node, u32 *id_ptr) {
     // If we're a leaf...
     u32 id = (*id_ptr)++;
-
     if (!node.children.empty() == 0) {
         // We are a leaf
         rn_checkboxes[id] = node.enabled;
+        rn_checkboxes_break[id] = node.break_on_fire;
         ImGui::Checkbox(node.name, &rn_checkboxes[id]);
+        ImGui::SameLine();
+        ImGui::PushID(id+400);
+        ImGui::Checkbox("(break)", &rn_checkboxes_break[id]);
+        ImGui::PopID();
         node.enabled = rn_checkboxes[id];
+        node.break_on_fire = rn_checkboxes_break[id];
+
         view.ids_enabled[node.category_id] = rn_checkboxes[id];
+        view.id_break[node.category_id] = rn_checkboxes_break[id];
     } else {
         // We are a further branch
         ImGui::SetNextItemOpen(true);

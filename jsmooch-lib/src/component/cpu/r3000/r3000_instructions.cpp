@@ -568,10 +568,15 @@ void core::fCOP0_RFE(u32 opcode, OPCODE *op)
     u32 b01 = (r12 >> 2) & 3; // Move from 2-3 to 0-1
     COP_write_reg(0, 12, (r12 & 0xFFFFFFF0) | b01 | b23);
     if (update_sr) update_sr(update_sr_ptr, this, regs.COP0[RCR_SR]);
-    if (dbg.dvptr && dbg.dvptr->ids_enabled[trace.rfe_id]) {
-        trace.str.quickempty();
-        trace.str.sprintf("RFE");
-        dbg.dvptr->add_printf(trace.rfe_id, *clock, DBGLS_TRACE, "%s", trace.str.ptr);
+    if (dbg.dvptr) {
+        if (dbg.dvptr->id_break[trace.rfe_id]) {
+            dbg_break("RFE!", *clock);
+        }
+        if (dbg.dvptr->ids_enabled[trace.rfe_id]) {
+            trace.str.quickempty();
+            trace.str.sprintf("RFE");
+            dbg.dvptr->add_printf(trace.rfe_id, *clock, DBGLS_TRACE, "%s", trace.str.ptr);
+        }
     }
 }
 

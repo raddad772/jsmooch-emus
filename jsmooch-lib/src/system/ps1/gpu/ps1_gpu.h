@@ -43,10 +43,12 @@ struct core {
 
     struct {
         u32 GPUSTAT{}, GPUREAD{};
+        u32 frame;
     } io{};
     u8 VRAM[1024 * 1024]{};
 
     void (core::*current_ins)(){};
+    void new_frame();
     u8 mmio_buffer[96]{};
     u32 gp0_buffer[256]{};
     u32 gp1_buffer[256]{};

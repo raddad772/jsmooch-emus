@@ -122,7 +122,7 @@ core::core() :
     ::dbg.traces.better_irq_multiplexer = 1;
 
     //
-    ::dbg.traces.r3000.instruction = 1;
+    //::dbg.traces.r3000.instruction = 1;
 }
 
 static constexpr u32 alignmask[5] = { 0, 0xFFFFFFFF, 0xFFFFFFFE, 0, 0xFFFFFFFC };
@@ -199,6 +199,7 @@ u32 core::mainbus_read(u32 addr, u8 sz, bool has_effect)
     printf("\nUNHANDLED MAINBUS READ sz %d addr %08x", sz, addr);
     e++;
     if (e > 10) dbg_break("TOO MANY BAD READ", clock.master_cycle_count+clock.waitstates);
+    return 0;
     switch(sz) {
         case 1:
             return 0xFF;

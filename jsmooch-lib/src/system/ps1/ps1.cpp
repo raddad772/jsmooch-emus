@@ -46,6 +46,7 @@ static void vblank(void *bound_ptr, u64 key, u64 current_clock, u32 jitter)
     last = current_clock;
     //printf("\nVBLANK @cycle:%lld diff:%lld val:%lld", th->clock.master_cycle_count, diff, key);
     th->set_irq(IRQ_VBlank, key);
+    th->gpu.new_frame();
     th->clock.in_vblank = key;
     th->timers[1].vblank(key);
 }

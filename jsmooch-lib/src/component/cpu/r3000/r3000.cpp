@@ -418,8 +418,8 @@ void core::exception(u32 code, u32 branch_delay, u32 cop0)
     //            dbg_break("IRQ!", *clock);
     //}
         //printf("\nCurrent PC at exception: %08x  Current instruction address:%08x", regs.PC, pipe.current.addr);
-    printf("\nCurrent PC at exception: %08x  Current instruction address:%08x", regs.PC, pipe.current.addr);
-    dbg_break("Exception", *clock);
+    //printf("\nCurrent PC at exception: %08x  Current instruction address:%08x", regs.PC, pipe.current.addr);
+
     u32 mycode = code;
     code <<= 2;
     u32 vector = 0x80000080;
@@ -508,11 +508,9 @@ void core::lycoder_trace_format(jsm_string &out)
 }
 
 void core::dbglog_exception(u32 code, u32 vector, u32 raddr, bool branch_delay) {
-    bool do_dbglog = false;
-    if (dbg.dvptr) {
-        do_dbglog = dbg.dvptr->ids_enabled[trace.exception_id];
-    }
-    if (do_dbglog) {
+    if (!dbg.dvptr) return;
+    if (dbg.dvptr->ids_enabled[trace.exception_id]) {
+        if (dbg.dvptr->id_break[trace.exception_id]) dbg_break("Exception", *clock);
         trace.str.quickempty();
         trace.str.sprintf("Exception. Code:%d Vector:%08x ReturnAddr:%08x Delay:%d", code, vector, raddr, branch_delay);
         dbg.dvptr->add_printf(trace.exception_id, *clock, DBGLS_TRACE, "%s", trace.str.ptr);
@@ -561,7 +559,7 @@ void core::trace_format_console(jsm_string &out)
 
 void core::check_IRQ()
 {
-    if (pins.IRQ && (regs.COP0[12] & 0x400) && (regs.COP0[12] & 1)) {
+    if (pins.IRQ && (regs.COP0[12] & 0x400) && (regs.COP0[12] & 1) && pipe.item0.new_PC == 0xFFFFFFFF) {
         //printf("\nDO IRQ!");
         regs.PC -= 4;
         exception(0, pipe.item0.new_PC != 0xFFFFFFFF, 0);
@@ -583,9 +581,7 @@ void core::cycle(i32 howmany)
         lycoder_trace_format(&trace.str);
 #else
         if (::dbg.trace_on && ::dbg.traces.r3000.instruction) {
-            trace_format_console(trace.str);
-            //console.log(hex8(regs.PC) + ' ' + R3000_disassemble(current.opcode));
-            //dbg.traces.add(D_RESOURCE_TYPES.R3000, clock.trace_cycles-1, trace_format(R3000_disassemble(current.opcode), current.addr))
+            //trace_format_console(trace.str);
         }
 #endif
         trace_format();
