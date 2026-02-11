@@ -133,6 +133,9 @@ struct CDROM {
     u32 mainbus_read(u32 addr, u8 sz, bool has_effect);
     void update_IRQs();
     void insert_disc(multi_file_set &mfs);
+    void remove_disc();
+    void open_drive();
+    void close_drive();
 
     struct {
         u32 spinning_up{};
@@ -191,10 +194,11 @@ struct CDROM {
         u32 counterlo{}, counterhi{};
 
     } test{};
+
     struct {
         u32 num_sessions{false};
-        bool inserted{true};
-    } disk;
+        bool inserted{false};
+    } disk{};
 
 private:
 

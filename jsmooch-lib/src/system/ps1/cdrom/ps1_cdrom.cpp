@@ -18,7 +18,7 @@ void CD_FIFO::reset() {
 
 void CD_FIFO::push(u32 val) {
     if (len == 16) {
-        printf("\nATTEMPT TO PUSH TO FULL FIFO!");
+        printf("\n(CDROM) ATTEMPT TO PUSH TO FULL FIFO!");
         return;
     }
     entries[tail] = val;
@@ -46,7 +46,7 @@ u32 CDROM::mainbus_read(u32 addr, u8 sz, bool has_effect) {
             io.HSTS.PRMWRDY = io.PARAMETER.len != 16;
             io.HSTS.RSLRRDY = io.RESULT.len > 0;
             u32 v = io.HSTS.u | (io.HSTS.u << 8) | (io.HSTS.u << 16) | (io.HSTS.u << 24);
-            printf("\n(CDROM) read HSTS %02x", v & 0xFF);
+            printif(ps1.cdrom.reg_read, "\n(CDROM) read HSTS %02x", v & 0xFF);
             return v & masksz[sz];
         }
         case 0x1F801801: return read_01(sz, has_effect);
@@ -74,7 +74,7 @@ u32 CDROM::read_01(u8 sz, bool has_effect) {
     // RESULT
     u8 v = io.RESULT.pop();
     recalc_HSTS();
-    printf("\n(CDROM) read RESULT %02x", v);
+    printif(ps1.cdrom.result_read, "\n(CDROM) read RESULT %02x", v);
     return v;
 }
 
@@ -100,12 +100,12 @@ u32 CDROM::read_03(u8 sz, bool has_effect) {
         case 0:
         case 2: // HINTMSK
             v = io.HINTMSK.u | 0b11100000;
-            printf("\n(CDROM) read HINTMSK %02x", v);
+            printif(ps1.cdrom.reg_read, "\n(CDROM) read HINTMSK %02x", v);
             return v;
         case 1:
         case 3: // HINTSTS
             v = io.HINTSTS.u | 0b11100000;
-            printf("\n(CDROM) read HINTSTS %02x", v);
+            printif(ps1.cdrom.reg_read, "\n(CDROM) read HINTSTS %02x", v);
             return v;
     }
     NOGOHERE;
@@ -134,10 +134,11 @@ void CDROM::result(u32 val) {
 }
 
 void CDROM::cmd_start(u64 key, u64 clock) {
+    io.RESULT.reset();
     u32 cmd = io.CMD;
     if ((cmd >= 0x20) && (cmd <= 0x4F)) cmd = 0;
     if (cmd >= 0x60) cmd = 0;
-    printf("\n(CDROM) EXEC CMD %02x", io.CMD);;
+    printif(ps1.cdrom.cmd, "\n(CDROM) EXEC CMD %02x", io.CMD);
     switch(cmd) {
         case 0x00:
         case 0x17:
@@ -279,7 +280,7 @@ static u8 decode_bcd(u8 val) {
 void CDROM::cmd_test() {
     u8 sub = io.PARAMETER.pop();
     test.subcmd = sub;
-    printf("\n(CDROM) TEST %02x", sub);
+    //printf("\n(CDROM) TEST %02x", sub);
     switch (sub) {
         case 0x20: // CDROM BIOS version 94h,09h,19h,C0h
             result(0x94);
@@ -622,7 +623,7 @@ void CDROM::schedule_CMD() {
 }
 
 void CDROM::queue_interrupt(u32 level) {
-    printf("\n(CDROM) QUEUE INT %d", level);
+    //printf("\n(CDROM) QUEUE INT %d", level);
     if (io.HINTSTS.INTSTS == 0) {
         io.HINTSTS.INTSTS = level;
         update_IRQs();
@@ -639,7 +640,7 @@ void CDROM::stat_irq() {
 
 void CDROM::finish_CMD(bool do_stat_irq, u32 irq_num) {
     io.HSTS.BUSYSTS = 0;
-    printf("\n(CDROM) CMD FINISH");
+    printif(ps1.cdrom.cmd, "\n(CDROM) CMD FINISH");
     if (do_stat_irq) {
         queue_interrupt(irq_num);
         result(io.stat.u);
@@ -663,7 +664,7 @@ void CDROM::write_01(u32 val, u8 sz) {
             return;
         case 2: // CI
             io.CI.u = val & 0b01010101;
-            printf("\n(CDROM) CI write %02x", io.CI.u);
+            //printf("\n(CDROM) CI write %02x", io.CI.u);
             // TODO: scheduler changes for sample rate?
             return;
         case 3: // ATV2 R->R
@@ -672,9 +673,23 @@ void CDROM::write_01(u32 val, u8 sz) {
     }
 }
 
+void CDROM::remove_disc() {
+    disk.inserted = false;
+}
+
+void CDROM::open_drive() {
+    io.stat.shell_open = 1;
+    io.stat.motor_fullspeed = 0;
+}
+
+void CDROM::close_drive() {
+    io.stat.shell_open = 0;
+}
 
 void CDROM::insert_disc(multi_file_set &mfs) {
     printf("\nInserting PSX CDROM! DO THIS!!!");
+    io.stat.shell_open = 0;
+    disk.inserted = true;
 }
 
 void CDROM::update_IRQs() {
@@ -686,7 +701,7 @@ void CDROM::update_IRQs() {
 void CDROM::write_02(u32 val, u8 sz) {
     switch (io.HSTS.RA) {
         case 0: // PARAMETER
-            printf("\n(CDROM) PARAMETER write %02x", val);
+            //printf("\n(CDROM) PARAMETER write %02x", val);
             io.PARAMETER.push(val);
             recalc_HSTS();
             return;
@@ -695,7 +710,7 @@ void CDROM::write_02(u32 val, u8 sz) {
             u32 old = io.HINTMSK.u;
             io.HINTMSK.u = (val & 0b11111) | 0b11100000;
             if (io.HINTMSK.u != old) update_IRQs();
-            printf("\n(CDROM) HINTMSK write %02x. new HINTMSK %02x", val, io.HINTMSK.u);
+            printif(ps1.cdrom.reg_write, "\n(CDROM) HINTMSK write %02x. new HINTMSK %02x", val, io.HINTMSK.u);
             return; }
         case 2: // ATV0 L->L
             io.L_L = val & 0xFF;
@@ -716,17 +731,19 @@ void CDROM::write_03(u32 val, u8 sz) {
             u32 old = io.HINTMSK.u;
             io.HINTSTS.u &= ((val & 0b11111) ^ 0b11111);
             io.HINTSTS.u |= 0b11100000;
+            //printf("\n(CDROM) reset RESULTs on HCLRCTL write");
             if (io.HINTSTS.INTSTS == 0 && io.interrupts.len > 0) {
+                //printf("\n(CDROM) Queue next IRQ!");
                 io.HINTSTS.INTSTS = io.interrupts.pop();
-            }
+              }
             if (old != io.HINTSTS.u) update_IRQs();
-            printf("\n(CDROM) HCLRCTL write %02x. new HINTSTS %02x", val, io.HINTSTS.u);
+            //printf("\n(CDROM) HCLRCTL write %02x. new HINTSTS %02x", val, io.HINTSTS.u);
             if (val & 0x80) {
-                printf("\n(CDROM) Reset decoder");
+                //printf("\n(CDROM) Reset decoder");
                 reset_decoder();
             }
             if (val & 0x40) {
-                printf("\n(CDROM) Clear parameter stack");
+                //printf("\n(CDROM) Clear parameter stack");
                 io.PARAMETER.reset();
             }
              if (val & 0x20) {

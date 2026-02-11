@@ -114,6 +114,13 @@ struct jsm_debug_struct {
             } sio0{};
 
             u32 pad{};
+
+            struct {
+                bool reg_read{};
+                bool reg_write{};
+                bool result_read{};
+                bool cmd{};
+            } cdrom{};
         } ps1{};
 
         struct {

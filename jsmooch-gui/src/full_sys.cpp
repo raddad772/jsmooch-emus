@@ -913,7 +913,7 @@ void full_system::load_default_ROM()
             //worked = grab_ROM(&ROMs, which, "PSX/HelloWorld/16BPP/HelloWorld16BPP.exe", nullptr);
             //worked = grab_ROM(&ROMs, which, "PSX/GTE/GTETransfer/GTETransfer.exe", nullptr);
 
-            worked = grab_cue(&ROMs, which, "mk2.cue", nullptr);
+            //worked = grab_cue(&ROMs, which, "mk2.cue", nullptr);
             //worked = grab_ROM(&ROMs, which, "VBLANK.exe", nullptr);
             break;
         case jsm::systems::GBA:
@@ -1178,16 +1178,19 @@ void full_system::load_default_ROM()
     }
     if (!worked) {
         printf("\nCouldn't open ROM!");
-        return;
+        if (which != jsm::systems::PS1) return;
     }
 
     switch (which) {
         case jsm::systems::PS1:
-            if (ROMs.files.size() < 1) break;
-            if (ends_with(ROMs.files[0].name, ".exe"))
-                sys->sideload(ROMs);
-            else
-                load_ROM_into_emu(sys, IOs, ROMs);
+            if (worked) {
+                if (ROMs.files.size() < 1) break;
+                if (ends_with(ROMs.files[0].name, ".exe"))
+                    sys->sideload(ROMs);
+                else
+                    load_ROM_into_emu(sys, IOs, ROMs);
+            }
+            worked = 1;
             break;
         case jsm::systems::COSMAC_VIP_2k:
         case jsm::systems::COSMAC_VIP_4k:

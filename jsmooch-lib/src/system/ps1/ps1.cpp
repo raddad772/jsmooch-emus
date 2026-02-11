@@ -311,6 +311,8 @@ void core::reset()
         sideload_EXE(&sideloaded);
         //amidog_print_console();
     }
+
+    cdrom.open_drive();
 }
 
 void core::sample_audio(u32 num_cycles)
@@ -419,15 +421,18 @@ void IO_insert_disc(jsm_system *ptr, physical_io_device &pio, multi_file_set& mf
 }
 
 void IO_remove_disc(jsm_system *ptr) {
-    printf("\nJSM REMOVE DISC");
+    auto *th = static_cast<core *>(ptr);
+    th->cdrom.remove_disc();
 }
 
 void IO_close_drive(jsm_system *ptr) {
-    printf("\nJSM CLOSE DRIVE");
+    auto *th = static_cast<core *>(ptr);
+    th->cdrom.close_drive();
 }
 
 void IO_open_drive(jsm_system *ptr) {
-    printf("\nJSM OPEN DRIVE");
+    auto *th = static_cast<core *>(ptr);
+    th->cdrom.open_drive();
 }
 
 void core::setup_cdrom() {
