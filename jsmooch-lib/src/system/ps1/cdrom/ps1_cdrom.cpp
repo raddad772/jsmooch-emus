@@ -5,7 +5,7 @@
 #include "helpers/debug.h"
 #include "ps1_cdrom.h"
 
-#include <stdnoreturn.h>
+#include <queue>
 
 namespace PS1 {
 
@@ -36,16 +36,19 @@ u8 CD_FIFO::pop() {
 }
 
 u32 CDROM::mainbus_read(u32 addr, u8 sz, bool has_effect) {
-    printf("\nRD CDROM %08x", addr);
-    static int a = 0;
+    //printf("\nRD CDROM %08x", addr);
+    /*static int a = 0;
     a++;
     if (a == 10) {
         dbg_break("CDROM TEST", 0);
-    }
+    }*/
     switch (addr) {
         case 0x1F801800: {
+            io.HSTS.PRMEMPT = io.PARAMETER.len == 0;
+            io.HSTS.PRMWRDY = io.PARAMETER.len != 16;
+            io.HSTS.RSLRRDY = io.RESULT.len > 0;
             u32 v = io.HSTS.u | (io.HSTS.u << 8) | (io.HSTS.u << 16) | (io.HSTS.u << 24);
-            printf("\nRETURN %02x", v & 0xFF);
+            printf("\n(CDROM) read HSTS %02x", v & 0xFF);
             return v & masksz[sz];
         }
         case 0x1F801801: return read_01(sz, has_effect);
@@ -57,7 +60,7 @@ u32 CDROM::mainbus_read(u32 addr, u8 sz, bool has_effect) {
 }
 
 void CDROM::mainbus_write(u32 addr, u32 val, u8 sz) {
-    printf("\nWR CDROM %08x: %08x", addr, val);
+    //printf("\nWR CDROM %08x: %08x", addr, val);
     switch (addr) {
         case 0x1F801800: io.HSTS.RA = val & 3; return;
         case 0x1F801801: return write_01(val, sz);
@@ -73,12 +76,14 @@ u32 CDROM::read_01(u8 sz, bool has_effect) {
     // RESULT
     u8 v = io.RESULT.pop();
     recalc_HSTS();
+    printf("\n(CDROM) read RESULT %02x", v);
     return v;
 }
 
 u32 CDROM::read_02(u8 sz, bool has_effect) {
     // RDDATA
     // if DRQSTS is set, the datablock (disk sector) can be then read from this register
+    printf("\n(CDROM) READ DATA (not impl)");
     if (io.HSTS.DRQSTS) {
         u32 v = io.RDDATA.read_byte();
         if (sz >= 2) v |= io.RDDATA.read_byte() << 8;
@@ -88,17 +93,22 @@ u32 CDROM::read_02(u8 sz, bool has_effect) {
         }
         return v;
     }
-    else return masksz[sz];
+    return masksz[sz];
 }
 
 u32 CDROM::read_03(u8 sz, bool has_effect) {
+    u32 v;
     switch (io.HSTS.RA) {
         case 0:
         case 2: // HINTMSK
-            return io.HINTMSK.u | 0b11100000;
+            v = io.HINTMSK.u | 0b11100000;
+            printf("\n(CDROM) read HINTMSK %02x", v);
+            return v;
         case 1:
         case 3: // HINTSTS
-            return io.HINTSTS.u | 0b11100000;
+            v = io.HINTSTS.u | 0b11100000;
+            printf("\n(CDROM) read HINTSTS %02x", v);
+            return v;
     }
     NOGOHERE;
 }
@@ -114,6 +124,11 @@ void CDROM::write_CMD(u32 val) {
     if (io.HSTS.BUSYSTS) cancel_CMD();
     io.CMD = val & 0xFF;
     schedule_CMD();
+}
+void CDROM::result_string(const char *s) {
+    for (u32 i = 0; i < strlen(s); i++) {
+        if (s[i] != 0) result(s[i]);
+    }
 }
 
 void CDROM::result(u32 val) {
@@ -133,6 +148,9 @@ void CDROM::cmd_start(u64 key, u64 clock) {
             result(0x11);
             result(0x40);
             finish_CMD(false, 3);
+            return;
+        case 0x19:
+            cmd_test();
             return;
         case 0x58:
         case 0x59:
@@ -198,7 +216,7 @@ void CDROM::cmd_start(u64 key, u64 clock) {
             cmd_reset();
             return;
     }
-    printf("\n\nUnhandled CDROM CMD %d\n", io.CMD);
+    printf("\n\nUnhandled CDROM CMD %02x\n", io.CMD);
 }
 
 void CDROM::cmd_step3(u64 key, u64 clock) {
@@ -254,6 +272,63 @@ static u8 decode_bcd(u8 val) {
     return ((val >> 4) * 10) + (val & 0xF);;
 }
 
+void CDROM::cmd_test() {
+    u8 sub = io.PARAMETER.pop();
+    test.subcmd = sub;
+    printf("\n(CDROM) TEST %02x", sub);
+    switch (sub) {
+        case 0x20: // CDROM BIOS version 94h,09h,19h,C0h
+            result(0x94);
+            result(0x09);
+            result(0x19);
+            result(0xC0);
+            queue_interrupt(3);
+            finish_CMD(false, 0);
+            return;
+        case 0x21: { // Status of POS0 and DOOR switches
+            u32 v = head.sector == 0;
+            v |= io.stat.shell_open << 1;
+            result(v);
+            queue_interrupt(3);
+            finish_CMD(false, 0);
+            return; }
+        case 0x22: // Not supported/higher BIOS version
+            result(0x11);
+            result(0x10);
+            queue_interrupt(5);
+            finish_CMD(false, 0);
+            return;
+        case 0x23: // Servo Amplifier
+        case 0x24: // Signal processor
+            result_string("CXD2940Q");
+            queue_interrupt(3);
+            finish_CMD(false, 0);
+            return;
+        case 0x25: // Not supported/higher BIOS version
+            result(0x11);
+            result(0x10);
+            queue_interrupt(5);
+            return;
+        case 0x04: // Read SCEx string (and force motor on)
+            if (io.stat.shell_open) {
+                test.counterlo = test.counterhi = 0;
+            }
+            else {
+                test.counterlo = test.counterhi = 1;
+            }
+            finish_CMD(true, 3);
+            io.stat.motor_fullspeed = 1;
+            return;
+        case 0x05: // Read total/success
+            result(test.counterlo);
+            result(test.counterhi);
+            queue_interrupt(3);
+            finish_CMD(false, 0);
+            return;
+    }
+    printf("\n(CDROM) TEST UNKNOWN CMD %02x", sub);
+}
+
 void CDROM::cmd_setloc() {
     printf("\n(CDROM) CMD SetLoc");
     stat_irq();
@@ -290,6 +365,7 @@ void CDROM::do_cmd_read(u64 clock) {
 void CDROM::do_cmd_read_step2(u64 clock) {
     schedule_read(clock + ONEFRAME);
     queue_interrupt(1);
+    io.HSTS.DRQSTS = 1;
     result(io.stat.u);
 }
 
@@ -320,6 +396,7 @@ void CDROM::cmd_motor_on(u64 clock) {
 
 void CDROM::sch_read(u64 key, u64 clock) {
     printf("\n(CDROM) IMPL ACTUAL DATA READ");
+    io.HSTS.DRQSTS = 0;
 }
 
 void CDROM::cmd_motor_on_finish() {
@@ -495,6 +572,7 @@ void CDROM::schedule_CMD() {
 }
 
 void CDROM::queue_interrupt(u32 level) {
+    printf("\n(CDROM) QUEUE INT %d", level);
     if (io.HINTSTS.INTSTS == 0) {
         io.HINTSTS.INTSTS = level;
         update_IRQs();
@@ -511,6 +589,7 @@ void CDROM::stat_irq() {
 
 void CDROM::finish_CMD(bool do_stat_irq, u32 irq_num) {
     io.HSTS.BUSYSTS = 0;
+    printf("\n(CDROM) CMD FINISH");
     if (do_stat_irq) {
         queue_interrupt(irq_num);
         result(io.stat.u);
@@ -530,9 +609,11 @@ void CDROM::write_01(u32 val, u8 sz) {
             return;
         case 1: // WRDATA
             // Used to write sectors for XA-ADPCM so ignore for now!
+            printf("\n(CDROM) WRDATA write %02x", val);
             return;
         case 2: // CI
             io.CI.u = val & 0b01010101;
+            printf("\n(CDROM) CI write %02x", io.CI.u);
             // TODO: scheduler changes for sample rate?
             return;
         case 3: // ATV2 R->R
@@ -547,13 +628,15 @@ void CDROM::insert_disc(multi_file_set &mfs) {
 }
 
 void CDROM::update_IRQs() {
-    u32 lvl = io.HINTMSK.u & io.HINTSTS.u & 0b11111;
+    u32 lvl = (io.HINTMSK.u & io.HINTSTS.u & 0b11111) != 0;
     set_irq_lvl(set_irq_ptr, lvl);
+    //printf("\n(CDROM) IRQ update %d", lvl);
 }
 
 void CDROM::write_02(u32 val, u8 sz) {
     switch (io.HSTS.RA) {
         case 0: // PARAMETER
+            printf("\n(CDROM) PARAMETER write %02x", val);
             io.PARAMETER.push(val);
             recalc_HSTS();
             return;
@@ -575,6 +658,9 @@ void CDROM::write_02(u32 val, u8 sz) {
 
 void CDROM::write_03(u32 val, u8 sz) {
     switch (io.HSTS.RA) {
+        case 0:
+            printf("\n(CDROM) UNKNOWN write_03 reg0 %02x", val);
+            return;
         case 1: {
             // HCLRCTL
             u32 old = io.HINTMSK.u;
@@ -612,6 +698,7 @@ void CDROM::write_03(u32 val, u8 sz) {
                 io.latch.R_L = io.R_L;
                 io.latch.R_R = io.R_R;
             }
+            return;
     }
 }
 void CDROM::reset_decoder() {

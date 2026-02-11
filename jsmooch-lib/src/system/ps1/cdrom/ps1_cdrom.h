@@ -174,13 +174,19 @@ struct CDROM {
     } seek;
 
     struct {
-        CDHEAD_MODE mode;
+        CDHEAD_MODE mode{};
         // can be seeking,
         // can be reading
         // can be data or audio mode
 
         u32 sector{}, session{};
-    } head;
+    } head{};
+
+    struct {
+        u8 subcmd{};
+        u32 counterlo{}, counterhi{};
+
+    } test{};
     struct {
         u32 num_sessions;
     } disk;
@@ -207,8 +213,10 @@ private:
     void finish_CMD(bool do_stat_irq, u32 irq_num);
     void queue_interrupt(u32 lvl);
     void result(u32 val);
+    void result_string(const char *s);
     void stat_irq();
     void cmd_setloc();
+    void cmd_test();
     void cmd_play();
     void cmd_forward();
     void cmd_backward();
