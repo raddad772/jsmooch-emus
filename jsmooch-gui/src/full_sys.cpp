@@ -335,24 +335,63 @@ u32 grab_cue(multi_file_set* ROMs, jsm::systems which, const char* fname, const 
     u32 worked = 0;
 
     GET_HOME_BASE_SYS(BASE_PATH, sizeof(BASE_PATH), which, sec_path, &worked);
+    char BASER_PATH[255];
     if (!worked) {
         printf("\nEARLY QUIT!");
         return 0;
     }
-    // TODO: this
-    //printf("\nREMEMBER TO IMPLEMENT BASIC CUE LOADER!");
+    snprintf(BASER_PATH, sizeof(BASER_PATH), "%s/%s", BASE_PATH, fname);
+    printf("\nBASER_PATH %s", BASER_PATH);
 
     ROMs->clear();
     char fname2[500];
     snprintf(fname2, sizeof(fname2), "%s.cue", fname);
-    ROMs->add(fname2, BASE_PATH);
+    ROMs->add(fname2, BASER_PATH);
 
-    snprintf(fname2, sizeof(fname2), "%s_1.bin", fname);
-    ROMs->add(fname2, BASE_PATH);
+    // Now parse through it!!! GPT time!
+    const char *cue = static_cast<const char *>(ROMs->files[0].buf.ptr);
+    size_t cue_sz = ROMs->files[0].buf.size;
+    const char *p = cue;
+    const char *end = cue + cue_sz;
 
-    snprintf(fname2, sizeof(fname2), "%s_2.bin", fname);
-    ROMs->add(fname2, BASE_PATH);
+    auto next_line = [&](char *out, size_t out_sz) -> bool {
+        if (p >= end)
+            return false;
 
+        // Skip line endings from previous read
+        while (p < end && (*p == '\n' || *p == '\r'))
+            p++;
+
+        if (p >= end)
+            return false;
+
+        // Skip leading whitespace
+        while (p < end && (*p == ' ' || *p == '\t'))
+            p++;
+
+        size_t i = 0;
+        while (p < end && *p != '\n' && *p != '\r') {
+            if (i + 1 < out_sz)
+                out[i++] = *p;
+            p++;
+        }
+        out[i] = 0;
+
+        return true;
+    };
+
+    char line[512];
+
+    while (next_line(line, sizeof(line))) {
+        printf("\nLINE (%ld): %s", strlen(line), line);
+        if (!line[0]) continue;
+        if (!strncmp(line, "FILE", 4)) {
+            char ffname[256]{};
+            if (sscanf(line, R"(FILE "%255[^"]")", ffname) == 1) {
+                ROMs->add(ffname, BASER_PATH);
+            }
+        }
+    }
     return 1;
 
 }

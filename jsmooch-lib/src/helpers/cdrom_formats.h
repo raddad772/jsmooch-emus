@@ -19,6 +19,7 @@ frames    98 frames per sector
 bytes     33 bytes per frame (24+1+8 = data + subchannel + error correction)
 */
 
+
 enum CDROM_TRACK_MODE {
     CDMODE_AUDIO,
     CDMODE_MODE1,

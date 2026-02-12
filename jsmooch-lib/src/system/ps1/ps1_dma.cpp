@@ -111,12 +111,7 @@ void DMA_channel::do_block()
                         src_word = bus->gpu.get_gpuread();
                         break;
                     case DP_cdrom: {
-                        static u32 e = 0;
-                        if (!e) {
-                            e = 1;
-                            printf("\nWARN DMA read CDROM not implement!");
-                        }
-                        //src_word = cdrom.dma_read_word();
+                        src_word = bus->cdrom.mainbus_read(0x1F801802, 4, true);
                         break; }
                     case DP_MDEC_out:
                         src_word = 0;

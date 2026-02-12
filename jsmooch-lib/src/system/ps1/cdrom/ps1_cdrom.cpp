@@ -81,7 +81,6 @@ u32 CDROM::read_01(u8 sz, bool has_effect) {
 u32 CDROM::read_02(u8 sz, bool has_effect) {
     // RDDATA
     // if DRQSTS is set, the datablock (disk sector) can be then read from this register
-    printf("\n(CDROM) READ DATA (not impl)");
     if (io.HSTS.DRQSTS) {
         u32 v = io.RDDATA.read_byte();
         if (sz >= 2) v |= io.RDDATA.read_byte() << 8;
@@ -89,7 +88,10 @@ u32 CDROM::read_02(u8 sz, bool has_effect) {
             v |= io.RDDATA.read_byte() << 16;
             v |= io.RDDATA.read_byte() << 24;
         }
-        if (io.RDDATA.pos >= io.RDDATA.len) io.HSTS.DRQSTS = 0;
+        if (io.RDDATA.pos >= io.RDDATA.len) {
+            printf("\n\nFINISH RDDATA!");
+            io.HSTS.DRQSTS = 0;
+        }
         return v;
     }
     return masksz[sz];
@@ -262,12 +264,12 @@ void CDROM::cmd_finish(u64 key, u64 clock) {
             io.stat.seek = 0;
             finish_CMD(true, 2);
             return;
-        case 0x06: // ReadN
         case 0x1A: // GetID
             cmd_getid_finish();
             return;
+        case 0x06: // ReadN
         case 0x1B: // ReadS
-            do_cmd_read_step2(clock);
+            schedule_read(clock);
             return;
         default:
             NOGOHERE;
@@ -373,12 +375,6 @@ void CDROM::do_cmd_read(u64 clock) {
     schedule_finish(clock + ONEFRAME);
 }
 
-void CDROM::do_cmd_read_step2(u64 clock) {
-    schedule_read(clock + (ONEFRAME/75));
-    queue_interrupt(1);
-    result(io.stat.u);
-}
-
 void CDROM::cmd_getid(u64 clock) {
     printf("\n(CDROM) CMD GetID");
     if (io.stat.shell_open) {
@@ -450,6 +446,7 @@ void CDROM::cmd_motor_on(u64 clock) {
 }
 
 void CDROM::read_sector() {
+    printf("\n(CDROM) Read sector %02d:%02d:%02d", seek.amm, seek.ass, seek.asect);
     u8 *ptr = data.ptr_to_data(seek.amm, seek.ass, seek.asect);
     memcpy(sector_buf.bufs[sector_buf.tail], ptr, 0x930);
     sector_buf.tail = (sector_buf.tail + 1) & 7;
@@ -462,7 +459,6 @@ void CDROM::read_sector() {
 }
 
 void CDROM::sch_read(u64 key, u64 clock) {
-    printf("\n(CDROM) DATA READ");
     read_sector();
     seek.asect++;
     if (seek.asect >= 75) {
@@ -476,7 +472,7 @@ void CDROM::sch_read(u64 key, u64 clock) {
             }
         }
     }
-    schedule_read(clock+(ONEFRAME/75));
+    schedule_read(clock);
 }
 
 void CDROM::cmd_motor_on_finish() {
@@ -531,6 +527,7 @@ void CDROM::cmd_setmode() {
 void CDROM::cmd_reset() {
     printf("\n(CDROM) CMD RESET.");
     finish_CMD(true, 3);
+    sector_buf.head = sector_buf.tail = sector_buf.len = 0;
 }
 
 void CDROM::cmd_set_session(u64 clock) {
@@ -608,7 +605,9 @@ static void scheduled_cmd_step3(void *ptr, u64 key, u64 timecode, u32 jitter) {
 }
 
 void CDROM::schedule_read(u64 clock) {
-    read.sched_id = scheduler->only_add_abs(clock, 0, this, &scheduled_read, &read.still_sched);
+    u64 div = io.MODE.speed ? 150 : 75;
+    u64 tm = clock + ((ONEFRAME * 60) / div);
+    read.sched_id = scheduler->only_add_abs(tm, 0, this, &scheduled_read, &read.still_sched);
 }
 
 void CDROM::schedule_finish(u64 clock) {
@@ -764,8 +763,18 @@ void CDROM::write_03(u32 val, u8 sz) {
     switch (io.HSTS.RA) {
         case 0:
             io.read_mode = (val >> 7) & 1;
-            io.HSTS.DRQSTS = io.read_mode && sector_buf.len > 0;
-            queue_sector_RDDATA();
+            printf("\n(CDROM) write read mode %d", io.read_mode);
+            if (!io.read_mode) {
+                io.HSTS.DRQSTS = 0;
+                io.RDDATA.clear();
+            }
+            else {
+                io.HSTS.DRQSTS = sector_buf.len > 0;
+                if (io.HSTS.DRQSTS) {
+                    printf("\n(CDROM) Queiueng read data!");
+                    queue_sector_RDDATA();
+                }
+            }
             return;
         case 1: {
             // HCLRCTL
