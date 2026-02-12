@@ -89,6 +89,7 @@ u32 CDROM::read_02(u8 sz, bool has_effect) {
             v |= io.RDDATA.read_byte() << 16;
             v |= io.RDDATA.read_byte() << 24;
         }
+        if (io.RDDATA.pos >= io.RDDATA.len) io.HSTS.DRQSTS = 0;
         return v;
     }
     return masksz[sz];
@@ -340,6 +341,7 @@ void CDROM::cmd_setloc() {
     seek.amm = decode_bcd(io.PARAMETER.pop());
     seek.ass = decode_bcd(io.PARAMETER.pop());
     seek.asect = decode_bcd(io.PARAMETER.pop());
+    finish_CMD(false, 0);
 }
 
 void CDROM::cmd_play() {
@@ -361,6 +363,10 @@ void CDROM::cmd_reads(u64 clock) {
 }
 
 void CDROM::do_cmd_read(u64 clock) {
+    if (read.still_sched) {
+        printf("\nABORT read req. processing for already going!");
+        return;
+    }
     stat_irq();
     io.stat.seek = 0;
     io.stat.read = 1;
@@ -368,9 +374,8 @@ void CDROM::do_cmd_read(u64 clock) {
 }
 
 void CDROM::do_cmd_read_step2(u64 clock) {
-    schedule_read(clock + ONEFRAME);
+    schedule_read(clock + (ONEFRAME/75));
     queue_interrupt(1);
-    io.HSTS.DRQSTS = 1;
     result(io.stat.u);
 }
 
@@ -444,9 +449,34 @@ void CDROM::cmd_motor_on(u64 clock) {
     schedule_finish(clock + (ONEFRAME * 60));
 }
 
+void CDROM::read_sector() {
+    u8 *ptr = data.ptr_to_data(seek.amm, seek.ass, seek.asect);
+    memcpy(sector_buf.bufs[sector_buf.tail], ptr, 0x930);
+    sector_buf.tail = (sector_buf.tail + 1) & 7;
+    sector_buf.len++;
+    if (sector_buf.len > 2) {
+        printf("\nWARN SECTOR BUF LEN %d", sector_buf.len);
+    }
+    queue_interrupt(1);
+    result(io.stat.u);
+}
+
 void CDROM::sch_read(u64 key, u64 clock) {
-    printf("\n(CDROM) IMPL ACTUAL DATA READ");
-    io.HSTS.DRQSTS = 0;
+    printf("\n(CDROM) DATA READ");
+    read_sector();
+    seek.asect++;
+    if (seek.asect >= 75) {
+        seek.asect = 0;
+        seek.ass++;
+        if (seek.ass>=60) {
+            seek.ass = 0;
+            seek.amm++;
+            if (seek.amm >= 74) {
+                seek.amm = 0;
+            }
+        }
+    }
+    schedule_read(clock+(ONEFRAME/75));
 }
 
 void CDROM::cmd_motor_on_finish() {
@@ -536,7 +566,6 @@ void CDROM::cmd_set_session_finish(u64 clock) {
         }
         else {
             head.session = seek.session;
-            read_toc();
             finish_CMD(true, 2);
         }
     }
@@ -549,18 +578,9 @@ void CDROM::cmd_set_session_finish(u64 clock) {
         }
         else {
             head.session = seek.session;
-            do_seek();
-            read_toc();
             finish_CMD(true, 2);
         }
     }
-}
-void CDROM::read_toc() {
-    printf("\nIMPL READ_TOC");
-}
-
-void CDROM::do_seek() {
-    printf("\nIMPL DO_SEEK");
 }
 
 //void CDROM::cmd_() {
@@ -689,6 +709,7 @@ void CDROM::close_drive() {
 void CDROM::insert_disc(multi_file_set &mfs) {
     printf("\nInserting PSX CDROM! DO THIS!!!");
     io.stat.shell_open = 0;
+    data.parse_cue(mfs);
     disk.inserted = true;
 }
 
@@ -720,11 +741,31 @@ void CDROM::write_02(u32 val, u8 sz) {
             return;
     }
 }
+void CDROM::queue_sector_RDDATA() {
+    if (sector_buf.len == 0) {
+        printf("\nNO BUFS TO RDDATA!?");
+        return;
+    }
+    io.RDDATA.clear();
+    io.RDDATA.ptr = sector_buf.bufs[sector_buf.head];
+    if (io.latch.MODE_sector_size) {
+        io.RDDATA.len = 0x924;
+        io.RDDATA.ptr += 0x0C; // drop sync bytes
+    }
+    else {
+        io.RDDATA.len = 0x800;
+        io.RDDATA.ptr += 0x18;
+    }
+    sector_buf.head = (sector_buf.head + 1) & 7;
+    sector_buf.len--;
+}
 
 void CDROM::write_03(u32 val, u8 sz) {
     switch (io.HSTS.RA) {
         case 0:
-            printf("\n(CDROM) UNKNOWN write_03 reg0 %02x", val);
+            io.read_mode = (val >> 7) & 1;
+            io.HSTS.DRQSTS = io.read_mode && sector_buf.len > 0;
+            queue_sector_RDDATA();
             return;
         case 1: {
             // HCLRCTL

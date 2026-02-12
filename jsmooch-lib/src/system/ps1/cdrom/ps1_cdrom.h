@@ -7,6 +7,7 @@
 #include "helpers/int.h"
 #include "helpers/physical_io.h"
 #include "helpers/cvec.h"
+#include "helpers/cdrom_formats.h"
 
 namespace PS1 {
 
@@ -21,16 +22,19 @@ struct CD_FIFO {
 };
 
 struct CD_DATA_BUF {
-    u8 values[0x940]{};
+    u8 *ptr;
     u32 pos{};
-    u32 len{};
+    i32 len{};
     u32 read_byte() {
-        if (pos >= len) return 0;
-        u8 v = values[pos];
-        pos++;
+        u8 v;
+        if (pos >= len) v = ptr[pos-1];
+        else {
+            v = ptr[pos];
+            pos++;
+        }
         return v;
     }
-    void clear() { len = 0; pos = 0; }
+    void clear() { ptr = nullptr; len = 0; pos = 0; }
 };
 
 struct CDROM_IO {
@@ -38,6 +42,8 @@ struct CDROM_IO {
     CD_FIFO RESULT{};
     CD_DATA_BUF RDDATA{};
     CD_FIFO interrupts{};
+
+    bool read_mode{};
 
     u8 L_L{}, L_R{}, R_L{}, R_R{};
     struct {
@@ -126,7 +132,14 @@ enum CDHEAD_MODE {
     HM_AUDIO, HM_DATA
 };
 
+struct SECTOR_BUFFER {
+    u32 head{}, tail{}, len{};
+    u8 bufs[8][0x930];
+};
+
 struct CDROM {
+
+
     explicit CDROM(scheduler_t *scheduler_in) : scheduler(scheduler_in) {}
     scheduler_t *scheduler;
     void mainbus_write(u32 addr, u32 val, u8 sz);
@@ -147,6 +160,8 @@ struct CDROM {
     void sch_read(u64 key, u64 clock);
     void read_toc();
     void do_seek();
+
+    void queue_sector_readback();
 
     void *set_irq_ptr{};
     void (*set_irq_lvl)(void*, u32){};
@@ -189,19 +204,21 @@ struct CDROM {
         u32 sector{}, session{};
     } head{};
 
+    SECTOR_BUFFER sector_buf{};
+
     struct {
         u8 subcmd{};
         u32 counterlo{}, counterhi{};
 
     } test{};
 
+    CDROM_DISC data{};
     struct {
         u32 num_sessions{false};
         bool inserted{false};
     } disk{};
 
 private:
-
     u32 read_01(u8 sz, bool has_effect);
     u32 read_02(u8 sz, bool has_effect);
     u32 read_03(u8 sz, bool has_effect);
@@ -246,5 +263,7 @@ private:
     void cmd_set_session_finish(u64 clock);
     void do_cmd_read(u64 clock);
     void do_cmd_read_step2(u64 clock);
+    void read_sector();
+    void queue_sector_RDDATA();
 };
 }

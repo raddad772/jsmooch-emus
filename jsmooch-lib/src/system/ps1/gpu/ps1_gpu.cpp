@@ -1473,7 +1473,7 @@ void core::gp0_cmd(u32 cmd) {
 #endif
         switch(cmdr) {
             case 0: // NOP
-                if (cmd != 0) printf("\nINTERPRETED AS NOP:%08x", cmd);
+                //if (cmd != 0) printf("\nINTERPRETED AS NOP:%08x", cmd);
                 break;
             case 0x01: // Clear cache (not implemented)
                 break;

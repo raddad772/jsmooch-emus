@@ -340,7 +340,19 @@ u32 grab_cue(multi_file_set* ROMs, jsm::systems which, const char* fname, const 
         return 0;
     }
     // TODO: this
-    printf("\nREMEMBER TO IMPLEMENT BASIC CUE LOADER!");
+    //printf("\nREMEMBER TO IMPLEMENT BASIC CUE LOADER!");
+
+    ROMs->clear();
+    char fname2[500];
+    snprintf(fname2, sizeof(fname2), "%s.cue", fname);
+    ROMs->add(fname2, BASE_PATH);
+
+    snprintf(fname2, sizeof(fname2), "%s_1.bin", fname);
+    ROMs->add(fname2, BASE_PATH);
+
+    snprintf(fname2, sizeof(fname2), "%s_2.bin", fname);
+    ROMs->add(fname2, BASE_PATH);
+
     return 1;
 
 }
@@ -372,11 +384,13 @@ physical_io_device* load_ROM_into_emu(jsm_system* sys, std::vector<physical_io_d
         case jsm::systems::MAC128K:
         case jsm::systems::MACPLUS_1MB:
         case jsm::systems::APPLEIIe:
+        case jsm::systems::PS1:
             for (u32 i = 0; i < IOs.size(); i++) {
                 pio = &IOs.at(i);
                 if (pio->kind == HID_DISC_DRIVE) {
                     printf("\nINSERT DISC!");
                     pio->disc_drive.insert_disc(sys, *pio, mfs);
+                    pio->disc_drive.close_drive(sys);
                     break;
                 }
                 else if (pio->kind == HID_AUDIO_CASSETTE) {
@@ -915,7 +929,7 @@ void full_system::load_default_ROM()
             //worked = grab_ROM(&ROMs, which, "PSX/HelloWorld/16BPP/HelloWorld16BPP.exe", nullptr);
             //worked = grab_ROM(&ROMs, which, "PSX/GTE/GTETransfer/GTETransfer.exe", nullptr);
 
-            //worked = grab_cue(&ROMs, which, "mk2.cue", nullptr);
+            worked = grab_cue(&ROMs, which, "mk2", nullptr);
             //worked = grab_ROM(&ROMs, which, "VBLANK.exe", nullptr);
             break;
         case jsm::systems::GBA:

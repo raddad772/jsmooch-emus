@@ -506,6 +506,8 @@ set(SOURCE_LIST
         src/system/zxspectrum/zxspectrum_debugger.h
         src/system/zxspectrum/clock.cpp
         src/system/zxspectrum/clock.h
+        src/helpers/cdrom_formats.cpp
+        src/helpers/cdrom_formats.h
 )
 
 # TODO: Fix elf-parser repo for windows

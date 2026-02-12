@@ -436,6 +436,7 @@ void IO_open_drive(jsm_system *ptr) {
 }
 
 void core::setup_cdrom() {
+    printf("\nSETTING UP CDROM!");
     physical_io_device *pio = &IOs.emplace_back();
     pio->init(HID_DISC_DRIVE, true, true, true, false);
     cdrom.pio_ptr.make(IOs, IOs.size()-1);
@@ -482,15 +483,6 @@ void core::describe_io()
 
     // cartridge port
     physical_io_device *d = &IOs.emplace_back();
-    d->init(HID_DISC_DRIVE, 1, 1, 1, 0);
-    // TODO: this
-    d->disc_drive.open_drive = nullptr;
-    d->disc_drive.remove_disc = nullptr;
-    d->disc_drive.insert_disc = nullptr;
-    d->disc_drive.close_drive = nullptr;
-
-    // screen
-    d = &IOs.emplace_back();
     d->init(HID_DISPLAY, 1, 1, 0, 1);
     d->display.output[0] = malloc(1024*1024);
     d->display.output[1] = malloc(1024*1024);
