@@ -1745,7 +1745,9 @@ void core::reset()
 
 void core::write_gp1(u32 cmd)
 {
-    switch(cmd >> 24) {
+    u32 cmdb = cmd >> 24;
+    if ((cmdb >= 0x10) && (cmdb <= 0x1F)) cmdb = 0x10;
+    switch(cmdb) {
         case 0:
             //printf("\nGP1 soft reset %08x", bus->cpu.gte.flags);
             // Soft reset
@@ -1844,6 +1846,41 @@ void core::write_gp1(u32 cmd)
                 printf("\nUnsupported display mode!");
             }
             bus->dotclock_change();
+            break; }
+        case 0x10: {
+            // Read internal register
+            u32 reg = cmd & 0xFFFFFF;
+            reg &= 7;
+            u32 r = 0;
+            switch (reg) {
+                case 0x00:
+                case 0x01:
+                case 0x06:
+                case 0x07:
+                    break;
+                case 0x02:
+                    r = tx_win_x_mask;
+                    r |= (tx_win_y_mask << 5);
+                    r |= (tx_win_x_offset << 10);
+                    r |= (tx_win_y_offset << 15);
+                    io.GPUREAD = r;
+                    break;
+                case 0x03:
+                    r = draw_area_top;
+                    r |= (draw_area_left << 10);
+                    io.GPUREAD = r;
+                    break;
+                case 0x04:
+                    r = draw_area_bottom;
+                    r |= (draw_area_right << 10);
+                    io.GPUREAD = r;
+                    break;
+                case 0x05:
+                    r = (draw_x_offset & 0x7FF);
+                    r |= ((draw_y_offset & 0x7FF) << 11);
+                    io.GPUREAD = r;
+                    break;
+            }
             break; }
         default:
             printf("\nUnknown GP1 command %08x", cmd);

@@ -262,8 +262,8 @@ private:
     void cmd_set_session(u64 clock);
     void cmd_set_session_finish(u64 clock);
     void do_cmd_read(u64 clock);
-    void do_cmd_read_step2(u64 clock);
     void read_sector();
+    void cmd_demute();
     void queue_sector_RDDATA();
 };
 }

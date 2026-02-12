@@ -89,7 +89,7 @@ u32 CDROM::read_02(u8 sz, bool has_effect) {
             v |= io.RDDATA.read_byte() << 24;
         }
         if (io.RDDATA.pos >= io.RDDATA.len) {
-            printf("\n\nFINISH RDDATA!");
+            //printf("\n\nFINISH RDDATA!");
             io.HSTS.DRQSTS = 0;
         }
         return v;
@@ -199,6 +199,9 @@ void CDROM::cmd_start(u64 key, u64 clock) {
             return;
         case 0x0a:
             cmd_init(clock);
+            return;
+        case 0x0C:
+            cmd_demute();
             return;
         case 0x0D: // setfilter
             ADPCM.filter.file = io.PARAMETER.pop();
@@ -338,7 +341,7 @@ void CDROM::cmd_test() {
 }
 
 void CDROM::cmd_setloc() {
-    printf("\n(CDROM) CMD SetLoc");
+    //printf("\n(CDROM) CMD SetLoc");
     stat_irq();
     seek.amm = decode_bcd(io.PARAMETER.pop());
     seek.ass = decode_bcd(io.PARAMETER.pop());
@@ -359,7 +362,7 @@ void CDROM::cmd_backward() {
 }
 
 void CDROM::cmd_reads(u64 clock) {
-    printf("\n(CDROM) CMD ReadS");
+    //printf("\n(CDROM) CMD ReadS");
     // Read data!
     do_cmd_read(clock);
 }
@@ -376,7 +379,7 @@ void CDROM::do_cmd_read(u64 clock) {
 }
 
 void CDROM::cmd_getid(u64 clock) {
-    printf("\n(CDROM) CMD GetID");
+    //printf("\n(CDROM) CMD GetID");
     if (io.stat.shell_open) {
         queue_interrupt(5);
         result(0x11);
@@ -430,7 +433,7 @@ void CDROM::cmd_seekp(u64 clock) {
 }
 
 void CDROM::cmd_seekl(u64 clock) {
-    printf("\n(CDROM) CMD SeekL");
+    //printf("\n(CDROM) CMD SeekL");
     stat_irq();
     io.stat.seek = 1;
     io.stat.read = 0;
@@ -446,7 +449,7 @@ void CDROM::cmd_motor_on(u64 clock) {
 }
 
 void CDROM::read_sector() {
-    printf("\n(CDROM) Read sector %02d:%02d:%02d", seek.amm, seek.ass, seek.asect);
+    //printf("\n(CDROM) Read sector %02d:%02d:%02d", seek.amm, seek.ass, seek.asect);
     u8 *ptr = data.ptr_to_data(seek.amm, seek.ass, seek.asect);
     memcpy(sector_buf.bufs[sector_buf.tail], ptr, 0x930);
     sector_buf.tail = (sector_buf.tail + 1) & 7;
@@ -499,15 +502,20 @@ void CDROM::cmd_stop(u64 clock) {
 }
 
 void CDROM::cmd_pause(u64 clock) {
-    printf("\n(CDROM) CMD Pause");
+    //printf("\n(CDROM) CMD Pause");
     stat_irq();
     if (read.still_sched) scheduler->delete_if_exist(read.sched_id);
     io.stat.read = 0;
     schedule_finish(clock + ONEFRAME);
 }
 
+void CDROM::cmd_demute() {
+    printf("\n(CDROM) CMD Demute. NOT IMPL!");
+    finish_CMD(true, 3);
+}
+
 void CDROM::cmd_init(u64 clock) {
-    printf("\n(CDROM) CMD Init");
+    //printf("\n(CDROM) CMD Init");
     stat_irq();
     io.MODE.u = 0x20;
     io.stat.motor_fullspeed = 1;
@@ -516,7 +524,7 @@ void CDROM::cmd_init(u64 clock) {
 
 void CDROM::cmd_setmode() {
     u8 mode = io.PARAMETER.pop();
-    printf("\n(CDROM) CMD SETMODE %02x", mode);
+    //printf("\n(CDROM) CMD SETMODE %02x", mode);
     if (!(mode & 0x10)) {
         io.latch.MODE_sector_size = (mode >> 5) & 1;
     }
@@ -525,13 +533,13 @@ void CDROM::cmd_setmode() {
 }
 
 void CDROM::cmd_reset() {
-    printf("\n(CDROM) CMD RESET.");
+    //printf("\n(CDROM) CMD RESET.");
     finish_CMD(true, 3);
     sector_buf.head = sector_buf.tail = sector_buf.len = 0;
 }
 
 void CDROM::cmd_set_session(u64 clock) {
-    printf("\n(CDROM) CMD SetSession");
+    //printf("\n(CDROM) CMD SetSession");
     seek.session = io.PARAMETER.pop();
     if (seek.session == 0) {
         queue_interrupt(5);
@@ -659,7 +667,7 @@ void CDROM::stat_irq() {
 
 void CDROM::finish_CMD(bool do_stat_irq, u32 irq_num) {
     io.HSTS.BUSYSTS = 0;
-    printif(ps1.cdrom.cmd, "\n(CDROM) CMD FINISH");
+    //printif(ps1.cdrom.cmd, "\n(CDROM) CMD FINISH");
     if (do_stat_irq) {
         queue_interrupt(irq_num);
         result(io.stat.u);
@@ -763,7 +771,7 @@ void CDROM::write_03(u32 val, u8 sz) {
     switch (io.HSTS.RA) {
         case 0:
             io.read_mode = (val >> 7) & 1;
-            printf("\n(CDROM) write read mode %d", io.read_mode);
+            //printf("\n(CDROM) write read mode %d", io.read_mode);
             if (!io.read_mode) {
                 io.HSTS.DRQSTS = 0;
                 io.RDDATA.clear();
@@ -771,7 +779,7 @@ void CDROM::write_03(u32 val, u8 sz) {
             else {
                 io.HSTS.DRQSTS = sector_buf.len > 0;
                 if (io.HSTS.DRQSTS) {
-                    printf("\n(CDROM) Queiueng read data!");
+                    //printf("\n(CDROM) Queiueng read data!");
                     queue_sector_RDDATA();
                 }
             }
