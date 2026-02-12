@@ -383,7 +383,6 @@ u32 grab_cue(multi_file_set* ROMs, jsm::systems which, const char* fname, const 
     char line[512];
 
     while (next_line(line, sizeof(line))) {
-        printf("\nLINE (%ld): %s", strlen(line), line);
         if (!line[0]) continue;
         if (!strncmp(line, "FILE", 4)) {
             char ffname[256]{};
@@ -968,7 +967,10 @@ void full_system::load_default_ROM()
             //worked = grab_ROM(&ROMs, which, "PSX/HelloWorld/16BPP/HelloWorld16BPP.exe", nullptr);
             //worked = grab_ROM(&ROMs, which, "PSX/GTE/GTETransfer/GTETransfer.exe", nullptr);
 
-            worked = grab_cue(&ROMs, which, "mk2", nullptr);
+            //worked = grab_cue(&ROMs, which, "mk2", nullptr);
+            worked = grab_cue(&ROMs, which, "Ridge Racer (USA)", nullptr);
+            //worked = grab_cue(&ROMs, which, "Spyro the Dragon (USA) (En,Fr,Es)", nullptr);
+            //worked = grab_cue(&ROMs, which, "Rayman 2 - The Great Escape (USA)", nullptr);
             //worked = grab_ROM(&ROMs, which, "VBLANK.exe", nullptr);
             break;
         case jsm::systems::GBA:
