@@ -35,6 +35,10 @@ void PS1_delete(jsm_system *sys) {
 
 namespace PS1 {
 
+static void sch_sample_audio(void *ptr, u64 key, u64 clock, u32 jitter) {
+    auto *th = static_cast<core *>(ptr);
+    th->sample_audio();
+}
 
 //typedef void (*scheduler_callback)(void *bound_ptr, u64 user_key, u64 current_clock, u32 jitter);
 static void vblank(void *bound_ptr, u64 key, u64 current_clock, u32 jitter)
@@ -74,6 +78,12 @@ void core::schedule_frame(u64 start_clock, u32 is_first)
         clock.master_frame++;
         clock.frame_cycle_start = start_clock;
     }
+    else {
+        if (audio.master_cycles_per_audio_sample == 0) {
+            audio.next_sample_cycle = 0;
+            scheduler.only_add_abs(768, 0, this, &sch_sample_audio, nullptr);
+        }
+    }
     // Schedule out a frame!
     i64 cur_clock = start_clock;
     clock.cycles_left_this_frame += clock.timing.frame.cycles;
@@ -107,6 +117,14 @@ static void setup_debug_waveform(debug_waveform *dw)
 
 void core::set_audiobuf(audiobuf *ab)
 {
+    audio.buf = ab;
+    if (audio.master_cycles_per_audio_sample == 0) {
+        audio.master_cycles_per_audio_sample = (static_cast<double>(static_cast<double>(clock.timing.cpu.hz)/static_cast<double>(clock.timing.fps)) / static_cast<double>(ab->samples_len));
+        printf("\nAUDIO MASTER CYCLES PER SAMPLE: %f", audio.master_cycles_per_audio_sample);
+        audio.next_sample_cycle = 0;
+        //auto *wf = &dbg.waveforms.main.get();
+        //sn76489.ext_enable = wf->ch_output_enabled;
+    }
     /*audio.buf = ab;
     if (audio.master_cycles_per_audio_sample == 0) {
         audio.master_cycles_per_audio_sample = ((float)(MASTER_CYCLES_PER_FRAME / (float)ab->samples_len));
@@ -317,44 +335,26 @@ void core::reset()
     cdrom.open_drive();
 }
 
-void core::sample_audio(u32 num_cycles)
+static inline float i16_to_float(i16 val)
 {
-    /*
-    for (u64 i = 0; i < num_cycles; i++) {
-        PS1_APU_cycle();
-        u64 mc = clock.master_cycle_count + i;
-        if (audio.buf && (mc >= (u64) audio.next_sample_cycle)) {
-            audio.next_sample_cycle += audio.master_cycles_per_audio_sample;
-            if (audio.buf->upos < audio.buf->samples_len) {
-                ((float *)(audio.buf->ptr))[audio.buf->upos] = PS1_APU_mix_sample(0);
-            }
-            audio.buf->upos++;
-        }
+    return ((static_cast<float>(static_cast<i32>(val) + 32768) / 65535.0f) * 2.0f) - 1.0f;
+}
 
-        debug_waveform *dw = cpg(dbg.waveforms.main);
-        if (mc >= (u64)dw->user.next_sample_cycle) {
-            if (dw->user.buf_pos < dw->samples_requested) {
-                dw->user.next_sample_cycle += dw->user.cycle_stride;
-                ((float *) dw->buf.ptr)[dw->user.buf_pos] = PS1_APU_mix_sample(1);
-                dw->user.buf_pos++;
-            }
-        }
 
-        dw = cpg(dbg.waveforms.chan[0]);
-        if (mc >= (u64)dw->user.next_sample_cycle) {
-            for (int j = 0; j < 6; j++) {
-                dw = cpg(dbg.waveforms.chan[j]);
-                if (dw->user.buf_pos < dw->samples_requested) {
-                    dw->user.next_sample_cycle += dw->user.cycle_stride;
-                    float sv = PS1_APU_sample_channel(j);
-                    ((float *) dw->buf.ptr)[dw->user.buf_pos] = sv;
-                    dw->user.buf_pos++;
-                    assert(dw->user.buf_pos < 410);
-                }
-            }
+void core::sample_audio()
+{
+    if (audio.buf) {
+        audio.cycles++;
+        audio.next_sample_cycle += audio.master_cycles_per_audio_sample;
+        scheduler.only_add_abs(static_cast<i64>(audio.next_sample_cycle), 0, this, &sch_sample_audio, nullptr);
+        spu.cycle();
+        if (audio.buf->upos < (audio.buf->samples_len << 1)) {
+            static_cast<float *>(audio.buf->ptr)[audio.buf->upos] = i16_to_float(static_cast<i16>(spu.sample_l));
+            static_cast<float *>(audio.buf->ptr)[audio.buf->upos+1] = i16_to_float(static_cast<i16>(spu.sample_r));
         }
+        audio.buf->upos+=2;
     }
-     */
+
 }
 
 u32 core::finish_scanline()
@@ -454,7 +454,9 @@ void core::setup_audio()
     physical_io_device *pio = &IOs.emplace_back();
     pio->kind = HID_AUDIO_CHANNEL;
     JSM_AUDIO_CHANNEL *chan = &pio->audio_channel;
-    chan->sample_rate = 22050;
+    chan->sample_rate = 44100;
+    chan->left = chan->right = 1;
+    chan->num = 2;
     chan->low_pass_filter = 22050;
 }
 

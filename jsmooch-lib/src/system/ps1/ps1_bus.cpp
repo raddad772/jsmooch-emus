@@ -91,7 +91,7 @@ core::core() :
     has.max_loaded_files = 0;
     has.max_loaded_folders = 0;
     has.save_state = false;
-    has.set_audiobuf = false;
+    has.set_audiobuf = true;
 
     scheduler.max_block_size = 2;
 

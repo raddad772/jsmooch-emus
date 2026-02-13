@@ -326,7 +326,7 @@ void VOICE::gaussian_me_up() {
     sample = v;
 }
 
-void VOICE::cycle() {
+void VOICE::cycle(i16 noise_level) {
     i32 step = io.sample_rate;
     if (io.PMON && num > 0) {
         i32 factor = bus->spu.voices[num-1].sample;
@@ -350,7 +350,7 @@ void VOICE::cycle() {
     }
     adpcm_get_sample();
     gaussian_me_up();
-    if (io.noise_enable) sample = VOL(bus->spu.noise.level, env.output);
+    if (io.noise_enable) sample = VOL(noise_level, env.output);
     else sample = VOL(sample, env.output);
     sample_l = VOL(io.vol_l.output, sample);
     sample_r = VOL(io.vol_r.output, sample);
@@ -575,15 +575,29 @@ void core::do_noise() {
 }
 
 void core::cycle() {
-    // TODO: calculate PMON
     do_noise();
-    for (auto & v : voices) v.cycle();
+    for (auto & v : voices) v.cycle(noise.level);
     do_capture();
 
     local_clock++;
 
-    // TODO: mix and output samples...
+    i32 l = 0;
+    i32 r = 0;
+    for (u32 i = 0; i < 24; i++) {
+        l += voices[i].sample_l;
+        r += voices[i].sample_r;
+    }
+
+    // TODO: add cdrom audio to mix
+    if (l < -0x8000) l = -0x8000;
+    if (l > 0x7FFF) l = 0x7FFF;
+
+    if (r < -0x8000) r = -0x8000;
+    if (r > 0x7FFF) r = 0x7FFF;
+
     // TODO: test DMA IRQs
+    sample_l = static_cast<i16>(l);
+    sample_r = static_cast<i16>(r);
 }
 
 void core::mainbus_write(u32 addr, u8 sz, u32 val)

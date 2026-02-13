@@ -81,7 +81,7 @@ struct core : jsm_system {
     void sideload_EXE(buf *w);
     void setup_audio();
     void setup_cdrom();
-    void sample_audio(u32 num_cycles);
+    void sample_audio();
     [[nodiscard]] u64 clock_current() const;
 
     IRQ_multiplexer_b IRQ_multiplexer;
@@ -116,6 +116,13 @@ struct core : jsm_system {
         bool cached_isolated{};
         SIO::digital_gamepad controller1;
     } io;
+
+    struct {
+        double master_cycles_per_audio_sample{};
+        double next_sample_cycle{};
+        audiobuf *buf{};
+        u64 cycles{};
+    } audio{};
 
     DBG_START
         cvec_ptr<debugger_view> console_view{};

@@ -101,7 +101,6 @@ struct VOICE {
     void reset(PS1::core *ps1, u32 num);
     void keyon();
     void keyoff();
-    void set_NON(u32 val);
     u32 num{};
     bool key_is_on{};
     PS1::core *bus{};
@@ -110,7 +109,7 @@ struct VOICE {
     void write_reg(u32 regnum, u16 val);
 
     struct {
-        bool PMON;
+        bool PMON{};
         i16 sample_rate{};
         VOICE_VOL vol_l{}, vol_r{};
         u32 reached_loop_end{};
@@ -122,7 +121,7 @@ struct VOICE {
 
     ADSR env{};
     u32 pitch_counter{}; // 17 bits?
-    void cycle();
+    void cycle(i16 noise_level);
 
     ADPCM adpcm{};
     void adpcm_start();
@@ -236,7 +235,7 @@ struct core {
     } latch{};
 
     VOICE voices[24]{};
-
+    i16 sample_l{}, sample_r{};
 private:
     void write_control_regs(u32 addr, u8 sz, u32 val);
     u32 read_control_regs(u32 addr, u8 sz);
