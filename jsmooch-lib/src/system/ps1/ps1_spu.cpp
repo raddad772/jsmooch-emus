@@ -3,8 +3,12 @@
 //
 #include <cassert>
 #include "ps1_spu.h"
+
+#include <ranges>
+
 #include "ps1_bus.h"
 #include "component/audio/ym2612/ym2612.h"
+#include "system/snes/snes_apu.h"
 
 namespace PS1::SPU {
 
@@ -82,6 +86,10 @@ void VOICE::adpcm_start() {
     adpcm_decode();
 }
 
+static constexpr i32  pos_xa_adpcm_table[5] = {0, 60, 115, 98, 122};
+
+static constexpr i32 neg_xa_adpcm_table[5] = {0,   0,  -52, -55,  -60};
+
 void VOICE::adpcm_decode() {
     u8 data[16];
     for (u32 i = 0; i < 8; i++) {
@@ -103,6 +111,39 @@ void VOICE::adpcm_decode() {
             env.output = 0;
             env.release.calc(env.output);
         }
+    }
+    const u8 hd = data[0];
+    u8 shift = hd & 0xF;
+    if (shift > 13) shift = 9;
+    shift = 12 - shift;
+    u8 filter = (shift >> 4) & 7;
+    if (filter > 4) filter = 4; // TODO: ??
+
+    const i32 f0 = pos_xa_adpcm_table[filter];
+    const i32 f1 = neg_xa_adpcm_table[filter];
+    u32 idx = 2;
+    u32 nibble = 0;
+    i32 older = 0;
+    i32 old = 0;
+    for (short & s_out : adpcm.samples) {
+        i32 t;
+        if (nibble == 0) {
+            t = data[idx] & 0x0F;
+        }
+        else {
+            t = data[idx] >> 4;
+            idx++;
+        }
+        nibble ^= 1;
+        // t is a signed 4-bit value so convert to 32-bit signed
+        t = (t & 7) | (t & 8 ? 0xFFFFFFF8 : 0);
+        i32 s = (t << shift);
+        s += (old * f0 + older * f1 + 32) >> 6;
+        if (s < -0x8000) s = -0x8000;
+        if (s > 0x7FFF) s = 0x7FFF;
+        s_out = s;
+        older = old;
+        old = s;
     }
 }
 

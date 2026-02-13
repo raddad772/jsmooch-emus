@@ -59,7 +59,8 @@ static void set_cdrom_irq_level(void *ptr, u32 lvl) {
     auto *th = static_cast<PS1::core *>(ptr);
     th->set_irq(IRQ_CDROM, lvl);
 }
-
+// TODO: add in audio to scheduler, as well as audio sampling and output
+    // TODO: finish up SPU
 core::core() :
     IRQ_multiplexer(15),
     clock(true),
