@@ -99,7 +99,7 @@ struct core : jsm_system {
     buf sideloaded{};
 
     GPU::core gpu;
-    SPU spu{};
+    SPU::core spu;
 
     struct {
         bool described_inputs{};

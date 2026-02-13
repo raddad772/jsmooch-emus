@@ -512,7 +512,7 @@ void core::cycle() {
     do_capture();
 
     // Now mix samples...
-    
+
 }
 
 void core::mainbus_write(u32 addr, u8 sz, u32 val)

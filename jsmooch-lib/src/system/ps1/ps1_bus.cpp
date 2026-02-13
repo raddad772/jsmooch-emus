@@ -68,6 +68,7 @@ core::core() :
     sio0(this),
     cdrom(&this->scheduler),
     gpu(this),
+    spu(this),
     dma(this),
     io{ false, SIO::digital_gamepad(this) }
     {
