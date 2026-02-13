@@ -45,6 +45,8 @@ struct DMA_channel {
 };
 
 struct DMA {
+    void reset();
+    void complete_transfer(u32 num);
     u32 irq_status();
     u32 read(u32 addr, u32 sz);
     void write(u32 addr, u32 sz, u32 val);
@@ -58,10 +60,13 @@ struct DMA {
     }
     core *bus;
     u32 control{};
-    u32 irq_enable{}, irq_enable_ch{};
-    u32 irq_flags_ch{};
-    u32 irq_force{};
-    u32 unknown1{};
+    struct {
+        u32 IF{}, IE{};
+        u32 mode{};
+        u32 level{};
+        bool master_enable{};
+    } irq{};
+    void update_IRQs();
 };
 
 

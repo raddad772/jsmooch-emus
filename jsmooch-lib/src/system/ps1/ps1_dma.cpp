@@ -41,6 +41,7 @@ void DMA_channel::do_linked_list()
         addr = header & 0x1FFFFC;
         if (lnum == 1) printf("\n(DMA) warning: infinite linked list terminating");
     }
+    bus->dma.complete_transfer(num);
 }
 
 u32 DMA_channel::transfer_size() const
@@ -127,6 +128,16 @@ void DMA_channel::do_block()
         addr = (addr + mstep) & 0xFFFFFFFF;
         copies--;
     }
+    bus->dma.complete_transfer(num);
+}
+
+void DMA::complete_transfer(u32 num) {
+    // TODO: schedule for future
+    u32 bit = 1 << num;
+    if ((irq.IE & bit) && !(irq.IF & bit)) {
+        irq.IF |= bit;
+        update_IRQs();
+    }
 }
 
 void DMA_channel::do_dma()
@@ -201,14 +212,10 @@ void DMA_channel::set_control(u32 val)
     unknown = (val >> 29) & 3;
 }
 
-u32 DMA::irq_status()
-{
-    return +(irq_force || (irq_enable && (irq_flags_ch & irq_enable_ch)));
-}
-
 u32 DMA::read(u32 addr, u32 sz)
 {
     // 1f8010F0
+    if (sz < 4) sz = 4;
     u32 l3 = addr & 3;
     addr &= 0xFFFFFFFC;
     u32 ch_num = ((addr - 0x80) & 0x70) >> 4;
@@ -243,9 +250,11 @@ u32 DMA::read(u32 addr, u32 sz)
                 case 0: // DPCR - DMA control 0x1F8010F0:
                     v = control;
                     break;
-                case 4: // DPIR - DMA interrupt control 0x1F8010F4:
-                    v = unknown1 | (irq_force << 15) | (irq_enable_ch << 16) |
-                           (irq_enable << 23) | (irq_flags_ch << 24) | (irq_status() << 31);
+                case 4: // DICR - DMA interrupt control 0x1F8010F4:
+                    v = irq.master_enable << 23;
+                    v |= irq.IF << 24;
+                    v |= irq.IE << 16;
+                    v |= irq.level << 31;
                     break;
                 default:
                     printf("\nUnimplemented per-channel DMA register read2 %d %d %08x", ch_num, reg, addr);
@@ -260,6 +269,10 @@ u32 DMA::read(u32 addr, u32 sz)
     return v >> (l3 * 8);
 }
 
+void DMA::reset() {
+     write(0x1F8010F0, 2, 0x07654321);
+}
+
 void DMA::write(u32 addr, u32 sz, u32 val)
 {
     //printf("\nWR DMA addr:%04x sz:%d val:%04x", addr, sz, val);
@@ -269,6 +282,7 @@ void DMA::write(u32 addr, u32 sz, u32 val)
     u32 reg = (addr & 0x0F);
     u32 ch_activated = 0;
     val <<= (l3 * 8);
+    if (sz < 4) sz = 4;
     switch(ch_num) {
         case 0:
         case 1:
@@ -307,24 +321,26 @@ void DMA::write(u32 addr, u32 sz, u32 val)
                         bit += 4;
                     }
                     return; }
-                case 4: // DICR - DMA Interrupt register case 0x1F8010F4:
+            case 4: {// DICR - DMA Interrupt register case 0x1F8010F4:
                     // Low 5 bits are R/w, we don't know what
-                    unknown1 = val & 31;
-                    if (sz >= 2)
-                        irq_force = (val >> 15) & 1;
-                    if (sz >= 3) {
-                        irq_enable_ch = (val >> 16) & 0x7F;
-                        irq_enable = (val >> 23) & 1;
-                    }
-                    if (sz >= 4) {
-                        u32 to_ack = (val >> 24) & 0x3F;
-                        irq_flags_ch &= (to_ack ^ 0x3F);
-                    }
-                    return;
+                    irq.master_enable = (val >> 23) & 1;
+                    u32 to_ack = (val >> 24) & 0b1111111;
+                    to_ack ^= 0b1111111; // Invert bits
+                    irq.IF &= to_ack;
+                    irq.IE = (val >> 16) & 0b1111111;
+                    irq.mode = val & 0b1111111;
+                    update_IRQs();
+                    return; }
                 default:
                     printf("\nUnhandled DMA write: %d %d %08x", ch_num, reg, addr);
                     return;
             }
     }
+}
+
+void DMA::update_IRQs() {
+    u32 old = irq.level;
+    irq.level = irq.master_enable && (irq.IF & irq.IE);
+    if (old != irq.level) bus->set_irq(IRQ_DMA, irq.level);
 }
 }

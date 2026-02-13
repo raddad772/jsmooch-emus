@@ -295,6 +295,8 @@ void core::sideload_EXE(buf *w)
 void core::reset()
 {
     cpu.reset();
+    dma.reset();
+    spu.reset();
     io.cached_isolated = false;
 
     gpu.reset();
