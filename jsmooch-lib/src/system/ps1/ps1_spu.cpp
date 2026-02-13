@@ -116,7 +116,7 @@ void VOICE::adpcm_decode() {
     u8 shift = hd & 0xF;
     if (shift > 13) shift = 9;
     shift = 12 - shift;
-    u8 filter = (shift >> 4) & 7;
+    u8 filter = (hd >> 4) & 7;
     if (filter > 4) filter = 4; // TODO: ??
 
     const i32 f0 = pos_xa_adpcm_table[filter];
@@ -337,7 +337,8 @@ void VOICE::cycle() {
     pitch_counter = (pitch_counter + step);
     if (pitch_counter >= 0x1C000) {
         pitch_counter -= 0x1C000;
-
+        // Decode new samples!!!
+        adpcm_decode();
     }
     adpcm_get_sample();
     gaussian_me_up();
