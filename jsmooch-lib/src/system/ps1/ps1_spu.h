@@ -6,8 +6,10 @@
 #include "helpers/int.h"
 
 namespace PS1 {
-
-struct SPU_FIFO {
+    struct core;
+}
+namespace PS1::SPU {
+struct FIFO {
     u16 items[32]{};
     u32 len{}, head{}, tail{};
 
@@ -19,31 +21,130 @@ struct SPU_FIFO {
     u64 sch_id{};
 };
 struct core;
-struct SPU_VOICE {
-    void reset(core *ps1, u32 num);
+
+enum E_MODE {
+    EM_LINEAR=0,
+    EM_EXPONENTIAL=1
+};
+
+enum E_DIR {
+    ED_INCREASE=0,
+    ED_DECREASE=1
+};
+
+enum V_PHASE {
+    VP_POSITIVE=0,
+    VP_NEGATIVE=1
+};
+
+enum E_PHASE {
+    EP_ATTACK = 0,
+    EP_DECAY = 1,
+    EP_SUSTAIN = 2,
+    EP_RELEASE = 3
+};
+
+enum VV_MODE {
+    VVM_FIXED=0,
+    VVM_SWEEP=1
+};
+
+struct ADSR_PHASE {
+    i32 mode{};
+    i32 decreasing{};
+    i32 shift{};
+    i32 step{};
+    i32 negative{}; // 1=negative
+    void calc(i32 adsr_level);
+    void cycle(u16 &counter, i32 &adsr_level) const;
+
+    i32 adsr_step{};
+    i32 counter_increment{};
+};
+
+struct VOICE_VOL {
+    u16 io_val{};
+    VV_MODE mode{};
+    void cycle();
+    void write(u16 v);
+    u16 read();
+    i32 phase{};
+
+    ADSR_PHASE sweep{};
+
+    i32 output{};
+    i32 adsr_step{};
+    u16 adsr_counter{};
+};
+
+struct ADSR {
+    void cycle();
+
+    E_PHASE phase{EP_RELEASE};
+
+    ADSR_PHASE attack{}, sustain{}, decay{}, release{};
+    i32 sustain_level{};
+    u16 adsr_counter{};
+    i32 output{};
+};
+
+struct ADPCM {
+    u32 start_addr{};
+    u32 repeat_addr{};
+    u32 cur_addr{};
+
+    i16 samples[28];
+};
+
+
+struct VOICE {
+    void reset(PS1::core *ps1, u32 num);
+    void keyon();
+    void keyoff();
+    void set_NON(u32 val);
     u32 num{};
-    core *bus{};
+    PS1::core *bus{};
 
     u16 read_reg(u32 regnum);
     void write_reg(u32 regnum, u16 val);
 
     struct {
         bool PMON;
-        u16 sample_rate{};
-        u32 adpcm_start_addr{};
-        u32 adpcm_repeat_addr{};
+        i16 sample_rate{};
+        VOICE_VOL vol_l{}, vol_r{};
+        u32 reached_loop_end{};
+        u32 reverb_on{};
+        u8 env_lo{}, env_hi{};
+        bool noise_enable{};
     } io{};
-    u32 pitch_counter{};
+    i16 sample{}, sample_l{}, sample_r{};
+
+    ADSR env{};
+    u32 pitch_counter{}; // 17 bits?
     void cycle();
+
+    ADPCM adpcm{};
+    void adpcm_start();
+    void adpcm_decode();
+    void adpcm_get_sample();
+    void gaussian_me_up();
+    struct {
+        i16 samples[4]{};
+        u32 idx{3};
+    } gauss{};
+private:
+    void write_env_lo(u16 val);;
+    void write_env_hi(u16 val);
 };
-struct SPU {
-    explicit SPU(core *parent) : bus(parent) {}
+
+struct core {
+    explicit core(PS1::core *parent) : bus(parent) {}
     void mainbus_write(u32 addr, u8 sz, u32 val);
     u32 mainbus_read(u32 addr, u8 sz, bool has_effect);
     u16 RAM[0x40000]{};
-    SPU_FIFO FIFO{};
+    FIFO FIFO{};
     void reset();
-    core *bus;
+    PS1::core *bus;
 
     void update_IRQs();
     void schedule_FIFO_transfer(u64 clock);
@@ -95,20 +196,42 @@ struct SPU {
             };
             u16 u{};
         } SPUSTAT{};
-        u32 RAM_transfer_addr;
-        u32 IRQ_level;
-        u32 IRQ_addr;
+        u32 RAM_transfer_addr{};
+        u32 IRQ_level{};
+        u32 IRQ_addr{};
+        u16 vol_L{}, vol_R{}, vol_CD_L{}, vol_CD_R{}, vol_ext_L{}, vol_ext_R{};
+        i16 cur_vol_L{}, cur_vol_R{};
+        u16 keyon_lo{}, keyon_hi{};
+        u16 keyoff_lo{}, keyoff_hi{};
+        u16 non_lo{}, non_hi{};
+        u16 pmon_lo{}, pmon_hi{};
+        u16 reverb_on_lo{}, reverb_on_hi{};
+        struct {
+            u16 vol_l{}, vol_r{};
+            u32 work_area_start_addr{};
+            u16 regs[0x20];
+        } reverb{};
     } io{};
+    void cycle();
+    void do_capture();
+    struct {
+        u16 index{};
+        struct {
+            i16 cd_l{}, cd_r{}, v1{}, v3{};
+        } sample;
+    } capture{};
 
     struct {
         u32 RAM_transfer_addr;
     } latch{};
 
-    SPU_VOICE voices[24]{};
+    VOICE voices[24]{};
 
 private:
     void write_control_regs(u32 addr, u8 sz, u32 val);
     u32 read_control_regs(u32 addr, u8 sz);
     void write_SPUCNT(u16 val);
+    void write_reverb_reg(u32 addr, u8 sz, u32 val);
+    u32 read_reverb_reg(u32 addr, u8 sz);
 };
 }

@@ -139,7 +139,7 @@ struct SECTOR_BUFFER {
 
 struct CDROM {
 
-
+    i16 get_CD_sample() {return 0; }
     explicit CDROM(scheduler_t *scheduler_in) : scheduler(scheduler_in) {}
     scheduler_t *scheduler;
     void mainbus_write(u32 addr, u32 val, u8 sz);
