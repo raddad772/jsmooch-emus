@@ -327,8 +327,17 @@ void VOICE::gaussian_me_up() {
 }
 
 void VOICE::cycle() {
-    i16 step = io.sample_rate;
-    // TODO: implement PMON
+    i32 step = io.sample_rate;
+    if (io.PMON && num > 0) {
+        i32 factor = bus->spu.voices[num-1].sample;
+        factor += 0x8000;
+        factor = static_cast<i32>(static_cast<i16>(factor));
+        i32 estep = step;
+        estep = (estep * factor) >> 15;
+        step = estep & 0xFFFF;
+    }
+
+    // TODO: sample every 768 samples
     if (step > 0x3FFF) step = 0x4000;
     env.cycle();
     if (io.vol_l.mode) io.vol_l.cycle();
@@ -337,18 +346,14 @@ void VOICE::cycle() {
     pitch_counter = (pitch_counter + step);
     if (pitch_counter >= 0x1C000) {
         pitch_counter -= 0x1C000;
-        // Decode new samples!!!
         adpcm_decode();
     }
     adpcm_get_sample();
     gaussian_me_up();
-    sample = VOL(sample, env.output);
+    if (io.noise_enable) sample = VOL(bus->spu.noise.level, env.output);
+    else sample = VOL(sample, env.output);
     sample_l = VOL(io.vol_l.output, sample);
     sample_r = VOL(io.vol_r.output, sample);
-
-    if (io.noise_enable) {
-        // TODO: NOISE!!!
-    }
 }
 
 static void sch_FIFO_transfer(void *ptr, u64 key, u64 timecode, u32 jitter) {
@@ -480,6 +485,9 @@ void core::write_SPUCNT(u16 val) {
             break;
     }
     if (!io.SPUCNT.irq9_enable) io.SPUSTAT.irq9 = 0;
+
+    noise.step = io.SPUCNT.noise_frequency_step + 4;
+    noise.shift = io.SPUCNT.noise_frequency_shift;
     update_IRQs();
 }
 
@@ -549,11 +557,30 @@ void core::do_capture() {
     }
 }
 
+void core::do_noise() {
+    noise.timer -= noise.step;
+    u32 bit = (noise.level >> 15) & 1;
+    bit ^= (noise.level >> 12) & 1;
+    bit ^= (noise.level >> 11) & 1;
+    bit ^= (noise.level >> 10) & 1;
+    bit ^= 1;
+    if (noise.timer < 0) {
+        noise.level = (noise.level << 1) + bit;
+        noise.timer += (20000 >> noise.shift);
+    }
+    if (noise.timer < 0) {
+        noise.timer += (20000 >> noise.shift);
+    }
+
+}
+
 void core::cycle() {
-    // TODO: add noise
     // TODO: calculate PMON
+    do_noise();
     for (auto & v : voices) v.cycle();
     do_capture();
+
+    local_clock++;
 
     // TODO: mix and output samples...
     // TODO: test DMA IRQs

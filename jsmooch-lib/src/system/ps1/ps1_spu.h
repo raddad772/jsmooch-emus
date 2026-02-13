@@ -147,6 +147,8 @@ struct core {
     void reset();
     PS1::core *bus;
 
+    u64 local_clock{};
+
     void update_IRQs();
     void schedule_FIFO_transfer(u64 clock);
 
@@ -213,8 +215,15 @@ struct core {
             u16 regs[0x20];
         } reverb{};
     } io{};
+    struct {
+        i32 timer{};
+        i32 step{};
+        i32 shift{};
+        i16 level{};
+    } noise{};
     void cycle();
     void do_capture();
+    void do_noise();
     struct {
         u16 index{};
         struct {
