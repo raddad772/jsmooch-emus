@@ -389,7 +389,7 @@ u32 core::DMA_read() {
 
 void core::FIFO_transfer(u64 clock) {
     if (FIFO.len > 0) {
-        if (io.RAMCNT.mode != 1) printf("\n(SPU) WARN MANUAL FIFO WRITE MODE!=2!");
+        //if (io.RAMCNT.mode != 1) printf("\n(SPU) WARN MANUAL FIFO WRITE MODE!=2!");
         latch.RAM_transfer_addr &= 0x7FFFF;
         u16 v = FIFO.pop();
         write_RAM(latch.RAM_transfer_addr, v, true);
@@ -397,6 +397,9 @@ void core::FIFO_transfer(u64 clock) {
     }
     if (FIFO.len != 0) {
         schedule_FIFO_transfer(clock);
+    }
+    else {
+        io.SPUSTAT.data_transfer_busy = 0;
     }
 }
 

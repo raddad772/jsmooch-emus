@@ -969,8 +969,8 @@ void full_system::load_default_ROM()
 
             //worked = grab_ROM(&ROMs, which, "VBLANK.exe", nullptr);
 
-            worked = grab_cue(&ROMs, which, "mk2", nullptr);
-            //worked = grab_cue(&ROMs, which, "Ridge Racer (USA)", nullptr);
+            //worked = grab_cue(&ROMs, which, "mk2", nullptr);
+            worked = grab_cue(&ROMs, which, "Ridge Racer (USA)", nullptr);
             //worked = grab_cue(&ROMs, which, "Spyro the Dragon (USA)", nullptr);
             //worked = grab_cue(&ROMs, which, "Rayman 2 - The Great Escape (USA) (En,Fr,Es)", nullptr);
             //worked = grab_cue(&ROMs, which, "Earthworm Jim 2 (Europe)", nullptr);
