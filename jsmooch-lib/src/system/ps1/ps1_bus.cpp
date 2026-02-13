@@ -196,6 +196,8 @@ u32 core::mainbus_read(u32 addr, u8 sz, bool has_effect)
         case 0x1F000084: // PIO
             //console.log('PIO READ!');
             return 0;
+        case 0x1F801014: // SPU_DELAY delay/size
+            return io.spu_delay;
     }
 
     if ((addr >= 0x1F801100) && (addr < 0x1F801130)) return timers_read(addr, sz);
@@ -294,6 +296,7 @@ void core::mainbus_write(u32 addr, u8 sz, u32 val)
         case 0x1F80100C: // Expansion 3 delay/size
         case 0x1F801010: // BIOS ROM delay/size
         case 0x1F801014: // SPU_DELAY delay/size
+            io.spu_delay = val;
         case 0x1F801018: // CDROM_DELAY delay/size
         case 0x1F80101C: // Expansion 2 delay/size
         case 0x1F801020: // COM_DELAY /size

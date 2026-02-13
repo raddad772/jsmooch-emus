@@ -182,6 +182,13 @@ void CDROM::cmd_start(u64 key, u64 clock) {
             stat_irq();
             cmd_backward();
             return;
+        case 0x13: // GetTN
+            cmd_gettn();
+            return;
+        case 0x14:
+            cmd_gettd();
+            return;
+        case 0x1B: // ReadS
         case 0x06: // ReadN
             cmd_reads(clock);
             return;
@@ -370,6 +377,7 @@ void CDROM::cmd_reads(u64 clock) {
 void CDROM::do_cmd_read(u64 clock) {
     if (read.still_sched) {
         printf("\nABORT read req. processing for already going!");
+        stat_irq();
         return;
     }
     stat_irq();
@@ -509,9 +517,42 @@ void CDROM::cmd_pause(u64 clock) {
     schedule_finish(clock + ONEFRAME);
 }
 
+void CDROM::cmd_gettn() {
+    // int3 stat,first,last
+    queue_interrupt(3);
+    result(io.stat.u);
+    result(1);
+    result(data.num_tracks+1);
+    finish_CMD(false, 0);
+}
+
+void CDROM::cmd_gettd() {
+    u32 track_num = io.PARAMETER.pop();
+    track_num--;
+    queue_interrupt(3);
+    if (track_num >= data.num_tracks) {
+        result(0x10);
+        finish_CMD(false, 0);
+        return;
+    }
+    queue_interrupt(3);
+    result(io.stat.u);
+    // mm, ss
+    u32 calc = data.tracks[track_num].data_lba;
+    // ((mm * 60) + ss) * 75) + sect
+    static constexpr u32 min_val = 60 * 75;
+    static constexpr u32 sec_val = 75;
+    u32 mm = calc / min_val;
+    u32 ss = (calc % min_val) / sec_val;
+    result(mm);
+    result(ss);
+    finish_CMD(false, 0);
+}
+
 void CDROM::cmd_demute() {
     printf("\n(CDROM) CMD Demute. NOT IMPL!");
     finish_CMD(true, 3);
+
 }
 
 void CDROM::cmd_init(u64 clock) {

@@ -209,7 +209,6 @@ struct CDROM {
     struct {
         u8 subcmd{};
         u32 counterlo{}, counterhi{};
-
     } test{};
 
     CDROM_DISC data{};
@@ -264,6 +263,8 @@ private:
     void do_cmd_read(u64 clock);
     void read_sector();
     void cmd_demute();
+    void cmd_gettn();
+    void cmd_gettd();
     void queue_sector_RDDATA();
 };
 }

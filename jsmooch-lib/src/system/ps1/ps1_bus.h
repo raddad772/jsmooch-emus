@@ -115,6 +115,7 @@ struct core : jsm_system {
     struct {
         bool cached_isolated{};
         SIO::digital_gamepad controller1;
+        u32 spu_delay{};
     } io;
 
     struct {

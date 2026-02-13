@@ -1012,6 +1012,7 @@ void core::cmd80_vram_copy()
 #ifdef LOG_GP0
     printf("\nGP0 cmd80 copy from %d,%d to %d,%d size:%d,%d", x1, y1, x2, y2, width, height);
 #endif
+    printf("\nGP0 cmd80 copy from %d,%d to %d,%d size:%d,%d", x1, y1, x2, y2, width, height);
 
     for (u32 iy = 0; iy < height; iy++) {
         for (u32 ix = 0; ix < width; ix++) {
@@ -1019,7 +1020,7 @@ void core::cmd80_vram_copy()
             get_addr += ((iy+y1) & 511) * 2048; // 2048 bytes per 1024-pixel row
             if (preserve_masked_pixels) {
                 u16 t = cR16(VRAM, (((iy + y2) & 511) * 2048) + (((ix + x2) & 1023) * 2));
-                if (t & 0x8000) continue;
+                //if (t & 0x8000) continue;
             }
 
             u16 v = cR16(VRAM, get_addr & 0xFFFFF);

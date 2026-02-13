@@ -26,12 +26,26 @@ enum CDROM_TRACK_MODE {
     CDMODE_MODE2,
 };
 
+struct CDROM_cue_track {
+    int track_no{};
+    CDROM_TRACK_MODE mode{};
+    int file_index{};
+
+    u32 pregap_lba{};        // total pregap (INDEX 00 + PREGAP)
+    u32 file_lba{};          // INDEX 01 file position
+
+    u32 start_lba{};         // start of pregap on disc
+    u32 data_lba{};          // start of INDEX 01 on disc
+};
+
+
 struct CDROM_DISC {
     simplebuf8 data{};
-    bool valid;
-
+    bool valid{};
+    u32 num_tracks{};
     bool parse_cue(multi_file_set &mfs);
     u8 *ptr_to_data(u32 minutes, u32 seconds, u32 sectors);
+    std::vector<CDROM_cue_track> tracks{};
 
     struct {
         u32 track_num=0;

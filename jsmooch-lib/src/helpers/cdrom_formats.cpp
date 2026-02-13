@@ -8,18 +8,6 @@ static inline u32 msf_to_lba(u32 m, u32 s, u32 f) {
     return m * 60 * 75 + s * 75 + f;
 }
 
-struct cue_track {
-    int track_no{};
-    CDROM_TRACK_MODE mode{};
-    int file_index{};
-
-    u32 pregap_lba{};        // total pregap (INDEX 00 + PREGAP)
-    u32 file_lba{};          // INDEX 01 file position
-
-    u32 start_lba{};         // start of pregap on disc
-    u32 data_lba{};          // start of INDEX 01 on disc
-};
-
 u8 *CDROM_DISC::ptr_to_data(u32 m, u32 s, u32 f) {
     u32 lba = msf_to_lba(m, s, f);
     u32 offset = lba * 2352;
@@ -49,10 +37,8 @@ bool CDROM_DISC::parse_cue(multi_file_set &mfs) {
     const char *cue = static_cast<const char *>(mfs.files[cue_index].buf.ptr);
     size_t cue_sz = mfs.files[cue_index].buf.size;
 
-    std::vector<cue_track> tracks;
-
     int current_file = -1;
-    cue_track *current_track = nullptr;
+    CDROM_cue_track *current_track = nullptr;
 
     const char *p = cue;
     const char *end = cue + cue_sz;
@@ -148,11 +134,13 @@ bool CDROM_DISC::parse_cue(multi_file_set &mfs) {
     if (tracks.empty())
         return false;
 
+    num_tracks = tracks.size();
+
     // Assign absolute LBAs (with global 150 sector pregap)
     u32 cur_lba = 150; // lead-in
 
     for (size_t i = 0; i < tracks.size(); i++) {
-        cue_track &t = tracks[i];
+        CDROM_cue_track &t = tracks[i];
 
         t.start_lba = cur_lba;
         t.data_lba  = cur_lba + t.pregap_lba;
