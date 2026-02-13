@@ -91,11 +91,7 @@ void DMA_channel::do_block()
                         //ps1!.MDEC.command(src_word);
                         break; }
                     case DP_SPU: {// Ignore SPU transfer for now
-                        static u32 e = 0;
-                        if (!e) {
-                            printf("\nWARN DMA write to SPU!");
-                            e = 1;
-                        }
+                        bus->spu.DMA_write(src_word);
                         break; }
                     default:
                         printf("\nUNHANDLED DMA PORT! %d", num);

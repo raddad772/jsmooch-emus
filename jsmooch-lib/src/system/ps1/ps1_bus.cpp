@@ -167,8 +167,8 @@ u32 core::mainbus_read(u32 addr, u8 sz, bool has_effect)
         return sio1.read(addr, sz);
     }
 
-    if ((addr >= 0x1F801C00) && (addr < 0x1F801E00)) {
-        return spu.read(addr, sz, has_effect);
+    if ((addr >= 0x1F801C00) && (addr < 0x1F802000)) {
+        return spu.mainbus_read(addr, sz, has_effect);
     }
 
     switch(addr) {
@@ -254,8 +254,8 @@ void core::mainbus_write(u32 addr, u8 sz, u32 val)
         return;
     }
 
-    if ((addr >= 0x1F801C00) && (addr < 0x1F801E00)) {
-        spu.write(addr, sz, val);
+    if ((addr >= 0x1F801C00) && (addr < 0x1F802000)) {
+        spu.mainbus_write(addr, sz, val);
         return;
     }
 
@@ -293,10 +293,6 @@ void core::mainbus_write(u32 addr, u8 sz, u32 val)
         case 0x1F80101C: // Expansion 2 delay/size
         case 0x1F801020: // COM_DELAY /size
         case 0x1F801060: // RAM SIZE, 2mb mirrored in first 8mb
-        case 0x1F801D80: // SPU main vol L
-        case 0x1F801D82: // ...R
-        case 0x1F801D84: // Reverb output L
-        case 0x1F801D86: // ... R
         case 0x1FFE0130: // Cache control
             return;
     }
