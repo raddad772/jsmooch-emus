@@ -82,6 +82,9 @@ core::core() :
         dma.channels[i].sync = D_manual;
         dma.channels[i].direction = D_to_ram;
     }
+    for (u32 i = 0; i <24; i++) {
+        spu.voices[i].reset(this, i);
+    }
     has.load_BIOS = true;
     has.max_loaded_files = 0;
     has.max_loaded_folders = 0;

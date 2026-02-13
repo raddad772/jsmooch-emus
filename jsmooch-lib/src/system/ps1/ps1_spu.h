@@ -19,12 +19,30 @@ struct SPU_FIFO {
     u64 sch_id{};
 };
 struct core;
+struct SPU_VOICE {
+    void reset(core *ps1, u32 num);
+    u32 num{};
+    core *bus{};
+
+    u16 read_reg(u32 regnum);
+    void write_reg(u32 regnum, u16 val);
+
+    struct {
+        bool PMON;
+        u16 sample_rate{};
+        u32 adpcm_start_addr{};
+        u32 adpcm_repeat_addr{};
+    } io{};
+    u32 pitch_counter{};
+    void cycle();
+};
 struct SPU {
     explicit SPU(core *parent) : bus(parent) {}
     void mainbus_write(u32 addr, u8 sz, u32 val);
     u32 mainbus_read(u32 addr, u8 sz, bool has_effect);
     u16 RAM[0x40000]{};
     SPU_FIFO FIFO{};
+    void reset();
     core *bus;
 
     void update_IRQs();
@@ -85,5 +103,12 @@ struct SPU {
     struct {
         u32 RAM_transfer_addr;
     } latch{};
+
+    SPU_VOICE voices[24]{};
+
+private:
+    void write_control_regs(u32 addr, u8 sz, u32 val);
+    u32 read_control_regs(u32 addr, u8 sz);
+    void write_SPUCNT(u16 val);
 };
 }
