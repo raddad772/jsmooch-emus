@@ -103,6 +103,7 @@ struct VOICE {
     void keyoff();
     void set_NON(u32 val);
     u32 num{};
+    bool key_is_on{};
     PS1::core *bus{};
 
     u16 read_reg(u32 regnum);

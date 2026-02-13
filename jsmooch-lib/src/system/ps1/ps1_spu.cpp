@@ -551,11 +551,12 @@ void core::do_capture() {
 
 void core::cycle() {
     // TODO: add noise
+    // TODO: calculate PMON
     for (auto & v : voices) v.cycle();
     do_capture();
 
-    // TODO: mix samples...
-
+    // TODO: mix and output samples...
+    // TODO: test DMA IRQs
 }
 
 void core::mainbus_write(u32 addr, u8 sz, u32 val)
@@ -689,19 +690,25 @@ void core::check_irq_addr(u32 addr) {
 }
 // TODO: 44.1kHz scheduling, sampling, mixing, etc.
 void VOICE::keyon() {
-    io.reached_loop_end = 0;
-    env.phase = EP_ATTACK;
-    env.output = 0;
-    env.adsr_counter = 0;
-    env.attack.calc(env.output);
-    adpcm.repeat_addr = adpcm.start_addr;
-    adpcm_start();
+    if (!key_is_on) {
+        key_is_on = true;
+        io.reached_loop_end = 0;
+        env.phase = EP_ATTACK;
+        env.output = 0;
+        env.adsr_counter = 0;
+        env.attack.calc(env.output);
+        adpcm.repeat_addr = adpcm.start_addr;
+        adpcm_start();
+    }
 }
 
 void VOICE::keyoff() {
-    env.phase = EP_RELEASE;
-    env.adsr_counter = 0;
-    env.release.calc(env.output);
+    if (key_is_on) {
+        key_is_on = false;
+        env.phase = EP_RELEASE;
+        env.adsr_counter = 0;
+        env.release.calc(env.output);
+    }
 }
 
 void VOICE::reset(PS1::core *ps1, u32 num_in) {
