@@ -550,10 +550,11 @@ void core::do_capture() {
 }
 
 void core::cycle() {
+    // TODO: add noise
     for (auto & v : voices) v.cycle();
     do_capture();
 
-    // Now mix samples...
+    // TODO: mix samples...
 
 }
 
