@@ -236,6 +236,7 @@ struct core {
 
     VOICE voices[24]{};
     i16 sample_l{}, sample_r{};
+    void commit_FIFO();
 private:
     void write_control_regs(u32 addr, u8 sz, u32 val);
     u32 read_control_regs(u32 addr, u8 sz);

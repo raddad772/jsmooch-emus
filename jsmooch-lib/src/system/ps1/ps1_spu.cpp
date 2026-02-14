@@ -123,8 +123,12 @@ void VOICE::adpcm_decode() {
     const i32 f1 = neg_xa_adpcm_table[filter];
     u32 idx = 2;
     u32 nibble = 0;
-    i32 older = 0;
-    i32 old = 0;
+    // +0 = current
+    // +1 = oldest
+    // +2 = older
+    // +3 = old
+    i32 older = gauss.samples[(gauss.idx + 2) & 3];
+    i32 old = gauss.samples[(gauss.idx + 3) & 3];
     for (short & s_out : adpcm.samples) {
         i32 t;
         if (nibble == 0) {
@@ -387,6 +391,17 @@ u32 core::DMA_read() {
     return v;
 }
 
+void core::commit_FIFO() {
+    while (FIFO.len > 0) {
+        //if (io.RAMCNT.mode != 1) printf("\n(SPU) WARN MANUAL FIFO WRITE MODE!=2!");
+        latch.RAM_transfer_addr &= 0x7FFFF;
+        u16 v = FIFO.pop();
+        write_RAM(latch.RAM_transfer_addr, v, true);
+        latch.RAM_transfer_addr += 2;
+    }
+    io.SPUSTAT.data_transfer_busy = 0;
+}
+
 void core::FIFO_transfer(u64 clock) {
     if (FIFO.len > 0) {
         //if (io.RAMCNT.mode != 1) printf("\n(SPU) WARN MANUAL FIFO WRITE MODE!=2!");
@@ -419,18 +434,21 @@ void core::write_control_regs(u32 addr, u8 sz, u32 val) {
             io.IRQ_addr = val << 3;
             return;
         case 0x1F801DA6: // RAM transfer address
+            printf("\nRAM transfer addr %08x", latch.RAM_transfer_addr);
             io.RAM_transfer_addr = val;
             latch.RAM_transfer_addr = val << 3;
             return;
         case 0x1F801DA8: // FIFO write
             FIFO.push(val);
-            printf("\nFIFO write len:%d", FIFO.len);
+            if (io.SPUCNT.sound_ram_transfer_mode == 1) commit_FIFO();
+            //FIFO.push(val);
+            //printf("\nFIFO write len:%d", FIFO.len);
             // if we're in data transfer mode, schedule it if it's not
-            if (io.SPUCNT.sound_ram_transfer_mode == 1 && !FIFO.still_sch) {
+            /*if (io.SPUCNT.sound_ram_transfer_mode == 1 && !FIFO.still_sch) {
                 printf("\n(FIFO) drained reschedule");
                 schedule_FIFO_transfer(bus->clock.master_cycle_count);
                 io.SPUSTAT.data_transfer_busy = 1;
-            }
+            }*/
             return;
         case 0x1F801DAA: // SPUCNT
             write_SPUCNT(val);
@@ -470,21 +488,22 @@ void core::write_SPUCNT(u16 val) {
     io.SPUSTAT.data_transfer_dma_rw_req = (val >> 5) & 1;
     io.SPUSTAT.data_transfer_dma_read_req = 0;
     io.SPUSTAT.data_transfer_dma_write_req = 0;
-    if (io.SPUCNT.sound_ram_transfer_mode != 1 && FIFO.still_sch) {
+    /*if (io.SPUCNT.sound_ram_transfer_mode != 1 && FIFO.still_sch) {
         printf("\n(SPU) warn FIFO commit cancel!");
         bus->scheduler.delete_if_exist(FIFO.sch_id);
         io.SPUSTAT.data_transfer_busy = 0;
-    }
+    }*/
     printf("\n(SPU) Transfer mode %d", io.SPUCNT.sound_ram_transfer_mode);
     switch (io.SPUCNT.sound_ram_transfer_mode) {
         case 0: // OFF
             break;
         case 1: // Manual Write/commit FIFO
-            if (FIFO.len > 0) {
+            /*if (FIFO.len > 0) {
                 printf("\n(SPU) Already has %d FIFO items!", FIFO.len);
                 schedule_FIFO_transfer(bus->clock.master_cycle_count);
                 io.SPUSTAT.data_transfer_busy = 1;
-            }
+            }*/
+            commit_FIFO();
             break;
         case 2: // DMAWrite
             io.SPUSTAT.data_transfer_dma_write_req = 1;
