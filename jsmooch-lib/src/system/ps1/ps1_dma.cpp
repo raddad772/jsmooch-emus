@@ -113,6 +113,9 @@ void DMA_channel::do_block()
                     case DP_MDEC_out:
                         src_word = 0;
                         break;
+                case DP_SPU:
+                        src_word = bus->spu.DMA_read();
+                        break;
                     default:
                         printf("\nUNKNOWN DMA PORT %d", num);
                         src_word = 0;

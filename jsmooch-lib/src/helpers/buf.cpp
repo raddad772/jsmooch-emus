@@ -59,6 +59,7 @@ int read_file_buf::read(const char *fname, const char *fpath)
         printf("\nFILE \"%s\" NOT FOUND", OUTPATH);
         return 0;
     }
+    //printf("\nFILE %s", OUTPATH);
 
     FILE *fil = fopen(OUTPATH, "rb");
     fseek(fil, 0L, SEEK_END);

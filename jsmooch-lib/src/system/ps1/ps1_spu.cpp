@@ -395,17 +395,20 @@ void core::FIFO_transfer(u64 clock) {
         write_RAM(latch.RAM_transfer_addr, v, true);
         latch.RAM_transfer_addr += 2;
     }
+    printf("\nFIFO transfer lenleft: %d", FIFO.len);
     if (FIFO.len != 0) {
+        printf("\nSchedule next transfer!");
         schedule_FIFO_transfer(clock);
     }
     else {
+        printf("\nFIFO emptied!");
         io.SPUSTAT.data_transfer_busy = 0;
     }
 }
 
 void core::schedule_FIFO_transfer(u64 clock) {
     // i64 timecode, u64 key, void *ptr, scheduler_callback callback, u32 *still_sched
-    FIFO.sch_id = bus->scheduler.only_add_abs(clock + 24, 0, this, &sch_FIFO_transfer, &FIFO.still_sch);
+    FIFO.sch_id = bus->scheduler.only_add_abs(clock + 60, 0, this, &sch_FIFO_transfer, &FIFO.still_sch);
 }
 
 static u32 constexpr masksz[5] = {0, 0xFF, 0xFFFF, 0, 0xFFFFFFFF };
@@ -421,8 +424,10 @@ void core::write_control_regs(u32 addr, u8 sz, u32 val) {
             return;
         case 0x1F801DA8: // FIFO write
             FIFO.push(val);
+            printf("\nFIFO write len:%d", FIFO.len);
             // if we're in data transfer mode, schedule it if it's not
             if (io.SPUCNT.sound_ram_transfer_mode == 1 && !FIFO.still_sch) {
+                printf("\n(FIFO) drained reschedule");
                 schedule_FIFO_transfer(bus->clock.master_cycle_count);
                 io.SPUSTAT.data_transfer_busy = 1;
             }
@@ -470,12 +475,13 @@ void core::write_SPUCNT(u16 val) {
         bus->scheduler.delete_if_exist(FIFO.sch_id);
         io.SPUSTAT.data_transfer_busy = 0;
     }
-
+    printf("\n(SPU) Transfer mode %d", io.SPUCNT.sound_ram_transfer_mode);
     switch (io.SPUCNT.sound_ram_transfer_mode) {
         case 0: // OFF
             break;
         case 1: // Manual Write/commit FIFO
             if (FIFO.len > 0) {
+                printf("\n(SPU) Already has %d FIFO items!", FIFO.len);
                 schedule_FIFO_transfer(bus->clock.master_cycle_count);
                 io.SPUSTAT.data_transfer_busy = 1;
             }

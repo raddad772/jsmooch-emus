@@ -903,9 +903,33 @@ void full_system::load_default_ROM()
             //worked = grab_ROM(&ROMs, which, "ps1-tests-built/dma/chain-looping/chain-looping.exe", nullptr);
             //worked = grab_ROM(&ROMs, which, "ps1-tests-built/gte/test-all/test-all.exe", nullptr);
             //worked = grab_ROM(&ROMs, which, "ps1-tests-built/timers/timers.exe", nullptr);
+            //worked = grab_ROM(&ROMs, which, "ps1-tests-built/spu/memory-transfer/memory-transfer.exe", nullptr);
+            //worked = grab_ROM(&ROMs, which, "ps1-tests-built/spu/test/test.exe", nullptr);
             //worked = grab_ROM(&ROMs, which, "ps1-tests-built/gte-fuzz/gte-fuzz.exe", nullptr);
             //worked = grab_ROM(&ROMs, which, "redux_cpu.exe", nullptr);
             //worked = grab_ROM(&ROMs, which, "pad.exe", nullptr);
+#undef CTEST
+#define CTEST(x) worked = grab_ROM(&ROMs, which, "PSX/DMA/DMA" x "/DMA" x ".exe", nullptr)
+            //CTEST("BLOCKGPU");
+            //CTEST("CD");
+            //CTEST("GPU");
+            //CTEST("LINKEDLIST");
+            //CTEST("OTCData");
+            //CTEST("SPU");
+            //CTEST("SPUDELAY");
+
+#undef CTEST
+#define CTEST(x) worked = grab_ROM(&ROMs, which, "PSX/DMA/DMA" x "/DMA" x ".exe", nullptr)
+            //CTEST("BLOCKGPU");
+            //CTEST("CD");
+            //CTEST("GPU");
+            //CTEST("LINKEDLIST");
+            //CTEST("OTCData");
+            //CTEST("SPU");
+            //CTEST("SPUDELAY");
+
+#undef CTEST
+
 #define CTEST(x) worked = grab_ROM(&ROMs, which, "PSX/TIMER/" x "/" x ".exe", nullptr)
             //CTEST("TimerCalib");
             //CTEST("TimerHBlank");
@@ -969,11 +993,11 @@ void full_system::load_default_ROM()
 
             //worked = grab_ROM(&ROMs, which, "VBLANK.exe", nullptr);
 
-            worked = grab_cue(&ROMs, which, "mk2", nullptr);
+            //worked = grab_cue(&ROMs, which, "mk2", nullptr);
             //worked = grab_cue(&ROMs, which, "Ridge Racer (USA)", nullptr);
             //worked = grab_cue(&ROMs, which, "Spyro the Dragon (USA)", nullptr);
             //worked = grab_cue(&ROMs, which, "Rayman 2 - The Great Escape (USA) (En,Fr,Es)", nullptr);
-            //worked = grab_cue(&ROMs, which, "Earthworm Jim 2 (Europe)", nullptr);
+            worked = grab_cue(&ROMs, which, "Earthworm Jim 2 (Europe)", nullptr);
             break;
         case jsm::systems::GBA:
             //worked = grab_ROM(&ROMs, which, "panda.gba", nullptr);

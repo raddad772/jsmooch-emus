@@ -268,7 +268,7 @@ void core::sideload_EXE(buf *w)
         if (file_size >= 4) {
             u32 address_read = 0x800;
             u32 address_write = load_addr & 0x1FFFFF;
-            printf("\nWrite %d bytes from %08x to %08x", file_size, address_write, address_write+file_size);
+            //printf("\nWrite %d bytes from %08x to %08x", file_size, address_write, address_write+file_size);
             for (u32 i = 0; i < file_size; i+=4) {
                 u32 data = cR32(r, address_read);
                 cW32(mem.MRAM, address_write, data);
@@ -280,7 +280,7 @@ void core::sideload_EXE(buf *w)
         // PC has to  e done first because we can't load it in thedelay slot?
         BIOS_patch(0x6FF0, 0x3C080000 | (initial_pc >> 16));    // lui $t0, (r_pc >> 16)
         BIOS_patch(0x6FF4, 0x35080000 | (initial_pc & 0xFFFF));  // ori $t0, $t0, (r_pc & 0xFFFF)
-        printf("\nInitial PC: %08x", initial_pc);
+        //printf("\nInitial PC: %08x", initial_pc);
         BIOS_patch(0x6FF8, 0x3C1C0000 | (initial_gp >> 16));    // lui $gp, (r_gp >> 16)
         BIOS_patch(0x6FFC, 0x379C0000 | (initial_gp & 0xFFFF));  // ori $gp, $gp, (r_gp & 0xFFFF)
 
