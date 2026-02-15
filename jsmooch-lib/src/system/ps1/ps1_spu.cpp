@@ -927,7 +927,7 @@ u32 core::mainbus_read(u32 addr, u8 sz, bool has_effect)
         return voices[v].io.vol_l.output;
     }
     // D84...DFE reverb
-    if (addr >= 0x1F801DA4 && addr <= 0x1F801DBC) {
+    if (addr >= 0x1F801DA4 && addr <= 0x1F801DBA) {
         return read_control_regs(addr, sz);
     }
     if (addr >= 0x1F801DC0 && addr <= 0x1F801DFF) {
@@ -946,18 +946,18 @@ u32 core::mainbus_read(u32 addr, u8 sz, bool has_effect)
             for (u32 i = 0; i < 16; i++) {
                 v |= voices[i].io.reached_loop_end << i;
             }
-            printf("\nENDX_LO: %04x", v);
             return v;
         case 0x1F801D9E:
             v = 0;
             for (u32 i = 0; i < 8; i++) {
                 v |= voices[i+16].io.reached_loop_end << i;
             }
-            printf("\nENDX_HI: %04x", v);
             return v;
         case 0x1F801D84: return io.reverb.vol_l;
         case 0x1F801D86: return io.reverb.vol_r;
-        case 0x1F801D88: return io.keyon_lo;
+        case 0x1F801D88: {
+            return io.keyon_lo;
+        }
         case 0x1F801D8A: return io.keyon_hi;
         case 0x1F801D8C: return io.keyoff_lo;
         case 0x1F801D8E: return io.keyoff_hi;
