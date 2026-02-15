@@ -207,10 +207,10 @@ static void render_emu_window(full_system &fsys, ImGuiIO& io, u32 frame_multi)
 #define DISASM_VIEW_DEFAULT_ENABLE 0
 #define SOURCE_LIST_VIEW_DEFAULT_ENABLE 1
 #define IMAGE_VIEW_DEFAULT_ENABLE 0
-#define DBGLOG_VIEW_DEFAULT_ENABLE 1
-#define SOUND_VIEW_DEFAULT_ENABLE 0
+#define DBGLOG_VIEW_DEFAULT_ENABLE 0
 #define TRACE_VIEW_DEFAULT_ENABLE 0
 #define CONSOLE_VIEW_DEFAULT_ENABLE 0
+#define WAVEFORM_VIEW_DEFAULT_ENABLE 1
 
 int hexfilter(ImGuiInputTextCallbackData *data)
 {
@@ -720,9 +720,12 @@ void imgui_jsmooch_app::render_disassembly_views(bool update_dasm_scroll) {
 
 void imgui_jsmooch_app::render_waveform_view(WVIEW &wview, u32 num)
 {
-    managed_window *mw = register_managed_window(0x600 + num, mwk_debug_sound, wview.view->name, SOUND_VIEW_DEFAULT_ENABLE);
+    managed_window *mw = register_managed_window(0x600 + num, mwk_debug_sound, wview.view->name, WAVEFORM_VIEW_DEFAULT_ENABLE);
     if (mw->enabled) {
         fsys.waveform_view_present(wview);
+        u32 num_per_line = 2;
+        bool first = true;
+
         if (ImGui::Begin(wview.view->name)) {
             if (wview.waveforms[0].wf->default_clock_divider != 0) {
                 if (wview.waveforms[0].wf->clock_divider == 0)
@@ -747,6 +750,8 @@ void imgui_jsmooch_app::render_waveform_view(WVIEW &wview, u32 num)
             }
             u32 on_line = 0;
             u32 last_kind = 0;
+            if (wview.waveforms.size() > 9) num_per_line = 4;
+            if (wview.waveforms.size() > 17) num_per_line = 6;
             for (auto &wf: wview.waveforms) {
                 u32 old_on_line = on_line;
                 bool make_new_line = false;
@@ -760,20 +765,17 @@ void imgui_jsmooch_app::render_waveform_view(WVIEW &wview, u32 num)
                     default:
                         assert(1 == 2);
                 }
-                switch (on_line) {
-                    case 1:
-                        break;
-                        case 2:
-                        case 3:
-                        make_new_line = true;
-                        break;
-                    default:
-                        assert(1 == 2);
+
+                if (on_line < num_per_line) {
+                }
+                else {
+                    make_new_line = true;
                 }
                 if (last_kind == dwk_main) {
                     on_line = 0;
-                } else if (!make_new_line) ImGui::SameLine();
-                if (on_line >= 2) on_line = 0;
+                } else if (!make_new_line && !first) ImGui::SameLine();
+                first = false;
+                if (on_line >= num_per_line) on_line = 0;
                 last_kind = wf.wf->kind;
                 ImGui::SetNextWindowSizeConstraints(ImVec2(wf.wf->samples_requested, wf.height),
                                                     ImVec2(wf.wf->samples_requested + 20, wf.height + 30));

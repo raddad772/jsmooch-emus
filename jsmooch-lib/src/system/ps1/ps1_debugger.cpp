@@ -49,13 +49,16 @@ static void setup_waveforms(core& th, debugger_interface *dbgr) {
     snprintf(wv->name, sizeof(wv->name), "SPU");
     wv->waveforms.reserve(8);
 
-    debug_waveform *dw = &wv->waveforms.emplace_back();
     wv->waveforms.reserve(32);
+
+    debug_waveform *dw = &wv->waveforms.emplace_back();
     th.dbg.waveforms.main.make(wv->waveforms, wv->waveforms.size()-1);
+
     snprintf(dw->name, sizeof(dw->name), "Output (Mono)");
     dw->kind = dwk_main;
     dw->samples_requested = 400;
     dw->default_clock_divider = 768;
+
     for (u32 i = 0; i < 24; i++) {
         dw = &wv->waveforms.emplace_back();
         dw->kind = dwk_channel;
