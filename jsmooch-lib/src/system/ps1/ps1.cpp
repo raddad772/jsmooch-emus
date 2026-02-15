@@ -58,7 +58,7 @@ static void vblank(void *bound_ptr, u64 key, u64 current_clock, u32 jitter)
 static void hblank(void *bound_ptr, u64 key, u64 current_clock, u32 jitter)
 {
     // Do what here?
-    auto *th = (core *)bound_ptr;
+    auto *th = static_cast<core *>(bound_ptr);
     th->clock.in_hblank = key;
     th->clock.hblank_clock += key;
     th->timers[0].hblank(key);
@@ -123,8 +123,8 @@ void core::schedule_frame(u64 start_clock, u32 is_first)
             audio.next_sample_cycle = 0;
             scheduler.only_add_abs(768, 0, this, &sch_sample_audio, nullptr);
         }
-        //scheduler.only_add_abs(static_cast<i64>(audio.next_sample_cycle_max), 0, this, &sample_audio_debug_max, nullptr);
-        //scheduler.only_add_abs(static_cast<i64>(audio.next_sample_cycle_min), 0, this, &sample_audio_debug_min, nullptr);
+        scheduler.only_add_abs(static_cast<i64>(audio.next_sample_cycle_max), 0, this, &sample_audio_debug_max, nullptr);
+        scheduler.only_add_abs(static_cast<i64>(audio.next_sample_cycle_min), 0, this, &sample_audio_debug_min, nullptr);
     }
     // Schedule out a frame!
     i64 cur_clock = start_clock;

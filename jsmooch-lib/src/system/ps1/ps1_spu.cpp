@@ -254,7 +254,6 @@ void ADSR_ENVELOPE::cycle() {
             }
             break;
         case EP_SUSTAIN:
-            break;
         case EP_RELEASE:
             break;
         default:
@@ -270,7 +269,7 @@ void ADSR_GENERATOR::cycle() {
 
     output += adsr_step;
     if (!decreasing) {
-        if (output < -0x8000) output = 0x8000;
+        if (output < -0x8000) output = -0x8000;
         if (output > 0x7FFF) output = 0x7FFF;
     }
     else if (negative) {
@@ -309,9 +308,8 @@ void ADSR_GENERATOR::calc() {
     r = MAX(0, r);
     counter_reload = 1 << r;
 
-
     // IF exponential AND increase AND AdsrLevel>6000h THEN
-    if (exponential && !decreasing && output<0x6000) {
+    if (exponential && !decreasing && output>0x6000) {
         //   IF ShiftValue < 10 THEN
         if (shift < 10)
         //     AdsrStep /= 4 ; SHR 2
@@ -335,10 +333,11 @@ void ADSR_GENERATOR::calc() {
     }
     // IF (StepValue | (ShiftValue SHL 2)) != ALL_BITS THEN
     r = (step | (shift << 2));
-    if (r != 0b1111111)
-    //   CounterIncrement = MAX(CounterIncrement, 1)
-        counter_reload = MIN(counter_reload, 1);
-
+    if (r != 0b1111111) {
+        //   CounterIncrement = MAX(CounterIncrement, 1)
+        counter_reload = MIN(counter_reload, 0x8000);
+    }
+    counter = counter_reload;
 }
 
 void VOICE_VOL::write(u16 v) {
@@ -468,13 +467,10 @@ void core::FIFO_transfer(u64 clock) {
         write_RAM(latch.RAM_transfer_addr, v, true);
         latch.RAM_transfer_addr += 2;
     }
-    printf("\nFIFO transfer lenleft: %d", FIFO.len);
     if (FIFO.len != 0) {
-        printf("\nSchedule next transfer!");
         schedule_FIFO_transfer(clock);
     }
     else {
-        printf("\nFIFO emptied!");
         io.SPUSTAT.data_transfer_busy = 0;
     }
 }
@@ -492,7 +488,6 @@ void core::write_control_regs(u32 addr, u8 sz, u32 val) {
             io.IRQ_addr = val << 3;
             return;
         case 0x1F801DA6: // RAM transfer address
-            //printf("\nRAM transfer addr %08x", latch.RAM_transfer_addr);
             io.RAM_transfer_addr = val;
             latch.RAM_transfer_addr = val << 3;
             return;
@@ -641,7 +636,9 @@ void core::do_capture() {
 
     capture.index = (capture.index + 2) & 0x1FF;
     if (capture.index == 0) {
+#ifndef LYCODER
         io.SPUSTAT.capture_buffer_half ^= 1;
+#endif
     }
 }
 
@@ -840,7 +837,6 @@ void VOICE::keyon() {
 }
 
 void VOICE::keyoff() {
-    env.phase = EP_RELEASE;
     env.load_release();
 }
 
@@ -856,7 +852,6 @@ u16 VOICE::read_reg(u32 regnum) {
             return io.vol_l.read();
         }
         case 1: {
-            printf("\nREAD R%d:%04x", num, io.vol_l.read());
             return io.vol_r.read();
         }
         case 2: return io.sample_rate;
@@ -906,7 +901,6 @@ void VOICE::write_reg(u32 regnum, u16 val) {
         case 2: io.sample_rate = val & 0x7FFF; return;
         case 3: {
                 adpcm.start_addr = val << 3;
-                //printf("\nCH%d WRITE START ADDR %06x", num, adpcm.start_addr);
             return;
         }
         case 4: write_env_lo(val); return;
@@ -914,7 +908,6 @@ void VOICE::write_reg(u32 regnum, u16 val) {
         case 6: {
             env.adsr.output = static_cast<i16>(val); return;
             // ?? psx-spx says both it works and not
-            //printf("\nATTEMPT WRITE ENV OUTPUT CH:%d VAL:%04x", num, val);
             return; // WHICH IS IT!?
         }
         case 7: adpcm.repeat_addr = val << 3; return;
