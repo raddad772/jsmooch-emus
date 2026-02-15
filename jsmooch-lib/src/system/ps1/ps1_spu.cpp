@@ -457,7 +457,7 @@ void core::write_control_regs(u32 addr, u8 sz, u32 val) {
             io.IRQ_addr = val << 3;
             return;
         case 0x1F801DA6: // RAM transfer address
-            printf("\nRAM transfer addr %08x", latch.RAM_transfer_addr);
+            //printf("\nRAM transfer addr %08x", latch.RAM_transfer_addr);
             io.RAM_transfer_addr = val;
             latch.RAM_transfer_addr = val << 3;
             return;
@@ -508,6 +508,7 @@ void core::write_control_regs(u32 addr, u8 sz, u32 val) {
 
 void core::write_SPUCNT(u16 val) {
     io.SPUCNT.u = val & 0xFFFF;
+
     io.SPUSTAT.u = (io.SPUSTAT.u & ~0b111111) | (val & 0b111111);
     io.SPUSTAT.data_transfer_dma_rw_req = (val >> 5) & 1;
     io.SPUSTAT.data_transfer_dma_read_req = 0;
@@ -536,6 +537,7 @@ void core::write_SPUCNT(u16 val) {
             io.SPUSTAT.data_transfer_dma_read_req = 1;
             break;
     }
+    //printf("\nSPUSTAT: %d SPUCNT:%d", io.SPUSTAT.irq9, io.SPUCNT.irq9_enable);
     if (!io.SPUCNT.irq9_enable) io.SPUSTAT.irq9 = 0;
 
     noise.step = io.SPUCNT.noise_frequency_step + 4;
@@ -783,33 +785,29 @@ void core::write_RAM(u32 addr, u16 val, bool triggers_irq) {
 }
 
 void core::check_irq_addr(u32 addr) {
-    if (addr == io.IRQ_addr && ((io.RAMCNT.mode & 6) != 0)) {
+    if (addr == io.IRQ_addr && ((io.RAMCNT.mode & 6) != 0) && io.SPUCNT.irq9_enable) {
         io.SPUSTAT.irq9 = 1;
+        printf("\nIRQ9 FIRE @%08X!", addr);
         update_IRQs();
     }
 }
 // TODO: 44.1kHz scheduling, sampling, mixing, etc.
 void VOICE::keyon() {
-    if (!key_is_on) {
-        printf("\nKEYON %d", num);
-        key_is_on = true;
-        io.reached_loop_end = 0;
-        env.phase = EP_ATTACK;
-        env.output = 0;
-        env.adsr_counter = 0;
-        env.attack.calc(env.output);
-        adpcm.repeat_addr = adpcm.start_addr;
-        adpcm_start();
-    }
+    printf("\nKEYON %d is_on:%d", num, key_is_on);
+    io.reached_loop_end = 0;
+    env.phase = EP_ATTACK;
+    env.output = 0;
+    env.adsr_counter = 0;
+    env.attack.calc(env.output);
+    adpcm.repeat_addr = adpcm.start_addr;
+    adpcm_start();
 }
 
 void VOICE::keyoff() {
-    if (key_is_on) {
-        key_is_on = false;
-        env.phase = EP_RELEASE;
-        env.adsr_counter = 0;
-        env.release.calc(env.output);
-    }
+    printf("\nKEYOFF %d is_on:%d", num, key_is_on);
+    env.phase = EP_RELEASE;
+    env.adsr_counter = 0;
+    env.release.calc(env.output);
 }
 
 void VOICE::reset(PS1::core *ps1, u32 num_in) {
