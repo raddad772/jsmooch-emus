@@ -537,7 +537,6 @@ void core::write_SPUCNT(u16 val) {
             io.SPUSTAT.data_transfer_dma_read_req = 1;
             break;
     }
-    //printf("\nSPUSTAT: %d SPUCNT:%d", io.SPUSTAT.irq9, io.SPUCNT.irq9_enable);
     if (!io.SPUCNT.irq9_enable) io.SPUSTAT.irq9 = 0;
 
     noise.step = io.SPUCNT.noise_frequency_step + 4;
@@ -785,7 +784,7 @@ void core::write_RAM(u32 addr, u16 val, bool triggers_irq) {
 }
 
 void core::check_irq_addr(u32 addr) {
-    if (addr == io.IRQ_addr && ((io.RAMCNT.mode & 6) != 0) && io.SPUCNT.irq9_enable) {
+    if (io.SPUCNT.irq9_enable && addr == io.IRQ_addr && ((io.RAMCNT.mode & 6) != 0)) {
         io.SPUSTAT.irq9 = 1;
         printf("\nIRQ9 FIRE @%08X!", addr);
         update_IRQs();
@@ -956,3 +955,4 @@ u32 core::mainbus_read(u32 addr, u8 sz, bool has_effect)
     return masksz[sz];
 }
 }
+
