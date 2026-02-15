@@ -106,7 +106,6 @@ void VOICE::adpcm_decode() {
         io.reached_loop_end = 1;
         adpcm.cur_addr = adpcm.repeat_addr;
         if (!(flag & 2)) { // loop repeat
-            printf("\nWARN REPEAT NOT SET");
             env.phase = EP_RELEASE;
             env.output = 0;
             env.release.calc(env.output);
@@ -671,14 +670,15 @@ void core::mainbus_write(u32 addr, u8 sz, u32 val)
         return;
     }
     if (sz == 1) sz = 2;
-    val &= masksz[sz];
+    val &= 0xFFFF;
 
     if (addr >= 0x1F801C00 && addr <= 0x1F801D7F) {
-        addr &= 0x17F;
+        addr -= 0x1F801C00;
+        addr %= 0x180;
         return voices[addr >> 4].write_reg((addr & 0xF) >> 1, val);
     }
 
-    if (addr >= 0x1F801DA4 && addr <= 0x1F801DBF) {
+    if (addr >= 0x1F801DA4 && addr <= 0x1F801DBB) {
         return write_control_regs(addr, sz, val);
     }
     if (addr >= 0x1F801DC0 && addr <= 0x1F801DFF) {
@@ -723,12 +723,14 @@ void core::mainbus_write(u32 addr, u8 sz, u32 val)
             io.keyon_hi = val;
             return;
         case 0x1F801D8C:
+            printf("\nKEYOFF_LO %08x: %04x", addr, val);
             for (u16 i = 0; i < 16; i++) {
                 if ((val >> i) & 1) voices[i].keyoff();
             }
             io.keyoff_lo = val;
             return;
         case 0x1F801D8E:
+            printf("\nKEYOFF_HI %08x: %04x", addr, val);
             for (u16 i = 0; i < 8; i++) {
                 if ((val >> i) & 1) voices[i+16].keyoff();
             }
@@ -792,7 +794,7 @@ void core::check_irq_addr(u32 addr) {
 }
 // TODO: 44.1kHz scheduling, sampling, mixing, etc.
 void VOICE::keyon() {
-    printf("\nKEYON %d is_on:%d", num, key_is_on);
+    if (num == 0) printf("\nKEYON %d", num);
     io.reached_loop_end = 0;
     env.phase = EP_ATTACK;
     env.output = 0;
@@ -803,7 +805,7 @@ void VOICE::keyon() {
 }
 
 void VOICE::keyoff() {
-    printf("\nKEYOFF %d is_on:%d", num, key_is_on);
+    if (num == 0) printf("\nKEYOFF %d", num);
     env.phase = EP_RELEASE;
     env.adsr_counter = 0;
     env.release.calc(env.output);
@@ -825,14 +827,22 @@ void VOICE::reset(PS1::core *ps1, u32 num_in) {
 
 u16 VOICE::read_reg(u32 regnum) {
     switch (regnum) {
-        case 0: return io.vol_l.read();
-        case 1: return io.vol_r.read();
+        case 0: {
+            return io.vol_l.read();
+        }
+        case 1: {
+            printf("\nREAD R%d:%04x", num, io.vol_l.read());
+            return io.vol_r.read();
+        }
         case 2: return io.sample_rate;
         case 3: return adpcm.start_addr >> 3;
             // 4, 5 = 8, A
         case 4: return io.env_lo;
         case 5: return io.env_hi;
-        case 6: return env.output;
+        case 6: {
+            return env.output;
+        }
+
         case 7: return adpcm.repeat_addr >> 3;
         default:
             NOGOHERE;
@@ -869,11 +879,19 @@ void VOICE::write_reg(u32 regnum, u16 val) {
         case 0: io.vol_l.write(val); return;
         case 1: io.vol_r.write(val); return;
         case 2: io.sample_rate = val & 0x7FFF; return;
-        case 3: adpcm.start_addr = val << 3; return;
+        case 3: {
+                adpcm.start_addr = val << 3;
+                printf("\nCH%d WRITE START ADDR %06x", num, adpcm.start_addr);
+            return;
+        }
         case 4: write_env_lo(val); return;
         case 5: write_env_hi(val); return;
-        //case 6: env.output = static_cast<i16>(val); return;
-        case 6: return; // WHICH IS IT!?
+        case 6: {
+            // env.output = static_cast<i16>(val); return;
+            // ?? psx-spx says both it works and not
+            printf("\nATTEMPT WRITE ENV OUTPUT CH:%d VAL:%04x", num, val);
+            return; // WHICH IS IT!?
+        }
         case 7: adpcm.repeat_addr = val << 3; return;
         default:
             NOGOHERE;
@@ -897,7 +915,7 @@ u32 core::mainbus_read(u32 addr, u8 sz, bool has_effect)
     if (sz == 1) sz = 2;
     if (addr >= 0x1F801C00 && addr <= 0x1F801D7F) {
         addr -= 0x1F801C00;
-        addr &= 0x17F; // 8 16-bit regs per voice
+        addr %= 0x180; // 8 16-bit regs per voice
         return voices[addr >> 4].read_reg((addr & 0xF) >> 1);
     }
     if ((addr >= 0x1F801E00) && (addr <= 0x1F801E5F)) {
@@ -909,7 +927,7 @@ u32 core::mainbus_read(u32 addr, u8 sz, bool has_effect)
         return voices[v].io.vol_l.output;
     }
     // D84...DFE reverb
-    if (addr >= 0x1F801DA4 && addr <= 0x1F801DBF) {
+    if (addr >= 0x1F801DA4 && addr <= 0x1F801DBC) {
         return read_control_regs(addr, sz);
     }
     if (addr >= 0x1F801DC0 && addr <= 0x1F801DFF) {
@@ -928,12 +946,14 @@ u32 core::mainbus_read(u32 addr, u8 sz, bool has_effect)
             for (u32 i = 0; i < 16; i++) {
                 v |= voices[i].io.reached_loop_end << i;
             }
+            printf("\nENDX_LO: %04x", v);
             return v;
         case 0x1F801D9E:
             v = 0;
             for (u32 i = 0; i < 8; i++) {
                 v |= voices[i+16].io.reached_loop_end << i;
             }
+            printf("\nENDX_HI: %04x", v);
             return v;
         case 0x1F801D84: return io.reverb.vol_l;
         case 0x1F801D86: return io.reverb.vol_r;
