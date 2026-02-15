@@ -245,7 +245,7 @@ void core::copy_vram()
 u32 core::finish_frame()
 {
 #ifdef LYCODER
-    dbg_enable_trace();
+    //dbg_enable_trace();
 #endif
     u64 old_clock = clock.master_cycle_count;
     scheduler.run_for_cycles(clock.cycles_left_this_frame);
@@ -258,7 +258,9 @@ u32 core::finish_frame()
         dbg_flush();
         ::dbg.trace_on -= 1;
     }
+        ::dbg.trace_on += 1;
     dbg_flush();
+        ::dbg.trace_on -= 1;
     return 0;
 }
 

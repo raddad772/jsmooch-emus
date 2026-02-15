@@ -405,17 +405,10 @@ void core::cycle()
         ins_cycles();
     } else {
 #ifdef Z80_DBG_SUPPORT
-#ifdef LYCODER
-        if (dbg.trace_on && regs.TCU == 1 && *trace.cycles > 5000000) {
-            trace.last_cycle = PCO;
-            Z80_lycoder_print();
-        }
-#else
-        if (regs.TCU == 1) {
-            trace.last_cycle = trace.ins_PC;
-            trace_format();
-        }
-#endif // LYCODER
+    if (regs.TCU == 1) {
+        trace.last_cycle = trace.ins_PC;
+        trace_format();
+    }
 #endif // Z80_DBG_SUPPORT
         // Execute an actual opcode
         current_instruction(regs, pins);

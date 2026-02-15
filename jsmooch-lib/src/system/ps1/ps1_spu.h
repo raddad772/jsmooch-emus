@@ -49,17 +49,19 @@ enum VV_MODE {
     VVM_SWEEP=1
 };
 
-struct ADSR_PHASE {
-    i32 mode{};
+struct ADSR_GENERATOR {
+    i32 exponential{};
     i32 decreasing{};
     i32 shift{};
     i32 step{};
     i32 negative{}; // 1=negative
-    void calc(i32 adsr_level);
-    void cycle(u16 &counter, i32 &adsr_level) const;
+    i32 counter{};
+    i32 output{};
+    void calc();
+    void cycle();
 
     i32 adsr_step{};
-    i32 counter_increment{};
+    i32 counter_reload{};
 };
 
 struct VOICE_VOL {
@@ -70,22 +72,29 @@ struct VOICE_VOL {
     u16 read();
     i32 phase{};
 
-    ADSR_PHASE sweep{};
+    ADSR_GENERATOR sweep{};
 
-    i32 output{};
-    i32 adsr_step{};
-    u16 adsr_counter{};
+    //i32 adsr_step{};
 };
 
-struct ADSR {
+struct ADSR_ENVELOPE {
     void cycle();
 
     E_PHASE phase{EP_RELEASE};
 
-    ADSR_PHASE attack{}, sustain{}, decay{}, release{};
+    ADSR_GENERATOR adsr{};
     i32 sustain_level{};
-    u16 adsr_counter{};
-    i32 output{};
+    u32 num{};
+
+    i32 attack_exponential{}, attack_shift{}, attack_step{};
+    i32 decay_shift{};
+    i32 sustain_exponential{}, sustain_decreasing{}, sustain_shift{}, sustain_step{};
+    i32 release_exponential{}, release_shift{};
+
+    void load_attack();
+    void load_decay();
+    void load_sustain();
+    void load_release();
 };
 
 struct ADPCM {
@@ -115,12 +124,12 @@ struct VOICE {
         VOICE_VOL vol_l{}, vol_r{};
         u32 reached_loop_end{};
         u32 reverb_on{};
-        u8 env_lo{}, env_hi{};
+        u16 env_lo{}, env_hi{};
         bool noise_enable{};
     } io{};
     i16 sample{}, sample_l{}, sample_r{};
 
-    ADSR env{};
+    ADSR_ENVELOPE env{};
     u32 pitch_counter{}; // 17 bits?
     void cycle(i16 noise_level);
 
@@ -142,6 +151,7 @@ struct core {
     explicit core(PS1::core *parent) : bus(parent) {}
     void mainbus_write(u32 addr, u8 sz, u32 val);
     u32 mainbus_read(u32 addr, u8 sz, bool has_effect);
+    u32 snooped_mainbus_read(u32 addr, u8 sz, bool has_effect);
     u16 RAM[0x40000]{};
     FIFO FIFO{};
     void reset();

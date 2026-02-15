@@ -71,7 +71,7 @@ void DFT(const char *format, ...)
 
 int dbg_printf(const char *format, ...)
 {
-    if (!dbg.trace_on) return 0;
+    //if (!dbg.trace_on) return 0;
     jsm_string *th = &dbg.msg;
     // do jsm_sprintf, basically, minus one line
     if (th->ptr == nullptr) {
@@ -117,7 +117,7 @@ static void construct_path(char* w, size_t sz, const char* who)
 #if defined(_MSC_VER)
     tp += sprintf(tp, "%s\\dev\\%s", homeDir, who);
 #else
-    tp += snprintf(tp, sz, "%s/dev/%s", homeDir, who);
+    tp += snprintf(tp, sz, "%s/%s", homeDir, who);
 #endif
 }
 
@@ -131,7 +131,7 @@ void dbg_flush()
 #ifdef DBG_LOG_TO_FILE
     char fpath[250];
     printf("\nOUTPUTTING...");
-    construct_path(fpath, sizeof(fpath), "jsmooch_neutopia.txt");
+    construct_path(fpath, sizeof(fpath), "my_spu.txt");
     if (dbg.first_flush) {
         dbg.first_flush = 0;
         remove(fpath);

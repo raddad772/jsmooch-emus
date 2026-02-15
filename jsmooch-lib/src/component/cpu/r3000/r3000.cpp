@@ -582,7 +582,7 @@ void core::cycle(i32 howmany)
         auto *current = pipe.move_forward();
 
 #ifdef LYCODER
-        lycoder_trace_format(&trace.str);
+        //lycoder_trace_format(&trace.str);
 #else
         if (::dbg.trace_on && ::dbg.traces.r3000.instruction) {
             trace_format_console(trace.str);

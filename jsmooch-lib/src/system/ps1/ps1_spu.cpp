@@ -14,6 +14,7 @@
 namespace PS1::SPU {
 
 #define MAX(a,b) ((a)>(b)?(a):(b))
+#define MIN(a,b) ((a)<(b)?(a):(b))
 
 static constexpr i16 gauss_table[0x200] = {
     -1,-1,-1,-1,-1,-1,-1,-1,
@@ -107,8 +108,8 @@ void VOICE::adpcm_decode() {
         adpcm.cur_addr = adpcm.repeat_addr;
         if (!(flag & 2)) { // loop repeat
             env.phase = EP_RELEASE;
-            env.output = 0;
-            env.release.calc(env.output);
+            env.adsr.output = 0;
+            env.load_release();
         }
     }
     const u8 hd = data[0];
@@ -199,56 +200,91 @@ void core::update_IRQs() {
     if (old != io.IRQ_level) bus->set_irq(IRQ_SPU, io.IRQ_level);
 }
 
-void ADSR::cycle() {
+void ADSR_ENVELOPE::load_attack() {
+    adsr.exponential = attack_exponential;
+    adsr.decreasing = 0;
+    adsr.shift = attack_shift;
+    adsr.step = attack_step;
+    adsr.output = 0;
+    phase = EP_ATTACK;
+    adsr.calc();
+}
+
+void ADSR_ENVELOPE::load_decay() {
+    adsr.exponential = 1;
+    adsr.decreasing = 1;
+    adsr.shift = decay_shift;
+    adsr.step = 0;
+    adsr.output = 0x7FFF;
+    phase = EP_DECAY;
+    adsr.calc();
+}
+
+void ADSR_ENVELOPE::load_sustain() {
+    adsr.exponential = sustain_exponential;
+    adsr.decreasing = sustain_decreasing;
+    adsr.shift = sustain_shift;
+    adsr.step = sustain_step;
+    adsr.output = sustain_level;
+    phase = EP_SUSTAIN;
+    adsr.calc();
+}
+
+void ADSR_ENVELOPE::load_release() {
+    adsr.exponential = release_exponential;
+    adsr.decreasing = 1;
+    adsr.shift = release_shift;
+    adsr.step = 0;
+    phase = EP_RELEASE;
+    adsr.calc();
+}
+
+
+void ADSR_ENVELOPE::cycle() {
+    adsr.cycle();
     switch (phase) {
         case EP_ATTACK:
-            attack.cycle(adsr_counter, output);
-            if (output >= 0x7FFF) {
-                phase = EP_DECAY;
-                adsr_counter = 0;
-                decay.calc(output);
+            if (adsr.output >= 0x7FFF) {
+                load_decay();
             }
             break;
         case EP_DECAY:
-            decay.cycle(adsr_counter, output);
-            if (output <= sustain_level) {
-                phase = EP_SUSTAIN;
-                adsr_counter = 0;
-                sustain.calc(output);
+            if (adsr.output <= sustain_level) {
+                load_sustain();
             }
             break;
         case EP_SUSTAIN:
-            sustain.cycle(adsr_counter, output);
             break;
         case EP_RELEASE:
-            release.cycle(adsr_counter, output);
             break;
         default:
             NOGOHERE;
     }
 }
 
-void ADSR_PHASE::cycle(u16 &counter, i32 &adsr_level) const {
-    counter += counter_increment;
-    if (!(counter & 0x8000)) return;
+void ADSR_GENERATOR::cycle() {
+    counter--;
+    if (counter > 0) return;
+    counter = counter_reload;
+    //if ((counter & 0x8000) == 0) return;
 
-    adsr_level += adsr_step;
+    output += adsr_step;
     if (!decreasing) {
-        if (adsr_level < -0x8000) adsr_level = 0x8000;
-        if (adsr_level > 0x7FFF) adsr_level = 0x7FFF;
+        if (output < -0x8000) output = 0x8000;
+        if (output > 0x7FFF) output = 0x7FFF;
     }
     else if (negative) {
-        if (adsr_level < -0x8000) adsr_level = -0x8000;
-        if (adsr_level > 0) adsr_level = 0;
+        if (output < -0x8000) output = -0x8000;
+        if (output > 0) output = 0;
     }
     else {
-        adsr_level = MAX(adsr_level, 0);
+        output = MAX(output, 0);
     }
 }
 
 void VOICE_VOL::cycle() {
     // Adavnce the voice
-    sweep.cycle(adsr_counter, output);
+    sweep.cycle();
 }
 
 static constexpr i32 dirtable[2][4] = {
@@ -256,7 +292,7 @@ static constexpr i32 dirtable[2][4] = {
     {-8, -7, -6, -5} // 1=decrease
 };
 
-void ADSR_PHASE::calc(i32 adsr_level) {
+void ADSR_GENERATOR::calc() {
     // ; Precalculation, can be cached on phase begin.
     // AdsrStep = 7 - StepValue
     // IF Decreasing XOR PhaseNegative THEN
@@ -271,11 +307,11 @@ void ADSR_PHASE::calc(i32 adsr_level) {
     // CounterIncrement = 8000h SHR Max(0,ShiftValue-11)
     r = shift - 11;
     r = MAX(0, r);
-    counter_increment = 0x8000 >> r;
+    counter_reload = 1 << r;
 
 
     // IF exponential AND increase AND AdsrLevel>6000h THEN
-    if (mode && !decreasing && adsr_level<0x6000) {
+    if (exponential && !decreasing && output<0x6000) {
         //   IF ShiftValue < 10 THEN
         if (shift < 10)
         //     AdsrStep /= 4 ; SHR 2
@@ -283,42 +319,42 @@ void ADSR_PHASE::calc(i32 adsr_level) {
         //   ELSE IF ShiftValue >= 11 THEN
         else if (shift >= 11)
         //     CounterIncrement /= 4 ; SHR 2
-            counter_increment >>= 2;
+            counter_reload <<= 2;
         else {
             //   ELSE
             //     AdsrStep /= 4 ; SHR 2
             //     CounterIncrement /= 4 ; SHR 2
             adsr_step >>= 2;
-            counter_increment >>= 2;
+            counter_reload <<= 2;
         }
     }
     // ELSE IF exponential AND decrease THEN
-    else if (mode && decreasing) {
+    else if (exponential && decreasing) {
         //   AdsrStep=AdsrStep*AdsrLevel/8000h
-        adsr_step = (adsr_step * adsr_level) >> 15;
+        adsr_step = (adsr_step * output) >> 15;
     }
     // IF (StepValue | (ShiftValue SHL 2)) != ALL_BITS THEN
     r = (step | (shift << 2));
     if (r != 0b1111111)
     //   CounterIncrement = MAX(CounterIncrement, 1)
-        counter_increment = MAX(counter_increment, 1);
+        counter_reload = MIN(counter_reload, 1);
 
 }
 
 void VOICE_VOL::write(u16 v) {
     io_val = v;
     mode = static_cast<VV_MODE>((v >> 15) & 1);
-    if (mode == VVM_FIXED) output = static_cast<i16>(v << 1);
+    if (mode == VVM_FIXED) sweep.output = static_cast<i16>(v << 1);
     else {
         // Do sweep stuff!
-        sweep.mode = (v >> 14) & 1;
+        sweep.exponential = (v >> 14) & 1;
         sweep.decreasing = (v >> 13) & 1;
         phase = (v >> 12) & 1;
         sweep.shift = (v >> 2) & 0x1F;
         sweep.step = v & 3;
-        output = sweep.decreasing ? 0x7FFF : 0;
-        adsr_counter = 0;
-        sweep.calc(output);
+        sweep.output = sweep.decreasing ? 0x7FFF : 0;
+        sweep.calc();
+        sweep.counter = sweep.counter_reload;
     }
 }
 
@@ -371,10 +407,10 @@ void VOICE::cycle(i16 noise_level) {
     }
     adpcm_get_sample();
     gaussian_me_up();
-    if (io.noise_enable) sample = VOL(noise_level, env.output);
-    else sample = VOL(sample, env.output);
-    sample_l = VOL(io.vol_l.output, sample);
-    sample_r = VOL(io.vol_r.output, sample);
+    if (io.noise_enable) sample = VOL(noise_level, env.adsr.output);
+    else sample = VOL(sample, env.adsr.output);
+    sample_l = VOL(io.vol_l.sweep.output, sample);
+    sample_r = VOL(io.vol_r.sweep.output, sample);
 }
 
 static void sch_FIFO_transfer(void *ptr, u64 key, u64 timecode, u32 jitter) {
@@ -461,8 +497,8 @@ void core::write_control_regs(u32 addr, u8 sz, u32 val) {
             latch.RAM_transfer_addr = val << 3;
             return;
         case 0x1F801DA8: // FIFO write
-            FIFO_instant_transfer(val);
-            //FIFO.push(val);
+            //FIFO_instant_transfer(val);
+            FIFO.push(val);
             //if (io.SPUCNT.sound_ram_transfer_mode == 1) commit_FIFO();
             //FIFO.push(val);
             //printf("\nFIFO write len:%d", FIFO.len);
@@ -527,7 +563,7 @@ void core::write_SPUCNT(u16 val) {
                 schedule_FIFO_transfer(bus->clock.master_cycle_count);
                 io.SPUSTAT.data_transfer_busy = 1;
             }*/
-            //commit_FIFO();
+            commit_FIFO();
             break;
         case 2: // DMAWrite
             io.SPUSTAT.data_transfer_dma_write_req = 1;
@@ -655,6 +691,7 @@ void core::cycle() {
 void core::mainbus_write(u32 addr, u8 sz, u32 val)
 {
     u32 raddr = addr;
+    //if (raddr != 0x1f801da8) dbg_printf("\n(SPU) Write %08x(%d): %08x", addr, sz, val);
     if ((sz == 1) && (addr & 1)) {
         static int a = 1;
         if (a == 1) {
@@ -690,8 +727,8 @@ void core::mainbus_write(u32 addr, u8 sz, u32 val)
         // 02 = r
         addr -= 0x1F801E00;
         u32 v = addr >> 2;
-        if (addr & 2) voices[v].io.vol_r.output = static_cast<i16>(val);
-        else voices[v].io.vol_l.output = static_cast<i16>(val);
+        if (addr & 2) voices[v].io.vol_r.sweep.output = static_cast<i16>(val);
+        else voices[v].io.vol_l.sweep.output = static_cast<i16>(val);
         return;
     }
 
@@ -723,14 +760,14 @@ void core::mainbus_write(u32 addr, u8 sz, u32 val)
             io.keyon_hi = val;
             return;
         case 0x1F801D8C:
-            printf("\nKEYOFF_LO %08x: %04x", addr, val);
+            //printf("\nKEYOFF_LO %08x: %04x", addr, val);
             for (u16 i = 0; i < 16; i++) {
                 if ((val >> i) & 1) voices[i].keyoff();
             }
             io.keyoff_lo = val;
             return;
         case 0x1F801D8E:
-            printf("\nKEYOFF_HI %08x: %04x", addr, val);
+            //printf("\nKEYOFF_HI %08x: %04x", addr, val);
             for (u16 i = 0; i < 8; i++) {
                 if ((val >> i) & 1) voices[i+16].keyoff();
             }
@@ -794,35 +831,23 @@ void core::check_irq_addr(u32 addr) {
 }
 // TODO: 44.1kHz scheduling, sampling, mixing, etc.
 void VOICE::keyon() {
-    if (num == 0) printf("\nKEYON %d", num);
     io.reached_loop_end = 0;
     env.phase = EP_ATTACK;
-    env.output = 0;
-    env.adsr_counter = 0;
-    env.attack.calc(env.output);
+    env.adsr.output = 0;
+    env.load_attack();
     adpcm.repeat_addr = adpcm.start_addr;
     adpcm_start();
 }
 
 void VOICE::keyoff() {
-    if (num == 0) printf("\nKEYOFF %d", num);
     env.phase = EP_RELEASE;
-    env.adsr_counter = 0;
-    env.release.calc(env.output);
+    env.load_release();
 }
 
 void VOICE::reset(PS1::core *ps1, u32 num_in) {
     num = num_in;
     bus = ps1;
-    env.attack.decreasing = 0;
-    env.decay.mode = 1;
-    env.decay.decreasing = 1;
-    env.decay.step = 0;
-    env.release.decreasing = 1;
-    env.release.step = 0;
-    env.attack.calc(env.output);
-    env.decay.calc(env.output);
-    env.release.calc(env.output);
+    env.num = num_in;
 }
 
 u16 VOICE::read_reg(u32 regnum) {
@@ -840,7 +865,7 @@ u16 VOICE::read_reg(u32 regnum) {
         case 4: return io.env_lo;
         case 5: return io.env_hi;
         case 6: {
-            return env.output;
+            return env.adsr.output;
         }
 
         case 7: return adpcm.repeat_addr >> 3;
@@ -850,27 +875,27 @@ u16 VOICE::read_reg(u32 regnum) {
 }
 
 void VOICE::write_env_lo(u16 val) {
-    bool changed = io.env_lo == val;
+    bool changed = io.env_lo != val;
     io.env_lo = val;
     if (changed) {
-        env.attack.mode = (val >> 15) & 1;
-        env.attack.shift = (val >> 10) & 0x1F;
-        env.attack.step = (val >> 8) & 3;
-        env.decay.shift = (val >> 4) & 0xF;
+        env.attack_exponential = (val >> 15) & 1;
+        env.attack_shift = (val >> 10) & 0x1F;
+        env.attack_step = (val >> 8) & 3;
+        env.decay_shift = (val >> 4) & 0xF;
         env.sustain_level = ((val & 0x0F) + 1) * 0x800;
     }
 }
 
 void VOICE::write_env_hi(u16 val) {
-    bool changed = io.env_hi == val;
+    bool changed = io.env_hi != val;
     io.env_hi = val;
     if (changed) {
-        env.sustain.mode = (val >> 15) & 1;
-        env.sustain.decreasing = (val >> 14) & 1;
-        env.sustain.shift = (val >> 8) & 0x1F;
-        env.sustain.step = (val >> 6) & 3;
-        env.release.mode = (val >> 5) & 1;
-        env.release.shift = val & 0x1F;
+        env.sustain_exponential = (val >> 15) & 1;
+        env.sustain_decreasing = (val >> 14) & 1;
+        env.sustain_shift = (val >> 8) & 0x1F;
+        env.sustain_step = (val >> 6) & 3;
+        env.release_exponential = (val >> 5) & 1;
+        env.release_shift = val & 0x1F;
     }
 }
 
@@ -881,15 +906,15 @@ void VOICE::write_reg(u32 regnum, u16 val) {
         case 2: io.sample_rate = val & 0x7FFF; return;
         case 3: {
                 adpcm.start_addr = val << 3;
-                printf("\nCH%d WRITE START ADDR %06x", num, adpcm.start_addr);
+                //printf("\nCH%d WRITE START ADDR %06x", num, adpcm.start_addr);
             return;
         }
         case 4: write_env_lo(val); return;
         case 5: write_env_hi(val); return;
         case 6: {
-            // env.output = static_cast<i16>(val); return;
+            env.adsr.output = static_cast<i16>(val); return;
             // ?? psx-spx says both it works and not
-            printf("\nATTEMPT WRITE ENV OUTPUT CH:%d VAL:%04x", num, val);
+            //printf("\nATTEMPT WRITE ENV OUTPUT CH:%d VAL:%04x", num, val);
             return; // WHICH IS IT!?
         }
         case 7: adpcm.repeat_addr = val << 3; return;
@@ -902,8 +927,14 @@ void core::reset() {
     for (u32 i = 0; i < 24; i++) voices[i].reset(bus, i);
 }
 
-u32 core::mainbus_read(u32 addr, u8 sz, bool has_effect)
-{
+u32 core::mainbus_read(u32 addr, u8 sz, bool has_effect) {
+    u32 v = snooped_mainbus_read(addr, sz, has_effect);
+    //dbg_printf("\n(SPU) Read %08x(%d): %08x", addr, sz, v);
+    return v;
+
+}
+
+u32 core::snooped_mainbus_read(u32 addr, u8 sz, bool has_effect) {
     u32 raddr = addr;
     addr &= 0xFFFFFFFE;
     u32 v;
@@ -923,8 +954,8 @@ u32 core::mainbus_read(u32 addr, u8 sz, bool has_effect)
         // 02 = r
         addr -= 0x1F801E00;
         v = addr >> 2;
-        if (addr & 2) return voices[v].io.vol_r.output;
-        return voices[v].io.vol_l.output;
+        if (addr & 2) return voices[v].io.vol_r.sweep.output;
+        return voices[v].io.vol_l.sweep.output;
     }
     // D84...DFE reverb
     if (addr >= 0x1F801DA4 && addr <= 0x1F801DBA) {
