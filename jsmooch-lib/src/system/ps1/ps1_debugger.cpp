@@ -42,6 +42,31 @@ static void setup_dbglog(debugger_interface *dbgr, core *th)
     r3000.add_node(dv, "Exceptions", "Except", PS1_CAT_R3000_EXCEPTION, 0xFFFFFF);
 }
 
+static void setup_waveforms(core& th, debugger_interface *dbgr) {
+    th.dbg.waveforms.view = dbgr->make_view(dview_waveforms);
+    auto *dview = &th.dbg.waveforms.view.get();
+    auto *wv = &dview->waveform;
+    snprintf(wv->name, sizeof(wv->name), "SPU");
+    wv->waveforms.reserve(8);
+
+    debug_waveform *dw = &wv->waveforms.emplace_back();
+    wv->waveforms.reserve(32);
+    th.dbg.waveforms.main.make(wv->waveforms, wv->waveforms.size()-1);
+    snprintf(dw->name, sizeof(dw->name), "Output (Mono)");
+    dw->kind = dwk_main;
+    dw->samples_requested = 400;
+    dw->default_clock_divider = 768;
+    for (u32 i = 0; i < 24; i++) {
+        dw = &wv->waveforms.emplace_back();
+        dw->kind = dwk_channel;
+        dw->samples_requested = 200;
+        snprintf(dw->name, sizeof(dw->name), "CH%d", i);
+
+        th.dbg.waveforms.chan[i].make(wv->waveforms, wv->waveforms.size()-1);
+    }
+}
+
+
 void core::setup_debugger_interface(debugger_interface &dbgr)
 {
     dbg.interface = &dbgr;
@@ -51,5 +76,6 @@ void core::setup_debugger_interface(debugger_interface &dbgr)
     dbgr.smallest_step = 1;
     setup_console_view(this, &dbgr);
     setup_dbglog(&dbgr, this);
+    setup_waveforms(*this, &dbgr);
 }
 }

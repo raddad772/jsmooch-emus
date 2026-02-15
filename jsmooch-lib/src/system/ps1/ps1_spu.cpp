@@ -8,6 +8,7 @@
 
 #include "ps1_bus.h"
 #include "component/audio/ym2612/ym2612.h"
+#include "helpers/multisize_memaccess.cpp"
 #include "system/snes/snes_apu.h"
 
 namespace PS1::SPU {
@@ -83,30 +84,29 @@ static constexpr i16 gauss_table[0x200] = {
 
 void VOICE::adpcm_start() {
     adpcm.cur_addr = adpcm.start_addr;
+    pitch_counter = 0;
     adpcm_decode();
 }
 
 static constexpr i32  pos_xa_adpcm_table[5] = {0, 60, 115, 98, 122};
-
 static constexpr i32 neg_xa_adpcm_table[5] = {0,   0,  -52, -55,  -60};
 
 void VOICE::adpcm_decode() {
     u8 data[16];
-    for (u32 i = 0; i < 8; i++) {
-        u16 v = bus->spu.read_RAM(adpcm.cur_addr, true , true);
-        u32 idx = i << 1;
-        data[idx] = v & 0xFF;
-        data[idx+1] = v >> 8;
-        adpcm.cur_addr += 2;
+    u32 start_addr = adpcm.cur_addr;
+    for (u32 i = 0; i < 16; i++) {
+        data[i] = bus->spu.read_RAM8(adpcm.cur_addr, true , true);
+        adpcm.cur_addr++;
     }
     u8 flag = data[1];
-    if (flag & 4) {
-        adpcm.repeat_addr = adpcm.cur_addr - 16;
+    if (flag & 4) { // Loop start
+        adpcm.repeat_addr = start_addr;
     }
     if (flag & 1) { // loop end
         io.reached_loop_end = 1;
         adpcm.cur_addr = adpcm.repeat_addr;
         if (!(flag & 2)) { // loop repeat
+            printf("\nWARN REPEAT NOT SET");
             env.phase = EP_RELEASE;
             env.output = 0;
             env.release.calc(env.output);
@@ -119,8 +119,6 @@ void VOICE::adpcm_decode() {
     u8 filter = (hd >> 4) & 7;
     if (filter > 4) filter = 4; // TODO: ??
 
-    const i32 f0 = pos_xa_adpcm_table[filter];
-    const i32 f1 = neg_xa_adpcm_table[filter];
     u32 idx = 2;
     u32 nibble = 0;
     // +0 = current
@@ -142,12 +140,32 @@ void VOICE::adpcm_decode() {
         // t is a signed 4-bit value so convert to 32-bit signed
         t = (t & 7) | (t & 8 ? 0xFFFFFFF8 : 0);
         i32 s = (t << shift);
-        s += (old * f0 + older * f1 + 32) >> 6;
-        if (s < -0x8000) s = -0x8000;
-        if (s > 0x7FFF) s = 0x7FFF;
-        s_out = s;
+        i32 filtered;
+        switch (filter) {
+            case 0:
+                filtered = s;
+                break;
+            case 1:
+                filtered = s + (60 * old + 32) / 64;
+                break;
+            case 2:
+                filtered = s + (115 * old - 52 * older + 32) / 64;
+                break;
+            case 3:
+                filtered = s + (98 * old - 55 * older + 32) / 64;
+                break;
+            case 4:
+                filtered = s + (122 * old - 60 * older + 32) / 64;
+                break;
+            default:
+                NOGOHERE;
+        }
+
+        if (filtered < -0x8000) s = -0x8000;
+        if (filtered > 0x7FFF) s = 0x7FFF;
+        s_out = filtered;
         older = old;
-        old = s;
+        old = filtered;
     }
 }
 
@@ -401,6 +419,11 @@ void core::commit_FIFO() {
     }
     io.SPUSTAT.data_transfer_busy = 0;
 }
+void core::FIFO_instant_transfer(u16 val) {
+    latch.RAM_transfer_addr &= 0x7FFFF;
+    write_RAM(latch.RAM_transfer_addr, val, true);
+    latch.RAM_transfer_addr += 2;
+}
 
 void core::FIFO_transfer(u64 clock) {
     if (FIFO.len > 0) {
@@ -439,8 +462,9 @@ void core::write_control_regs(u32 addr, u8 sz, u32 val) {
             latch.RAM_transfer_addr = val << 3;
             return;
         case 0x1F801DA8: // FIFO write
-            FIFO.push(val);
-            if (io.SPUCNT.sound_ram_transfer_mode == 1) commit_FIFO();
+            FIFO_instant_transfer(val);
+            //FIFO.push(val);
+            //if (io.SPUCNT.sound_ram_transfer_mode == 1) commit_FIFO();
             //FIFO.push(val);
             //printf("\nFIFO write len:%d", FIFO.len);
             // if we're in data transfer mode, schedule it if it's not
@@ -493,7 +517,7 @@ void core::write_SPUCNT(u16 val) {
         bus->scheduler.delete_if_exist(FIFO.sch_id);
         io.SPUSTAT.data_transfer_busy = 0;
     }*/
-    printf("\n(SPU) Transfer mode %d", io.SPUCNT.sound_ram_transfer_mode);
+    //printf("\n(SPU) Transfer mode %d", io.SPUCNT.sound_ram_transfer_mode);
     switch (io.SPUCNT.sound_ram_transfer_mode) {
         case 0: // OFF
             break;
@@ -503,7 +527,7 @@ void core::write_SPUCNT(u16 val) {
                 schedule_FIFO_transfer(bus->clock.master_cycle_count);
                 io.SPUSTAT.data_transfer_busy = 1;
             }*/
-            commit_FIFO();
+            //commit_FIFO();
             break;
         case 2: // DMAWrite
             io.SPUSTAT.data_transfer_dma_write_req = 1;
@@ -746,6 +770,13 @@ u16 core::read_RAM(u32 addr, bool has_effect, bool triggers_irq) {
     return v;
 }
 
+u8 core::read_RAM8(u32 addr, bool has_effect, bool triggers_irq) {
+    u8 v = cR8(RAM, addr);
+    if ((addr & 1) == 0 && triggers_irq && has_effect) check_irq_addr(addr);
+    return v;
+}
+
+
 void core::write_RAM(u32 addr, u16 val, bool triggers_irq) {
     RAM[(addr >> 1) & 0x3FFFF] = val;
     if (triggers_irq) check_irq_addr(addr);
@@ -760,6 +791,7 @@ void core::check_irq_addr(u32 addr) {
 // TODO: 44.1kHz scheduling, sampling, mixing, etc.
 void VOICE::keyon() {
     if (!key_is_on) {
+        printf("\nKEYON %d", num);
         key_is_on = true;
         io.reached_loop_end = 0;
         env.phase = EP_ATTACK;

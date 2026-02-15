@@ -101,6 +101,7 @@ struct VOICE {
     void reset(PS1::core *ps1, u32 num);
     void keyon();
     void keyoff();
+    bool ext_enable{true};
     u32 num{};
     bool key_is_on{};
     PS1::core *bus{};
@@ -152,11 +153,15 @@ struct core {
     void schedule_FIFO_transfer(u64 clock);
 
     u16 read_RAM(u32 addr, bool has_effect, bool triggers_irq);
+    u8 read_RAM8(u32 addr, bool has_effect, bool triggers_irq);
+
     void write_RAM(u32 addr, u16 val, bool triggers_irq);
     void FIFO_transfer(u64 clock);
     void check_irq_addr(u32 addr);
     u32 DMA_read();
     void DMA_write(u32 val);
+
+    bool ext_enable{true};
 
     struct {
         union {
@@ -237,6 +242,7 @@ struct core {
     VOICE voices[24]{};
     i16 sample_l{}, sample_r{};
     void commit_FIFO();
+    void FIFO_instant_transfer(u16 val);
 private:
     void write_control_regs(u32 addr, u8 sz, u32 val);
     u32 read_control_regs(u32 addr, u8 sz);

@@ -70,6 +70,46 @@ void do_next_scheduled_frame(void *bound_ptr, u64 key, u64 current_clock, u32 ji
     th->schedule_frame(current_clock-jitter, 0);
 }
 
+static inline float i16_to_float(i16 val)
+{
+    return ((static_cast<float>(static_cast<i32>(val) + 32768) / 65535.0f) * 2.0f) - 1.0f;
+}
+
+static void sample_audio_debug_max(void *ptr, u64 key, u64 clock, u32 jitter)
+{
+    auto *th = static_cast<core *>(ptr);
+
+    /* PSG */
+    debug_waveform *dw = &th->dbg.waveforms.main.get();
+    if (dw->user.buf_pos < dw->samples_requested) {
+        static_cast<float *>(dw->buf.ptr)[dw->user.buf_pos] = i16_to_float((th->spu.sample_l + th->spu.sample_r) >> 1);
+        dw->user.buf_pos++;
+    }
+
+    th->audio.next_sample_cycle_max += th->audio.master_cycles_per_max_sample;
+    th->scheduler.only_add_abs(static_cast<i64>(th->audio.next_sample_cycle_max), 0, th, &sample_audio_debug_max, nullptr);
+}
+
+static void sample_audio_debug_min(void *ptr, u64 key, u64 clock, u32 jitter)
+{
+    auto *th = static_cast<core *>(ptr);
+
+    /* PSG */
+    debug_waveform *dw = &th->dbg.waveforms.chan[0].get();
+    for (int j = 0; j < 24; j++) {
+        dw = &th->dbg.waveforms.chan[j].get();
+        if (dw->user.buf_pos < dw->samples_requested) {
+            i16 sv = th->spu.voices[j].sample;
+            static_cast<float *>(dw->buf.ptr)[dw->user.buf_pos] = i16_to_float(sv * 4);
+            dw->user.buf_pos++;
+        }
+    }
+
+    th->audio.next_sample_cycle_min += th->audio.master_cycles_per_min_sample;
+    th->scheduler.only_add_abs(static_cast<i64>(th->audio.next_sample_cycle_min), 0, th, &sample_audio_debug_min, nullptr);
+}
+
+
 
 void core::schedule_frame(u64 start_clock, u32 is_first)
 {
@@ -83,6 +123,8 @@ void core::schedule_frame(u64 start_clock, u32 is_first)
             audio.next_sample_cycle = 0;
             scheduler.only_add_abs(768, 0, this, &sch_sample_audio, nullptr);
         }
+        scheduler.only_add_abs(static_cast<i64>(audio.next_sample_cycle_max), 0, this, &sample_audio_debug_max, nullptr);
+        scheduler.only_add_abs(static_cast<i64>(audio.next_sample_cycle_min), 0, this, &sample_audio_debug_min, nullptr);
     }
     // Schedule out a frame!
     i64 cur_clock = start_clock;
@@ -106,44 +148,40 @@ void core::schedule_frame(u64 start_clock, u32 is_first)
     scheduler.only_add_abs(start_clock+clock.timing.frame.cycles, 0, this, &do_next_scheduled_frame, nullptr);
 }
 
-
-static void setup_debug_waveform(debug_waveform *dw)
+void core::setup_debug_waveform(debug_waveform *dw)
 {
-    /*if (dw->samples_requested == 0) return;
+    if (dw->samples_requested == 0) return;
     dw->samples_rendered = dw->samples_requested;
-    dw->user.cycle_stride = ((float)MASTER_CYCLES_PER_FRAME / (float)dw->samples_requested);
-    dw->user.buf_pos = 0;*/
+    dw->user.cycle_stride = audio.cycles_per_frame / static_cast<float>(dw->samples_requested);
+    dw->user.buf_pos = 0;
 }
 
 void core::set_audiobuf(audiobuf *ab)
 {
     audio.buf = ab;
     if (audio.master_cycles_per_audio_sample == 0) {
-        audio.master_cycles_per_audio_sample = (static_cast<double>(static_cast<double>(clock.timing.cpu.hz)/static_cast<double>(clock.timing.fps)) / static_cast<double>(ab->samples_len));
-        printf("\nAUDIO MASTER CYCLES PER SAMPLE: %f", audio.master_cycles_per_audio_sample);
+        audio.cycles_per_frame = static_cast<double>(clock.timing.cpu.hz)/static_cast<double>(clock.timing.fps);
+        audio.master_cycles_per_audio_sample = (audio.cycles_per_frame / static_cast<double>(ab->samples_len));
         audio.next_sample_cycle = 0;
-        //auto *wf = &dbg.waveforms.main.get();
-        //sn76489.ext_enable = wf->ch_output_enabled;
-    }
-    /*audio.buf = ab;
-    if (audio.master_cycles_per_audio_sample == 0) {
-        audio.master_cycles_per_audio_sample = ((float)(MASTER_CYCLES_PER_FRAME / (float)ab->samples_len));
-        audio.next_sample_cycle = 0;
-        debug_waveform *wf = (debug_waveform *)cvec_get(dbg.waveforms.main.vec, dbg.waveforms.main.index);
-        apu.ext_enable = wf->ch_output_enabled;
+        audio.next_sample_cycle_min = 0;
+        audio.next_sample_cycle_max = 0;
+        // Setup main output view
+        auto *wf = &dbg.waveforms.main.get();
+        spu.ext_enable = wf->ch_output_enabled;
+        audio.master_cycles_per_max_sample = audio.cycles_per_frame / static_cast<float>(wf->samples_requested);
+        // Setup some math for voices
+        wf = &dbg.waveforms.chan[0].get();
+        audio.master_cycles_per_min_sample = audio.cycles_per_frame / static_cast<float>(wf->samples_requested);
     }
 
-    // PSG
-    setup_debug_waveform(cvec_get(dbg.waveforms.main.vec, dbg.waveforms.main.index));
-    for (u32 i = 0; i < 6; i++) {
-        setup_debug_waveform(cvec_get(dbg.waveforms.chan[i].vec, dbg.waveforms.chan[i].index));
-        debug_waveform *wf = (debug_waveform *)cvec_get(dbg.waveforms.chan[i].vec, dbg.waveforms.chan[i].index);
-        if (i < 4)
-            apu.channels[i].ext_enable = wf->ch_output_enabled;
-        else
-            apu.fifo[i - 4].ext_enable = wf->ch_output_enabled;
+    auto *wf = &dbg.waveforms.main.get();
+    setup_debug_waveform(wf);
+    spu.ext_enable = wf->ch_output_enabled;
+    for (u32 i = 0; i < 24; i++) {
+        wf = &dbg.waveforms.chan[i].get();
+        setup_debug_waveform(wf);
+        spu.voices[i].ext_enable = wf->ch_output_enabled;
     }
-    */
 }
 
 void core::amidog_print_console()
@@ -334,12 +372,6 @@ void core::reset()
 
     cdrom.open_drive();
 }
-
-static inline float i16_to_float(i16 val)
-{
-    return ((static_cast<float>(static_cast<i32>(val) + 32768) / 65535.0f) * 2.0f) - 1.0f;
-}
-
 
 void core::sample_audio()
 {

@@ -119,15 +119,22 @@ struct core : jsm_system {
     } io;
 
     struct {
-        double master_cycles_per_audio_sample{};
-        double next_sample_cycle{};
+        double master_cycles_per_audio_sample{},  master_cycles_per_min_sample{}, master_cycles_per_max_sample{};
+        double next_sample_cycle_max{}, next_sample_cycle_min{}, next_sample_cycle{};
         audiobuf *buf{};
         u64 cycles{};
+        double cycles_per_frame{};
     } audio{};
+
+    void setup_debug_waveform(debug_waveform *dw);
 
     DBG_START
         cvec_ptr<debugger_view> console_view{};
         DBG_LOG_VIEW
+        DBG_WAVEFORM_START1
+            DBG_WAVEFORM_MAIN
+            DBG_WAVEFORM_CHANS(24)
+        DBG_WAVEFORM_END1
     DBG_END
 
 public:
