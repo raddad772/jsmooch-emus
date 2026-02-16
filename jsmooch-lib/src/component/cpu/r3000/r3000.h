@@ -109,10 +109,12 @@ struct core {
         bool ok{};
         u32 ins_PC{};
         i32 source_id{};
-        u32 irq_id;
-        u32 rfe_id;
-        u32 exception_id;
-    } trace;
+        u32 irq_id{};
+        u32 rfe_id{};
+        u32 exception_id{};
+        u32 I_STAT_write{};
+        u32 I_MASK_write{};
+    } trace{};
 
     struct {
         IRQ_multiplexer_b *I_STAT{};

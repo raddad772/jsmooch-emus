@@ -6,6 +6,7 @@
 
 #include "ps1_bus.h"
 #include "ps1_dma.h"
+#include "ps1_debugger.h"
 #include "peripheral/ps1_sio.h"
 #include "peripheral/ps1_digital_pad.h"
 #include "helpers/multisize_memaccess.cpp"
@@ -315,7 +316,11 @@ void core::mainbus_write(u32 addr, u8 sz, u32 val)
 
 void core::set_irq(IRQ from, u32 level)
 {
+    u32 old_if = IRQ_multiplexer.IF;
     IRQ_multiplexer.set_level(from, level);
+    if (old_if != IRQ_multiplexer.IF) {
+        dbgloglog(PS1D_BUS_IRQS, DBGLS_INFO, "IRQ %d (%s) set to %d", from, IRQnames[from], level);
+    }
     cpu.update_I_STAT();
 }
 

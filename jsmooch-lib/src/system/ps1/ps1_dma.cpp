@@ -6,12 +6,14 @@
 
 #include "ps1_bus.h"
 #include "ps1_dma.h"
+#include "ps1_debugger.h"
 
 namespace PS1 {
 void DMA_channel::do_linked_list()
 {
     //printf("\nDo linked list CH%d", num);
     u32 addr = base_addr & 0x1FFFFC;
+    dbgloglog_bus(PS1D_DMA_CH0+num, DBGLS_INFO, "CH:%d LINKED LIST  DEST:%08x  IE:%d", num, addr, (bus->dma.irq.IE >> num) & 1);
     if (direction == D_to_ram) {
         printf("\nInvalid DMA direction for linked list mode: to RAM");
         return;
@@ -66,6 +68,7 @@ void DMA_channel::do_block()
     u32 mstep = (step == D_increment) ? 4 : -4;
     u32 addr = base_addr;
     u32 copies = transfer_size();;
+    dbgloglog_bus(PS1D_DMA_CH0+num, DBGLS_INFO, "CH:%d BLOCK  DEST:%08x  LEN:%d bytes  IE:%d", num, addr, copies, (bus->dma.irq.IE >> num) & 1);
     //printf("\nDo block ch%d base_addr:%08x copies:%d", num, base_addr, copies);
     if (copies == -1) {
         printf("\nCouldn't decide DMA transfer size");
@@ -113,7 +116,7 @@ void DMA_channel::do_block()
                     case DP_MDEC_out:
                         src_word = 0;
                         break;
-                case DP_SPU:
+                    case DP_SPU:
                         src_word = bus->spu.DMA_read();
                         break;
                     default:
@@ -344,6 +347,9 @@ void DMA::write(u32 addr, u32 sz, u32 val)
 void DMA::update_IRQs() {
     u32 old = irq.level;
     irq.level = irq.master_enable && (irq.IF & irq.IE);
-    if (old != irq.level) bus->set_irq(IRQ_DMA, irq.level);
+    if (old != irq.level) {
+        bus->set_irq(IRQ_DMA, irq.level);
+    }
 }
+
 }

@@ -24,6 +24,8 @@
 #include "cdrom/ps1_cdrom.h"
 
 namespace PS1 {
+
+static constexpr char IRQnames[11][50] = { "VBlank", "GPU", "CDROM", "DMA", "TMR0", "TMR1", "TMR2", "SIO0", "SIO1", "SPU", "LightPen" };
 enum IRQ {
     IRQ_VBlank = 0,
     IRQ_GPU = 1,

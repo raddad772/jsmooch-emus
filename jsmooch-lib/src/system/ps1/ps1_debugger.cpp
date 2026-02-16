@@ -37,6 +37,8 @@ static void setup_dbglog(debugger_interface *dbgr, core *th)
     th->cpu.dbg.dv_id = PS1D_R3000_INSTRUCTION;
     th->cpu.trace.rfe_id = PS1D_R3000_RFE;
     th->cpu.trace.exception_id = PS1D_R3000_EXCEPTION;
+    th->cpu.trace.I_MASK_write =
+    th->cpu.trace.I_STAT_write = PS1D_BUS_IRQ_ACK;;
     //r3000.add_node(dv, "IRQs", "IRQ", PS1D_R3000_IRQ, 0xFFFFFF);
     r3000.add_node(dv, "RFEs", "RFE", PS1D_R3000_RFE, 0xFFFFFF);
     r3000.add_node(dv, "Exceptions", "Except", PS1D_R3000_EXCEPTION, 0xFFFFFF);
@@ -73,7 +75,8 @@ static void setup_dbglog(debugger_interface *dbgr, core *th)
 
     dbglog_category_node &bus = root.add_node(dv, "General", nullptr, 0, 0);
     bus.children.reserve(10);
-    bus.add_node(dv, "IRQs", "IRQ", PS1D_BUS_IRQs, 0xFF2020);
+    bus.add_node(dv, "IRQs", "IRQ", PS1D_BUS_IRQS, 0xFF2020);
+    bus.add_node(dv, "IRQ ACKs", "IRQ ACK", PS1D_BUS_IRQ_ACK, 0xFF2020);
     bus.add_node(dv, "Console Logs", "Console", PS1D_BUS_CONSOLE, 0xFF2020);
 }
 

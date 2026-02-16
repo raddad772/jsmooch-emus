@@ -7,6 +7,7 @@
 #include <cstdio> // printf
 #include "helpers/debug.h"
 
+#include "r3000_debugger.h"
 #include "r3000_instructions.h"
 #include "r3000.h"
 #include "r3000_disassembler.h"
@@ -619,13 +620,13 @@ void core::write_reg(u32 addr, u8 sz, u32 val)
     switch(addr) {
         case 0x1F801070: // I_STAT write
             //printf("\nwrite I_STAT %04x current:%04llx", val, io.I_STAT->IF);
+            dbgloglog(trace.I_STAT_write, DBGLS_INFO, "IRQs acked: %04x", val);
             io.I_STAT->mask(val);
             update_I_STAT();
-            //printf("\nnew I_STAT: %04llx", io.I_STAT->IF);
             return;
         case 0x1F801074: // I_MASK write
+            //dbgloglog(trace.I_MASK_write, DBGLS_INFO, "I_MASK: %04x", val);
             io.I_MASK = val & 0xFFFF07FF;
-            //printf("\nwrite I_MASK %04x", val);
             update_I_STAT();
             return;
     }
