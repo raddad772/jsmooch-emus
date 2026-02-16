@@ -78,6 +78,7 @@ static void setup_dbglog(debugger_interface *dbgr, core *th)
     bus.add_node(dv, "IRQs", "IRQ", PS1D_BUS_IRQS, 0xFF2020);
     bus.add_node(dv, "IRQ ACKs", "IRQ ACK", PS1D_BUS_IRQ_ACK, 0xFF2020);
     bus.add_node(dv, "Console Logs", "Console", PS1D_BUS_CONSOLE, 0xFF2020);
+    th->cpu.trace.console_log_id = PS1D_BUS_CONSOLE;
 }
 
 static void setup_waveforms(core& th, debugger_interface *dbgr) {

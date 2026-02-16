@@ -114,6 +114,7 @@ struct core {
         u32 exception_id{};
         u32 I_STAT_write{};
         u32 I_MASK_write{};
+        u32 console_log_id{};
     } trace{};
 
     struct {

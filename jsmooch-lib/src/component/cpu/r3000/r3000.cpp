@@ -375,6 +375,7 @@ void core::add_to_console(u32 ch)
     }*/
     if (ch == '\n' || (console.cur - console.ptr) >= (console.allocated_len-1)) {
         printf("\n(CONSOLE) %s", console.ptr);
+        dbgloglog(trace.console_log_id, DBGLS_INFO, "%s", console.ptr);
         console.quickempty();
     } else
         console.sprintf("%c", ch);
