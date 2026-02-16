@@ -441,8 +441,14 @@ static void render_node(dbglog_view &view, dbglog_category_node &node, u32 *id_p
         ImGui::SameLine();
         ImGui::PushID(id+400);
         char foo[1024];
-        i64 d = static_cast<i64>(cur_time) - static_cast<i64>(view.id_to_last_fires[node.category_id]);
-        snprintf(foo, sizeof(foo), "(break) (last:%lld)", d);
+        i64 r = static_cast<i64>(view.id_to_last_fires[node.category_id]);
+        if (r != 0) {
+            i64 d = static_cast<i64>(cur_time) - ;
+            snprintf(foo, sizeof(foo), "(break) (last:%lld)", d);
+        }
+        else {
+            snprintf(foo, sizeof(foo), "(break) (last:never)");
+        }
         ImGui::Checkbox(foo, &rn_checkboxes_break[id]);
         ImGui::PopID();
         node.enabled = rn_checkboxes[id];
