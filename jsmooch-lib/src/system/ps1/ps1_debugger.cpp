@@ -52,14 +52,24 @@ static void setup_dbglog(debugger_interface *dbgr, core *th)
     dma.add_node(dv, "DMA5 PIO", "DMA5", PS1D_DMA_CH5, dma_c);
     dma.add_node(dv, "DMA6 OTC", "DMA6", PS1D_DMA_CH6, dma_c);
 
-
+    // CDROM STAT IO, IF/IEs
+    // DMA IF/IE
+    // IF/IE
+    // SPUCNT/STAT
     dbglog_category_node &cdrom = root.add_node(dv, "CDROM Drive", nullptr, 0, 0);
-    cdrom.children.reserve(10);
-    dma.add_node(dv, "Command", "CMD", PS1D_CDROM_CMD, dma_c);
-    dma.add_node(dv, "Read", "Read", PS1D_CDROM_READ, dma_c);
-    dma.add_node(dv, "Play", "Play", PS1D_CDROM_PLAY, dma_c);
-    dma.add_node(dv, "Pause", "Pause", PS1D_CDROM_PAUSE, dma_c);
-    dma.add_node(dv, "SetLoc", "SetLoc", PS1D_CDROM_SETLOC, dma_c);
+    cdrom.children.reserve(30);
+    cdrom.add_node(dv, "Command", "CMD", PS1D_CDROM_CMD, dma_c);
+    cdrom.add_node(dv, "CMD Read", "Read", PS1D_CDROM_READ, dma_c);
+    cdrom.add_node(dv, "CMD Play", "Play", PS1D_CDROM_PLAY, dma_c);
+    cdrom.add_node(dv, "CMD Pause", "Pause", PS1D_CDROM_PAUSE, dma_c);
+    cdrom.add_node(dv, "CMD SetLoc", "SetLoc", PS1D_CDROM_SETLOC, dma_c);
+    cdrom.add_node(dv, "CMD Reset", "Reset", PS1D_CDROM_CMD_RESET, dma_c);
+    cdrom.add_node(dv, "Result", "Result", PS1D_CDROM_RESULT, dma_c);
+    cdrom.add_node(dv, "IRQ Queued", "IRQ_Q", PS1D_CDROM_IRQ_QUEUE, dma_c);
+    cdrom.add_node(dv, "IRQ Asserted", "IRQ_ASRT", PS1D_CDROM_IRQ_ASSERT, dma_c);
+    cdrom.add_node(dv, "Sector read", "R.Sector", PS1D_CDROM_SECTOR_READS, dma_c);
+    cdrom.add_node(dv, "RDDATA Start", "RDDATA_start", PS1D_CDROM_RDDATA_START, dma_c);
+    cdrom.add_node(dv, "RDDATA Finish", "RDDATA_finish", PS1D_CDROM_RDDATA_FINISH, dma_c);
 
     dbglog_category_node &bus = root.add_node(dv, "General", nullptr, 0, 0);
     bus.children.reserve(10);

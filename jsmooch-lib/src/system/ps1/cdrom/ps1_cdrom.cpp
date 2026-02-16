@@ -4,6 +4,9 @@
 
 #include "helpers/debug.h"
 #include "ps1_cdrom.h"
+#include "../ps1_debugger.h"
+#include "helpers/debugger/debugger.h"
+#include "../ps1_bus.h"
 
 namespace PS1 {
 
@@ -89,7 +92,7 @@ u32 CDROM::read_02(u8 sz, bool has_effect) {
             v |= io.RDDATA.read_byte() << 24;
         }
         if (io.RDDATA.pos >= io.RDDATA.len) {
-            //printf("\n\nFINISH RDDATA!");
+            dbgloglog_busn(PS1D_CDROM_RDDATA_FINISH, DBGLS_INFO, "RDDATA consumed");
             io.HSTS.DRQSTS = 0;
         }
         return v;
@@ -133,6 +136,7 @@ void CDROM::result_string(const char *s) {
 }
 
 void CDROM::result(u32 val) {
+    dbgloglog_bus(PS1D_CDROM_RESULT, DBGLS_INFO, "RES. %02x", val);
     io.RESULT.push(val);
 }
 
@@ -142,6 +146,7 @@ void CDROM::cmd_start(u64 key, u64 clock) {
     if ((cmd >= 0x20) && (cmd <= 0x4F)) cmd = 0;
     if (cmd >= 0x60) cmd = 0;
     printif(ps1.cdrom.cmd, "\n(CDROM) EXEC CMD %02x", io.CMD);
+    dbgloglog_bus(PS1D_CDROM_CMD, DBGLS_INFO, "Exec cmd %02x", io.CMD);
     switch(cmd) {
         case 0x00:
         case 0x17:
@@ -354,26 +359,36 @@ void CDROM::cmd_setloc() {
         seek.amm = decode_bcd(io.PARAMETER.pop());
         seek.ass = decode_bcd(io.PARAMETER.pop());
         seek.asect = decode_bcd(io.PARAMETER.pop());
+        dbgloglog_bus(PS1D_CDROM_SETLOC, DBGLS_INFO, "(Cmd) SetLoc %02d:%02d:%02d", seek.amm, seek.ass, seek.asect);
+    }
+    else {
+        dbgloglog_busn(PS1D_CDROM_SETLOC, DBGLS_INFO, "(Cmd) SetLoc ignore_bit set");
     }
     finish_CMD(false, 0);
 }
 
 void CDROM::cmd_play() {
+    dbgloglog_busn(PS1D_CDROM_PLAY, DBGLS_INFO, "(Cmd) Play");
     if (io.stat.seek || io.stat.read || !io.stat.motor_fullspeed) {
+        dbgloglog_bus(PS1D_CDROM_PLAY, DBGLS_INFO, "(Cmd) Play error can't. SEEK:%d READ:%d FULLSPEED:%d", io.stat.seek, io.stat.read, io.stat.motor_fullspeed);
         queue_interrupt(5);
         result(0x10);
         result(0x80);
         finish_CMD(false, 0);
     }
     if (io.MODE.report && head.mode == HM_AUDIO) {
+        dbgloglog_busn(PS1D_CDROM_PLAY, DBGLS_INFO, "(Cmd) Play req. with reports requested!");
         printf("\nWARN Play with report interrupts done!");
     }
     if (io.PARAMETER.len > 0) {
         u32 track = io.PARAMETER.pop();
         u32 LBA;
         if (track >= data.num_tracks + 1) {
+            dbgloglog_busn(PS1D_CDROM_PLAY, DBGLS_INFO, "(Cmd) Play restart current track");
+
             // Restart current track
             LBA = seek.asect + (seek.ass * 75) + (seek.amm * (75 * 60));
+
             // Find current track...
             i32 cur_track = 0;
             for (u32 i = 1; i < (data.num_tracks + 1); i++) {
@@ -391,6 +406,7 @@ void CDROM::cmd_play() {
         }
         // Seek to track
         if (track > 0) {
+            dbgloglog_bus(PS1D_CDROM_PLAY, DBGLS_INFO, "(Cmd) Play seek track start %d", track);
             LBA = data.tracks[track-1].data_lba;
             seek.asect = LBA % 75;
             seek.ass = (LBA / 75) % 60;
@@ -417,12 +433,15 @@ void CDROM::cmd_reads(u64 clock) {
 }
 
 void CDROM::do_cmd_read(u64 clock) {
+    dbgloglog_busn(PS1D_CDROM_READ, DBGLS_INFO, "(Cmd) ReadN/S");
     if (read.still_sched) {
         printf("\nABORT read req. processing for already going!");
+    dbgloglog_busn(PS1D_CDROM_READ, DBGLS_INFO, "(Cmd) ReadN/S ABORT for already going!");
         stat_irq();
         return;
     }
     stat_irq();
+    io.stat.play = 0;
     io.stat.seek = 0;
     io.stat.read = 1;
     schedule_finish(clock + ONEFRAME);
@@ -502,6 +521,7 @@ void CDROM::cmd_motor_on(u64 clock) {
 
 void CDROM::read_sector() {
     //printf("\n(CDROM) Read sector %02d:%02d:%02d", seek.amm, seek.ass, seek.asect);
+    dbgloglog_bus(PS1D_CDROM_SECTOR_READS, DBGLS_INFO, "Read sector %02d:%02d:%20d into queue size %d", seek.amm, seek.ass, seek.asect, sector_buf.len);
     u8 *ptr = data.ptr_to_data(seek.amm, seek.ass, seek.asect);
     memcpy(sector_buf.bufs[sector_buf.tail], ptr, 0x930);
     sector_buf.tail = (sector_buf.tail + 1) & 7;
@@ -565,6 +585,7 @@ void CDROM::cmd_stop(u64 clock) {
 
 void CDROM::cmd_pause(u64 clock) {
     //printf("\n(CDROM) CMD Pause");
+    dbgloglog_busn(PS1D_CDROM_PAUSE, DBGLS_INFO, "(Cmd) Pause");
     stat_irq();
     if (read.still_sched) scheduler->delete_if_exist(read.sched_id);
     io.stat.read = 0;
@@ -748,9 +769,11 @@ void CDROM::queue_interrupt(u32 level) {
     //printf("\n(CDROM) QUEUE INT %d", level);
     if (io.HINTSTS.INTSTS == 0) {
         io.HINTSTS.INTSTS = level;
+        dbgloglog_bus(PS1D_CDROM_IRQ_ASSERT, DBGLS_INFO, "IRQ assert: %d", level);
         update_IRQs();
     }
     else {
+        dbgloglog_bus(PS1D_CDROM_IRQ_QUEUE, DBGLS_INFO, "IRQ queued %d num_waiting_before:%d", level, io.interrupts.len);
         io.interrupts.push(level);
     }
 }
@@ -768,6 +791,7 @@ void CDROM::finish_CMD(bool do_stat_irq, u32 irq_num) {
         result(io.stat.u);
     }
     io.PARAMETER.reset();
+    dbgloglog_busn(PS1D_CDROM_FINISH_CMD, DBGLS_INFO, "(Cmd) finish");
 }
 
 void CDROM::cancel_CMD() {
@@ -846,6 +870,7 @@ void CDROM::write_02(u32 val, u8 sz) {
 }
 void CDROM::queue_sector_RDDATA() {
     if (sector_buf.len == 0) {
+        dbgloglog_busn(PS1D_CDROM_RDDATA_START, DBGLS_WARN, "WARN: RDDATA requested with no buffers.");
         printf("\nNO BUFS TO RDDATA!?");
         return;
     }
@@ -861,6 +886,7 @@ void CDROM::queue_sector_RDDATA() {
     }
     sector_buf.head = (sector_buf.head + 1) & 7;
     sector_buf.len--;
+    dbgloglog_bus(PS1D_CDROM_RDDATA_START, DBGLS_INFO, "RDDATA request sz:%03x  sectors left in buffer:%d", io.RDDATA.len, sector_buf.len);
 }
 
 void CDROM::write_03(u32 val, u8 sz) {
@@ -889,6 +915,7 @@ void CDROM::write_03(u32 val, u8 sz) {
             if (io.HINTSTS.INTSTS == 0 && io.interrupts.len > 0) {
                 //printf("\n(CDROM) Queue next IRQ!");
                 io.HINTSTS.INTSTS = io.interrupts.pop();
+                dbgloglog_bus(PS1D_CDROM_IRQ_ASSERT, DBGLS_INFO, "IRQ assert: %d num_left:%d", io.HINTSTS.INTSTS, io.interrupts.len);
               }
             if (old != io.HINTSTS.u) update_IRQs();
             //printf("\n(CDROM) HCLRCTL write %02x. new HINTSTS %02x", val, io.HINTSTS.u);

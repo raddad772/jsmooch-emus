@@ -137,8 +137,11 @@ struct SECTOR_BUFFER {
     u8 bufs[8][0x930];
 };
 
-struct CDROM {
+struct core;
 
+struct CDROM {
+    explicit CDROM(core *parent) : bus(parent) {}
+    core *bus;
     void get_CD_audio(i16 &left, i16 &right);
     explicit CDROM(scheduler_t *scheduler_in) : scheduler(scheduler_in) {}
     scheduler_t *scheduler;
