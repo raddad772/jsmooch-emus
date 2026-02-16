@@ -89,11 +89,13 @@ void core::cmd02_quick_rect()
     u32 BGR = BGR24to15(CMD[0] & 0xFFFFFF);
     u32 start_y = (CMD[1] >> 16) & 0xFFFF;
     u32 start_x = (CMD[1]) & 0xFFFF;
+    //printf("\nX:%d  Y:%d  XS:%d  YS:%d", start_x, start_y, xsize, ysize);
+
     //if (LOG_DRAW_QUADS) console.log('QUICKRECT! COLOR', hex4(BGR), 'X Y', start_x, start_y, 'SZ X SZ Y', xsize, ysize);
     for (u32 y = start_y; y < (start_y+ysize); y++) {
         for (u32 x = start_x; x < (start_x + xsize); x++) {
             u32 addr = (2048*y)+(x*2);
-            cW[2](VRAM, addr, BGR);
+            cW16(VRAM, addr & 0xFFFFF, BGR);
         }
     }
 
@@ -133,7 +135,7 @@ static u16 sample_tex_4bit(TEXTURE_SAMPLER *ts, i32 u, i32 v)
     else d = (d & 0xF0) >> 4;
     addr = (ts->clut_addr + (d*2)) & 0xFFFFF;
     //cW16(ts->VRAM, addr, 0xFFF0);
-    u16 r = cR16(ts->VRAM, addr);
+    u16 r = cR16(ts->VRAM, addr & 0xFFFFF);
     return r;
 }
 
@@ -305,6 +307,7 @@ void core::cmd2a_quad_flat_semi_transparent()
     V2.xy_from_cmd(CMD[3]);
     V3.xy_from_cmd(CMD[4]);
     V0.color24_from_cmd(CMD[0]);
+    //printf("\nQUAD(2A) x/y0:%d,%d x/y1:%d,%d x/y2:%d,%d x/y3:%d,%d", V0.x, V0.y, V1.x, V1.y, V2.x, V2.y, V3.x, V3.y);
 
 #ifdef LOG_GP0
     printf("\ncmd2a quad flat semi v0:%d,%d v1:%d,%d v2:%d,%d v3:%d,%d color:%04x", v0.x, v0.y, v1.x, v1.y, v2.x, v2.y, v3.x, v3.y, color);
@@ -571,7 +574,7 @@ void core::cmd38_quad_shaded_opaque()
     draw_vd(&T3);
     draw_vd(&T4);
 #endif
-    
+
     RT_draw_shaded_triangle(&T1, &T2, &T3);
     RT_draw_shaded_triangle(&T2, &T3, &T4);
 }
@@ -1019,7 +1022,7 @@ void core::cmd80_vram_copy()
             u32 get_addr = ((ix+x1) & 1023) * 2;
             get_addr += ((iy+y1) & 511) * 2048; // 2048 bytes per 1024-pixel row
             if (preserve_masked_pixels) {
-                u16 t = cR16(VRAM, (((iy + y2) & 511) * 2048) + (((ix + x2) & 1023) * 2));
+                u16 t = cR16(VRAM, ((((iy + y2) & 511) * 2048) + (((ix + x2) & 1023) * 2))  & 0xFFFFF);
                 if (t & 0x8000) continue;
             }
 
@@ -1279,7 +1282,7 @@ void core::gp0_image_save_continue() {
         u32 y = load_buffer.y+load_buffer.img_y;
         u32 x = load_buffer.x+load_buffer.img_x;
         u32 addr = (2048*y)+(x*2) & 0xFFFFF;
-        u16 v = cR16(VRAM, addr);
+        u16 v = cR16(VRAM, addr & 0xFFFFF);
         px |= (static_cast<u32>(v) << 16);
         load_buffer.img_x++;
         if ((x+1) >= (load_buffer.width+load_buffer.x)) {
@@ -1315,12 +1318,12 @@ void core::gp0_image_load_continue(u32 cmd)
         u32 addr = (2048*y)+(x*2) & 0xFFFFF;
         u32 draw_it = 1;
         if (preserve_masked_pixels) {
-            u16 v = cR16(VRAM, addr);
+            u16 v = cR16(VRAM, addr & 0xFFFFF);
             if (v & 0x8000) draw_it = 0;
         }
         //if (!((px & 0x8000) || ((px & 0x7FFF) != 0))) draw_it = 0;
         if (draw_it) {
-            cW16(VRAM, addr, px);
+            cW16(VRAM, addr & 0xFFFFF, px);
         }
 
         load_buffer.img_x++;
@@ -1666,7 +1669,7 @@ void core::gp0_cmd(u32 cmd) {
                 break;
             case 0xE1: // GP0 Draw Mode
 #ifdef DBG_GP0
-                printf("GP0 E1 set draw mode");
+                printf("\nGP0 E1 set draw mode");
 #endif
                 //printf("\nSET DRAW MODE %08x", cmd);
                 page_base_x = cmd & 15;
@@ -1806,15 +1809,19 @@ void core::write_gp1(u32 cmd)
         case 0x04: // DMA direction
             switch(cmd & 3) {
                 case 0:
+                    //printf("\nSET DMA DIR OFF");
                     dma_direction = e_dma_off;
                     break;
                 case 1:
+                    //printf("\nSET DMA DIR FIFO");
                     dma_direction = e_dma_fifo;
                     break;
                 case 2:
+                    //printf("\nSET DMA DIR CPU-TO-GP0");
                     dma_direction = e_dma_cpu_to_gp0;
                     break;
                 case 3:
+                    //printf("\nSET DMA DIR GP0-TO-CPU");
                     dma_direction = e_dma_vram_to_cpu;
                     break;
             }

@@ -521,7 +521,7 @@ void CDROM::cmd_motor_on(u64 clock) {
 
 void CDROM::read_sector() {
     //printf("\n(CDROM) Read sector %02d:%02d:%02d", seek.amm, seek.ass, seek.asect);
-    dbgloglog_bus(PS1D_CDROM_SECTOR_READS, DBGLS_INFO, "Read sector %02d:%02d:%20d into queue size %d", seek.amm, seek.ass, seek.asect, sector_buf.len);
+    dbgloglog_bus(PS1D_CDROM_SECTOR_READS, DBGLS_INFO, "Read sector %02d:%02d:%02d into queue size %d", seek.amm, seek.ass, seek.asect, sector_buf.len);
     u8 *ptr = data.ptr_to_data(seek.amm, seek.ass, seek.asect);
     memcpy(sector_buf.bufs[sector_buf.tail], ptr, 0x930);
     sector_buf.tail = (sector_buf.tail + 1) & 7;
@@ -587,7 +587,7 @@ void CDROM::cmd_pause(u64 clock) {
     //printf("\n(CDROM) CMD Pause");
     dbgloglog_busn(PS1D_CDROM_PAUSE, DBGLS_INFO, "(Cmd) Pause");
     stat_irq();
-    if (read.still_sched) scheduler->delete_if_exist(read.sched_id);
+    if (read.still_sched) bus->scheduler.delete_if_exist(read.sched_id);
     io.stat.read = 0;
     schedule_finish(clock + ONEFRAME);
 }
@@ -731,25 +731,25 @@ static void scheduled_cmd_step3(void *ptr, u64 key, u64 timecode, u32 jitter) {
 void CDROM::schedule_read(u64 clock) {
     u64 div = io.MODE.speed ? 150 : 75;
     u64 tm = clock + ((ONEFRAME * 60) / div);
-    read.sched_id = scheduler->only_add_abs(tm, 0, this, &scheduled_read, &read.still_sched);
+    read.sched_id = bus->scheduler.only_add_abs(tm, 0, this, &scheduled_read, &read.still_sched);
 }
 
 void CDROM::schedule_finish(u64 clock) {
-    CMD.sched_id = scheduler->only_add_abs(clock, 0, this, &scheduled_cmd_end, &CMD.still_sched);
+    CMD.sched_id = bus->scheduler.only_add_abs(clock, 0, this, &scheduled_cmd_end, &CMD.still_sched);
 }
 
 void CDROM::schedule_step_3(u64 clock) {
-    CMD.sched_id = scheduler->only_add_abs(clock, 0, this, &scheduled_cmd_step3, &CMD.still_sched);
+    CMD.sched_id = bus->scheduler.only_add_abs(clock, 0, this, &scheduled_cmd_step3, &CMD.still_sched);
 }
 
 
 void CDROM::schedule_seek_finish(u64 clock) {
-    CMD.sched_id = scheduler->only_add_abs(clock + ONEFRAME, 0, this, &scheduled_cmd_end, &CMD.still_sched);
+    CMD.sched_id = bus->scheduler.only_add_abs(clock + ONEFRAME, 0, this, &scheduled_cmd_end, &CMD.still_sched);
 }
 
 void CDROM::schedule_CMD() {
 
-#define SC(y) CMD.sched_id = scheduler->only_add_abs(scheduler->current_time() + y, 0, this, &scheduled_cmd_start, &CMD.still_sched)
+#define SC(y) CMD.sched_id = bus->scheduler.only_add_abs(bus->scheduler.current_time() + y, 0, this, &scheduled_cmd_start, &CMD.still_sched)
     // TODO: this
     switch (io.CMD) {
         case 0x0A: // Init
@@ -796,7 +796,7 @@ void CDROM::finish_CMD(bool do_stat_irq, u32 irq_num) {
 
 void CDROM::cancel_CMD() {
     if (CMD.still_sched) {
-        scheduler->delete_if_exist(CMD.sched_id);
+        bus->scheduler.delete_if_exist(CMD.sched_id);
     }
 }
 

@@ -68,7 +68,7 @@ core::core() :
     scheduler(&clock.master_cycle_count),
     cpu(&clock.master_cycle_count, &clock.waitstates, &scheduler, &IRQ_multiplexer),
     sio0(this),
-    cdrom(&this->scheduler),
+    cdrom(this),
     gpu(this),
     spu(this),
     dma(this),

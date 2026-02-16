@@ -621,7 +621,7 @@ void core::write_reg(u32 addr, u8 sz, u32 val)
     switch(addr) {
         case 0x1F801070: // I_STAT write
             //printf("\nwrite I_STAT %04x current:%04llx", val, io.I_STAT->IF);
-            dbgloglog(trace.I_STAT_write, DBGLS_INFO, "IRQs acked: %04x", val);
+            dbgloglog(trace.I_STAT_write, DBGLS_INFO, "IRQs acked: %04x", val & io.I_STAT->IF);
             io.I_STAT->mask(val);
             update_I_STAT();
             return;

@@ -9,7 +9,7 @@ namespace PS1::GPU {
     // All coordinates to PS1 are drawn with integer values
 
 struct RT_POINT2D {
-    void xy_from_cmd(u32 cmd) { x = static_cast<i32>(cmd & 0xFFFF); y = static_cast<i32>(cmd >> 16); }
+    void xy_from_cmd(u32 cmd) { x = static_cast<i16>(cmd & 0xFFFF); y = static_cast<i16>(cmd >> 16); }
     void color24_from_cmd(u32 cmd) { r = cmd & 0xFF; g = (cmd >> 8) & 0xFF; b = (cmd >> 16) & 0xFF; }
     void uv_from_cmd(u32 cmd) { u = cmd & 0xFF; v = (cmd >> 8) & 0xFF; }
     i32 x{}, y{};

@@ -440,7 +440,6 @@ static bool render_node(dbglog_view &view, dbglog_category_node &node, u32 *id_p
         rn_checkboxes_break[id] = node.break_on_fire;
         ImGui::Checkbox(node.name, &rn_checkboxes[id]);
         ImGui::SameLine();
-        ImGui::PushID(id+400);
         char foo[1024];
         i64 r = static_cast<i64>(view.id_to_last_fires[node.category_id]);
         if (r != 0) {
@@ -450,6 +449,7 @@ static bool render_node(dbglog_view &view, dbglog_category_node &node, u32 *id_p
         else {
             snprintf(foo, sizeof(foo), "(break) (last:never)");
         }
+        ImGui::PushID(id+400);
         ImGui::Checkbox(foo, &rn_checkboxes_break[id]);
         ImGui::PopID();
         node.enabled = rn_checkboxes[id];
@@ -460,26 +460,26 @@ static bool render_node(dbglog_view &view, dbglog_category_node &node, u32 *id_p
         view.id_break[node.category_id] = rn_checkboxes_break[id];
     } else {
         // We are a further branch
-        ImGui::SetNextItemOpen(true);
+        //ImGui::SetNextItemOpen(true);
         ImGui::PushID(id);
-        any_checked = false;
+        bool my_checked = false;
         if (ImGui::TreeNodeEx(node.name)) {
             for (auto &e : node.children) {
-                any_checked |= render_node(view, e, id_ptr, cur_time);
+                my_checked |= render_node(view, e, id_ptr, cur_time);
             }
+            ImGui::PushID(id + 1200);
+            bool old_cbox = my_checked;
+            ImGui::Checkbox("((multiselect))", &my_checked);
+            ImGui::PopID();
             ImGui::TreePop();
-        }
-        ImGui::PopID();
-        ImGui::SameLine();
-        ImGui::PushID(id + 1200);
-        bool old_cbox = any_checked;
-        ImGui::Checkbox("selected", &any_checked);
-        ImGui::PopID();
-        if (old_cbox != any_checked) {
-            for (auto &e: node.children) {
-                e.enabled = any_checked;
+            if (old_cbox != my_checked) {
+                for (auto &e: node.children) {
+                    e.enabled = my_checked;
+                }
             }
+            any_checked |= my_checked;
         }
+        ImGui::PopID();
     }
     return any_checked;
 }
@@ -501,8 +501,19 @@ void imgui_jsmooch_app::render_dbglog_view(DLVIEW &dview, bool update_dasm_scrol
         // Now do a tree of checkboxes!!!
         u32 bid = 0;
         dbglog_category_node &root = dlv.get_category_root();
+        bool any_checked = false;
         for (auto &c : root.children) {
-            render_node(dlv, c, &bid, cur_time);
+            any_checked |= render_node(dlv, c, &bid, cur_time);
+            /*ImGui::SameLine();
+            ImGui::PushID(bid + 20000);
+            bool old_cbox = any_checked;
+            ImGui::Checkbox("selected", &any_checked);
+            ImGui::PopID();
+            if (old_cbox != any_checked) {
+                for (auto &e: c.children) {
+                    c.enabled = any_checked;
+                }
+            }*/
         }
     }
     ImGui::End();

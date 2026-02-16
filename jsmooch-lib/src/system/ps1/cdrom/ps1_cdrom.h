@@ -143,8 +143,6 @@ struct CDROM {
     explicit CDROM(core *parent) : bus(parent) {}
     core *bus;
     void get_CD_audio(i16 &left, i16 &right);
-    explicit CDROM(scheduler_t *scheduler_in) : scheduler(scheduler_in) {}
-    scheduler_t *scheduler;
     void mainbus_write(u32 addr, u32 val, u8 sz);
     u32 mainbus_read(u32 addr, u8 sz, bool has_effect);
     void update_IRQs();

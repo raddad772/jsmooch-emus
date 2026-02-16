@@ -43,6 +43,7 @@ void DMA_channel::do_linked_list()
         addr = header & 0x1FFFFC;
         if (lnum == 1) printf("\n(DMA) warning: infinite linked list terminating");
     }
+    if (num == 3) printf("\nDMA Finish transfer of %d", 65536 - lnum);
     bus->dma.complete_transfer(num);
 }
 
@@ -301,7 +302,9 @@ void DMA::write(u32 addr, u32 sz, u32 val)
             switch(reg) {
                 case 0:
                     //printf("\nBASE ADDRESS WRITE CH:%d VAL:%08x", ch_num, val);
+                    //fflush(stdout);
                     ch->base_addr = val & 0xFFFFFF;
+                    //if (ch->base_addr == 0x58124) dbg_break("BAD DMA BASE ADDR", 0);
                     break;
                 case 4:
                     ch->block_size = val & 0xFFFF;
