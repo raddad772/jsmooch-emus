@@ -44,18 +44,18 @@ struct imgui_jsmooch_app {
     int do_setup_before_mainloop();
     void mainloop(ImGuiIO& io);
     void at_end();
-    void render_debug_views(ImGuiIO& io, bool update_dasm_scroll);
+    void render_debug_views(ImGuiIO& io, bool update_dasm_scroll, u64 cur_time);
     void render_memory_view();
     void render_event_view();
     void render_image_views();
-    void render_dbglog_views(bool update_dasm_scroll);
+    void render_dbglog_views(bool update_dasm_scroll, u64 cur_time);
     void render_trace_view(bool update_dasm_scroll);
     void render_console_view(bool update_dasm_scroll);
 
     void render_waveform_view(struct WVIEW &wview, u32 num);
     void render_disassembly_views(bool update_dasm_scroll);
     void render_disassembly_view(struct DVIEW &dview, bool update_dasm_scroll, u32 num);
-    void render_dbglog_view(struct DLVIEW &dview, bool update_dasm_scoll);
+    void render_dbglog_view(struct DLVIEW &dview, bool update_dasm_scoll, u64 cur_time);
     void render_window_manager();
 
 #ifdef JSM_SDLGPU

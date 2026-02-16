@@ -207,10 +207,10 @@ static void render_emu_window(full_system &fsys, ImGuiIO& io, u32 frame_multi)
 #define DISASM_VIEW_DEFAULT_ENABLE 0
 #define SOURCE_LIST_VIEW_DEFAULT_ENABLE 1
 #define IMAGE_VIEW_DEFAULT_ENABLE 0
-#define DBGLOG_VIEW_DEFAULT_ENABLE 0
+#define DBGLOG_VIEW_DEFAULT_ENABLE 1
 #define TRACE_VIEW_DEFAULT_ENABLE 0
 #define CONSOLE_VIEW_DEFAULT_ENABLE 0
-#define WAVEFORM_VIEW_DEFAULT_ENABLE 1
+#define WAVEFORM_VIEW_DEFAULT_ENABLE 0
 
 int hexfilter(ImGuiInputTextCallbackData *data)
 {
@@ -430,7 +430,7 @@ void imgui_jsmooch_app::render_event_view()
 static bool rn_checkboxes[MAX_DBGLOG_IDS*4];
 static bool rn_checkboxes_break[MAX_DBGLOG_IDS*4];
 
-static void render_node(dbglog_view &view, dbglog_category_node &node, u32 *id_ptr) {
+static void render_node(dbglog_view &view, dbglog_category_node &node, u32 *id_ptr, u64 cur_time) {
     // If we're a leaf...
     u32 id = (*id_ptr)++;
     if (!node.children.empty() == 0) {
@@ -440,7 +440,10 @@ static void render_node(dbglog_view &view, dbglog_category_node &node, u32 *id_p
         ImGui::Checkbox(node.name, &rn_checkboxes[id]);
         ImGui::SameLine();
         ImGui::PushID(id+400);
-        ImGui::Checkbox("(break)", &rn_checkboxes_break[id]);
+        char foo[1024];
+        i64 d = static_cast<i64>(cur_time) - static_cast<i64>(view.id_to_last_fires[node.category_id]);
+        snprintf(foo, sizeof(foo), "(break) (last:%lld)", d);
+        ImGui::Checkbox(foo, &rn_checkboxes_break[id]);
         ImGui::PopID();
         node.enabled = rn_checkboxes[id];
         node.break_on_fire = rn_checkboxes_break[id];
@@ -453,7 +456,7 @@ static void render_node(dbglog_view &view, dbglog_category_node &node, u32 *id_p
         ImGui::PushID(id);
         if (ImGui::TreeNodeEx(node.name)) {
             for (auto &e : node.children) {
-                render_node(view, e, id_ptr);
+                render_node(view, e, id_ptr, cur_time);
             }
             ImGui::TreePop();
         }
@@ -469,7 +472,7 @@ static ImVec4 get_iv4(u32 color)
                   1.0f};
 }
 
-void imgui_jsmooch_app::render_dbglog_view(DLVIEW &dview, bool update_dasm_scroll) {
+void imgui_jsmooch_app::render_dbglog_view(DLVIEW &dview, bool update_dasm_scroll, u64 cur_time) {
     // 2 views
     char wname[100];
     dbglog_view &dlv = dview.view->dbglog;
@@ -479,7 +482,7 @@ void imgui_jsmooch_app::render_dbglog_view(DLVIEW &dview, bool update_dasm_scrol
         u32 bid = 0;
         dbglog_category_node &root = dlv.get_category_root();
         for (auto &c : root.children) {
-            render_node(dlv, c, &bid);
+            render_node(dlv, c, &bid, cur_time);
         }
     }
     ImGui::End();
@@ -1030,13 +1033,13 @@ void imgui_jsmooch_app::render_trace_view(bool update_dasm_scroll)
     }
 }
 
-void imgui_jsmooch_app::render_dbglog_views(bool update_dasm_scroll)
+void imgui_jsmooch_app::render_dbglog_views(bool update_dasm_scroll, u64 cur_time)
 {
     u32 i = 0;
     for (auto &myv : fsys.dlviews) {
         managed_window *mw = register_managed_window(0x2500 + (i++), mwk_debug_dbglog, myv.view->dbglog.name, DBGLOG_VIEW_DEFAULT_ENABLE);
         if (mw->enabled) {
-            render_dbglog_view(myv, update_dasm_scroll);
+            render_dbglog_view(myv, update_dasm_scroll, cur_time);
         }
     }
 }
@@ -1076,12 +1079,12 @@ static void render_opt_view(full_system &fsys)
     }
 }
 
-void imgui_jsmooch_app::render_debug_views(ImGuiIO& io, bool update_dasm_scroll)
+void imgui_jsmooch_app::render_debug_views(ImGuiIO& io, bool update_dasm_scroll, u64 cur_time)
 {
     render_event_view();
     render_memory_view();
     render_disassembly_views(update_dasm_scroll);
-    render_dbglog_views(update_dasm_scroll);
+    render_dbglog_views(update_dasm_scroll, cur_time);
     render_image_views();
     render_trace_view(update_dasm_scroll);
     render_console_view(update_dasm_scroll);
@@ -1373,7 +1376,7 @@ void imgui_jsmooch_app::mainloop(ImGuiIO& io) {
 
     // disassembly+ view
     render_opt_view(fsys);
-    render_debug_views(io, update_dasm_scroll);
+    render_debug_views(io, update_dasm_scroll, end_fv.master_cycle);
 }
 
 void imgui_jsmooch_app::at_end()

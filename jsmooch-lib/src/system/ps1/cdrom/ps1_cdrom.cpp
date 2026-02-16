@@ -350,14 +350,53 @@ void CDROM::cmd_test() {
 void CDROM::cmd_setloc() {
     //printf("\n(CDROM) CMD SetLoc");
     stat_irq();
-    seek.amm = decode_bcd(io.PARAMETER.pop());
-    seek.ass = decode_bcd(io.PARAMETER.pop());
-    seek.asect = decode_bcd(io.PARAMETER.pop());
+    if (!io.MODE.ignore_bit) {
+        seek.amm = decode_bcd(io.PARAMETER.pop());
+        seek.ass = decode_bcd(io.PARAMETER.pop());
+        seek.asect = decode_bcd(io.PARAMETER.pop());
+    }
     finish_CMD(false, 0);
 }
 
 void CDROM::cmd_play() {
-    printf("\n(CDROM) CMD Play. NOT IMPL!");
+    if (io.stat.seek || io.stat.read || !io.stat.motor_fullspeed) {
+        
+    }
+    if (io.MODE.report && head.mode == HM_AUDIO) {
+        printf("\nWARN Play with report interrupts done!");
+    }
+    if (io.PARAMETER.len > 0) {
+        u32 track = io.PARAMETER.pop();
+        u32 LBA;
+        if (track >= data.num_tracks + 1) {
+            // Restart current track
+            LBA = seek.asect + (seek.ass * 75) + (seek.amm * (75 * 60));
+            // Find current track...
+            i32 cur_track = 0;
+            for (u32 i = 1; i < (data.num_tracks + 1); i++) {
+                auto &t = data.tracks[i-1];
+                if (LBA >= t.data_lba) {
+                    cur_track = i;
+                    break;
+                }
+            }
+            if (cur_track == 0) {
+                printf("\nWARNING COULDNT FIND TRACK");
+                cur_track = 1;
+            }
+            track = cur_track;
+        }
+        // Seek to track
+        if (track > 0) {
+            LBA = data.tracks[track-1].data_lba;
+            seek.asect = LBA % 75;
+            seek.ass = (LBA / 75) % 60;
+            seek.amm = (LBA / (75 * 60));
+        }
+    }
+    io.stat.play = 1;
+
+    finish_CMD(false, 0);
 }
 
 void CDROM::cmd_forward() {
@@ -437,6 +476,7 @@ void CDROM::cmd_seekp(u64 clock) {
     io.stat.read = 0;
     io.stat.play = 0;
     head.mode = HM_AUDIO;
+    printf("\nHEAD MODE AUDIO!!!");
     schedule_seek_finish(clock);
 }
 
@@ -445,6 +485,7 @@ void CDROM::cmd_seekl(u64 clock) {
     stat_irq();
     io.stat.seek = 1;
     io.stat.read = 0;
+    io.stat.play = 0;
     head.mode = HM_DATA;
     schedule_seek_finish(clock);
 }
@@ -484,6 +525,16 @@ void CDROM::sch_read(u64 key, u64 clock) {
         }
     }
     schedule_read(clock);
+}
+
+void CDROM::get_CD_audio(i16 &left, i16 &right) {
+    left = right = 0;
+    if (head.mode != HM_AUDIO) return;
+
+    if (head.muted) {
+        left = right = 0;
+        return;
+    }
 }
 
 void CDROM::cmd_motor_on_finish() {
@@ -550,7 +601,7 @@ void CDROM::cmd_gettd() {
 }
 
 void CDROM::cmd_demute() {
-    printf("\n(CDROM) CMD Demute. NOT IMPL!");
+    head.muted = false;
     finish_CMD(true, 3);
 
 }
@@ -713,6 +764,7 @@ void CDROM::finish_CMD(bool do_stat_irq, u32 irq_num) {
         queue_interrupt(irq_num);
         result(io.stat.u);
     }
+    io.PARAMETER.reset();
 }
 
 void CDROM::cancel_CMD() {

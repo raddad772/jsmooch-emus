@@ -60,7 +60,7 @@ struct CDROM_IO {
             u8 shell_open : 1; // is/was open
             u8 read : 1; // reading data sectors
             u8 seek : 1;
-            u8 play : 1;
+            u8 play : 1; // palying
         };
         u8 u;
     } stat;
@@ -139,7 +139,7 @@ struct SECTOR_BUFFER {
 
 struct CDROM {
 
-    i16 get_CD_sample() {return 0; }
+    void get_CD_audio(i16 &left, i16 &right);
     explicit CDROM(scheduler_t *scheduler_in) : scheduler(scheduler_in) {}
     scheduler_t *scheduler;
     void mainbus_write(u32 addr, u32 val, u8 sz);
@@ -202,6 +202,8 @@ struct CDROM {
         // can be data or audio mode
 
         u32 sector{}, session{};
+        u32 sample_index{}; // 0/2352
+        bool muted{false};
     } head{};
 
     SECTOR_BUFFER sector_buf{};

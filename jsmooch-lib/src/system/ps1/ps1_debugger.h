@@ -5,10 +5,26 @@
 #pragma once
 
 enum PS1_DBLOG_CATEGORIES {
-    PS1_CAT_UNKNOWN = 0,
-    PS1_CAT_R3000_INSTRUCTION = 1,
-    PS1_CAT_R3000_RFE = 2,
-    PS1_CAT_R3000_EXCEPTION = 3
+    PS1D_UNKNOWN = 0,
+    PS1D_R3000_INSTRUCTION = 1,
+    PS1D_R3000_RFE = 2,
+    PS1D_R3000_EXCEPTION = 3,
+
+    PS1D_DMA_CH0=4,
+    PS1D_DMA_CH1=PS1D_DMA_CH0+1,
+    PS1D_DMA_CH2=PS1D_DMA_CH0+2,
+    PS1D_DMA_CH3=PS1D_DMA_CH0+3,
+    PS1D_DMA_CH4=PS1D_DMA_CH0+4,
+    PS1D_DMA_CH5=PS1D_DMA_CH0+5,
+    PS1D_DMA_CH6=PS1D_DMA_CH0+6,
+
+    PS1D_CDROM_CMD,
+    PS1D_CDROM_READ,
+    PS1D_CDROM_PLAY,
+    PS1D_CDROM_PAUSE,
+    PS1D_CDROM_SETLOC,
+
+    PS1_IRQs
 };
 
 #define dbgloglog(r_cat, r_severity, r_format, ...) if (dbg.dvptr->ids_enabled[r_cat]) dbg.dvptr->add_printf(r_cat, clock.master_cycle_count9+waitstates.current_transaction, r_severity, r_format, __VA_ARGS__);

@@ -624,8 +624,10 @@ u32 core::read_reverb_reg(u32 addr, u8 sz) {
 
 void core::do_capture() {
     u32 addr_add = io.SPUSTAT.capture_buffer_half ? 0x200 : 0;
-    write_RAM(addr_add + capture.index, bus->cdrom.get_CD_sample(), true);
-    write_RAM(0x400 + addr_add + capture.index, bus->cdrom.get_CD_sample(), true);
+    i16 l, r;
+    bus->cdrom.get_CD_audio(l, r);
+    write_RAM(addr_add + capture.index, l, true);
+    write_RAM(0x400 + addr_add + capture.index, r, true);
     write_RAM(0x800 + addr_add + capture.index, voices[1].sample, true);
     write_RAM(0xC00 + addr_add + capture.index, voices[3].sample, true);
     addr_add ^= 0x200;

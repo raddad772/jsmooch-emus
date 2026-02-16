@@ -32,14 +32,14 @@ static void setup_dbglog(debugger_interface *dbgr, core *th)
     root.children.reserve(10);
     dbglog_category_node &r3000 = root.add_node(dv, "R3000", nullptr, 0, 0);
     r3000.children.reserve(10);
-    r3000.add_node(dv, "Instructions", "R3000", PS1_CAT_R3000_INSTRUCTION, 0x80FF80);
+    r3000.add_node(dv, "Instructions", "R3000", PS1D_R3000_INSTRUCTION, 0x80FF80);
     th->cpu.dbg.dvptr = &dv;
-    th->cpu.dbg.dv_id = PS1_CAT_R3000_INSTRUCTION;
-    th->cpu.trace.rfe_id = PS1_CAT_R3000_RFE;
-    th->cpu.trace.exception_id = PS1_CAT_R3000_EXCEPTION;
-    //r3000.add_node(dv, "IRQs", "IRQ", PS1_CAT_R3000_IRQ, 0xFFFFFF);
-    r3000.add_node(dv, "RFEs", "RFE", PS1_CAT_R3000_RFE, 0xFFFFFF);
-    r3000.add_node(dv, "Exceptions", "Except", PS1_CAT_R3000_EXCEPTION, 0xFFFFFF);
+    th->cpu.dbg.dv_id = PS1D_R3000_INSTRUCTION;
+    th->cpu.trace.rfe_id = PS1D_R3000_RFE;
+    th->cpu.trace.exception_id = PS1D_R3000_EXCEPTION;
+    //r3000.add_node(dv, "IRQs", "IRQ", PS1D_R3000_IRQ, 0xFFFFFF);
+    r3000.add_node(dv, "RFEs", "RFE", PS1D_R3000_RFE, 0xFFFFFF);
+    r3000.add_node(dv, "Exceptions", "Except", PS1D_R3000_EXCEPTION, 0xFFFFFF);
 }
 
 static void setup_waveforms(core& th, debugger_interface *dbgr) {

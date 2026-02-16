@@ -69,6 +69,7 @@ void dbglog_view::add_printf(u32 id, u64 timecode, dbglog_severity severity, con
         // Move first entry forward
         items.first_entry = (items.first_entry + 1) % MAX_DBGLOG_LINES;
     }
+    id_to_last_fires[id] = timecode;
     dbglog_entry *e = &items.data[items.next_entry];
     last_added = e;
     e->category_id = id;
