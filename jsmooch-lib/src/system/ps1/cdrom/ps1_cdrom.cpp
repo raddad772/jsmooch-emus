@@ -360,7 +360,10 @@ void CDROM::cmd_setloc() {
 
 void CDROM::cmd_play() {
     if (io.stat.seek || io.stat.read || !io.stat.motor_fullspeed) {
-        
+        queue_interrupt(5);
+        result(0x10);
+        result(0x80);
+        finish_CMD(false, 0);
     }
     if (io.MODE.report && head.mode == HM_AUDIO) {
         printf("\nWARN Play with report interrupts done!");

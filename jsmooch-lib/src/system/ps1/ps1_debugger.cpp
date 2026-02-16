@@ -44,13 +44,13 @@ static void setup_dbglog(debugger_interface *dbgr, core *th)
     dbglog_category_node &dma = root.add_node(dv, "DMA", nullptr, 0, 0);
     dma.children.reserve(10);
     u32 dma_c = 0xFF2080;
-    dma.add_node(dv, "DMA0", "DMA0", PS1D_DMA_CH0, dma_c);
-    dma.add_node(dv, "DMA1", "DMA1", PS1D_DMA_CH1, dma_c);
-    dma.add_node(dv, "DMA2", "DMA2", PS1D_DMA_CH2, dma_c);
-    dma.add_node(dv, "DMA3", "DMA3", PS1D_DMA_CH3, dma_c);
-    dma.add_node(dv, "DMA4", "DMA4", PS1D_DMA_CH4, dma_c);
-    dma.add_node(dv, "DMA5", "DMA5", PS1D_DMA_CH5, dma_c);
-    dma.add_node(dv, "DMA6", "DMA6", PS1D_DMA_CH6, dma_c);
+    dma.add_node(dv, "DMA0 MDEC in", "DMA0", PS1D_DMA_CH0, dma_c);
+    dma.add_node(dv, "DMA1 MDEC out", "DMA1", PS1D_DMA_CH1, dma_c);
+    dma.add_node(dv, "DMA2 GPU", "DMA2", PS1D_DMA_CH2, dma_c);
+    dma.add_node(dv, "DMA3 CDROM", "DMA3", PS1D_DMA_CH3, dma_c);
+    dma.add_node(dv, "DMA4 SPU", "DMA4", PS1D_DMA_CH4, dma_c);
+    dma.add_node(dv, "DMA5 PIO", "DMA5", PS1D_DMA_CH5, dma_c);
+    dma.add_node(dv, "DMA6 OTC", "DMA6", PS1D_DMA_CH6, dma_c);
 
 
     dbglog_category_node &cdrom = root.add_node(dv, "CDROM Drive", nullptr, 0, 0);
@@ -63,7 +63,8 @@ static void setup_dbglog(debugger_interface *dbgr, core *th)
 
     dbglog_category_node &bus = root.add_node(dv, "General", nullptr, 0, 0);
     bus.children.reserve(10);
-    bus.add_node(dv, "IRQs", "R3000", PS1D_BUS_IRQs, 0xFF2020);
+    bus.add_node(dv, "IRQs", "IRQ", PS1D_BUS_IRQs, 0xFF2020);
+    bus.add_node(dv, "Console Logs", "Console", PS1D_BUS_CONSOLE, 0xFF2020);
 }
 
 static void setup_waveforms(core& th, debugger_interface *dbgr) {
