@@ -24,7 +24,7 @@ enum PS1_DBLOG_CATEGORIES {
     PS1D_CDROM_PAUSE,
     PS1D_CDROM_SETLOC,
 
-    PS1_IRQs
+    PS1D_BUS_IRQs
 };
 
 #define dbgloglog(r_cat, r_severity, r_format, ...) if (dbg.dvptr->ids_enabled[r_cat]) dbg.dvptr->add_printf(r_cat, clock.master_cycle_count9+waitstates.current_transaction, r_severity, r_format, __VA_ARGS__);

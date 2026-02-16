@@ -40,6 +40,30 @@ static void setup_dbglog(debugger_interface *dbgr, core *th)
     //r3000.add_node(dv, "IRQs", "IRQ", PS1D_R3000_IRQ, 0xFFFFFF);
     r3000.add_node(dv, "RFEs", "RFE", PS1D_R3000_RFE, 0xFFFFFF);
     r3000.add_node(dv, "Exceptions", "Except", PS1D_R3000_EXCEPTION, 0xFFFFFF);
+
+    dbglog_category_node &dma = root.add_node(dv, "DMA", nullptr, 0, 0);
+    dma.children.reserve(10);
+    u32 dma_c = 0xFF2080;
+    dma.add_node(dv, "DMA0", "DMA0", PS1D_DMA_CH0, dma_c);
+    dma.add_node(dv, "DMA1", "DMA1", PS1D_DMA_CH1, dma_c);
+    dma.add_node(dv, "DMA2", "DMA2", PS1D_DMA_CH2, dma_c);
+    dma.add_node(dv, "DMA3", "DMA3", PS1D_DMA_CH3, dma_c);
+    dma.add_node(dv, "DMA4", "DMA4", PS1D_DMA_CH4, dma_c);
+    dma.add_node(dv, "DMA5", "DMA5", PS1D_DMA_CH5, dma_c);
+    dma.add_node(dv, "DMA6", "DMA6", PS1D_DMA_CH6, dma_c);
+
+
+    dbglog_category_node &cdrom = root.add_node(dv, "CDROM Drive", nullptr, 0, 0);
+    cdrom.children.reserve(10);
+    dma.add_node(dv, "Command", "CMD", PS1D_CDROM_CMD, dma_c);
+    dma.add_node(dv, "Read", "Read", PS1D_CDROM_READ, dma_c);
+    dma.add_node(dv, "Play", "Play", PS1D_CDROM_PLAY, dma_c);
+    dma.add_node(dv, "Pause", "Pause", PS1D_CDROM_PAUSE, dma_c);
+    dma.add_node(dv, "SetLoc", "SetLoc", PS1D_CDROM_SETLOC, dma_c);
+
+    dbglog_category_node &bus = root.add_node(dv, "General", nullptr, 0, 0);
+    bus.children.reserve(10);
+    bus.add_node(dv, "IRQs", "R3000", PS1D_BUS_IRQs, 0xFF2020);
 }
 
 static void setup_waveforms(core& th, debugger_interface *dbgr) {
