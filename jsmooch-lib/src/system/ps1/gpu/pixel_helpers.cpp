@@ -7,15 +7,17 @@
 #include "helpers/multisize_memaccess.cpp"
 
 namespace PS1::GPU {
+#define DOY (y + draw_y_offset)
+#define DOX (x + draw_x_offset)
 
 void core::setpix(i32 y, i32 x, u32 color, u32 is_tex, u32 tex_mask)
 {
     // VRAM is 512 1024-wide 16-bit words. so 2048 bytes per line
-    i32 ry = (y + draw_y_offset) & 511;
-    i32 rx = (x + draw_x_offset) & 1023;
+    i32 ry = DOY;
+    i32 rx = DOX;
     if ((ry < draw_area_top) || (ry > draw_area_bottom)) return;
     if ((rx < draw_area_left) || (rx > draw_area_right)) return;
-    
+
     u32 addr = ((2048*ry)+(rx*2)) & 0xFFFFF;
 
     if (preserve_masked_pixels) {
@@ -33,8 +35,8 @@ void core::setpix(i32 y, i32 x, u32 color, u32 is_tex, u32 tex_mask)
 void core::setpix_split(i32 y, i32 x, u32 r, u32 g, u32 b, u32 is_tex, u32 tex_mask)
 {
     // VRAM is 512 1024-wide 16-bit words. so 2048 bytes per line
-    i32 ry = (y + draw_y_offset) & 511;
-    i32 rx = (x + draw_x_offset) & 1023;
+    i32 ry = DOY;
+    i32 rx = DOX;
     if ((ry < draw_area_top) || (ry > draw_area_bottom)) return;
     if ((rx < draw_area_left) || (rx > draw_area_right)) return;
     u32 addr = (2048*ry)+(rx*2);
@@ -162,8 +164,8 @@ static u32 blend_semi15_split(u32 mode, u32 b, u32 f_r, u32 f_g, u32 f_b)
 void core::semipix(i32 y, i32 x, u32 color, u32 is_tex, u32 tex_mask)
 {
     // VRAM is 512 1024-wide 16-bit words. so 2048 bytes per line
-    i32 ry = (y + draw_y_offset) & 511;
-    i32 rx = (x + draw_x_offset) & 1023;
+    i32 ry = DOY;
+    i32 rx = DOX;
     if ((ry < draw_area_top) || (ry > draw_area_bottom)) return;
     if ((rx < draw_area_left) || (rx > draw_area_right)) return;
     u32 addr = ((2048*ry)+(rx*2)) & 0xFFFFF;
@@ -192,8 +194,8 @@ void core::semipix(i32 y, i32 x, u32 color, u32 is_tex, u32 tex_mask)
 void core::semipixm(i32 y, i32 x, u32 color, u32 mode, u32 is_tex, u32 tex_mask)
 {
     // VRAM is 512 1024-wide 16-bit words. so 2048 bytes per line
-    i32 ry = (y + draw_y_offset) & 511;
-    i32 rx = (x + draw_x_offset) & 1023;
+    i32 ry = DOY;
+    i32 rx = DOX;
     if ((ry < draw_area_top) || (ry > draw_area_bottom)) return;
     if ((rx < draw_area_left) || (rx > draw_area_right)) return;
     u32 addr = ((2048*ry)+(rx*2)) & 0xFFFFF;
@@ -222,8 +224,8 @@ void core::semipixm(i32 y, i32 x, u32 color, u32 mode, u32 is_tex, u32 tex_mask)
 void core::semipix_split(i32 y, i32 x, u32 r, u32 g, u32 b, u32 is_tex, u32 tex_mask)
 {
     // VRAM is 512 1024-wide 16-bit words. so 2048 bytes per line
-    i32 ry = (y + draw_y_offset) & 511;
-    i32 rx = (x + draw_x_offset) & 1023;
+    i32 ry = DOY;
+    i32 rx = DOX;
     if ((ry < draw_area_top) || (ry > draw_area_bottom)) return;
     if ((rx < draw_area_left) || (rx > draw_area_right)) return;
     u32 addr = ((2048*ry)+(rx*2)) & 0xFFFFF;
