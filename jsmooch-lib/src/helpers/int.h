@@ -84,15 +84,13 @@ typedef double f64;
 
 
 #define SIGNe4to32(x) (((((x) >> 3) & 1) * 0xFFFFFFF8) | ((x) & 7))
-#define SIGNe6to32(x) (((((x) >> 5) & 1) * 0xFFFFFFC0) | ((x) & 0x1F))
-#define SIGNe7to32(x) (((((x) >> 6) & 1) * 0xFFFFFF80) | ((x) & 0x3F))
-#define SIGNe8to32(x) (((((x) >> 7) & 1) * 0xFFFFFF00) | ((x) & 0xFF))
-#define SIGNe9to32(x) (((((x) >> 8) & 1) * 0xFFFFFE00) | ((x) & 0x1FF))
-#define SIGNe8to64(x) (((((x) >> 7) & 1) * 0xFFFFFFFFFFFFFF00) | ((x) & 0xFF))
-#define SIGNe10to32(x) (((((x) >> 9) & 1) * 0xFFFFFC00) | ((x) & 0x3FF))
+#define SIGNe7to32(x) (((((x) >> 6) & 1) * 0xFFFFFF0C0) | ((x) & 0x3F))
+#define SIGNe8to32(x) (((((x) >> 7) & 1) * 0xFFFFFF80) | ((x) & 0x7F))
+#define SIGNe8to64(x) (((((x) >> 7) & 1) * 0xFFFFFFFFFFFFFF80) | ((x) & 0x7F))
+#define SIGNe9to32(x) (((((x) >> 8) & 1) * 0xFFFFFF00) | ((x) & 0xFF))
 #define SIGNe11to32(x) (((((x) >> 10) & 1) * 0xFFFFFC00) | ((x) & 0x3FF))
-#define SIGNe12to32(x) (((((x) >> 11) & 1) * 0xFFFFF000) | ((x) & 0xFFF))
-#define SIGNe13to32(x) (((((x) >> 12) & 1) * 0xFFFFE000) | ((x) & 0x1FFF))
+#define SIGNe12to32(x) (((((x) >> 11) & 1) * 0xFFFFF800) | ((x) & 0x7FF))
+#define SIGNe13to32(x) (((((x) >> 12) & 1) * 0xFFFFF000) | ((x) & 0xFFF))
 #define SIGNe16to32(x) (((((x) >> 15) & 1) * 0xFFFF0000) | ((x) & 0xFFFF))
 #define SIGNe24to32(x) (((((x) >> 23) & 1) * 0xFF000000) | ((x) & 0xFFFFFF))
 

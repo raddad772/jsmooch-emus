@@ -454,7 +454,6 @@ void core::cmd30_tri_shaded_opaque()
     V1.xy_from_cmd(CMD[1]);
     V2.xy_from_cmd(CMD[3]);
     V3.xy_from_cmd(CMD[5]);
-    printf("\nCMD %08x. V1:%d,%d  V2:%d,%d  V3:%d,%d", CMD[0], V1.x, V1.y, V2.x, V2.y, V3.x, V3.y);
     V1.color24_from_cmd(CMD[0]);
     V2.color24_from_cmd(CMD[2]);
     V3.color24_from_cmd(CMD[4]);
