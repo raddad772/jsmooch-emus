@@ -158,11 +158,11 @@ void core::get_texture_sampler_from_texpage_and_palette(u32 texpage, u32 palette
 
     u32 clut_addr = (cly * 2048) + (clx * 2);
 
-    u32 tx_x = texpage & 15;
-    u32 tx_y = (texpage >> 4) & 1;
+    u32 tx_x = texpage & 15; // bits 0-3
+    u32 tx_y = (texpage >> 4) & 1; // bit 4
     ts->mk_new(tx_x, tx_y, clut_addr, this);
-    ts->semi_mode = (texpage >> 5) & 3;
-    u32 tdepth = (texpage >> 7) & 3;
+    ts->semi_mode = (texpage >> 5) & 3; // bit 5-6
+    u32 tdepth = (texpage >> 7) & 3; // bit 7-8
     switch(tdepth) {
         case 0:
             ts->sample = &sample_tex_4bit;
@@ -203,6 +203,28 @@ void core::cmd22_tri_flat_semi_transparent()
     RT_draw_flat_triangle_semi(&V0, &V1, &V2, V0.r, V0.g, V0.b);
 }
 
+void core::update_global_texpage(u32 texpage_in) {
+    TEXPAGE = texpage_in;
+    page_base_x = (texpage_in & 15) << 3;
+    page_base_y = (texpage_in >> 4) & 1;
+    semi_transparency = (texpage_in >> 5) & 3;
+    switch ((texpage_in >> 7) & 3) {
+        case 0:
+            texture_depth = e_t4bit;
+            break;
+        case 1:
+            texture_depth = e_t8bit;
+            break;
+        case 2:
+            texture_depth = e_t15bit;
+            break;
+        case 3:
+            printf("\nUNHANDLED TEXTAR DEPTH 3!!!");
+            break;
+    }
+    GPUSTAT_update();
+}
+
 void core::cmd24_tri_raw_modulated()
 {
     /*
@@ -224,6 +246,7 @@ void core::cmd24_tri_raw_modulated()
     u32 color = CMD[0] & 0xFFFFFF;
     TEXTURE_SAMPLER ts{};
     get_texture_sampler_from_texpage_and_palette(texpage, palette, &ts);
+    update_global_texpage(texpage);
     RT_draw_flat_tex_triangle_modulated(&V0, &V1, &V2, color, &ts);
 }
 
@@ -248,6 +271,7 @@ void core::cmd25_tri_raw()
     u16 palette = CMD[2] >> 16;
     TEXTURE_SAMPLER ts;
     get_texture_sampler_from_texpage_and_palette(texpage, palette, &ts);
+    update_global_texpage(texpage);
     RT_draw_flat_tex_triangle(&V0, &V1, &V2, &ts);
 }
 
@@ -273,6 +297,7 @@ void core::cmd26_tri_modulated_semi_transparent()
     u32 color = CMD[0] & 0xFFFFFF;
     TEXTURE_SAMPLER ts;
     get_texture_sampler_from_texpage_and_palette(texpage, palette, &ts);
+    update_global_texpage(texpage);
     RT_draw_flat_tex_triangle_modulated_semi(&V0, &V1, &V2, color, &ts);
 }
 
@@ -296,6 +321,7 @@ void core::cmd27_tri_raw_semi_transparent()
     u16 palette = CMD[2] >> 16;
     TEXTURE_SAMPLER ts;
     get_texture_sampler_from_texpage_and_palette(texpage, palette, &ts);
+    update_global_texpage(texpage);
     RT_draw_flat_tex_triangle_semi(&V0, &V1, &V2, &ts);
 }
 
@@ -342,6 +368,7 @@ void core::cmd2c_quad_opaque_flat_textured_modulated() {
 
     TEXTURE_SAMPLER ts;
     get_texture_sampler_from_texpage_and_palette(tx_page, palette, &ts);
+    update_global_texpage(tx_page);
 
     RT_draw_flat_tex_triangle_modulated(&T1, &T2, &T3, col, &ts);
     RT_draw_flat_tex_triangle_modulated(&T2, &T3, &T4, col, &ts);
@@ -374,6 +401,7 @@ WRIOW GP0,(0x2D<<24)                         ; Write GP0 Command Word (Command)
 
     TEXTURE_SAMPLER ts;
     get_texture_sampler_from_texpage_and_palette(tx_page, palette, &ts);
+    update_global_texpage(tx_page);
 
     RT_draw_flat_tex_triangle(&T1, &T2, &T3, &ts);
     RT_draw_flat_tex_triangle(&T2, &T3, &T4, &ts);
@@ -406,6 +434,7 @@ void core::cmd2e_quad_flat_textured_modulated() {
 
     TEXTURE_SAMPLER ts;
     get_texture_sampler_from_texpage_and_palette(tx_page, palette, &ts);
+    update_global_texpage(tx_page);
 
     RT_draw_flat_tex_triangle_modulated_semi(&T1, &T2, &T3, col, &ts);
     RT_draw_flat_tex_triangle_modulated_semi(&T2, &T3, &T4, col, &ts);
@@ -437,6 +466,7 @@ void core::cmd2f_quad_flat_textured_semi() {
 
     TEXTURE_SAMPLER ts;
     get_texture_sampler_from_texpage_and_palette(tx_page, palette, &ts);
+    update_global_texpage(tx_page);
 
     RT_draw_flat_tex_triangle_semi(&T1, &T2, &T3, &ts);
     RT_draw_flat_tex_triangle_semi(&T2, &T3, &T4, &ts);
@@ -490,6 +520,7 @@ void core::cmd34_tri_shaded_opaque_tex_modulated()
     u16 palette = CMD[2] >> 16;
     TEXTURE_SAMPLER ts;
     get_texture_sampler_from_texpage_and_palette(texpage, palette, &ts);
+    update_global_texpage(texpage);
     RT_draw_shaded_tex_triangle_modulated(&V1, &V2, &V3, &ts);
 }
 
@@ -517,6 +548,7 @@ void core::cmd36_tri_shaded_opaque_tex_modulated_semi()
     u16 palette = CMD[2] >> 16;
     TEXTURE_SAMPLER ts;
     get_texture_sampler_from_texpage_and_palette(texpage, palette, &ts);
+    update_global_texpage(texpage);
 
     RT_draw_shaded_tex_triangle_modulated_semi(&V1, &V2, &V3, &ts);
 }
@@ -642,6 +674,7 @@ void core::cmd3c_quad_opaque_shaded_textured_modulated() {
     u16 palette = CMD[2] >> 16;
     TEXTURE_SAMPLER ts;
     get_texture_sampler_from_texpage_and_palette(texpage, palette, &ts);
+    update_global_texpage(texpage);
 
     RT_draw_shaded_tex_triangle_modulated(&T1, &T2, &T3, &ts);
     RT_draw_shaded_tex_triangle_modulated(&T2, &T3, &T4, &ts);
@@ -679,6 +712,7 @@ void core::cmd3e_quad_opaque_shaded_textured_modulated_semi() {
     u16 palette = CMD[2] >> 16;
     TEXTURE_SAMPLER ts;
     get_texture_sampler_from_texpage_and_palette(texpage, palette, &ts);
+    update_global_texpage(texpage);
 
     RT_draw_shaded_tex_triangle_modulated_semi(&T1, &T2, &T3, &ts);
     RT_draw_shaded_tex_triangle_modulated_semi(&T2, &T3, &T4, &ts);
@@ -751,7 +785,7 @@ void core::cmd64_rect_opaque_flat_textured_modulated()
 #endif
 
     TEXTURE_SAMPLER ts;
-    get_texture_sampler_from_texpage_and_palette(io.GPUSTAT, clut, &ts);
+    get_texture_sampler_from_texpage_and_palette(TEXPAGE, clut, &ts);
     for (i32 y = V0.y; y < yend; y++) {
         u32 u = ustart;
         for (i32 x = V1.y; x < xend; x++) {
@@ -798,7 +832,7 @@ void core::cmd65_rect_opaque_flat_textured()
 
     TEXTURE_SAMPLER ts;
     //get_texture_sampler_clut(texture_depth, page_base_x, page_base_y, clut, &ts);
-    get_texture_sampler_from_texpage_and_palette(io.GPUSTAT, clut, &ts);
+    get_texture_sampler_from_texpage_and_palette(TEXPAGE, clut, &ts);
     for (i32 y = V0.y; y < yend; y++) {
         u32 u = ustart;
         for (i32 x = V0.x; x < xend; x++) {
@@ -843,7 +877,7 @@ void core::cmd66_rect_semi_flat_textured_modulated()
 #endif
 
     TEXTURE_SAMPLER ts;
-    get_texture_sampler_from_texpage_and_palette(io.GPUSTAT, clut, &ts);
+    get_texture_sampler_from_texpage_and_palette(TEXPAGE, clut, &ts);
     for (i32 y = V0.y; y < yend; y++) {
         u32 u = ustart;
         for (i32 x = V0.x; x < xend; x++) {
@@ -893,7 +927,7 @@ void core::cmd67_rect_semi_flat_textured()
 
     TEXTURE_SAMPLER ts;
     //get_texture_sampler_clut(texture_depth, page_base_x, page_base_y, clut, &ts);
-    get_texture_sampler_from_texpage_and_palette(io.GPUSTAT, clut, &ts);
+    get_texture_sampler_from_texpage_and_palette(TEXPAGE, clut, &ts);
     for (i32 y = V0.y; y < yend; y++) {
         u32 u = ustart;
         for (i32 x = V0.x; x < xend; x++) {
@@ -921,7 +955,7 @@ void core::cmd6d_rect_1x1_tex()
     u32 u = (CMD[2] & 0xFF);
     u32 palette = (CMD[2] >> 16);
     TEXTURE_SAMPLER ts;
-    get_texture_sampler_from_texpage_and_palette(io.GPUSTAT, palette, &ts);
+    get_texture_sampler_from_texpage_and_palette(TEXPAGE, palette, &ts);
     u32 color = ts.sample(&ts, u, v);
     setpix(V0.y, V0.x, color & 0x7FFF, 1, color & 0x8000);
 }
@@ -933,7 +967,7 @@ void core::cmd6c_rect_1x1_tex_modulated()
     u32 u = (CMD[2] & 0xFF);
     u32 palette = (CMD[2] >> 16);
     TEXTURE_SAMPLER ts;
-    get_texture_sampler_from_texpage_and_palette(io.GPUSTAT, palette, &ts);
+    get_texture_sampler_from_texpage_and_palette(TEXPAGE, palette, &ts);
     u32 color = ts.sample(&ts, u, v);
     u32 hbit = color & 0x8000;
 
@@ -962,7 +996,7 @@ void core::cmd6e_rect_1x1_tex_semi_modulated()
     u32 u = (CMD[2] & 0xFF);
     u32 palette = (CMD[2] >> 16);
     TEXTURE_SAMPLER ts;
-    get_texture_sampler_from_texpage_and_palette(io.GPUSTAT, palette, &ts);
+    get_texture_sampler_from_texpage_and_palette(TEXPAGE, palette, &ts);
     u32 color = ts.sample(&ts, u, v);
     u32 hbit = color & 0x8000;
 
@@ -989,7 +1023,7 @@ void core::cmd6f_rect_1x1_tex_semi()
     u32 u = (CMD[2] & 0xFF);
     u32 palette = (CMD[2] >> 16);
     TEXTURE_SAMPLER ts;
-    get_texture_sampler_from_texpage_and_palette(io.GPUSTAT, palette, &ts);
+    get_texture_sampler_from_texpage_and_palette(TEXPAGE, palette, &ts);
     u32 color = ts.sample(&ts, u, v);
     semipix(V0.y, V0.x, color & 0x7FFF, 1, color & 0x8000);
 }
@@ -1006,7 +1040,6 @@ void core::cmd80_vram_copy()
 #ifdef LOG_GP0
     printf("\nGP0 cmd80 copy from %d,%d to %d,%d size:%d,%d", x1, y1, x2, y2, width, height);
 #endif
-    printf("\nGP0 cmd80 copy from %d,%d to %d,%d size:%d,%d", x1, y1, x2, y2, width, height);
 
     for (u32 iy = 0; iy < height; iy++) {
         for (u32 ix = 0; ix < width; ix++) {
@@ -1055,7 +1088,7 @@ void core::rect_opaque_flat_textured_modulated_xx(u32 wh)
     float bm = (float)((tc >> 16) & 0xFF) * mm;
 
     TEXTURE_SAMPLER ts;
-    get_texture_sampler_from_texpage_and_palette(io.GPUSTAT, clut, &ts);
+    get_texture_sampler_from_texpage_and_palette(TEXPAGE, clut, &ts);
     for (i32 y = V0.y; y < yend; y++) {
         u32 u = ustart;
         for (i32 x = V0.x; x < xend; x++) {
@@ -1110,7 +1143,7 @@ void core::rect_opaque_flat_textured_xx(u32 wh)
 #endif
 
     TEXTURE_SAMPLER ts;
-    get_texture_sampler_from_texpage_and_palette(io.GPUSTAT, clut, &ts);
+    get_texture_sampler_from_texpage_and_palette(TEXPAGE, clut, &ts);
     for (i32 y = V0.y; y < yend; y++) {
         u32 u = ustart;
         for (i32 x = V0.x; x < xend; x++) {
@@ -1167,7 +1200,7 @@ void core::rect_semi_flat_textured_modulated_xx(u32 wh)
     float bm = (float)((tc >> 16) & 0xFF) * mm;
 
     TEXTURE_SAMPLER ts;
-    get_texture_sampler_from_texpage_and_palette(io.GPUSTAT, clut, &ts);
+    get_texture_sampler_from_texpage_and_palette(TEXPAGE, clut, &ts);
     for (i32 y = V0.y; y < yend; y++) {
         u32 u = ustart;
         for (i32 x = V0.x; x < xend; x++) {
@@ -1222,7 +1255,7 @@ void core::rect_semi_flat_textured_xx(u32 wh)
 #endif
 
     TEXTURE_SAMPLER ts;
-    get_texture_sampler_from_texpage_and_palette(io.GPUSTAT, clut, &ts);
+    get_texture_sampler_from_texpage_and_palette(TEXPAGE, clut, &ts);
     for (i32 y = V0.y; y < yend; y++) {
         u32 u = ustart;
         for (i32 x = V0.x; x < xend; x++) {
@@ -1385,6 +1418,7 @@ void core::GPUSTAT_update()
     o |= (page_base_y) << 4;
     o |= (semi_transparency) << 5;
     o |= (texture_depth) << 7;
+    TEXPAGE = o;
     o |= (dithering) << 9;
     o |= (draw_to_display) << 10;
     o |= (force_set_mask_bit) >> 4;
@@ -1694,7 +1728,6 @@ void core::gp0_cmd(u32 cmd) {
 #endif
                 break;
             case 0xE4: // Draw area lower-right corner
-                printf("\nDRAW TOP AND LEFT %d and %d", draw_area_top, draw_area_left);
                 draw_area_bottom = (cmd >> 10) & 0x3FF;
                 draw_area_right = cmd & 0x3FF;
 #ifdef DBG_GP0
@@ -1704,7 +1737,6 @@ void core::gp0_cmd(u32 cmd) {
             case 0xE5: // Drawing offset
                 draw_x_offset = mksigned11(cmd & 0x7FF);
                 draw_y_offset = mksigned11((cmd >> 11) & 0x7FF);
-                printf("\nX OFFSET %d, Y OFFSET %d", draw_x_offset, draw_y_offset);
 #ifdef DBG_GP0
                 printf("\nGP0 E5 set drawing offset %d, %d", draw_x_offset, draw_y_offset);
 #endif

@@ -7,23 +7,10 @@
 #include "ps1_gpu.h"
 
 namespace PS1::GPU {
-inline bool is_top_left(const RT_POINT2D *a, const RT_POINT2D *b)
-{
-    return (a->y < b->y) || (a->y == b->y && a->x > b->x);
-}
 
-float edge_function (const RT_POINT2D *a, const RT_POINT2D *b, const RT_POINT2D *c)  {
-    float e =
-            (b->x - a->x) * (c->y - a->y) -
-            (b->y - a->y) * (c->x - a->x);
-
-    // Apply top-left rule bias
-    if (!is_top_left(a, b))
-        e -= 1e-6f;  // small negative bias
-
-    return e;
+    float edge_function (const RT_POINT2D *a, const RT_POINT2D *b, const RT_POINT2D *c)  {
+    return (b->x - a->x) * (c->y - a->y) - (b->y - a->y) * (c->x - a->x);
 };
-
 
 #ifndef MIN
 #define MIN(a,b) ((a) < (b) ? (a) : (b))
@@ -44,6 +31,8 @@ static inline i32 MAX3(const i32 a, const i32 b, const i32 c)
     const i32 mab = MAX(a,b);
     return MAX(mab, c);
 }
+
+constexpr float EDGE_EPS = 1e-5f;
 
 void core::RT_draw_flat_triangle(const RT_POINT2D *v0, RT_POINT2D *v1, RT_POINT2D *v2, const u32 color) {
     // Calculate the edge function for the whole triangle (ABC)
@@ -83,13 +72,17 @@ void core::RT_draw_flat_triangle(const RT_POINT2D *v0, RT_POINT2D *v1, RT_POINT2
             const float w1 = edge_function(v2, v0, &p); // w2
             const float w2 = edge_function(v0, v1, &p); // w1
 
-            u32 overlaps = w1 >= 0 && w0 >= 0 && w2 >= 0;
+            auto inside_edge = [](float w, const RT_POINT2Df& e) {
+                if (w > EDGE_EPS) return true;
+                if (w < -EDGE_EPS) return false;
+                // On edge → top-left rule
+                return (e.y > 0.0f) || (e.y == 0.0f && e.x > 0.0f);
+            };
 
-            // If the point is on the edge, test if it is a top or left edge,
-            // otherwise test if the edge function is positive
-            overlaps &= (w0 == 0 ? ((edge0.y == 0 && edge0.x > 0) || edge0.y > 0) : (w0 > 0));
-            overlaps &= (w1 == 0 ? ((edge1.y == 0 && edge1.x > 0) || edge1.y > 0) : (w1 > 0));
-            overlaps &= (w2 == 0 ? ((edge2.y == 0 && edge2.x > 0) || edge2.y > 0) : (w2 > 0));
+            bool overlaps =
+                inside_edge(w0, edge0) &&
+                inside_edge(w1, edge1) &&
+                inside_edge(w2, edge2);
 
             // If all the edge functions are positive, the point is inside the triangle
             if (overlaps) {

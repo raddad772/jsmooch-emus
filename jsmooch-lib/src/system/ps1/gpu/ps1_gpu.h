@@ -41,6 +41,8 @@ struct core {
     [[nodiscard]] u32 get_gpuread();
     [[nodiscard]] u32 get_gpustat() const;
 
+    u32 TEXPAGE{};
+
     struct {
         u32 GPUSTAT{}, GPUREAD{};
         u32 frame;
@@ -234,6 +236,7 @@ private:
     void semipix(i32 y, i32 x, u32 color, u32 is_tex, u32 tex_mask);
     void semipixm(i32 y, i32 x, u32 color, u32 mode, u32 is_tex, u32 tex_mask);
     void semipix_split(i32 y, i32 x, u32 r, u32 g, u32 b, u32 is_tex, u32 tex_mask);
+    void update_global_texpage(u32 texpage);
 
     static inline u32 BGR24to15(u32 c)
     {
