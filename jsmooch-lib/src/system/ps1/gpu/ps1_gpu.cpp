@@ -141,13 +141,13 @@ static u16 sample_tex_4bit(TEXTURE_SAMPLER *ts, i32 u, i32 v)
 
 static u16 sample_tex_8bit(TEXTURE_SAMPLER *ts, i32 u, i32 v)
 {
-    u32 d = ts->VRAM[(ts->base_addr + ((v&0xFF)<<11) + (u&0x7F)) & 0xFFFFF];
+    u32 d = ts->VRAM[(ts->base_addr + ((v&0xFF)<<11) + (u&0xFF)) & 0xFFFFF];
     return cR16(ts->VRAM, (ts->clut_addr + (d*2)) & 0xFFFFF);
 }
 
 static u16 sample_tex_15bit(TEXTURE_SAMPLER *ts, i32 u, i32 v)
 {
-    u32 addr = ts->base_addr + ((v&0xFF)<<11) + ((u&0x7F)<<1);
+    u32 addr = ts->base_addr + ((v&0xFF)<<11) + ((u&0xFF)<<1);
     return cR16(ts->VRAM, addr & 0xFFFFF);
 }
 
@@ -814,7 +814,6 @@ void core::cmd65_rect_opaque_flat_textured()
     // 2 WRIOW GP0,(PAL<<16)+((V&0xFF)<<8)+(U&0xFF) ; Write GP0  Packet Word (Texcoord+Palette)
     // 3 WRIOW GP0,(HEIGHT<<16)+(WIDTH&0xFFFF)      ; Write GP0  Packet Word (Width+Height)
 
-
     u32 clut = (CMD[2] >> 16) & 0xFFFF;
     u32 v = (CMD[2] >> 8) & 0xFF;
     u32 ustart = CMD[2] & 0xFF;
@@ -907,7 +906,6 @@ void core::cmd67_rect_semi_flat_textured()
     // 1 WRIOW GP0,(Y<<16)+(X&0xFFFF)               ; Write GP0  Packet Word (Vertex)
     // 2 WRIOW GP0,(PAL<<16)+((V&0xFF)<<8)+(U&0xFF) ; Write GP0  Packet Word (Texcoord+Palette)
     // 3 WRIOW GP0,(HEIGHT<<16)+(WIDTH&0xFFFF)      ; Write GP0  Packet Word (Width+Height)
-
     V0.xy_from_cmd(CMD[1]);
 
     u32 clut = (CMD[2] >> 16) & 0xFFFF;
