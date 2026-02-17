@@ -7,9 +7,21 @@
 #include "ps1_gpu.h"
 
 namespace PS1::GPU {
+inline bool is_top_left(const RT_POINT2D *a, const RT_POINT2D *b)
+{
+    return (a->y < b->y) || (a->y == b->y && a->x > b->x);
+}
 
 float edge_function (const RT_POINT2D *a, const RT_POINT2D *b, const RT_POINT2D *c)  {
-    return (b->x - a->x) * (c->y - a->y) - (b->y - a->y) * (c->x - a->x);
+    float e =
+            (b->x - a->x) * (c->y - a->y) -
+            (b->y - a->y) * (c->x - a->x);
+
+    // Apply top-left rule bias
+    if (!is_top_left(a, b))
+        e -= 1e-6f;  // small negative bias
+
+    return e;
 };
 
 

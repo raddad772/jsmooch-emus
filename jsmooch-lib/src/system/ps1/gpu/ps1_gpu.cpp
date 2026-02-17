@@ -454,6 +454,7 @@ void core::cmd30_tri_shaded_opaque()
     V1.xy_from_cmd(CMD[1]);
     V2.xy_from_cmd(CMD[3]);
     V3.xy_from_cmd(CMD[5]);
+    printf("\nCMD %08x. V1:%d,%d  V2:%d,%d  V3:%d,%d", CMD[0], V1.x, V1.y, V2.x, V2.y, V3.x, V3.y);
     V1.color24_from_cmd(CMD[0]);
     V2.color24_from_cmd(CMD[2]);
     V3.color24_from_cmd(CMD[4]);
@@ -697,23 +698,24 @@ void core::cmd40_line_opaque() {
 void core::cmd60_rect_opaque_flat()
 {
     u32 color = BGR24to15(CMD[0] & 0xFFFFFF);
-    u32 xstart = CMD[1] & 0xFFFF;
-    u32 ystart = CMD[1] >> 16;
-    u32 xsize = CMD[2] & 0xFFFF;
-    u32 ysize = CMD[2] >> 16;
+    V0.xy_from_cmd(CMD[1]);
+    i32 xsize = CMD[2] & 0xFFFF;
+    i32 ysize = CMD[2] >> 16;
+    if (xsize > 1023) xsize = 1023;
+    if (ysize > 511) ysize = 511;
 
 #ifdef LOG_GP0
     printf("\n60_rect_opaque_flat %d %d %d %d %06x", xstart, ystart, xsize, ysize, CMD[0] & 0xFFFFFF);
 #endif
 
-    u32 xend = (xstart + xsize);
-    xend = xend > 1024 ? 1024 : xend;
+    i32 xend = (V0.x + xsize);
+    xend = xend > 1023 ? 1023 : xend;
 
-    u32 yend = (ystart + ysize);
-    yend = yend > 512 ? 512 : yend;
+    i32 yend = (V0.y + ysize);
+    yend = yend > 511 ? 511 : yend;
 
-    for (u32 y = ystart; y < yend; y++) {
-        for (u32 x = xstart; x < xend; x++) {
+    for (i32 y = V0.y; y < yend; y++) {
+        for (i32 x = V0.x; x < xend; x++) {
             setpix(y, x, color, 0, 0);
         }
     }
@@ -724,8 +726,7 @@ void core::cmd64_rect_opaque_flat_textured_modulated()
     // WRIOW GP0,(0x64<<24)+(COLOR&0xFFFFFF)      ; Write GP0 Command Word (Color+Command)
 
     // WRIOW GP0,(Y<<16)+(X&0xFFFF)               ; Write GP0  Packet Word (Vertex)
-    u32 ystart = (CMD[1] & 0xFFFF0000) >> 16;
-    u32 xstart = ((CMD[1] & 0xFFFF) << 16) >> 16;
+    V0.xy_from_cmd(CMD[1]);
 
     u32 col = CMD[0] & 0xFFFFFF;
     const static float mm = 1.0f / 128.0f;
@@ -739,22 +740,22 @@ void core::cmd64_rect_opaque_flat_textured_modulated()
     u32 ustart = CMD[2] & 0xFF;
 
     // WRIOW GP0,(HEIGHT<<16)+(WIDTH&0xFFFF)      ; Write GP0  Packet Word (Width+Height)
-    u32 height = (CMD[3] >> 16) & 0xFFFF;
-    u32 width = CMD[3] & 0xFFFF;
+    i32 height = (CMD[3] >> 16) & 0xFFFF;
+    i32 width = CMD[3] & 0xFFFF;
+    if (width > 1023) width = 1023;
+    if (height > 511) height = 511;
 
-    u32 xend = (xstart + width);
-    u32 yend = (ystart + height);
-    xend = xend > 1024 ? 1024 : xend;
-    yend = yend > 512 ? 512 : yend;
+    i32 xend = (V0.x + width);
+    i32 yend = (V0.y + height);
 #ifdef LOG_GP0
     printf("\nrect_opaque_flat %d %d %d %d", xstart, ystart, width, height);
 #endif
 
     TEXTURE_SAMPLER ts;
     get_texture_sampler_from_texpage_and_palette(io.GPUSTAT, clut, &ts);
-    for (u32 y = ystart; y < yend; y++) {
+    for (i32 y = V0.y; y < yend; y++) {
         u32 u = ustart;
-        for (u32 x = xstart; x < xend; x++) {
+        for (i32 x = V1.y; x < xend; x++) {
             u16 color = ts.sample(&ts, u, v);
             u32 hbit = color & 0x8000;
 
@@ -780,20 +781,18 @@ void core::cmd65_rect_opaque_flat_textured()
     // 2 WRIOW GP0,(PAL<<16)+((V&0xFF)<<8)+(U&0xFF) ; Write GP0  Packet Word (Texcoord+Palette)
     // 3 WRIOW GP0,(HEIGHT<<16)+(WIDTH&0xFFFF)      ; Write GP0  Packet Word (Width+Height)
 
-    u32 ystart = (CMD[1] & 0xFFFF0000) >> 16;
-    u32 xstart = ((CMD[1] & 0xFFFF) << 16) >> 16;
 
     u32 clut = (CMD[2] >> 16) & 0xFFFF;
     u32 v = (CMD[2] >> 8) & 0xFF;
     u32 ustart = CMD[2] & 0xFF;
 
-    u32 height = (CMD[3] >> 16) & 0xFFFF;
-    u32 width = CMD[3] & 0xFFFF;
+    i32 height = (CMD[3] >> 16) & 0xFFFF;
+    i32 width = CMD[3] & 0xFFFF;
+    if (width > 1023) width = 1023;
+    if (height > 511) height = 511;
 
-    u32 xend = (xstart + width);
-    u32 yend = (ystart + height);
-    xend = xend > 1024 ? 1024 : xend;
-    yend = yend > 512 ? 512 : yend;
+    u32 xend = (V0.x + width);
+    u32 yend = (V0.y + height);
 #ifdef LOG_GP0
     printf("\nrect_opaque_flat %d %d %d %d", xstart, ystart, width, height);
 #endif
@@ -801,9 +800,9 @@ void core::cmd65_rect_opaque_flat_textured()
     TEXTURE_SAMPLER ts;
     //get_texture_sampler_clut(texture_depth, page_base_x, page_base_y, clut, &ts);
     get_texture_sampler_from_texpage_and_palette(io.GPUSTAT, clut, &ts);
-    for (u32 y = ystart; y < yend; y++) {
+    for (i32 y = V0.y; y < yend; y++) {
         u32 u = ustart;
-        for (u32 x = xstart; x < xend; x++) {
+        for (i32 x = V0.x; x < xend; x++) {
             u16 color = ts.sample(&ts, u, v);
             u32 hbit = color & 0x8000;
             u32 lbit = color & 0x7FFF;
@@ -819,8 +818,7 @@ void core::cmd66_rect_semi_flat_textured_modulated()
     // WRIOW GP0,(0x64<<24)+(COLOR&0xFFFFFF)      ; Write GP0 Command Word (Color+Command)
 
     // WRIOW GP0,(Y<<16)+(X&0xFFFF)               ; Write GP0  Packet Word (Vertex)
-    u32 ystart = (CMD[1] & 0xFFFF0000) >> 16;
-    u32 xstart = ((CMD[1] & 0xFFFF) << 16) >> 16;
+    V0.xy_from_cmd(CMD[1]);
 
     u32 col = CMD[0] & 0xFFFFFF;
     const static float mm = 1.0f / 128.0f;
@@ -834,22 +832,22 @@ void core::cmd66_rect_semi_flat_textured_modulated()
     u32 ustart = CMD[2] & 0xFF;
 
     // WRIOW GP0,(HEIGHT<<16)+(WIDTH&0xFFFF)      ; Write GP0  Packet Word (Width+Height)
-    u32 height = (CMD[3] >> 16) & 0xFFFF;
-    u32 width = CMD[3] & 0xFFFF;
+    i32 height = (CMD[3] >> 16) & 0xFFFF;
+    i32 width = CMD[3] & 0xFFFF;
+    if (width > 1023) width = 1023;
+    if (height > 511) height = 511;
 
-    u32 xend = (xstart + width);
-    u32 yend = (ystart + height);
-    xend = xend > 1024 ? 1024 : xend;
-    yend = yend > 512 ? 512 : yend;
+    i32 xend = V0.x + width;
+    i32 yend = V0.y + height;
 #ifdef LOG_GP0
     printf("\nrect_opaque_flat %d %d %d %d", xstart, ystart, width, height);
 #endif
 
     TEXTURE_SAMPLER ts;
     get_texture_sampler_from_texpage_and_palette(io.GPUSTAT, clut, &ts);
-    for (u32 y = ystart; y < yend; y++) {
+    for (i32 y = V0.y; y < yend; y++) {
         u32 u = ustart;
-        for (u32 x = xstart; x < xend; x++) {
+        for (i32 x = V0.x; x < xend; x++) {
             u16 color = ts.sample(&ts, u, v);
             u32 hbit = color & 0x8000;
             u32 lbit = color & 0x7FFF;
@@ -877,20 +875,19 @@ void core::cmd67_rect_semi_flat_textured()
     // 2 WRIOW GP0,(PAL<<16)+((V&0xFF)<<8)+(U&0xFF) ; Write GP0  Packet Word (Texcoord+Palette)
     // 3 WRIOW GP0,(HEIGHT<<16)+(WIDTH&0xFFFF)      ; Write GP0  Packet Word (Width+Height)
 
-    u32 ystart = (CMD[1] & 0xFFFF0000) >> 16;
-    u32 xstart = ((CMD[1] & 0xFFFF) << 16) >> 16;
+    V0.xy_from_cmd(CMD[1]);
 
     u32 clut = (CMD[2] >> 16) & 0xFFFF;
     u32 v = (CMD[2] >> 8) & 0xFF;
     u32 ustart = CMD[2] & 0xFF;
 
-    u32 height = (CMD[3] >> 16) & 0xFFFF;
-    u32 width = CMD[3] & 0xFFFF;
+    i32 height = (CMD[3] >> 16) & 0xFFFF;
+    i32 width = CMD[3] & 0xFFFF;
+    if (width > 1023) width = 1023;
+    if (height > 511) height = 511;
 
-    u32 xend = (xstart + width);
-    u32 yend = (ystart + height);
-    xend = xend > 1024 ? 1024 : xend;
-    yend = yend > 512 ? 512 : yend;
+    i32 xend = V0.x + width;;
+    i32 yend = V0.y + height;
 #ifdef LOG_GP0
     printf("\nrect_opaque_flat %d %d %d %d", xstart, ystart, width, height);
 #endif
@@ -898,9 +895,9 @@ void core::cmd67_rect_semi_flat_textured()
     TEXTURE_SAMPLER ts;
     //get_texture_sampler_clut(texture_depth, page_base_x, page_base_y, clut, &ts);
     get_texture_sampler_from_texpage_and_palette(io.GPUSTAT, clut, &ts);
-    for (u32 y = ystart; y < yend; y++) {
+    for (i32 y = V0.y; y < yend; y++) {
         u32 u = ustart;
-        for (u32 x = xstart; x < xend; x++) {
+        for (i32 x = V0.x; x < xend; x++) {
             u16 color = ts.sample(&ts, u, v);
             u32 hbit = color & 0x8000;
             u32 lbit = color & 0x7FFF;
@@ -913,29 +910,26 @@ void core::cmd67_rect_semi_flat_textured()
 
 void core::cmd68_rect_1x1()
 {
-    u32 y = (CMD[1] & 0xFFFF0000) >> 16;
-    u32 x = ((CMD[1] & 0xFFFF) << 16) >> 16;
+    V0.xy_from_cmd(CMD[1]);
     u32 color = BGR24to15(CMD[0] & 0xFFFFFF);
-    setpix(y, x, color, 0, 0);
+    setpix(V0.y, V0.x, color, 0, 0);
 }
 
 void core::cmd6d_rect_1x1_tex()
 {
-    u32 y = (CMD[1] & 0xFFFF0000) >> 16;
-    u32 x = ((CMD[1] & 0xFFFF) << 16) >> 16;
+    V0.xy_from_cmd(CMD[1]);
     u32 v = (CMD[2] & 0xFF00) >> 8;
     u32 u = (CMD[2] & 0xFF);
     u32 palette = (CMD[2] >> 16);
     TEXTURE_SAMPLER ts;
     get_texture_sampler_from_texpage_and_palette(io.GPUSTAT, palette, &ts);
     u32 color = ts.sample(&ts, u, v);
-    setpix(y, x, color & 0x7FFF, 1, color & 0x8000);
+    setpix(V0.y, V0.x, color & 0x7FFF, 1, color & 0x8000);
 }
 
 void core::cmd6c_rect_1x1_tex_modulated()
 {
-    u32 y = (CMD[1] & 0xFFFF0000) >> 16;
-    u32 x = ((CMD[1] & 0xFFFF) << 16) >> 16;
+    V0.xy_from_cmd(CMD[1]);
     u32 v = (CMD[2] & 0xFF00) >> 8;
     u32 u = (CMD[2] & 0xFF);
     u32 palette = (CMD[2] >> 16);
@@ -945,7 +939,7 @@ void core::cmd6c_rect_1x1_tex_modulated()
     u32 hbit = color & 0x8000;
 
     u32 tc = CMD[0] & 0xFFFFFF;
-    static const float mm = 1.0f / 128.0f;
+    static constexpr float mm = 1.0f / 128.0f;
     float rm = (float)(tc & 0xFF) * mm;
     float gm = (float)((tc >> 8) & 0xFF) * mm;
     float bm = (float)((tc >> 16) & 0xFF) * mm;
@@ -959,13 +953,12 @@ void core::cmd6c_rect_1x1_tex_modulated()
 
     color = ((u32)r) | ((u32)g << 5) | ((u32)b << 10);
 
-    setpix(y, x, color & 0x7FFF, 1, hbit);
+    setpix(V0.y, V0.x, color & 0x7FFF, 1, hbit);
 }
 
 void core::cmd6e_rect_1x1_tex_semi_modulated()
 {
-    u32 y = (CMD[1] & 0xFFFF0000) >> 16;
-    u32 x = ((CMD[1] & 0xFFFF) << 16) >> 16;
+    V0.xy_from_cmd(CMD[1]);
     u32 v = (CMD[2] & 0xFF00) >> 8;
     u32 u = (CMD[2] & 0xFF);
     u32 palette = (CMD[2] >> 16);
@@ -975,7 +968,7 @@ void core::cmd6e_rect_1x1_tex_semi_modulated()
     u32 hbit = color & 0x8000;
 
     u32 tc = CMD[0] & 0xFFFFFF;
-    static const float mm = 1.0f / 128.0f;
+    static constexpr float mm = 1.0f / 128.0f;
     float rm = (float)(tc & 0xFF) * mm;
     float gm = (float)((tc >> 8) & 0xFF) * mm;
     float bm = (float)((tc >> 16) & 0xFF) * mm;
@@ -986,21 +979,20 @@ void core::cmd6e_rect_1x1_tex_semi_modulated()
 
     color = ((u32)r) | ((u32)g << 5) | ((u32)b << 10);
 
-    semipix(y, x, color & 0x7FFF, 1, hbit);
+    semipix(V0.y, V0.x, color & 0x7FFF, 1, hbit);
 }
 
 
 void core::cmd6f_rect_1x1_tex_semi()
 {
-    u32 y = (CMD[1] & 0xFFFF0000) >> 16;
-    u32 x = ((CMD[1] & 0xFFFF) << 16) >> 16;
+    V0.xy_from_cmd(CMD[1]);
     u32 v = (CMD[2] & 0xFF00) >> 8;
     u32 u = (CMD[2] & 0xFF);
     u32 palette = (CMD[2] >> 16);
     TEXTURE_SAMPLER ts;
     get_texture_sampler_from_texpage_and_palette(io.GPUSTAT, palette, &ts);
     u32 color = ts.sample(&ts, u, v);
-    semipix(y, x, color & 0x7FFF, 1, color & 0x8000);
+    semipix(V0.y, V0.x, color & 0x7FFF, 1, color & 0x8000);
 }
 
 
@@ -1011,7 +1003,7 @@ void core::cmd80_vram_copy()
     u32 y2 = CMD[2] >> 16;
     u32 x2 = CMD[2] & 0xFFFF;
     u32 height = CMD[3] >> 16;
-    u32 width = CMD[3] & 0xFFFF;
+    i32 width = CMD[3] & 0xFFFF;
 #ifdef LOG_GP0
     printf("\nGP0 cmd80 copy from %d,%d to %d,%d size:%d,%d", x1, y1, x2, y2, width, height);
 #endif
@@ -1040,8 +1032,7 @@ void core::rect_opaque_flat_textured_modulated_xx(u32 wh)
     //let color24 = CMD[0] & 0xFFFFFF;
 
     // WRIOW GP0,(Y<<16)+(X&0xFFFF)               ; Write GP0  Packet Word (Vertex)
-    u32 ystart = (CMD[1] & 0xFFFF0000) >> 16;
-    u32 xstart = ((CMD[1] & 0xFFFF) << 16) >> 16;
+    V0.xy_from_cmd(CMD[1]);
 
     // WRIOW GP0,(PAL<<16)+((V&0xFF)<<8)+(U&0xFF) ; Write GP0  Packet Word (Texcoord+Palette)
     u32 clut = (CMD[2] >> 16) & 0xFFFF;
@@ -1049,13 +1040,11 @@ void core::rect_opaque_flat_textured_modulated_xx(u32 wh)
     u32 ustart = CMD[2] & 0xFF;
 
     // WRIOW GP0,(HEIGHT<<16)+(WIDTH&0xFFFF)      ; Write GP0  Packet Word (Width+Height)
-    u32 height = wh;
-    u32 width = wh;
+    i32 height = wh > 511 ? 511 : wh;
+    i32 width = wh > 1023 ? 1023 : wh;
 
-    u32 xend = (xstart + width);
-    u32 yend = (ystart + height);
-    xend = xend > 1024 ? 1024 : xend;
-    yend = yend > 512 ? 512 : yend;
+    i32 xend = V0.x + width;;
+    i32 yend = V0.y + height;
 #ifdef LOG_GP0
     printf("\nrect_opaque_flat %d %d %d %d", xstart, ystart, width, height);
 #endif
@@ -1068,9 +1057,9 @@ void core::rect_opaque_flat_textured_modulated_xx(u32 wh)
 
     TEXTURE_SAMPLER ts;
     get_texture_sampler_from_texpage_and_palette(io.GPUSTAT, clut, &ts);
-    for (u32 y = ystart; y < yend; y++) {
+    for (i32 y = V0.y; y < yend; y++) {
         u32 u = ustart;
-        for (u32 x = xstart; x < xend; x++) {
+        for (i32 x = V0.x; x < xend; x++) {
             u16 color = ts.sample(&ts, u, v);
             u32 hbit = color & 0x8000;
 
@@ -1104,8 +1093,7 @@ void core::rect_opaque_flat_textured_xx(u32 wh)
     //let color24 = CMD[0] & 0xFFFFFF;
 
     // WRIOW GP0,(Y<<16)+(X&0xFFFF)               ; Write GP0  Packet Word (Vertex)
-    u32 ystart = (CMD[1] & 0xFFFF0000) >> 16;
-    u32 xstart = ((CMD[1] & 0xFFFF) << 16) >> 16;
+    V0.xy_from_cmd(CMD[1]);
 
     // WRIOW GP0,(PAL<<16)+((V&0xFF)<<8)+(U&0xFF) ; Write GP0  Packet Word (Texcoord+Palette)
     u32 clut = (CMD[2] >> 16) & 0xFFFF;
@@ -1113,22 +1101,20 @@ void core::rect_opaque_flat_textured_xx(u32 wh)
     u32 ustart = CMD[2] & 0xFF;
 
     // WRIOW GP0,(HEIGHT<<16)+(WIDTH&0xFFFF)      ; Write GP0  Packet Word (Width+Height)
-    u32 height = wh;
-    u32 width = wh;
+    i32 height = wh > 511 ? 511 : wh;
+    i32 width = wh > 1023 ? 1023 : wh;
 
-    u32 xend = (xstart + width);
-    u32 yend = (ystart + height);
-    xend = xend > 1024 ? 1024 : xend;
-    yend = yend > 512 ? 512 : yend;
+    i32 xend = V0.x + width;;
+    i32 yend = V0.y + height;
 #ifdef LOG_GP0
     printf("\nrect_opaque_flat %d %d %d %d", xstart, ystart, width, height);
 #endif
 
     TEXTURE_SAMPLER ts;
     get_texture_sampler_from_texpage_and_palette(io.GPUSTAT, clut, &ts);
-    for (u32 y = ystart; y < yend; y++) {
+    for (i32 y = V0.y; y < yend; y++) {
         u32 u = ustart;
-        for (u32 x = xstart; x < xend; x++) {
+        for (i32 x = V0.x; x < xend; x++) {
             u16 color = ts.sample(&ts, u, v);
             u32 hbit = color & 0x8000;
             u32 lbit = color & 0x7FFF;
@@ -1156,8 +1142,7 @@ void core::rect_semi_flat_textured_modulated_xx(u32 wh)
     //let color24 = CMD[0] & 0xFFFFFF;
 
     // WRIOW GP0,(Y<<16)+(X&0xFFFF)               ; Write GP0  Packet Word (Vertex)
-    u32 ystart = (CMD[1] & 0xFFFF0000) >> 16;
-    u32 xstart = ((CMD[1] & 0xFFFF) << 16) >> 16;
+    V0.xy_from_cmd(CMD[1]);
 
     // WRIOW GP0,(PAL<<16)+((V&0xFF)<<8)+(U&0xFF) ; Write GP0  Packet Word (Texcoord+Palette)
     u32 clut = (CMD[2] >> 16) & 0xFFFF;
@@ -1165,11 +1150,11 @@ void core::rect_semi_flat_textured_modulated_xx(u32 wh)
     u32 ustart = CMD[2] & 0xFF;
 
     // WRIOW GP0,(HEIGHT<<16)+(WIDTH&0xFFFF)      ; Write GP0  Packet Word (Width+Height)
-    u32 height = wh;
-    u32 width = wh;
+    i32 height = wh > 511 ? 511 : wh;
+    i32 width = wh > 1023 ? 1023 : wh;
 
-    u32 xend = (xstart + width);
-    u32 yend = (ystart + height);
+    i32 xend = V0.x + width;;
+    i32 yend = V0.y + height;
     xend = xend > 1024 ? 1024 : xend;
     yend = yend > 512 ? 512 : yend;
 #ifdef LOG_GP0
@@ -1184,9 +1169,9 @@ void core::rect_semi_flat_textured_modulated_xx(u32 wh)
 
     TEXTURE_SAMPLER ts;
     get_texture_sampler_from_texpage_and_palette(io.GPUSTAT, clut, &ts);
-    for (u32 y = ystart; y < yend; y++) {
+    for (i32 y = V0.y; y < yend; y++) {
         u32 u = ustart;
-        for (u32 x = xstart; x < xend; x++) {
+        for (i32 x = V0.x; x < xend; x++) {
             u16 color = ts.sample(&ts, u, v);
             u32 hbit = color & 0x8000;
 
@@ -1220,8 +1205,7 @@ void core::rect_semi_flat_textured_xx(u32 wh)
     //let color24 = CMD[0] & 0xFFFFFF;
 
     // WRIOW GP0,(Y<<16)+(X&0xFFFF)               ; Write GP0  Packet Word (Vertex)
-    u32 ystart = (CMD[1] & 0xFFFF0000) >> 16;
-    u32 xstart = ((CMD[1] & 0xFFFF) << 16) >> 16;
+    V0.xy_from_cmd(CMD[1]);
 
     // WRIOW GP0,(PAL<<16)+((V&0xFF)<<8)+(U&0xFF) ; Write GP0  Packet Word (Texcoord+Palette)
     u32 clut = (CMD[2] >> 16) & 0xFFFF;
@@ -1229,22 +1213,20 @@ void core::rect_semi_flat_textured_xx(u32 wh)
     u32 ustart = CMD[2] & 0xFF;
 
     // WRIOW GP0,(HEIGHT<<16)+(WIDTH&0xFFFF)      ; Write GP0  Packet Word (Width+Height)
-    u32 height = wh;
-    u32 width = wh;
+    i32 height = wh > 511 ? 511 : wh;
+    i32 width = wh > 1023 ? 1023 : wh;
 
-    u32 xend = (xstart + width);
-    u32 yend = (ystart + height);
-    xend = xend > 1024 ? 1024 : xend;
-    yend = yend > 512 ? 512 : yend;
+    i32 xend = V0.x + width;;
+    i32 yend = V0.y + height;
 #ifdef LOG_GP0
     printf("\nrect_opaque_flat %d %d %d %d", xstart, ystart, width, height);
 #endif
 
     TEXTURE_SAMPLER ts;
     get_texture_sampler_from_texpage_and_palette(io.GPUSTAT, clut, &ts);
-    for (u32 y = ystart; y < yend; y++) {
+    for (i32 y = V0.y; y < yend; y++) {
         u32 u = ustart;
-        for (u32 x = xstart; x < xend; x++) {
+        for (i32 x = V0.x; x < xend; x++) {
             u16 color = ts.sample(&ts, u, v);
             u32 hbit = color & 0x8000;
             u32 lbit = color & 0x7FFF;
@@ -1713,6 +1695,7 @@ void core::gp0_cmd(u32 cmd) {
 #endif
                 break;
             case 0xE4: // Draw area lower-right corner
+                printf("\nDRAW TOP AND LEFT %d and %d", draw_area_top, draw_area_left);
                 draw_area_bottom = (cmd >> 10) & 0x3FF;
                 draw_area_right = cmd & 0x3FF;
 #ifdef DBG_GP0
@@ -1722,6 +1705,7 @@ void core::gp0_cmd(u32 cmd) {
             case 0xE5: // Drawing offset
                 draw_x_offset = mksigned11(cmd & 0x7FF);
                 draw_y_offset = mksigned11((cmd >> 11) & 0x7FF);
+                printf("\nX OFFSET %d, Y OFFSET %d", draw_x_offset, draw_y_offset);
 #ifdef DBG_GP0
                 printf("\nGP0 E5 set drawing offset %d, %d", draw_x_offset, draw_y_offset);
 #endif
