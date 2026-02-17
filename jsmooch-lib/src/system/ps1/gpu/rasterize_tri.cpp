@@ -8,7 +8,7 @@
 
 namespace PS1::GPU {
 
-    float edge_function (const RT_POINT2D *a, const RT_POINT2D *b, const RT_POINT2D *c)  {
+float edge_function (const RT_POINT2D *a, const RT_POINT2D *b, const RT_POINT2D *c)  {
     return (b->x - a->x) * (c->y - a->y) - (b->y - a->y) * (c->x - a->x);
 };
 
@@ -52,6 +52,7 @@ void core::RT_draw_flat_triangle(const RT_POINT2D *v0, RT_POINT2D *v1, RT_POINT2
     const i32 minY = MIN3(v0->y, v1->y, v2->y);
     const i32 maxX = MAX3(v0->x, v1->x, v2->x);
     const i32 maxY = MAX3(v0->y, v1->y, v2->y);
+    if (((maxY - minY) > 511) || ((maxX - minX) > 1023)) return;
 
     // Get edges for top-left testing...
     RT_POINT2Df edge0, edge1, edge2;
@@ -130,6 +131,7 @@ void core::RT_draw_flat_tex_triangle_modulated(const RT_POINT2D *v0, RT_POINT2D 
     const i32 minY = MIN3(v0->y, v1->y, v2->y);
     const i32 maxX = MAX3(v0->x, v1->x, v2->x);
     const i32 maxY = MAX3(v0->y, v1->y, v2->y);
+    if (((maxY - minY) > 511) || ((maxX - minX) > 1023)) return;
 
     // Get edges for top-left testing...
     RT_POINT2Df edge0, edge1, edge2;
@@ -220,6 +222,7 @@ void core::RT_draw_flat_tex_triangle_modulated_semi(const RT_POINT2D *v0, RT_POI
     const i32 minY = MIN3(v0->y, v1->y, v2->y);
     const i32 maxX = MAX3(v0->x, v1->x, v2->x);
     const i32 maxY = MAX3(v0->y, v1->y, v2->y);
+    if (((maxY - minY) > 511) || ((maxX - minX) > 1023)) return;
 
     // Get edges for top-left testing...
     RT_POINT2Df edge0, edge1, edge2;
@@ -318,6 +321,7 @@ void core::RT_draw_shaded_tex_triangle_modulated_semi(const RT_POINT2D *v0, RT_P
     const i32 minY = MIN3(v0->y, v1->y, v2->y);
     const i32 maxX = MAX3(v0->x, v1->x, v2->x);
     const i32 maxY = MAX3(v0->y, v1->y, v2->y);
+    if (((maxY - minY) > 511) || ((maxX - minX) > 1023)) return;
 
     // Get edges for top-left testing...
     RT_POINT2Df edge0, edge1, edge2;
@@ -421,6 +425,7 @@ void core::RT_draw_shaded_tex_triangle_modulated(const RT_POINT2D *v0, RT_POINT2
     const i32 minY = MIN3(v0->y, v1->y, v2->y);
     const i32 maxX = MAX3(v0->x, v1->x, v2->x);
     const i32 maxY = MAX3(v0->y, v1->y, v2->y);
+    if (((maxY - minY) > 511) || ((maxX - minX) > 1023)) return;
 
     // Get edges for top-left testing...
     RT_POINT2Df edge0, edge1, edge2;
@@ -511,6 +516,7 @@ void core::RT_draw_flat_tex_triangle(const RT_POINT2D *v0, RT_POINT2D *v1, RT_PO
     const i32 minY = MIN3(v0->y, v1->y, v2->y);
     const i32 maxX = MAX3(v0->x, v1->x, v2->x);
     const i32 maxY = MAX3(v0->y, v1->y, v2->y);
+    if (((maxY - minY) > 511) || ((maxX - minX) > 1023)) return;
 
     // Get edges for top-left testing...
     RT_POINT2Df edge0, edge1, edge2;
@@ -591,6 +597,7 @@ void core::RT_draw_flat_tex_triangle_semi(const RT_POINT2D *v0, RT_POINT2D *v1, 
     const i32 minY = MIN3(v0->y, v1->y, v2->y);
     const i32 maxX = MAX3(v0->x, v1->x, v2->x);
     const i32 maxY = MAX3(v0->y, v1->y, v2->y);
+    if (((maxY - minY) > 511) || ((maxX - minX) > 1023)) return;
 
     // Get edges for top-left testing...
     RT_POINT2Df edge0, edge1, edge2;
@@ -656,6 +663,7 @@ void core::RT_draw_flat_triangle_semi(const RT_POINT2D *v0, RT_POINT2D *v1, RT_P
     const i32 minY = MIN3(v0->y, v1->y, v2->y);
     const i32 maxX = MAX3(v0->x, v1->x, v2->x);
     const i32 maxY = MAX3(v0->y, v1->y, v2->y);
+    if (((maxY - minY) > 511) || ((maxX - minX) > 1023)) return;
 
     // Get edges for top-left testing...
     RT_POINT2Df edge0, edge1, edge2;
@@ -727,6 +735,7 @@ void core::RT_draw_shaded_triangle(const RT_POINT2D *v0, RT_POINT2D *v1, RT_POIN
     const i32 minY = MIN3(v0->y, v1->y, v2->y);
     const i32 maxX = MAX3(v0->x, v1->x, v2->x);
     const i32 maxY = MAX3(v0->y, v1->y, v2->y);
+    if (((maxY - minY) > 511) || ((maxX - minX) > 1023)) return;
 
     // Get edges for top-left testing...
     RT_POINT2Df edge0, edge1, edge2;
@@ -807,6 +816,7 @@ void core::RT_draw_shaded_triangle_semi(const RT_POINT2D *v0, RT_POINT2D *v1, RT
     const i32 minY = MIN3(v0->y, v1->y, v2->y);
     const i32 maxX = MAX3(v0->x, v1->x, v2->x);
     const i32 maxY = MAX3(v0->y, v1->y, v2->y);
+    if (((maxY - minY) > 511) || ((maxX - minX) > 1023)) return;
 
     // Get edges for top-left testing...
     RT_POINT2Df edge0, edge1, edge2;

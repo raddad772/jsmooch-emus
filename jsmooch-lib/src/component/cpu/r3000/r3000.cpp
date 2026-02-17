@@ -563,9 +563,15 @@ void core::trace_format_console(jsm_string &out)
     }
 }
 
+static bool is_gte(u32 opcode) {
+    return  (opcode &0xfe000000) == 0x4a000000;
+}
+
 void core::check_IRQ()
 {
-    if (pins.IRQ && (regs.COP0[12] & 0x400) && (regs.COP0[12] & 1) && pipe.item0.new_PC == 0xFFFFFFFF) {
+    if (pipe.num_items < 1)
+        fetch_and_decode();
+    if (pins.IRQ && (regs.COP0[12] & 0x400) && (regs.COP0[12] & 1) && pipe.item0.new_PC == 0xFFFFFFFF && !is_gte(pipe.current.opcode) && !is_gte(pipe.item0.opcode)) {
         //printf("\nDO IRQ!");
         regs.PC -= 4;
         exception(0, pipe.item0.new_PC != 0xFFFFFFFF, 0);
