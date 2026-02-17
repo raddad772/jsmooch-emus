@@ -15,6 +15,7 @@ void core::setpix(i32 y, i32 x, u32 color, u32 is_tex, u32 tex_mask)
     i32 rx = (x + draw_x_offset) & 1023;
     if ((ry < draw_area_top) || (ry > draw_area_bottom)) return;
     if ((rx < draw_area_left) || (rx > draw_area_right)) return;
+    
     u32 addr = ((2048*ry)+(rx*2)) & 0xFFFFF;
 
     if (preserve_masked_pixels) {

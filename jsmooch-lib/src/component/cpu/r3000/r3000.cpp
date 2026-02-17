@@ -571,8 +571,11 @@ void core::check_IRQ()
 {
     if (pipe.num_items < 1)
         fetch_and_decode();
-    if (pins.IRQ && (regs.COP0[12] & 0x400) && (regs.COP0[12] & 1) && pipe.item0.new_PC == 0xFFFFFFFF && !is_gte(pipe.current.opcode) && !is_gte(pipe.item0.opcode)) {
-        //printf("\nDO IRQ!");
+    if (pins.IRQ && (regs.COP0[12] & 0x400) && (regs.COP0[12] & 1) && pipe.item0.new_PC == 0xFFFFFFFF) {
+        if (is_gte(pipe.item0.opcode)) {
+            // Execute opcode "early" before exception!
+            gte.command(pipe.item0.opcode, current_clock());
+        }
         regs.PC -= 4;
         exception(0, pipe.item0.new_PC != 0xFFFFFFFF, 0);
         //dbg_enable_trace();
