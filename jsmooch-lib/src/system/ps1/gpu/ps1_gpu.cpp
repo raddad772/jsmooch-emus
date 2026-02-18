@@ -1427,7 +1427,6 @@ void core::gp0_image_load_continue(u32 cmd)
     if (gp0_transfer_remaining == 0) {
         current_ins = nullptr;
         handle_gp0 = &core::gp0_cmd;
-        recv_gp0_len = 0;
         ready_cmd();
         //unready_recv_dma();
     }
@@ -1504,9 +1503,6 @@ void core::gp0_cmd(u32 cmd) {
     if (VRAM_to_CPU_in_progress) {
         printf("\nWARN CMD DURING VRAM TO CPU!?");
     }
-    gp0_buffer[recv_gp0_len] = cmd;
-    recv_gp0_len++;
-    assert(recv_gp0_len < 256);
 
     // Check if we have an instruction..
     if (current_ins) {
@@ -1516,7 +1512,6 @@ void core::gp0_cmd(u32 cmd) {
             // Execute instruction!
             (this->*current_ins)();
             current_ins = nullptr;
-            recv_gp0_len = 0;
             cmd_arg_index = 0;
         }
     } else {
@@ -1826,7 +1821,6 @@ void core::write_gp1(u32 cmd)
             display_line_start = 0x10;
             display_line_end = 0x100;
             io.GPUSTAT.display_area_24bit = 0;
-            recv_gp0_len = 0;
             handle_gp0 = &core::gp0_cmd;
             current_ins = nullptr;
             cmd_arg_index = 0;

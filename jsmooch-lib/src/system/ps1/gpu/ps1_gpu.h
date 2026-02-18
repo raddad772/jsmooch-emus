@@ -86,19 +86,12 @@ struct core {
     void (core::*current_ins)(){};
     void new_frame();
     u8 mmio_buffer[96]{};
-    u32 gp0_buffer[256]{};
-    u32 gp1_buffer[256]{};
     u32 IRQ_bit{};
 
     u32 CMD[32]{};
     u32 cmd_arg_num{}, cmd_arg_index{};
     PS1::core *bus{};
     u32 ins_special{};
-
-    u32 recv_gp0[1024 * 1024]{};
-    u32 recv_gp1[1024 * 1024]{};
-    u32 recv_gp0_len{};
-    u32 recv_gp1_len{};
 
     struct {
         i32 texture_x_flip{};
