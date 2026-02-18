@@ -30,7 +30,7 @@ static void setup_dbglog(debugger_interface *dbgr, core *th)
 
     dbglog_category_node &root = dv.get_category_root();
     root.children.reserve(10);
-    dbglog_category_node &r3000 = root.add_node(dv, "R3000", nullptr, 0, 0);
+    dbglog_category_node &r3000 = root.add_node(dv, "R3000", nullptr, 0, 0x80FF80);
     r3000.children.reserve(10);
     r3000.add_node(dv, "Instructions", "R3000", PS1D_R3000_INSTRUCTION, 0x80FF80);
     th->cpu.dbg.dvptr = &dv;
@@ -43,9 +43,9 @@ static void setup_dbglog(debugger_interface *dbgr, core *th)
     r3000.add_node(dv, "RFEs", "RFE", PS1D_R3000_RFE, 0xFFFFFF);
     r3000.add_node(dv, "Exceptions", "Except", PS1D_R3000_EXCEPTION, 0xFFFFFF);
 
-    dbglog_category_node &dma = root.add_node(dv, "DMA", nullptr, 0, 0);
-    dma.children.reserve(10);
     u32 dma_c = 0xFF2080;
+    dbglog_category_node &dma = root.add_node(dv, "DMA", nullptr, 0, dma_c);
+    dma.children.reserve(10);
     dma.add_node(dv, "DMA0 MDEC in", "DMA0", PS1D_DMA_CH0, dma_c);
     dma.add_node(dv, "DMA1 MDEC out", "DMA1", PS1D_DMA_CH1, dma_c);
     dma.add_node(dv, "DMA2 GPU", "DMA2", PS1D_DMA_CH2, dma_c);
@@ -58,7 +58,8 @@ static void setup_dbglog(debugger_interface *dbgr, core *th)
     // DMA IF/IE
     // IF/IE
     // SPUCNT/STAT
-    dbglog_category_node &cdrom = root.add_node(dv, "CDROM Drive", nullptr, 0, 0);
+    dma_c = 0x20A0A0;
+    dbglog_category_node &cdrom = root.add_node(dv, "CDROM Drive", nullptr, 0, dma_c);
     cdrom.children.reserve(30);
     cdrom.add_node(dv, "Command", "CMD", PS1D_CDROM_CMD, dma_c);
     cdrom.add_node(dv, "CMD Read", "Read", PS1D_CDROM_READ, dma_c);
@@ -73,11 +74,12 @@ static void setup_dbglog(debugger_interface *dbgr, core *th)
     cdrom.add_node(dv, "RDDATA Start", "RDDATA_start", PS1D_CDROM_RDDATA_START, dma_c);
     cdrom.add_node(dv, "RDDATA Finish", "RDDATA_finish", PS1D_CDROM_RDDATA_FINISH, dma_c);
 
-    dbglog_category_node &bus = root.add_node(dv, "General", nullptr, 0, 0);
+    dma_c = 0x7042FF;
+    dbglog_category_node &bus = root.add_node(dv, "General", nullptr, 0, dma_c);
     bus.children.reserve(10);
-    bus.add_node(dv, "IRQs", "IRQ", PS1D_BUS_IRQS, 0xFF2020);
-    bus.add_node(dv, "IRQ ACKs", "IRQ ACK", PS1D_BUS_IRQ_ACK, 0xFF2020);
-    bus.add_node(dv, "Console Logs", "Console", PS1D_BUS_CONSOLE, 0xFF2020);
+    bus.add_node(dv, "IRQs", "IRQ", PS1D_BUS_IRQS, dma_c);
+    bus.add_node(dv, "IRQ ACKs", "IRQ ACK", PS1D_BUS_IRQ_ACK, dma_c);
+    bus.add_node(dv, "Console Logs", "Console", PS1D_BUS_CONSOLE, dma_c);
     th->cpu.trace.console_log_id = PS1D_BUS_CONSOLE;
 }
 

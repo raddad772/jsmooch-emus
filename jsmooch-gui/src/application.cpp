@@ -529,10 +529,11 @@ void imgui_jsmooch_app::render_dbglog_view(DLVIEW &dview, bool update_dasm_scrol
         static ImGuiTableFlags flags =
                 ImGuiTableFlags_ScrollY | ImGuiTableFlags_RowBg | ImGuiTableFlags_BordersOuter |
                 ImGuiTableFlags_BordersV | ImGuiTableFlags_SizingStretchProp;
-        if (ImGui::BeginTable("tabley_table", dlv.has_extra ? 4 : 3, flags)) {
+        if (ImGui::BeginTable("tabley_table", dlv.has_extra ? 5 : 4, flags)) {
             ImGui::TableSetupScrollFreeze(0, 1); // Make top row always visible
-            ImGui::TableSetupColumn("Kind", ImGuiTableColumnFlags_None, 1);
+            ImGui::TableSetupColumn("Category", ImGuiTableColumnFlags_None, 1);
             ImGui::TableSetupColumn("Timecode", ImGuiTableColumnFlags_None, 1);
+            ImGui::TableSetupColumn("Kind", ImGuiTableColumnFlags_None, 1);
             ImGui::TableSetupColumn("Entry", ImGuiTableColumnFlags_None, 5);
             if (dlv.has_extra)
                 ImGui::TableSetupColumn("Extra", ImGuiTableColumnFlags_None, 5);
@@ -556,20 +557,23 @@ void imgui_jsmooch_app::render_dbglog_view(DLVIEW &dview, bool update_dasm_scrol
                 u32 idx = dlv.get_nth_visible(clipper.DisplayStart);
                 for (int row = clipper.DisplayStart; row < clipper.DisplayEnd; row++) {
                     ImGui::TableNextRow();
+                    dbglog_entry *e = &dlv.items.data[idx];
+                    dbglog_category_node *parent = dlv.id_to_category[e->category_id]->parent;
 
                     ImGui::TableSetColumnIndex(0);
-                    dbglog_entry *e = &dlv.items.data[idx];
-
-                    ImGui::TextColored(get_iv4(dlv.id_to_color[e->category_id]), "%s", dlv.id_to_category[e->category_id]->short_name);
+                    ImGui::TextColored(get_iv4(parent->color), "%s", parent->name);
 
                     ImGui::TableSetColumnIndex(1);
                     ImGui::Text("%lld", e->timecode);
 
                     ImGui::TableSetColumnIndex(2);
+                    ImGui::TextColored(get_iv4(dlv.id_to_color[e->category_id]), "%s", dlv.id_to_category[e->category_id]->short_name);
+
+                    ImGui::TableSetColumnIndex(3);
                     ImGui::TextColored(get_iv4(dlv.id_to_color[e->category_id]), "%s", e->text.ptr);
 
                     if (dlv.has_extra) {
-                        ImGui::TableSetColumnIndex(3);
+                        ImGui::TableSetColumnIndex(4);
                         ImGui::TextColored(get_iv4(dlv.id_to_color[e->category_id]), "%s", e->extra.ptr);
                     }
                     idx = dlv.get_next_visible(idx);

@@ -110,7 +110,7 @@ void SIO0::write_ctrl(u8 sz, u32 val)
 {
     //printf("\nTHING:%d  TRACES:%d", ::dbg.traces.ps1.sio0.rw, ::dbg.trace_on);
     printif(ps1.sio0.rw, "\n\nport: SIO0 WRITE CTRL %04x", val);
-    bus->dbg.dvptr->add_printf(PS1D_R3000_RFE, bus->clock.master_cycle_count, DBGLS_TRACE, "SIO0 WRITE CTRL %04x", val);
+    //bus->dbg.dvptr->add_printf(PS1D_R3000_, bus->clock.master_cycle_count, DBGLS_TRACE, "SIO0 WRITE CTRL %04x", val);
     u32 old_rx_enable = io.SIO_CTRL.rx_enable;
     u32 old_dtr = io.SIO_CTRL.dtr_output;
     u32 old_select = io.SIO_CTRL.sio0_port_sel;

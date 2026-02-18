@@ -271,6 +271,7 @@ void CDROM::cmd_finish(u64 key, u64 clock) {
             return;
         case 0x09:
             io.stat.read = 0;
+            io.stat.play = 0;
             finish_CMD(true, 2);
             return;
         case 0x0A: // Init
