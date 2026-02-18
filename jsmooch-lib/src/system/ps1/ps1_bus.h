@@ -133,6 +133,10 @@ struct core : jsm_system {
     DBG_START
         cvec_ptr<debugger_view> console_view{};
         DBG_LOG_VIEW
+        DBG_IMAGE_VIEWS_START
+            MDBG_IMAGE_VIEW(sysinfo)
+            MDBG_IMAGE_VIEW(vram)
+        DBG_IMAGE_VIEWS_END
         DBG_WAVEFORM_START1
             DBG_WAVEFORM_MAIN
             DBG_WAVEFORM_CHANS(24)

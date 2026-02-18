@@ -142,7 +142,6 @@ u64 TIMER::get_clock_source()
 
 u32 TIMER::read() {
     u32 v = read_clk(get_clock_source());
-    //if (num == 1) printf("\nREAD timer %d: %04x", num, v);
     static u32 last=0;
     //printf("\nReading timer num %d: %d diff:%d diffhex:%x @%lld", num, v, v - last, v - last, bus->clock.master_cycle_count);
     last = v;

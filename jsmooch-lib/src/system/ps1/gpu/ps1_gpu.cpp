@@ -1382,8 +1382,8 @@ void core::gp0_image_save_continue() {
     }
     io.GPUREAD = px;
     gp0_transfer_remaining--;
-    if (gp0_transfer_remaining == 0) {
-        printf("\n0 TRANSFER REMAINING!");
+    if (gp0_transfer_remaining <= 0) {
+        //printf("\n0 TRANSFER REMAINING!");
         current_ins = nullptr;
         handle_gp0 = &core::gp0_cmd;
         VRAM_to_CPU_in_progress = false;
@@ -1443,7 +1443,7 @@ void core::gp0_image_save_start() {
 
     // Get imgsize, round it
     u32 imgsize = ((width * height) + 1) & 0xFFFFFFFE;
-    printf("\nVRAM->CPU IMGSIZE:%d  X:%d Y:%d WIDTH:%d HEIGHT:%d", imgsize, x, y, width, height);
+    //printf("\nVRAM->CPU IMGSIZE:%d  X:%d Y:%d WIDTH:%d HEIGHT:%d", imgsize, x, y, width, height);
     gp0_transfer_remaining = imgsize/2;
     if (gp0_transfer_remaining > 0) {
         VRAM_to_CPU_in_progress = true;
@@ -1731,8 +1731,9 @@ void core::gp0_cmd(u32 cmd) {
                 io.GPUSTAT.dither = (cmd >> 9) & 1;
                 io.GPUSTAT.drawing_to_display_area = (cmd >> 10) & 1;
                 io.GPUSTAT.texture_page_y_base_2 = (cmd >> 1) & 1;
-                rect.texture_x_flip = (cmd >> 12) & 1;
-                rect.texture_y_flip = (cmd >> 13) & 1;
+                TEXPAGE = io.GPUSTAT.u;
+                //rect.texture_x_flip = (cmd >> 12) & 1;
+                //rect.texture_y_flip = (cmd >> 13) & 1;
                 break;
             case 0xE2: // Texture window
 #ifdef DBG_GP0
@@ -1769,7 +1770,7 @@ void core::gp0_cmd(u32 cmd) {
                 printf("\nGP0 E6 set bit mask");
 #endif
                 io.GPUSTAT.force_set_mask_bit = cmd & 1;
-                force_set_mask = io.GPUSTAT.force_set_mask_bit << 15;
+                force_set_mask = (cmd & 1) << 15;
                 io.GPUSTAT.preserve_masked_pixels = (cmd >> 1) & 1;
                 break;
             default:
