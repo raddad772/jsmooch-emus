@@ -44,6 +44,7 @@ struct core {
     u32 TEXPAGE{};
     u32 out_vres{}, out_hres{};
     u32 force_set_mask{};
+    void cmd_end();
 
     struct {
         u32 GPUREAD{};

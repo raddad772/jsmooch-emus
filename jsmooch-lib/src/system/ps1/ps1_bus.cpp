@@ -135,10 +135,6 @@ u32 core::mainbus_read(u32 addr, u8 sz, bool has_effect)
 
     addr = deKSEG(addr) & alignmask[sz];
     // 2MB MRAM mirrored 4 times
-    if (raddr == 0x801FFD5C) {
-        int a = 1;
-        a++;
-    }
     if (addr < 0x00800000) {
         return cR[sz](mem.MRAM, addr & 0x1FFFFF);
     }
@@ -178,9 +174,6 @@ u32 core::mainbus_read(u32 addr, u8 sz, bool has_effect)
     }
 
     switch(addr) {
-        case 0x1f801110:
-            // expansion area poll
-            return 0;
         case 0x00FF1F00: // Invalid addresses?
         case 0x00FF1F04:
         case 0x00FF1F08:

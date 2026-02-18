@@ -14,7 +14,7 @@
 
 #include "helpers/multisize_memaccess.cpp"
 
-//#define LOG_GP0
+#define LOG_GP0
 //#define DBG_GP0
 
 
@@ -1384,10 +1384,8 @@ void core::gp0_image_save_continue() {
     gp0_transfer_remaining--;
     if (gp0_transfer_remaining <= 0) {
         //printf("\n0 TRANSFER REMAINING!");
-        current_ins = nullptr;
-        handle_gp0 = &core::gp0_cmd;
         VRAM_to_CPU_in_progress = false;
-        ready_cmd();
+        cmd_end();
     }
 }
 
@@ -1425,12 +1423,16 @@ void core::gp0_image_load_continue(u32 cmd)
     }
     gp0_transfer_remaining--;
     if (gp0_transfer_remaining == 0) {
-        current_ins = nullptr;
-        handle_gp0 = &core::gp0_cmd;
-        recv_gp0_len = 0;
-        ready_cmd();
-        //unready_recv_dma();
+        cmd_end();
     }
+}
+
+void core::cmd_end() {
+    current_ins = nullptr;
+    recv_gp0_len = 0;
+    cmd_arg_index = 0;
+    handle_gp0 = &core::gp0_cmd;
+    ready_all();
 }
 
 void core::gp0_image_save_start() {
@@ -1451,8 +1453,7 @@ void core::gp0_image_save_start() {
         gp0_image_save_continue();
     } else {
         printf("\nBad size image save: 0?");
-        current_ins = nullptr;
-        ready_cmd();
+        cmd_end();
     }
 
 }
@@ -1515,9 +1516,7 @@ void core::gp0_cmd(u32 cmd) {
         if (cmd_arg_index == cmd_arg_num) {
             // Execute instruction!
             (this->*current_ins)();
-            current_ins = nullptr;
-            recv_gp0_len = 0;
-            cmd_arg_index = 0;
+            cmd_end();
         }
     } else {
         CMD[0] = cmd;
@@ -1531,8 +1530,10 @@ void core::gp0_cmd(u32 cmd) {
         switch(cmdr) {
             case 0: // NOP
                 //if (cmd != 0) printf("\nINTERPRETED AS NOP:%08x", cmd);
+                cmd_end();
                 break;
             case 0x01: // Clear cache (not implemented)
+                cmd_end();
                 break;
             case 0x02: // Quick Rectangle
                 //console.log('Quick rectangle!');
@@ -1546,6 +1547,7 @@ void core::gp0_cmd(u32 cmd) {
                 printf("\nIRQ1 trigger");
                 io.GPUSTAT.irq1 = 1;
                 bus->set_irq(IRQ_GPU, 1);
+                cmd_end();
                 break;
             case 0x20: // flat-shaded opaque triangle
                 current_ins = &core::cmd20_tri_flat;
@@ -1732,6 +1734,7 @@ void core::gp0_cmd(u32 cmd) {
                 io.GPUSTAT.drawing_to_display_area = (cmd >> 10) & 1;
                 io.GPUSTAT.texture_page_y_base_2 = (cmd >> 1) & 1;
                 TEXPAGE = io.GPUSTAT.u;
+                cmd_end();
                 //rect.texture_x_flip = (cmd >> 12) & 1;
                 //rect.texture_y_flip = (cmd >> 13) & 1;
                 break;
@@ -1743,6 +1746,7 @@ void core::gp0_cmd(u32 cmd) {
                 tx_win_y_mask = (cmd >> 5) & 0x1F;
                 tx_win_x_offset = (cmd >> 10) & 0x1F;
                 tx_win_y_offset = (cmd >> 15) & 0x1F;
+                cmd_end();
                 break;
             case 0xE3: // Set draw area upper-left corner
                 draw_area_top = (cmd >> 10) & 0x3FF;
@@ -1750,6 +1754,7 @@ void core::gp0_cmd(u32 cmd) {
 #ifdef DBG_GP0
                 printf("\nGP0 E3 set draw area UL corner %d, %d", draw_area_top, draw_area_left);
 #endif
+                cmd_end();
                 break;
             case 0xE4: // Draw area lower-right corner
                 draw_area_bottom = (cmd >> 10) & 0x3FF;
@@ -1757,6 +1762,7 @@ void core::gp0_cmd(u32 cmd) {
 #ifdef DBG_GP0
                 printf("\nGP0 E4 set draw area LR corner %d, %d", draw_area_right, draw_area_bottom);
 #endif
+                cmd_end();
                 break;
             case 0xE5: // Drawing offset
                 draw_x_offset = mksigned11(cmd & 0x7FF);
@@ -1764,6 +1770,7 @@ void core::gp0_cmd(u32 cmd) {
 #ifdef DBG_GP0
                 printf("\nGP0 E5 set drawing offset %d, %d", draw_x_offset, draw_y_offset);
 #endif
+                cmd_end();
                 break;
             case 0xE6: // Set Mask Bit setting
 #ifdef DBG_GP0
@@ -1772,6 +1779,7 @@ void core::gp0_cmd(u32 cmd) {
                 io.GPUSTAT.force_set_mask_bit = cmd & 1;
                 force_set_mask = (cmd & 1) << 15;
                 io.GPUSTAT.preserve_masked_pixels = (cmd >> 1) & 1;
+                cmd_end();
                 break;
             default:
                 printf("\nUnknown GP0 command %08x", cmd);
