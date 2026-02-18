@@ -756,6 +756,7 @@ void core::cmd40_line_opaque() {
 #endif
 }
 
+
 void core::cmd60_rect_opaque_flat()
 {
     u32 color = BGR24to15(CMD[0] & 0xFFFFFF);
@@ -1567,10 +1568,12 @@ void core::gp0_cmd(u32 cmd) {
                 cmd_arg_num = 7;
                 break;
             case 0x28: // flat-shaded rectangle
+            case 0x29:
                 current_ins = &core::cmd28_draw_flat4untex;
                 cmd_arg_num = 5;
                 break;
             case 0x2A: // semi-transparent monochrome quad
+            case 0x2B:
                 current_ins = &core::cmd2a_quad_flat_semi_transparent;
                 cmd_arg_num = 5;
                 break;
@@ -1627,6 +1630,7 @@ void core::gp0_cmd(u32 cmd) {
                 cmd_arg_num = 3;
                 break;
             case 0x60: // Rectangle, variable size, opaque
+            case 0x62:
                 current_ins = &core::cmd60_rect_opaque_flat;
                 cmd_arg_num = 3;
                 break;
@@ -1770,6 +1774,7 @@ void core::gp0_cmd(u32 cmd) {
                 break;
             default:
                 printf("\nUnknown GP0 command %08x", cmd);
+                dbg_break("BAD GP0 CMD", 0);
                 break;
         }
     }
