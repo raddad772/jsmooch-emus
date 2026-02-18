@@ -125,10 +125,17 @@ void CDROM::recalc_HSTS() {
 
 void CDROM::write_CMD(u32 val) {
     // TODO: this
-    if (io.HSTS.BUSYSTS) cancel_CMD();
+    if (io.HSTS.BUSYSTS) {
+        printf("\n(CDROM) WARN IGNORE CMD %02x", val);
+        //cancel_CMD();
+        return;
+    }
+    printf("\n(CDROM) CMD WRITE %02x", val);
     io.CMD = val & 0xFF;
+    io.HSTS.BUSYSTS = 1;
     schedule_CMD();
 }
+
 void CDROM::result_string(const char *s) {
     for (u32 i = 0; i < strlen(s); i++) {
         if (s[i] != 0) result(s[i]);
@@ -253,6 +260,7 @@ void CDROM::cmd_step3(u64 key, u64 clock) {
 }
 
 void CDROM::cmd_finish(u64 key, u64 clock) {
+    printf("\nCMD END FOR %02x", io.CMD);
     switch (io.CMD) {
         case 0x07:
             cmd_motor_on_finish();
@@ -281,10 +289,6 @@ void CDROM::cmd_finish(u64 key, u64 clock) {
             return;
         case 0x1A: // GetID
             cmd_getid_finish();
-            return;
-        case 0x06: // ReadN
-        case 0x1B: // ReadS
-            schedule_read(clock);
             return;
         default:
             NOGOHERE;
@@ -427,7 +431,8 @@ void CDROM::cmd_backward() {
 }
 
 void CDROM::cmd_reads(u64 clock) {
-    //printf("\n(CDROM) CMD ReadS");
+    //printf("\n(CDROM) CMD ReadS");    printf("\nSCHEDULING END FOR %02x", io.CMD);
+
     // Read data!
     do_cmd_read(clock);
 }
@@ -440,11 +445,11 @@ void CDROM::do_cmd_read(u64 clock) {
         stat_irq();
         return;
     }
-    stat_irq();
+    finish_CMD(true, 3);
     io.stat.play = 0;
     io.stat.seek = 0;
     io.stat.read = 1;
-    schedule_finish(clock + ONEFRAME);
+    schedule_read(clock);
 }
 
 void CDROM::cmd_getid(u64 clock) {
@@ -589,7 +594,7 @@ void CDROM::cmd_pause(u64 clock) {
     stat_irq();
     if (read.still_sched) bus->scheduler.delete_if_exist(read.sched_id);
     io.stat.read = 0;
-    schedule_finish(clock + ONEFRAME);
+    schedule_finish(clock + ONEFRAME/60);
 }
 
 void CDROM::cmd_gettn() {
@@ -735,6 +740,7 @@ void CDROM::schedule_read(u64 clock) {
 }
 
 void CDROM::schedule_finish(u64 clock) {
+    printf("\nSCHEDULING END FOR %02x", io.CMD);
     CMD.sched_id = bus->scheduler.only_add_abs(clock, 0, this, &scheduled_cmd_end, &CMD.still_sched);
 }
 
@@ -796,7 +802,11 @@ void CDROM::finish_CMD(bool do_stat_irq, u32 irq_num) {
 
 void CDROM::cancel_CMD() {
     if (CMD.still_sched) {
+        printf("\nCANCEL %02x", io.CMD);
         bus->scheduler.delete_if_exist(CMD.sched_id);
+    }
+    else {
+        printf("\n(CDROM) CMD NOT SCHEDULED??");
     }
 }
 

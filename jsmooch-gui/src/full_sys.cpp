@@ -836,6 +836,7 @@ void full_system::load_default_ROM()
             worked = 1;
             break;
         case jsm::systems::NDS:
+            worked = grab_ROM(&ROMs, which, "nfs2mw.nds", nullptr); // save data corrupt complaint
             //worked = grab_ROM(&ROMs, which, "sims3.nds", nullptr); // save data corrupt complaint
             //worked = grab_ROM(&ROMs, which, "rockwrestler.nds", nullptr);
             //worked = grab_ROM(&ROMs, which, "armwrestler.nds", nullptr);
@@ -868,7 +869,7 @@ void full_system::load_default_ROM()
             //worked = grab_ROM(&ROMs, which, "pmdes.nds", nullptr);
             //worked = grab_ROM(&ROMs, which, "mariokart.nds", nullptr);
             //worked = grab_ROM(&ROMs, which, "phoenixwright.nds", nullptr);
-            worked = grab_ROM(&ROMs, which, "sm64.nds", nullptr);
+            //worked = grab_ROM(&ROMs, which, "sm64.nds", nullptr);
             //worked = grab_ROM(&ROMs, which, "nintendogs.nds", nullptr);
             //worked = grab_ROM(&ROMs, which, "dbz2.nds", nullptr);
             //worked = grab_ROM(&ROMs, which, "rayman.nds", nullptr);
@@ -985,7 +986,13 @@ void full_system::load_default_ROM()
             //worked = grab_ROM(&ROMs, which, "PSX/GPU/16BPP/RenderTexturePolygon/CLUT4BPP/RenderTexturePolygonCLUT4BPP.exe", nullptr);
             //worked = grab_ROM(&ROMs, which, "PSX/GPU/16BPP/RenderTexturePolygon/CLUT8BPP/RenderTexturePolygonCLUT8BPP.exe", nullptr);
             //worked = grab_ROM(&ROMs, which, "PSX/GPU/16BPP/RenderTexturePolygon/15BPP/RenderTexturePolygon15BPP.exe", nullptr);
-            //worked = grab_ROM(&ROMs, which, "PSX/GPU/16BPP/RenderTexturePolygon/MASK15BPP/RenderTexturePolygonMASK15BPP.exe", nullptr);
+            //worked = grab_ROM(&ROMs, which, "PSX/GPU/16BPP/RenderTexturePolygon/MASK15BPP/RenderTextureRectangleMASK15BPP.exe", nullptr);
+            //worked = grab_ROM(&ROMs, which, "PSX/GPU/16BPP/RenderTextureRectangle/CLUT4BPP/RenderTextureRectangleCLUT4BPP.exe", nullptr);
+            //worked = grab_ROM(&ROMs, which, "PSX/GPU/16BPP/RenderTextureRectangle/CLUT8BPP/RenderTextureRectangleCLUT8BPP.exe", nullptr);
+            //worked = grab_ROM(&ROMs, which, "PSX/GPU/16BPP/RenderTextureRectangle/15BPP/RenderTextureRectangle15BPP.exe", nullptr); // needs help!
+            //worked = grab_ROM(&ROMs, which, "PSX/GPU/16BPP/RenderTextureRectangle/MASK15BPP/RenderTexturePolygonMASK15BPP.exe", nullptr);
+
+
             //worked = grab_ROM(&ROMs, which, "PSX/GPU/16BPP/RenderTextureRectangle/CLUT4BPP/RenderTextureRectangleCLUT4BPP.exe", nullptr);
             //worked = grab_ROM(&ROMs, which, "PSX/GPU/16BPP/MemoryTransfer/MemoryTransfer16BPP.exe", nullptr);
             //worked = grab_ROM(&ROMs, which, "PSX/HelloWorld/16BPP/HelloWorld16BPP.exe", nullptr);
@@ -993,8 +1000,10 @@ void full_system::load_default_ROM()
 
             //worked = grab_ROM(&ROMs, which, "VBLANK.exe", nullptr);
 
-            //worked = grab_cue(&ROMs, which, "mk2", nullptr);
-            worked = grab_cue(&ROMs, which, "Crash Bandicoot 1", nullptr);
+            worked = grab_cue(&ROMs, which, "mk2", nullptr);
+            //worked = grab_cue(&ROMs, which, "Crash Bandicoot 1", nullptr);
+            //worked = grab_cue(&ROMs, which, "Hydro Thunder (USA)", nullptr);
+            //worked = grab_cue(&ROMs, which, "Cool Boarders 2 (USA)", nullptr);
             //worked = grab_cue(&ROMs, which, "Ridge Racer (USA)", nullptr);
             //worked = grab_cue(&ROMs, which, "Spyro the Dragon (USA)", nullptr);
             //worked = grab_cue(&ROMs, which, "Rayman 2 - The Great Escape (USA) (En,Fr,Es)", nullptr);
@@ -1003,7 +1012,7 @@ void full_system::load_default_ROM()
         case jsm::systems::GBA:
             //worked = grab_ROM(&ROMs, which, "panda.gba", nullptr);
             //worked = grab_ROM(&ROMs, which, "armwrestler-gba-fixed.gba", nullptr);
-            worked = grab_ROM(&ROMs, which, "arm.gba", nullptr);
+            //worked = grab_ROM(&ROMs, which, "arm.gba", nullptr);
             //worked = grab_ROM(&ROMs, which, "thumb.gba", nullptr);
             //worked = grab_ROM(&ROMs, which, "retaddr.gba", nullptr);
 

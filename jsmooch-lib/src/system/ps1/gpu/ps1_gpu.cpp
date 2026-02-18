@@ -14,8 +14,10 @@
 
 #include "helpers/multisize_memaccess.cpp"
 
-//#define LOG_GP0
+#define LOG_GP0
 //#define DBG_GP0
+
+
 namespace PS1 {
 void core::setup_dotclock()
 {
@@ -117,7 +119,7 @@ void core::cmd28_draw_flat4untex()
 
     u32 color = BGR24to15(CMD[0] & 0xFFFFFF);
 #ifdef LOG_DRAW_QUADS
-    printf("\nflat4untex %d %d %d %d %d %d %06x", x0, y0, x1, y1, x2, y2, color);
+    printf("\nflat4untex %d %d %d %d %d %d %06x", V0.x, V0.y, V1.x, V1.y, V2.x, V2.y, color);
 #endif
     RT_draw_flat_triangle(&V0, &V1, &V2, color);
     RT_draw_flat_triangle(&V1, &V2, &V3, color);
@@ -133,6 +135,10 @@ static u16 sample_tex_4bit(TEXTURE_SAMPLER *ts, i32 u, i32 v)
     //ts->VRAM[addr & 0xFFFFF] = 0xFF;
     if ((u & 1) == 0) d &= 0x0F;
     else d = (d & 0xF0) >> 4;
+
+    //d <<= 1;
+    //return d | (d << 5) | (d << 10) | 0x8000;
+
     addr = (ts->clut_addr + (d*2)) & 0xFFFFF;
     //cW16(ts->VRAM, addr, 0xFFF0);
     u16 r = cR16(ts->VRAM, addr & 0xFFFFF);
@@ -141,13 +147,17 @@ static u16 sample_tex_4bit(TEXTURE_SAMPLER *ts, i32 u, i32 v)
 
 static u16 sample_tex_8bit(TEXTURE_SAMPLER *ts, i32 u, i32 v)
 {
-    u32 d = ts->VRAM[(ts->base_addr + ((v&0xFF)<<11) + (u&0xFF)) & 0xFFFFF];
+    u32 d = cR8(ts->VRAM, (ts->base_addr + ((v&0xFF)<<11) + (u&0xFF)) & 0xFFFFF);
+    //d = (d >> 3);
+    //return d | (d << 5) | (d << 10) | 0x8000;
+    //return 0xFFFF;
     return cR16(ts->VRAM, (ts->clut_addr + (d*2)) & 0xFFFFF);
 }
 
 static u16 sample_tex_15bit(TEXTURE_SAMPLER *ts, i32 u, i32 v)
 {
     u32 addr = ts->base_addr + ((v&0xFF)<<11) + ((u&0xFF)<<1);
+    //return 0xFFFF;
     return cR16(ts->VRAM, addr & 0xFFFFF);
 }
 
@@ -185,7 +195,7 @@ void core::cmd20_tri_flat()
     V2.xy_from_cmd(CMD[3]);
     u32 color = BGR24to15(CMD[0] & 0xFFFFFF);
 #ifdef LOG_GP0
-    printf("\nGP0_20 flat tri %f,%f %f,%f %f,%f color:%04x", x0, y0, x1, y1, x2, y2, color);
+    printf("\nGP0_20 flat tri %d,%d  %d,%d  %d,%d color:%04x", V0.x, V0.y, V1.x, V1.y, V2.x, V2.y, color);
 #endif
     RT_draw_flat_triangle(&V0, &V1, &V2, color);
 }
@@ -198,7 +208,7 @@ void core::cmd22_tri_flat_semi_transparent()
     V0.color24_from_cmd(CMD[0]);
     u32 color = BGR24to15(CMD[0] & 0xFFFFFF);
 #ifdef LOG_GP0
-    printf("\nGP0_20 flat tri %f,%f %f,%f %f,%f color:%04x", x0, y0, x1, y1, x2, y2, color);
+    printf("\nGP0_20 flat tri %d,%d  %d,%d  %d,%d color:%04x", V0.x, V0.y, V1.x, V1.y, V2.x, V2.y, color);
 #endif
     RT_draw_flat_triangle_semi(&V0, &V1, &V2, V0.r, V0.g, V0.b);
 }
@@ -235,6 +245,9 @@ void core::cmd24_tri_raw_modulated()
   4 WRIOW GP0,(TEX<<16)+((V2&0xFF)<<8)+(U2&0xFF) ; Write GP0  Packet Word (Texcoord2+Texpage)
   5 WRIOW GP0,(Y3<<16)+(X3&0xFFFF)               ; Write GP0  Packet Word (Vertex3)
   6 WRIOW GP0,((V3&0xFF)<<8)+(U3&0xFF)           ; Write GP0  Packet Word (Texcoord3)     */
+#ifdef LOG_GP0
+    printf("\nPRIM 24");
+#endif
     V0.xy_from_cmd(CMD[1]);
     V1.xy_from_cmd(CMD[3]);
     V2.xy_from_cmd(CMD[5]);
@@ -261,6 +274,9 @@ void core::cmd25_tri_raw()
   5 WRIOW GP0,(Y3<<16)+(X3&0xFFFF)               ; Write GP0  Packet Word (Vertex3)
   6 WRIOW GP0,((V3&0xFF)<<8)+(U3&0xFF)           ; Write GP0  Packet Word (Texcoord3)
      */
+#ifdef LOG_GP0
+    printf("\nPRIM 25");
+#endif
     V0.xy_from_cmd(CMD[1]);
     V1.xy_from_cmd(CMD[3]);
     V2.xy_from_cmd(CMD[5]);
@@ -286,6 +302,9 @@ void core::cmd26_tri_modulated_semi_transparent()
   5 WRIOW GP0,(Y3<<16)+(X3&0xFFFF)               ; Write GP0  Packet Word (Vertex3)
   6 WRIOW GP0,((V3&0xFF)<<8)+(U3&0xFF)           ; Write GP0  Packet Word (Texcoord3)
      */
+#ifdef LOG_GP0
+    printf("\nPRIM 26");
+#endif
     V0.xy_from_cmd(CMD[1]);
     V1.xy_from_cmd(CMD[3]);
     V2.xy_from_cmd(CMD[5]);
@@ -311,6 +330,9 @@ void core::cmd27_tri_raw_semi_transparent()
   4 WRIOW GP0,(TEX<<16)+((V2&0xFF)<<8)+(U2&0xFF) ; Write GP0  Packet Word (Texcoord2+Texpage)
   5 WRIOW GP0,(Y3<<16)+(X3&0xFFFF)               ; Write GP0  Packet Word (Vertex3)
   6 WRIOW GP0,((V3&0xFF)<<8)+(U3&0xFF)           ; Write GP0  Packet Word (Texcoord3)     */
+#ifdef LOG_GP0
+    printf("\nPRIM 27");
+#endif
     V0.xy_from_cmd(CMD[1]);
     V1.xy_from_cmd(CMD[3]);
     V2.xy_from_cmd(CMD[5]);
@@ -326,8 +348,7 @@ void core::cmd27_tri_raw_semi_transparent()
 }
 
 
-void core::cmd2a_quad_flat_semi_transparent()
-{
+void core::cmd2a_quad_flat_semi_transparent() {
     V0.xy_from_cmd(CMD[1]);
     V1.xy_from_cmd(CMD[2]);
     V2.xy_from_cmd(CMD[3]);
@@ -336,7 +357,7 @@ void core::cmd2a_quad_flat_semi_transparent()
     //printf("\nQUAD(2A) x/y0:%d,%d x/y1:%d,%d x/y2:%d,%d x/y3:%d,%d", V0.x, V0.y, V1.x, V1.y, V2.x, V2.y, V3.x, V3.y);
 
 #ifdef LOG_GP0
-    printf("\ncmd2a quad flat semi v0:%d,%d v1:%d,%d v2:%d,%d v3:%d,%d color:%04x", v0.x, v0.y, v1.x, v1.y, v2.x, v2.y, v3.x, v3.y, color);
+    printf("\ncmd2a quad flat semi v0:%d,%d v1:%d,%d v2:%d,%d v3:%d,%d color:%04x", V0.x, V0.y, V1.x, V1.y, V2.x, V2.y, V3.x, V3.y, CMD[0] & 0xFFFFFF);
 #endif
     RT_draw_flat_triangle_semi(&V0, &V1, &V2, V0.r, V0.g, V0.b);
     RT_draw_flat_triangle_semi(&V1, &V2, &V3, V0.r, V0.g, V0.b);
@@ -370,6 +391,9 @@ void core::cmd2c_quad_opaque_flat_textured_modulated() {
     get_texture_sampler_from_texpage_and_palette(tx_page, palette, &ts);
     update_global_texpage(tx_page);
 
+#ifdef LOG_GP0
+    printf("\nPRIM 2C");
+#endif
     RT_draw_flat_tex_triangle_modulated(&T1, &T2, &T3, col, &ts);
     RT_draw_flat_tex_triangle_modulated(&T2, &T3, &T4, col, &ts);
 }
@@ -402,6 +426,9 @@ WRIOW GP0,(0x2D<<24)                         ; Write GP0 Command Word (Command)
     TEXTURE_SAMPLER ts;
     get_texture_sampler_from_texpage_and_palette(tx_page, palette, &ts);
     update_global_texpage(tx_page);
+#ifdef LOG_GP0
+    printf("\nPRIM 2D");
+#endif
 
     RT_draw_flat_tex_triangle(&T1, &T2, &T3, &ts);
     RT_draw_flat_tex_triangle(&T2, &T3, &T4, &ts);
@@ -435,6 +462,9 @@ void core::cmd2e_quad_flat_textured_modulated() {
     TEXTURE_SAMPLER ts;
     get_texture_sampler_from_texpage_and_palette(tx_page, palette, &ts);
     update_global_texpage(tx_page);
+#ifdef LOG_GP0
+    printf("\nPRIM 2E");
+#endif
 
     RT_draw_flat_tex_triangle_modulated_semi(&T1, &T2, &T3, col, &ts);
     RT_draw_flat_tex_triangle_modulated_semi(&T2, &T3, &T4, col, &ts);
@@ -463,6 +493,9 @@ void core::cmd2f_quad_flat_textured_semi() {
 
     u32 palette = CMD[2] >> 16;
     u32 tx_page = CMD[4] >> 16;
+#ifdef LOG_GP0
+    printf("\nPRIM 2F");
+#endif
 
     TEXTURE_SAMPLER ts;
     get_texture_sampler_from_texpage_and_palette(tx_page, palette, &ts);
@@ -489,9 +522,6 @@ void core::cmd30_tri_shaded_opaque()
     V3.color24_from_cmd(CMD[4]);
 #ifdef LOG_GP0
     printf("\ntri_shaded_opaque ");
-    print_v(&V1);
-    print_v(&V2);
-    print_v(&V3);
 #endif
     RT_draw_shaded_triangle(&V1, &V2, &V3);
 }
@@ -521,6 +551,9 @@ void core::cmd34_tri_shaded_opaque_tex_modulated()
     TEXTURE_SAMPLER ts;
     get_texture_sampler_from_texpage_and_palette(texpage, palette, &ts);
     update_global_texpage(texpage);
+#ifdef LOG_GP0
+    printf("\nPRIM 34");
+#endif
     RT_draw_shaded_tex_triangle_modulated(&V1, &V2, &V3, &ts);
 }
 
@@ -549,6 +582,9 @@ void core::cmd36_tri_shaded_opaque_tex_modulated_semi()
     TEXTURE_SAMPLER ts;
     get_texture_sampler_from_texpage_and_palette(texpage, palette, &ts);
     update_global_texpage(texpage);
+#ifdef LOG_GP0
+    printf("\nPRIM 36");
+#endif
 
     RT_draw_shaded_tex_triangle_modulated_semi(&V1, &V2, &V3, &ts);
 }
@@ -572,9 +608,6 @@ void core::cmd32_tri_shaded_semi_transparent()
     V3.color24_from_cmd(CMD[4]);
 #ifdef LOG_GP0
     printf("\ntri_shaded_opaque ");
-    print_v(&V1);
-    print_v(&V2);
-    print_v(&V3);
 #endif
     RT_draw_shaded_triangle_semi(&V1, &V2, &V3);
 }
@@ -675,6 +708,9 @@ void core::cmd3c_quad_opaque_shaded_textured_modulated() {
     TEXTURE_SAMPLER ts;
     get_texture_sampler_from_texpage_and_palette(texpage, palette, &ts);
     update_global_texpage(texpage);
+#ifdef LOG_GP0
+    printf("\nPRIM 3C");
+#endif
 
     RT_draw_shaded_tex_triangle_modulated(&T1, &T2, &T3, &ts);
     RT_draw_shaded_tex_triangle_modulated(&T2, &T3, &T4, &ts);
@@ -713,6 +749,9 @@ void core::cmd3e_quad_opaque_shaded_textured_modulated_semi() {
     TEXTURE_SAMPLER ts;
     get_texture_sampler_from_texpage_and_palette(texpage, palette, &ts);
     update_global_texpage(texpage);
+#ifdef LOG_GP0
+    printf("\nPRIM 3E");
+#endif
 
     RT_draw_shaded_tex_triangle_modulated_semi(&T1, &T2, &T3, &ts);
     RT_draw_shaded_tex_triangle_modulated_semi(&T2, &T3, &T4, &ts);
@@ -726,6 +765,9 @@ void core::cmd40_line_opaque() {
     V0.xy_from_cmd(CMD[1]);
     V1.xy_from_cmd(CMD[2]);
     bresenham_opaque(&V0, &V1, color);
+#ifdef LOG_GP0
+    printf("\nPRIM 40");
+#endif
 }
 
 void core::cmd60_rect_opaque_flat()
@@ -738,7 +780,7 @@ void core::cmd60_rect_opaque_flat()
     if (ysize > 511) ysize = 511;
 
 #ifdef LOG_GP0
-    printf("\n60_rect_opaque_flat %d %d %d %d %06x", xstart, ystart, xsize, ysize, CMD[0] & 0xFFFFFF);
+    printf("\n60_rect_opaque_flat %d %d %d %d %06x", V0.x, V0.y, xsize, ysize, CMD[0] & 0xFFFFFF);
 #endif
 
     i32 xend = (V0.x + xsize);
@@ -762,15 +804,15 @@ void core::cmd64_rect_opaque_flat_textured_modulated()
     V0.xy_from_cmd(CMD[1]);
 
     u32 col = CMD[0] & 0xFFFFFF;
-    const static float mm = 1.0f / 128.0f;
+    constexpr static float mm = 1.0f / 128.0f;
     float mr = ((float)(col & 0xFF)) * mm;
     float mg = ((float)((col >> 8) & 0xFF)) * mm;
     float mb = ((float)((col >> 16) & 0xFF)) * mm;
 
     // WRIOW GP0,(PAL<<16)+((V&0xFF)<<8)+(U&0xFF) ; Write GP0  Packet Word (Texcoord+Palette)
     u32 clut = (CMD[2] >> 16) & 0xFFFF;
-    u32 v = (CMD[2] >> 8) & 0xFF;
-    u32 ustart = CMD[2] & 0xFF;
+    i32 v = (CMD[2] >> 8) & 0xFF;
+    i32 ustart = CMD[2] & 0xFF;
 
     // WRIOW GP0,(HEIGHT<<16)+(WIDTH&0xFFFF)      ; Write GP0  Packet Word (Width+Height)
     i32 height = (CMD[3] >> 16) & 0xFFFF;
@@ -781,13 +823,15 @@ void core::cmd64_rect_opaque_flat_textured_modulated()
     i32 xend = (V0.x + width);
     i32 yend = (V0.y + height);
 #ifdef LOG_GP0
-    printf("\nrect_opaque_flat %d %d %d %d", xstart, ystart, width, height);
+    printf("\nrect_opaque_flat %d %d %d %d", V0.x, V0.y, width, height);
 #endif
+    i32 u_increment = rect.texture_x_flip ? -1 : 1;
+    i32 v_increment = rect.texture_y_flip ? -1 : 1;
 
     TEXTURE_SAMPLER ts;
     get_texture_sampler_from_texpage_and_palette(TEXPAGE, clut, &ts);
     for (i32 y = V0.y; y < yend; y++) {
-        u32 u = ustart;
+        i32 u = ustart;
         for (i32 x = V1.y; x < xend; x++) {
             u16 color = ts.sample(&ts, u, v);
             u32 hbit = color & 0x8000;
@@ -801,9 +845,9 @@ void core::cmd64_rect_opaque_flat_textured_modulated()
             u32 lbit = ((u32)r) | ((u32)g << 5) | ((u32)b << 10);
 
             setpix(y, x, lbit, 1, hbit);
-            u++;
+            u += u_increment; u &= 0xFF;
         }
-        v++;
+        v += v_increment; v &= 0xFF;
     }
 }
 
@@ -813,10 +857,10 @@ void core::cmd65_rect_opaque_flat_textured()
     // 1 WRIOW GP0,(Y<<16)+(X&0xFFFF)               ; Write GP0  Packet Word (Vertex)
     // 2 WRIOW GP0,(PAL<<16)+((V&0xFF)<<8)+(U&0xFF) ; Write GP0  Packet Word (Texcoord+Palette)
     // 3 WRIOW GP0,(HEIGHT<<16)+(WIDTH&0xFFFF)      ; Write GP0  Packet Word (Width+Height)
-
+    V0.xy_from_cmd(CMD[1]);
     u32 clut = (CMD[2] >> 16) & 0xFFFF;
-    u32 v = (CMD[2] >> 8) & 0xFF;
-    u32 ustart = CMD[2] & 0xFF;
+    i32 v = (CMD[2] >> 8) & 0xFF;
+    i32 ustart = CMD[2] & 0xFF;
 
     i32 height = (CMD[3] >> 16) & 0xFFFF;
     i32 width = CMD[3] & 0xFFFF;
@@ -826,22 +870,25 @@ void core::cmd65_rect_opaque_flat_textured()
     u32 xend = (V0.x + width);
     u32 yend = (V0.y + height);
 #ifdef LOG_GP0
-    printf("\nrect_opaque_flat %d %d %d %d", xstart, ystart, width, height);
+    printf("\nrect_opaque_flat %d %d %d %d", V0.x, V0.y, width, height);
 #endif
+    i32 u_increment = rect.texture_x_flip ? -1 : 1;
+    i32 v_increment = rect.texture_y_flip ? -1 : 1;
+
 
     TEXTURE_SAMPLER ts;
     //get_texture_sampler_clut(texture_depth, page_base_x, page_base_y, clut, &ts);
     get_texture_sampler_from_texpage_and_palette(TEXPAGE, clut, &ts);
     for (i32 y = V0.y; y < yend; y++) {
-        u32 u = ustart;
+        i32 u = ustart;
         for (i32 x = V0.x; x < xend; x++) {
             u16 color = ts.sample(&ts, u, v);
             u32 hbit = color & 0x8000;
             u32 lbit = color & 0x7FFF;
             setpix(y, x, lbit, 1, hbit);
-            u++;
+            u += u_increment; u &= 0xFF;
         }
-        v++;
+        v += v_increment; v &= 0xFF;
     }
 }
 
@@ -860,8 +907,8 @@ void core::cmd66_rect_semi_flat_textured_modulated()
 
     // WRIOW GP0,(PAL<<16)+((V&0xFF)<<8)+(U&0xFF) ; Write GP0  Packet Word (Texcoord+Palette)
     u32 clut = (CMD[2] >> 16) & 0xFFFF;
-    u32 v = (CMD[2] >> 8) & 0xFF;
-    u32 ustart = CMD[2] & 0xFF;
+    i32 v = (CMD[2] >> 8) & 0xFF;
+    i32 ustart = CMD[2] & 0xFF;
 
     // WRIOW GP0,(HEIGHT<<16)+(WIDTH&0xFFFF)      ; Write GP0  Packet Word (Width+Height)
     i32 height = (CMD[3] >> 16) & 0xFFFF;
@@ -872,13 +919,16 @@ void core::cmd66_rect_semi_flat_textured_modulated()
     i32 xend = V0.x + width;
     i32 yend = V0.y + height;
 #ifdef LOG_GP0
-    printf("\nrect_opaque_flat %d %d %d %d", xstart, ystart, width, height);
+    printf("\nrect_opaque_flat %d %d %d %d", V0.x, V0.y, width, height);
 #endif
+    i32 u_increment = rect.texture_x_flip ? -1 : 1;
+    i32 v_increment = rect.texture_y_flip ? -1 : 1;
+
 
     TEXTURE_SAMPLER ts;
     get_texture_sampler_from_texpage_and_palette(TEXPAGE, clut, &ts);
     for (i32 y = V0.y; y < yend; y++) {
-        u32 u = ustart;
+        i32 u = ustart;
         for (i32 x = V0.x; x < xend; x++) {
             u16 color = ts.sample(&ts, u, v);
             u32 hbit = color & 0x8000;
@@ -893,9 +943,9 @@ void core::cmd66_rect_semi_flat_textured_modulated()
             lbit = ((u32)r) | ((u32)g << 5) | ((u32)b << 10);
 
             semipix(y, x, lbit, 1, hbit);
-            u++;
+            u += u_increment; u &= 0xFF;
         }
-        v++;
+        v += v_increment; v &= 0xFF;
     }
 }
 
@@ -909,8 +959,8 @@ void core::cmd67_rect_semi_flat_textured()
     V0.xy_from_cmd(CMD[1]);
 
     u32 clut = (CMD[2] >> 16) & 0xFFFF;
-    u32 v = (CMD[2] >> 8) & 0xFF;
-    u32 ustart = CMD[2] & 0xFF;
+    i32 v = (CMD[2] >> 8) & 0xFF;
+    i32 ustart = CMD[2] & 0xFF;
 
     i32 height = (CMD[3] >> 16) & 0xFFFF;
     i32 width = CMD[3] & 0xFFFF;
@@ -920,22 +970,25 @@ void core::cmd67_rect_semi_flat_textured()
     i32 xend = V0.x + width;;
     i32 yend = V0.y + height;
 #ifdef LOG_GP0
-    printf("\nrect_opaque_flat %d %d %d %d", xstart, ystart, width, height);
+    printf("\nrect_opaque_flat %d %d %d %d", V0.x, V0.y, width, height);
 #endif
+    i32 u_increment = rect.texture_x_flip ? -1 : 1;
+    i32 v_increment = rect.texture_y_flip ? -1 : 1;
+
 
     TEXTURE_SAMPLER ts;
     //get_texture_sampler_clut(texture_depth, page_base_x, page_base_y, clut, &ts);
     get_texture_sampler_from_texpage_and_palette(TEXPAGE, clut, &ts);
     for (i32 y = V0.y; y < yend; y++) {
-        u32 u = ustart;
+        i32 u = ustart;
         for (i32 x = V0.x; x < xend; x++) {
             u16 color = ts.sample(&ts, u, v);
             u32 hbit = color & 0x8000;
             u32 lbit = color & 0x7FFF;
             semipix(y, x, lbit, 1, hbit);
-            u++;
+            u += u_increment; u &= 0xFF;
         }
-        v++;
+        v += v_increment; v &= 0xFF;
     }
 }
 
@@ -944,25 +997,33 @@ void core::cmd68_rect_1x1()
     V0.xy_from_cmd(CMD[1]);
     u32 color = BGR24to15(CMD[0] & 0xFFFFFF);
     setpix(V0.y, V0.x, color, 0, 0);
+#ifdef LOG_GP0
+    printf("\nPRIM 68");
+#endif
 }
 
 void core::cmd6d_rect_1x1_tex()
 {
     V0.xy_from_cmd(CMD[1]);
-    u32 v = (CMD[2] & 0xFF00) >> 8;
-    u32 u = (CMD[2] & 0xFF);
+    i32 v = (CMD[2] & 0xFF00) >> 8;
+    i32 u = (CMD[2] & 0xFF);
     u32 palette = (CMD[2] >> 16);
     TEXTURE_SAMPLER ts;
     get_texture_sampler_from_texpage_and_palette(TEXPAGE, palette, &ts);
     u32 color = ts.sample(&ts, u, v);
     setpix(V0.y, V0.x, color & 0x7FFF, 1, color & 0x8000);
+    //setpix(V0.y, V0.x, 0x7FFF, 1, 0x8000);
+#ifdef LOG_GP0
+    printf("\nPRIM 6D");
+#endif
+
 }
 
 void core::cmd6c_rect_1x1_tex_modulated()
 {
     V0.xy_from_cmd(CMD[1]);
-    u32 v = (CMD[2] & 0xFF00) >> 8;
-    u32 u = (CMD[2] & 0xFF);
+    i32 v = (CMD[2] & 0xFF00) >> 8;
+    i32 u = (CMD[2] & 0xFF);
     u32 palette = (CMD[2] >> 16);
     TEXTURE_SAMPLER ts;
     get_texture_sampler_from_texpage_and_palette(TEXPAGE, palette, &ts);
@@ -985,13 +1046,17 @@ void core::cmd6c_rect_1x1_tex_modulated()
     color = ((u32)r) | ((u32)g << 5) | ((u32)b << 10);
 
     setpix(V0.y, V0.x, color & 0x7FFF, 1, hbit);
+    //setpix(V0.y, V0.x, 0x7FFF, 1, 0x8000);
+#ifdef LOG_GP0
+    printf("\nPRIM 6C");
+#endif
 }
 
 void core::cmd6e_rect_1x1_tex_semi_modulated()
 {
     V0.xy_from_cmd(CMD[1]);
-    u32 v = (CMD[2] & 0xFF00) >> 8;
-    u32 u = (CMD[2] & 0xFF);
+    i32 v = (CMD[2] & 0xFF00) >> 8;
+    i32 u = (CMD[2] & 0xFF);
     u32 palette = (CMD[2] >> 16);
     TEXTURE_SAMPLER ts;
     get_texture_sampler_from_texpage_and_palette(TEXPAGE, palette, &ts);
@@ -1009,51 +1074,66 @@ void core::cmd6e_rect_1x1_tex_semi_modulated()
     float b = (float)((color >> 10) & 0x1F) * bm;
 
     color = ((u32)r) | ((u32)g << 5) | ((u32)b << 10);
+#ifdef LOG_GP0
+    printf("\nPRIM 6E");
+#endif
 
     semipix(V0.y, V0.x, color & 0x7FFF, 1, hbit);
+    //semipix(V0.y, V0.x, 0x7FFF, 1, 0x8000);
+
 }
 
 
 void core::cmd6f_rect_1x1_tex_semi()
 {
     V0.xy_from_cmd(CMD[1]);
-    u32 v = (CMD[2] & 0xFF00) >> 8;
-    u32 u = (CMD[2] & 0xFF);
+    i32 v = (CMD[2] & 0xFF00) >> 8;
+    i32 u = (CMD[2] & 0xFF);
     u32 palette = (CMD[2] >> 16);
     TEXTURE_SAMPLER ts;
     get_texture_sampler_from_texpage_and_palette(TEXPAGE, palette, &ts);
     u32 color = ts.sample(&ts, u, v);
     semipix(V0.y, V0.x, color & 0x7FFF, 1, color & 0x8000);
+#ifdef LOG_GP0
+    printf("\nPRIM 6F");
+#endif
+    //semipix(V0.y, V0.x, 0x7FFF, 1, 0x8000);
 }
 
 
 void core::cmd80_vram_copy()
 {
-    u32 y1 = CMD[1] >> 16;
-    u32 x1 = CMD[1] & 0xFFFF;
-    u32 y2 = CMD[2] >> 16;
-    u32 x2 = CMD[2] & 0xFFFF;
+    u32 src_y = CMD[1] >> 16;
+    u32 src_x = CMD[1] & 0xFFFF;
+    u32 dest_y = CMD[2] >> 16;
+    u32 dest_x = CMD[2] & 0xFFFF;
     u32 height = CMD[3] >> 16;
-    i32 width = CMD[3] & 0xFFFF;
+    u32 width = CMD[3] & 0xFFFF;
 #ifdef LOG_GP0
-    printf("\nGP0 cmd80 copy from %d,%d to %d,%d size:%d,%d", x1, y1, x2, y2, width, height);
+    printf("\nGP0 cmd80 copy from %d,%d to %d,%d size:%d,%d", src_x, src_y, dest_x,dest_y, width, height);
 #endif
 
-    for (u32 iy = 0; iy < height; iy++) {
-        for (u32 ix = 0; ix < width; ix++) {
-            u32 get_addr = ((ix+x1) & 1023) * 2;
-            get_addr += ((iy+y1) & 511) * 2048; // 2048 bytes per 1024-pixel row
+    for (u32 row = 0; row < height; row++) {
+        for (u32 col = 0; col < width; col++) {
+            u32 vram_x = (src_x + col) & 1023;
+            u32 vram_y = (src_y + row) & 511;
+            u32 vram_idx = (vram_y * 1024 + vram_x) * 2;
+            u16 v = cR16(VRAM, vram_idx & 0xFFFFF);
+
+            vram_x = (dest_x + col) & 1023;
+            vram_y = (dest_y + row) & 511;
+            vram_idx = (vram_y * 1024 + vram_x) * 2;
+
             if (preserve_masked_pixels) {
-                u16 t = cR16(VRAM, ((((iy + y2) & 511) * 2048) + (((ix + x2) & 1023) * 2))  & 0xFFFFF);
+                u16 t = cR16(VRAM, vram_idx & 0xFFFFF);
                 if (t & 0x8000) continue;
             }
-
-            u16 v = cR16(VRAM, get_addr & 0xFFFFF);
-            setpix(iy+y2, ix+x2, v & 0x7FFF, 1, v & 0x8000);
+            cW16(VRAM, vram_idx & 0xFFFFF, v | (force_set_mask_bit * 0x8000));
+            //cW16(VRAM, vram_idx & 0xFFFFF, 0xFFFF);
         }
     }
 
-    //printf("\nCOPY VRAM %d,%d to %d,%d size:%d,%d")
+    //printf("\nCOPY VRAM %d,%d to %d,%d size:%d,%d");
 }
 
 void core::rect_opaque_flat_textured_modulated_xx(u32 wh)
@@ -1066,8 +1146,11 @@ void core::rect_opaque_flat_textured_modulated_xx(u32 wh)
 
     // WRIOW GP0,(PAL<<16)+((V&0xFF)<<8)+(U&0xFF) ; Write GP0  Packet Word (Texcoord+Palette)
     u32 clut = (CMD[2] >> 16) & 0xFFFF;
-    u32 v = (CMD[2] >> 8) & 0xFF;
-    u32 ustart = CMD[2] & 0xFF;
+    i32 v = (CMD[2] >> 8) & 0xFF;
+    i32 ustart = CMD[2] & 0xFF;
+
+    i32 u_increment = rect.texture_x_flip ? -1 : 1;
+    i32 v_increment = rect.texture_y_flip ? -1 : 1;
 
     // WRIOW GP0,(HEIGHT<<16)+(WIDTH&0xFFFF)      ; Write GP0  Packet Word (Width+Height)
     i32 height = wh > 511 ? 511 : wh;
@@ -1076,7 +1159,7 @@ void core::rect_opaque_flat_textured_modulated_xx(u32 wh)
     i32 xend = V0.x + width;;
     i32 yend = V0.y + height;
 #ifdef LOG_GP0
-    printf("\nrect_opaque_flat %d %d %d %d", xstart, ystart, width, height);
+    printf("\nrect_opaque_flat %d %d %d %d", V0.x, V0.y, width, height);
 #endif
 
     u32 tc = CMD[0] & 0xFFFFFF;
@@ -1088,7 +1171,7 @@ void core::rect_opaque_flat_textured_modulated_xx(u32 wh)
     TEXTURE_SAMPLER ts;
     get_texture_sampler_from_texpage_and_palette(TEXPAGE, clut, &ts);
     for (i32 y = V0.y; y < yend; y++) {
-        u32 u = ustart;
+        i32 u = ustart;
         for (i32 x = V0.x; x < xend; x++) {
             u16 color = ts.sample(&ts, u, v);
             u32 hbit = color & 0x8000;
@@ -1101,9 +1184,9 @@ void core::rect_opaque_flat_textured_modulated_xx(u32 wh)
             if (b > 31.0f) b = 31.0f;
 
             setpix_split(y, x, (u32)r, (u32)g, (u32)b, 1, hbit);
-            u++;
+            u += u_increment; u &= 0xFF;
         }
-        v++;
+        v += v_increment; v &= 0xFF;
     }
 }
 
@@ -1127,8 +1210,8 @@ void core::rect_opaque_flat_textured_xx(u32 wh)
 
     // WRIOW GP0,(PAL<<16)+((V&0xFF)<<8)+(U&0xFF) ; Write GP0  Packet Word (Texcoord+Palette)
     u32 clut = (CMD[2] >> 16) & 0xFFFF;
-    u32 v = (CMD[2] >> 8) & 0xFF;
-    u32 ustart = CMD[2] & 0xFF;
+    i32 v = (CMD[2] >> 8) & 0xFF;
+    i32 ustart = CMD[2] & 0xFF;
 
     // WRIOW GP0,(HEIGHT<<16)+(WIDTH&0xFFFF)      ; Write GP0  Packet Word (Width+Height)
     i32 height = wh > 511 ? 511 : wh;
@@ -1136,22 +1219,25 @@ void core::rect_opaque_flat_textured_xx(u32 wh)
 
     i32 xend = V0.x + width;;
     i32 yend = V0.y + height;
+    i32 u_increment = rect.texture_x_flip ? -1 : 1;
+    i32 v_increment = rect.texture_y_flip ? -1 : 1;
+
 #ifdef LOG_GP0
-    printf("\nrect_opaque_flat %d %d %d %d", xstart, ystart, width, height);
+    printf("\nrect_opaque_flat %d %d %d %d", V0.x, V0.y, width, height);
 #endif
 
     TEXTURE_SAMPLER ts;
     get_texture_sampler_from_texpage_and_palette(TEXPAGE, clut, &ts);
     for (i32 y = V0.y; y < yend; y++) {
-        u32 u = ustart;
+        i32 u = ustart;
         for (i32 x = V0.x; x < xend; x++) {
             u16 color = ts.sample(&ts, u, v);
             u32 hbit = color & 0x8000;
             u32 lbit = color & 0x7FFF;
             setpix(y, x, lbit, 1, hbit);
-            u++;
+            u += u_increment; u &= 0xFF;
         }
-        v++;
+        v += v_increment; v &= 0xFF;
     }
 }
 
@@ -1176,8 +1262,8 @@ void core::rect_semi_flat_textured_modulated_xx(u32 wh)
 
     // WRIOW GP0,(PAL<<16)+((V&0xFF)<<8)+(U&0xFF) ; Write GP0  Packet Word (Texcoord+Palette)
     u32 clut = (CMD[2] >> 16) & 0xFFFF;
-    u32 v = (CMD[2] >> 8) & 0xFF;
-    u32 ustart = CMD[2] & 0xFF;
+    i32 v = (CMD[2] >> 8) & 0xFF;
+    i32 ustart = CMD[2] & 0xFF;
 
     // WRIOW GP0,(HEIGHT<<16)+(WIDTH&0xFFFF)      ; Write GP0  Packet Word (Width+Height)
     i32 height = wh > 511 ? 511 : wh;
@@ -1188,7 +1274,7 @@ void core::rect_semi_flat_textured_modulated_xx(u32 wh)
     xend = xend > 1024 ? 1024 : xend;
     yend = yend > 512 ? 512 : yend;
 #ifdef LOG_GP0
-    printf("\nrect_opaque_flat %d %d %d %d", xstart, ystart, width, height);
+    printf("\nrect_opaque_flat %d %d %d %d", V0.x, V0.y, width, height);
 #endif
 
     u32 tc = CMD[0] & 0xFFFFFF;
@@ -1196,11 +1282,14 @@ void core::rect_semi_flat_textured_modulated_xx(u32 wh)
     float rm = (float)(tc & 0xFF) * mm;
     float gm = (float)((tc >> 8) & 0xFF) * mm;
     float bm = (float)((tc >> 16) & 0xFF) * mm;
+    i32 u_increment = rect.texture_x_flip ? -1 : 1;
+    i32 v_increment = rect.texture_y_flip ? -1 : 1;
+
 
     TEXTURE_SAMPLER ts;
     get_texture_sampler_from_texpage_and_palette(TEXPAGE, clut, &ts);
     for (i32 y = V0.y; y < yend; y++) {
-        u32 u = ustart;
+        i32 u = ustart;
         for (i32 x = V0.x; x < xend; x++) {
             u16 color = ts.sample(&ts, u, v);
             u32 hbit = color & 0x8000;
@@ -1213,9 +1302,9 @@ void core::rect_semi_flat_textured_modulated_xx(u32 wh)
             if (b > 31.0f) b = 31.0f;
 
             semipix_split(y, x, (u32)r, (u32)g, (u32)b, 1, hbit);
-            u++;
+            u += u_increment; u &= 0xFF;
         }
-        v++;
+        v += v_increment; v &= 0xFF;
     }
 }
 
@@ -1239,8 +1328,8 @@ void core::rect_semi_flat_textured_xx(u32 wh)
 
     // WRIOW GP0,(PAL<<16)+((V&0xFF)<<8)+(U&0xFF) ; Write GP0  Packet Word (Texcoord+Palette)
     u32 clut = (CMD[2] >> 16) & 0xFFFF;
-    u32 v = (CMD[2] >> 8) & 0xFF;
-    u32 ustart = CMD[2] & 0xFF;
+    i32 v = (CMD[2] >> 8) & 0xFF;
+    i32 ustart = CMD[2] & 0xFF;
 
     // WRIOW GP0,(HEIGHT<<16)+(WIDTH&0xFFFF)      ; Write GP0  Packet Word (Width+Height)
     i32 height = wh > 511 ? 511 : wh;
@@ -1249,21 +1338,24 @@ void core::rect_semi_flat_textured_xx(u32 wh)
     i32 xend = V0.x + width;;
     i32 yend = V0.y + height;
 #ifdef LOG_GP0
-    printf("\nrect_opaque_flat %d %d %d %d", xstart, ystart, width, height);
+    printf("\nrect_opaque_flat %d %d %d %d", V0.x, V0.y, width, height);
 #endif
+
+    i32 u_increment = rect.texture_x_flip ? -1 : 1;
+    i32 v_increment = rect.texture_y_flip ? -1 : 1;
 
     TEXTURE_SAMPLER ts;
     get_texture_sampler_from_texpage_and_palette(TEXPAGE, clut, &ts);
     for (i32 y = V0.y; y < yend; y++) {
-        u32 u = ustart;
+        i32 u = ustart;
         for (i32 x = V0.x; x < xend; x++) {
             u16 color = ts.sample(&ts, u, v);
             u32 hbit = color & 0x8000;
             u32 lbit = color & 0x7FFF;
             semipix(y, x, lbit, 1, hbit);
-            u++;
+            u += u_increment; u &= 0xFF;
         }
-        v++;
+        v += v_increment; v &= 0xFF;
     }
 }
 
@@ -1486,7 +1578,7 @@ void core::gp0_cmd(u32 cmd) {
         cmd_arg_num = 1;
         u32 cmdr = cmd >> 24;
 #ifdef LOG_GP0
-        printf("\nCMD %02x", cmdr);
+        printf("\n(GPU) CMD %02x", cmdr);
 #endif
         switch(cmdr) {
             case 0: // NOP
