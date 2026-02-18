@@ -20,14 +20,14 @@ void core::setpix(i32 y, i32 x, u32 color, u32 is_tex, u32 tex_mask)
 
     u32 addr = ((2048*ry)+(rx*2)) & 0xFFFFF;
 
-    if (preserve_masked_pixels) {
+    if (io.GPUSTAT.preserve_masked_pixels) {
         u16 v = cR16(VRAM, addr);
         if (v & 0x8000) return;
     }
     if (is_tex) {
         if (!(tex_mask || (color !=0))) return;
     }
-    u32 mask_bit = is_tex * (tex_mask | force_set_mask_bit);
+    u32 mask_bit = is_tex * (tex_mask | force_set_mask);
     cW16(VRAM, addr, color | mask_bit);
     //cW16(VRAM, addr, color);
 }
@@ -41,7 +41,7 @@ void core::setpix_split(i32 y, i32 x, u32 r, u32 g, u32 b, u32 is_tex, u32 tex_m
     if ((rx < draw_area_left) || (rx > draw_area_right)) return;
     u32 addr = (2048*ry)+(rx*2);
 
-    if (preserve_masked_pixels) {
+    if (io.GPUSTAT.preserve_masked_pixels) {
         u16 v = cR16(VRAM, addr);
         if (v & 0x8000) return;
     }
@@ -49,7 +49,7 @@ void core::setpix_split(i32 y, i32 x, u32 r, u32 g, u32 b, u32 is_tex, u32 tex_m
     if (is_tex) {
         if (!(tex_mask || (color !=0))) return;
     }
-    u32 mask_bit = is_tex * (tex_mask | force_set_mask_bit);
+    u32 mask_bit = is_tex * (tex_mask | force_set_mask);
     cW16(VRAM, addr, color | mask_bit);
 }
 
@@ -63,8 +63,8 @@ static inline u32 BLEND1(u32 b, u32 f)
 static inline u32 BLEND2(u32 b, u32 f)
 {
     // B - F
-    i32 o = (i32)b - (i32)f;
-    return o < 0 ? 0 : (u32)o;
+    i32 o = static_cast<i32>(b) - static_cast<i32>(f);
+    return o < 0 ? 0 : static_cast<u32>(o);
 }
 
 static inline u32 BLEND3(u32 b, u32 f)
@@ -170,7 +170,7 @@ void core::semipix(i32 y, i32 x, u32 color, u32 is_tex, u32 tex_mask)
     if ((rx < draw_area_left) || (rx > draw_area_right)) return;
     u32 addr = ((2048*ry)+(rx*2)) & 0xFFFFF;
 
-    if (preserve_masked_pixels) {
+    if (io.GPUSTAT.preserve_masked_pixels) {
         u16 v = cR16(VRAM, addr);
         if (v & 0x8000) return;
     }
@@ -180,14 +180,14 @@ void core::semipix(i32 y, i32 x, u32 color, u32 is_tex, u32 tex_mask)
         u32 bg = cR16(VRAM, addr);
 
         // Then blend...
-        color = blend_semi15(semi_transparency, bg, color);
+        color = blend_semi15(io.GPUSTAT.semi_transparency, bg, color);
     }
     else {
         if (color == 0) return;
     }
 
     // Now write...
-    u32 mask_bit = is_tex * (tex_mask | force_set_mask_bit);
+    u32 mask_bit = is_tex * (tex_mask | force_set_mask);
     cW16(VRAM, addr, color | mask_bit);
 }
 
@@ -200,7 +200,7 @@ void core::semipixm(i32 y, i32 x, u32 color, u32 mode, u32 is_tex, u32 tex_mask)
     if ((rx < draw_area_left) || (rx > draw_area_right)) return;
     u32 addr = ((2048*ry)+(rx*2)) & 0xFFFFF;
 
-    if (preserve_masked_pixels) {
+    if (io.GPUSTAT.preserve_masked_pixels) {
         u16 v = cR16(VRAM, addr);
         if (v & 0x8000) return;
     }
@@ -217,7 +217,7 @@ void core::semipixm(i32 y, i32 x, u32 color, u32 mode, u32 is_tex, u32 tex_mask)
     }
 
     // Now write...
-    u32 mask_bit = is_tex * (tex_mask | force_set_mask_bit);
+    u32 mask_bit = is_tex * (tex_mask | force_set_mask);
     cW16(VRAM, addr, color | mask_bit);
 }
 
@@ -230,7 +230,7 @@ void core::semipix_split(i32 y, i32 x, u32 r, u32 g, u32 b, u32 is_tex, u32 tex_
     if ((rx < draw_area_left) || (rx > draw_area_right)) return;
     u32 addr = ((2048*ry)+(rx*2)) & 0xFFFFF;
 
-    if (preserve_masked_pixels) {
+    if (io.GPUSTAT.preserve_masked_pixels) {
         u16 v = cR16(VRAM, addr);
         if (v & 0x8000) return;
     }
@@ -241,7 +241,7 @@ void core::semipix_split(i32 y, i32 x, u32 r, u32 g, u32 b, u32 is_tex, u32 tex_
         u32 bg = cR16(VRAM, addr);
 
         // Then blend...
-        color = blend_semi15_split(semi_transparency, bg, r, g, b);
+        color = blend_semi15_split(io.GPUSTAT.semi_transparency, bg, r, g, b);
     }
     else {
         color = r | (g << 5) | (b << 10);
@@ -249,7 +249,7 @@ void core::semipix_split(i32 y, i32 x, u32 r, u32 g, u32 b, u32 is_tex, u32 tex_
     }
 
     // Now write...
-    u32 mask_bit = is_tex * (tex_mask | force_set_mask_bit);
+    u32 mask_bit = is_tex * (tex_mask | force_set_mask);
     cW16(VRAM, addr, color | mask_bit);
 }
 

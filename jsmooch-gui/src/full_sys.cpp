@@ -896,7 +896,7 @@ void full_system::load_default_ROM()
             break;
         case jsm::systems::PS1:
             //RenderPolygon16BPP
-            //worked = grab_ROM(&ROMs, which, "psxtest_cpu.exe", nullptr); // slammin'!
+            worked = grab_ROM(&ROMs, which, "psxtest_cpu.exe", nullptr); // slammin'!
             //worked = grab_ROM(&ROMs, which, "psxtest_cpx.exe", nullptr);
             //worked = grab_ROM(&ROMs, which, "psxtest_gte.exe", nullptr);
             //worked = grab_ROM(&ROMs, which, "ps1-tests-built/cpu/cop/cop.exe", nullptr);
@@ -920,25 +920,11 @@ void full_system::load_default_ROM()
             //CTEST("SPUDELAY");
 
 #undef CTEST
-#define CTEST(x) worked = grab_ROM(&ROMs, which, "PSX/DMA/DMA" x "/DMA" x ".exe", nullptr)
-            //CTEST("BLOCKGPU");
-            //CTEST("CD");
-            //CTEST("GPU");
-            //CTEST("LINKEDLIST");
-            //CTEST("OTCData");
-            //CTEST("SPU");
-            //CTEST("SPUDELAY");
-
-#undef CTEST
-
 #define CTEST(x) worked = grab_ROM(&ROMs, which, "PSX/TIMER/" x "/" x ".exe", nullptr)
             //CTEST("TimerCalib");
             //CTEST("TimerHBlank");
             //CTEST("TimerSet");
             //CTEST("TimerWrap");
-#undef CTEST
-#define CTEST(x) worked = grab_ROM(&ROMs, which, "PSX/DMA/DMA" x "/DMA" x ".exe", nullptr)
-            //CTEST("Wrap");
 #undef CTEST
 #define CTEST(x) worked = grab_ROM(&ROMs, which, "PSX/BUS/" x "/" x ".exe", nullptr)
             //CTEST("Load816Unalign");
@@ -1004,7 +990,7 @@ void full_system::load_default_ROM()
             //worked = grab_cue(&ROMs, which, "Crash Bandicoot 1", nullptr);
             //worked = grab_cue(&ROMs, which, "Hydro Thunder (USA)", nullptr);
             //worked = grab_cue(&ROMs, which, "Cool Boarders 2 (USA)", nullptr);
-            worked = grab_cue(&ROMs, which, "Ridge Racer (USA)", nullptr);
+            //worked = grab_cue(&ROMs, which, "Ridge Racer (USA)", nullptr);
             //worked = grab_cue(&ROMs, which, "Spyro the Dragon (USA)", nullptr);
             //worked = grab_cue(&ROMs, which, "Rayman 2 - The Great Escape (USA) (En,Fr,Es)", nullptr);
             //worked = grab_cue(&ROMs, which, "Earthworm Jim 2 (Europe)", nullptr);

@@ -21,15 +21,15 @@
 namespace PS1 {
 void core::setup_dotclock()
 {
-    if (gpu.hr2) {
-        gpu.hres = 368;
+    if (gpu.io.GPUSTAT.hres2) {
+        gpu.out_hres = 368;
     }
     else {
         static constexpr u32 table[4] =  {256, 320, 512, 640};
-        gpu.hres = table[gpu.hr1];
+        gpu.out_hres = table[gpu.io.GPUSTAT.hres1];
     }
     float cycles_per_line = (static_cast<float>(clock.timing.gpu.hz) / clock.timing.fps) / static_cast<float>(clock.timing.frame.lines);
-    float cycles_per_px = cycles_per_line / static_cast<float>(gpu.hres);
+    float cycles_per_px = cycles_per_line / static_cast<float>(gpu.out_hres);
 
     clock.dot.horizontal_px = (((gpu.display_horiz_end-gpu.display_horiz_start)/static_cast<u32>(cycles_per_px))+2) & ~3;
     clock.dot.vertical_px = clock.timing.frame.lines - clock.timing.frame.vblank.start_on_line;
@@ -80,7 +80,7 @@ void core::unready_cmd()
     //static u32 e = 0;
     //e++;
     //printf("\nUNREADY CMD %d", e);
-    io.GPUSTAT &= 0xFBFFFFFF;
+    io.GPUSTAT.ready_recv_cmd = 0;
 }
 
 void core::cmd02_quick_rect()
@@ -215,24 +215,10 @@ void core::cmd22_tri_flat_semi_transparent()
 
 void core::update_global_texpage(u32 texpage_in) {
     TEXPAGE = texpage_in;
-    page_base_x = (texpage_in & 15) << 3;
-    page_base_y = (texpage_in >> 4) & 1;
-    semi_transparency = (texpage_in >> 5) & 3;
-    switch ((texpage_in >> 7) & 3) {
-        case 0:
-            texture_depth = e_t4bit;
-            break;
-        case 1:
-            texture_depth = e_t8bit;
-            break;
-        case 2:
-            texture_depth = e_t15bit;
-            break;
-        case 3:
-            printf("\nUNHANDLED TEXTAR DEPTH 3!!!");
-            break;
-    }
-    GPUSTAT_update();
+    io.GPUSTAT.texture_page_x_base = (texpage_in & 15) << 3;
+    io.GPUSTAT.texture_page_y_base = (texpage_in >> 4) & 1;
+    io.GPUSTAT.semi_transparency = (texpage_in >> 5) & 3;
+    io.GPUSTAT.texture_page_colors = (texpage_in >> 7) & 3;
 }
 
 void core::cmd24_tri_raw_modulated()
@@ -1124,11 +1110,11 @@ void core::cmd80_vram_copy()
             vram_y = (dest_y + row) & 511;
             vram_idx = (vram_y * 1024 + vram_x) * 2;
 
-            if (preserve_masked_pixels) {
+            if (io.GPUSTAT.preserve_masked_pixels) {
                 u16 t = cR16(VRAM, vram_idx & 0xFFFFF);
                 if (t & 0x8000) continue;
             }
-            cW16(VRAM, vram_idx & 0xFFFFF, v | (force_set_mask_bit * 0x8000));
+            cW16(VRAM, vram_idx & 0xFFFFF, v | force_set_mask);
             //cW16(VRAM, vram_idx & 0xFFFFF, 0xFFFF);
         }
     }
@@ -1397,18 +1383,18 @@ void core::gp0_image_save_continue() {
     io.GPUREAD = px;
     gp0_transfer_remaining--;
     if (gp0_transfer_remaining == 0) {
+        printf("\n0 TRANSFER REMAINING!");
         current_ins = nullptr;
         handle_gp0 = &core::gp0_cmd;
         ready_cmd();
-        unready_vram_to_CPU();
     }
 }
 
 void core::gp0_image_load_continue(u32 cmd)
 {
-    /*recv_gp0[recv_gp0_len] = cmd;
+    recv_gp0[recv_gp0_len] = cmd;
     recv_gp0_len++;
-    if (recv_gp0_len >= (1024*1024)) {
+    /*if (recv_gp0_len >= (1024*1024)) {
         printf("\nWARNING GP0 TRANSFER OVERFLOW!");
         recv_gp0_len--;
     }*/
@@ -1421,7 +1407,7 @@ void core::gp0_image_load_continue(u32 cmd)
         u32 x = load_buffer.x+load_buffer.img_x;
         u32 addr = (2048*y)+(x*2) & 0xFFFFF;
         u32 draw_it = 1;
-        if (preserve_masked_pixels) {
+        if (io.GPUSTAT.preserve_masked_pixels) {
             u16 v = cR16(VRAM, addr & 0xFFFFF);
             if (v & 0x8000) draw_it = 0;
         }
@@ -1438,11 +1424,11 @@ void core::gp0_image_load_continue(u32 cmd)
     }
     gp0_transfer_remaining--;
     if (gp0_transfer_remaining == 0) {
-        //printf("\nTRANSFER COMPLETE!");
+        printf("\nTRANSFER COMPLETE!");
         current_ins = nullptr;
         handle_gp0 = &core::gp0_cmd;
         ready_cmd();
-        unready_recv_dma();
+        //unready_recv_dma();
     }
 }
 
@@ -1456,6 +1442,7 @@ void core::gp0_image_save_start() {
 
     // Get imgsize, round it
     u32 imgsize = ((width * height) + 1) & 0xFFFFFFFE;
+    printf("\nVRAM->CPU IMGSIZE:%d  X:%d Y:%d WIDTH:%d HEIGHT:%d", imgsize, x, y, width, height);
     gp0_transfer_remaining = imgsize/2;
     if (gp0_transfer_remaining > 0) {
         VRAM_to_CPU_in_progress = true;
@@ -1464,6 +1451,7 @@ void core::gp0_image_save_start() {
     } else {
         printf("\nBad size image save: 0?");
         current_ins = nullptr;
+        ready_cmd();
     }
 
 }
@@ -1502,53 +1490,9 @@ void core::gp0_cmd_unhandled()
 
 }
 
-void core::GPUSTAT_update()
-{
-    u32 o = page_base_x;
-    o |= (page_base_y) << 4;
-    o |= (semi_transparency) << 5;
-    o |= (texture_depth) << 7;
-    TEXPAGE = o;
-    o |= (dithering) << 9;
-    o |= (draw_to_display) << 10;
-    o |= (force_set_mask_bit) >> 4;
-    o |= (preserve_masked_pixels) << 12;
-    o |= (field) << 14;
-    o |= (texture_disable) << 15;
-    o |= hres << 16;
-    o |= vres << 19;
-    o |= vmode << 20;
-    o |= display_depth << 21;
-    o |= interlaced << 22;
-    o |= display_disabled << 23;
-    o |= irq1 << 24;
-    o |= dma_direction << 29;
-
-    u32 dmar;
-    switch(dma_direction) {
-        // 0 if FIFO full, 1 otherwise
-        case e_dma_off:
-            dmar = 0;
-            break;
-        case e_dma_fifo:
-            dmar = 0; // set during read on other side
-            break;
-        case e_dma_cpu_to_gp0:
-            dmar = (o >> 28) & 1;
-            break;
-        case e_dma_vram_to_cpu:
-            dmar = (o >> 27) & 1;
-            break;
-    }
-
-    o |= (dmar << 25);
-
-    // Preserve GPU ready or not bits
-    io.GPUSTAT = o | (io.GPUSTAT & 0x1C000000);
-}
-
 void core::new_frame() {
     io.frame ^= 1;
+    io.GPUSTAT.interlaced_odd_frame ^= 1;
 }
 
 void core::write_gp0(u32 cmd) {
@@ -1596,9 +1540,8 @@ void core::gp0_cmd(u32 cmd) {
                 //    break;
             case 0x1F: // Set IRQ1
                 printf("\nIRQ1 trigger");
-                irq1 = 1;
+                io.GPUSTAT.irq1 = 1;
                 bus->set_irq(IRQ_GPU, 1);
-                GPUSTAT_update();
                 break;
             case 0x20: // flat-shaded opaque triangle
                 current_ins = &core::cmd20_tri_flat;
@@ -1777,27 +1720,13 @@ void core::gp0_cmd(u32 cmd) {
                 printf("\nGP0 E1 set draw mode");
 #endif
                 //printf("\nSET DRAW MODE %08x", cmd);
-                page_base_x = cmd & 15;
-                page_base_y = (cmd >> 4) & 1;
-                semi_transparency = (cmd >> 5) & 3;
-                switch ((cmd >> 7) & 3) {
-                    case 0:
-                        texture_depth = e_t4bit;
-                        break;
-                    case 1:
-                        texture_depth = e_t8bit;
-                        break;
-                    case 2:
-                        texture_depth = e_t15bit;
-                        break;
-                    case 3:
-                        printf("\nUNHANDLED TEXTAR DEPTH 3!!!");
-                        break;
-                }
-                dithering = (cmd >> 9) & 1;
-                draw_to_display = (cmd >> 10) & 1;
-                texture_disable = (cmd >> 1) & 1;
-                GPUSTAT_update();
+                io.GPUSTAT.texture_page_x_base = cmd & 15;
+                io.GPUSTAT.texture_page_y_base = (cmd >> 4) & 1;
+                io.GPUSTAT.semi_transparency = (cmd >> 5) & 3;
+                io.GPUSTAT.texture_page_colors = (cmd >> 7) & 3;
+                io.GPUSTAT.dither = (cmd >> 9) & 1;
+                io.GPUSTAT.drawing_to_display_area = (cmd >> 10) & 1;
+                io.GPUSTAT.texture_page_y_base_2 = (cmd >> 1) & 1;
                 rect.texture_x_flip = (cmd >> 12) & 1;
                 rect.texture_y_flip = (cmd >> 13) & 1;
                 break;
@@ -1835,8 +1764,9 @@ void core::gp0_cmd(u32 cmd) {
 #ifdef DBG_GP0
                 printf("\nGP0 E6 set bit mask");
 #endif
-                force_set_mask_bit = (cmd & 1) << 15;
-                preserve_masked_pixels = (cmd >> 1) & 1;
+                io.GPUSTAT.force_set_mask_bit = cmd & 1;
+                force_set_mask = io.GPUSTAT.force_set_mask_bit << 15;
+                io.GPUSTAT.preserve_masked_pixels = (cmd >> 1) & 1;
                 break;
             default:
                 printf("\nUnknown GP0 command %08x", cmd);
@@ -1849,6 +1779,7 @@ void core::gp0_cmd(u32 cmd) {
 
 void core::reset()
 {
+    ready_all();
     bus->dotclock_change();
 }
 
@@ -1863,38 +1794,38 @@ void core::write_gp1(u32 cmd)
             unready_cmd();
             unready_recv_dma();
             unready_vram_to_CPU();
-            page_base_x = 0;
-            page_base_y = 0;
-            semi_transparency = 0;
-            texture_depth = e_t4bit;
+            io.GPUSTAT.texture_page_x_base = 0;
+            io.GPUSTAT.texture_page_y_base = 0;
+            io.GPUSTAT.semi_transparency = 0;
+            io.GPUSTAT.texture_page_colors = 0;
             tx_win_x_mask = tx_win_y_mask = 0;
             tx_win_x_offset = tx_win_y_offset = 0;
-            dithering = 0;
-            draw_to_display = 0;
-            texture_disable = 0;
+            io.GPUSTAT.dither = 0;
+            io.GPUSTAT.drawing_to_display_area = 0;
+            io.GPUSTAT.texture_page_y_base_2 = 0;
             rect.texture_x_flip = rect.texture_y_flip = 0;
             draw_area_bottom = draw_area_right = draw_area_left = draw_area_top = 0;
             draw_x_offset = draw_y_offset = 0;
-            force_set_mask_bit = 0;
-            preserve_masked_pixels = 0;
-            dma_direction = e_dma_off;
-            display_disabled = 1;
+            io.GPUSTAT.force_set_mask_bit = 0;
+            force_set_mask = 0;
+            io.GPUSTAT.preserve_masked_pixels = 0;
+            io.GPUSTAT.dma_dir = 0;
+            io.GPUSTAT.display_disabled = 1;
             display_vram_x_start = display_vram_y_start = 0;
-            hres = 0;
-            vres = e_y240lines;
-            vmode = e_ntsc;
-            interlaced = 1;
+            io.GPUSTAT.hres1 = 0;
+            io.GPUSTAT.hres2 = 0;
+            io.GPUSTAT.video_mode_PAL = 0;
+            io.GPUSTAT.interlacing = 1;
             display_horiz_start = 0x200;
             display_horiz_end = 0xC00;
             display_line_start = 0x10;
             display_line_end = 0x100;
-            display_depth = e_d15bits;
+            io.GPUSTAT.display_area_24bit = 0;
             recv_gp0_len = 0;
             handle_gp0 = &core::gp0_cmd;
             current_ins = nullptr;
             cmd_arg_index = 0;
             //clear_FIFO();
-            GPUSTAT_update();
             ready_cmd();
             ready_recv_dma();
             ready_vram_to_CPU();
@@ -1904,33 +1835,14 @@ void core::write_gp1(u32 cmd)
             //console.log('RESET CMD FIFO NOT IMPLEMENT');
             break;
         case 0x02:
-            irq1 = 0;
+            io.GPUSTAT.irq1 = 0;
             bus->set_irq(IRQ_GPU, 0);
-            GPUSTAT_update();
             break;
         case 0x03: // DISPLAY DISABLE
             //TODO: do this
             break;
         case 0x04: // DMA direction
-            switch(cmd & 3) {
-                case 0:
-                    //printf("\nSET DMA DIR OFF");
-                    dma_direction = e_dma_off;
-                    break;
-                case 1:
-                    //printf("\nSET DMA DIR FIFO");
-                    dma_direction = e_dma_fifo;
-                    break;
-                case 2:
-                    //printf("\nSET DMA DIR CPU-TO-GP0");
-                    dma_direction = e_dma_cpu_to_gp0;
-                    break;
-                case 3:
-                    //printf("\nSET DMA DIR GP0-TO-CPU");
-                    dma_direction = e_dma_vram_to_cpu;
-                    break;
-            }
-            GPUSTAT_update();
+            io.GPUSTAT.dma_dir = cmd & 3;
             break;
         case 0x05: // VRAM start
             //console.log('GP1 VRAM start');
@@ -1948,13 +1860,13 @@ void core::write_gp1(u32 cmd)
             break;
         case 0x08: {// Display mode
             //console.log('GP1 display mode');
-            hr1 = cmd & 3;
-            hr2 = ((cmd >> 6) & 1);
+            io.GPUSTAT.hres1 = cmd & 3;
+            io.GPUSTAT.hres2 = ((cmd >> 6) & 1);
 
-            vres = (cmd & 4) ? e_y480lines : e_y240lines;
-            vmode = (cmd & 8) ? e_pal : e_ntsc;
-            display_depth = (cmd & 16) ? e_d15bits : e_d24bits;
-            interlaced = (cmd >> 5) & 1;
+            io.GPUSTAT.vres = (cmd >> 2) & 1;
+            io.GPUSTAT.video_mode_PAL = (cmd >> 3) & 1;
+            io.GPUSTAT.display_area_24bit = (cmd >> 4) & 1;
+            io.GPUSTAT.interlacing = (cmd >> 5) & 1;
             if ((cmd & 0x80) != 0) {
                 printf("\nUnsupported display mode!");
             }
@@ -2007,8 +1919,24 @@ u32 core::get_gpuread()
     if (VRAM_to_CPU_in_progress) gp0_image_save_continue();
     return v;
 }
-u32 core::get_gpustat() const
+
+u32 core::get_gpustat()
 {
-    return io.GPUSTAT | 0x10000000 | (io.frame << 31);
+    //printf("\nDMA_dir:%d", DMA_dir);
+    switch(io.GPUSTAT.dma_dir) {
+        case 0:
+            io.GPUSTAT.dma_data_request_bit = 0;
+            break;
+        case 1:
+            io.GPUSTAT.dma_data_request_bit = 1; // 0=full FIFO, 1 = not full
+            break;
+        case 2:
+            io.GPUSTAT.dma_data_request_bit = io.GPUSTAT.ready_recv_dma;
+            break;
+        case 3:
+            io.GPUSTAT.dma_data_request_bit = io.GPUSTAT.ready_vram_to_cpu;
+            break;
+    }
+    return io.GPUSTAT.u;
 }
 }

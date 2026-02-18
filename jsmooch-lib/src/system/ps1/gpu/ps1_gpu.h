@@ -39,13 +39,46 @@ struct core {
     void write_gp0(u32 cmd);
     void write_gp1(u32 cmd);
     [[nodiscard]] u32 get_gpuread();
-    [[nodiscard]] u32 get_gpustat() const;
+    [[nodiscard]] u32 get_gpustat();
 
     u32 TEXPAGE{};
+    u32 out_vres{}, out_hres{};
+    u32 force_set_mask{};
 
     struct {
-        u32 GPUSTAT{}, GPUREAD{};
-        u32 frame;
+        u32 GPUREAD{};
+        u32 frame{};
+        union {
+            struct {
+                u32 texture_page_x_base : 4; // 0-3
+                u32 texture_page_y_base : 1; // 4
+                u32 semi_transparency : 2; // 5-6
+                u32 texture_page_colors : 2; // 7-8
+                u32 dither : 1; // 9
+                u32 drawing_to_display_area : 1; // 10
+                u32 force_set_mask_bit : 1; // 11
+                u32 preserve_masked_pixels : 1; // 12
+                u32 interlace_field : 1; // 13
+                u32 screen_flip_x : 1;// 14
+                u32 texture_page_y_base_2 : 1; // 15
+                // 16 bits...
+                u32 hres2: 1; // 16
+                u32 hres1: 2; // 17-18
+                u32 vres : 1; // 19
+                u32 video_mode_PAL : 1; // 20
+                u32 display_area_24bit : 1; // 21
+                u32 interlacing : 1; // 22
+                u32 display_disabled : 1; // 23
+                u32 irq1 : 1; // 24
+                u32 dma_data_request_bit : 1; // 25
+                u32 ready_recv_cmd : 1;
+                u32 ready_vram_to_cpu : 1;
+                u32 ready_recv_dma : 1;
+                u32 dma_dir : 2;
+                u32 interlaced_odd_frame : 1;
+            };
+            u32 u{};
+        } GPUSTAT{};
     } io{};
     u8 VRAM[1024 * 1024]{};
 
@@ -78,41 +111,6 @@ struct core {
     u32 display_vram_x_start{}, display_vram_y_start{};
     u32 display_horiz_start{}, display_horiz_end{};
     u32 display_line_start{}, display_line_end{};
-
-    u32 page_base_x{}, page_base_y{};
-    u32 irq1{};
-    i32 semi_transparency{};
-    enum TEX_DEPTH {
-        e_t4bit, e_t8bit, e_t15bit
-    } texture_depth{};
-    u32 dithering{};
-    u32 draw_to_display{};
-    u32 force_set_mask_bit{};
-    u32 preserve_masked_pixels{};
-    enum FIELD {
-        e_top,
-        e_bottom
-    } field{};
-    u32 texture_disable{};
-    u32 hr1{}, hr2{}, hres{};
-    enum VRES {
-        e_y240lines, e_y480lines
-    } vres{};
-    enum VMODE {
-        e_ntsc, e_pal
-    } vmode{};
-    enum DDEPTH {
-        e_d15bits, e_d24bits
-    } display_depth{};
-    u32 interlaced{};
-    u32 display_disabled{};
-    u32 interrupt{};
-    enum DMADIR {
-        e_dma_off,
-        e_dma_fifo,
-        e_dma_cpu_to_gp0,
-        e_dma_vram_to_cpu
-    } dma_direction{};
 
     struct COLOR_SAMPLER {
         i32 r_start{}, g_start{}, b_start{};
@@ -151,12 +149,12 @@ struct core {
     JSM_DISPLAY *display{};
 
 private:
-    void unready_recv_dma() { io.GPUSTAT &= 0xEFFFFFFF; }
-    void unready_vram_to_CPU() { io.GPUSTAT &= 0xF7FFFFFF; }
+    void unready_recv_dma() { io.GPUSTAT.ready_recv_dma = 0; }
+    void unready_vram_to_CPU() { io.GPUSTAT.ready_vram_to_cpu = 0; }
     void unready_all() { unready_cmd(); unready_recv_dma(); unready_vram_to_CPU(); }
-    void ready_cmd() { io.GPUSTAT |= 0x4000000; }
-    void ready_recv_dma() { io.GPUSTAT |= 0x10000000; }
-    void ready_vram_to_CPU() { io.GPUSTAT |= 0x8000000; }
+    void ready_cmd() { io.GPUSTAT.ready_recv_cmd = 1; }
+    void ready_recv_dma() { io.GPUSTAT.ready_recv_dma = 1; }
+    void ready_vram_to_CPU() { io.GPUSTAT.ready_vram_to_cpu = 1; }
     void ready_all() { ready_cmd(); ready_recv_dma(); ready_vram_to_CPU(); }
 
     void unready_cmd();
@@ -223,8 +221,6 @@ private:
     void gp0_image_save_start();
     void gp0_image_save_continue();
     void gp0_cmd_unhandled();
-
-    void GPUSTAT_update();
 
     void bresenham_opaque(RT_POINT2D *v1, RT_POINT2D *v2, u32 color);;
 
