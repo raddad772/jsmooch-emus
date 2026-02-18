@@ -45,7 +45,7 @@ struct CDROM_IO {
 
     bool read_mode{};
 
-    u8 L_L{}, L_R{}, R_L{}, R_R{};
+    i32 L_L{}, L_R{}, R_L{}, R_R{};
     struct {
         u8 L_L{}, L_R{}, R_L{}, R_R{};
         u8 MODE_sector_size;

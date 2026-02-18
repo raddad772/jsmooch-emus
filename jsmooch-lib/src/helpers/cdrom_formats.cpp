@@ -160,6 +160,7 @@ bool CDROM_DISC::parse_cue(multi_file_set &mfs) {
 
     // Allocate disc buffer
     u32 total_lba = cur_lba;
+    end_of_last_track = cur_lba - 1;
     u32 total_size = total_lba * 2352;
     total_size = 74 * 60 * 75 * 2352; // 74min * 60sec * 75sector * 2352 bytes per
     //printf("\nALLOCATE %d BYTES", total_size);

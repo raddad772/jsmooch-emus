@@ -42,6 +42,7 @@ struct CDROM_cue_track {
 struct CDROM_DISC {
     simplebuf8 data{};
     bool valid{};
+    u32 end_of_last_track{};
     u32 num_tracks{};
     bool parse_cue(multi_file_set &mfs);
     u8 *ptr_to_data(u32 minutes, u32 seconds, u32 sectors);

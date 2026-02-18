@@ -675,6 +675,9 @@ void core::cycle() {
         r += voices[i].sample_r;
     }
 
+    l += capture.sample.cd_l;
+    r += capture.sample.cd_r;
+
     // TODO: add cdrom audio to mix
     if (l < -0x8000) l = -0x8000;
     if (l > 0x7FFF) l = 0x7FFF;

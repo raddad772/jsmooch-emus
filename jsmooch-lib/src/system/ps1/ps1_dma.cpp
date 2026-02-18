@@ -69,7 +69,7 @@ void DMA_channel::do_block()
     u32 mstep = (step == D_increment) ? 4 : -4;
     u32 addr = base_addr;
     u32 copies = transfer_size();;
-    dbgloglog_bus(PS1D_DMA_CH0+num, DBGLS_INFO, "CH:%d BLOCK  DEST:%08x  LEN:%d bytes  IE:%d", num, addr, copies, (bus->dma.irq.IE >> num) & 1);
+    dbgloglog_bus(PS1D_DMA_CH0+num, DBGLS_INFO, "CH:%d BLOCK  DEST:%08x  LEN:%d bytes  IE:%d", num, addr, copies*4, (bus->dma.irq.IE >> num) & 1);
     //printf("\nDo block ch%d base_addr:%08x copies:%d", num, base_addr, copies);
     if (copies == -1) {
         printf("\nCouldn't decide DMA transfer size");

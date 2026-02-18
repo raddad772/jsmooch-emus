@@ -22,6 +22,7 @@ void CD_FIFO::reset() {
 void CD_FIFO::push(u32 val) {
     if (len == 16) {
         printf("\n(CDROM) ATTEMPT TO PUSH TO FULL FIFO!");
+        dbg_break("CDROM FIFO FULL", 0);
         return;
     }
     entries[tail] = val;
@@ -201,7 +202,11 @@ void CDROM::cmd_start(u64 key, u64 clock) {
             cmd_gettd();
             return;
         case 0x1B: // ReadS
+            dbgloglog_busn(PS1D_CDROM_READ, DBGLS_INFO, "(Cmd) ReadS");
+            cmd_reads(clock);
+            return;
         case 0x06: // ReadN
+            dbgloglog_busn(PS1D_CDROM_READ, DBGLS_INFO, "(Cmd) ReadN");
             cmd_reads(clock);
             return;
         case 0x07:
@@ -296,7 +301,11 @@ void CDROM::cmd_finish(u64 key, u64 clock) {
     }
 }
 
-static u8 decode_bcd(u8 val) {
+static u8 encode_bcd(u8 val) {
+    return ((val / 10) << 4) | (val % 10);
+}
+
+    static u8 decode_bcd(u8 val) {
     return ((val >> 4) * 10) + (val & 0xF);;
 }
 
@@ -373,6 +382,7 @@ void CDROM::cmd_setloc() {
 }
 
 void CDROM::cmd_play() {
+    printf("\n\n\nPLAY!");
     dbgloglog_busn(PS1D_CDROM_PLAY, DBGLS_INFO, "(Cmd) Play");
     if (io.stat.seek || io.stat.read || !io.stat.motor_fullspeed) {
         dbgloglog_bus(PS1D_CDROM_PLAY, DBGLS_INFO, "(Cmd) Play error can't. SEEK:%d READ:%d FULLSPEED:%d", io.stat.seek, io.stat.read, io.stat.motor_fullspeed);
@@ -420,7 +430,7 @@ void CDROM::cmd_play() {
     }
     io.stat.play = 1;
 
-    finish_CMD(false, 0);
+    finish_CMD(true, 3);
 }
 
 void CDROM::cmd_forward() {
@@ -439,10 +449,9 @@ void CDROM::cmd_reads(u64 clock) {
 }
 
 void CDROM::do_cmd_read(u64 clock) {
-    dbgloglog_busn(PS1D_CDROM_READ, DBGLS_INFO, "(Cmd) ReadN/S");
     if (read.still_sched) {
         printf("\nABORT read req. processing for already going!");
-    dbgloglog_busn(PS1D_CDROM_READ, DBGLS_INFO, "(Cmd) ReadN/S ABORT for already going!");
+        dbgloglog_busn(PS1D_CDROM_READ, DBGLS_INFO, "(Cmd) ReadN/S ABORT for already going!");
         stat_irq();
         return;
     }
@@ -559,11 +568,51 @@ void CDROM::sch_read(u64 key, u64 clock) {
 void CDROM::get_CD_audio(i16 &left, i16 &right) {
     left = right = 0;
     if (head.mode != HM_AUDIO) return;
+    if (!io.stat.play) return;
+    if (head.muted) return;
 
-    if (head.muted) {
-        left = right = 0;
-        return;
+    //u32 addr = head.sample_index * 4;
+    u32 LBA = seek.asect + (seek.ass * 75) + (seek.amm * 75 * 50)
+    ;
+    auto *smp = reinterpret_cast<i16 *>(data.data.ptr + (LBA * 2352));
+    smp += head.sample_index * 2;
+    head.sample_index++;
+    if (head.sample_index >= 588) {
+        head.sample_index = 0;
+        seek.asect++;
+        if (seek.asect >= 75) {
+            seek.ass++;
+            seek.asect = 0;
+            if (seek.ass >= 60) {
+                seek.amm++;
+                seek.ass = 0;
+                if (seek.amm >= 74) {
+                    seek.amm = 0;
+                }
+            }
+        }
     }
+
+    i32 l = smp[0];
+    i32 r = smp[1];
+    // Now mix the samples in...
+    i32 l_o = 0;
+    i32 r_o = 0;
+
+    // 0x40 = half
+    // 0x80 = full
+    // 0xFF = double
+    // so... multiply then >> 7?
+    l_o += (l * io.L_L) >> 7;
+    l_o += (r * io.R_L) >> 7;
+    r_o += (l * io.L_R) >> 7;
+    r_o += (r * io.R_R) >> 7;
+    if (l_o < -0x8000) l_o = -0x8000;
+    if (l_o > 0x7FFF) l_o = 0x7FFF;
+    if (r_o < -0x8000) r_o = -0x8000;
+    if (r_o > 0x7FFF) r_o = 0x7FFF;
+    left = static_cast<i16>(l_o);
+    right = static_cast<i16>(r_o);
 }
 
 void CDROM::cmd_motor_on_finish() {
@@ -603,15 +652,16 @@ void CDROM::cmd_gettn() {
     queue_interrupt(3);
     result(io.stat.u);
     result(1);
-    result(data.num_tracks+1);
+    result(data.num_tracks);
+    printf("\nGetTN NUMBER OF TRACKS: %d", data.num_tracks);
     finish_CMD(false, 0);
 }
 
 void CDROM::cmd_gettd() {
-    u32 track_num = io.PARAMETER.pop();
-    track_num--;
-    queue_interrupt(3);
-    if (track_num >= data.num_tracks) {
+    u32 track_num = decode_bcd(io.PARAMETER.pop());
+    printf("\n(CDROM) CMD GetTD %d", track_num);
+    if (track_num > data.num_tracks) {
+        queue_interrupt(5);
         result(0x10);
         finish_CMD(false, 0);
         return;
@@ -619,14 +669,23 @@ void CDROM::cmd_gettd() {
     queue_interrupt(3);
     result(io.stat.u);
     // mm, ss
-    u32 calc = data.tracks[track_num].data_lba;
+    u32 calc;
+    if (track_num == 0) {
+        // End of last track
+        calc = data.end_of_last_track;
+    }
+    else {
+        calc = data.tracks[track_num-1].data_lba;
+        if (track_num != 1) calc += 150;
+    }
     // ((mm * 60) + ss) * 75) + sect
     static constexpr u32 min_val = 60 * 75;
     static constexpr u32 sec_val = 75;
     u32 mm = calc / min_val;
     u32 ss = (calc % min_val) / sec_val;
-    result(mm);
-    result(ss);
+    result(encode_bcd(mm));
+    result(encode_bcd(ss));
+    printf("\nGetTD result %02d:%02d", mm, ss);
     finish_CMD(false, 0);
 }
 
@@ -646,9 +705,12 @@ void CDROM::cmd_init(u64 clock) {
 
 void CDROM::cmd_setmode() {
     u8 mode = io.PARAMETER.pop();
+    printf("\nSETMODE %02x", mode);
     //printf("\n(CDROM) CMD SETMODE %02x", mode);
+    dbgloglog_bus(PS1D_CDROM_READ, DBGLS_INFO, "(Cmd) SetMode %02x", mode);
     if (!(mode & 0x10)) {
         io.latch.MODE_sector_size = (mode >> 5) & 1;
+        //io.latch.MODE_sector_size = 0;
     }
     io.MODE.u = mode;
     finish_CMD(true, 3);
@@ -751,7 +813,7 @@ void CDROM::schedule_step_3(u64 clock) {
 
 
 void CDROM::schedule_seek_finish(u64 clock) {
-    CMD.sched_id = bus->scheduler.only_add_abs(clock + ONEFRAME, 0, this, &scheduled_cmd_end, &CMD.still_sched);
+    CMD.sched_id = bus->scheduler.only_add_abs(clock + (ONEFRAME*10), 0, this, &scheduled_cmd_end, &CMD.still_sched);
 }
 
 void CDROM::schedule_CMD() {
