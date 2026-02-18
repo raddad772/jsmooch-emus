@@ -14,7 +14,7 @@
 
 #include "helpers/multisize_memaccess.cpp"
 
-#define LOG_GP0
+//#define LOG_GP0
 //#define DBG_GP0
 
 
@@ -1386,15 +1386,16 @@ void core::gp0_image_save_continue() {
         printf("\n0 TRANSFER REMAINING!");
         current_ins = nullptr;
         handle_gp0 = &core::gp0_cmd;
+        VRAM_to_CPU_in_progress = false;
         ready_cmd();
     }
 }
 
 void core::gp0_image_load_continue(u32 cmd)
 {
-    recv_gp0[recv_gp0_len] = cmd;
+    /*recv_gp0[recv_gp0_len] = cmd;
     recv_gp0_len++;
-    /*if (recv_gp0_len >= (1024*1024)) {
+    if (recv_gp0_len >= (1024*1024)) {
         printf("\nWARNING GP0 TRANSFER OVERFLOW!");
         recv_gp0_len--;
     }*/
@@ -1424,9 +1425,9 @@ void core::gp0_image_load_continue(u32 cmd)
     }
     gp0_transfer_remaining--;
     if (gp0_transfer_remaining == 0) {
-        printf("\nTRANSFER COMPLETE!");
         current_ins = nullptr;
         handle_gp0 = &core::gp0_cmd;
+        recv_gp0_len = 0;
         ready_cmd();
         //unready_recv_dma();
     }
@@ -1500,6 +1501,9 @@ void core::write_gp0(u32 cmd) {
 }
 
 void core::gp0_cmd(u32 cmd) {
+    if (VRAM_to_CPU_in_progress) {
+        printf("\nWARN CMD DURING VRAM TO CPU!?");
+    }
     gp0_buffer[recv_gp0_len] = cmd;
     recv_gp0_len++;
     assert(recv_gp0_len < 256);
