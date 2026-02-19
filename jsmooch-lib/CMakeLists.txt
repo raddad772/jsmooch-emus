@@ -508,6 +508,8 @@ set(SOURCE_LIST
         src/system/zxspectrum/clock.h
         src/helpers/cdrom_formats.cpp
         src/helpers/cdrom_formats.h
+        src/system/ps1/ps1_mdec.cpp
+        src/system/ps1/ps1_mdec.h
 )
 
 # TODO: Fix elf-parser repo for windows

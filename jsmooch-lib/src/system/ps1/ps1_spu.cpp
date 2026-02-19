@@ -13,13 +13,80 @@
 
 namespace PS1::SPU {
 
+#define VOL(a,b) (static_cast<i16>(((static_cast<i32>(a) * static_cast<i32>(b)) >> 16)))
+
 #define MAX(a,b) ((a)>(b)?(a):(b))
 #define MIN(a,b) ((a)<(b)?(a):(b))
 
-#define RR(x) ((x - 0x1F801DC0) >> 1)
-#define RV_VOL_L RR(0x1F801DFC)
-#define RV_VOL_R RR(0x1F801DFE)
+#define REVERB_REG(x) ((x - 0x1F801DC0) >> 1)
 
+//  1F801DC0h rev00 dAPF1   disp    Reverb APF Offset 1
+#define dAPF1 REVERB_REG(0x1F801DC0)
+//  1F801DC2h rev01 dAPF2   disp    Reverb APF Offset 2
+#define dAPF2 REVERB_REG(0x1F801DC2)
+//  1F801DC4h rev02 vIIR    volume  Reverb Reflection Volume 1
+#define vIIR REVERB_REG(0x1F801DC4)
+//  1F801DC6h rev03 vCOMB1  volume  Reverb Comb Volume 1
+#define vCOMB1 REVERB_REG(0x1F801DC6)
+//  1F801DC8h rev04 vCOMB2  volume  Reverb Comb Volume 2
+#define vCOMB2 REVERB_REG(0x1F801DC8)
+//  1F801DCAh rev05 vCOMB3  volume  Reverb Comb Volume 3
+#define vCOMB3 REVERB_REG(0x1F801DCA)
+    //  1F801DCCh rev06 vCOMB4  volume  Reverb Comb Volume 4
+#define vCOMB4 REVERB_REG(0x1F801DCC)
+    //  1F801DCEh rev07 vWALL   volume  Reverb Reflection Volume 2
+#define vWALL REVERB_REG(0x1F801DCE)
+    //  1F801DD0h rev08 vAPF1   volume  Reverb APF Volume 1
+#define vAPF1 REVERB_REG(0x1F801DD0)
+    //  1F801DD2h rev09 vAPF2   volume  Reverb APF Volume 2
+#define vAPF2 REVERB_REG(0x1F801DD2)
+    //  1F801DD4h rev0A mLSAME  src/dst Reverb Same Side Reflection Address 1 Left
+#define mLSAME REVERB_REG(0x1F801DD4)
+    //  1F801DD6h rev0B mRSAME  src/dst Reverb Same Side Reflection Address 1 Right
+#define mRSAME REVERB_REG(0x1F801DD6)
+    //  1F801DD8h rev0C mLCOMB1 src     Reverb Comb Address 1 Left
+#define mLCOMB1 REVERB_REG(0x1F801DD8)
+    //  1F801DDAh rev0D mRCOMB1 src     Reverb Comb Address 1 Right
+#define mRCOMB1 REVERB_REG(0x1F801DDA)
+    //  1F801DDCh rev0E mLCOMB2 src     Reverb Comb Address 2 Left
+#define mLCOMB2 REVERB_REG(0x1F801DDC)
+    //  1F801DDEh rev0F mRCOMB2 src     Reverb Comb Address 2 Right
+#define mRCOMB2 REVERB_REG(0x1F801DDE)
+    //  1F801DE0h rev10 dLSAME  src     Reverb Same Side Reflection Address 2 Left
+#define dLSAME REVERB_REG(0x1F801DE0)
+    //  1F801DE2h rev11 dRSAME  src     Reverb Same Side Reflection Address 2 Right
+#define dRSAME REVERB_REG(0x1F801DE2)
+    //  1F801DE4h rev12 mLDIFF  src/dst Reverb Different Side Reflect Address 1 Left
+#define mLDIFF REVERB_REG(0x1F801DE4)
+    //  1F801DE6h rev13 mRDIFF  src/dst Reverb Different Side Reflect Address 1 Right
+#define mRDIFF REVERB_REG(0x1F801DE6)
+    //  1F801DE8h rev14 mLCOMB3 src     Reverb Comb Address 3 Left
+#define mLCOMB3 REVERB_REG(0x1F801DE8)
+    //  1F801DEAh rev15 mRCOMB3 src     Reverb Comb Address 3 Right
+#define mRCOMB3 REVERB_REG(0x1F801DEA)
+    //  1F801DECh rev16 mLCOMB4 src     Reverb Comb Address 4 Left
+#define mLCOMB4 REVERB_REG(0x1F801DEC)
+    //  1F801DEEh rev17 mRCOMB4 src     Reverb Comb Address 4 Right
+#define mRCOMB4 REVERB_REG(0x1F801DEE)
+    //  1F801DF0h rev18 dLDIFF  src     Reverb Different Side Reflect Address 2 Left
+#define dLDIFF REVERB_REG(0x1F801DF0)
+    //  1F801DF2h rev19 dRDIFF  src     Reverb Different Side Reflect Address 2 Right
+#define dRDIFF REVERB_REG(0x1F801DF2)
+    //  1F801DF4h rev1A mLAPF1  src/dst Reverb APF Address 1 Left
+#define mLAPF1 REVERB_REG(0x1F801DF4)
+    //  1F801DF6h rev1B mRAPF1  src/dst Reverb APF Address 1 Right
+#define mRAPF1 REVERB_REG(0x1F801DF6)
+    //  1F801DF8h rev1C mLAPF2  src/dst Reverb APF Address 2 Left
+#define mLAPF2 REVERB_REG(0x1F801DF8)
+    //  1F801DFAh rev1D mRAPF2  src/dst Reverb APF Address 2 Right
+#define mRAPF2 REVERB_REG(0x1F801DFA)
+// 1F801DFCh rev1E vLIN    volume  Reverb Input Volume Left
+#define vLIN REVERB_REG(0x1F801DFC)
+  // 1F801DFEh rev1F vRIN    volume  Reverb Input Volume Right
+#define vRIN REVERB_REG(0x1F801DFE)
+
+#define RR(x) io.reverb.regs[x]
+#define RRA(x) (static_cast<u32>(io.reverb.regs[x]) << 3)
 
 static constexpr i16 gauss_table[0x200] = {
     -1,-1,-1,-1,-1,-1,-1,-1,
@@ -93,9 +160,6 @@ void VOICE::adpcm_start() {
     pitch_counter = 0;
     adpcm_decode();
 }
-
-static constexpr i32  pos_xa_adpcm_table[5] = {0, 60, 115, 98, 122};
-static constexpr i32 neg_xa_adpcm_table[5] = {0,   0,  -52, -55,  -60};
 
 void VOICE::adpcm_decode() {
     u8 data[16];
@@ -365,8 +429,6 @@ void VOICE_VOL::write(u16 v) {
 u16 VOICE_VOL::read() {
     return io_val;
 }
-
-#define VOL(a,b) (static_cast<i16>(((static_cast<i32>(a) * static_cast<i32>(b)) >> 16)))
 
 void VOICE::adpcm_get_sample() {
     gauss.idx = (gauss.idx + 1) & 3;
@@ -691,34 +753,126 @@ i32 FIR_filter::run() {
 
 void core::process_reverb() {
     // Ingest L/R samples
-    reverb.filters.in.l.add_sample(reverb.in_l);
-    reverb.filters.in.r.add_sample(reverb.in_l);
+    reverb.filter_l.in.add_sample(reverb.in_l);
+    reverb.filter_r.in.add_sample(reverb.in_r);
 
-    // Actually run reverb now...
-    if (reverb.counter) { // 22050 clock
-        i32 l = (reverb.filters.in.l.run() * static_cast<i32>(static_cast<i16>(io.reverb.regs[RV_VOL_L]))) >> 15;
-        i32 r = (reverb.filters.in.r.run() * static_cast<i32>(static_cast<i16>(io.reverb.regs[RV_VOL_R]))) >> 15;
-        if (l < -0x8000) l = -0x8000;
-        if (l > 0x7FFF) l = 0x7FFF;
-        if (r < -0x8000) r = -0x8000;
-        if (r > 0x7FFF) r = 0x7FFF;
 
-        /* Now actually apply the reverb sample and write out to latest... */
+    if (!reverb.counter) { // 22050 clock
+        // Actually run reverb now...
+        i32 l = (reverb.filter_l.in.run() * static_cast<i32>(static_cast<i16>(RR(vLIN)))) >> 15;
+        i32 r = (reverb.filter_r.in.run() * static_cast<i32>(static_cast<i16>(RR(vRIN)))) >> 15;
 
+        apply_reflection(l, r);
+        apply_comb_filter();
+        apply_all_pass_filter_1();
+        apply_all_pass_filter_2();
+        reverb.proc_l *= static_cast<i32>(static_cast<i16>(RR(io.reverb.vol_out_l)));
+        reverb.proc_r *= static_cast<i32>(static_cast<i16>(RR(io.reverb.vol_out_r)));
+        reverb.proc_l >>= 15;
+        reverb.proc_r >>= 15;
+        if (reverb.proc_l < -0x8000) reverb.proc_l = -0x8000;
+        if (reverb.proc_l > 0x7FFF) reverb.proc_l = 0x7FFF;
+        if (reverb.proc_r < -0x8000) reverb.proc_r = -0x8000;
+        if (reverb.proc_r > 0x7FFF) reverb.proc_r = 0x7FFF;
+        reverb.filter_l.out.add_sample(reverb.proc_l);
+        reverb.filter_r.out.add_sample(reverb.proc_r);
+        reverb.buf_addr = reverb_addr(reverb.buf_addr + 2);
+    }
+    else { // cycle 1, add a 0
+        reverb.filter_l.out.add_sample(0);
+        reverb.filter_r.out.add_sample(0);
     }
 
-    if (!reverb.counter) { // cycle 0, add a 22kHz signal from sample buffer
-        reverb.filters.out.l.add_sample(most_recent_l);
-        reverb.filters.out.r.add_sample(most_recent_r);
-    }
-    else {
-        reverb.filters.out.l.add_sample(0);
-        reverb.filters.out.r.add_sample(0);
-    }
-    reverb.sample_l = reverb.filters.out.l.run();
-    reverb.sample_r = reverb.filters.out.r.run();
+    // Run the sample filter to get our 44kHz output
+    reverb.sample_l = reverb.filter_l.out.run() << 1;
+    reverb.sample_r = reverb.filter_r.out.run() << 1;
 
     reverb.counter ^= 1;
+}
+#define RVOL(a,b) ((static_cast<i32>(a)*static_cast<i32>(b))>>15)
+
+void core::apply_all_pass_filter_1() {
+    // ___Late Reverb APF1 (All Pass Filter 1, with input from COMB)________________
+    // Lout=Lout-vAPF1*[mLAPF1-dAPF1]
+    // Rout=Rout-vAPF1*[mRAPF1-dAPF1]
+    u32 mal = reverb_addr(RRA(mLAPF1) - RRA(dAPF1));
+    reverb.proc_l -= RVOL(RR(vAPF1), RAM[mal]);
+
+    // [mLAPF1]=Lout
+    RAM[reverb_addr(RRA(mLAPF1))] = reverb.proc_l;
+
+    // Lout=Lout*vAPF1+[mLAPF1-dAPF1]
+    reverb.proc_l = RVOL(reverb.proc_l,RR(vAPF1)) + RAM[mal];
+
+    // Rout=Rout-vAPF1*[mRAPF1-dAPF1]
+    u32 mar = reverb_addr(RRA(mRAPF1) - RRA(dAPF1));
+    reverb.proc_r -= RVOL(RR(vAPF1), RAM[mar]);
+
+    // [mRAPF1]=Rout
+    RAM[reverb_addr(RRA(mRAPF1))] = reverb.proc_r;
+
+    // Rout=Rout*vAPF1+[mRAPF1-dAPF1]
+    reverb.proc_r = RVOL(reverb.proc_r, RR(vAPF1)) + RAM[mar];
+}
+
+void core::apply_all_pass_filter_2() {
+    //___Late Reverb APF2 (All Pass Filter 2, with input from APF1)________________
+    // Lout=Lout-vAPF2*[mLAPF2-dAPF2], [mLAPF2]=Lout, Lout=Lout*vAPF2+[mLAPF2-dAPF2]
+    // Rout=Rout-vAPF2*[mRAPF2-dAPF2], [mRAPF2]=Rout, Rout=Rout*vAPF2+[mRAPF2-dAPF2]
+    u32 mal = reverb_addr(RRA(mLAPF2) - RRA(dAPF2));
+    reverb.proc_l -= RVOL(RR(vAPF2), RAM[mal]);
+    RAM[reverb_addr(RRA(mLAPF2))] = reverb.proc_l;
+    reverb.proc_l = RVOL(reverb.proc_l, RR(vAPF2)) + RAM[mal];
+
+    u32 mar = reverb_addr(RRA(mRAPF2) - RRA(dAPF2));
+    reverb.proc_r -= RVOL(RR(vAPF2), RAM[mar]);
+    RAM[reverb_addr(RRA(mRAPF2))] = reverb.proc_r;
+    reverb.proc_r = RVOL(reverb.proc_r, RR(vAPF2)) + RAM[mar];
+}
+
+void core::do_reflect(i32 smp, u32 d, u32 m) {
+    //am[m_addr] = (input_sample + ram[d_addr] * vWALL - ram[m_addr - 2]) * vIIR + ram[m_addr - 2]
+    i32 d_addr = reverb_addr(d);
+    i32 m_addr = reverb_addr(m);
+    i32 mm2 = m_addr - 2;
+    if (mm2 < 0) mm2 = 0x7FFFE;
+    i32 s = smp + RVOL(RAM[d_addr],RR(vWALL)) - RAM[mm2];
+    s = VOL(s,RR(vIIR));
+    s += RAM[mm2];
+    RAM[m_addr] = s;
+}
+
+void core::apply_comb_filter() {
+    /*
+    __Early Echo (Comb Filter, with input from buffer)__________________________
+    Lout=vCOMB1*[mLCOMB1]+vCOMB2*[mLCOMB2]+vCOMB3*[mLCOMB3]+vCOMB4*[mLCOMB4]
+    Rout=vCOMB1*[mRCOMB1]+vCOMB2*[mRCOMB2]+vCOMB3*[mRCOMB3]+vCOMB4*[mRCOMB4]}
+    */
+    u32 ml1 = reverb_addr(RR(mLCOMB1));
+    u32 ml2 = reverb_addr(RR(mLCOMB2));
+    u32 ml3 = reverb_addr(RR(mLCOMB3));
+    u32 ml4 = reverb_addr(RR(mLCOMB4));
+    u32 mr1 = reverb_addr(RR(mRCOMB1));
+    u32 mr2 = reverb_addr(RR(mRCOMB2));
+    u32 mr3 = reverb_addr(RR(mRCOMB3));
+    u32 mr4 = reverb_addr(RR(mRCOMB4));
+    //     Lout=vCOMB1*[mLCOMB1]+vCOMB2*[mLCOMB2]+vCOMB3*[mLCOMB3]+vCOMB4*[mLCOMB4]
+
+    reverb.proc_l = RVOL(RR(vCOMB1), RAM[ml1]);
+    reverb.proc_l += RVOL(RR(vCOMB2), RAM[ml2]);
+    reverb.proc_l += RVOL(RR(vCOMB3), RAM[ml3]);
+    reverb.proc_l += RVOL(RR(vCOMB4), RAM[ml4]);
+    reverb.proc_r = RVOL(RR(vCOMB1), RAM[mr1]);
+    reverb.proc_r += RVOL(RR(vCOMB2), RAM[mr2]);
+    reverb.proc_r += RVOL(RR(vCOMB3), RAM[mr3]);
+    reverb.proc_r += RVOL(RR(vCOMB4), RAM[mr4]);
+}
+
+void core::apply_reflection(i32 l, i32 r) {
+    do_reflect(l, RRA(dLSAME), RRA(mLSAME));
+    do_reflect(r, RRA(dRSAME), RRA(mRSAME));
+    do_reflect(l, RRA(dLDIFF), RRA(mLDIFF));
+    do_reflect(r, RRA(dRDIFF), RRA(mRDIFF));
 }
 
 void core::cycle() {
@@ -753,10 +907,12 @@ void core::cycle() {
     if (reverb.in_r > 0x7FFF) reverb.in_r = 0x7FFF;
     process_reverb();
 
-    l += capture.sample.cd_l;
-    r += capture.sample.cd_r;
-    l += reverb.sample_l;
-    r += reverb.sample_r;
+    //l += capture.sample.cd_l;
+    //r += capture.sample.cd_r;
+    //l += reverb.sample_l;
+    //r += reverb.sample_r;
+    l = reverb.sample_l;
+    r = reverb.sample_r;
 
     // TODO: add cdrom audio to mix
     if (l < -0x8000) l = -0x8000;
@@ -871,17 +1027,17 @@ void core::mainbus_write(u32 addr, u8 sz, u32 val)
             for (u16 i = 0; i < 16; i++) {
                 voices[i].io.reverb_on = (val >> i) & 1;
             }
-            io.reverb_on_lo = val;
+            io.reverb.on_lo = val;
             return;
         case 0x1F801D9A:
             for (u16 i = 0; i < 8; i++) {
                 voices[i+16].io.reverb_on = (val >> i) & 1;
             }
-            io.reverb_on_hi = val;
+            io.reverb.on_hi = val;
             return;
-        case 0x1F801D84: io.reverb.vol_l = val; return;
-        case 0x1F801D86: io.reverb.vol_r = val; return;
-        case 0x1F801DA2: io.reverb.work_area_start_addr = val; return;
+        case 0x1F801D84: io.reverb.vol_out_l = val; return;
+        case 0x1F801D86: io.reverb.vol_out_r = val; return;
+        case 0x1F801DA2: io.reverb.mBASE = val << 3; return;
     }
     printf("\n(SPU) Unhandled write %08x (%d): %08x", raddr, sz, val);
 }
@@ -1062,8 +1218,8 @@ u32 core::snooped_mainbus_read(u32 addr, u8 sz, bool has_effect) {
                 v |= voices[i+16].io.reached_loop_end << i;
             }
             return v;
-        case 0x1F801D84: return io.reverb.vol_l;
-        case 0x1F801D86: return io.reverb.vol_r;
+        case 0x1F801D84: return io.reverb.vol_out_l;
+        case 0x1F801D86: return io.reverb.vol_out_r;
         case 0x1F801D88: {
             return io.keyon_lo;
         }
@@ -1072,9 +1228,9 @@ u32 core::snooped_mainbus_read(u32 addr, u8 sz, bool has_effect) {
         case 0x1F801D8E: return io.keyoff_hi;
         case 0x1F801D94: return io.non_lo;
         case 0x1F801D96: return io.non_hi;
-        case 0x1F801D98: return io.reverb_on_lo;
-        case 0x1F801D9A: return io.reverb_on_hi;
-        case 0x1F801DA2: return io.reverb.work_area_start_addr >> 3;
+        case 0x1F801D98: return io.reverb.on_lo;
+        case 0x1F801D9A: return io.reverb.on_hi;
+        case 0x1F801DA2: return io.reverb.mBASE >> 3;
         case 0x1F801DA0: return 0x9D78;
         case 0x1F801DBC: return 0x8021;
         case 0x1F801DBE: return 0x4BDF;

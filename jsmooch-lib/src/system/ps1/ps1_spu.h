@@ -229,12 +229,13 @@ struct core {
         u16 keyoff_lo{}, keyoff_hi{};
         u16 non_lo{}, non_hi{};
         u16 pmon_lo{}, pmon_hi{};
-        u16 reverb_on_lo{}, reverb_on_hi{};
         struct {
-            i16 vol_l{}, vol_r{};
-            u32 work_area_start_addr{};
-            u16 regs[0x20];
+            i32 vol_out_l{}, vol_out_r{};
+            u32 mBASE{};
+            u16 regs[0x20]{};
+            u16 on_lo{}, on_hi{};
         } reverb{};
+
     } io{};
     struct {
         i32 timer{};
@@ -259,16 +260,12 @@ struct core {
         i32 sample_l{}, sample_r{};
         u32 counter{0};
 
-        struct {
-            struct {
-                FIR_filter l{}, r{};
-            } in{};
+        struct REVERBPROC {
+            FIR_filter in{}, out{};
+        } filter_l{}, filter_r{};
+        u32 buf_addr{};
 
-            struct {
-                FIR_filter l{}, r{};
-            } out{};
-        } filters{};
-
+        i32 proc_l{}, proc_r{};
     } reverb{};
 
     struct {
@@ -285,5 +282,15 @@ private:
     void write_SPUCNT(u16 val);
     void write_reverb_reg(u32 addr, u8 sz, u32 val);
     u32 read_reverb_reg(u32 addr, u8 sz);
+    void apply_reflection(i32 l, i32 r);
+    u32 reverb_addr(u32 inaddr) {
+        i32 a = inaddr + io.reverb.mBASE + reverb.buf_addr;
+        return a < 0 ? 0x7FFFE : a > 0x7FFFE ? io.reverb.mBASE >> 1 : a >> 1;
+    }
+    void apply_comb_filter();
+    void apply_all_pass_filter_1();
+    void apply_all_pass_filter_2();
+
+    void do_reflect(i32 smp, u32 d, u32 m);
 };
 }

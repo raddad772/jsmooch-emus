@@ -22,6 +22,7 @@
 #include "peripheral/ps1_digital_pad.h"
 #include "ps1_timers.h"
 #include "cdrom/ps1_cdrom.h"
+#include "ps1_mdec.h"
 
 namespace PS1 {
 
@@ -94,6 +95,7 @@ struct core : jsm_system {
     SIO::SIO1 sio1;
     TIMER timers[3]{};
     CDROM cdrom;
+    MDEC mdec;
 
     u32 already_scheduled{};
     i64 cycles_left{};

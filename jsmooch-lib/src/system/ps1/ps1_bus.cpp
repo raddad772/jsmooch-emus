@@ -11,6 +11,8 @@
 #include "peripheral/ps1_digital_pad.h"
 #include "helpers/multisize_memaccess.cpp"
 
+#include <cassert>
+
 #define deKSEG(addr) ((addr) & 0x1FFFFFFF)
 #define DEFAULT_WAITSTATES 1
 namespace PS1 {
@@ -69,6 +71,7 @@ core::core() :
     cpu(&clock.master_cycle_count, &clock.waitstates, &scheduler, &IRQ_multiplexer),
     sio0(this),
     cdrom(this),
+    mdec(this),
     gpu(this),
     spu(this),
     dma(this),
@@ -192,6 +195,12 @@ u32 core::mainbus_read(u32 addr, u8 sz, bool has_effect)
             return 0;
         case 0x1F801014: // SPU_DELAY delay/size
             return io.spu_delay;
+        case 0x1F801820:
+            assert(sz==4);
+            return mdec.read_data();
+        case 0x1F801824:
+            assert(sz==4);
+            return mdec.read_ctrl();
     }
 
     if ((addr >= 0x1F801100) && (addr < 0x1F801130)) return timers_read(addr, sz);
@@ -278,6 +287,14 @@ void core::mainbus_write(u32 addr, u8 sz, u32 val)
         case 0x1F802041: // F802041h 1 PSX: POST (external 7 segment display, indicate BIOS boot status
             //printf("\nWRITE POST STATUS! %d", val);
             return;
+        case 0x1F801820:
+            assert(sz==4);
+            mdec.write_data(val);
+            return;
+        case 0x1F801824:
+            assert(sz==4);
+            mdec.write_ctrl(val);
+            return;
         case 0x1F801810: // GP0 Send GP0 Commands/Packets (Rendering and VRAM Access)
             gpu.write_gp0(val);
             return;
@@ -297,6 +314,7 @@ void core::mainbus_write(u32 addr, u8 sz, u32 val)
         case 0x1F801060: // RAM SIZE, 2mb mirrored in first 8mb
         case 0x1FFE0130: // Cache control
             return;
+
     }
 
     if ((addr >= 0x1F801100) && (addr < 0x1F801130)) {
