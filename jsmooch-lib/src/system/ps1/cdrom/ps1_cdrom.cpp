@@ -572,8 +572,8 @@ void CDROM::get_CD_audio(i16 &left, i16 &right) {
     if (head.muted) return;
 
     //u32 addr = head.sample_index * 4;
-    u32 LBA = seek.asect + (seek.ass * 75) + (seek.amm * 75 * 50)
-    ;
+    u32 LBA = seek.asect + (seek.ass * 75) + (seek.amm * 75 * 50);
+    
     auto *smp = reinterpret_cast<i16 *>(data.data.ptr + (LBA * 2352));
     smp += head.sample_index * 2;
     head.sample_index++;

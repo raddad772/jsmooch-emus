@@ -16,6 +16,11 @@ namespace PS1::SPU {
 #define MAX(a,b) ((a)>(b)?(a):(b))
 #define MIN(a,b) ((a)<(b)?(a):(b))
 
+#define RR(x) ((x - 0x1F801DC0) >> 1)
+#define RV_VOL_L RR(0x1F801DFC)
+#define RV_VOL_R RR(0x1F801DFE)
+
+
 static constexpr i16 gauss_table[0x200] = {
     -1,-1,-1,-1,-1,-1,-1,-1,
     -1,-1,-1,-1,-1,-1,-1,-1,
@@ -661,9 +666,68 @@ void core::do_noise() {
 
 }
 
+static constexpr i32 reverb_FIR[39] = {
+    -0x0001,  0x0000,  0x0002,  0x0000, -0x000A,  0x0000,  0x0023, 0x0000,
+-0x0067,  0x0000,  0x010A,  0x0000, -0x0268,  0x0000,  0x0534,  0x0000,
+-0x0B90,  0x0000,  0x2806,  0x4000,  0x2806,  0x0000, -0x0B90,  0x0000,
+ 0x0534,  0x0000, -0x0268,  0x0000,  0x010A,  0x0000, -0x0067,  0x0000,
+ 0x0023,  0x0000, -0x000A,  0x0000,  0x0002,  0x0000, -0x0001,
+};
+
+void FIR_filter::add_sample(i32 smp) {
+    samples[pos] = smp;
+    pos = (pos + 1) % 39;
+}
+
+i32 FIR_filter::run() {
+    i32 o = 0;
+    u32 p = pos;
+    for (const i32 s : reverb_FIR) {
+        o += (samples[p] * s) >> 15;
+        p = (p + 1) % 39;
+    }
+    return o;
+}
+
+void core::process_reverb() {
+    // Ingest L/R samples
+    reverb.filters.in.l.add_sample(reverb.in_l);
+    reverb.filters.in.r.add_sample(reverb.in_l);
+
+    // Actually run reverb now...
+    if (reverb.counter) { // 22050 clock
+        i32 l = (reverb.filters.in.l.run() * static_cast<i32>(static_cast<i16>(io.reverb.regs[RV_VOL_L]))) >> 15;
+        i32 r = (reverb.filters.in.r.run() * static_cast<i32>(static_cast<i16>(io.reverb.regs[RV_VOL_R]))) >> 15;
+        if (l < -0x8000) l = -0x8000;
+        if (l > 0x7FFF) l = 0x7FFF;
+        if (r < -0x8000) r = -0x8000;
+        if (r > 0x7FFF) r = 0x7FFF;
+
+        /* Now actually apply the reverb sample and write out to latest... */
+
+    }
+
+    if (!reverb.counter) { // cycle 0, add a 22kHz signal from sample buffer
+        reverb.filters.out.l.add_sample(most_recent_l);
+        reverb.filters.out.r.add_sample(most_recent_r);
+    }
+    else {
+        reverb.filters.out.l.add_sample(0);
+        reverb.filters.out.r.add_sample(0);
+    }
+    reverb.sample_l = reverb.filters.out.l.run();
+    reverb.sample_r = reverb.filters.out.r.run();
+
+    reverb.counter ^= 1;
+}
+
 void core::cycle() {
     do_noise();
-    for (auto & v : voices) v.cycle(noise.level);
+    reverb.in_l = 0;
+    reverb.in_r = 0;
+    for (auto & v : voices) {
+        v.cycle(noise.level);
+    }
     do_capture();
 
     local_clock++;
@@ -673,10 +737,26 @@ void core::cycle() {
     for (u32 i = 0; i < 24; i++) {
         l += voices[i].sample_l;
         r += voices[i].sample_r;
+        if (io.SPUCNT.reverb_master_enable && voices[i].io.reverb_on) {
+            reverb.in_l += voices[i].sample_l;
+            reverb.in_r += voices[i].sample_r;
+        }
+
     }
+    if (io.SPUCNT.cd_audio_reverb) {
+        reverb.in_l += capture.sample.cd_l;
+        reverb.in_r += capture.sample.cd_r;
+    }
+    if (reverb.in_l < -0x8000) reverb.in_l = -0x8000;
+    if (reverb.in_l > 0x7FFF) reverb.in_l = 0x7FFF;
+    if (reverb.in_r < -0x8000) reverb.in_r = -0x8000;
+    if (reverb.in_r > 0x7FFF) reverb.in_r = 0x7FFF;
+    process_reverb();
 
     l += capture.sample.cd_l;
     r += capture.sample.cd_r;
+    l += reverb.sample_l;
+    r += reverb.sample_r;
 
     // TODO: add cdrom audio to mix
     if (l < -0x8000) l = -0x8000;

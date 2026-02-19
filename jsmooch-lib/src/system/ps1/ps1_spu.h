@@ -22,6 +22,13 @@ struct FIFO {
 };
 struct core;
 
+struct FIR_filter {
+    void add_sample(i32 smp);
+    i32 run();
+    u32 pos{};
+    i32 samples[39]{};
+};
+
 enum E_MODE {
     EM_LINEAR=0,
     EM_EXPONENTIAL=1
@@ -224,7 +231,7 @@ struct core {
         u16 pmon_lo{}, pmon_hi{};
         u16 reverb_on_lo{}, reverb_on_hi{};
         struct {
-            u16 vol_l{}, vol_r{};
+            i16 vol_l{}, vol_r{};
             u32 work_area_start_addr{};
             u16 regs[0x20];
         } reverb{};
@@ -238,12 +245,31 @@ struct core {
     void cycle();
     void do_capture();
     void do_noise();
+    void process_reverb();
     struct {
         u16 index{};
         struct {
             i16 cd_l{}, cd_r{}, v1{}, v3{};
         } sample;
     } capture{};
+
+    struct {
+        i32 in_l{}, in_r{};
+
+        i32 sample_l{}, sample_r{};
+        u32 counter{0};
+
+        struct {
+            struct {
+                FIR_filter l{}, r{};
+            } in{};
+
+            struct {
+                FIR_filter l{}, r{};
+            } out{};
+        } filters{};
+
+    } reverb{};
 
     struct {
         u32 RAM_transfer_addr;
