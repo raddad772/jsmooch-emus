@@ -68,7 +68,7 @@ struct W2FORM {
     debug::waveform2::wf *wf{};
     u32 szpo2{256};
     bool output_enabled{true};
-    u32 height{}, len{};
+    u32 height{80}, len{200};
     std::vector<u8> drawbuf{};
 };
 
@@ -86,6 +86,7 @@ struct W2VIEW {
 public:
     debug::waveform2::view *view{};
     std::vector<W2FORM> waveform2s{};
+    bool did_textures{};
 };
 
 class WVIEW {

@@ -120,7 +120,7 @@ static void sample_audio_debug_min(void *ptr, u64 key, u64 clock, u32 jitter) {
 
     /* PSG */
     for (int j = 0; j < 24; j++) {
-        auto *dw = &th->dbg.waveforms2.channels.chan[j].get().data;
+        auto *dw = th->dbg.waveforms2.channels.chan_cache[j];
         if (dw->user.buf_pos < dw->samples_requested) {
             i16 sv = th->spu.voices[j].sample;
             static_cast<float *>(dw->buf[dw->rendering_buf].ptr)[dw->user.buf_pos] = i16_to_float(sv);
@@ -196,10 +196,10 @@ void core::set_audiobuf(audiobuf *ab)
         spu.ext_enable = audio.nosolo || wf->ch_output_solo;
         audio.master_cycles_per_max_sample = audio.cycles_per_frame / static_cast<float>(wf->samples_requested);
         // Setup some math for voices
-        auto *v = &dbg.waveforms2.cd.chan[0].get().data;
+        wf = dbg.waveforms2.cd.chan_cache[0];
         audio.master_cycles_per_min_sample = audio.cycles_per_frame / static_cast<float>(wf->samples_requested);
         // Now for "bigger" displays...
-        v = &dbg.waveforms2.reverb.chan[0].get().data;
+        wf = dbg.waveforms2.reverb.chan_cache[0];
         audio.master_cycles_per_med_sample = audio.cycles_per_frame / static_cast<float>(wf->samples_requested);
     }
 
@@ -210,22 +210,22 @@ void core::set_audiobuf(audiobuf *ab)
 
     // Setup the 24 voices (mini)
     for (u32 i = 0; i < 24; i++) {
-        auto *v = &dbg.waveforms2.channels.chan[i].get().data;
+        auto *v = dbg.waveforms2.channels.chan_cache[i];
         setup_debug_waveform(v);
         spu.voices[i].ext_enable = audio.nosolo || v->ch_output_solo;
     }
 
     // Setup CD (medium)
-    auto *v = &dbg.waveforms2.cd.chan[0].get().data;
+    auto *v = dbg.waveforms2.cd.chan_cache[0];
     setup_debug_waveform(v);
     spu.capture.cd_ext_enable = audio.nosolo || v->ch_output_solo;
 
     // Setup Reverb (medium)
-    v = &dbg.waveforms2.reverb.chan[0].get().data; // in
+    v = dbg.waveforms2.reverb.chan_cache[0]; // in
     setup_debug_waveform(v);
     spu.reverb.ext_enable_in = audio.nosolo || v->ch_output_solo;
 
-    v = &dbg.waveforms2.reverb.chan[1].get().data; // out
+    v = dbg.waveforms2.reverb.chan_cache[1]; // out
     setup_debug_waveform(v);
     spu.reverb.ext_enable_out = audio.nosolo || v->ch_output_solo;
 }

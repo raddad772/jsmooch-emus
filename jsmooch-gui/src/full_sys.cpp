@@ -1291,7 +1291,8 @@ void full_system::load_default_ROM()
 void full_system::w2_create_node_texture(W2VIEW &myv, debug::waveform2::view_node *node, bool force_create) {
     if (node->children.size() == 0 || force_create) {
         // Create/update texture
-        W2FORM wf;
+        W2FORM &wf = myv.waveform2s.emplace_back();
+;
         wf.enabled = true;
         u32 height;
         u32 szpo2;
@@ -1299,18 +1300,18 @@ void full_system::w2_create_node_texture(W2VIEW &myv, debug::waveform2::view_nod
         switch (node->data.kind) {
             case debug::waveform2::wk_medium:
                 height = 80;
-                szpo2 = 128; // 100x80
-                len = 100;
+                szpo2 = 256; // 200x80
+                len = 200;
                 break;
             case debug::waveform2::wk_big:
                 height = 80;
-                szpo2 = 256; // 200x160 max
-                len = 200;
+                szpo2 = 512; // 400x80 max
+                len = 400;
                 break;
             case debug::waveform2::wk_small:
                 height = 40;
-                szpo2 = 64;
-                len = 50;
+                szpo2 = 128; // 100x40
+                len = 100;
                 break;
             default:
                 NOGOHERE;
@@ -1321,7 +1322,6 @@ void full_system::w2_create_node_texture(W2VIEW &myv, debug::waveform2::view_nod
         wf.szpo2 = szpo2;
         wf.len = len;
         node->data.samples_requested = len;
-        myv.waveform2s.push_back(wf);
         node->user_ptr = &myv.waveform2s.back();
     }
     else {
@@ -1332,14 +1332,13 @@ void full_system::w2_create_node_texture(W2VIEW &myv, debug::waveform2::view_nod
 
 void full_system::add_waveform2_view(u32 idx) {
     auto &dview = dbgr.views.at(idx);
-    W2VIEW myv;
+    W2VIEW &myv = waveform2_views.emplace_back();
     myv.view = &dview.waveform2;
     myv.waveform2s.reserve(256); // Reserve space for 256 waveforms! We won't need it all!!!
+    myv.did_textures = false;
 
     w2_create_node_texture(myv, &myv.view->root, true);
     w2_create_node_texture(myv, &myv.view->root, false);
-
-    waveform2_views.push_back(myv);
 }
 
 void full_system::add_waveform_view(u32 idx)

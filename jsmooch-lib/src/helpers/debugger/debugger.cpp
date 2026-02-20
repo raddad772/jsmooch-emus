@@ -119,6 +119,9 @@ debugger_view::debugger_view(debugger_view_kinds kind) : kind(kind), memory{}
         case dview_waveforms:
             new (&waveform) waveform_view();
             break;
+        case dview_waveform2:
+            new (&waveform2) debug::waveform2::view();
+            break;
         case dview_trace:
             new (&trace) trace_view();
             break;
@@ -320,6 +323,8 @@ void debugger_view::move_union_from(debugger_view&& other) {
             new (&image) image_view(std::move(other.image)); break;
         case dview_waveforms:
             new (&waveform) waveform_view(std::move(other.waveform)); break;
+        case dview_waveform2:
+            new (&waveform2) debug::waveform2::view(std::move(other.waveform2)); break;
         case dview_trace:
             new (&trace) trace_view(std::move(other.trace)); break;
         case dview_console:
@@ -366,6 +371,9 @@ void debugger_view::destroy_active()
             break;
         case dview_waveforms:
             waveform.~waveform_view();
+            break;
+        case dview_waveform2:
+            waveform2.~view();
             break;
         case dview_trace:
             trace.~trace_view();

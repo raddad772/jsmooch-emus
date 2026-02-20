@@ -442,9 +442,9 @@ struct debug_waveform {
 
 namespace debug::waveform2 {
     enum kinds {
-        wk_big, // 400 samples
-        wk_medium, // 200 samples
-        wk_small // 100 samples
+        wk_big=0, // 400 samples
+        wk_medium=1, // 200 samples
+        wk_small=2 // 50? samples
     };
 
     struct wf {

@@ -130,6 +130,7 @@ static void setup_waveforms(core& th, debugger_interface *dbgr) {
     auto *wv = &dview->waveform2;
     snprintf(wv->name, sizeof(wv->name), "SPU");
     auto &root = wv->root;
+    root.children.reserve(10);
 
     th.dbg.waveforms2.main = &root;
     th.dbg.waveforms2.main_cache = &root.data;
@@ -137,7 +138,7 @@ static void setup_waveforms(core& th, debugger_interface *dbgr) {
     root.data.kind = debug::waveform2::wk_big;
     root.data.samples_requested = 400;
 
-    auto &main = root.add_child_category("Audio Ch", 24);
+    auto &main = root.add_child_category("Voices", 32);
     for (u32 i = 0; i < 24; i++) {
         auto *v = main.add_child_wf(debug::waveform2::wk_small, th.dbg.waveforms2.channels.chan[i]);
         auto *ch = &v->data;
@@ -145,11 +146,11 @@ static void setup_waveforms(core& th, debugger_interface *dbgr) {
         snprintf(ch->name, sizeof(ch->name), "CH%d", i);
     }
 
-    auto &cd = root.add_child_category("CD Audio", 1);
+    auto &cd = root.add_child_category("CD Audio", 2);
     auto *v = cd.add_child_wf(debug::waveform2::wk_medium, th.dbg.waveforms2.cd.chan[0]);
     th.dbg.waveforms2.cd.chan_cache[0] = &v->data;
     v->data.stereo = true;
-    snprintf(v->data.name, sizeof(v->data.name), "CD Audio");
+    snprintf(v->data.name, sizeof(v->data.name), "Output");
 
     auto &reverb = root.add_child_category("Reverb Processing", 4);
     v = reverb.add_child_wf(debug::waveform2::wk_medium, th.dbg.waveforms2.reverb.chan[0]);
@@ -157,8 +158,8 @@ static void setup_waveforms(core& th, debugger_interface *dbgr) {
     v->data.stereo = true;
     snprintf(v->data.name, sizeof(v->data.name), "Reverb In");
 
-    v = reverb.add_child_wf(debug::waveform2::wk_medium, th.dbg.waveforms2.reverb.chan[0]);
-    th.dbg.waveforms2.reverb.chan_cache[0] = &v->data;
+    v = reverb.add_child_wf(debug::waveform2::wk_medium, th.dbg.waveforms2.reverb.chan[1]);
+    th.dbg.waveforms2.reverb.chan_cache[1] = &v->data;
     v->data.stereo = true;
     snprintf(v->data.name, sizeof(v->data.name), "Reverb Out");
 }

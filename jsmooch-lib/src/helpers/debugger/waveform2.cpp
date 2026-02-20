@@ -7,22 +7,24 @@
 namespace debug::waveform2 {
 view_node *view_node::add_child_wf(kinds kind_in, cvec_ptr<view_node> &wfptr)
 {
-    auto &b = children.emplace_back();
+    auto *b = &children.emplace_back();
     wfptr.make(children, children.size()-1);
-    data.kind = kind_in;
+    b->data.kind = kind_in;
     switch (data.kind) {
         case wk_big:
-            data.samples_requested = 400;
+            b->data.samples_requested = 400;
             break;
         case wk_medium:
-            data.samples_requested = 200;
+            b->data.samples_requested = 200;
             break;
         case wk_small:
-            data.samples_requested = 100;
+            b->data.samples_requested = 100;
             break;
+        default:
+            NOGOHERE;
     }
 
-    return &b;
+    return b;
 }
 
 view_node &view_node::add_child_category(const char *name_in, u32 num_reserve) {

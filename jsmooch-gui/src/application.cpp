@@ -748,8 +748,8 @@ void imgui_jsmooch_app::render_disassembly_views(bool update_dasm_scroll) {
 
 void imgui_jsmooch_app::render_w2_tex(debug::waveform2::view_node &node) {
     auto *n = static_cast<W2FORM *>(node.user_ptr);
-    ImGui::SetNextWindowSizeConstraints(ImVec2(n->len, n->height),
-                              ImVec2(n->len, n->height));
+    ImGui::SetNextWindowSizeConstraints(ImVec2(n->len, n->height+20),
+                              ImVec2(n->len+20, n->height+30));
     auto *wf = &node.data;
     if (ImGui::BeginChild(wf->name, ImVec2(-FLT_MIN, 0.0f), ImGuiChildFlags_None)) {
         ImGui::Checkbox(wf->name, &wf->ch_output_solo);
@@ -760,21 +760,25 @@ void imgui_jsmooch_app::render_w2_tex(debug::waveform2::view_node &node) {
 
 void imgui_jsmooch_app::render_w2_node_line(debug::waveform2::view_node &nn, u32 &idpush) {
     u32 total_on_line = 0;
-    u32 total_per_line = 200; // 2 medium (100x80) or 1 large (200x80) or 4 tiny(50x40)
+    u32 total_per_line = 400; // 2 medium (200x80) or 1 large (400x80) or 4 tiny(100x40)
     if (nn.children.size() > 9) total_per_line *= 2; // 2 large, 4 medium, 8 tiny
-    if (nn.children.size() > 24) total_per_line += total_per_line >> 1; // 3 large, 8 medium, 16 tiny
+    if (nn.children.size() > 24) total_per_line += total_per_line >> 2; // 3 large, 8 medium, 16 tiny
+    bool first = true;
     for (auto &node : nn.children) {
         bool make_new_line = false;
         auto *v = static_cast<W2FORM *>(node.user_ptr);
         total_on_line += v->len;
-        if (total_on_line <= total_per_line) {}
+        if (total_on_line < total_per_line) {}
         else {
             make_new_line = true;
         }
-        if (!make_new_line) ImGui::SameLine();
+        if (!make_new_line) {
+            if (!first) ImGui::SameLine();
+        }
         else {
             total_on_line = 0;
         }
+        first = false;
         render_w2_tex(node);
     }
 }
@@ -791,8 +795,8 @@ void imgui_jsmooch_app::render_w2_node(debug::waveform2::view_node &node, u32 &i
                 render_w2_node_line(node, idpush);
             else
                 render_w2_node(node, idpush);
+            ImGui::TreePop();
         }
-        ImGui::TreePop();
         ImGui::PopID();
     }
 }
@@ -813,6 +817,7 @@ void imgui_jsmooch_app::render_waveform2_view(W2VIEW &wview, u32 num) {
             for (auto &node: wview.view->root.children) {
                 render_w2_node(node, idpush);
             }
+            ImGui::End();
         }
     }
 }
