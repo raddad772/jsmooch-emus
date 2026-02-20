@@ -90,12 +90,19 @@ static void sample_audio_debug_max(void *ptr, u64 key, u64 clock, u32 jitter)
     th->scheduler.only_add_abs(static_cast<i64>(th->audio.next_sample_cycle_max), 0, th, &sample_audio_debug_max, nullptr);
 }
 
-static void sample_audio_debug_min(void *ptr, u64 key, u64 clock, u32 jitter)
-{
+static void sample_audio_to_num(core *th, int chn, float sample) {
+    auto *dw = &th->dbg.waveforms.chan[chn].get();
+    if (dw->user.buf_pos < dw->samples_requested) {
+        static_cast<float *>(dw->buf.ptr)[dw->user.buf_pos] = sample;
+        dw->user.buf_pos++;
+    }
+}
+
+static void sample_audio_debug_min(void *ptr, u64 key, u64 clock, u32 jitter) {
     auto *th = static_cast<core *>(ptr);
 
     /* PSG */
-    debug_waveform *dw = &th->dbg.waveforms.chan[0].get();
+    debug_waveform *dw;
     for (int j = 0; j < 24; j++) {
         dw = &th->dbg.waveforms.chan[j].get();
         if (dw->user.buf_pos < dw->samples_requested) {
@@ -104,6 +111,10 @@ static void sample_audio_debug_min(void *ptr, u64 key, u64 clock, u32 jitter)
             dw->user.buf_pos++;
         }
     }
+    sample_audio_to_num(th, 24, i16_to_float(th->spu.reverb.in_l));
+    sample_audio_to_num(th, 25, i16_to_float(th->spu.reverb.in_r));
+    sample_audio_to_num(th, 26, i16_to_float(th->spu.reverb.sample_l));
+    sample_audio_to_num(th, 27, i16_to_float(th->spu.reverb.sample_r));
 
     th->audio.next_sample_cycle_min += th->audio.master_cycles_per_min_sample;
     th->scheduler.only_add_abs(static_cast<i64>(th->audio.next_sample_cycle_min), 0, th, &sample_audio_debug_min, nullptr);
@@ -177,11 +188,12 @@ void core::set_audiobuf(audiobuf *ab)
     auto *wf = &dbg.waveforms.main.get();
     setup_debug_waveform(wf);
     spu.ext_enable = wf->ch_output_enabled;
-    for (u32 i = 0; i < 24; i++) {
+    for (u32 i = 0; i < 28; i++) {
         wf = &dbg.waveforms.chan[i].get();
         setup_debug_waveform(wf);
         spu.voices[i].ext_enable = wf->ch_output_enabled;
     }
+
 }
 
 void core::amidog_print_console()

@@ -146,6 +146,7 @@ struct VOICE {
     void adpcm_get_sample();
     void gaussian_me_up();
     struct {
+        i32 old_sample_index{-1};
         i16 samples[4]{};
         u32 idx{3};
     } gauss{};

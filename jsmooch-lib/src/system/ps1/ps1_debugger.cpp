@@ -129,8 +129,6 @@ static void setup_waveforms(core& th, debugger_interface *dbgr) {
     auto *dview = &th.dbg.waveforms.view.get();
     auto *wv = &dview->waveform;
     snprintf(wv->name, sizeof(wv->name), "SPU");
-    wv->waveforms.reserve(8);
-
     wv->waveforms.reserve(32);
 
     debug_waveform *dw = &wv->waveforms.emplace_back();
@@ -149,6 +147,31 @@ static void setup_waveforms(core& th, debugger_interface *dbgr) {
 
         th.dbg.waveforms.chan[i].make(wv->waveforms, wv->waveforms.size()-1);
     }
+
+    dw = &wv->waveforms.emplace_back();
+    dw->kind = dwk_channel;
+    dw->samples_requested = 200;
+    snprintf(dw->name, sizeof(dw->name), "Reverb L In");
+    th.dbg.waveforms.chan[24].make(wv->waveforms, wv->waveforms.size()-1);
+
+    dw = &wv->waveforms.emplace_back();
+    dw->kind = dwk_channel;
+    dw->samples_requested = 200;
+    snprintf(dw->name, sizeof(dw->name), "Reverb R In");
+    th.dbg.waveforms.chan[25].make(wv->waveforms, wv->waveforms.size()-1);
+
+
+    dw = &wv->waveforms.emplace_back();
+    dw->kind = dwk_channel;
+    dw->samples_requested = 200;
+    snprintf(dw->name, sizeof(dw->name), "Reverb L Out");
+    th.dbg.waveforms.chan[26].make(wv->waveforms, wv->waveforms.size()-1);
+
+    dw = &wv->waveforms.emplace_back();
+    dw->kind = dwk_channel;
+    dw->samples_requested = 200;
+    snprintf(dw->name, sizeof(dw->name), "Reverb R Out");
+    th.dbg.waveforms.chan[27].make(wv->waveforms, wv->waveforms.size()-1);
 }
 static void setup_image_view_vram(core* th, debugger_interface *dbgr) {
     th->dbg.image_views.vram = dbgr->make_view(dview_image);

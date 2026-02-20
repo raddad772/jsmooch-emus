@@ -431,6 +431,10 @@ u16 VOICE_VOL::read() {
 }
 
 void VOICE::adpcm_get_sample() {
+    // Guard against repeat samples for slower playing
+    i32 sample_index = pitch_counter >> 12;
+    if (sample_index == gauss.old_sample_index) return;
+    gauss.old_sample_index = sample_index;
     gauss.idx = (gauss.idx + 1) & 3;
     gauss.samples[gauss.idx] = adpcm.samples[pitch_counter >> 12];
 }
@@ -467,8 +471,10 @@ void VOICE::cycle(i16 noise_level) {
     if (io.vol_r.mode) io.vol_r.cycle();
 
     pitch_counter = (pitch_counter + step);
+
     if (pitch_counter >= 0x1C000) {
         pitch_counter -= 0x1C000;
+        gauss.old_sample_index = -1;
         adpcm_decode();
     }
     adpcm_get_sample();
@@ -895,7 +901,6 @@ void core::cycle() {
             reverb.in_l += voices[i].sample_l;
             reverb.in_r += voices[i].sample_r;
         }
-
     }
     if (io.SPUCNT.cd_audio_reverb) {
         reverb.in_l += capture.sample.cd_l;
@@ -911,8 +916,8 @@ void core::cycle() {
     //r += capture.sample.cd_r;
     //l += reverb.sample_l;
     //r += reverb.sample_r;
-    l = reverb.sample_l;
-    r = reverb.sample_r;
+    l = reverb.in_l;
+    r = reverb.in_r;
 
     // TODO: add cdrom audio to mix
     if (l < -0x8000) l = -0x8000;

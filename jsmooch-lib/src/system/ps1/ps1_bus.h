@@ -141,7 +141,7 @@ struct core : jsm_system {
         DBG_IMAGE_VIEWS_END
         DBG_WAVEFORM_START1
             DBG_WAVEFORM_MAIN
-            DBG_WAVEFORM_CHANS(24)
+            DBG_WAVEFORM_CHANS(28)
         DBG_WAVEFORM_END1
     DBG_END
 
