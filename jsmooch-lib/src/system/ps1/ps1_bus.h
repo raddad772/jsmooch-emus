@@ -123,14 +123,15 @@ struct core : jsm_system {
     } io;
 
     struct {
-        double master_cycles_per_audio_sample{},  master_cycles_per_min_sample{}, master_cycles_per_max_sample{};
-        double next_sample_cycle_max{}, next_sample_cycle_min{}, next_sample_cycle{};
+        double master_cycles_per_audio_sample{},  master_cycles_per_min_sample{}, master_cycles_per_max_sample{}, master_cycles_per_med_sample{};
+        double next_sample_cycle_max{}, next_sample_cycle_min{}, next_sample_cycle{}, next_sample_cycle_med{};
         audiobuf *buf{};
+        bool nosolo{};
         u64 cycles{};
         double cycles_per_frame{};
     } audio{};
 
-    void setup_debug_waveform(debug_waveform *dw);
+    void setup_debug_waveform(debug::waveform2::wf *dw);
 
     DBG_START
         cvec_ptr<debugger_view> console_view{};
@@ -139,10 +140,13 @@ struct core : jsm_system {
             MDBG_IMAGE_VIEW(sysinfo)
             MDBG_IMAGE_VIEW(vram)
         DBG_IMAGE_VIEWS_END
-        DBG_WAVEFORM_START1
-            DBG_WAVEFORM_MAIN
-            DBG_WAVEFORM_CHANS(28)
-        DBG_WAVEFORM_END1
+
+        DBG_WAVEFORM2_START1
+            DBG_WAVEFORM2_MAIN
+            DBG_WAVEFORM2_BRANCH(channels, 24)
+            DBG_WAVEFORM2_BRANCH(cd, 2)
+            DBG_WAVEFORM2_BRANCH(reverb, 4)
+        DBG_WAVEFORM2_END1
     DBG_END
 
 public:

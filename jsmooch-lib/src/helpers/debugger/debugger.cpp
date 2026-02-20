@@ -62,6 +62,7 @@ void debugger_interface_dirty_mem(debugger_interface *dbgr, u32 mem_bus, u32 add
             case dview_console:
             case dview_dbglog:
             case dview_source_listing:
+            case dview_waveform2:
                 break;
             case dview_memory: {
                 dv.memory.force_refresh = 1;

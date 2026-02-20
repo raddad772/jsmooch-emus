@@ -80,9 +80,11 @@ static void sample_audio_debug_max(void *ptr, u64 key, u64 clock, u32 jitter)
     auto *th = static_cast<core *>(ptr);
 
     /* PSG */
-    debug_waveform *dw = &th->dbg.waveforms.main.get();
-    if (dw->user.buf_pos < dw->samples_requested) {
-        static_cast<float *>(dw->buf.ptr)[dw->user.buf_pos] = i16_to_float((th->spu.sample_l + th->spu.sample_r) >> 1);
+    auto *dw = th->dbg.waveforms2.main_cache;
+    if (dw->user.buf_pos < (dw->samples_requested << 1)) {
+        static_cast<float *>(dw->buf[dw->rendering_buf].ptr)[dw->user.buf_pos] = i16_to_float(th->spu.sample_l);
+        dw->user.buf_pos++;
+        static_cast<float *>(dw->buf[dw->rendering_buf].ptr)[dw->user.buf_pos] = i16_to_float(th->spu.sample_r);
         dw->user.buf_pos++;
     }
 
@@ -90,32 +92,41 @@ static void sample_audio_debug_max(void *ptr, u64 key, u64 clock, u32 jitter)
     th->scheduler.only_add_abs(static_cast<i64>(th->audio.next_sample_cycle_max), 0, th, &sample_audio_debug_max, nullptr);
 }
 
-static void sample_audio_to_num(core *th, int chn, float sample) {
-    auto *dw = &th->dbg.waveforms.chan[chn].get();
-    if (dw->user.buf_pos < dw->samples_requested) {
-        static_cast<float *>(dw->buf.ptr)[dw->user.buf_pos] = sample;
+static void sample_audio_to_stereo(core *th, debug::waveform2::wf *dw, i16 l, i16 r, bool &ee) {
+    ee = th->audio.nosolo || dw->ch_output_solo;
+    if (dw->user.buf_pos < (dw->samples_requested << 1)) {
+        static_cast<float *>(dw->buf[dw->rendering_buf].ptr)[dw->user.buf_pos] = i16_to_float(l);
+        dw->user.buf_pos++;
+        static_cast<float *>(dw->buf[dw->rendering_buf].ptr)[dw->user.buf_pos] = i16_to_float(r);
         dw->user.buf_pos++;
     }
 }
+
+static void sample_audio_debug_med(void *ptr, u64 key, u64 clock, u32 jitter) {
+    auto *th = static_cast<core *>(ptr);
+
+    sample_audio_to_stereo(th, th->dbg.waveforms2.cd.chan_cache[0], th->spu.capture.sample.cd_l, th->spu.capture.sample.cd_r, th->spu.capture.cd_ext_enable);
+    sample_audio_to_stereo(th, th->dbg.waveforms2.reverb.chan_cache[0], th->spu.reverb.in_l, th->spu.reverb.in_r, th->spu.reverb.ext_enable_in);
+    sample_audio_to_stereo(th, th->dbg.waveforms2.reverb.chan_cache[1], th->spu.reverb.sample_l, th->spu.reverb.sample_r, th->spu.reverb.ext_enable_out);
+
+    th->audio.next_sample_cycle_med += th->audio.master_cycles_per_med_sample;
+    th->scheduler.only_add_abs(static_cast<i64>(th->audio.next_sample_cycle_med), 0, th, &sample_audio_debug_med, nullptr);
+
+}
+
 
 static void sample_audio_debug_min(void *ptr, u64 key, u64 clock, u32 jitter) {
     auto *th = static_cast<core *>(ptr);
 
     /* PSG */
-    debug_waveform *dw;
     for (int j = 0; j < 24; j++) {
-        dw = &th->dbg.waveforms.chan[j].get();
+        auto *dw = &th->dbg.waveforms2.channels.chan[j].get().data;
         if (dw->user.buf_pos < dw->samples_requested) {
             i16 sv = th->spu.voices[j].sample;
-            static_cast<float *>(dw->buf.ptr)[dw->user.buf_pos] = i16_to_float(sv * 4);
+            static_cast<float *>(dw->buf[dw->rendering_buf].ptr)[dw->user.buf_pos] = i16_to_float(sv);
             dw->user.buf_pos++;
         }
     }
-    sample_audio_to_num(th, 24, i16_to_float(th->spu.reverb.in_l));
-    sample_audio_to_num(th, 25, i16_to_float(th->spu.reverb.in_r));
-    sample_audio_to_num(th, 26, i16_to_float(th->spu.reverb.sample_l));
-    sample_audio_to_num(th, 27, i16_to_float(th->spu.reverb.sample_r));
-
     th->audio.next_sample_cycle_min += th->audio.master_cycles_per_min_sample;
     th->scheduler.only_add_abs(static_cast<i64>(th->audio.next_sample_cycle_min), 0, th, &sample_audio_debug_min, nullptr);
 }
@@ -134,6 +145,7 @@ void core::schedule_frame(u64 start_clock, u32 is_first)
             audio.next_sample_cycle = 0;
             scheduler.only_add_abs(768, 0, this, &sch_sample_audio, nullptr);
         }
+        scheduler.only_add_abs(static_cast<i64>(audio.next_sample_cycle_med), 0, this, &sample_audio_debug_med, nullptr);
         scheduler.only_add_abs(static_cast<i64>(audio.next_sample_cycle_max), 0, this, &sample_audio_debug_max, nullptr);
         scheduler.only_add_abs(static_cast<i64>(audio.next_sample_cycle_min), 0, this, &sample_audio_debug_min, nullptr);
     }
@@ -159,7 +171,7 @@ void core::schedule_frame(u64 start_clock, u32 is_first)
     scheduler.only_add_abs(start_clock+clock.timing.frame.cycles, 0, this, &do_next_scheduled_frame, nullptr);
 }
 
-void core::setup_debug_waveform(debug_waveform *dw)
+void core::setup_debug_waveform(debug::waveform2::wf *dw)
 {
     if (dw->samples_requested == 0) return;
     dw->samples_rendered = dw->samples_requested;
@@ -170,30 +182,51 @@ void core::setup_debug_waveform(debug_waveform *dw)
 void core::set_audiobuf(audiobuf *ab)
 {
     audio.buf = ab;
+    audio.nosolo = !dbg.waveforms2.view.get().waveform2.any_solo;
     if (audio.master_cycles_per_audio_sample == 0) {
         audio.cycles_per_frame = static_cast<double>(clock.timing.cpu.hz)/static_cast<double>(clock.timing.fps);
         audio.master_cycles_per_audio_sample = (audio.cycles_per_frame / static_cast<double>(ab->samples_len));
         audio.next_sample_cycle = 0;
         audio.next_sample_cycle_min = 0;
+        audio.next_sample_cycle_med = 0;
         audio.next_sample_cycle_max = 0;
         // Setup main output view
-        auto *wf = &dbg.waveforms.main.get();
-        spu.ext_enable = wf->ch_output_enabled;
+        auto *wf = &dbg.waveforms2.main->data;
+        spu.ext_enable = audio.nosolo || wf->ch_output_solo;
         audio.master_cycles_per_max_sample = audio.cycles_per_frame / static_cast<float>(wf->samples_requested);
         // Setup some math for voices
-        wf = &dbg.waveforms.chan[0].get();
+        auto *v = &dbg.waveforms2.cd.chan[0].get().data;
         audio.master_cycles_per_min_sample = audio.cycles_per_frame / static_cast<float>(wf->samples_requested);
+        // Now for "bigger" displays...
+        v = &dbg.waveforms2.reverb.chan[0].get().data;
+        audio.master_cycles_per_med_sample = audio.cycles_per_frame / static_cast<float>(wf->samples_requested);
     }
 
-    auto *wf = &dbg.waveforms.main.get();
+    // Setup main channel, maxi.
+    auto *wf = dbg.waveforms2.main_cache;
     setup_debug_waveform(wf);
-    spu.ext_enable = wf->ch_output_enabled;
-    for (u32 i = 0; i < 28; i++) {
-        wf = &dbg.waveforms.chan[i].get();
-        setup_debug_waveform(wf);
-        spu.voices[i].ext_enable = wf->ch_output_enabled;
+    spu.ext_enable = audio.nosolo || wf->ch_output_solo;
+
+    // Setup the 24 voices (mini)
+    for (u32 i = 0; i < 24; i++) {
+        auto *v = &dbg.waveforms2.channels.chan[i].get().data;
+        setup_debug_waveform(v);
+        spu.voices[i].ext_enable = audio.nosolo || v->ch_output_solo;
     }
 
+    // Setup CD (medium)
+    auto *v = &dbg.waveforms2.cd.chan[0].get().data;
+    setup_debug_waveform(v);
+    spu.capture.cd_ext_enable = audio.nosolo || v->ch_output_solo;
+
+    // Setup Reverb (medium)
+    v = &dbg.waveforms2.reverb.chan[0].get().data; // in
+    setup_debug_waveform(v);
+    spu.reverb.ext_enable_in = audio.nosolo || v->ch_output_solo;
+
+    v = &dbg.waveforms2.reverb.chan[1].get().data; // out
+    setup_debug_waveform(v);
+    spu.reverb.ext_enable_out = audio.nosolo || v->ch_output_solo;
 }
 
 void core::amidog_print_console()
@@ -391,16 +424,19 @@ void core::sample_audio()
 {
     if (audio.buf) {
         audio.cycles++;
-        audio.next_sample_cycle += audio.master_cycles_per_audio_sample;
-        scheduler.only_add_abs(static_cast<i64>(audio.next_sample_cycle), 0, this, &sch_sample_audio, nullptr);
         spu.cycle();
+
         if (audio.buf->upos < (audio.buf->samples_len << 1)) {
-            static_cast<float *>(audio.buf->ptr)[audio.buf->upos] = i16_to_float(static_cast<i16>(spu.sample_l));
-            static_cast<float *>(audio.buf->ptr)[audio.buf->upos+1] = i16_to_float(static_cast<i16>(spu.sample_r));
+            float l = i16_to_float(static_cast<i16>(spu.sample_l));
+            float r = i16_to_float(static_cast<i16>(spu.sample_r));;
+            static_cast<float *>(audio.buf->ptr)[audio.buf->upos] = l;
+            static_cast<float *>(audio.buf->ptr)[audio.buf->upos+1] = r;
         }
         audio.buf->upos+=2;
     }
 
+    audio.next_sample_cycle += audio.master_cycles_per_audio_sample;
+    scheduler.only_add_abs(static_cast<i64>(audio.next_sample_cycle), 0, this, &sch_sample_audio, nullptr);
 }
 
 u32 core::finish_scanline()

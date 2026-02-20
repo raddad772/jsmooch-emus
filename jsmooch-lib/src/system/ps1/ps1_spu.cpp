@@ -706,8 +706,6 @@ void core::do_capture() {
     addr_add ^= 0x200;
     capture.sample.cd_l = static_cast<i16>(read_RAM(addr_add+capture.index, true, true));
     capture.sample.cd_r = static_cast<i16>(read_RAM(0x400+addr_add+capture.index, true, true));
-    capture.sample.v1 = static_cast<i16>(read_RAM(0x800+addr_add+capture.index, true, true));
-    capture.sample.v3 = static_cast<i16>(read_RAM(0xC00+addr_add+capture.index, true, true));
 
     capture.index = (capture.index + 2) & 0x1FF;
     if (capture.index == 0) {

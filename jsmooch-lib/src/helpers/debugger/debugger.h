@@ -27,6 +27,7 @@ enum debugger_view_kinds {
     dview_disassembly,
     dview_image,
     dview_waveforms,
+    dview_waveform2,
     dview_trace,
     dview_console,
     dview_dbglog,
@@ -325,9 +326,7 @@ struct dbglog_category_node {
     bool break_on_fire{};
 
     std::vector<dbglog_category_node> children{};
-
     dbglog_category_node *parent{};
-
     dbglog_category_node &add_node(dbglog_view &dv, const char *name, const char *short_name, u32 id, u32 color);
 };
 
@@ -432,6 +431,7 @@ struct debug_waveform {
     bool is_unsigned{};
     buf buf{8192}; // height*width. value -1...1
     debug_waveform_kinds kind{};
+    bool stereo{false};
 
     struct {
         double next_sample_cycle{};
@@ -439,6 +439,52 @@ struct debug_waveform {
         u32 buf_pos{};
     } user{};
 };
+
+namespace debug::waveform2 {
+    enum kinds {
+        wk_big, // 400 samples
+        wk_medium, // 200 samples
+        wk_small // 100 samples
+    };
+
+    struct wf {
+        char name[100]{};
+        bool ch_output_solo{false};
+        u32 samples_requested{};
+        u32 samples_rendered{};
+        bool is_unsigned{false};
+        bool start_at_0{false};
+        bool stereo{false};
+        kinds kind{};
+        bool force_own_line{false};
+        bool extra_data{false};
+        char extra_data_str[100];
+        buf buf[3]{::buf(8192), ::buf(8192)}; // Max 400 samples, floating-point, stereo = 3200 samples.
+        u32 rendering_buf{0}; // buf to render to. keeps a history up to 3!
+
+        struct {
+            double next_sample_cycle{};
+            double cycle_stride{};
+            u32 buf_pos{};
+        } user{};
+    };
+
+    struct view_node {
+        char name[100];
+        view_node *add_child_wf(kinds kind_in, cvec_ptr<view_node> &wfptr);
+        view_node &add_child_category(const char *name_in, u32 num_reserve);
+        wf data{}; // for child-less nodes and the main output
+        std::vector<view_node> children{}; // For branches/root!
+        view_node *parent{};
+    };
+
+    struct view {
+        char name[100]{};
+        view_node root{};
+        bool any_solo{};
+    };
+
+}
 
 #define MAX_TRACE_COLS 20
 
@@ -632,6 +678,7 @@ struct debugger_view {
         events_view events;
         image_view image;
         waveform_view waveform;
+        debug::waveform2::view waveform2;
         trace_view trace{};
         console_view console;
         dbglog_view dbglog;

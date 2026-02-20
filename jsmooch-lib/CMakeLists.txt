@@ -510,6 +510,8 @@ set(SOURCE_LIST
         src/helpers/cdrom_formats.h
         src/system/ps1/ps1_mdec.cpp
         src/system/ps1/ps1_mdec.h
+        src/helpers/debugger/waveform2.cpp
+        src/helpers/debugger/waveform2.h
 )
 
 # TODO: Fix elf-parser repo for windows

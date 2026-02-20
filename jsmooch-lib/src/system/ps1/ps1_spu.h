@@ -251,11 +251,13 @@ struct core {
     struct {
         u16 index{};
         struct {
-            i16 cd_l{}, cd_r{}, v1{}, v3{};
+            i16 cd_l{}, cd_r{};
         } sample;
+        bool cd_ext_enable{};
     } capture{};
 
     struct {
+        bool ext_enable_in{}, ext_enable_out{};
         i32 in_l{}, in_r{};
 
         i32 sample_l{}, sample_r{};

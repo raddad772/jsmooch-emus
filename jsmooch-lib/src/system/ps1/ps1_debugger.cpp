@@ -125,54 +125,44 @@ static void setup_dbglog(debugger_interface *dbgr, core *th)
 }
 
 static void setup_waveforms(core& th, debugger_interface *dbgr) {
-    th.dbg.waveforms.view = dbgr->make_view(dview_waveforms);
-    auto *dview = &th.dbg.waveforms.view.get();
-    auto *wv = &dview->waveform;
+    th.dbg.waveforms2.view = dbgr->make_view(dview_waveform2);
+    auto *dview = &th.dbg.waveforms2.view.get();
+    auto *wv = &dview->waveform2;
     snprintf(wv->name, sizeof(wv->name), "SPU");
-    wv->waveforms.reserve(32);
+    auto &root = wv->root;
 
-    debug_waveform *dw = &wv->waveforms.emplace_back();
-    th.dbg.waveforms.main.make(wv->waveforms, wv->waveforms.size()-1);
+    th.dbg.waveforms2.main = &root;
+    th.dbg.waveforms2.main_cache = &root.data;
+    snprintf(root.data.name, sizeof(root.data.name), "Stereo Out");
+    root.data.kind = debug::waveform2::wk_big;
+    root.data.samples_requested = 400;
 
-    snprintf(dw->name, sizeof(dw->name), "Output (Mono)");
-    dw->kind = dwk_main;
-    dw->samples_requested = 400;
-    dw->default_clock_divider = 768;
-
+    auto &main = root.add_child_category("Audio Ch", 24);
     for (u32 i = 0; i < 24; i++) {
-        dw = &wv->waveforms.emplace_back();
-        dw->kind = dwk_channel;
-        dw->samples_requested = 200;
-        snprintf(dw->name, sizeof(dw->name), "CH%d", i);
-
-        th.dbg.waveforms.chan[i].make(wv->waveforms, wv->waveforms.size()-1);
+        auto *v = main.add_child_wf(debug::waveform2::wk_small, th.dbg.waveforms2.channels.chan[i]);
+        auto *ch = &v->data;
+        th.dbg.waveforms2.channels.chan_cache[i] = &v->data;
+        snprintf(ch->name, sizeof(ch->name), "CH%d", i);
     }
 
-    dw = &wv->waveforms.emplace_back();
-    dw->kind = dwk_channel;
-    dw->samples_requested = 200;
-    snprintf(dw->name, sizeof(dw->name), "Reverb L In");
-    th.dbg.waveforms.chan[24].make(wv->waveforms, wv->waveforms.size()-1);
+    auto &cd = root.add_child_category("CD Audio", 1);
+    auto *v = cd.add_child_wf(debug::waveform2::wk_medium, th.dbg.waveforms2.cd.chan[0]);
+    th.dbg.waveforms2.cd.chan_cache[0] = &v->data;
+    v->data.stereo = true;
+    snprintf(v->data.name, sizeof(v->data.name), "CD Audio");
 
-    dw = &wv->waveforms.emplace_back();
-    dw->kind = dwk_channel;
-    dw->samples_requested = 200;
-    snprintf(dw->name, sizeof(dw->name), "Reverb R In");
-    th.dbg.waveforms.chan[25].make(wv->waveforms, wv->waveforms.size()-1);
+    auto &reverb = root.add_child_category("Reverb Processing", 4);
+    v = reverb.add_child_wf(debug::waveform2::wk_medium, th.dbg.waveforms2.reverb.chan[0]);
+    th.dbg.waveforms2.reverb.chan_cache[0] = &v->data;
+    v->data.stereo = true;
+    snprintf(v->data.name, sizeof(v->data.name), "Reverb In");
 
-
-    dw = &wv->waveforms.emplace_back();
-    dw->kind = dwk_channel;
-    dw->samples_requested = 200;
-    snprintf(dw->name, sizeof(dw->name), "Reverb L Out");
-    th.dbg.waveforms.chan[26].make(wv->waveforms, wv->waveforms.size()-1);
-
-    dw = &wv->waveforms.emplace_back();
-    dw->kind = dwk_channel;
-    dw->samples_requested = 200;
-    snprintf(dw->name, sizeof(dw->name), "Reverb R Out");
-    th.dbg.waveforms.chan[27].make(wv->waveforms, wv->waveforms.size()-1);
+    v = reverb.add_child_wf(debug::waveform2::wk_medium, th.dbg.waveforms2.reverb.chan[0]);
+    th.dbg.waveforms2.reverb.chan_cache[0] = &v->data;
+    v->data.stereo = true;
+    snprintf(v->data.name, sizeof(v->data.name), "Reverb Out");
 }
+
 static void setup_image_view_vram(core* th, debugger_interface *dbgr) {
     th->dbg.image_views.vram = dbgr->make_view(dview_image);
     auto *dview = &th->dbg.image_views.vram.get();

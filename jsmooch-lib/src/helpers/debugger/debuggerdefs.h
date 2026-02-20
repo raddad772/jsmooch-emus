@@ -20,6 +20,12 @@ struct memory_view;
 #define DBG_CPU_REG_START(x) struct { struct cpu_reg_context
 #define DBG_CPU_REG_END(x) ; } dasm_##x{};
 
+#define DBG_WAVEFORM2_START1 struct { cvec_ptr<debugger_view> view{};
+#define DBG_WAVEFORM2_MAIN debug::waveform2::view_node* main{}; debug::waveform2::wf *main_cache{};
+#define DBG_WAVEFORM2_BRANCH(name, x) struct { cvec_ptr<debug::waveform2::view_node> chan[x]{}; debug::waveform2::wf *chan_cache[x]{}; } name;
+#define DBG_WAVEFORM2_END1 } waveforms2{};
+
+
 #define DBG_WAVEFORM_START1 struct { cvec_ptr<debugger_view> view{};
 #define DBG_WAVEFORM_END1 } waveforms{};
 #define DBG_WAVEFORM_START(x) struct { cvec_ptr<debugger_view> view{};
