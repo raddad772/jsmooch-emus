@@ -1842,6 +1842,7 @@ bool full_system::draw_waveform2(W2FORM& wf) {
                 y1 = floor(y_val);
                 y2 = ceil(last_y_val);
             }
+            last_y_val = y_val;
             u32 yaddr = (wf.szpo2 * (y1 + r.yoffset)) + xpos;
             /*if (y1 == y2) outbuf[yaddr] = 0xFFFFFFFF;
             else*/ for (u32 y = y1; y < y2; y++) {

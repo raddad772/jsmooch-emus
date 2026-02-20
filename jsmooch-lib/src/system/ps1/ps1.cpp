@@ -123,7 +123,11 @@ static void sample_audio_debug_min(void *ptr, u64 key, u64 clock, u32 jitter) {
         auto *dw = th->dbg.waveforms2.channels.chan_cache[j];
         if (dw->user.buf_pos < dw->samples_requested) {
             i16 sv = th->spu.voices[j].sample;
-            static_cast<float *>(dw->buf[dw->rendering_buf].ptr)[dw->user.buf_pos] = i16_to_float(sv);
+            if (sv > 0x1000) printf("\nGOT IT!");
+            float r = i16_to_float(sv);
+
+            static_cast<float *>(dw->buf[dw->rendering_buf].ptr)[dw->user.buf_pos] = r;
+
             dw->user.buf_pos++;
         }
     }
