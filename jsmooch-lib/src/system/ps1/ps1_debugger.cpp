@@ -137,6 +137,7 @@ static void setup_waveforms(core& th, debugger_interface *dbgr) {
     snprintf(root.data.name, sizeof(root.data.name), "Stereo Out");
     root.data.kind = debug::waveform2::wk_big;
     root.data.samples_requested = 400;
+    root.data.stereo = true;
 
     auto &main = root.add_child_category("Voices", 32);
     for (u32 i = 0; i < 24; i++) {

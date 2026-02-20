@@ -1774,17 +1774,24 @@ bool full_system::draw_waveform2(W2FORM& wf) {
         u32 xsize{};
         float ysize{};
         bool is_unsigned{};
+        u32 bufstride{};
+        u32 bufstart{};
     } renders[2]{};
+    renders[0].bufstart = 0;
+
     if (wf.wf->stereo) {
         numrenders = 2;
         renders[0].is_unsigned = renders[1].is_unsigned = wf.wf->is_unsigned;
         renders[0].xsize = renders[1].xsize = wf.len;
+        renders[1].bufstart = 1;
+        renders[0].bufstride = renders[1].bufstride = 2;
         renders[0].yoffset = 0;
         renders[1].yoffset = wf.height >> 1;
         renders[0].ysize = renders[1].ysize = static_cast<float>(wf.height >> 1);
     }
     else {
         numrenders = 1;
+        renders[0].bufstride = 1;
         renders[0].is_unsigned = wf.wf->is_unsigned;
         renders[0].xsize = wf.len;
         renders[0].yoffset = 0;
@@ -1795,11 +1802,12 @@ bool full_system::draw_waveform2(W2FORM& wf) {
     for (u32 rn = 0; rn < numrenders; rn++) {
         auto &r = renders[rn];
         auto *smp_ptr = static_cast<float *>(wf.wf->buf[wf.wf->rendering_buf].ptr);
-        u32 offset = 0;
+        u32 offset = r.bufstart;;
         float last_y_val = r.is_unsigned ? 0 : r.ysize / 2.0f;
         for (u32 x = 0; x < r.xsize; x++) {
             u32 xpos = x + xoffset;
-            float smp = smp_ptr[offset++];
+            float smp = smp_ptr[offset];
+            offset += r.bufstride;
             float y_val;
             if (r.is_unsigned) {
                 if (smp < 0.0f) {
@@ -1823,6 +1831,7 @@ bool full_system::draw_waveform2(W2FORM& wf) {
                 }
                 y_val = (smp + 1.0f) / 2.0f;
             }
+            y_val = 1.0f - y_val;
             y_val *= r.ysize;
             u32 y1, y2;
             if (last_y_val < y_val) {
@@ -1833,9 +1842,9 @@ bool full_system::draw_waveform2(W2FORM& wf) {
                 y1 = floor(y_val);
                 y2 = ceil(last_y_val);
             }
-            u32 yaddr = (wf.szpo2 * y1) + xpos;
-            if (y1 == y2) outbuf[yaddr] = 0xFFFFFFFF;
-            else for (u32 y = y1; y < y2; y++) {
+            u32 yaddr = (wf.szpo2 * (y1 + r.yoffset)) + xpos;
+            /*if (y1 == y2) outbuf[yaddr] = 0xFFFFFFFF;
+            else*/ for (u32 y = y1; y < y2; y++) {
                 outbuf[yaddr] = 0xFFFFFFFF;
                 yaddr += wf.szpo2;
             }
@@ -1846,34 +1855,32 @@ bool full_system::draw_waveform2(W2FORM& wf) {
     return over_max;
 }
 
-void full_system::waveform2_view_present(W2VIEW &wv) {
-    for (auto& wf : wv.waveform2s) {
-        if (!wf.tex.is_good) {
-            u32 szpo2 = wf.szpo2;;
-            TS(wf.tex, wf.wf->name, szpo2, szpo2);
-            assert(wf.tex.is_good);
-            wf.tex.uv0 = ImVec2(0, 0);
-            wf.drawbuf.resize(szpo2*szpo2*4);
-        }
-        memset(wf.drawbuf.data(), 0, wf.szpo2*wf.szpo2*4);
-
-        u32 *ptr = reinterpret_cast<u32 *>(wf.drawbuf.data());
-
-        // Draw box around
-        bool overmax;
-        overmax = draw_waveform2(wf);
-
-        draw_box(ptr, 0, 0, wf.len-1, wf.height-1, wf.szpo2, wf.szpo2, overmax ? 0xFF0000FF : 0xFFFFFFFF);
-
-        // Upload texture
-        wf.tex.upload_data(wf.drawbuf.data(), wf.szpo2*wf.szpo2*4, wf.szpo2, wf.szpo2);
-
-
-        // Update data
-        wf.tex.uv1 = ImVec2(wf.len, wf.height);
-        wf.tex.sz_for_display = ImVec2(wf.len, wf.height);
+void full_system::waveform2_wf_present(W2FORM& wf) {
+    if (!wf.tex.is_good) {
+        u32 szpo2 = wf.szpo2;;
+        TS(wf.tex, wf.wf->name, szpo2, szpo2);
+        assert(wf.tex.is_good);
+        wf.tex.uv0 = ImVec2(0, 0);
+        float x_ratio = static_cast<float>(wf.len) / static_cast<float>(szpo2);
+        float y_ratio = static_cast<float>(wf.height) / static_cast<float>(szpo2);
+        wf.tex.uv1 = ImVec2(x_ratio, y_ratio);
+        wf.drawbuf.resize(szpo2*szpo2*4);
     }
+    memset(wf.drawbuf.data(), 0, wf.szpo2*wf.szpo2*4);
 
+    u32 *ptr = reinterpret_cast<u32 *>(wf.drawbuf.data());
+
+    // Draw box around
+    bool overmax;
+    overmax = draw_waveform2(wf);
+
+    draw_box(ptr, 0, 0, wf.len-1, wf.height-1, wf.szpo2, wf.szpo2, overmax ? 0xFF0000FF : 0xFFFFFFFF);
+
+    // Upload texture
+    wf.tex.upload_data(wf.drawbuf.data(), wf.szpo2*wf.szpo2*4, wf.szpo2, wf.szpo2);
+
+    //wf.tex.uv1 = ImVec2(wf.height, 0.5f);
+    wf.tex.sz_for_display = ImVec2(wf.len, wf.height);
 }
 
 void full_system::waveform_view_present(WVIEW &wv)

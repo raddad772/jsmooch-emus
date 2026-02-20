@@ -748,6 +748,7 @@ void imgui_jsmooch_app::render_disassembly_views(bool update_dasm_scroll) {
 
 void imgui_jsmooch_app::render_w2_tex(debug::waveform2::view_node &node) {
     auto *n = static_cast<W2FORM *>(node.user_ptr);
+    fsys.waveform2_wf_present(*n);
     ImGui::SetNextWindowSizeConstraints(ImVec2(n->len, n->height+20),
                               ImVec2(n->len+20, n->height+30));
     auto *wf = &node.data;
@@ -806,9 +807,6 @@ void imgui_jsmooch_app::render_waveform2_view(W2VIEW &wview, u32 num) {
     managed_window *mw = register_managed_window(0x600 + num, mwk_debug_sound, wview.view->name, WAVEFORM_VIEW_DEFAULT_ENABLE);
     u32 idpush = 0;
     if (mw->enabled) {
-        fsys.waveform2_view_present(wview);
-        bool first = true;
-
         if (ImGui::Begin(wview.view->name)) {
             // Master view
             render_w2_tex(wview.view->root);
