@@ -53,10 +53,14 @@ struct imgui_jsmooch_app {
     void render_console_view(bool update_dasm_scroll);
 
     void render_waveform_view(struct WVIEW &wview, u32 num);
+    void render_waveform2_view(struct W2VIEW &wview, u32 num);
     void render_disassembly_views(bool update_dasm_scroll);
     void render_disassembly_view(struct DVIEW &dview, bool update_dasm_scroll, u32 num);
     void render_dbglog_view(struct DLVIEW &dview, bool update_dasm_scoll, u64 cur_time);
     void render_window_manager();
+    void render_w2_tex(debug::waveform2::view_node &node);
+    void render_w2_node(debug::waveform2::view_node &node, u32 &idpush);
+    void render_w2_node_line(debug::waveform2::view_node &node, u32 &idpush);
 
 #ifdef JSM_SDLGPU
     SDL_GPUDevice *device{};

@@ -504,16 +504,6 @@ void imgui_jsmooch_app::render_dbglog_view(DLVIEW &dview, bool update_dasm_scrol
         bool any_checked = false;
         for (auto &c : root.children) {
             any_checked |= render_node(dlv, c, &bid, cur_time);
-            /*ImGui::SameLine();
-            ImGui::PushID(bid + 20000);
-            bool old_cbox = any_checked;
-            ImGui::Checkbox("selected", &any_checked);
-            ImGui::PopID();
-            if (old_cbox != any_checked) {
-                for (auto &e: c.children) {
-                    c.enabled = any_checked;
-                }
-            }*/
         }
     }
     ImGui::End();
@@ -756,6 +746,77 @@ void imgui_jsmooch_app::render_disassembly_views(bool update_dasm_scroll) {
     }
 }
 
+void imgui_jsmooch_app::render_w2_tex(debug::waveform2::view_node &node) {
+    auto *n = static_cast<W2FORM *>(node.user_ptr);
+    ImGui::SetNextWindowSizeConstraints(ImVec2(n->len, n->height),
+                              ImVec2(n->len, n->height));
+    auto *wf = &node.data;
+    if (ImGui::BeginChild(wf->name, ImVec2(-FLT_MIN, 0.0f), ImGuiChildFlags_None)) {
+        ImGui::Checkbox(wf->name, &wf->ch_output_solo);
+        ImGui::Image(n->tex.for_image(), n->tex.sz_for_display, n->tex.uv0, n->tex.uv1);
+    }
+    ImGui::EndChild();
+}
+
+void imgui_jsmooch_app::render_w2_node_line(debug::waveform2::view_node &nn, u32 &idpush) {
+    u32 total_on_line = 0;
+    u32 total_per_line = 200; // 2 medium (100x80) or 1 large (200x80) or 4 tiny(50x40)
+    if (nn.children.size() > 9) total_per_line *= 2; // 2 large, 4 medium, 8 tiny
+    if (nn.children.size() > 24) total_per_line += total_per_line >> 1; // 3 large, 8 medium, 16 tiny
+    for (auto &node : nn.children) {
+        bool make_new_line = false;
+        auto *v = static_cast<W2FORM *>(node.user_ptr);
+        total_on_line += v->len;
+        if (total_on_line <= total_per_line) {}
+        else {
+            make_new_line = true;
+        }
+        if (!make_new_line) ImGui::SameLine();
+        else {
+            total_on_line = 0;
+        }
+        render_w2_tex(node);
+    }
+}
+
+void imgui_jsmooch_app::render_w2_node(debug::waveform2::view_node &node, u32 &idpush) {
+    if (node.children.empty()) {
+        // Leaf!
+        render_w2_tex(node);
+    }
+    else {
+        ImGui::PushID(idpush++);
+        if (ImGui::TreeNodeEx(node.name)) {
+            if (node.children[0].children.empty())
+                render_w2_node_line(node, idpush);
+            else
+                render_w2_node(node, idpush);
+        }
+        ImGui::TreePop();
+        ImGui::PopID();
+    }
+}
+
+void imgui_jsmooch_app::render_waveform2_view(W2VIEW &wview, u32 num) {
+    bool any_solo_next = false;
+    managed_window *mw = register_managed_window(0x600 + num, mwk_debug_sound, wview.view->name, WAVEFORM_VIEW_DEFAULT_ENABLE);
+    u32 idpush = 0;
+    if (mw->enabled) {
+        fsys.waveform2_view_present(wview);
+        bool first = true;
+
+        if (ImGui::Begin(wview.view->name)) {
+            // Master view
+            render_w2_tex(wview.view->root);
+
+            // Nodes and trees!
+            for (auto &node: wview.view->root.children) {
+                render_w2_node(node, idpush);
+            }
+        }
+    }
+}
+
 void imgui_jsmooch_app::render_waveform_view(WVIEW &wview, u32 num)
 {
     managed_window *mw = register_managed_window(0x600 + num, mwk_debug_sound, wview.view->name, WAVEFORM_VIEW_DEFAULT_ENABLE);
@@ -791,7 +852,6 @@ void imgui_jsmooch_app::render_waveform_view(WVIEW &wview, u32 num)
             if (wview.waveforms.size() > 9) num_per_line = 4;
             if (wview.waveforms.size() > 17) num_per_line = 6;
             for (auto &wf: wview.waveforms) {
-                u32 old_on_line = on_line;
                 bool make_new_line = false;
                 switch (wf.wf->kind) {
                     case dwk_main:
@@ -1127,6 +1187,9 @@ void imgui_jsmooch_app::render_debug_views(ImGuiIO& io, bool update_dasm_scroll,
     u32 i = 0;
     for (auto &wv : fsys.waveform_views) {
         render_waveform_view(wv, i++);
+    }
+    for (auto &wv : fsys.waveform2_views) {
+        render_waveform2_view(wv, i++);
     }
     render_window_manager();
 }

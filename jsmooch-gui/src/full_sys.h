@@ -62,6 +62,16 @@ struct fssothing {
     float x_size, y_size;
 };
 
+struct W2FORM {
+    my_texture tex{};
+    bool enabled{};
+    debug::waveform2::wf *wf{};
+    u32 szpo2{256};
+    bool output_enabled{true};
+    u32 height{}, len{};
+    std::vector<u8> drawbuf{};
+};
+
 class WFORM {
 public:
     my_texture tex{};
@@ -72,10 +82,16 @@ public:
     std::vector<u8> drawbuf{};
 };
 
+struct W2VIEW {
+public:
+    debug::waveform2::view *view{};
+    std::vector<W2FORM> waveform2s{};
+};
+
 class WVIEW {
 public:
     waveform_view *view{};
-    std::vector<class WFORM> waveforms{};
+    std::vector<WFORM> waveforms{};
 };
 
 class CVIEW {
@@ -130,6 +146,7 @@ public:
 
     multi_file_set ROMs;
     std::vector<WVIEW> waveform_views;
+    std::vector<W2VIEW> waveform2_views;
     std::vector<DVIEW> dasm_views;
     std::vector<TVIEW> trace_views;
     std::vector<CVIEW> console_views;
@@ -229,6 +246,7 @@ public:
     void events_view_present();
     void pre_events_view_present();
     void waveform_view_present(WVIEW &wv);
+    void waveform2_view_present(W2VIEW &wv);
     void image_view_present(debugger_view &dview, my_texture &tex);
     void setup_wgpu();
     void setup_audio();
@@ -248,7 +266,10 @@ private:
     void add_disassembly_view(u32);
     void add_image_view(u32);
     void add_waveform_view(u32 idx);
+    void add_waveform2_view(u32 idx);
     void waveform_view_present(debugger_view &dview, WFORM &wf);
+    void waveform2_view_present(debugger_view &dview, WFORM &wf);
+    void w2_create_node_texture(W2VIEW &myv, debug::waveform2::view_node *node, bool force_create);
 };
 
 void newsys(full_system *fsys);

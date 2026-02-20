@@ -459,7 +459,7 @@ namespace debug::waveform2 {
         bool force_own_line{false};
         bool extra_data{false};
         char extra_data_str[100];
-        buf buf[3]{::buf(8192), ::buf(8192)}; // Max 400 samples, floating-point, stereo = 3200 samples.
+        buf buf[3]{::buf(8192), ::buf(8192), ::buf(8192)}; // Max 400 samples, floating-point, stereo = 3200 samples.
         u32 rendering_buf{0}; // buf to render to. keeps a history up to 3!
 
         struct {
@@ -476,6 +476,7 @@ namespace debug::waveform2 {
         wf data{}; // for child-less nodes and the main output
         std::vector<view_node> children{}; // For branches/root!
         view_node *parent{};
+        void *user_ptr{};
     };
 
     struct view {

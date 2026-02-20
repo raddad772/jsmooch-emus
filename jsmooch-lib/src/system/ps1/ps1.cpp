@@ -177,6 +177,7 @@ void core::setup_debug_waveform(debug::waveform2::wf *dw)
     dw->samples_rendered = dw->samples_requested;
     dw->user.cycle_stride = audio.cycles_per_frame / static_cast<float>(dw->samples_requested);
     dw->user.buf_pos = 0;
+    dw->rendering_buf = (dw->rendering_buf + 1) % 3;
 }
 
 void core::set_audiobuf(audiobuf *ab)

@@ -1288,6 +1288,60 @@ void full_system::load_default_ROM()
     }
 }
 
+void full_system::w2_create_node_texture(W2VIEW &myv, debug::waveform2::view_node *node, bool force_create) {
+    if (node->children.size() == 0 || force_create) {
+        // Create/update texture
+        W2FORM wf;
+        wf.enabled = true;
+        u32 height;
+        u32 szpo2;
+        u32 len;
+        switch (node->data.kind) {
+            case debug::waveform2::wk_medium:
+                height = 80;
+                szpo2 = 128; // 100x80
+                len = 100;
+                break;
+            case debug::waveform2::wk_big:
+                height = 80;
+                szpo2 = 256; // 200x160 max
+                len = 200;
+                break;
+            case debug::waveform2::wk_small:
+                height = 40;
+                szpo2 = 64;
+                len = 50;
+                break;
+            default:
+                NOGOHERE;
+        }
+
+        wf.height = height;
+        wf.wf = &node->data;
+        wf.szpo2 = szpo2;
+        wf.len = len;
+        node->data.samples_requested = len;
+        myv.waveform2s.push_back(wf);
+        node->user_ptr = &myv.waveform2s.back();
+    }
+    else {
+        for (auto &ch : node->children)
+            w2_create_node_texture(myv, &ch, false);
+    }
+}
+
+void full_system::add_waveform2_view(u32 idx) {
+    auto &dview = dbgr.views.at(idx);
+    W2VIEW myv;
+    myv.view = &dview.waveform2;
+    myv.waveform2s.reserve(256); // Reserve space for 256 waveforms! We won't need it all!!!
+
+    w2_create_node_texture(myv, &myv.view->root, true);
+    w2_create_node_texture(myv, &myv.view->root, false);
+
+    waveform2_views.push_back(myv);
+}
+
 void full_system::add_waveform_view(u32 idx)
 {
     auto &dview = dbgr.views.at(idx);
@@ -1358,6 +1412,7 @@ void full_system::add_image_view(u32 idx)
 void full_system::setup_debugger_interface()
 {
     sys->setup_debugger_interface(dbgr);
+    waveform2_views.reserve(4); // 4 different audio chips...
     debugger_setup = 1;
     for (u32 i = 0; i < dbgr.views.size(); i++) {
         auto &view = dbgr.views.at(i);
@@ -1388,6 +1443,9 @@ void full_system::setup_debugger_interface()
                 break;
             case dview_waveforms:
                 add_waveform_view(i);
+                break;
+            case dview_waveform2:
+                add_waveform2_view(i);
                 break;
             default:
                 assert(1==2);
@@ -1708,23 +1766,49 @@ static void draw_box(u32 *ptr, u32 x0, u32 y0, u32 x1, u32 y1, u32 out_width, u3
     }
 }
 
+void full_system::waveform2_view_present(W2VIEW &wv) {
+    for (auto& wf : wv.waveform2s) {
+        if (!wf.tex.is_good) {
+            u32 szpo2 = wf.szpo2;;
+            TS(wf.tex, wf.wf->name, szpo2, szpo2);
+            assert(wf.tex.is_good);
+            wf.tex.uv0 = ImVec2(0, 0);
+            wf.drawbuf.resize(szpo2*szpo2*4);
+        }
+        memset(wf.drawbuf.data(), 0, wf.szpo2*wf.szpo2*4);
+
+        u32 *ptr = (u32 *)(wf.drawbuf.data());
+
+        // Draw box around
+        draw_box(ptr, 0, 0, wf.len, wf.height, wf.szpo2, wf.szpo2, 0xFF0000FF);
+
+        // Upload texture
+        wf.tex.upload_data(wf.drawbuf.data(), wf.szpo2*wf.szpo2*4, wf.szpo2, wf.szpo2);
+
+        // Update data
+        wf.tex.uv1 = ImVec2(wf.len, wf.height);
+        wf.tex.sz_for_display = ImVec2(wf.len, wf.height);
+    }
+
+}
+
 void full_system::waveform_view_present(WVIEW &wv)
 {
     for (auto& wf : wv.waveforms) {
         if (!wf.tex.is_good) {
-            u32 szpo2 = 1024;
+            u32 szpo2 = 512;
             TS(wf.tex, wf.wf->name, szpo2, szpo2);
             assert(wf.tex.is_good);
             wf.tex.uv0 = ImVec2(0, 0);
-            wf.drawbuf.resize(1024*1024*4);
+            wf.drawbuf.resize(512*512*4);
         }
 
-        memset(wf.drawbuf.data(), 0, 1024*1024*4);
-        // Draw box around
+        memset(wf.drawbuf.data(), 0, 512*512*4);
 
+        // Draw box around
         float hrange = wf.height / 2.0f;
         u32 *ptr = (u32 *)(wf.drawbuf.data());
-        draw_box(ptr, 0, 0, wf.wf->samples_requested-1, wf.height-1, 1024, 1024, 0xFF808080);
+        draw_box(ptr, 0, 0, wf.wf->samples_requested-1, wf.height-1, 512, 1024, 0xFF808080);
         i32 last_y = 0;
         if (wf.wf->samples_rendered > 0) {
             float *b = (float *)wf.wf->buf.ptr;
