@@ -248,6 +248,7 @@ public:
     void pre_events_view_present();
     void waveform_view_present(WVIEW &wv);
     void waveform2_view_present(W2VIEW &wv);
+    bool draw_waveform2(W2FORM& wf);
     void image_view_present(debugger_view &dview, my_texture &tex);
     void setup_wgpu();
     void setup_audio();

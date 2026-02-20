@@ -32,7 +32,6 @@ struct my_texture  {
     SDL_GPUDevice *device;
     SDL_GPUTextureCreateInfo info;
 
-
     char store_label[500]{};
 
     ~my_texture();

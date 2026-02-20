@@ -1765,6 +1765,87 @@ static void draw_box(u32 *ptr, u32 x0, u32 y0, u32 x1, u32 y1, u32 out_width, u3
     }
 }
 
+bool full_system::draw_waveform2(W2FORM& wf) {
+    bool over_max = false;
+
+    u32 numrenders;
+    struct RENDERS {
+        u32 yoffset{};
+        u32 xsize{};
+        float ysize{};
+        bool is_unsigned{};
+    } renders[2]{};
+    if (wf.wf->stereo) {
+        numrenders = 2;
+        renders[0].is_unsigned = renders[1].is_unsigned = wf.wf->is_unsigned;
+        renders[0].xsize = renders[1].xsize = wf.len;
+        renders[0].yoffset = 0;
+        renders[1].yoffset = wf.height >> 1;
+        renders[0].ysize = renders[1].ysize = static_cast<float>(wf.height >> 1);
+    }
+    else {
+        numrenders = 1;
+        renders[0].is_unsigned = wf.wf->is_unsigned;
+        renders[0].xsize = wf.len;
+        renders[0].yoffset = 0;
+        renders[0].ysize = static_cast<float>(wf.height);
+    }
+    u32 xoffset = 0;
+    u32 *outbuf = reinterpret_cast<u32 *>(&wf.drawbuf[0]);
+    for (u32 rn = 0; rn < numrenders; rn++) {
+        auto &r = renders[rn];
+        auto *smp_ptr = static_cast<float *>(wf.wf->buf[wf.wf->rendering_buf].ptr);
+        u32 offset = 0;
+        float last_y_val = r.is_unsigned ? 0 : r.ysize / 2.0f;
+        for (u32 x = 0; x < r.xsize; x++) {
+            u32 xpos = x + xoffset;
+            float smp = smp_ptr[offset++];
+            float y_val;
+            if (r.is_unsigned) {
+                if (smp < 0.0f) {
+                    over_max = true;
+                    smp = 0.0f;
+                }
+                if (smp > 1.0f) {
+                    over_max = true;
+                    smp = 1.0f;
+                }
+                y_val = smp;
+            }
+            else {
+                if (smp < -1.0f) {
+                    over_max = true;
+                    smp = -1.0f;
+                }
+                if (smp > 1.0f) {
+                    over_max = true;
+                    smp = 1.0f;
+                }
+                y_val = (smp + 1.0f) / 2.0f;
+            }
+            y_val *= r.ysize;
+            u32 y1, y2;
+            if (last_y_val < y_val) {
+                y1 = floor(last_y_val);
+                y2 = ceil(y_val);
+            }
+            else {
+                y1 = floor(y_val);
+                y2 = ceil(last_y_val);
+            }
+            u32 yaddr = (wf.szpo2 * y1) + xpos;
+            if (y1 == y2) outbuf[yaddr] = 0xFFFFFFFF;
+            else for (u32 y = y1; y < y2; y++) {
+                outbuf[yaddr] = 0xFFFFFFFF;
+                yaddr += wf.szpo2;
+            }
+        }
+
+    }
+
+    return over_max;
+}
+
 void full_system::waveform2_view_present(W2VIEW &wv) {
     for (auto& wf : wv.waveform2s) {
         if (!wf.tex.is_good) {
@@ -1776,13 +1857,17 @@ void full_system::waveform2_view_present(W2VIEW &wv) {
         }
         memset(wf.drawbuf.data(), 0, wf.szpo2*wf.szpo2*4);
 
-        u32 *ptr = (u32 *)(wf.drawbuf.data());
+        u32 *ptr = reinterpret_cast<u32 *>(wf.drawbuf.data());
 
         // Draw box around
-        draw_box(ptr, 0, 0, wf.len, wf.height, wf.szpo2, wf.szpo2, 0xFF0000FF);
+        bool overmax;
+        overmax = draw_waveform2(wf);
+
+        draw_box(ptr, 0, 0, wf.len-1, wf.height-1, wf.szpo2, wf.szpo2, overmax ? 0xFF0000FF : 0xFFFFFFFF);
 
         // Upload texture
         wf.tex.upload_data(wf.drawbuf.data(), wf.szpo2*wf.szpo2*4, wf.szpo2, wf.szpo2);
+
 
         // Update data
         wf.tex.uv1 = ImVec2(wf.len, wf.height);

@@ -1049,7 +1049,7 @@ void core::ins_SMULWy(const u32 opcode)
     if (y) Rs >>= 16;
     else Rs &= 0xFFFF;
 
-    const u64 result = (static_cast<i64>(static_cast<i32>(Rm)) * static_cast<i16>(Rs)) >> 16;
+    const u64 result = (static_cast<i64>(static_cast<i32>(Rm))) * static_cast<i64>(static_cast<i16>(Rs));
 
     *Rd = result;
 
