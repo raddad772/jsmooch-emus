@@ -87,9 +87,9 @@ namespace PS1::SPU {
 
 #define RR(x) io.reverb.regs[x]
 #define RRA(x) (static_cast<u32>(io.reverb.regs[x]) << 3)
-#define REGRAM(x) read_RAM(reverb_addr(RRA(x)), true, true)
-#define REGRAM2(x) read_RAM(reverb_addr(RRA(x)-2), true, true)
-#define WREGRAM(x, y) write_RAM(reverb_addr(RRA(x)), y, true);
+#define REGRAM(x) static_cast<i16>(read_RAM(reverb_addr(RRA(x)), true, true))
+#define REGRAM2(x) static_cast<i16>(read_RAM(reverb_addr(RRA(x)-2), true, true))
+#define WREGRAM(x, y) write_RAM(reverb_addr(RRA(x)), static_cast<u16>(static_cast<i16>(y)), true);
 
 static constexpr i16 gauss_table[0x200] = {
     -1,-1,-1,-1,-1,-1,-1,-1,
@@ -529,6 +529,7 @@ void core::commit_FIFO() {
     }
     io.SPUSTAT.data_transfer_busy = 0;
 }
+
 void core::FIFO_instant_transfer(u16 val) {
     latch.RAM_transfer_addr &= 0x7FFFF;
     write_RAM(latch.RAM_transfer_addr, val, true);
@@ -782,7 +783,7 @@ void core::process_reverb() {
 
         reverb.filter_l.out.add_sample(reverb.proc_l);
         reverb.filter_r.out.add_sample(reverb.proc_r);
-        reverb.buf_addr = reverb_addr(reverb.buf_addr + 2) << 1;
+        reverb.buf_addr = (reverb.buf_addr + 2) % reverb.buf_len;
     }
     else { // cycle 1, add a 0
         reverb.filter_l.out.add_sample(0);
@@ -867,39 +868,55 @@ void core::apply_comb_filter() {
 
 void core::apply_reflection(i32 l, i32 r) {
     //[mLSAME] = (Lin + [dLSAME]*vWALL - [mLSAME-2])*vIIR + [mLSAME-2]  ;L-to-L
-    i32 s = l + RVOL(REGRAM(dLSAME), RR(vWALL)) - REGRAM2(mLSAME);
+    // READ REVERB   dLSame            dRSame
+    i16 r_dLSAME = REGRAM(dLSAME);
+    i16 r_dRSAME = REGRAM(dRSAME);
+    // READ REVERB   mLSame-1          mRSame-1
+    i16 r_mLSAME2 = REGRAM2(mLSAME);
+    i16 r_mRSAME2 = REGRAM2(mRSAME);
+    // READ REVERB   dRDiff            dLDiff
+    i16 r_dRDIFF = REGRAM(dRDIFF);
+    i16 r_dLDIFF = REGRAM(dLDIFF);
+
+    i32 s = l + RVOL(r_dLSAME, RR(vWALL)) - r_mLSAME2;
     s = RVOL(s, RR(vIIR));
-    s += REGRAM2(mLSAME);
+    s += r_mLSAME2;
     if (s < -0x8000) s = -0x8000;
     if (s > 0x7FFF) s = 0x7FFF;
     WREGRAM(mLSAME, s);
-    reverb.debug_l = s;
 
     //[mRSAME] = (Rin + [dRSAME]*vWALL - [mRSAME-2])*vIIR + [mRSAME-2]  ;R-to-R
-    s = r + RVOL(REGRAM(dRSAME), RR(vWALL)) - REGRAM2(mRSAME);
+    s = r + RVOL(r_dRSAME, RR(vWALL)) - r_mRSAME2;
     s= RVOL(s, RR(vIIR));
-    s += REGRAM2(mRSAME);
+    s += r_mRSAME2;
     if (s < -0x8000) s = -0x8000;
     if (s > 0x7FFF) s = 0x7FFF;
     WREGRAM(mRSAME, s);
-    reverb.debug_r = s;
+    // XXXX REVERB   mLSame            mRSame          <-- WRITE becomes READ if REVERB DISABLED.
+
+    // READ REVERB   mLDiff-1          mRDiff-1
+    i16 r_mLDIFF2 = REGRAM2(mLDIFF);
+    i16 r_mRDIFF2 = REGRAM2(mRDIFF);
+    // READ REVERB   mLComb1           mRComb1
+    reverb.r_mLCOMB1 = REGRAM(mLCOMB1);
+    reverb.r_mRCOMB1 = REGRAM(mRCOMB1);
 
   //[mLDIFF] = (Lin + [dRDIFF]*vWALL - [mLDIFF-2])*vIIR + [mLDIFF-2]  ;R-to-L
-    s = l + RVOL(REGRAM(dRDIFF), RR(vWALL)) - REGRAM2(mLDIFF);
+    s = l + RVOL(r_dRDIFF, RR(vWALL)) - r_mLDIFF2;
     s = RVOL(s, RR(vIIR));
-    s += REGRAM2(mLDIFF);
+    s += r_mLDIFF2;
     if (s < -0x8000) s = -0x8000;
     if (s > 0x7FFF) s = 0x7FFF;
-    //WREGRAM(mLDIFF, s);
+    WREGRAM(mLDIFF, s);
 
-  //[mRDIFF] = (Rin + [dLDIFF]*vWALL - [mRDIFF-2])*vIIR + [mRDIFF-2]  ;L-to-R
-    s = r + RVOL(REGRAM(dLDIFF), RR(vWALL)) - REGRAM2(mRDIFF);
+    //[mRDIFF] = (Rin + [dLDIFF]*vWALL - [mRDIFF-2])*vIIR + [mRDIFF-2]  ;L-to-R
+    s = r + RVOL(r_dLDIFF, RR(vWALL)) - r_mRDIFF2;
     s = RVOL(s, RR(vIIR));
-    s += REGRAM2(mRDIFF);
+    s += r_mRDIFF2;
     if (s < -0x8000) s = -0x8000;
-    if (s > 0x7FFF) s = -0x8000;
-    //WREGRAM(mRDIFF, s);
-
+    if (s > 0x7FFF) s = 0x7FFF;
+    WREGRAM(mRDIFF, s);
+    // XXXX REVERB   mLDiff            mRDiff          <-- WRITE becomes READ if REVERB DISABLED.
 }
 
 
@@ -1063,7 +1080,7 @@ void core::mainbus_write(u32 addr, u8 sz, u32 val)
         case 0x1F801D84: io.reverb.vol_out_l = static_cast<i16>(val);
             return;
         case 0x1F801D86: io.reverb.vol_out_r = static_cast<i16>(val); return;
-        case 0x1F801DA2: io.reverb.mBASE = val << 3; return;
+        case 0x1F801DA2: io.reverb.mBASE = val << 3; reverb.buf_len = 0x80000 - io.reverb.mBASE; reverb.buf_addr = 0; return;
     }
     printf("\n(SPU) Unhandled write %08x (%d): %08x", raddr, sz, val);
 }

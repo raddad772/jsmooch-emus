@@ -232,9 +232,9 @@ struct core {
         u16 pmon_lo{}, pmon_hi{};
         struct {
             i32 vol_out_l{}, vol_out_r{};
+            u16 on_lo{}, on_hi{};
             u32 mBASE{};
             i16 regs[0x20]{};
-            u16 on_lo{}, on_hi{};
         } reverb{};
 
     } io{};
@@ -267,10 +267,11 @@ struct core {
         struct REVERBPROC {
             FIR_filter in{}, out{};
         } filter_l{}, filter_r{};
-        u32 buf_addr{};
+        u32 buf_addr{}, buf_len{};
 
         i32 proc_l{}, proc_r{};
         i32 debug_l{}, debug_r{};
+        i16 r_mLCOMB1{}, r_mRCOMB1{};
     } reverb{};
 
     struct {
@@ -289,9 +290,8 @@ private:
     u32 read_reverb_reg(u32 addr, u8 sz);
     void apply_reflection(i32 l, i32 r);
     inline u32 reverb_addr(u32 inaddr) {
-        u32 len = 0x80000 - io.reverb.mBASE;
-        u32 a = ((inaddr + reverb.buf_addr) % len) + io.reverb.mBASE;
-        return a;
+        u32 a = (inaddr + reverb.buf_addr) % reverb.buf_len;
+        return a + io.reverb.mBASE;
     }
     void apply_comb_filter();
 

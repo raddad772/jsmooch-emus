@@ -265,7 +265,6 @@ void CDROM::cmd_step3(u64 key, u64 clock) {
 }
 
 void CDROM::cmd_finish(u64 key, u64 clock) {
-    printf("\nCMD END FOR %02x", io.CMD);
     switch (io.CMD) {
         case 0x07:
             cmd_motor_on_finish();
@@ -855,6 +854,8 @@ void CDROM::stat_irq() {
 void CDROM::finish_CMD(bool do_stat_irq, u32 irq_num) {
     io.HSTS.BUSYSTS = 0;
     //printif(ps1.cdrom.cmd, "\n(CDROM) CMD FINISH");
+    printf("\nfinish_CMD %02x", io.CMD);
+
     if (do_stat_irq) {
         queue_interrupt(irq_num);
         result(io.stat.u);
