@@ -93,8 +93,6 @@ struct CDROM_IO {
     CD_DATA_BUF RDDATA{};
     CD_FIFO_IRQ interrupts{};
 
-    bool read_mode{};
-
     i32 L_L{}, L_R{}, R_L{}, R_R{};
     struct {
         u8 L_L{}, L_R{}, R_L{}, R_R{};
@@ -127,6 +125,16 @@ struct CDROM_IO {
         };
         u8 u{};
     } HSTS{};
+
+    union {
+        struct {
+            u8 _res : 5;
+            u8 SMEN : 1;
+            u8 BFWR : 1;
+            u8 BFRD : 1; // 1= allow FIFO reads, 0 = return 0's
+        };
+        u8 u{};
+    } HCHPCTL{};
 
     union {
         struct {

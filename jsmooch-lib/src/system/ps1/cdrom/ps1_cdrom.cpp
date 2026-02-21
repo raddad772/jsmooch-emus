@@ -159,6 +159,7 @@ void CDROM::recalc_HSTS() {
     io.HSTS.PRMEMPT = io.PARAMETER.len == 0;
     io.HSTS.PRMWRDY = io.PARAMETER.len != 16;
     io.HSTS.RSLRRDY = io.interrupts.out_results.len > 0;
+    io.HSTS.DRQSTS = (io.RDDATA.pos < io.RDDATA.len) && io.HCHPCTL.BFRD;
 }
 
 void CDROM::write_CMD(u32 val) {
@@ -168,7 +169,7 @@ void CDROM::write_CMD(u32 val) {
         //cancel_CMD();
         return;
     }
-    printf("\n(CDROM) CMD WRITE %02x", val);
+    //printf("\n(CDROM) CMD WRITE %02x", val);
     io.CMD = val & 0xFF;
     io.HSTS.BUSYSTS = 1;
     schedule_CMD();
@@ -578,9 +579,10 @@ void CDROM::read_sector() {
     sector_buf.len++;
     if (sector_buf.len > 2) {
         printf("\nWARN SECTOR BUF LEN %d", sector_buf.len);
+        dbg_break("SECTOR BUF FILL", 0);
     }
-    queue_interrupt(1);
     result(io.stat.u);
+    queue_interrupt(1);
 }
 
 void CDROM::sch_read(u64 key, u64 clock) {
@@ -739,7 +741,6 @@ void CDROM::cmd_init(u64 clock) {
 
 void CDROM::cmd_setmode() {
     u8 mode = io.PARAMETER.pop();
-    printf("\nSETMODE %02x", mode);
     //printf("\n(CDROM) CMD SETMODE %02x", mode);
     dbgloglog_bus(PS1D_CDROM_READ, DBGLS_INFO, "(Cmd) SetMode %02x", mode);
     if (!(mode & 0x10)) {
@@ -841,7 +842,7 @@ void CDROM::schedule_read(u64 clock) {
 }
 
 void CDROM::schedule_finish(u64 clock) {
-    printf("\nSCHEDULING END FOR %02x", io.CMD);
+    //printf("\nSCHEDULING END FOR %02x", io.CMD);
     CMD.sched_id = bus->scheduler.only_add_abs(clock, 0, this, &scheduled_cmd_end, &CMD.still_sched);
 }
 
@@ -899,7 +900,7 @@ void CDROM::finish_CMD(bool do_stat_irq, u32 irq_num) {
         printf("\nWARN CMD %02x STILL HAS IN RESULTS: %d", io.CMD, io.interrupts.in_results.len);
     }
     //printif(ps1.cdrom.cmd, "\n(CDROM) CMD FINISH");
-    printf("\nfinish_CMD %02x", io.CMD);
+    //printf("\nfinish_CMD %02x", io.CMD);
 
     if (do_stat_irq) {
         result(io.stat.u);
@@ -1011,19 +1012,15 @@ void CDROM::queue_sector_RDDATA() {
 void CDROM::write_03(u32 val, u8 sz) {
     switch (io.HSTS.RA) {
         case 0:
-            io.read_mode = (val >> 7) & 1;
-            //printf("\n(CDROM) write read mode %d", io.read_mode);
-            if (!io.read_mode) {
-                io.HSTS.DRQSTS = 0;
-                io.RDDATA.clear();
+            io.HCHPCTL.u = val & 0b11100000;
+            if (io.HCHPCTL.BFRD && sector_buf.len > 0) {
+                queue_sector_RDDATA();
             }
-            else {
-                io.HSTS.DRQSTS = sector_buf.len > 0;
-                if (io.HSTS.DRQSTS) {
-                    //printf("\n(CDROM) Queiueng read data!");
-                    queue_sector_RDDATA();
-                }
+            else if (!io.HCHPCTL.BFRD) {
+                //io.RDDATA.pos = 0;
+                // TODO: cna break some games!?!?
             }
+            recalc_HSTS();
             return;
         case 1: {
             // HCLRCTL
