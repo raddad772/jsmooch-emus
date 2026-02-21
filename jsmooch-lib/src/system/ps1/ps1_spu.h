@@ -160,7 +160,7 @@ struct core {
     void mainbus_write(u32 addr, u8 sz, u32 val);
     u32 mainbus_read(u32 addr, u8 sz, bool has_effect);
     u32 snooped_mainbus_read(u32 addr, u8 sz, bool has_effect);
-    u16 RAM[0x40000]{};
+    i16 RAM[0x40000]{};
     FIFO FIFO{};
     void reset();
     PS1::core *bus;
@@ -233,7 +233,7 @@ struct core {
         struct {
             i32 vol_out_l{}, vol_out_r{};
             u32 mBASE{};
-            u16 regs[0x20]{};
+            i16 regs[0x20]{};
             u16 on_lo{}, on_hi{};
         } reverb{};
 
@@ -258,6 +258,7 @@ struct core {
 
     struct {
         bool ext_enable_in{}, ext_enable_out{};
+        bool ext_enable_debug{}, ext_enable_debug2{};
         i32 in_l{}, in_r{};
 
         i32 sample_l{}, sample_r{};
@@ -269,6 +270,7 @@ struct core {
         u32 buf_addr{};
 
         i32 proc_l{}, proc_r{};
+        i32 debug_l{}, debug_r{};
     } reverb{};
 
     struct {
@@ -286,9 +288,10 @@ private:
     void write_reverb_reg(u32 addr, u8 sz, u32 val);
     u32 read_reverb_reg(u32 addr, u8 sz);
     void apply_reflection(i32 l, i32 r);
-    u32 reverb_addr(u32 inaddr) {
-        i32 a = inaddr + io.reverb.mBASE + reverb.buf_addr;
-        return a < 0 ? 0x7FFFE : a > 0x7FFFE ? io.reverb.mBASE >> 1 : a >> 1;
+    inline u32 reverb_addr(u32 inaddr) {
+        u32 len = 0x80000 - io.reverb.mBASE;
+        i32 a = ((inaddr + reverb.buf_addr) % len) + io.reverb.mBASE;
+        return a >> 1;
     }
     void apply_comb_filter();
     void apply_all_pass_filter_1();

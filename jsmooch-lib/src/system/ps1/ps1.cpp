@@ -108,7 +108,8 @@ static void sample_audio_debug_med(void *ptr, u64 key, u64 clock, u32 jitter) {
     sample_audio_to_stereo(th, th->dbg.waveforms2.cd.chan_cache[0], th->spu.capture.sample.cd_l, th->spu.capture.sample.cd_r, th->spu.capture.cd_ext_enable);
     sample_audio_to_stereo(th, th->dbg.waveforms2.reverb.chan_cache[0], th->spu.reverb.in_l, th->spu.reverb.in_r, th->spu.reverb.ext_enable_in);
     sample_audio_to_stereo(th, th->dbg.waveforms2.reverb.chan_cache[1], th->spu.reverb.sample_l, th->spu.reverb.sample_r, th->spu.reverb.ext_enable_out);
-
+    sample_audio_to_stereo(th, th->dbg.waveforms2.reverb.chan_cache[2], th->spu.reverb.debug_l, th->spu.reverb.debug_r, th->spu.reverb.ext_enable_debug);
+    sample_audio_to_stereo(th, th->dbg.waveforms2.reverb.chan_cache[3], th->spu.reverb.debug_l, th->spu.reverb.debug_r, th->spu.reverb.ext_enable_debug2);
     th->audio.next_sample_cycle_med += th->audio.master_cycles_per_med_sample;
     th->scheduler.only_add_abs(static_cast<i64>(th->audio.next_sample_cycle_med), 0, th, &sample_audio_debug_med, nullptr);
 
@@ -231,6 +232,15 @@ void core::set_audiobuf(audiobuf *ab)
     v = dbg.waveforms2.reverb.chan_cache[1]; // out
     setup_debug_waveform(v);
     spu.reverb.ext_enable_out = audio.nosolo || v->ch_output_solo;
+
+    v = dbg.waveforms2.reverb.chan_cache[2]; // out
+    setup_debug_waveform(v);
+    spu.reverb.ext_enable_debug = audio.nosolo || v->ch_output_solo;
+
+    v = dbg.waveforms2.reverb.chan_cache[3]; // out
+    setup_debug_waveform(v);
+    spu.reverb.ext_enable_debug2 = audio.nosolo || v->ch_output_solo;
+
 }
 
 void core::amidog_print_console()
@@ -431,8 +441,13 @@ void core::sample_audio()
         spu.cycle();
 
         if (audio.buf->upos < (audio.buf->samples_len << 1)) {
-            float l = i16_to_float(static_cast<i16>(spu.sample_l));
-            float r = i16_to_float(static_cast<i16>(spu.sample_r));;
+            i16 il, ir;
+            //il = spu.sample_l;
+            //ir = spu.sample_r;
+            il = spu.reverb.debug_l;
+            ir = spu.reverb.debug_r;
+            float l = i16_to_float(il);
+            float r = i16_to_float(ir);;
             static_cast<float *>(audio.buf->ptr)[audio.buf->upos] = l;
             static_cast<float *>(audio.buf->ptr)[audio.buf->upos+1] = r;
         }

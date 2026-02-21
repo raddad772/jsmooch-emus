@@ -145,7 +145,7 @@ struct core : jsm_system {
             DBG_WAVEFORM2_MAIN
             DBG_WAVEFORM2_BRANCH(channels, 24)
             DBG_WAVEFORM2_BRANCH(cd, 2)
-            DBG_WAVEFORM2_BRANCH(reverb, 4)
+            DBG_WAVEFORM2_BRANCH(reverb, 8)
         DBG_WAVEFORM2_END1
     DBG_END
 

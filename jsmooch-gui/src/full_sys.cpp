@@ -1083,7 +1083,7 @@ void full_system::load_default_ROM()
             //worked = grab_ROM(&ROMs, which, "tony_hawk_downhill.gba", nullptr); // works great
             //worked = grab_ROM(&ROMs, which, "car_battler_joe.gba", nullptr);
             //worked = grab_ROM(&ROMs, which, "nfs_most_wanted.gba", nullptr);
-            //worked = grab_ROM(&ROMs, which, "big_mutha_truckers.gba", nullptr); // way too fast?
+            worked = grab_ROM(&ROMs, which, "big_mutha_truckers.gba", nullptr); // way too fast?
             //worked = grab_ROM(&ROMs, which, "kill_switch.gba", nullptr);
             //worked = grab_ROM(&ROMs, which, "ssx3.gba", nullptr); // works great
             //worked = grab_ROM(&ROMs, which, "fzero_gp_legends.gba", nullptr);
@@ -1887,15 +1887,15 @@ void full_system::waveform2_wf_present(W2FORM& wf) {
 void full_system::waveform_view_present(WVIEW &wv)
 {
     for (auto& wf : wv.waveforms) {
-        if (!wf.tex.is_good) {
             u32 szpo2 = 512;
+        if (!wf.tex.is_good) {
             TS(wf.tex, wf.wf->name, szpo2, szpo2);
             assert(wf.tex.is_good);
             wf.tex.uv0 = ImVec2(0, 0);
-            wf.drawbuf.resize(512*512*4);
+            wf.drawbuf.resize(szpo2*szpo2*4);
         }
 
-        memset(wf.drawbuf.data(), 0, 512*512*4);
+        memset(wf.drawbuf.data(), 0, szpo2*szpo2*4);
 
         // Draw box around
         float hrange = wf.height / 2.0f;
@@ -1922,8 +1922,8 @@ void full_system::waveform_view_present(WVIEW &wv)
                 b++;
             }
         }
-        wf.tex.upload_data(wf.drawbuf.data(), 1024*1024*4, 1024, 1024);
-        wf.tex.uv1 = ImVec2((float)wf.wf->samples_rendered / 1024.0f, (float)wf.height / 1024.0f);
+        wf.tex.upload_data(wf.drawbuf.data(), szpo2*szpo2*4, szpo2, szpo2);
+        wf.tex.uv1 = ImVec2((float)wf.wf->samples_rendered / static_cast<float>(szpo2), (float)wf.height / static_cast<float>(szpo2));
         wf.tex.sz_for_display = ImVec2(wf.wf->samples_rendered, wf.height);
     }
 }

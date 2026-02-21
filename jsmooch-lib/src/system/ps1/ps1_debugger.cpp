@@ -153,7 +153,7 @@ static void setup_waveforms(core& th, debugger_interface *dbgr) {
     v->data.stereo = true;
     snprintf(v->data.name, sizeof(v->data.name), "Output");
 
-    auto &reverb = root.add_child_category("Reverb Processing", 4);
+    auto &reverb = root.add_child_category("Reverb Processing", 8);
     v = reverb.add_child_wf(debug::waveform2::wk_medium, th.dbg.waveforms2.reverb.chan[0]);
     th.dbg.waveforms2.reverb.chan_cache[0] = &v->data;
     v->data.stereo = true;
@@ -163,6 +163,16 @@ static void setup_waveforms(core& th, debugger_interface *dbgr) {
     th.dbg.waveforms2.reverb.chan_cache[1] = &v->data;
     v->data.stereo = true;
     snprintf(v->data.name, sizeof(v->data.name), "Reverb Out");
+
+    v = reverb.add_child_wf(debug::waveform2::wk_medium, th.dbg.waveforms2.reverb.chan[2]);
+    th.dbg.waveforms2.reverb.chan_cache[2] = &v->data;
+    v->data.stereo = true;
+    snprintf(v->data.name, sizeof(v->data.name), "Debug");
+
+    v = reverb.add_child_wf(debug::waveform2::wk_medium, th.dbg.waveforms2.reverb.chan[2]);
+    th.dbg.waveforms2.reverb.chan_cache[3] = &v->data;
+    v->data.stereo = true;
+    snprintf(v->data.name, sizeof(v->data.name), "Debug2");
 }
 
 static void setup_image_view_vram(core* th, debugger_interface *dbgr) {
