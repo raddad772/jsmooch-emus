@@ -836,7 +836,7 @@ void full_system::load_default_ROM()
             worked = 1;
             break;
         case jsm::systems::NDS:
-            worked = grab_ROM(&ROMs, which, "nfs2mw.nds", nullptr); // save data corrupt complaint
+            //worked = grab_ROM(&ROMs, which, "nfs2mw.nds", nullptr); // save data corrupt complaint
             //worked = grab_ROM(&ROMs, which, "sims3.nds", nullptr); // save data corrupt complaint
             //worked = grab_ROM(&ROMs, which, "rockwrestler.nds", nullptr);
             //worked = grab_ROM(&ROMs, which, "armwrestler.nds", nullptr);
@@ -873,7 +873,7 @@ void full_system::load_default_ROM()
             //worked = grab_ROM(&ROMs, which, "nintendogs.nds", nullptr);
             //worked = grab_ROM(&ROMs, which, "dbz2.nds", nullptr);
             //worked = grab_ROM(&ROMs, which, "rayman.nds", nullptr);
-            //worked = grab_ROM(&ROMs, which, "mutha_truckers.nds", nullptr);
+            worked = grab_ROM(&ROMs, which, "mutha_truckers.nds", nullptr);
             //worked = grab_ROM(&ROMs, which, "recruit.nds", nullptr);
             //worked = grab_ROM(&ROMs, which, "tloz.nds", nullptr);
             //worked = grab_ROM(&ROMs, which, "dq9.nds", nullptr);

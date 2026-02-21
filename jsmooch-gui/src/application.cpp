@@ -815,8 +815,8 @@ void imgui_jsmooch_app::render_waveform2_view(W2VIEW &wview, u32 num) {
             for (auto &node: wview.view->root.children) {
                 render_w2_node(node, idpush);
             }
-            ImGui::End();
         }
+        ImGui::End();
     }
 }
 
@@ -1273,7 +1273,7 @@ int imgui_jsmooch_app::do_setup_before_mainloop()
     //which = jsm::systems::GBC;
     //which = jsm::systems::APPLEIIe;
     //which = jsm::systems::DMG;
-    which = jsm::systems::PS1;
+    //which = jsm::systems::PS1;
     //which = jsm::systems::SMS2;
     //which = jsm::systems::GG;
     //which = jsm::systems::ZX_SPECTRUM_48K;
@@ -1288,7 +1288,7 @@ int imgui_jsmooch_app::do_setup_before_mainloop()
     //which = jsm::systems::COSMAC_VIP_4k;
     //which = jsm::systems::GENESIS_USA;
     //which = jsm::systems::MEGADRIVE_PAL;
-    //which = jsm::systems::NDS;
+    which = jsm::systems::NDS;
     //which = jsm::systems::TURBOGRAFX16;
     //which = jsm::systems::NES;
     //which = jsm::systems::COMMODORE64;

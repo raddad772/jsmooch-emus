@@ -136,6 +136,19 @@ void ridge::eeprom_handle_spi_cmd(u32 val, u32 is_cmd)
             }
             backup.data_in_pos++;
             break;
+        case 0xB: // RDHI
+            if (is_cmd) return;
+            if (backup.data_in_pos < 3) {
+                flprintf("\nRDHI/ADDR %02x", val);
+                eeprom_get_addr(val);
+            }
+            else {
+                if (val != 0) printf("\nWARN VAL %02x", val);
+                backup.cmd_addr |= 0x100;
+                flprintf("\nRDLO/DATA ");
+                eeprom_read();
+            }
+            return;
         case 3: // RDLO
             if (is_cmd) return;
             if (backup.data_in_pos < 3) {
@@ -146,6 +159,18 @@ void ridge::eeprom_handle_spi_cmd(u32 val, u32 is_cmd)
                 if (val != 0) printf("\nWARN VAL %02x", val);
                 flprintf("\nRDLO/DATA ");
                 eeprom_read();
+            }
+            return;
+        case 0xA: // WRHI
+            if (is_cmd) return;
+            if (backup.data_in_pos < 3) {
+                flprintf("\nWRLO/ADDR %02x", val);
+                eeprom_get_addr(val);
+            }
+            else {
+                flprintf("\nWROLO/DATA ");
+                backup.cmd_addr |= 0x100;
+                eeprom_write(val);
             }
             return;
         case 0x2: // WRLO

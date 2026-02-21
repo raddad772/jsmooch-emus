@@ -990,7 +990,7 @@ void core::ins_SMLAxy(const u32 opcode)
     if (y) value2 = static_cast<i16>(*getR(Rsd) >> 16);
     else value2 = static_cast<i16>(*getR(Rsd) & 0xFFFF);
 
-    const u32 first_result = static_cast<u32>(value1 * value2);
+    const u32 first_result = static_cast<u32>(static_cast<i32>(value1) * static_cast<i32>(value2));
     const u32 mop2 = *getR(Rnd);
     const u32 final_result = first_result + mop2;
 
@@ -1017,7 +1017,7 @@ void core::ins_SMLAWy(const u32 opcode)
     if (y) value2 = static_cast<i16>(*getR(Rsd) >> 16);
     else value2 = static_cast<i16>(*getR(Rsd) & 0xFFFF);
 
-    const u32 first_result = static_cast<u32>((value1 * value2) >> 16);
+    const u32 first_result = static_cast<u32>((static_cast<i32>(value1) * static_cast<i32>(value2)) >> 16);
     const u32 mop2 = *getR(Rnd);
     const u32 final_result = first_result + mop2;
 
@@ -1110,7 +1110,7 @@ void core::ins_SMULxy(const u32 opcode)
     if (x) Rm >>= 16;
     else Rm &= 0xFFFF;
 
-    *Rd = (static_cast<i16>(Rm) * static_cast<i16>(Rs));
+    *Rd = (static_cast<i32>(static_cast<i16>(Rm)) * static_cast<i32>(static_cast<i16>(Rs)));
     if (Rdd == 15) {
        flush_pipeline();
     }
