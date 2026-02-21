@@ -824,8 +824,6 @@ void core::apply_all_pass_filter_1() {
     WREGRAM(mLAPF1, s);
     // Lout=Lout*vAPF1+[mLAPF1-dAPF1]
     s = RVOL(s, RR(vAPF1)) + r_mLAPF1dAPF1;
-    if (s < -0x8000) s = -0x8000;
-    if (s > 0x7FFF) s = 0x7FFF;
     reverb.proc_l = s;
 
     // Rout=Rout-vAPF1*[mRAPF1-dAPF1]
@@ -838,8 +836,6 @@ void core::apply_all_pass_filter_1() {
 
     // Rout=Rout*vAPF1+[mRAPF1-dAPF1]
     s = RVOL(s, RR(vAPF1)) + r_mRAPF1dAPF1;
-    if (s < -0x8000) s = -0x8000;
-    if (s > 0x7FFF) s = 0x7FFF;
     reverb.proc_r = s;
 }
 
@@ -854,8 +850,6 @@ void core::apply_all_pass_filter_2() {
     WREGRAM(mLAPF2, s);
     // Lout=Lout*vAPF2+[mLAPF2-dAPF2]
     s = RVOL(s, RR(vAPF2)) + reverb.r_mLAPF2dAPF2;
-    if (s < -0x8000) s = -0x8000;
-    if (s > 0x7FFF) s = 0x7FFF;
     reverb.proc_l = s;
 
     // Rout=Rout-vAPF2*[mRAPF2-dAPF2]
@@ -868,8 +862,6 @@ void core::apply_all_pass_filter_2() {
 
     // Rout=Rout*vAPF2+[mRAPF2-dAPF2]
     s = RVOL(s, RR(vAPF2)) + reverb.r_mRAPF2dAPF2;
-    if (s < -0x8000) s = -0x8000;
-    if (s > 0x7FFF) s = 0x7FFF;
     reverb.proc_r = s;
 }
 
