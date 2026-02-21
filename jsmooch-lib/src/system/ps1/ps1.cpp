@@ -442,10 +442,10 @@ void core::sample_audio()
 
         if (audio.buf->upos < (audio.buf->samples_len << 1)) {
             i16 il, ir;
-            //il = spu.sample_l;
-            //ir = spu.sample_r;
-            il = spu.reverb.debug_l;
-            ir = spu.reverb.debug_r;
+            il = spu.sample_l;
+            ir = spu.sample_r;
+            //il = spu.reverb.debug_l;
+            //ir = spu.reverb.debug_r;
             float l = i16_to_float(il);
             float r = i16_to_float(ir);;
             static_cast<float *>(audio.buf->ptr)[audio.buf->upos] = l;

@@ -758,6 +758,7 @@ i32 FIR_filter::run() {
     }
     return o;
 }
+#define RVOL(a,b) ((static_cast<i32>(a)*static_cast<i32>(b))>>15)
 
 void core::process_reverb() {
     // Ingest L/R samples
@@ -766,21 +767,22 @@ void core::process_reverb() {
 
     if (!reverb.counter) { // 22050 clock
         // Actually run reverb now...
-        i32 l = (reverb.filter_l.in.run() * static_cast<i32>(RR(vLIN))) >> 15;
-        i32 r = (reverb.filter_r.in.run() * static_cast<i32>(RR(vRIN))) >> 15;
+        i32 l = RVOL(reverb.filter_l.in.run(), RR(vLIN));
+        if (l < -0x8000) l = -0x8000;
+        if (l > 0x7FFF) l = 0x7FFF;
+        i32 r = RVOL(reverb.filter_r.in.run(), RR(vRIN));
+        if (r < -0x8000) r = -0x8000;
+        if (r > 0x7FFF) r = 0x7FFF;
         apply_reflection(l, r);
-        //apply_comb_filter();
-        //apply_all_pass_filter_1();
-        //apply_all_pass_filter_2();
-        reverb.proc_l *= io.reverb.vol_out_l;
-        reverb.proc_r *= io.reverb.vol_out_r;
-        reverb.proc_l >>= 15;
-        reverb.proc_r >>= 15;
+        apply_comb_filter();
+        apply_all_pass_filter_1();
+        apply_all_pass_filter_2();
+        reverb.proc_l = RVOL(reverb.proc_l, io.reverb.vol_out_l);
+        reverb.proc_r = RVOL(reverb.proc_r, io.reverb.vol_out_r);
         if (reverb.proc_l < -0x8000) reverb.proc_l = -0x8000;
         if (reverb.proc_l > 0x7FFF) reverb.proc_l = 0x7FFF;
         if (reverb.proc_r < -0x8000) reverb.proc_r = -0x8000;
         if (reverb.proc_r > 0x7FFF) reverb.proc_r = 0x7FFF;
-
         reverb.filter_l.out.add_sample(reverb.proc_l);
         reverb.filter_r.out.add_sample(reverb.proc_r);
         reverb.buf_addr = (reverb.buf_addr + 2) % reverb.buf_len;
@@ -793,77 +795,115 @@ void core::process_reverb() {
     // Run the sample filter to get our 44kHz output
     reverb.sample_l = reverb.filter_l.out.run() << 1;
     reverb.sample_r = reverb.filter_r.out.run() << 1;
+    if (reverb.sample_l < -0x8000) reverb.sample_l = -0x8000;
+    if (reverb.sample_l > 0x7FFF) reverb.sample_l = 0x7FFF;
+    if (reverb.sample_r < -0x8000) reverb.sample_r = -0x8000;
+    if (reverb.sample_r > 0x7FFF) reverb.sample_r = 0x7FFF;
 
     reverb.counter ^= 1;
 }
-#define RVOL(a,b) ((static_cast<i32>(a)*static_cast<i32>(b))>>15)
 
 void core::apply_all_pass_filter_1() {
     // ___Late Reverb APF1 (All Pass Filter 1, with input from COMB)________________
+    i32 s;
+
+    // READ REVERB   mLAPF1 - dAPF1    mRAPF1 - dAPF1
+    i16 r_mLAPF1dAPF1 = static_cast<i16>(read_RAM(reverb_addr(RRA(mLAPF1) - RRA(dAPF1)), true, true));
+    i16 r_mRAPF1dAPF1 = static_cast<i16>(read_RAM(reverb_addr(RRA(mRAPF1) - RRA(dAPF1)), true, true));
+    reverb.r_mLAPF2dAPF2 = static_cast<i16>(read_RAM(reverb_addr(RRA(mLAPF2) - RRA(dAPF2)), true, true));
+    reverb.r_mRAPF2dAPF2 = static_cast<i16>(read_RAM(reverb_addr(RRA(mRAPF2) - RRA(dAPF2)), true, true));
+    // READ REVERB   mLAPF2 - dAPF2    mRAPF2 - dAPF2
+    // XXXX REVERB   mLAPF1            mRAPF1          <-- WRITE becomes READ if REVERB DISABLED.
+    // XXXX REVERB   mLAPF2            mRAPF2          <-- WRITE becomes READ if REVERB DISABLED.
+
     // Lout=Lout-vAPF1*[mLAPF1-dAPF1]
-    // Rout=Rout-vAPF1*[mRAPF1-dAPF1]
-    u32 mal = reverb_addr(RRA(mLAPF1) - RRA(dAPF1));
-    reverb.proc_l -= RVOL(RR(vAPF1), read_RAM(mal, true, true));
-
-    // [mLAPF1]=Lout
-    i32 l = reverb.proc_l;
-    if (l < -0x8000) l = -0x8000;
-    if (l > 0x7FFF) l = 0x7FFF;
-    write_RAM(reverb_addr(RRA(mLAPF1)), l, true);
+    s = reverb.proc_l - RVOL(RR(vAPF1), r_mLAPF1dAPF1);
+    // [mLAPF1]=Lout,
+    if (s < -0x8000) s = -0x8000;
+    if (s > 0x7FFF) s = 0x7FFF;
+    WREGRAM(mLAPF1, s);
     // Lout=Lout*vAPF1+[mLAPF1-dAPF1]
-    reverb.proc_l = RVOL(reverb.proc_l, RR(vAPF1)) + read_RAM(mal, true, true);
+    s = RVOL(s, RR(vAPF1)) + r_mLAPF1dAPF1;
+    if (s < -0x8000) s = -0x8000;
+    if (s > 0x7FFF) s = 0x7FFF;
+    reverb.proc_l = s;
 
     // Rout=Rout-vAPF1*[mRAPF1-dAPF1]
-    u32 mar = reverb_addr(RRA(mRAPF1) - RRA(dAPF1));
-    reverb.proc_r -= RVOL(RR(vAPF1), read_RAM(mar, true, true));
+    s = reverb.proc_r - RVOL(RR(vAPF1), r_mRAPF1dAPF1);
 
     // [mRAPF1]=Rout
-    i32 r = reverb.proc_r;
-    if (r < -0x8000) r = -0x8000;
-    if (r > 0x7FFF) r = 0x7FFF;
-    write_RAM(reverb_addr(RRA(mRAPF1)), r, true);
+    if (s < -0x8000) s = -0x8000;
+    if (s > 0x7FFF) s = 0x7FFF;
+    WREGRAM(mRAPF1, s);
 
     // Rout=Rout*vAPF1+[mRAPF1-dAPF1]
-    reverb.proc_r = RVOL(reverb.proc_r, RR(vAPF1)) + read_RAM(mar, true, true);
+    s = RVOL(s, RR(vAPF1)) + r_mRAPF1dAPF1;
+    if (s < -0x8000) s = -0x8000;
+    if (s > 0x7FFF) s = 0x7FFF;
+    reverb.proc_r = s;
 }
 
 void core::apply_all_pass_filter_2() {
     //___Late Reverb APF2 (All Pass Filter 2, with input from APF1)________________
-    // Lout=Lout-vAPF2*[mLAPF2-dAPF2], [mLAPF2]=Lout, Lout=Lout*vAPF2+[mLAPF2-dAPF2]
-    // Rout=Rout-vAPF2*[mRAPF2-dAPF2], [mRAPF2]=Rout, Rout=Rout*vAPF2+[mRAPF2-dAPF2]
-    u32 mal = reverb_addr(RRA(mLAPF2) - RRA(dAPF2));
-    reverb.proc_l -= RVOL(RR(vAPF2), read_RAM(mal, true, true));
-    i32 l = reverb.proc_l;
-    if (l < -0x8000) l = -0x8000;
-    if (l > 0x7FFF) l = 0x7FFF;
-    WREGRAM(mLAPF2, l);
-    reverb.proc_l = RVOL(reverb.proc_l, RR(vAPF2)) + read_RAM(mal, true, true);
+    i32 s;
+    // Lout=Lout-vAPF2*[mLAPF2-dAPF2]
+    s = reverb.proc_l - RVOL(RR(vAPF2), reverb.r_mLAPF2dAPF2);
+    // [mLAPF2]=Lout
+    if (s < -0x8000) s = -0x8000;
+    if (s > 0x7FFF) s = 0x7FFF;
+    WREGRAM(mLAPF2, s);
+    // Lout=Lout*vAPF2+[mLAPF2-dAPF2]
+    s = RVOL(s, RR(vAPF2)) + reverb.r_mLAPF2dAPF2;
+    if (s < -0x8000) s = -0x8000;
+    if (s > 0x7FFF) s = 0x7FFF;
+    reverb.proc_l = s;
 
-    u32 mar = reverb_addr(RRA(mRAPF2) - RRA(dAPF2));
-    reverb.proc_r -= RVOL(RR(vAPF2), read_RAM(mar, true, true));
-    i32 r = reverb.proc_r;
-    if (r < -0x8000) r = -0x8000;
-    if (r > 0x7FFF) r = 0x7FFF;
-    WREGRAM(mRAPF2, r);
-    reverb.proc_r = RVOL(reverb.proc_r, RR(vAPF2)) + read_RAM(mar, true, true);
+    // Rout=Rout-vAPF2*[mRAPF2-dAPF2]
+    s = reverb.proc_r - RVOL(RR(vAPF2), reverb.r_mRAPF2dAPF2);
+
+    // [mRAPF2]=Rout
+    if (s < -0x8000) s = -0x8000;
+    if (s > 0x7FFF) s = 0x7FFF;
+    WREGRAM(mRAPF2, s);
+
+    // Rout=Rout*vAPF2+[mRAPF2-dAPF2]
+    s = RVOL(s, RR(vAPF2)) + reverb.r_mRAPF2dAPF2;
+    if (s < -0x8000) s = -0x8000;
+    if (s > 0x7FFF) s = 0x7FFF;
+    reverb.proc_r = s;
 }
 
 void core::apply_comb_filter() {
+    // READ REVERB   mLComb2           mRComb2
+    // READ REVERB   mLComb3           mRComb3
+    // READ REVERB   mLComb4           mRComb4
+    i16 r_mLCOMB2 = REGRAM(mLCOMB2);
+    i16 r_mRCOMB2 = REGRAM(mRCOMB2);
+    i16 r_mLCOMB3 = REGRAM(mLCOMB3);
+    i16 r_mRCOMB3 = REGRAM(mRCOMB3);
+    i16 r_mLCOMB4 = REGRAM(mLCOMB4);
+    i16 r_mRCOMB4 = REGRAM(mRCOMB4);
     /*
     __Early Echo (Comb Filter, with input from buffer)__________________________
     Lout=vCOMB1*[mLCOMB1]+vCOMB2*[mLCOMB2]+vCOMB3*[mLCOMB3]+vCOMB4*[mLCOMB4]
     Rout=vCOMB1*[mRCOMB1]+vCOMB2*[mRCOMB2]+vCOMB3*[mRCOMB3]+vCOMB4*[mRCOMB4]}
     */
     //     Lout=vCOMB1*[mLCOMB1]+vCOMB2*[mLCOMB2]+vCOMB3*[mLCOMB3]+vCOMB4*[mLCOMB4]
-    reverb.proc_l = RVOL(RR(vCOMB1), REGRAM(mLCOMB1));
-    reverb.proc_l += RVOL(RR(vCOMB2), REGRAM(mLCOMB2));
-    reverb.proc_l += RVOL(RR(vCOMB3), REGRAM(mLCOMB3));
-    reverb.proc_l += RVOL(RR(vCOMB4), REGRAM(mLCOMB4));
-    reverb.proc_r = RVOL(RR(vCOMB1), REGRAM(mRCOMB1));
-    reverb.proc_r += RVOL(RR(vCOMB2), REGRAM(mRCOMB2));
-    reverb.proc_r += RVOL(RR(vCOMB3), REGRAM(mRCOMB3));
-    reverb.proc_r += RVOL(RR(vCOMB4), REGRAM(mRCOMB4));
-
+    i32 l, r;
+    l = RVOL(RR(vCOMB1), reverb.r_mLCOMB1);
+    l += RVOL(RR(vCOMB2), r_mLCOMB2);
+    l += RVOL(RR(vCOMB3), r_mLCOMB3);
+    l += RVOL(RR(vCOMB4), r_mLCOMB4);
+    r = RVOL(RR(vCOMB1), reverb.r_mRCOMB1);
+    r += RVOL(RR(vCOMB2), r_mRCOMB2);
+    r += RVOL(RR(vCOMB3), r_mRCOMB3);
+    r += RVOL(RR(vCOMB4), r_mRCOMB4);
+    if (l < -0x8000) l = -0x8000;
+    if (l > 0x7FFF) l = 0x7FFF;
+    if (r < -0x8000) r = -0x8000;
+    if (r > 0x7FFF) r = 0x7FFF;
+    reverb.proc_l = l;
+    reverb.proc_r = r;
 }
 
 void core::apply_reflection(i32 l, i32 r) {
@@ -919,7 +959,6 @@ void core::apply_reflection(i32 l, i32 r) {
     // XXXX REVERB   mLDiff            mRDiff          <-- WRITE becomes READ if REVERB DISABLED.
 }
 
-
 void core::cycle() {
     do_noise();
     reverb.in_l = 0;
@@ -956,7 +995,6 @@ void core::cycle() {
     l += reverb.sample_l;
     r += reverb.sample_r;
 
-    // TODO: add cdrom audio to mix
     if (l < -0x8000) l = -0x8000;
     if (l > 0x7FFF) l = 0x7FFF;
 

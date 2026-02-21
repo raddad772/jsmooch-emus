@@ -272,6 +272,7 @@ struct core {
         i32 proc_l{}, proc_r{};
         i32 debug_l{}, debug_r{};
         i16 r_mLCOMB1{}, r_mRCOMB1{};
+        i32 r_mLAPF2dAPF2{}, r_mRAPF2dAPF2{};
     } reverb{};
 
     struct {
