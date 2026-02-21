@@ -290,13 +290,16 @@ private:
     void apply_reflection(i32 l, i32 r);
     inline u32 reverb_addr(u32 inaddr) {
         u32 len = 0x80000 - io.reverb.mBASE;
-        i32 a = ((inaddr + reverb.buf_addr) % len) + io.reverb.mBASE;
-        return a >> 1;
+        u32 a = ((inaddr + reverb.buf_addr) % len) + io.reverb.mBASE;
+        return a;
     }
     void apply_comb_filter();
+
+    int read_RAM(int _cpp_par_);
+
     void apply_all_pass_filter_1();
     void apply_all_pass_filter_2();
 
-    void do_reflect(i32 smp, u32 d, u32 m);
+    //void do_reflect(i32 smp, u32 d, u32 m);
 };
 }
