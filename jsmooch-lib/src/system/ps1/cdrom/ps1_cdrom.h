@@ -21,6 +21,57 @@ struct CD_FIFO {
     u8 head{}, tail{}, len{};
 };
 
+struct CD_FIFO_RESULTS_BUF {
+    u8 data[16]{};
+    u32 tail{};
+    u32 head{};
+    u32 len{};
+    void reset() { len = 0; head = tail = 0; }
+    void push(u8 val) {
+        if (len >= 16) {
+            printf("\n(CD FIFO RESULTS BUF) attempt to push to full!");
+            return;
+        }
+        data[tail] = val;
+        tail = (tail + 1) & 15;
+        len++;
+    }
+    u8 pop() {
+        if (len == 0) return data[head];
+        u8 v = data[head];
+        head = (head + 1) & 15;
+        len--;
+        return v;
+    }
+    void copy(CD_FIFO_RESULTS_BUF &other) {
+        memcpy(data, other.data, sizeof(other.data));
+        tail = other.tail;
+        head = other.head;
+        len = other.len;
+    }
+};
+
+struct CD_FIFO_IRQ_ENTRY {
+    u8 val{};
+    CD_FIFO_RESULTS_BUF results{};
+};
+
+struct CD_FIFO_IRQ {
+    void reset();
+    void push_irq(u32 val);
+    u8 pop_irq();
+
+    void push_result(u8 val);
+    u8 pop_result();
+    CD_FIFO_IRQ_ENTRY entries[16]{};
+    u8 head{}, tail{}, len{};
+
+    u32 cur_IRQ_val{};
+    CD_FIFO_RESULTS_BUF in_results{};
+    CD_FIFO_RESULTS_BUF out_results{};
+};
+
+
 struct CD_DATA_BUF {
     u8 *ptr;
     u32 pos{};
@@ -39,9 +90,8 @@ struct CD_DATA_BUF {
 
 struct CDROM_IO {
     CD_FIFO PARAMETER{};
-    CD_FIFO RESULT{};
     CD_DATA_BUF RDDATA{};
-    CD_FIFO interrupts{};
+    CD_FIFO_IRQ interrupts{};
 
     bool read_mode{};
 

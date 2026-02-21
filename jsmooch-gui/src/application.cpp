@@ -210,7 +210,7 @@ static void render_emu_window(full_system &fsys, ImGuiIO& io, u32 frame_multi)
 #define DBGLOG_VIEW_DEFAULT_ENABLE 0
 #define TRACE_VIEW_DEFAULT_ENABLE 0
 #define CONSOLE_VIEW_DEFAULT_ENABLE 0
-#define WAVEFORM_VIEW_DEFAULT_ENABLE 1
+#define WAVEFORM_VIEW_DEFAULT_ENABLE 0
 
 int hexfilter(ImGuiInputTextCallbackData *data)
 {
