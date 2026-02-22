@@ -3,7 +3,6 @@
 //
 
 #pragma once
-#include "helpers/scheduler.h"
 #include "helpers/int.h"
 #include "helpers/physical_io.h"
 #include "helpers/cvec.h"
@@ -41,7 +40,7 @@ struct FIFO_RESULTS_BUF {
         len--;
         return v;
     }
-    void copy(FIFO_RESULTS_BUF &other) {
+    void copy(const FIFO_RESULTS_BUF &other) {
         memcpy(data, other.data, sizeof(other.data));
         tail = other.tail;
         head = other.head;
@@ -210,24 +209,7 @@ enum XA_BPS {
     RRRESERVED1 = 2,
     RRRESERVED2 = 3
 };
-
-
-struct BLOCK {
-    i16 l[28];
-    i16 r[28];
-    u32 pos{28};
-};
-
-struct SECTOR {
-    bool emphasis{};
-    u8 buf[0x914]; // ONLY the data! not sector stuff!
-    u32 pos{};
-    bool sector_ended{true};
-    XA_BPS bps{};
-    XA_CH channels{};
-    XA_SR sample_rate{};
-};
-
+    
 struct DECODER {
     struct {
         i16 l[4032]{};
@@ -277,10 +259,6 @@ struct core {
     void cmd_finish(u64 key, u64 clock);
     void cmd_step3(u64 key, u64 clock);
     void sch_read(u64 key, u64 clock);
-    void read_toc();
-    void do_seek();
-
-    void queue_sector_readback();
 
     void *set_irq_ptr{};
     void (*set_irq_lvl)(void*, u32){};
@@ -362,7 +340,6 @@ private:
     void write_02(u32 val, u8 sz);
     void write_03(u32 val, u8 sz);
     void write_CMD(u32 val);
-    void ack_IRQ();
     void reset(); // TODO: CALL THIS
     void recalc_HSTS();
     void schedule_CMD();
@@ -383,7 +360,6 @@ private:
     void cmd_play();
     void cmd_forward();
     void cmd_backward();
-    void cmd_readn(u64 clock);
     void cmd_reads(u64 clock);
     void cmd_motor_on(u64 clock);
     void cmd_motor_on_finish();
@@ -417,6 +393,6 @@ private:
     bool xa_decode_next_sector();
     u8 *xa_get_sector(u8 &CI);
     void xa_decode_28(u8 *ptr, u32 blk, u32 nibble, u8 hd, i16 &old, i16 &older, i16 *s_out);
-    i16 zigzaginterp(i16 *ringbuf, u32 p, const i32 *tabl);
+    static i16 zigzaginterp(const i16 *ringbuf, u32 p, const i32 *tabl);
 };
 }

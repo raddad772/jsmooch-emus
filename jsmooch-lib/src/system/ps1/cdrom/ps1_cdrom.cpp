@@ -926,9 +926,8 @@ void core::get_CD_audio_xa(i16 &left, i16 &right) {
     xa.decoder.out_samples.pos++;
 }
 
-i16 core::zigzaginterp(i16 *ringbuf, u32 p, const i32 *tabl) {
+i16 core::zigzaginterp(const i16 *ringbuf, u32 p, const i32 *tabl) {
     i32 sum = 0;
-    //p = (p - 1) & 0x1F;
     for (u32 i = 0; i < 29; i++) {
         sum +=(static_cast<i32>(ringbuf[(p-i) & 0x1F]) * static_cast<i32>(tabl[i])) >> 15;
     }
