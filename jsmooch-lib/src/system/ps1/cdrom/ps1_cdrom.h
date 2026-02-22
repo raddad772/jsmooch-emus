@@ -188,6 +188,59 @@ enum CDHEAD_MODE {
     HM_AUDIO, HM_DATA
 };
 
+
+namespace XA {
+enum XA_CH {
+    MONO = 0,
+    STEREO = 1,
+    RESERVED1 = 2,
+    RESERVED2 = 3
+};
+
+enum XA_SR {
+    SR37800=0,
+    SR18900=1,
+    RRESERVED1 = 2,
+    RRESERVED2 = 3
+};
+
+enum XA_BPS {
+    BITS4 = 0,
+    BITS8 = 1,
+    RRRESERVED1 = 2,
+    RRRESERVED2 = 3
+};
+
+
+struct BLOCK {
+    i16 l[28];
+    i16 r[28];
+    u32 pos{28};
+};
+
+struct SECTOR {
+    bool emphasis{};
+    u8 buf[0x914]; // ONLY the data! not sector stuff!
+    u32 pos{};
+    bool sector_ended{true};
+    XA_BPS bps{};
+    XA_CH channels{};
+    XA_SR sample_rate{};
+};
+
+struct DECODER {
+    struct {
+        i16 l[5000]{};
+        i16 r[5000]{};
+        u32 len{};
+        u32 pos{};
+    } samples{};
+    bool last_block{};
+    i16 l{}, r{}, l_old{}, r_old{}, l_older{}, r_older{}, mono_old{}, mono_older{};
+};
+}
+
+
 struct SECTOR_BUFFER {
     u32 head{}, tail{}, len{};
     u8 bufs[8][0x930];
@@ -268,7 +321,6 @@ struct core {
     } head{};
 
     SECTOR_BUFFER sector_buf{};
-    SECTOR_BUFFER xa_sector_buf{};
 
     struct {
         u8 subcmd{};
@@ -285,7 +337,9 @@ struct core {
         struct {
             u8 file{}, channel{};
         } filter{};
-        DATA_BUF cur_buf{};
+        XA::DECODER decoder{};
+
+        SECTOR_BUFFER sector_buf{};
     } xa{};
 
 private:
@@ -348,5 +402,9 @@ private:
     void queue_xa_sector(u8 *ptr);
     void get_CD_audio_cdda(i16 &left, i16 &right);
     void get_CD_audio_xa(i16 &left, i16 &right);
+
+    bool xa_decode_next_sector();
+    u8 *xa_get_sector(u8 &CI);
+    void xa_decode_28(u8 *ptr, u32 blk, u32 nibble, u8 hd, i16 &old, i16 &older, i16 *s_out);
 };
 }

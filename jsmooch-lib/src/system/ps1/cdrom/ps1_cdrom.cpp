@@ -624,10 +624,10 @@ void core::update_track_loc() {
 #define XA_SUBHEADER_START 16
 
 void core::queue_xa_sector(u8 *ptr) {
-    if (xa_sector_buf.len > 2) {
+    if (xa.sector_buf.len > 2) {
         printf("\nWARN XA AUDIO UP TO 2 BUFFERS!");
     }
-    if (xa_sector_buf.len >= 8) {
+    if (xa.sector_buf.len >= 8) {
         printf("\nWARN DROP XA BUFFER!");
     }
     // Check filter to see if we should just discard
@@ -643,9 +643,9 @@ void core::queue_xa_sector(u8 *ptr) {
         }
         return;
     }
-    memcpy(xa_sector_buf.bufs[xa_sector_buf.tail], ptr, 0x930);
-    xa_sector_buf.tail = (xa_sector_buf.tail + 1) & 7;
-    xa_sector_buf.len++;
+    memcpy(xa.sector_buf.bufs[xa.sector_buf.tail], ptr, 0x930);
+    xa.sector_buf.tail = (xa.sector_buf.tail + 1) & 7;
+    xa.sector_buf.len++;
 }
 
 void core::read_sector() {
@@ -723,14 +723,139 @@ void core::get_CD_audio(i16 &left, i16 &right) {
     }
 }
 
+u8 *core::xa_get_sector(u8 &CI) {
+    if (xa.sector_buf.len == 0) {
+        return nullptr;
+    }
+    CI = xa.sector_buf.bufs[xa.sector_buf.head][XA_SUBHEADER_START+3];
+    u8 *r = xa.sector_buf.bufs[xa.sector_buf.head];
+    xa.sector_buf.head = (xa.sector_buf.head + 1) & 7;
+    xa.sector_buf.len--;
+    return r + 0x18;
+}
+
+void core::xa_decode_28(u8 *ptr, u32 blk, u32 nibble, u8 hd, i16 &old, i16 &older, i16 *s_out) {
+    /*
+    shift  = 12 - (src[4+blk*2+nibble] AND 0Fh)
+    filter =      (src[4+blk*2+nibble] AND 30h) SHR 4
+    f0 = pos_xa_adpcm_table[filter]
+    f1 = neg_xa_adpcm_table[filter]
+    for j=0 to 27
+    t = signed4bit((src[16+blk+j*4] SHR (nibble*4)) AND 0Fh)
+    s = (t SHL shift) + ((old*f0 + older*f1+32)/64);
+    s = MinMax(s,-8000h,+7FFFh)
+    halfword[dst]=s, dst=dst+2, older=old, old=s
+    next j
+    */
+    u8 shift = hd & 0xF;
+    if (shift > 13) shift = 9;
+    shift = 12 - shift;
+    u8 filter = (hd >> 4) & 7;
+    if (filter > 3) filter = 3; // TODO: ??
+    u32 sn = xa.decoder.samples.pos;
+    for (u32 i = 0; i < 28; i++) {
+        i32 t;
+        if (nibble == 0) t = ptr[i] & 0x0F;
+        else t = ptr[i] >> 4;
+        t = (t & 7) | (t & 8 ? 0xFFFFFFF8 : 0);
+        i32 s = (t << shift);
+        i32 filtered;
+        switch (filter) {
+            case 0:
+                filtered = s;
+                break;
+            case 1:
+                filtered = s + (60 * old + 32) / 64;
+                break;
+            case 2:
+                filtered = s + (115 * old - 52 * older + 32) / 64;
+                break;
+            case 3:
+                filtered = s + (98 * old - 55 * older + 32) / 64;
+                break;
+            default:
+                NOGOHERE;
+        }
+        if (filtered < -0x8000) s = -0x8000;
+        if (filtered > 0x7FFF) s = 0x7FFF;
+        *s_out = static_cast<i16>(filtered);
+        s_out++;
+        older = old;
+        old = static_cast<i16>(filtered);
+        sn++;
+    }
+}
+
+bool core::xa_decode_next_sector() {
+    u8 CI;
+    u8 *dat = xa_get_sector(CI);
+    if (dat == nullptr) {
+        printf("\nXA BUFFER RUN DRY!");
+        return false;
+    }
+    auto channels = static_cast<XA::XA_CH>(CI & 3);
+    auto sample_rate = static_cast<XA::XA_SR>((CI >> 2) & 3);
+    auto bps = static_cast<XA::XA_BPS>((CI >> 4) & 3);
+    bool emphasis = (CI >> 6) & 1;
+    if (channels > 1) {
+        printf("\n(XA) ERROR INVALID CHANNELS %d", channels);
+        channels = XA::STEREO;
+    }
+    if (bps == XA::BITS8) {
+        printf("\n(XA) ERROR 8BIT!");
+        dbg_break("8BIT XA-ADPCM!", 0);
+        return false;
+    }
+    if (bps > 1) {
+        printf("\n(XA) ERROR INVALID BPS %d DEAULT TO 4", bps);
+        bps = XA::BITS4;
+    }
+    if (sample_rate > 1) {
+        printf("\n(XA) ERROR INVALID SAMPLE RATE %d DEAULT TO 37800", sample_rate);
+        sample_rate = XA::SR37800;
+    }
+    u8 headers[8];
+    xa.decoder.samples.pos = 0;
+    for (u32 block_num = 0; block_num < 0x12; block_num++) {
+        dat += 4;
+        memcpy(headers, dat, 8);
+        dat += 4;
+        u8 hdr = 0;
+        for (u32 blk = 0; blk < 4; blk++) {
+            if (channels == XA::STEREO) {
+                xa_decode_28(dat, blk, headers[hdr++], 0, xa.decoder.l_old, xa.decoder.l_older, &xa.decoder.samples.l[xa.decoder.samples.pos]);
+                xa_decode_28(dat, blk, headers[hdr++], 1, xa.decoder.r_old, xa.decoder.r_older, &xa.decoder.samples.r[xa.decoder.samples.pos]);
+            }
+            else {
+                xa_decode_28(dat, blk, headers[hdr++], 0, xa.decoder.l_old, xa.decoder.l_older, &xa.decoder.samples.l[xa.decoder.samples.pos]);
+                xa.decoder.samples.pos += 28;
+                xa_decode_28(dat, blk, headers[hdr++], 1, xa.decoder.l, xa.decoder.l_older, &xa.decoder.samples.l[xa.decoder.samples.pos]);
+            }
+            xa.decoder.samples.pos += 28;
+            dat += 28;
+        }
+    }
+    xa.decoder.samples.len = xa.decoder.samples.pos;
+    xa.decoder.samples.pos = 0;
+
+    // Now zigzag it!
+    return true;
+}
+
 void core::get_CD_audio_xa(i16 &left, i16 &right) {
+    left = right = 0;
+    if (xa.decoder.samples.pos >= xa.decoder.samples.len) if (!xa_decode_next_sector()) return;
+
     // Advance in our current block!
+    left = xa.decoder.samples.l[xa.decoder.samples.pos];
+    right = xa.decoder.samples.r[xa.decoder.samples.pos];
+    xa.decoder.samples.pos++;
 }
 
 void core::get_CD_audio_cdda(i16 &left, i16 &right) {
     //u32 addr = head.sample_index * 4;
     u32 LBA = seek.asect + (seek.ass * 75) + (seek.amm * 75 * 50);
-    
+
     auto *smp = reinterpret_cast<i16 *>(data.data.ptr + (LBA * 2352));
     smp += head.sample_index * 2;
     head.sample_index++;
