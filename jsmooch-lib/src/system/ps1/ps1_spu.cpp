@@ -173,7 +173,7 @@ void VOICE::adpcm_decode() {
     }
     u8 flag = data[1];
     if (flag & 4) { // Loop start
-        adpcm.repeat_addr = start_addr;
+        if (!loop_written) adpcm.repeat_addr = start_addr;
     }
     if (flag & 1) { // loop end
         io.reached_loop_end = 1;
@@ -1147,6 +1147,7 @@ void VOICE::keyon() {
     env.adsr.output = 0;
     env.load_attack();
     adpcm.repeat_addr = adpcm.start_addr;
+    loop_written = false;
     adpcm_start();
 }
 
@@ -1224,7 +1225,11 @@ void VOICE::write_reg(u32 regnum, u16 val) {
             // ?? psx-spx says both it works and not
             return; // WHICH IS IT!?
         }
-        case 7: adpcm.repeat_addr = val << 3; return;
+        case 7: {
+            adpcm.repeat_addr = val << 3;
+            loop_written = true;
+            return;
+        }
         default:
             NOGOHERE;
     }

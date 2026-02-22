@@ -119,6 +119,7 @@ struct VOICE {
     void keyoff();
     bool ext_enable{true};
     u32 num{};
+    bool loop_written{};
     bool key_is_on{};
     PS1::core *bus{};
 
