@@ -230,13 +230,24 @@ struct SECTOR {
 
 struct DECODER {
     struct {
-        i16 l[5000]{};
-        i16 r[5000]{};
+        i16 l[37800]{};
+        i16 r[37800]{};
         u32 len{};
         u32 pos{};
     } samples{};
+    struct {
+        i16 l[16]{}, r[16]{};
+        u32 pos{};
+    } ringbuf{};
+
+    struct {
+        u32 pos{};
+        u32 len{};
+        i16 l[44100];
+        i16 r[44100];
+    } out_samples{};
     bool last_block{};
-    i16 l{}, r{}, l_old{}, r_old{}, l_older{}, r_older{}, mono_old{}, mono_older{};
+    i16 l_old{}, r_old{}, l_older{}, r_older{};
 };
 }
 
@@ -406,5 +417,6 @@ private:
     bool xa_decode_next_sector();
     u8 *xa_get_sector(u8 &CI);
     void xa_decode_28(u8 *ptr, u32 blk, u32 nibble, u8 hd, i16 &old, i16 &older, i16 *s_out);
+    i16 zigzaginterp(i16 *ringbuf, u32 p, const i16 *tabl);
 };
 }

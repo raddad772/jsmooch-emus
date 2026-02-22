@@ -11,9 +11,11 @@
 namespace PS1::CDROM {
 
 static u32 constexpr masksz[5] = {0, 0xFF, 0xFFFF, 0, 0xFFFFFFFF };
-#define ONEFRAME (33868800/60)
-#define UKN_TIME ONEFRAME
+#define CYCLES_PER_SEC 33868800
+#define ONEFRAME 564480
 
+#define UKN_TIME ONEFRAME
+#define TIME_IN_SEC static_cast<double>(bus->clock.master_cycle_count) / 33868800.0
 void FIFO_IRQ::reset() {
     head = tail = len = 0;
     in_results.reset();
@@ -624,12 +626,6 @@ void core::update_track_loc() {
 #define XA_SUBHEADER_START 16
 
 void core::queue_xa_sector(u8 *ptr) {
-    if (xa.sector_buf.len > 2) {
-        printf("\nWARN XA AUDIO UP TO 2 BUFFERS!");
-    }
-    if (xa.sector_buf.len >= 8) {
-        printf("\nWARN DROP XA BUFFER!");
-    }
     // Check filter to see if we should just discard
     if (io.MODE.xa_filter) {
         u8 filenum = ptr[XA_SUBHEADER_START+0];
@@ -639,9 +635,15 @@ void core::queue_xa_sector(u8 *ptr) {
         }
         u8 chnum = ptr[XA_SUBHEADER_START+1];
         if (chnum != xa.filter.channel) {
-            printf("\nIGNORE XADPCM CH %02x NOT %02x!", chnum, xa.filter.channel);
+            //printf("\nIGNORE XADPCM CH %02x NOT %02x!", chnum, xa.filter.channel);
+            return;
         }
-        return;
+    }
+    if (xa.sector_buf.len > 2) {
+        printf("\nWARN XA AUDIO UP TO 2 BUFFERS!");
+    }
+    if (xa.sector_buf.len >= 8) {
+        printf("\nWARN DROP XA BUFFER!");
     }
     memcpy(xa.sector_buf.bufs[xa.sector_buf.tail], ptr, 0x930);
     xa.sector_buf.tail = (xa.sector_buf.tail + 1) & 7;
@@ -712,8 +714,6 @@ void core::next_sector() {
 void core::get_CD_audio(i16 &left, i16 &right) {
     left = right = 0;
     if (io.MODE.xa_adpcm) {
-        if (io.stat.play) return;
-        if (head.mode != HM_AUDIO) return;
         get_CD_audio_xa(left, right);
     }
     else {
@@ -786,16 +786,84 @@ void core::xa_decode_28(u8 *ptr, u32 blk, u32 nibble, u8 hd, i16 &old, i16 &olde
     }
 }
 
+static constexpr i16 zzt[7][29] = {
+{ // Table[0]
+    0, 0, 0, 0, 0,
+    -0x0002, 0x000A, -0x0022,
+    0x0041, -0x0054, 0x0034, 0x0009, 
+    0x010A, 0x0400, -0x0A78, 0x234C,
+    0x6794, -0x1780, 0x0BCD, -0x0623,
+    0x0350, -0x016D, 0x006B, 0x000A,
+    -0x0010, 0x0011, -0x0008, 0x0003,
+    -0x0001 },
+{ // Table[1]
+        0, 0, 0, -0x0002,
+        0, 0x0003, -0x0013, 0x003C,
+        -0x004B, 0x00A2, -0x00E3, 0x0132,
+        -0x0043, -0x0267, 0x0C9D, 0x74BB,
+        -0x11B4, 0x09B8, -0x05BF, 0x0372,
+        -0x01A8, 0x00A6, -0x001B, 0x0005,
+        0x0006, -0x0008, 0x0003, -0x0001,
+        0 },
+{ // Table[2]
+        0, 0, -0x0001, 0x0003,
+        -0x0002, -0x0005, 0x001F, -0x004A,
+        0x00B3, -0x0192, 0x02B1, -0x039E,
+        0x04F8, -0x05A6, 0x7939, -0x05A6,
+        0x04F8, -0x039E, 0x02B1, -0x0192,
+        0x00B3, -0x004A, 0x001F, -0x0005,
+        -0x0002, 0x0003, -0x0001, 0,
+        0 },
+{ // Table[3]
+        0, -0x0001, 0x0003, -0x0008,
+        0x0006, 0x0005, -0x001B, 0x00A6,
+        -0x01A8, 0x0372, -0x05BF, 0x09B8,
+        -0x11B4, 0x74BB, 0x0C9D, -0x0267,
+        -0x0043, 0x0132, -0x00E3, 0x00A2,
+        -0x004B, 0x003C, -0x0013, 0x0003,
+        0     , -0x0002, 0     , 0     ,
+    0 },
+    { // Table[4]
+        -0x0001, 0x0003, -0x0008, 0x0011,
+        -0x0010, 0x000A, 0x006B, -0x016D,
+        0x0350, -0x0623, 0x0BCD, -0x1780,
+        0x6794, 0x234C, -0x0A78, 0x0400,
+        -0x010A, 0x0009, 0x0034, -0x0054,
+        0x0041, -0x0022, 0x000A, -0x0001,
+        0     , 0x0001, 0     , 0     ,
+        0 },
+    { // Table[5]
+        0x0002, -0x0008, 0x0010, -0x0023,
+        0x002B, 0x001A, -0x00EB, 0x027B,
+        -0x0548, 0x0AFA, -0x16FA, 0x53E0,
+        0x3C07, -0x1249, 0x080E, -0x0347,
+        0x015B, -0x0044, -0x0017, 0x0046,
+        -0x0023, 0x0011, -0x0005, 0     ,
+        0     , 0     , 0     , 0     ,
+        0 },
+    { // Table[6]
+        -0x0005, 0x0011, -0x0023, 0x0046,
+        -0x0017, -0x0044, 0x015B, -0x0347,
+        0x080E, -0x1249, 0x3C07, 0x53E0,
+        -0x16FA, 0x0AFA, -0x0548, 0x027B,
+        -0x00EB, 0x001A, 0x002B, -0x0023,
+        0x0010, -0x0008, 0x0002, 0,
+        0, 0, 0, 0,
+        0 }
+};
+    
 bool core::xa_decode_next_sector() {
+    printf("\nDECODE XA SECTOR!");
     u8 CI;
     u8 *dat = xa_get_sector(CI);
     if (dat == nullptr) {
-        printf("\nXA BUFFER RUN DRY!");
+        //printf("\nNO DATA...");
         return false;
     }
     auto channels = static_cast<XA::XA_CH>(CI & 3);
     auto sample_rate = static_cast<XA::XA_SR>((CI >> 2) & 3);
     auto bps = static_cast<XA::XA_BPS>((CI >> 4) & 3);
+    printf("\nXA SECTOR CH:%d SR:%d BPS:%d", channels == XA::STEREO ? 2 : 1, sample_rate == XA::SR37800 ? 37800 : 18900, bps == XA::BITS4 ? 4 : 8);
     bool emphasis = (CI >> 6) & 1;
     if (channels > 1) {
         printf("\n(XA) ERROR INVALID CHANNELS %d", channels);
@@ -829,7 +897,7 @@ bool core::xa_decode_next_sector() {
             else {
                 xa_decode_28(dat, blk, headers[hdr++], 0, xa.decoder.l_old, xa.decoder.l_older, &xa.decoder.samples.l[xa.decoder.samples.pos]);
                 xa.decoder.samples.pos += 28;
-                xa_decode_28(dat, blk, headers[hdr++], 1, xa.decoder.l, xa.decoder.l_older, &xa.decoder.samples.l[xa.decoder.samples.pos]);
+                xa_decode_28(dat, blk, headers[hdr++], 1, xa.decoder.l_old, xa.decoder.l_older, &xa.decoder.samples.l[xa.decoder.samples.pos]);
             }
             xa.decoder.samples.pos += 28;
             dat += 28;
@@ -837,19 +905,71 @@ bool core::xa_decode_next_sector() {
     }
     xa.decoder.samples.len = xa.decoder.samples.pos;
     xa.decoder.samples.pos = 0;
-
+    printf("\nDECODED %d XA S", xa.decoder.samples.len);
     // Now zigzag it!
+    u32 s_index=0;
+    u32 out_index=0;
+    u32 num_loops = xa.decoder.samples.len / 6;
+    for (u32 i = 0; i < num_loops; i++) {
+        // First we need to output 6 samples
+        for (u32 u = 0; u < 3; u++) { // 3 * 2 = 6 samples @ 38700
+            if (sample_rate == XA::SR37800) {
+                // push 2 samples
+                xa.decoder.ringbuf.l[xa.decoder.ringbuf.pos] = xa.decoder.samples.l[s_index];
+                xa.decoder.ringbuf.l[xa.decoder.ringbuf.pos+1] = xa.decoder.samples.l[s_index+1];
+                if (channels == XA::STEREO) {
+                    xa.decoder.ringbuf.r[xa.decoder.ringbuf.pos] = xa.decoder.samples.r[s_index];
+                    xa.decoder.ringbuf.r[xa.decoder.ringbuf.pos+1] = xa.decoder.samples.r[s_index+1];
+                }
+                s_index += 2;
+            }
+            else {
+                xa.decoder.ringbuf.l[xa.decoder.ringbuf.pos] = xa.decoder.samples.l[s_index];
+                xa.decoder.ringbuf.l[xa.decoder.ringbuf.pos+1] = 0;
+                if (channels == XA::STEREO) {
+                    xa.decoder.ringbuf.r[xa.decoder.ringbuf.pos] = xa.decoder.samples.l[s_index];
+                    xa.decoder.ringbuf.r[xa.decoder.ringbuf.pos+1] = 0;
+                }
+                s_index++;
+                // push 1 sample then 0
+            }
+            xa.decoder.ringbuf.pos = (xa.decoder.ringbuf.pos + 2) & 0x1F;
+        }
+        // Now that we've filled 6 samples (or 6 interp. @ 37800), out 7 44.1kHz!
+        for (u32 tblnum = 0; tblnum < 7; tblnum++) {
+            xa.decoder.out_samples.l[out_index] = zigzaginterp(xa.decoder.ringbuf.l, xa.decoder.ringbuf.pos, &zzt[tblnum][0]);
+            if (channels == XA::STEREO) {
+                xa.decoder.out_samples.r[out_index] = zigzaginterp(xa.decoder.ringbuf.r, xa.decoder.ringbuf.pos, &zzt[tblnum][0]);
+            }
+            else {
+                xa.decoder.out_samples.r[out_index] = xa.decoder.out_samples.l[out_index];
+            }
+            out_index++;
+        }
+    }
+    xa.decoder.out_samples.len = out_index;
+    printf("\nDECODED %d XA-ADPCM SAMPLES!", xa.decoder.out_samples.len);
+    xa.decoder.out_samples.pos = 0;
     return true;
 }
 
 void core::get_CD_audio_xa(i16 &left, i16 &right) {
-    left = right = 0;
-    if (xa.decoder.samples.pos >= xa.decoder.samples.len) if (!xa_decode_next_sector()) return;
-
+    if (xa.decoder.out_samples.pos >= xa.decoder.out_samples.len) if (!xa_decode_next_sector()) return;
     // Advance in our current block!
-    left = xa.decoder.samples.l[xa.decoder.samples.pos];
-    right = xa.decoder.samples.r[xa.decoder.samples.pos];
-    xa.decoder.samples.pos++;
+    left = xa.decoder.out_samples.l[xa.decoder.out_samples.pos];
+    right = xa.decoder.out_samples.r[xa.decoder.out_samples.pos];
+    xa.decoder.out_samples.pos++;
+}
+
+i16 core::zigzaginterp(i16 *ringbuf, u32 p, const i16 *tabl) {
+    i32 sum = 0;
+    //p = (p - 1) & 0x1F;
+    for (u32 i = 0; i < 29; i++) {
+        sum +=(ringbuf[(p-i) & 0x1F]* tabl[i]) >> 15;
+    }
+    if (sum < -0x8000) sum = -0x8000;
+    if (sum > 0x7FFF) sum = 0x7FFF;
+    return static_cast<i16>(sum);
 }
 
 void core::get_CD_audio_cdda(i16 &left, i16 &right) {
@@ -1072,7 +1192,8 @@ static void scheduled_cmd_step3(void *ptr, u64 key, u64 timecode, u32 jitter) {
 
 void core::schedule_read(u64 clock) {
     u64 div = io.MODE.speed ? 150 : 75;
-    u64 tm = clock + ((ONEFRAME * 60) / div);
+    u64 tm = clock + (CYCLES_PER_SEC / div);
+
     read.sched_id = bus->scheduler.only_add_abs(tm, 0, this, &scheduled_read, &read.still_sched);
 }
 
