@@ -235,7 +235,7 @@ struct DECODER {
         u32 len{};
     } samples{};
     struct {
-        i16 l[16]{}, r[16]{};
+        i16 l[32]{}, r[32]{};
         u32 pos{};
     } ringbuf{};
     i32 six{6};
@@ -417,6 +417,6 @@ private:
     bool xa_decode_next_sector();
     u8 *xa_get_sector(u8 &CI);
     void xa_decode_28(u8 *ptr, u32 blk, u32 nibble, u8 hd, i16 &old, i16 &older, i16 *s_out);
-    i16 zigzaginterp(i16 *ringbuf, u32 p, const i16 *tabl);
+    i16 zigzaginterp(i16 *ringbuf, u32 p, const i32 *tabl);
 };
 }

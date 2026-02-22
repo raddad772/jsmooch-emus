@@ -734,6 +734,10 @@ u8 *core::xa_get_sector(u8 &CI) {
     return r + 0x18;
 }
 
+    static constexpr i32 filter_table_pos[16] = {0, 60, 115, 98, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0};
+    static constexpr i32 filter_table_neg[16] = {0, 0, -52, -55, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0};
+
+
 void core::xa_decode_28(u8 *ptr, u32 blk, u32 nibble, u8 hd, i16 &old, i16 &older, i16 *s_out) {
     /*
     shift  = 12 - (src[4+blk*2+nibble] AND 0Fh)
@@ -748,9 +752,11 @@ void core::xa_decode_28(u8 *ptr, u32 blk, u32 nibble, u8 hd, i16 &old, i16 &olde
     next j
     */
     u8 shift = hd & 0xF;
-    if (shift > 13) shift = 9;
-    shift = 12 - shift;
-    u8 filter = (hd >> 4) & 3;
+    if (shift > 12) shift = 9;
+    u8 filter = (hd >> 4) & 0x0F;
+    const s32 filter_pos = filter_table_pos[filter];
+    const s32 filter_neg = filter_table_neg[filter];
+
     //u32 sn = xa.decoder.samples.pos;
     for (u32 i = 0; i < 28; i++) {
         i32 t;
@@ -762,25 +768,9 @@ void core::xa_decode_28(u8 *ptr, u32 blk, u32 nibble, u8 hd, i16 &old, i16 &olde
         // src[blk+j*4]
         if (nibble == 0) t = ptr[addr] & 0x0F;
         else t = ptr[addr] >> 4;
-        t = (t & 7) | (t & 8 ? 0xFFFFFFF8 : 0);
-        i32 s = (t << shift);
-        i32 filtered;
-        switch (filter) {
-            case 0:
-                filtered = s;
-                break;
-            case 1:
-                filtered = s + (60 * old + 32) / 64;
-                break;
-            case 2:
-                filtered = s + (115 * old - 52 * older + 32) / 64;
-                break;
-            case 3:
-                filtered = s + (98 * old - 55 * older + 32) / 64;
-                break;
-            default:
-                NOGOHERE;
-        }
+        t = static_cast<i16>(t << 12);
+        i32 s = t >> shift;
+        i32 filtered = s + ((static_cast<i32>(old) * filter_pos) >> 6) + ((static_cast<i32>(older) * filter_neg) >> 6);
         if (filtered < -0x8000) filtered = -0x8000;
         if (filtered > 0x7FFF) filtered = 0x7FFF;
         *s_out = static_cast<i16>(filtered);
@@ -790,71 +780,27 @@ void core::xa_decode_28(u8 *ptr, u32 blk, u32 nibble, u8 hd, i16 &old, i16 &olde
     }
 }
 
-static constexpr i16 zzt[7][29] = {
-{ // Table[0]
-    0, 0, 0, 0, 0,
-    -0x0002, 0x000A, -0x0022,
-    0x0041, -0x0054, 0x0034, 0x0009, 
-    0x010A, 0x0400, -0x0A78, 0x234C,
-    0x6794, -0x1780, 0x0BCD, -0x0623,
-    0x0350, -0x016D, 0x006B, 0x000A,
-    -0x0010, 0x0011, -0x0008, 0x0003,
-    -0x0001 },
-{ // Table[1]
-        0, 0, 0, -0x0002,
-        0, 0x0003, -0x0013, 0x003C,
-        -0x004B, 0x00A2, -0x00E3, 0x0132,
-        -0x0043, -0x0267, 0x0C9D, 0x74BB,
-        -0x11B4, 0x09B8, -0x05BF, 0x0372,
-        -0x01A8, 0x00A6, -0x001B, 0x0005,
-        0x0006, -0x0008, 0x0003, -0x0001,
-        0 },
-{ // Table[2]
-        0, 0, -0x0001, 0x0003,
-        -0x0002, -0x0005, 0x001F, -0x004A,
-        0x00B3, -0x0192, 0x02B1, -0x039E,
-        0x04F8, -0x05A6, 0x7939, -0x05A6,
-        0x04F8, -0x039E, 0x02B1, -0x0192,
-        0x00B3, -0x004A, 0x001F, -0x0005,
-        -0x0002, 0x0003, -0x0001, 0,
-        0 },
-{ // Table[3]
-        0, -0x0001, 0x0003, -0x0008,
-        0x0006, 0x0005, -0x001B, 0x00A6,
-        -0x01A8, 0x0372, -0x05BF, 0x09B8,
-        -0x11B4, 0x74BB, 0x0C9D, -0x0267,
-        -0x0043, 0x0132, -0x00E3, 0x00A2,
-        -0x004B, 0x003C, -0x0013, 0x0003,
-        0     , -0x0002, 0     , 0     ,
-    0 },
-    { // Table[4]
-        -0x0001, 0x0003, -0x0008, 0x0011,
-        -0x0010, 0x000A, 0x006B, -0x016D,
-        0x0350, -0x0623, 0x0BCD, -0x1780,
-        0x6794, 0x234C, -0x0A78, 0x0400,
-        -0x010A, 0x0009, 0x0034, -0x0054,
-        0x0041, -0x0022, 0x000A, -0x0001,
-        0     , 0x0001, 0     , 0     ,
-        0 },
-    { // Table[5]
-        0x0002, -0x0008, 0x0010, -0x0023,
-        0x002B, 0x001A, -0x00EB, 0x027B,
-        -0x0548, 0x0AFA, -0x16FA, 0x53E0,
-        0x3C07, -0x1249, 0x080E, -0x0347,
-        0x015B, -0x0044, -0x0017, 0x0046,
-        -0x0023, 0x0011, -0x0005, 0     ,
-        0     , 0     , 0     , 0     ,
-        0 },
-    { // Table[6]
-        -0x0005, 0x0011, -0x0023, 0x0046,
-        -0x0017, -0x0044, 0x015B, -0x0347,
-        0x080E, -0x1249, 0x3C07, 0x53E0,
-        -0x16FA, 0x0AFA, -0x0548, 0x027B,
-        -0x00EB, 0x001A, 0x002B, -0x0023,
-        0x0010, -0x0008, 0x0002, 0,
-        0, 0, 0, 0,
-        0 }
-};
+    static constexpr i32 zzt[7][29] =       {{0,      0x0,     0x0,     0x0,    0x0,     -0x0002, 0x000A,  -0x0022, 0x0041, -0x0054,
+            0x0034, 0x0009,  -0x010A, 0x0400, -0x0A78, 0x234C,  0x6794,  -0x1780, 0x0BCD, -0x0623,
+            0x0350, -0x016D, 0x006B,  0x000A, -0x0010, 0x0011,  -0x0008, 0x0003,  -0x0001},
+           {0,       0x0,    0x0,     -0x0002, 0x0,    0x0003,  -0x0013, 0x003C,  -0x004B, 0x00A2,
+            -0x00E3, 0x0132, -0x0043, -0x0267, 0x0C9D, 0x74BB,  -0x11B4, 0x09B8,  -0x05BF, 0x0372,
+            -0x01A8, 0x00A6, -0x001B, 0x0005,  0x0006, -0x0008, 0x0003,  -0x0001, 0x0},
+           {0,      0x0,     -0x0001, 0x0003,  -0x0002, -0x0005, 0x001F,  -0x004A, 0x00B3, -0x0192,
+            0x02B1, -0x039E, 0x04F8,  -0x05A6, 0x7939,  -0x05A6, 0x04F8,  -0x039E, 0x02B1, -0x0192,
+            0x00B3, -0x004A, 0x001F,  -0x0005, -0x0002, 0x0003,  -0x0001, 0x0,     0x0},
+           {0,       -0x0001, 0x0003,  -0x0008, 0x0006, 0x0005,  -0x001B, 0x00A6, -0x01A8, 0x0372,
+            -0x05BF, 0x09B8,  -0x11B4, 0x74BB,  0x0C9D, -0x0267, -0x0043, 0x0132, -0x00E3, 0x00A2,
+            -0x004B, 0x003C,  -0x0013, 0x0003,  0x0,    -0x0002, 0x0,     0x0,    0x0},
+           {-0x0001, 0x0003,  -0x0008, 0x0011,  -0x0010, 0x000A, 0x006B,  -0x016D, 0x0350, -0x0623,
+            0x0BCD,  -0x1780, 0x6794,  0x234C,  -0x0A78, 0x0400, -0x010A, 0x0009,  0x0034, -0x0054,
+            0x0041,  -0x0022, 0x000A,  -0x0001, 0x0,     0x0001, 0x0,     0x0,     0x0},
+           {0x0002,  -0x0008, 0x0010,  -0x0023, 0x002B, 0x001A,  -0x00EB, 0x027B,  -0x0548, 0x0AFA,
+            -0x16FA, 0x53E0,  0x3C07,  -0x1249, 0x080E, -0x0347, 0x015B,  -0x0044, -0x0017, 0x0046,
+            -0x0023, 0x0011,  -0x0005, 0x0,     0x0,    0x0,     0x0,     0x0,     0x0},
+           {-0x0005, 0x0011,  -0x0023, 0x0046, -0x0017, -0x0044, 0x015B,  -0x0347, 0x080E, -0x1249,
+            0x3C07,  0x53E0,  -0x16FA, 0x0AFA, -0x0548, 0x027B,  -0x00EB, 0x001A,  0x002B, -0x0023,
+            0x0010,  -0x0008, 0x0002,  0x0,    0x0,     0x0,     0x0,     0x0,     0x0}};
     
 bool core::xa_decode_next_sector() {
     u8 CI;
@@ -866,7 +812,7 @@ bool core::xa_decode_next_sector() {
     auto channels = static_cast<XA::XA_CH>(CI & 3);
     auto sample_rate = static_cast<XA::XA_SR>((CI >> 2) & 3);
     auto bps = static_cast<XA::XA_BPS>((CI >> 4) & 3);
-    printf("\nXA SECTOR CH:%d SR:%d BPS:%d", channels == XA::STEREO ? 2 : 1, sample_rate == XA::SR37800 ? 37800 : 18900, bps == XA::BITS4 ? 4 : 8);
+    //printf("\nXA SECTOR CH:%d SR:%d BPS:%d", channels == XA::STEREO ? 2 : 1, sample_rate == XA::SR37800 ? 37800 : 18900, bps == XA::BITS4 ? 4 : 8);
     bool emphasis = (CI >> 6) & 1;
     if (channels > 1) {
         printf("\n(XA) ERROR INVALID CHANNELS %d", channels);
@@ -887,13 +833,12 @@ bool core::xa_decode_next_sector() {
     }
     u8 headers[8];
     u32 sample_pos = 0;
-    u32 six = 6;
     for (u32 block_num = 0; block_num < 0x12; block_num++) {
         // 4 copies...
         dat += 4;
         // 8 headers
         memcpy(headers, dat, 8);
-        // advance past 4 more copies...
+        // advance past 8 + 4 more copies...
         dat += 12;
 
         u8 hdr = 0;
@@ -911,20 +856,22 @@ bool core::xa_decode_next_sector() {
             sample_pos += 28;
             // advance 28 bytes
         } // finish 4 blocks
+        // get out of this block
         dat += 112;
     } // finish 18 block-of-blocks
 
     xa.decoder.samples.len = sample_pos;
-    printf("\nDECODED %d XA COMPRESSED SAMPLES", xa.decoder.samples.len);
 
-    // FOR NOW, just put these samples as ours!
-    /*memset(xa.decoder.out_samples.l, 0, 2352 * 2);
-    memset(xa.decoder.out_samples.r, 0, 2352 * 2);
-    memcpy(xa.decoder.out_samples.l, xa.decoder.samples.l, xa.decoder.samples.len * sizeof(i16));
-    memcpy(xa.decoder.out_samples.r, xa.decoder.samples.r, xa.decoder.samples.len * sizeof(i16));
-    xa.decoder.out_samples.len = 2352;
-    xa.decoder.out_samples.pos = 0;
-    return true;*/
+    if (false) {
+        // FOR NOW, just put these samples as ours!
+        memset(xa.decoder.out_samples.l, 0, 2352 * 2);
+        memset(xa.decoder.out_samples.r, 0, 2352 * 2);
+        memcpy(xa.decoder.out_samples.l, xa.decoder.samples.l, xa.decoder.samples.len * sizeof(i16));
+        memcpy(xa.decoder.out_samples.r, xa.decoder.samples.r, xa.decoder.samples.len * sizeof(i16));
+        xa.decoder.out_samples.len = 2016;
+        xa.decoder.out_samples.pos = 0;
+        return true;
+    }
     // Now zigzag it!
     u32 s_index=0;
     u32 out_index=0;
@@ -932,8 +879,9 @@ bool core::xa_decode_next_sector() {
     for (u32 i = 0; i < num_loops; i++) {
         // First we need to output 6 samples
         for (u32 u = 0; u < 3; u++) { // 3 * 2 = 6 samples @ 38700
+            // push 2 samples 3 times
+            // either 2 samples, or 1 repeated sample for half-rate
             if (sample_rate == XA::SR37800) {
-                // push 2 samples
                 xa.decoder.ringbuf.l[xa.decoder.ringbuf.pos] = xa.decoder.samples.l[s_index];
                 xa.decoder.ringbuf.l[xa.decoder.ringbuf.pos+1] = xa.decoder.samples.l[s_index+1];
                 if (channels == XA::STEREO) {
@@ -944,21 +892,20 @@ bool core::xa_decode_next_sector() {
             }
             else {
                 xa.decoder.ringbuf.l[xa.decoder.ringbuf.pos] = xa.decoder.samples.l[s_index];
-                xa.decoder.ringbuf.l[xa.decoder.ringbuf.pos+1] = 0;
+                xa.decoder.ringbuf.l[xa.decoder.ringbuf.pos+1] = xa.decoder.samples.l[s_index];;
                 if (channels == XA::STEREO) {
                     xa.decoder.ringbuf.r[xa.decoder.ringbuf.pos] = xa.decoder.samples.l[s_index];
-                    xa.decoder.ringbuf.r[xa.decoder.ringbuf.pos+1] = 0;
+                    xa.decoder.ringbuf.r[xa.decoder.ringbuf.pos+1] = xa.decoder.samples.l[s_index];
                 }
                 s_index++;
-                // push 1 sample then 0
             }
             xa.decoder.ringbuf.pos = (xa.decoder.ringbuf.pos + 2) & 0x1F;
         }
         // Now that we've filled 6 samples (or 6 interp. @ 37800), out 7 44.1kHz!
         for (u32 tblnum = 0; tblnum < 7; tblnum++) {
-            xa.decoder.out_samples.l[out_index] = zigzaginterp(xa.decoder.ringbuf.l, xa.decoder.ringbuf.pos, &zzt[tblnum][0]);
+            xa.decoder.out_samples.l[out_index] = zigzaginterp(xa.decoder.ringbuf.l, xa.decoder.ringbuf.pos, zzt[tblnum]);
             if (channels == XA::STEREO) {
-                xa.decoder.out_samples.r[out_index] = zigzaginterp(xa.decoder.ringbuf.r, xa.decoder.ringbuf.pos, &zzt[tblnum][0]);
+                xa.decoder.out_samples.r[out_index] = zigzaginterp(xa.decoder.ringbuf.r, xa.decoder.ringbuf.pos, zzt[tblnum]);
             }
             else {
                 xa.decoder.out_samples.r[out_index] = xa.decoder.out_samples.l[out_index];
@@ -967,7 +914,6 @@ bool core::xa_decode_next_sector() {
         }
     }
     xa.decoder.out_samples.len = out_index;
-    printf("\nDECODED %d XA-ADPCM SAMPLES!", xa.decoder.out_samples.len);
     xa.decoder.out_samples.pos = 0;
     return true;
 }
@@ -980,11 +926,11 @@ void core::get_CD_audio_xa(i16 &left, i16 &right) {
     xa.decoder.out_samples.pos++;
 }
 
-i16 core::zigzaginterp(i16 *ringbuf, u32 p, const i16 *tabl) {
+i16 core::zigzaginterp(i16 *ringbuf, u32 p, const i32 *tabl) {
     i32 sum = 0;
     //p = (p - 1) & 0x1F;
     for (u32 i = 0; i < 29; i++) {
-        sum +=(ringbuf[(p-i) & 0x1F]* tabl[i]) >> 15;
+        sum +=(static_cast<i32>(ringbuf[(p-i) & 0x1F]) * static_cast<i32>(tabl[i])) >> 15;
     }
     if (sum < -0x8000) sum = -0x8000;
     if (sum > 0x7FFF) sum = 0x7FFF;

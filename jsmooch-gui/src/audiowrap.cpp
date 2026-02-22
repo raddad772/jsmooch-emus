@@ -2,6 +2,8 @@
 // Created by . on 9/5/24.
 //
 #include <cstring>
+#define SRATE 44100
+//#define SRATE 48000
 
 #define MINIAUDIO_IMPLEMENTATION
 #include "../vendor/miniaudio/miniaudio.h"
@@ -162,11 +164,11 @@ int audiowrap::init_wrapper(u32 in_num_channels, u32 in_sample_rate, u32 low_pas
     w->config = ma_device_config_init(ma_device_type_playback);
     w->config.playback.format   = ma_format_s16;   // Set to ma_format_unknown to use the device's native format.
     w->config.playback.channels = in_num_channels;               // Set to 0 to use the device's native channel count.
-    if (in_sample_rate != 48000) {
+    if (in_sample_rate != SRATE) {
         printf("\nRESAMPLING! native rate:%d", in_sample_rate);
         resample = 1;
-        w->config.sampleRate        = 48000;           // Set to 0 to use the device's native sample rate.
-        ClownResampler_HighLevel_Init(&resampler, in_num_channels, in_sample_rate, 48000, lpf);
+        w->config.sampleRate        = SRATE;           // Set to 0 to use the device's native sample rate.
+        ClownResampler_HighLevel_Init(&resampler, in_num_channels, in_sample_rate, SRATE, lpf);
     }
     else {
         w->config.sampleRate = in_sample_rate;
