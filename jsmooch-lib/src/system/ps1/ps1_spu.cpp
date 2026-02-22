@@ -233,8 +233,8 @@ void VOICE::adpcm_decode() {
                 NOGOHERE;
         }
 
-        if (filtered < -0x8000) s = -0x8000;
-        if (filtered > 0x7FFF) s = 0x7FFF;
+        if (filtered < -0x8000) filtered = -0x8000;
+        if (filtered > 0x7FFF) filtered = 0x7FFF;
         s_out = filtered;
         older = old;
         old = filtered;
@@ -703,6 +703,8 @@ void core::do_capture() {
     u32 addr_add = io.SPUSTAT.capture_buffer_half ? 0x200 : 0;
     i16 l, r;
     bus->cdrom.get_CD_audio(l, r);
+    l = VOL(l, io.vol_CD_L);
+    r = VOL(r, io.vol_CD_R);
     write_RAM(addr_add + capture.index, l, true);
     write_RAM(0x400 + addr_add + capture.index, r, true);
     write_RAM(0x800 + addr_add + capture.index, voices[1].sample, true);

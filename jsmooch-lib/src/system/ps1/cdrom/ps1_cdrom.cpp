@@ -750,13 +750,18 @@ void core::xa_decode_28(u8 *ptr, u32 blk, u32 nibble, u8 hd, i16 &old, i16 &olde
     u8 shift = hd & 0xF;
     if (shift > 13) shift = 9;
     shift = 12 - shift;
-    u8 filter = (hd >> 4) & 7;
-    if (filter > 3) filter = 3; // TODO: ??
-    u32 sn = xa.decoder.samples.pos;
+    u8 filter = (hd >> 4) & 3;
+    //u32 sn = xa.decoder.samples.pos;
     for (u32 i = 0; i < 28; i++) {
         i32 t;
-        if (nibble == 0) t = ptr[i] & 0x0F;
-        else t = ptr[i] >> 4;
+        u32 addr = (i*4)+blk;
+        // t = signed4bit((src[16+blk+j*4] SHR (nibble*4)) AND 0Fh)
+        // src[16+blk+j*4]
+        // we already did 16+
+        // so
+        // src[blk+j*4]
+        if (nibble == 0) t = ptr[addr] & 0x0F;
+        else t = ptr[addr] >> 4;
         t = (t & 7) | (t & 8 ? 0xFFFFFFF8 : 0);
         i32 s = (t << shift);
         i32 filtered;
@@ -776,13 +781,12 @@ void core::xa_decode_28(u8 *ptr, u32 blk, u32 nibble, u8 hd, i16 &old, i16 &olde
             default:
                 NOGOHERE;
         }
-        if (filtered < -0x8000) s = -0x8000;
-        if (filtered > 0x7FFF) s = 0x7FFF;
+        if (filtered < -0x8000) filtered = -0x8000;
+        if (filtered > 0x7FFF) filtered = 0x7FFF;
         *s_out = static_cast<i16>(filtered);
         s_out++;
         older = old;
         old = static_cast<i16>(filtered);
-        sn++;
     }
 }
 
@@ -853,7 +857,6 @@ static constexpr i16 zzt[7][29] = {
 };
     
 bool core::xa_decode_next_sector() {
-    printf("\nDECODE XA SECTOR!");
     u8 CI;
     u8 *dat = xa_get_sector(CI);
     if (dat == nullptr) {
@@ -883,29 +886,45 @@ bool core::xa_decode_next_sector() {
         sample_rate = XA::SR37800;
     }
     u8 headers[8];
-    xa.decoder.samples.pos = 0;
+    u32 sample_pos = 0;
+    u32 six = 6;
     for (u32 block_num = 0; block_num < 0x12; block_num++) {
+        // 4 copies...
         dat += 4;
+        // 8 headers
         memcpy(headers, dat, 8);
-        dat += 4;
+        // advance past 4 more copies...
+        dat += 12;
+
         u8 hdr = 0;
         for (u32 blk = 0; blk < 4; blk++) {
             if (channels == XA::STEREO) {
-                xa_decode_28(dat, blk, headers[hdr++], 0, xa.decoder.l_old, xa.decoder.l_older, &xa.decoder.samples.l[xa.decoder.samples.pos]);
-                xa_decode_28(dat, blk, headers[hdr++], 1, xa.decoder.r_old, xa.decoder.r_older, &xa.decoder.samples.r[xa.decoder.samples.pos]);
+                xa_decode_28(dat, blk, 0, headers[hdr++], xa.decoder.l_old, xa.decoder.l_older, xa.decoder.samples.l + sample_pos);
+                xa_decode_28(dat, blk, 1, headers[hdr++],  xa.decoder.r_old, xa.decoder.r_older, xa.decoder.samples.r + sample_pos);
             }
             else {
-                xa_decode_28(dat, blk, headers[hdr++], 0, xa.decoder.l_old, xa.decoder.l_older, &xa.decoder.samples.l[xa.decoder.samples.pos]);
-                xa.decoder.samples.pos += 28;
-                xa_decode_28(dat, blk, headers[hdr++], 1, xa.decoder.l_old, xa.decoder.l_older, &xa.decoder.samples.l[xa.decoder.samples.pos]);
+                xa_decode_28(dat, blk, 0, headers[hdr++], xa.decoder.l_old, xa.decoder.l_older, xa.decoder.samples.l + sample_pos);
+                sample_pos += 28;
+                xa_decode_28(dat, blk, 1, headers[hdr++], xa.decoder.l_old, xa.decoder.l_older, xa.decoder.samples.l + sample_pos);
             }
-            xa.decoder.samples.pos += 28;
-            dat += 28;
-        }
-    }
-    xa.decoder.samples.len = xa.decoder.samples.pos;
-    xa.decoder.samples.pos = 0;
-    printf("\nDECODED %d XA S", xa.decoder.samples.len);
+            // advance 28 (or 28+28) ADPCM samples
+            sample_pos += 28;
+            // advance 28 bytes
+        } // finish 4 blocks
+        dat += 112;
+    } // finish 18 block-of-blocks
+
+    xa.decoder.samples.len = sample_pos;
+    printf("\nDECODED %d XA COMPRESSED SAMPLES", xa.decoder.samples.len);
+
+    // FOR NOW, just put these samples as ours!
+    /*memset(xa.decoder.out_samples.l, 0, 2352 * 2);
+    memset(xa.decoder.out_samples.r, 0, 2352 * 2);
+    memcpy(xa.decoder.out_samples.l, xa.decoder.samples.l, xa.decoder.samples.len * sizeof(i16));
+    memcpy(xa.decoder.out_samples.r, xa.decoder.samples.r, xa.decoder.samples.len * sizeof(i16));
+    xa.decoder.out_samples.len = 2352;
+    xa.decoder.out_samples.pos = 0;
+    return true;*/
     // Now zigzag it!
     u32 s_index=0;
     u32 out_index=0;

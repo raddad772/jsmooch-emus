@@ -230,21 +230,21 @@ struct SECTOR {
 
 struct DECODER {
     struct {
-        i16 l[37800]{};
-        i16 r[37800]{};
+        i16 l[4032]{};
+        i16 r[4032]{};
         u32 len{};
-        u32 pos{};
     } samples{};
     struct {
         i16 l[16]{}, r[16]{};
         u32 pos{};
     } ringbuf{};
+    i32 six{6};
 
     struct {
         u32 pos{};
         u32 len{};
-        i16 l[44100];
-        i16 r[44100];
+        i16 l[4704];
+        i16 r[4704];
     } out_samples{};
     bool last_block{};
     i16 l_old{}, r_old{}, l_older{}, r_older{};
