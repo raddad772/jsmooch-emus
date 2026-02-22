@@ -83,11 +83,9 @@ u32 CDROM::mainbus_read(u32 addr, u8 sz, bool has_effect) {
     }*/
     switch (addr) {
         case 0x1F801800: {
-            io.HSTS.PRMEMPT = io.PARAMETER.len == 0;
-            io.HSTS.PRMWRDY = io.PARAMETER.len != 16;
-            io.HSTS.RSLRRDY = io.interrupts.out_results.len > 0;
+            recalc_HSTS();
             u32 v = io.HSTS.u | (io.HSTS.u << 8) | (io.HSTS.u << 16) | (io.HSTS.u << 24);
-            printif(ps1.cdrom.reg_read, "\n(CDROM) read HSTS %02x", v & 0xFF);
+            dbgloglog_bus(PS1D_CDROM_REGRW, DBGLS_INFO, "READ HSTS %02x   buf_len:%d  pos/len:%d/%d   num-result:%d", v & 0xFF, sector_buf.len, io.RDDATA.pos, io.RDDATA.len, io.interrupts.out_results.len);
             return v & masksz[sz];
         }
         case 0x1F801801: return read_01(sz, has_effect);
@@ -101,7 +99,11 @@ u32 CDROM::mainbus_read(u32 addr, u8 sz, bool has_effect) {
 void CDROM::mainbus_write(u32 addr, u32 val, u8 sz) {
     //printf("\nWR CDROM %08x: %08x", addr, val);
     switch (addr) {
-        case 0x1F801800: io.HSTS.RA = val & 3; return;
+        case 0x1F801800: {
+            dbgloglog_bus(PS1D_CDROM_REGRW, DBGLS_INFO, "WRITE RA %d", val & 3);
+            io.HSTS.RA = val & 3;
+            return;
+        }
         case 0x1F801801: return write_01(val, sz);
         case 0x1F801802: return write_02(val, sz);
         case 0x1F801803: return write_03(val, sz);
@@ -115,14 +117,14 @@ u32 CDROM::read_01(u8 sz, bool has_effect) {
     // RESULT
     u8 v = io.interrupts.pop_result();
     recalc_HSTS();
-    printif(ps1.cdrom.result_read, "\n(CDROM) read RESULT %02x", v);
+    dbgloglog_bus(PS1D_CDROM_RESULT, DBGLS_INFO, "POP RESULT %02x", v);
     return v;
 }
 
 u32 CDROM::read_02(u8 sz, bool has_effect) {
     // RDDATA
     // if DRQSTS is set, the datablock (disk sector) can be then read from this register
-    if (io.HSTS.DRQSTS) {
+    if (io.HCHPCTL.BFRD && io.HSTS.DRQSTS) {
         u32 v = io.RDDATA.read_byte();
         if (sz >= 2) v |= io.RDDATA.read_byte() << 8;
         if (sz == 4) {
@@ -144,12 +146,12 @@ u32 CDROM::read_03(u8 sz, bool has_effect) {
         case 0:
         case 2: // HINTMSK
             v = io.HINTMSK.u | 0b11100000;
-            printif(ps1.cdrom.reg_read, "\n(CDROM) read HINTMSK %02x", v);
+            dbgloglog_bus(PS1D_CDROM_REGRW, DBGLS_INFO, "READ HINTMSK %02x", v);
             return v;
         case 1:
         case 3: // HINTSTS
             v = io.HINTSTS.u | 0b11100000;
-            printif(ps1.cdrom.reg_read, "\n(CDROM) read HINTSTS %02x", v);
+            dbgloglog_bus(PS1D_CDROM_REGRW, DBGLS_INFO, "READ HINTSTS %02x", v);
             return v;
     }
     NOGOHERE;
@@ -182,7 +184,7 @@ void CDROM::result_string(const char *s) {
 }
 
 void CDROM::result(u32 val) {
-    dbgloglog_bus(PS1D_CDROM_RESULT, DBGLS_INFO, "RES. %02x", val);
+    dbgloglog_bus(PS1D_CDROM_RESULT, DBGLS_INFO, "PUSH RESULT %02x", val);
     io.interrupts.push_result(val);
 }
 
@@ -275,6 +277,9 @@ void CDROM::cmd_start(u64 key, u64 clock) {
         case 0x15: // SeekL
             cmd_seekl(clock);
             return;
+        case 0x11:
+            cmd_getlocp();
+            return;
         case 0x16:
             cmd_seekp(clock);
             return;
@@ -322,11 +327,12 @@ void CDROM::cmd_finish(u64 key, u64 clock) {
             cmd_set_session_finish(clock);
             return;
         case 0x15: // SeekL
-            io.stat.seek = 0;
-            finish_CMD(true, 2);
-            return;
         case 0x16: // SeekP
             io.stat.seek = 0;
+            seek.needs_seek = false;
+            seek.last_read.disc.amm = seek.amm;
+            seek.last_read.disc.asect = seek.asect;
+            seek.last_read.disc.ass = seek.ass;
             finish_CMD(true, 2);
             return;
         case 0x1A: // GetID
@@ -409,12 +415,34 @@ void CDROM::cmd_setloc() {
         seek.amm = decode_bcd(io.PARAMETER.pop());
         seek.ass = decode_bcd(io.PARAMETER.pop());
         seek.asect = decode_bcd(io.PARAMETER.pop());
+        seek.needs_seek = true;
         dbgloglog_bus(PS1D_CDROM_SETLOC, DBGLS_INFO, "(Cmd) SetLoc %02d:%02d:%02d", seek.amm, seek.ass, seek.asect);
     }
     else {
         dbgloglog_busn(PS1D_CDROM_SETLOC, DBGLS_INFO, "(Cmd) SetLoc ignore_bit set");
     }
     finish_CMD(false, 0);
+}
+
+u32 CDROM::get_LBA_from_aaa(u32 amm, u32 ass, u32 asect) {
+    return asect + (ass * 75) + (amm * (75 * 60));
+}
+
+u32 CDROM::get_track_from_LBA(u32 LBA) {
+    // Find current track...
+    i32 cur_track = 0;
+    for (u32 i = 1; i < (data.num_tracks + 1); i++) {
+        auto &t = data.tracks[i-1];
+        if (LBA >= t.data_lba) {
+            cur_track = i;
+            break;
+        }
+    }
+    if (cur_track == 0) {
+        printf("\nWARNING COULDNT FIND TRACK");
+        cur_track = 1;
+    }
+    return cur_track;
 }
 
 void CDROM::cmd_play() {
@@ -438,22 +466,8 @@ void CDROM::cmd_play() {
             dbgloglog_busn(PS1D_CDROM_PLAY, DBGLS_INFO, "(Cmd) Play restart current track");
 
             // Restart current track
-            LBA = seek.asect + (seek.ass * 75) + (seek.amm * (75 * 60));
-
-            // Find current track...
-            i32 cur_track = 0;
-            for (u32 i = 1; i < (data.num_tracks + 1); i++) {
-                auto &t = data.tracks[i-1];
-                if (LBA >= t.data_lba) {
-                    cur_track = i;
-                    break;
-                }
-            }
-            if (cur_track == 0) {
-                printf("\nWARNING COULDNT FIND TRACK");
-                cur_track = 1;
-            }
-            track = cur_track;
+            LBA = get_cur_LBA();
+            track = get_track_from_LBA(LBA);
         }
         // Seek to track
         if (track > 0) {
@@ -493,8 +507,9 @@ void CDROM::do_cmd_read(u64 clock) {
     }
     finish_CMD(true, 3);
     io.stat.play = 0;
-    io.stat.seek = 0;
-    io.stat.read = 1;
+    io.stat.seek = seek.needs_seek;
+    io.stat.read = !io.stat.seek;
+    if (io.stat.seek) clock += seek_cycles();
     schedule_read(clock);
 }
 
@@ -550,17 +565,35 @@ void CDROM::cmd_seekp(u64 clock) {
     io.stat.play = 0;
     head.mode = HM_AUDIO;
     printf("\nHEAD MODE AUDIO!!!");
-    schedule_seek_finish(clock);
+    schedule_seek_finish(clock+seek_cycles());
 }
 
+void CDROM::cmd_getlocp() {
+    u32 track = get_track_from_LBA(get_cur_LBA());
+    result(encode_bcd(track)); // track
+    result(1); // index
+    // Within track
+    update_track_loc();
+    result(encode_bcd(seek.last_read.track.amm));
+    result(encode_bcd(seek.last_read.track.ass));
+    result(encode_bcd(seek.last_read.track.asect));
+
+    // Within disk
+    result(encode_bcd(seek.last_read.disc.amm));
+    result(encode_bcd(seek.last_read.disc.ass));
+    result(encode_bcd(seek.last_read.disc.asect));
+    queue_interrupt(3);
+    finish_CMD(false, 0);
+}
 void CDROM::cmd_seekl(u64 clock) {
     //printf("\n(CDROM) CMD SeekL");
+    dbgloglog_busn(PS1D_CDROM_SEEK, DBGLS_INFO, "(Cmd) Seek");
     stat_irq();
     io.stat.seek = 1;
     io.stat.read = 0;
     io.stat.play = 0;
     head.mode = HM_DATA;
-    schedule_seek_finish(clock);
+    schedule_seek_finish(clock+seek_cycles());
 }
 
 void CDROM::cmd_motor_on(u64 clock) {
@@ -570,14 +603,50 @@ void CDROM::cmd_motor_on(u64 clock) {
     schedule_finish(clock + (ONEFRAME * 60));
 }
 
+void CDROM::update_track_loc() {
+    i32 disc_LBA = get_cur_LBA(); // like 100
+    u32 tnum = get_track_from_LBA(disc_LBA);
+    tnum--;
+    i32 track_LBA = data.tracks[tnum].data_lba; // like 80
+    i32 rel_LBA = disc_LBA - track_LBA;
+    if (rel_LBA < 0) {
+        printf("\nERROR RELATIVE LBA <0");
+        return;
+    }
+    seek.last_read.track.asect = rel_LBA % 75;
+    seek.last_read.track.ass = (rel_LBA / 75) % 60;
+    seek.last_read.track.amm = (rel_LBA / (75 * 60));
+}
+
 void CDROM::read_sector() {
     //printf("\n(CDROM) Read sector %02d:%02d:%02d", seek.amm, seek.ass, seek.asect);
-    dbgloglog_bus(PS1D_CDROM_SECTOR_READS, DBGLS_INFO, "Read sector %02d:%02d:%02d into queue size %d", seek.amm, seek.ass, seek.asect, sector_buf.len);
+    dbgloglog_bus(PS1D_CDROM_SECTOR_READS, DBGLS_INFO, "(RDSEC) Read sector %02d:%02d:%02d into queue size %d", seek.amm, seek.ass, seek.asect, sector_buf.len);
+    // 25:14:48
+    seek.last_read.disc.amm = seek.amm;
+    seek.last_read.disc.asect = seek.asect;
+    seek.last_read.disc.ass = seek.ass;
+
+    if (seek.needs_seek || io.stat.seek) {
+        seek.needs_seek = false;
+        io.stat.seek = 0;
+        io.stat.read = 1;
+    }
+    /*if ((seek.amm == 25) && (seek.ass == 14) && (seek.asect == 48)) {
+        //dbg_break("TARGET READ", 0);
+    }*/
     u8 *ptr = data.ptr_to_data(seek.amm, seek.ass, seek.asect);
+    if (io.MODE.xa_adpcm) {
+        u8 v = ptr[18];
+        if (v & 4) {
+            printf("\nSKIP XA-ADPCM SECTOR!");
+            return;
+        }
+    }
+
     memcpy(sector_buf.bufs[sector_buf.tail], ptr, 0x930);
     sector_buf.tail = (sector_buf.tail + 1) & 7;
     sector_buf.len++;
-    if (sector_buf.len > 2) {
+    if (sector_buf.len > 1) {
         printf("\nWARN SECTOR BUF LEN %d", sector_buf.len);
         dbg_break("SECTOR BUF FILL", 0);
     }
@@ -587,6 +656,11 @@ void CDROM::read_sector() {
 
 void CDROM::sch_read(u64 key, u64 clock) {
     read_sector();
+    next_sector();
+    schedule_read(clock);
+}
+
+void CDROM::next_sector() {
     seek.asect++;
     if (seek.asect >= 75) {
         seek.asect = 0;
@@ -599,7 +673,6 @@ void CDROM::sch_read(u64 key, u64 clock) {
             }
         }
     }
-    schedule_read(clock);
 }
 
 void CDROM::get_CD_audio(i16 &left, i16 &right) {
@@ -616,18 +689,7 @@ void CDROM::get_CD_audio(i16 &left, i16 &right) {
     head.sample_index++;
     if (head.sample_index >= 588) {
         head.sample_index = 0;
-        seek.asect++;
-        if (seek.asect >= 75) {
-            seek.ass++;
-            seek.asect = 0;
-            if (seek.ass >= 60) {
-                seek.amm++;
-                seek.ass = 0;
-                if (seek.amm >= 74) {
-                    seek.amm = 0;
-                }
-            }
-        }
+        next_sector();
     }
 
     i32 l = smp[0];
@@ -748,6 +810,7 @@ void CDROM::cmd_setmode() {
         //io.latch.MODE_sector_size = 0;
     }
     io.MODE.u = mode;
+    printf("\nSETMODE XA-ADPCM:%d", io.MODE.xa_adpcm);
     finish_CMD(true, 3);
 }
 
@@ -850,9 +913,12 @@ void CDROM::schedule_step_3(u64 clock) {
     CMD.sched_id = bus->scheduler.only_add_abs(clock, 0, this, &scheduled_cmd_step3, &CMD.still_sched);
 }
 
+i64 CDROM::seek_cycles() {
+    return (ONEFRAME*24);
+}
 
 void CDROM::schedule_seek_finish(u64 clock) {
-    CMD.sched_id = bus->scheduler.only_add_abs(clock + (ONEFRAME*10), 0, this, &scheduled_cmd_end, &CMD.still_sched);
+    CMD.sched_id = bus->scheduler.only_add_abs(clock, 0, this, &scheduled_cmd_end, &CMD.still_sched);
 }
 
 void CDROM::schedule_CMD() {
@@ -879,7 +945,7 @@ void CDROM::queue_interrupt(u32 level) {
         io.HINTSTS.INTSTS = level;
         io.interrupts.out_results.copy(io.interrupts.in_results);
         io.interrupts.in_results.reset();
-        dbgloglog_bus(PS1D_CDROM_IRQ_ASSERT, DBGLS_INFO, "IRQ assert: %d", level);
+        dbgloglog_bus(PS1D_CDROM_IRQ_ASSERT, DBGLS_INFO, "IRQ assert: %d  CMD:%02x", level, io.CMD);
         recalc_HSTS();
         update_IRQs();
     }
@@ -931,11 +997,12 @@ void CDROM::write_01(u32 val, u8 sz) {
             return;
         case 2: // CI
             io.CI.u = val & 0b01010101;
+            dbgloglog_bus(PS1D_CDROM_REGRW, DBGLS_INFO, "WRITE CI %02x", val);
             //printf("\n(CDROM) CI write %02x", io.CI.u);
-            // TODO: scheduler changes for sample rate?
             return;
         case 3: // ATV2 R->R
             io.R_R = val & 0xFF;;
+            dbgloglog_bus(PS1D_CDROM_REGRW, DBGLS_INFO, "WRITE R->R %02x", val);
             return;
     }
 }
@@ -970,6 +1037,7 @@ void CDROM::write_02(u32 val, u8 sz) {
     switch (io.HSTS.RA) {
         case 0: // PARAMETER
             //printf("\n(CDROM) PARAMETER write %02x", val);
+            dbgloglog_bus(PS1D_CDROM_REGRW, DBGLS_INFO, "WRITE PARAMETER %02x", val);
             io.PARAMETER.push(val);
             recalc_HSTS();
             return;
@@ -978,13 +1046,15 @@ void CDROM::write_02(u32 val, u8 sz) {
             u32 old = io.HINTMSK.u;
             io.HINTMSK.u = (val & 0b11111) | 0b11100000;
             if (io.HINTMSK.u != old) update_IRQs();
-            printif(ps1.cdrom.reg_write, "\n(CDROM) HINTMSK write %02x. new HINTMSK %02x", val, io.HINTMSK.u);
+            dbgloglog_bus(PS1D_CDROM_REGRW, DBGLS_INFO, "WRITE HINTMASK %02x", val);
             return; }
         case 2: // ATV0 L->L
             io.L_L = val & 0xFF;
+            dbgloglog_bus(PS1D_CDROM_REGRW, DBGLS_INFO, "WRITE L->L %02x", val);
             return;
         case 3: // ATV3 R->L
             io.R_L = val & 0xFF;
+            dbgloglog_bus(PS1D_CDROM_REGRW, DBGLS_INFO, "WRITE R->L %02x", val);
             return;
     }
 }
@@ -993,6 +1063,9 @@ void CDROM::queue_sector_RDDATA() {
         dbgloglog_busn(PS1D_CDROM_RDDATA_START, DBGLS_WARN, "WARN: RDDATA requested with no buffers.");
         printf("\nNO BUFS TO RDDATA!?");
         return;
+    }
+    if (io.RDDATA.pos < io.RDDATA.len) {
+        dbgloglog_bus(PS1D_CDROM_RDDATA_START, DBGLS_INFO, "RDDATA when pos/len:%d/%d", io.RDDATA.pos, io.RDDATA.len);
     }
     io.RDDATA.clear();
     io.RDDATA.ptr = sector_buf.bufs[sector_buf.head];
@@ -1006,12 +1079,13 @@ void CDROM::queue_sector_RDDATA() {
     }
     sector_buf.head = (sector_buf.head + 1) & 7;
     sector_buf.len--;
-    dbgloglog_bus(PS1D_CDROM_RDDATA_START, DBGLS_INFO, "RDDATA request sz:%03x  sectors left in buffer:%d", io.RDDATA.len, sector_buf.len);
+    dbgloglog_bus(PS1D_CDROM_RDDATA_START, DBGLS_INFO, "RDDATA request sz:%03x  sectors left in buffer:%d. num_irqs_queued:%d", io.RDDATA.len, sector_buf.len, io.interrupts.len);
 }
 
 void CDROM::write_03(u32 val, u8 sz) {
     switch (io.HSTS.RA) {
         case 0:
+            dbgloglog_bus(PS1D_CDROM_REGRW, DBGLS_INFO, "WRITE HCHPCTL %02x", val);
             io.HCHPCTL.u = val & 0b11100000;
             if (io.HCHPCTL.BFRD && sector_buf.len > 0) {
                 queue_sector_RDDATA();
@@ -1024,6 +1098,7 @@ void CDROM::write_03(u32 val, u8 sz) {
             return;
         case 1: {
             // HCLRCTL
+            dbgloglog_bus(PS1D_CDROM_REGRW, DBGLS_INFO, "WRITE HCLRCTL %02x", val);
             u32 old = io.HINTMSK.u;
             io.HINTSTS.u &= ((val & 0b11111) ^ 0b11111);
             io.HINTSTS.u |= 0b11100000;
@@ -1053,8 +1128,11 @@ void CDROM::write_03(u32 val, u8 sz) {
         }
         case 2: // ATV1 L->R
             io.L_R = val & 0xFF;
+            dbgloglog_bus(PS1D_CDROM_REGRW, DBGLS_INFO, "WRITE L->R %02x", val);
             return;
         case 3: // ADPCTL
+            dbgloglog_bus(PS1D_CDROM_REGRW, DBGLS_INFO, "WRITE ADPCTL %02x", val);
+
             if (val & 1) {
                 // TODO: mute XA-ADPCM!
             }

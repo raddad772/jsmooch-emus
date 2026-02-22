@@ -102,11 +102,13 @@ static void setup_dbglog(debugger_interface *dbgr, core *th)
     dbglog_category_node &cdrom = root.add_node(dv, "CDROM Drive", nullptr, 0, dma_c);
     cdrom.children.reserve(30);
     cdrom.add_node(dv, "Command", "CMD", PS1D_CDROM_CMD, dma_c);
+    cdrom.add_node(dv, "Register read/write", "Reg R/W", PS1D_CDROM_REGRW, dma_c);
     cdrom.add_node(dv, "CMD SetMode", "SetMode", PS1D_CDROM_SETMODE, dma_c);
     cdrom.add_node(dv, "CMD Read", "Read", PS1D_CDROM_READ, dma_c);
     cdrom.add_node(dv, "CMD Play", "Play", PS1D_CDROM_PLAY, dma_c);
     cdrom.add_node(dv, "CMD Pause", "Pause", PS1D_CDROM_PAUSE, dma_c);
     cdrom.add_node(dv, "CMD SetLoc", "SetLoc", PS1D_CDROM_SETLOC, dma_c);
+    cdrom.add_node(dv, "CMD Seek", "Seek", PS1D_CDROM_SEEK, dma_c);
     cdrom.add_node(dv, "CMD Reset", "Reset", PS1D_CDROM_CMD_RESET, dma_c);
     cdrom.add_node(dv, "Result", "Result", PS1D_CDROM_RESULT, dma_c);
     cdrom.add_node(dv, "IRQ Queued", "IRQ_Q", PS1D_CDROM_IRQ_QUEUE, dma_c);

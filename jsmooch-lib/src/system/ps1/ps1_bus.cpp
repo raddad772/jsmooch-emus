@@ -141,6 +141,10 @@ u32 core::mainbus_read(u32 addr, u8 sz, bool has_effect)
     if (addr < 0x00800000) {
         return cR[sz](mem.MRAM, addr & 0x1FFFFF);
     }
+    if (addr >= 0x1F800000 && addr != 0x1F801070 && addr != 0x1F801074 && ::dbg.trace_on) {
+        dbg_break("\nREAD REG", 0);
+        dbgloglog(PS1D_CDROM_RESULT, DBGLS_INFO, "READ REG %08x", addr);
+    }
     // 1F800000 1024kb of scratchpad
     if ((addr >= 0x1F800000) && (addr < 0x1F800400)) {
         return cR[sz](mem.scratchpad, addr & 0x3FF);

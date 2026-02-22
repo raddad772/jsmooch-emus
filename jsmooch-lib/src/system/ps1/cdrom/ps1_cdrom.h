@@ -252,7 +252,19 @@ struct CDROM {
     struct {
         u8 amm{}, ass{}, asect{};
         u8 session{};
+        struct {
+            struct {
+                u8 amm{}, ass{}, asect{};
+            } disc{};
+            struct {
+                u8 amm{}, ass{}, asect{};
+            } track{};
+        } last_read{};
+
+        bool needs_seek{};
     } seek;
+
+    static i64 seek_cycles();
 
     struct {
         CDHEAD_MODE mode{};
@@ -279,6 +291,7 @@ struct CDROM {
     } disk{};
 
 private:
+    void next_sector();
     u32 read_01(u8 sz, bool has_effect);
     u32 read_02(u8 sz, bool has_effect);
     u32 read_03(u8 sz, bool has_effect);
@@ -316,6 +329,10 @@ private:
     void cmd_setmode();
     void cmd_reset();
     void cmd_seekl(u64 clock);
+    void cmd_getlocp();
+    u32 get_LBA_from_aaa(u32 amm, u32 ass, u32 asect);
+    u32 get_track_from_LBA(u32 LBA);
+    u32 get_cur_LBA() { return get_LBA_from_aaa(seek.last_read.disc.amm, seek.last_read.disc.ass, seek.last_read.disc.asect);}
     void cmd_seekp(u64 clock);
     void cmd_getid(u64 clock);
     void cmd_getid_finish();
@@ -327,5 +344,6 @@ private:
     void cmd_gettn();
     void cmd_gettd();
     void queue_sector_RDDATA();
+    void update_track_loc();
 };
 }
