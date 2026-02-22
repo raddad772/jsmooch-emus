@@ -862,16 +862,6 @@ bool core::xa_decode_next_sector() {
 
     xa.decoder.samples.len = sample_pos;
 
-    if (false) {
-        // FOR NOW, just put these samples as ours!
-        memset(xa.decoder.out_samples.l, 0, 2352 * 2);
-        memset(xa.decoder.out_samples.r, 0, 2352 * 2);
-        memcpy(xa.decoder.out_samples.l, xa.decoder.samples.l, xa.decoder.samples.len * sizeof(i16));
-        memcpy(xa.decoder.out_samples.r, xa.decoder.samples.r, xa.decoder.samples.len * sizeof(i16));
-        xa.decoder.out_samples.len = 2016;
-        xa.decoder.out_samples.pos = 0;
-        return true;
-    }
     // Now zigzag it!
     u32 s_index=0;
     u32 out_index=0;

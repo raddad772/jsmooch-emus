@@ -209,7 +209,7 @@ enum XA_BPS {
     RRRESERVED1 = 2,
     RRRESERVED2 = 3
 };
-    
+
 struct DECODER {
     struct {
         i16 l[4032]{};
