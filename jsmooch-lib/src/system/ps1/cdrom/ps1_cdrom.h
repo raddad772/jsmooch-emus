@@ -244,12 +244,6 @@ struct CDROM {
     } read{};
 
     struct {
-        struct {
-            u8 file{}, channel{};
-        } filter{};
-    } ADPCM{};
-
-    struct {
         u8 amm{}, ass{}, asect{};
         u8 session{};
         struct {
@@ -278,6 +272,7 @@ struct CDROM {
     } head{};
 
     SECTOR_BUFFER sector_buf{};
+    SECTOR_BUFFER xa_sector_buf{};
 
     struct {
         u8 subcmd{};
@@ -289,6 +284,13 @@ struct CDROM {
         u32 num_sessions{false};
         bool inserted{false};
     } disk{};
+
+    struct {
+        struct {
+            u8 file{}, channel{};
+        } filter{};
+        CD_DATA_BUF cur_buf{};
+    } xa{};
 
 private:
     void next_sector();
@@ -314,6 +316,7 @@ private:
     void result(u32 val);
     void result_string(const char *s);
     void stat_irq();
+    void cmd_setfilter();
     void cmd_setloc();
     void cmd_test();
     void cmd_play();
@@ -345,5 +348,9 @@ private:
     void cmd_gettd();
     void queue_sector_RDDATA();
     void update_track_loc();
+
+    void queue_xa_sector(u8 *ptr);
+    void get_CD_audio_cdda(i16 &left, i16 &right);
+    void get_CD_audio_xa(i16 &left, i16 &right);
 };
 }

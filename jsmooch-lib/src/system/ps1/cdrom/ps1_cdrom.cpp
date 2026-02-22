@@ -195,6 +195,9 @@ void CDROM::cmd_start(u64 key, u64 clock) {
     printif(ps1.cdrom.cmd, "\n(CDROM) EXEC CMD %02x", io.CMD);
     dbgloglog_bus(PS1D_CDROM_CMD, DBGLS_INFO, "Exec cmd %02x", io.CMD);
     switch(cmd) {
+        case 0x0D: // setfilter
+            cmd_setfilter();
+            return;
         case 0x00:
         case 0x17:
         case 0x18:
@@ -265,11 +268,6 @@ void CDROM::cmd_start(u64 key, u64 clock) {
             return;
         case 0x0C:
             cmd_demute();
-            return;
-        case 0x0D: // setfilter
-            ADPCM.filter.file = io.PARAMETER.pop();
-            ADPCM.filter.channel = io.PARAMETER.pop();
-            finish_CMD(true, 3);
             return;
         case 0x0e:
             cmd_setmode();
@@ -406,6 +404,12 @@ void CDROM::cmd_test() {
             return;
     }
     printf("\n(CDROM) TEST UNKNOWN CMD %02x", sub);
+}
+
+void CDROM::cmd_setfilter() {
+    xa.filter.file = io.PARAMETER.pop();
+    xa.filter.channel = io.PARAMETER.pop() & 0x1F; // TODO: ?
+    finish_CMD(true, 3);
 }
 
 void CDROM::cmd_setloc() {
@@ -617,6 +621,32 @@ void CDROM::update_track_loc() {
     seek.last_read.track.ass = (rel_LBA / 75) % 60;
     seek.last_read.track.amm = (rel_LBA / (75 * 60));
 }
+#define XA_SUBHEADER_START 16
+
+void CDROM::queue_xa_sector(u8 *ptr) {
+    if (xa_sector_buf.len > 2) {
+        printf("\nWARN XA AUDIO UP TO 2 BUFFERS!");
+    }
+    if (xa_sector_buf.len >= 8) {
+        printf("\nWARN DROP XA BUFFER!");
+    }
+    // Check filter to see if we should just discard
+    if (io.MODE.xa_filter) {
+        u8 filenum = ptr[XA_SUBHEADER_START+0];
+        if (filenum != xa.filter.file) {
+            printf("\nIGNORE XAPDCM FILE %02x not %02x!", filenum, xa.filter.file);
+            return;
+        }
+        u8 chnum = ptr[XA_SUBHEADER_START+1];
+        if (chnum != xa.filter.channel) {
+            printf("\nIGNORE XADPCM CH %02x NOT %02x!", chnum, xa.filter.channel);
+        }
+        return;
+    }
+    memcpy(xa_sector_buf.bufs[xa_sector_buf.tail], ptr, 0x930);
+    xa_sector_buf.tail = (xa_sector_buf.tail + 1) & 7;
+    xa_sector_buf.len++;
+}
 
 void CDROM::read_sector() {
     //printf("\n(CDROM) Read sector %02d:%02d:%02d", seek.amm, seek.ass, seek.asect);
@@ -636,10 +666,14 @@ void CDROM::read_sector() {
     }*/
     u8 *ptr = data.ptr_to_data(seek.amm, seek.ass, seek.asect);
     if (io.MODE.xa_adpcm) {
-        u8 v = ptr[18];
-        if (v & 4) {
-            printf("\nSKIP XA-ADPCM SECTOR!");
-            return;
+        u8 v = ptr[XA_SUBHEADER_START+2];
+        if (v & 0x40) { // real-time
+            if ((v & 0x4)) {// || // audio
+                //(v & 0x8)) { // data, real-time data = audio
+                //if (v & 0x8) printf("\nWARN REALTIME DATA!");
+                queue_xa_sector(ptr);
+                return;
+            }
         }
     }
 
@@ -677,10 +711,23 @@ void CDROM::next_sector() {
 
 void CDROM::get_CD_audio(i16 &left, i16 &right) {
     left = right = 0;
-    if (head.mode != HM_AUDIO) return;
-    if (!io.stat.play) return;
-    if (head.muted) return;
+    if (io.MODE.xa_adpcm) {
+        if (io.stat.play) return;
+        if (head.mode != HM_AUDIO) return;
+        get_CD_audio_xa(left, right);
+    }
+    else {
+        if (!io.stat.play) return;
+        if (head.mode != HM_AUDIO) return;
+        get_CD_audio_cdda(left, right);
+    }
+}
 
+void CDROM::get_CD_audio_xa(i16 &left, i16 &right) {
+
+}
+
+void CDROM::get_CD_audio_cdda(i16 &left, i16 &right) {
     //u32 addr = head.sample_index * 4;
     u32 LBA = seek.asect + (seek.ass * 75) + (seek.amm * 75 * 50);
     
@@ -695,8 +742,9 @@ void CDROM::get_CD_audio(i16 &left, i16 &right) {
     i32 l = smp[0];
     i32 r = smp[1];
     // Now mix the samples in...
-    i32 l_o = 0;
-    i32 r_o = 0;
+    i32 l_o = left = 0;
+    i32 r_o = right = 0;
+    if (head.muted) return;
 
     // 0x40 = half
     // 0x80 = full
@@ -810,7 +858,6 @@ void CDROM::cmd_setmode() {
         //io.latch.MODE_sector_size = 0;
     }
     io.MODE.u = mode;
-    printf("\nSETMODE XA-ADPCM:%d", io.MODE.xa_adpcm);
     finish_CMD(true, 3);
 }
 
