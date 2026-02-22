@@ -8,12 +8,10 @@
 #include "helpers/physical_io.h"
 #include "helpers/cvec.h"
 #include "helpers/cdrom_formats.h"
+namespace PS1 { struct core; }
+namespace PS1::CDROM {
 
-namespace PS1 {
-
-struct CDROM;
-
-struct CD_FIFO {
+struct FIFO {
     void reset();
     void push(u32 val);
     u8 pop();
@@ -21,7 +19,7 @@ struct CD_FIFO {
     u8 head{}, tail{}, len{};
 };
 
-struct CD_FIFO_RESULTS_BUF {
+struct FIFO_RESULTS_BUF {
     u8 data[16]{};
     u32 tail{};
     u32 head{};
@@ -43,7 +41,7 @@ struct CD_FIFO_RESULTS_BUF {
         len--;
         return v;
     }
-    void copy(CD_FIFO_RESULTS_BUF &other) {
+    void copy(FIFO_RESULTS_BUF &other) {
         memcpy(data, other.data, sizeof(other.data));
         tail = other.tail;
         head = other.head;
@@ -51,28 +49,28 @@ struct CD_FIFO_RESULTS_BUF {
     }
 };
 
-struct CD_FIFO_IRQ_ENTRY {
+struct FIFO_IRQ_ENTRY {
     u8 val{};
-    CD_FIFO_RESULTS_BUF results{};
+    FIFO_RESULTS_BUF results{};
 };
 
-struct CD_FIFO_IRQ {
+struct FIFO_IRQ {
     void reset();
     void push_irq(u32 val);
     u8 pop_irq();
 
     void push_result(u8 val);
     u8 pop_result();
-    CD_FIFO_IRQ_ENTRY entries[16]{};
+    FIFO_IRQ_ENTRY entries[16]{};
     u8 head{}, tail{}, len{};
 
     u32 cur_IRQ_val{};
-    CD_FIFO_RESULTS_BUF in_results{};
-    CD_FIFO_RESULTS_BUF out_results{};
+    FIFO_RESULTS_BUF in_results{};
+    FIFO_RESULTS_BUF out_results{};
 };
 
 
-struct CD_DATA_BUF {
+struct DATA_BUF {
     u8 *ptr;
     u32 pos{};
     i32 len{};
@@ -88,10 +86,10 @@ struct CD_DATA_BUF {
     void clear() { ptr = nullptr; len = 0; pos = 0; }
 };
 
-struct CDROM_IO {
-    CD_FIFO PARAMETER{};
-    CD_DATA_BUF RDDATA{};
-    CD_FIFO_IRQ interrupts{};
+struct IO {
+    FIFO PARAMETER{};
+    DATA_BUF RDDATA{};
+    FIFO_IRQ interrupts{};
 
     i32 L_L{}, L_R{}, R_L{}, R_R{};
     struct {
@@ -195,11 +193,9 @@ struct SECTOR_BUFFER {
     u8 bufs[8][0x930];
 };
 
-struct core;
-
-struct CDROM {
-    explicit CDROM(core *parent) : bus(parent) {}
-    core *bus;
+struct core {
+    explicit core(PS1::core *parent) : bus(parent) {}
+    PS1::core *bus;
     void get_CD_audio(i16 &left, i16 &right);
     void mainbus_write(u32 addr, u32 val, u8 sz);
     u32 mainbus_read(u32 addr, u8 sz, bool has_effect);
@@ -228,7 +224,7 @@ struct CDROM {
     cvec_ptr<physical_io_device> pio_ptr{};
     JSM_DISC_DRIVE *dd{};
 
-    CDROM_IO io{};
+    IO io{};
 
     struct {
         // TODO: this
@@ -289,7 +285,7 @@ struct CDROM {
         struct {
             u8 file{}, channel{};
         } filter{};
-        CD_DATA_BUF cur_buf{};
+        DATA_BUF cur_buf{};
     } xa{};
 
 private:

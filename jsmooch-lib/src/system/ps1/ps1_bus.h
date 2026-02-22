@@ -94,7 +94,7 @@ struct core : jsm_system {
     SIO::SIO0 sio0;
     SIO::SIO1 sio1;
     TIMER timers[3]{};
-    CDROM cdrom;
+    CDROM::core cdrom;
     MDEC mdec;
 
     u32 already_scheduled{};
