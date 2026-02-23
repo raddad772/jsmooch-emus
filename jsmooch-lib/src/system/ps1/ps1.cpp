@@ -16,7 +16,7 @@
 #include "ps1_debugger.h"
 #include "peripheral/ps1_sio.h"
 #include "peripheral/ps1_digital_pad.h"
-
+#include "ps1_display_values.h"
 
 #include "component/cpu/r3000/r3000.h"
 
@@ -296,69 +296,68 @@ void core::setup_IRQs()
 }
 
 
-void core::present_screen()
-{
+void core::present_screen() {
     // Calculate pixels to display...
 
-    u32 hres = gpu.display_area.width;
-    u32 vres = gpu.display_area.height;
-    static u32 a = 0;
-    if ((hres > 640 || hres > gpu.out_hres) && hres != a) {
-        printf("\nWARN HRES %d", hres);
-        a = hres;
-        hres = gpu.out_hres;
-    }
-    static u32 b = 0;
-    if (vres > 278 && vres != b) {
-        printf("\nWARN VRES %d", vres);
-        b = vres;
-        vres = 278;
-    }
-    u32 *buf_out = gpu.cur_output;
-    u32 VRAM_addr = (gpu.display_area.y1 * 2048) + (gpu.display_area.x1 * 2);
-    const u32 VRAM_x_stride_byte = gpu.io.GPUSTAT.display_area_24bit ? 3 : 2;
-    const u32 VRAM_y_stride_byte = gpu.io.GPUSTAT.interlacing ? 4096 : 2048;
-    for (u32 y = 0; y < vres; y++) {
-        u32 x_addr = VRAM_addr & 0xFFFFF;
-        u32 *out_lineptr = buf_out;
-        for (u32 x = 0; x < hres; x++) {
-            if ((x + gpu.display_vram_x_start) < 1024) {
-                u32 color;
-                u32 addr = x_addr & 0xFFFFF;
-                if (gpu.io.GPUSTAT.display_area_24bit) {
-                    color = cR32(gpu.VRAM, addr) & 0xFFFFFF;
+    u32 *lineptr = gpu.cur_output;
+    u32 VRAM_addr_on_y = (gpu.display_area.y1 * 2048) + (gpu.display_area.x1 * 2);
+    u32 VRAM_y_stride = gpu.io.GPUSTAT.interlacing ? 4096 : 2048;
+    u32 VRAM_x_stride = gpu.io.GPUSTAT.display_area_24bit ? 3 : 2;
+    bool do_pad = gpu.out_hres != 384;
+    u32 hwidth = gpu.out_hres == 384 ? PS1_MAX_DISPLAY_CYCLES : 2560;
+    u32 vsize = gpu.io.GPUSTAT.interlacing ? gpu.display_area.height : gpu.display_area.height - 1;
+    hwidth /= gpu.dotclock_divider;
+    for (u32 sy = 0; sy < PS1_MAX_LINES; sy++) {
+        // Draw line!
+        // Pad 64 on left
+        //u64 lineptr_start = lineptr - gpu.cur_output;
+        if (sy < vsize) {
+            u32 VRAM_addr = VRAM_addr_on_y + (gpu.display_area.x1 * 2);
+            if (do_pad) {
+                for (u32 i = 0; i < 64; i++) {
+                    *lineptr = 0xFF000000;
+                    lineptr++;
+                }
+            }
+            for (u32 sx = 0; sx < hwidth; sx++) {
+                if (sx < gpu.display_area.width) {
+                    u32 color;
+                    if (gpu.io.GPUSTAT.display_area_24bit) {
+                        color = (cR32(gpu.VRAM, VRAM_addr) & 0xFFFFFF) | 0xFF000000;;
+                    }
+                    else {
+                        color = ps1_to_screen(cR16(gpu.VRAM, VRAM_addr));
+                    }
+                    for (u32 i = 0; i < gpu.dotclock_divider; i++) {
+                        *lineptr = color;
+                        lineptr++;
+                    }
+                    VRAM_addr += VRAM_x_stride;
                 }
                 else {
-                    color = ps1_to_screen(cR16(gpu.VRAM, addr));
-                }
-                for (u32 i = 0; i < gpu.out_x_stride; i++) {
-                    *out_lineptr = color;
-                    out_lineptr++;
+                    for (u32 i = 0; i < gpu.dotclock_divider; i++) {
+                        *lineptr = 0xFF000000;
+                        lineptr++;
+                    }
                 }
             }
-            else out_lineptr += gpu.out_x_stride;
-            x_addr = (x_addr + VRAM_x_stride_byte) & 0xFFFFF;
-        }
-        VRAM_addr += VRAM_y_stride_byte;
-        u32 line_len = out_lineptr - buf_out;
-        if (line_len < 2560) {
-            line_len = 2560 - line_len;
-            for (u32 i = 0; i < line_len; i++) {
-                *out_lineptr = 0xFF000000;
-                out_lineptr++;
+            if (do_pad) {
+                // Pad 64 on right
+                for (u32 i = 0; i < 64; i++) {
+                    *lineptr = 0xFF000000;
+                    lineptr++;
+                }
             }
+            VRAM_addr_on_y += VRAM_y_stride;
         }
-        buf_out += 2560;
-    }
-    if (vres < 278) {
-        for (u32 y = vres; y < 278; y++) {
-            for (u32 x = 0; x < 2560; x++) {
-                *buf_out = 0xFF000000;
-                buf_out++;
+        else {
+            // Blank line!
+            for (u32 i = 0; i < PS1_MAX_DISPLAY_CYCLES; i++) {
+                *lineptr = 0xFF000000;
+                lineptr++;
             }
         }
     }
-
     gpu.display->last_written ^= 1;
     gpu.cur_output = static_cast<u32 *>(gpu.display->output[gpu.display->last_written]);
 }
@@ -555,8 +554,8 @@ static void setup_crt(JSM_DISPLAY *d)
     // 240x160, but 308x228 with v and h blanks
 
     d->pixelometry.cols.left_hblank = 0;
-    d->pixelometry.cols.visible = 2560; // Lowest Common Denominator of 256, 320, 512, 640
-    d->pixelometry.cols.max_visible = 2560;
+    d->pixelometry.cols.visible = PS1_MAX_DISPLAY_CYCLES; // Lowest Common Denominator of 256, 320, 512, 640
+    d->pixelometry.cols.max_visible = PS1_MAX_DISPLAY_CYCLES;
     d->pixelometry.cols.right_hblank = 0;
     d->pixelometry.offset.x = 0;
 
@@ -651,8 +650,8 @@ void core::describe_io()
     // cartridge port
     physical_io_device *d = &IOs.emplace_back();
     d->init(HID_DISPLAY, true, true, false, true);
-    d->display.output[0] = malloc(2560*278*4); // Each frame we must blit to this
-    d->display.output[1] = malloc(2560*278*4);
+    d->display.output[0] = malloc(PS1_MAX_DISPLAY_CYCLES*PS1_MAX_LINES*4); // Each frame we must blit to this
+    d->display.output[1] = malloc(PS1_MAX_DISPLAY_CYCLES*PS1_MAX_LINES*4);
     d->display.output_debug_metadata[0] = nullptr;
     d->display.output_debug_metadata[1] = nullptr;
     setup_crt(&d->display);

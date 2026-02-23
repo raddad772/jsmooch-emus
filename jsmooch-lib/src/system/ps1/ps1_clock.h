@@ -3,6 +3,7 @@
 //
 
 #pragma once
+#include "ps1_display_values.h"
 #include "helpers/int.h"
 
 namespace PS1 {
@@ -40,11 +41,11 @@ struct CLOCK {
     struct {
         float fps{};
         struct {
-            u64 hz{};
+            u64 hz{PS1_CPU_SPEED};
         } cpu{};
 
         struct {
-            u64 hz{};
+            u64 hz{PS1_GPU_SPEED};
         } gpu{};
 
         struct {

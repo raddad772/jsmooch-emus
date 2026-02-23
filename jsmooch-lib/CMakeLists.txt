@@ -514,6 +514,7 @@ set(SOURCE_LIST
         src/helpers/present/sys_present.h
         src/helpers/present/ps1_present.cpp
         src/helpers/present/ps1_present.h
+        src/system/ps1/ps1_display_values.h
 )
 
 # TODO: Fix elf-parser repo for windows

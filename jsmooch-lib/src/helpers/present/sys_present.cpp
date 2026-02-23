@@ -11,6 +11,7 @@
 #include "system/commodore64/c64_vic2_color.h"
 #include "component/gpu/huc6260/huc6260.h"
 #include "ps1_present.h"
+#include "system/ps1/ps1_display_values.h"
 
 static u32 calc_stride(u32 out_width, u32 in_width)
 {
@@ -360,11 +361,11 @@ void c64_present(physical_io_device &device, void *out_buf, u32 out_width, u32 o
 void PS1_present(physical_io_device &device, void *out_buf, u32 out_width, u32 out_height, u32 is_event_view_present) {
     u32 *ps1o = static_cast<u32 *>(device.display.output[device.display.last_written ^ 1]);
     u32 *img32 = static_cast<u32 *>(out_buf);
-    for (u32 ry = 0; ry < 278; ry++) {
+    for (u32 ry = 0; ry < PS1_MAX_LINES; ry++) {
         u32 y = ry;
         u32 *line_out_ptr = img32 + (ry * out_width);
 
-        for (u32 rx = 0; rx < 2560; rx++) {
+        for (u32 rx = 0; rx < PS1_MAX_DISPLAY_CYCLES; rx++) {
             u32 x = rx;
             u32 di = ((y * 2560) + x);
             u32 c = *ps1o;

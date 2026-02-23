@@ -22,27 +22,23 @@ namespace PS1 {
 void core::setup_dotclock()
 {
     if (gpu.io.GPUSTAT.hres2) {
-        gpu.out_hres = 368;
-        gpu.out_h_dotclock = 440;
-        gpu.out_x_stride = 6; // 6.9xxxx is correct
+        gpu.out_hres = 384; // max 384 pixels
+        gpu.dotclock_divider = 7; // 6.9xxxx is correct
     }
     else {
         static constexpr u32 table[4] =  {256, 320, 512, 640};
-        static constexpr u32 table_dclock[4] =  {306, 382, 612, 765};
-        static constexpr u32 table_x_stride[4] = { 10, 8, 5, 4};
+        static constexpr u32 table_dotclock[4] = { 10, 8, 5, 4};
         gpu.out_hres = table[gpu.io.GPUSTAT.hres1];
-        gpu.out_h_dotclock = table_dclock[gpu.io.GPUSTAT.hres1];
-        gpu.out_x_stride =table_x_stride[gpu.io.GPUSTAT.hres1];;
+        gpu.dotclock_divider = table_dotclock[gpu.io.GPUSTAT.hres1];;
     }
-    float cycles_per_line = (static_cast<float>(clock.timing.gpu.hz) / clock.timing.fps) / static_cast<float>(clock.timing.frame.lines);
-    float cycles_per_px = cycles_per_line / static_cast<float>(gpu.out_h_dotclock);
+    u32 cycles_per_line = 3413; // NTSC. 3406 PAL
 
-    clock.dot.horizontal_px = (((gpu.display_horiz_end-gpu.display_horiz_start)/static_cast<u32>(cycles_per_px))+2) & ~3;
+    clock.dot.horizontal_px = cycles_per_line / gpu.dotclock_divider;
     clock.dot.vertical_px = gpu.display_line_end - gpu.display_line_start;
-    printf("\n%dx%d vs. %d:", clock.dot.horizontal_px, clock.dot.vertical_px, gpu.out_hres);
+    //printf("\n%dx%d vs. %d:", clock.dot.horizontal_px, clock.dot.vertical_px, gpu.out_hres);
 
     clock.dot.ratio.cpu_to_gpu = static_cast<float>(clock.timing.gpu.hz) / static_cast<float>(clock.timing.cpu.hz);
-    clock.dot.ratio.cpu_to_dotclock = clock.dot.ratio.cpu_to_gpu / cycles_per_px;
+    clock.dot.ratio.cpu_to_dotclock = clock.dot.ratio.cpu_to_gpu / gpu.dotclock_divider;
 }
 
 void core::dotclock_change()
@@ -1799,10 +1795,12 @@ void core::recalc_display_area() {
 // Get X1,Y1 - X2, Y2 of display area
     display_area.x1 = display_vram_x_start;
     display_area.y1 = display_vram_y_start;
-    display_area.width = bus->clock.dot.horizontal_px;
-    display_area.height = bus->clock.dot.vertical_px;
-    display_area.x2 = display_area.x1 + display_area.width - 1;
-    display_area.y2 = display_area.y1 + display_area.height - 1;
+    u32 full_width = (((display_horiz_end - display_horiz_start) / dotclock_divider) + 2) & ~3;
+    u32 full_height = display_line_end - display_line_start;
+    display_area.width = full_width;
+    display_area.height = full_height;
+    display_area.x2 = display_area.x1 + display_area.width;
+    display_area.y2 = display_area.y1 + display_area.height;
     if (display_area.x2 > 1023) display_area.x2 = 1023;
     if (display_area.y2 > 511) display_area.y2 = 511;
     if (display_area.x1 > display_area.x2) display_area.x1 = display_area.x2;
@@ -1817,6 +1815,7 @@ void core::recalc_display_area() {
     display_area.draw_y2 = display_area.y1 + display_area.draw_height;
     if (display_area.draw_y2 > 511) display_area.draw_y2 = 511;
     display_area.draw_height = display_area.draw_y2 - display_area.y1;
+    printf("\nDM:%dx%d  INTERLACE:%d DRAW_HEIGHT:%d", display_area.width, display_area.height, io.GPUSTAT.interlacing, display_area.draw_height);
 }
 
 void core::write_gp1(u32 cmd)

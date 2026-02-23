@@ -42,8 +42,7 @@ struct core {
     [[nodiscard]] u32 get_gpustat();
 
     u32 TEXPAGE{};
-    u32 out_hres{}, out_h_dotclock{};
-    u32 out_x_stride{6};
+    u32 out_hres{}, dotclock_divider{};
     u32 force_set_mask{};
     void cmd_end();
 

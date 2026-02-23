@@ -80,6 +80,8 @@ struct core : jsm_system {
     void BIOS_patch(u32 addr, u32 val);
     void setup_IRQs();
     void present_screen();
+    void present_384();
+    void present_other();
     void skip_BIOS();
     void sideload_EXE(buf *w);
     void setup_audio();
