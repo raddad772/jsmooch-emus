@@ -1815,7 +1815,6 @@ void core::recalc_display_area() {
     display_area.draw_y2 = display_area.y1 + display_area.draw_height;
     if (display_area.draw_y2 > 511) display_area.draw_y2 = 511;
     display_area.draw_height = display_area.draw_y2 - display_area.y1;
-    printf("\nDM:%dx%d  INTERLACE:%d DRAW_HEIGHT:%d", display_area.width, display_area.height, io.GPUSTAT.interlacing, display_area.draw_height);
 }
 
 void core::write_gp1(u32 cmd)
