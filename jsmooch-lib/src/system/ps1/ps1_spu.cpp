@@ -1113,6 +1113,9 @@ void core::mainbus_write(u32 addr, u8 sz, u32 val)
             return;
         case 0x1F801D86: io.reverb.vol_out_r = static_cast<i16>(val); return;
         case 0x1F801DA2: io.reverb.mBASE = val << 3; reverb.buf_len = 0x80000 - io.reverb.mBASE; reverb.buf_addr = 0; return;
+        case 0x1F801D9C: // ENDX ignores writes
+        case 0x1F801D9E: return;
+
     }
     printf("\n(SPU) Unhandled write %08x (%d): %08x", raddr, sz, val);
 }

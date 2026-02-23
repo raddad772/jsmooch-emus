@@ -38,7 +38,7 @@ void digital_gamepad::latch_buttons()
         B_GET(12, 1, 6); // cross
         B_GET(13, 1, 7); // square
 #undef B_GET
-
+        //printf("\nBUTTONS: %02x", buttons[0]);
         buttons[0] ^= 0xFF;
         buttons[1] ^= 0xFF;
     }

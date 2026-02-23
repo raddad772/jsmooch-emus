@@ -12,7 +12,7 @@
 #include "sms_gg_vdp.h"
 
 #include "sms_gg_serialize.h"
-#include "helpers/sys_present.h"
+#include "helpers/present/sys_present.h"
 namespace SMSGG {
 
 void core::serialize_core(serialized_state &state)

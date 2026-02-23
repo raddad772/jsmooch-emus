@@ -9,6 +9,54 @@
 
 namespace PS1 {
 
+
+void GFIFOUT::push(u16 val) {
+    if (len >= MDEC_NUMHWORDS_OUT) {
+        printf("\n(MDEC FIFO OUT) WARN PUSH TO FULL FIFO!");
+        return;
+    }
+    words[tail] = val;
+    tail = (tail + 1) & (MDEC_NUMHWORDS_OUT-1);
+    len++;
+}
+
+u16 GFIFOUT::pop() {
+    u16 v = words[head];
+    if (len > 0) {
+        head = (head + 1) % MDEC_NUMHWORDS_OUT;
+        len--;
+    }
+    return v;
+}
+
+void GFIFOUT::reset() {
+    head = tail = len = 0;
+}
+
+void GFIFOIN::push(u16 val) {
+    if (len >= MDEC_NUMHWORDS_IN) {
+        printf("\n(MDEC FIFO IN) WARN PUSH TO FULL FIFO!");
+        return;
+    }
+    words[tail] = val;
+    tail = (tail + 1) & (MDEC_NUMHWORDS_IN-1);
+    len++;
+}
+
+u16 GFIFOIN::pop() {
+    u16 v = words[head];
+    if (len > 0) {
+        head = (head + 1) % MDEC_NUMHWORDS_IN;
+        len--;
+    }
+    return v;
+}
+
+void GFIFOIN::reset() {
+    head = tail = len = 0;
+}
+
+    
 void MDEC::write_data(u32 val) {
     printf("\nMDEC write %08x", val);
 }
@@ -27,6 +75,29 @@ void MDEC::write_ctrl(u32 val) {
     }
 
 }
+
+u32 MDEC::mainbus_read(u32 addr, u8 sz) {
+    if (sz == 1) {
+        return mainbus_read(addr, 4) >> 8 * (addr & 3);
+    }
+    if (sz == 2) {
+        return mainbus_read(addr, 4) >> 8 * (addr & 3);
+    }
+    if (addr & 4) return read_ctrl();
+    return read_data();
+}
+
+void MDEC::mainbus_write(u32 addr, u8 sz, u32 val) {
+    if (sz == 1) {
+        return mainbus_write(addr, 4, val << (8 * (addr & 3)));
+    }
+    if (sz == 2) {
+        return mainbus_write(addr, 4, val << (8 * (addr & 3)));
+    }
+    if (addr & 4) write_ctrl(val);
+    else write_data(val);
+}
+
 
 u32 MDEC::read_ctrl() {
     printf("\nWARN MDEC read ctrl");

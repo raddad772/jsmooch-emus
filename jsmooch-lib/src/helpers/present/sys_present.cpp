@@ -10,6 +10,7 @@
 #include "helpers/debugger/debugger.h"
 #include "system/commodore64/c64_vic2_color.h"
 #include "component/gpu/huc6260/huc6260.h"
+#include "ps1_present.h"
 
 static u32 calc_stride(u32 out_width, u32 in_width)
 {
@@ -356,6 +357,27 @@ void c64_present(physical_io_device &device, void *out_buf, u32 out_width, u32 o
     }
 }
 
+void PS1_present(physical_io_device &device, void *out_buf, u32 out_width, u32 out_height, u32 is_event_view_present) {
+    u32 *ps1o = static_cast<u32 *>(device.display.output[device.display.last_written ^ 1]);
+    u32 *img32 = static_cast<u32 *>(out_buf);
+    for (u32 ry = 0; ry < 278; ry++) {
+        u32 y = ry;
+        u32 *line_out_ptr = img32 + (ry * out_width);
+
+        for (u32 rx = 0; rx < 2560; rx++) {
+            u32 x = rx;
+            u32 di = ((y * 2560) + x);
+            u32 c = *ps1o;
+            ps1o++;
+            //if (c == 0xBBE) printf("\nTO SCREEN: %08x", nds_to_screen(c));
+            //if (rx == 10) *line_out_ptr++ = 0xFFFFFFFF;
+            *(line_out_ptr++) = c;
+            //*(line_out_ptr++) = 0xFF808080;
+        }
+    }
+
+}
+
 void NDS_present(physical_io_device &device, void *out_buf, u32 out_width, u32 out_height, u32 is_event_view_present)
 {
     u32 *gbao = static_cast<u32 *>(device.display.output[device.display.last_written ^ 1]);
@@ -376,23 +398,6 @@ void NDS_present(physical_io_device &device, void *out_buf, u32 out_width, u32 o
     }
 }
 
-void PS1_present(physical_io_device &device, void *out_buf, u32 out_width, u32 out_height, u32 is_event_view_present) {
-    u16 *gbao = (u16 *)device.display.output[device.display.last_written];
-    u32 *img32 = (u32 *) out_buf;
-
-    for (u32 ry = 0; ry < 512; ry++) {
-        u32 y = ry;
-        u32 *line_out_ptr = img32 + (ry * out_width);
-        for (u32 rx = 0; rx < 1024; rx++) {
-            u32 x = rx;
-            u32 di = ((y * 1024) + x);
-
-            u32 color = ps1_to_screen(gbao[di]);
-            *line_out_ptr = color;
-            line_out_ptr++;
-        }
-    }
-}
 
 void GBA_present(physical_io_device &device, void *out_buf, u32 out_width, u32 out_height, u32 is_event_view_present)
 {
@@ -611,9 +616,9 @@ void DC_present(physical_io_device &device, void *out_buf, u32 out_width, u32 ou
     }
 }
 
-void jsm_present(jsm::systems which, physical_io_device &display, void *out_buf, u32 x_offset, u32 y_offset, u32 out_width, u32 out_height, events_view *ev)
+void jsm_present(jsm_system *jsm, jsm::systems which, physical_io_device &display, void *out_buf, u32 x_offset, u32 y_offset, u32 out_width, u32 out_height, events_view *ev)
 {
-    u32 is_event_view_present = ev != NULL;
+    u32 is_event_view_present = ev != nullptr;
     switch(which) {
         case jsm::systems::PS1:
             PS1_present(display, out_buf, out_width, out_height, is_event_view_present);

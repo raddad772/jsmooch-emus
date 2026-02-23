@@ -18,40 +18,30 @@ static u32 constexpr masksz[5] = {0, 0xFF, 0xFFFF, 0, 0xFFFFFFFF };
 #define TIME_IN_SEC static_cast<double>(bus->clock.master_cycle_count) / 33868800.0
 void FIFO_IRQ::reset() {
     head = tail = len = 0;
-    in_results.reset();
-    out_results.reset();
 }
 
-void FIFO_IRQ::push_irq(u32 val) {
+void FIFO_IRQ::push_irq(u32 val, FIFO_RESULTS_BUF &inbuf) {
     if (len >= 16) {
         printf("\n(CDR IRQ FIFO)ATTEMPT TO PUSH WHEN FULL!");
         return;
     }
     auto &e = entries[tail];
-    e.results.copy(in_results);
-    in_results.reset();
+    e.results.copy(inbuf);
+    inbuf.reset();
     e.val = val;
     tail = (tail + 1) & 15;
     len++;
 }
 
-u8 FIFO_IRQ::pop_irq() {
+u8 FIFO_IRQ::pop_irq(FIFO_RESULTS_BUF &outbuf) {
     if (len == 0) { printf("\n(CDR IRQ FIFO)EMPTY POP!"); return 0; }
     auto &e = entries[head];
     head = (head + 1) & 15;
     len--;
 
-    out_results.copy(e.results);
+    outbuf.copy(e.results);
     return e.val;
 };
-
-void FIFO_IRQ::push_result(u8 val) {
-    in_results.push(val);
-}
-
-u8 FIFO_IRQ::pop_result() {
-    return out_results.pop();
-}
 
 void FIFO::reset() {
     head = tail = len = 0;
@@ -87,7 +77,7 @@ u32 core::mainbus_read(u32 addr, u8 sz, bool has_effect) {
         case 0x1F801800: {
             recalc_HSTS();
             u32 v = io.HSTS.u | (io.HSTS.u << 8) | (io.HSTS.u << 16) | (io.HSTS.u << 24);
-            dbgloglog_bus(PS1D_CDROM_REGRW, DBGLS_INFO, "READ HSTS %02x   buf_len:%d  pos/len:%d/%d   num-result:%d", v & 0xFF, sector_buf.len, io.RDDATA.pos, io.RDDATA.len, io.interrupts.out_results.len);
+            dbgloglog_bus(PS1D_CDROM_REGRW, DBGLS_INFO, "READ HSTS %02x   buf_len:%d  pos/len:%d/%d", v & 0xFF, sector_buf.len, io.RDDATA.pos, io.RDDATA.len);
             return v & masksz[sz];
         }
         case 0x1F801801: return read_01(sz, has_effect);
@@ -117,7 +107,7 @@ void core::mainbus_write(u32 addr, u32 val, u8 sz) {
 
 u32 core::read_01(u8 sz, bool has_effect) {
     // RESULT
-    u8 v = io.interrupts.pop_result();
+    u8 v = io.results_out.pop();
     recalc_HSTS();
     dbgloglog_bus(PS1D_CDROM_RESULT, DBGLS_INFO, "POP RESULT %02x", v);
     return v;
@@ -162,7 +152,7 @@ u32 core::read_03(u8 sz, bool has_effect) {
 void core::recalc_HSTS() {
     io.HSTS.PRMEMPT = io.PARAMETER.len == 0;
     io.HSTS.PRMWRDY = io.PARAMETER.len != 16;
-    io.HSTS.RSLRRDY = io.interrupts.out_results.len > 0;
+    io.HSTS.RSLRRDY = io.results_out.len > 0;
     io.HSTS.DRQSTS = (io.RDDATA.pos < io.RDDATA.len) && io.HCHPCTL.BFRD;
 }
 
@@ -187,7 +177,7 @@ void core::result_string(const char *s) {
 
 void core::result(u32 val) {
     dbgloglog_bus(PS1D_CDROM_RESULT, DBGLS_INFO, "PUSH RESULT %02x", val);
-    io.interrupts.push_result(val);
+    io.results_in.push(val);
 }
 
 void core::cmd_start(u64 key, u64 clock) {
@@ -909,7 +899,13 @@ bool core::xa_decode_next_sector() {
 }
 
 void core::get_CD_audio_xa(i16 &left, i16 &right) {
-    if (xa.decoder.out_samples.pos >= xa.decoder.out_samples.len) if (!xa_decode_next_sector()) return;
+    if (xa.decoder.out_samples.pos >= xa.decoder.out_samples.len) {
+        bool yo = xa.decoder.out_samples.len > 0;
+        if (!xa_decode_next_sector()) {
+            return;
+        }
+    }
+
     // Advance in our current block!
     left = xa.decoder.out_samples.l[xa.decoder.out_samples.pos];
     right = xa.decoder.out_samples.r[xa.decoder.out_samples.pos];
@@ -1064,7 +1060,17 @@ void core::cmd_reset() {
     printf("\n(CDROM) CMD RESET.");
     finish_CMD(true, 3);
     sector_buf.head = sector_buf.tail = sector_buf.len = 0;
-    io.interrupts.reset();
+    io.irq1s.reset();
+    io.irqnot1s.reset();
+    io.results_in.reset();
+    io.results_out.reset();
+    if (read.still_sched) {
+        bus->scheduler.delete_if_exist(read.sched_id);
+    }
+    if (CMD.still_sched) {
+        bus->scheduler.delete_if_exist(CMD.sched_id);
+    }
+
     io.PARAMETER.reset();
 }
 
@@ -1188,17 +1194,23 @@ void core::schedule_CMD() {
 
 void core::queue_interrupt(u32 level) {
     //printf("\n(CDROM) QUEUE INT %d", level);
-    if (io.HINTSTS.INTSTS == 0) {
+    // if there's no IRQ, AND
+    //. ((the IRQ isn't a level 1),
+    //.   or, if it *IS* a level 1,
+    //.   there are no non-level1 IRQs
+    //    and there are no in-process commands
+    if (io.HINTSTS.INTSTS == 0 && (level != 1 || (io.irqnot1s.len == 0 && !io.HSTS.BUSYSTS))) {
         io.HINTSTS.INTSTS = level;
-        io.interrupts.out_results.copy(io.interrupts.in_results);
-        io.interrupts.in_results.reset();
+        io.results_out.copy(io.results_in);
+        io.results_in.reset();
         dbgloglog_bus(PS1D_CDROM_IRQ_ASSERT, DBGLS_INFO, "IRQ assert: %d  CMD:%02x", level, io.CMD);
         recalc_HSTS();
         update_IRQs();
     }
     else {
-        dbgloglog_bus(PS1D_CDROM_IRQ_QUEUE, DBGLS_INFO, "IRQ queued %d num_waiting_before:%d", level, io.interrupts.len);
-        io.interrupts.push_irq(level);
+        dbgloglog_bus(PS1D_CDROM_IRQ_QUEUE, DBGLS_INFO, "IRQ queued %d", level);
+        if (level == 1) io.irq1s.push_irq(level, io.results_in);
+        else io.irqnot1s.push_irq(level, io.results_in);
     }
 }
 
@@ -1209,8 +1221,8 @@ void core::stat_irq() {
 
 void core::finish_CMD(bool do_stat_irq, u32 irq_num) {
     io.HSTS.BUSYSTS = 0;
-    if (io.interrupts.in_results.len > 0) {
-        printf("\nWARN CMD %02x STILL HAS IN RESULTS: %d", io.CMD, io.interrupts.in_results.len);
+    if (io.results_in.len > 0) {
+        printf("\nWARN CMD %02x STILL HAS IN RESULTS: %d", io.CMD, io.results_in.len);
     }
     //printif(ps1.cdrom.cmd, "\n(CDROM) CMD FINISH");
     //printf("\nfinish_CMD %02x", io.CMD);
@@ -1326,7 +1338,7 @@ void core::queue_sector_RDDATA() {
     }
     sector_buf.head = (sector_buf.head + 1) & 7;
     sector_buf.len--;
-    dbgloglog_bus(PS1D_CDROM_RDDATA_START, DBGLS_INFO, "RDDATA request sz:%03x  sectors left in buffer:%d. num_irqs_queued:%d", io.RDDATA.len, sector_buf.len, io.interrupts.len);
+    dbgloglog_bus(PS1D_CDROM_RDDATA_START, DBGLS_INFO, "RDDATA request sz:%03x  sectors left in buffer:%d", io.RDDATA.len, sector_buf.len);
 }
 
 void core::write_03(u32 val, u8 sz) {
@@ -1339,7 +1351,7 @@ void core::write_03(u32 val, u8 sz) {
             }
             else if (!io.HCHPCTL.BFRD) {
                 //io.RDDATA.pos = 0;
-                // TODO: cna break some games!?!?
+                // TODO: can break some games!?!?
             }
             recalc_HSTS();
             return;
@@ -1351,10 +1363,14 @@ void core::write_03(u32 val, u8 sz) {
             io.HINTSTS.u |= 0b11100000;
             //printf("\n(CDROM) reset RESULTs on HCLRCTL write");
             if (io.HINTSTS.INTSTS == 0) {
-                io.interrupts.out_results.reset();
-                if (io.interrupts.len > 0) {
-                    io.HINTSTS.INTSTS = io.interrupts.pop_irq();
-                    dbgloglog_bus(PS1D_CDROM_IRQ_ASSERT, DBGLS_INFO, "IRQ assert: %d num_left:%d", io.HINTSTS.INTSTS, io.interrupts.len);
+                io.results_out.reset();
+                if (io.irqnot1s.len > 0) {
+                    io.HINTSTS.INTSTS = io.irqnot1s.pop_irq(io.results_out);
+                    dbgloglog_bus(PS1D_CDROM_IRQ_ASSERT, DBGLS_INFO, "IRQ assert: %d num_left:%d", io.HINTSTS.INTSTS, total_irqs_len());
+                }
+                else if (io.irq1s.len > 0 && !io.HSTS.BUSYSTS) {
+                    io.HINTSTS.INTSTS = io.irq1s.pop_irq(io.results_out);
+                    dbgloglog_bus(PS1D_CDROM_IRQ_ASSERT, DBGLS_INFO, "IRQ assert: %d num_left:%d", io.HINTSTS.INTSTS, total_irqs_len());
                 }
             }
             if (old != io.HINTSTS.u) update_IRQs();

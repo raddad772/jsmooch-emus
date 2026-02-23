@@ -457,7 +457,7 @@ static void genesisIO_unload_cart(jsm_system *sys)
 void core::setup_crt(JSM_DISPLAY &d)
 {
     d.kind = jsm::CRT;
-    d.enabled = 1;
+    d.enabled = true;
 
     d.fps = PAL ? 50 : 60.0988;
     d.fps_override_hint = clock.timing.second.frames_per;

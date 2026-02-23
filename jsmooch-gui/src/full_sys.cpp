@@ -14,7 +14,7 @@
 #include "application.h"
 #include "helpers/sys_interface.h"
 #include "helpers/cvec.h"
-#include "helpers/sys_present.h"
+#include "helpers/present/sys_present.h"
 #include "helpers/debug.h"
 #include "helpers/buf.h"
 #include "full_sys.h"
@@ -909,6 +909,8 @@ void full_system::load_default_ROM()
             //worked = grab_ROM(&ROMs, which, "ps1-tests-built/gte-fuzz/gte-fuzz.exe", nullptr);
             //worked = grab_ROM(&ROMs, which, "redux_cpu.exe", nullptr);
             //worked = grab_ROM(&ROMs, which, "pad.exe", nullptr);
+            //worked = grab_ROM(&ROMs, which, "PSX/MDEC/DCTBlockDecode/CLUT4BPP/DCTBlockDecodeCLUT4BPP.exe", nullptr);
+            // DCTBlockDecodeCLUT4BPP
 #undef CTEST
 #define CTEST(x) worked = grab_ROM(&ROMs, which, "PSX/DMA/DMA" x "/DMA" x ".exe", nullptr)
             //CTEST("BLOCKGPU");
@@ -988,10 +990,13 @@ void full_system::load_default_ROM()
 
             //worked = grab_cue(&ROMs, which, "mk2", nullptr);
             //worked = grab_cue(&ROMs, which, "Crash Bandicoot 1", nullptr);
-            //worked = grab_cue(&ROMs, which, "Hydro Thunder (USA)", nullptr);
+            worked = grab_cue(&ROMs, which, "Hydro Thunder (USA)", nullptr);
             //worked = grab_cue(&ROMs, which, "Cool Boarders 2 (USA)", nullptr);
             //worked = grab_cue(&ROMs, which, "Ridge Racer (USA)", nullptr);
-            worked = grab_cue(&ROMs, which, "Spyro the Dragon (USA)", nullptr);
+            //worked = grab_cue(&ROMs, which, "Mega Man X4 (USA)", nullptr);
+            // "either you are not handling the config commands or reset flag on ctrl reg where it resets all the other reg
+            // al;so you need to reset state when switching ports?
+            //worked = grab_cue(&ROMs, which, "Spyro the Dragon (USA)", nullptr);
             //worked = grab_cue(&ROMs, which, "Rayman 2 - The Great Escape (USA) (En,Fr,Es)", nullptr);
             //worked = grab_cue(&ROMs, which, "Earthworm Jim 2 (Europe)", nullptr);
             break;
@@ -1643,7 +1648,7 @@ void full_system::setup_display()
     if (output.backbuffer_backer) free(output.backbuffer_backer);
     output.backbuffer_backer = malloc(output.backbuffer_texture.width*output.backbuffer_texture.height * 4);
     memset(output.backbuffer_backer, 0, output.backbuffer_texture.width*output.backbuffer_texture.height * 4);
-    //printf("\nX0:%f  X1:%f", output.without_overscan.uv0.x, output.without_overscan.uv1.x);
+    printf("\nX0:%f  X1:%f", output.without_overscan.uv0.x, output.without_overscan.uv1.x);
 }
 
 static void construct_ss_path(char *out)
@@ -1698,7 +1703,7 @@ void full_system::present()
 {
     framevars fv = {};
     sys->get_framevars(fv);
-    jsm_present(sys->kind, io.display.get(), output.backbuffer_backer, 0, 0, output.backbuffer_texture.width, output.backbuffer_texture.height, nullptr);
+    jsm_present(sys, sys->kind, io.display.get(), output.backbuffer_backer, 0, 0, output.backbuffer_texture.width, output.backbuffer_texture.height, nullptr);
     if (screenshot) take_screenshot(output.backbuffer_backer, output.backbuffer_texture.width, output.backbuffer_texture.height);
     output.backbuffer_texture.upload_data(output.backbuffer_backer, output.backbuffer_texture.width * output.backbuffer_texture.height * 4, output.backbuffer_texture.width, output.backbuffer_texture.height);
 }
@@ -1735,7 +1740,7 @@ void full_system::events_view_present()
         sys->get_framevars(fv);
         JSM_DISPLAY *d = &(io.display.get()).display;
         memset(evd->buf, 0, events.texture.width*events.texture.height*4);
-        jsm_present(sys->kind, io.display.get(), evd->buf, d->pixelometry.offset.x, d->pixelometry.offset.y, events.texture.width, events.texture.height, events.view);
+        jsm_present(sys, sys->kind, io.display.get(), evd->buf, d->pixelometry.offset.x, d->pixelometry.offset.y, events.texture.width, events.texture.height, events.view);
         events.view->render(evd->buf, events.texture.width, events.texture.height);
 
         events.texture.upload_data(evd->buf, events.texture.width*events.texture.height*4, events.texture.width, events.texture.height);

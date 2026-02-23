@@ -9,6 +9,7 @@
 #include <math.h>
 
 #include "helpers/scheduler.h"
+#include "helpers/color.h"
 #include "ps1.h"
 #include "ps1_bus.h"
 #include "gpu/ps1_gpu.h"
@@ -294,11 +295,72 @@ void core::setup_IRQs()
     IRQ_multiplexer.setup_irq(IRQ_PIOLightpen, "lightpen_pio_dtl", IRQMBK_edge_0_to_1);
 }
 
-void core::copy_vram()
+
+void core::present_screen()
 {
-    memcpy(gpu.cur_output, gpu.VRAM, 1024*1024);
-    gpu.cur_output = ((u16 *)gpu.display->output[gpu.display->last_written ^ 1]);
+    // Calculate pixels to display...
+
+    u32 hres = gpu.display_area.width;
+    u32 vres = gpu.display_area.height;
+    static u32 a = 0;
+    if ((hres > 640 || hres > gpu.out_hres) && hres != a) {
+        printf("\nWARN HRES %d", hres);
+        a = hres;
+        hres = gpu.out_hres;
+    }
+    static u32 b = 0;
+    if (vres > 278 && vres != b) {
+        printf("\nWARN VRES %d", vres);
+        b = vres;
+        vres = 278;
+    }
+    u32 *buf_out = gpu.cur_output;
+    u32 VRAM_addr = (gpu.display_area.y1 * 2048) + (gpu.display_area.x1 * 2);
+    const u32 VRAM_x_stride_byte = gpu.io.GPUSTAT.display_area_24bit ? 3 : 2;
+    const u32 VRAM_y_stride_byte = gpu.io.GPUSTAT.interlacing ? 4096 : 2048;
+    for (u32 y = 0; y < vres; y++) {
+        u32 x_addr = VRAM_addr & 0xFFFFF;
+        u32 *out_lineptr = buf_out;
+        for (u32 x = 0; x < hres; x++) {
+            if ((x + gpu.display_vram_x_start) < 1024) {
+                u32 color;
+                u32 addr = x_addr & 0xFFFFF;
+                if (gpu.io.GPUSTAT.display_area_24bit) {
+                    color = cR32(gpu.VRAM, addr) & 0xFFFFFF;
+                }
+                else {
+                    color = ps1_to_screen(cR16(gpu.VRAM, addr));
+                }
+                for (u32 i = 0; i < gpu.out_x_stride; i++) {
+                    *out_lineptr = color;
+                    out_lineptr++;
+                }
+            }
+            else out_lineptr += gpu.out_x_stride;
+            x_addr = (x_addr + VRAM_x_stride_byte) & 0xFFFFF;
+        }
+        VRAM_addr += VRAM_y_stride_byte;
+        u32 line_len = out_lineptr - buf_out;
+        if (line_len < 2560) {
+            line_len = 2560 - line_len;
+            for (u32 i = 0; i < line_len; i++) {
+                *out_lineptr = 0xFF000000;
+                out_lineptr++;
+            }
+        }
+        buf_out += 2560;
+    }
+    if (vres < 278) {
+        for (u32 y = vres; y < 278; y++) {
+            for (u32 x = 0; x < 2560; x++) {
+                *buf_out = 0xFF000000;
+                buf_out++;
+            }
+        }
+    }
+
     gpu.display->last_written ^= 1;
+    gpu.cur_output = static_cast<u32 *>(gpu.display->output[gpu.display->last_written]);
 }
 
 u32 core::finish_frame()
@@ -311,7 +373,7 @@ u32 core::finish_frame()
     u64 diff = clock.master_cycle_count - old_clock;
     clock.cycles_left_this_frame -= diff;
 
-    copy_vram();
+    present_screen();
     if (::dbg.do_break) {
         ::dbg.trace_on += 1;
         dbg_flush();
@@ -488,24 +550,24 @@ static void setup_crt(JSM_DISPLAY *d)
     d->kind = jsm::CRT;
     d->enabled = true;
 
-    d->fps = 59.727;
+    d->fps = 60;
     d->fps_override_hint = 60;
     // 240x160, but 308x228 with v and h blanks
 
     d->pixelometry.cols.left_hblank = 0;
-    d->pixelometry.cols.visible = 1024;
-    d->pixelometry.cols.max_visible = 1024;
+    d->pixelometry.cols.visible = 2560; // Lowest Common Denominator of 256, 320, 512, 640
+    d->pixelometry.cols.max_visible = 2560;
     d->pixelometry.cols.right_hblank = 0;
     d->pixelometry.offset.x = 0;
 
     d->pixelometry.rows.top_vblank = 0;
-    d->pixelometry.rows.visible = 512;
-    d->pixelometry.rows.max_visible = 512;
+    d->pixelometry.rows.visible = 278;
+    d->pixelometry.rows.max_visible = 278;
     d->pixelometry.rows.bottom_vblank = 0;
     d->pixelometry.offset.y = 0;
 
-    d->geometry.physical_aspect_ratio.width = 2;
-    d->geometry.physical_aspect_ratio.height = 1;
+    d->geometry.physical_aspect_ratio.width = 4;
+    d->geometry.physical_aspect_ratio.height = 3;
 
     d->pixelometry.overscan.left = d->pixelometry.overscan.right = 0;
     d->pixelometry.overscan.top = d->pixelometry.overscan.bottom = 0;
@@ -588,16 +650,16 @@ void core::describe_io()
 
     // cartridge port
     physical_io_device *d = &IOs.emplace_back();
-    d->init(HID_DISPLAY, 1, 1, 0, 1);
-    d->display.output[0] = malloc(1024*1024);
-    d->display.output[1] = malloc(1024*1024);
+    d->init(HID_DISPLAY, true, true, false, true);
+    d->display.output[0] = malloc(2560*278*4); // Each frame we must blit to this
+    d->display.output[1] = malloc(2560*278*4);
     d->display.output_debug_metadata[0] = nullptr;
     d->display.output_debug_metadata[1] = nullptr;
     setup_crt(&d->display);
     gpu.display_ptr.make(IOs, IOs.size() - 1);
     d->display.last_written = 1;
     //d->display.last_displayed = 1;
-    gpu.cur_output = static_cast<u16 *>(d->display.output[0]);
+    gpu.cur_output = static_cast<u32 *>(d->display.output[0]);
 
     setup_audio();
     setup_cdrom();

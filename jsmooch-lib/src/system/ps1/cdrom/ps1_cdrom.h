@@ -34,8 +34,8 @@ struct FIFO_RESULTS_BUF {
         len++;
     }
     u8 pop() {
-        if (len == 0) return data[head];
         u8 v = data[head];
+        if (len == 0) return v;
         head = (head + 1) & 15;
         len--;
         return v;
@@ -55,17 +55,13 @@ struct FIFO_IRQ_ENTRY {
 
 struct FIFO_IRQ {
     void reset();
-    void push_irq(u32 val);
-    u8 pop_irq();
+    void push_irq(u32 val, FIFO_RESULTS_BUF &inbuf);
+    u8 pop_irq(FIFO_RESULTS_BUF &outbuf);
 
-    void push_result(u8 val);
-    u8 pop_result();
     FIFO_IRQ_ENTRY entries[16]{};
     u8 head{}, tail{}, len{};
 
     u32 cur_IRQ_val{};
-    FIFO_RESULTS_BUF in_results{};
-    FIFO_RESULTS_BUF out_results{};
 };
 
 
@@ -88,7 +84,8 @@ struct DATA_BUF {
 struct IO {
     FIFO PARAMETER{};
     DATA_BUF RDDATA{};
-    FIFO_IRQ interrupts{};
+    FIFO_IRQ irq1s{}, irqnot1s{};
+    FIFO_RESULTS_BUF results_in{}, results_out{};
 
     i32 L_L{}, L_R{}, R_L{}, R_R{};
     struct {
@@ -216,6 +213,7 @@ struct DECODER {
         i16 r[4032]{};
         u32 len{};
     } samples{};
+
     struct {
         i16 l[32]{}, r[32]{};
         u32 pos{};
@@ -280,6 +278,8 @@ struct core {
         u32 still_sched{};
         u64 sched_id{};
     } read{};
+
+    [[nodiscard]] u32 total_irqs_len() const { return io.irq1s.len + io.irqnot1s.len; }
 
     struct {
         u8 amm{}, ass{}, asect{};

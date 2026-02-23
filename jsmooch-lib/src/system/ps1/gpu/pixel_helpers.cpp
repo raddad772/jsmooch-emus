@@ -17,6 +17,9 @@ void core::setpix(i32 y, i32 x, u32 color, u32 is_tex, u32 tex_mask)
     i32 rx = DOX;
     if ((ry < draw_area_top) || (ry > draw_area_bottom)) return;
     if ((rx < draw_area_left) || (rx > draw_area_right)) return;
+    /*if ((!io.GPUSTAT.drawing_to_display_area) && (rx >= display_area.x1) && (rx <= display_area.x2) && (ry >= display_area.y1) && (ry <= display_area.y2)) {
+        return;
+    }*/
 
     u32 addr = ((2048*ry)+(rx*2)) & 0xFFFFF;
 

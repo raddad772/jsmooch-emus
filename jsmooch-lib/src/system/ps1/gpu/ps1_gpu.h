@@ -42,7 +42,8 @@ struct core {
     [[nodiscard]] u32 get_gpustat();
 
     u32 TEXPAGE{};
-    u32 out_vres{}, out_hres{};
+    u32 out_hres{}, out_h_dotclock{};
+    u32 out_x_stride{6};
     u32 force_set_mask{};
     void cmd_end();
 
@@ -106,6 +107,14 @@ struct core {
     u32 display_horiz_start{}, display_horiz_end{};
     u32 display_line_start{}, display_line_end{};
 
+    struct {
+        u32 x1{}, y1{};
+        u32 x2{}, y2{};
+        u32 width{}, height{};
+        u32 draw_height{}, draw_y2{};
+        bool bits24{};
+    } display_area;
+
     struct COLOR_SAMPLER {
         i32 r_start{}, g_start{}, b_start{};
         i32 r{}, g{}, b{};
@@ -138,11 +147,12 @@ struct core {
 
     void (core::*handle_gp0)(u32 cmd);
 
-    u16 *cur_output{};
+    u32 *cur_output{};
     cvec_ptr<physical_io_device> display_ptr{};
     JSM_DISPLAY *display{};
 
 private:
+    void recalc_display_area();
     void unready_recv_dma() { io.GPUSTAT.ready_recv_dma = 0; }
     void unready_vram_to_CPU() { io.GPUSTAT.ready_vram_to_cpu = 0; }
     void unready_all() { unready_cmd(); unready_recv_dma(); unready_vram_to_CPU(); }

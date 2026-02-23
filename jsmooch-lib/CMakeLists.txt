@@ -253,8 +253,6 @@ set(SOURCE_LIST
         "src/helpers/file_exists.h"
         "src/helpers/simplebuf.cpp"
         "src/helpers/simplebuf.h"
-        "src/helpers/sys_present.cpp"
-        "src/helpers/sys_present.h"
         "src/helpers/debug.cpp"
         "src/helpers/debug.h"
         "src/helpers/sys_interface.cpp"
@@ -512,6 +510,10 @@ set(SOURCE_LIST
         src/system/ps1/ps1_mdec.h
         src/helpers/debugger/waveform2.cpp
         src/helpers/debugger/waveform2.h
+        src/helpers/present/sys_present.cpp
+        src/helpers/present/sys_present.h
+        src/helpers/present/ps1_present.cpp
+        src/helpers/present/ps1_present.h
 )
 
 # TODO: Fix elf-parser repo for windows

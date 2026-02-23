@@ -8,6 +8,26 @@
 
 namespace PS1 {
 struct core;
+static constexpr u32 MDEC_NUMHWORDS_OUT = 0x40;
+static constexpr u32 MDEC_NUMHWORDS_IN = 0x10000;
+
+struct GFIFOIN {
+    u32 head{}, tail{}, len{};
+    u32 words[MDEC_NUMHWORDS_IN];
+
+    void push(u16 val);
+    u16 pop();
+    void reset();
+};
+
+struct GFIFOUT {
+    u32 head{}, tail{}, len{};
+    u32 words[MDEC_NUMHWORDS_OUT];
+
+    void push(u16 val);
+    u16 pop();
+    void reset();
+};
 
 struct MDEC {
     explicit MDEC(core *parent) : bus(parent) {}
@@ -17,6 +37,11 @@ struct MDEC {
 
     void write_ctrl(u32 val);
     u32 read_ctrl();
+    u32 mainbus_read(u32 addr, u8 sz);
+    void mainbus_write(u32 addr, u8 sz, u32 val);
+
+    GFIFOIN fifo_in{};
+    GFIFOUT fifo_out{};
 
     struct {
         union {

@@ -23,16 +23,23 @@ void core::setup_dotclock()
 {
     if (gpu.io.GPUSTAT.hres2) {
         gpu.out_hres = 368;
+        gpu.out_h_dotclock = 440;
+        gpu.out_x_stride = 6; // 6.9xxxx is correct
     }
     else {
         static constexpr u32 table[4] =  {256, 320, 512, 640};
+        static constexpr u32 table_dclock[4] =  {306, 382, 612, 765};
+        static constexpr u32 table_x_stride[4] = { 10, 8, 5, 4};
         gpu.out_hres = table[gpu.io.GPUSTAT.hres1];
+        gpu.out_h_dotclock = table_dclock[gpu.io.GPUSTAT.hres1];
+        gpu.out_x_stride =table_x_stride[gpu.io.GPUSTAT.hres1];;
     }
     float cycles_per_line = (static_cast<float>(clock.timing.gpu.hz) / clock.timing.fps) / static_cast<float>(clock.timing.frame.lines);
-    float cycles_per_px = cycles_per_line / static_cast<float>(gpu.out_hres);
+    float cycles_per_px = cycles_per_line / static_cast<float>(gpu.out_h_dotclock);
 
     clock.dot.horizontal_px = (((gpu.display_horiz_end-gpu.display_horiz_start)/static_cast<u32>(cycles_per_px))+2) & ~3;
-    clock.dot.vertical_px = clock.timing.frame.lines - clock.timing.frame.vblank.start_on_line;
+    clock.dot.vertical_px = gpu.display_line_end - gpu.display_line_start;
+    printf("\n%dx%d vs. %d:", clock.dot.horizontal_px, clock.dot.vertical_px, gpu.out_hres);
 
     clock.dot.ratio.cpu_to_gpu = static_cast<float>(clock.timing.gpu.hz) / static_cast<float>(clock.timing.cpu.hz);
     clock.dot.ratio.cpu_to_dotclock = clock.dot.ratio.cpu_to_gpu / cycles_per_px;
@@ -1788,6 +1795,30 @@ void core::reset()
     bus->dotclock_change();
 }
 
+void core::recalc_display_area() {
+// Get X1,Y1 - X2, Y2 of display area
+    display_area.x1 = display_vram_x_start;
+    display_area.y1 = display_vram_y_start;
+    display_area.width = bus->clock.dot.horizontal_px;
+    display_area.height = bus->clock.dot.vertical_px;
+    display_area.x2 = display_area.x1 + display_area.width - 1;
+    display_area.y2 = display_area.y1 + display_area.height - 1;
+    if (display_area.x2 > 1023) display_area.x2 = 1023;
+    if (display_area.y2 > 511) display_area.y2 = 511;
+    if (display_area.x1 > display_area.x2) display_area.x1 = display_area.x2;
+    if (display_area.y1 > display_area.y2) display_area.y1 = display_area.y2;
+    display_area.width = display_area.x2 - display_area.x1;
+    display_area.height = display_area.y2 - display_area.y1;
+    display_area.bits24 = io.GPUSTAT.display_area_24bit;
+
+    // OK, now we need to consider interlacing!
+
+    display_area.draw_height = display_area.height * (io.GPUSTAT.interlacing + 1);
+    display_area.draw_y2 = display_area.y1 + display_area.draw_height;
+    if (display_area.draw_y2 > 511) display_area.draw_y2 = 511;
+    display_area.draw_height = display_area.draw_y2 - display_area.y1;
+}
+
 void core::write_gp1(u32 cmd)
 {
     u32 cmdb = cmd >> 24;
@@ -1833,6 +1864,7 @@ void core::write_gp1(u32 cmd)
             ready_cmd();
             ready_recv_dma();
             ready_vram_to_CPU();
+            recalc_display_area();
             // TODO: remember to flush GPU texture cache
             break;
         case 0x01: // reset CMD FIFO
@@ -1850,17 +1882,20 @@ void core::write_gp1(u32 cmd)
             break;
         case 0x05: // VRAM start
             //console.log('GP1 VRAM start');
-            display_vram_x_start = cmd & 0x3FE;
+            display_vram_x_start = cmd & 0x3FF;
             display_vram_y_start = (cmd >> 10) & 0x1FF;
+            recalc_display_area();
             break;
         case 0x06: // Display horizontal range, in output coordinates
             display_horiz_start = cmd & 0xFFF;
             display_horiz_end = (cmd >> 12) & 0xFFF;
             bus->dotclock_change();
+            recalc_display_area();
             break;
         case 0x07: // Display vertical range, in output coordinates
             display_line_start = cmd & 0x3FF;
             display_line_end = (cmd >> 10) & 0x3FF;
+            recalc_display_area();
             break;
         case 0x08: {// Display mode
             //console.log('GP1 display mode');
@@ -1875,6 +1910,7 @@ void core::write_gp1(u32 cmd)
                 printf("\nUnsupported display mode!");
             }
             bus->dotclock_change();
+            recalc_display_area();
             break; }
         case 0x10: {
             // Read internal register
