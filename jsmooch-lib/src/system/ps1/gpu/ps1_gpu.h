@@ -238,8 +238,8 @@ private:
     void update_global_texpage(u32 texpage);
     inline u32 ditherP(RT_POINT2D &p)
     {
-        //i32 y = io.GPUSTAT.interlacing ? p.y >> 1 : p.y;
-        i32 y = p.y;
+        i32 y = io.GPUSTAT.interlacing ? p.y >> 1 : p.y;
+        //i32 y = p.y;
         return ((y & 3) << 2) | (p.x & 3);
     }
 

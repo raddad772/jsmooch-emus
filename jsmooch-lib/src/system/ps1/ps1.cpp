@@ -312,7 +312,8 @@ void core::present_screen() {
         // Pad 64 on left
         //u64 lineptr_start = lineptr - gpu.cur_output;
         if (sy < vsize) {
-            u32 VRAM_addr = VRAM_addr_on_y + (gpu.display_area.x1 * 2);
+            u32 dispy = gpu.io.GPUSTAT.interlacing ? (sy << 1) : sy;
+            u32 VRAM_addr = ((gpu.display_area.y1 + dispy) * 2048) + (gpu.display_area.x1 * 2);
             if (do_pad) {
                 for (u32 i = 0; i < 64; i++) {
                     *lineptr = 0xFF000000;

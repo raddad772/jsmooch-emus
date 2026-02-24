@@ -310,9 +310,10 @@ void core::RT_draw_shaded_tex_triangle_modulated(RT_POINT2D *v0, RT_POINT2D *v1,
                 mr = CLAMP(mr, 0, 255) >> 3;
                 mg = CLAMP(mg, 0, 255) >> 3;
                 mb = CLAMP(mb, 0, 255) >> 3;
+                u32 c = mr | (mg << 5) | (mb << 10);
 
                 // Draw the pixe
-                setpix_split(p.y, p.x, static_cast<u32>(mr), static_cast<u32>(mg), static_cast<u32>(mb), 1, color & 0x8000);
+                setpix(p.y, p.x, c | (color & 0x8000), 0, color);
             }
         }
     }
@@ -477,7 +478,7 @@ void core::RT_draw_shaded_triangle(RT_POINT2D *v0, RT_POINT2D *v1, RT_POINT2D *v
     const i32 minY = MIN3(v0->y, v1->y, v2->y);
     const i32 maxX = MAX3(v0->x, v1->x, v2->x);
     const i32 maxY = MAX3(v0->y, v1->y, v2->y);
-    //if (((maxY - minY) > 511) || ((maxX - minX) > 1023)) return;
+    if (((maxY - minY) > 511) || ((maxX - minX) > 1023)) return;
 
     i64 cross_product_z = cpz(v0, v1, v2);
     if (cross_product_z < 0) {

@@ -1141,7 +1141,6 @@ void core::write_RAM(u32 addr, u16 val, bool triggers_irq) {
 void core::check_irq_addr(u32 addr) {
     if (io.SPUCNT.irq9_enable && addr == io.IRQ_addr && ((io.RAMCNT.mode & 6) != 0)) {
         io.SPUSTAT.irq9 = 1;
-        printf("\nIRQ9 FIRE @%08X!", addr);
         update_IRQs();
     }
 }
