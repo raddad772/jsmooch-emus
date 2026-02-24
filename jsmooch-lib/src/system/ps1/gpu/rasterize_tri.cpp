@@ -19,7 +19,6 @@ static constexpr i32 dithertable[16] = {
 +3,  -1,  +2,  -2,
 };
 
-
 float edge_function (const RT_POINT2D *a, const RT_POINT2D *b, const RT_POINT2D *c)  {
     return (b->x - a->x) * (c->y - a->y) - (b->y - a->y) * (c->x - a->x);
 };
@@ -321,77 +320,35 @@ void core::RT_draw_shaded_tex_triangle_modulated(RT_POINT2D *v0, RT_POINT2D *v1,
 
 void core::RT_draw_flat_tex_triangle(RT_POINT2D *v0, RT_POINT2D *v1, RT_POINT2D *v2, TEXTURE_SAMPLER *ts)
 {
-    // Calculate the edge function for the whole triangle (ABC)
-    float ABC = edge_function(v0, v1, v2);
-
-    if (ABC < 0) {
-        RT_POINT2D *sa = v2;
-        v2 = v1;
-        v1 = sa;
-        ABC = edge_function(v0, v1, v2);
-    }
-
-    const float ABCr = 1.0f / ABC;
-
-    const auto v0u = static_cast<float>(v0->u);
-    const auto v0v = static_cast<float>(v0->v);
-
-    const auto v1u = static_cast<float>(v1->u);
-    const auto v1v = static_cast<float>(v1->v);
-
-    const auto v2u = static_cast<float>(v2->u);
-    const auto v2v = static_cast<float>(v2->v);
-
-    // Initialise our point
-    RT_POINT2D p;
-    p.x = p.y = 0;
-
-    // Get the bounding box of the triangle
     const i32 minX = MIN3(v0->x, v1->x, v2->x);
     const i32 minY = MIN3(v0->y, v1->y, v2->y);
     const i32 maxX = MAX3(v0->x, v1->x, v2->x);
     const i32 maxY = MAX3(v0->y, v1->y, v2->y);
     if (((maxY - minY) > 511) || ((maxX - minX) > 1023)) return;
 
-    // Get edges for top-left testing...
-    RT_POINT2Df edge0, edge1, edge2;
-    edge0.x = static_cast<float>(v2->x - v1->x);
-    edge0.y = static_cast<float>(v2->y - v1->y);
+    i64 cross_product_z = cpz(v0, v1, v2);
+    if (cross_product_z < 0) {
+        RT_POINT2D *sa = v0;
+        v0 = v1;
+        v1 = sa;
+        cross_product_z = cpz(v0, v1, v2);
+    }
 
-    edge1.x = static_cast<float>(v0->x - v2->x);
-    edge1.y = static_cast<float>(v0->y - v2->y);
-
-    edge2.x = static_cast<float>(v1->x - v0->x);
-    edge2.y = static_cast<float>(v1->y - v0->y);
+    // Initialise our point
+    RT_POINT2D p;
+    i64 lambda[3];
 
     // Loop through all the pixels of the bounding box
     for (p.y = minY; p.y < maxY; p.y++) {
         for (p.x = minX; p.x < maxX; p.x++) {
-            // Calculate our edge functions
-            const float w0 = edge_function(v1, v2, &p); // w0 BCP
-            const float w1 = edge_function(v2, v0, &p); // w1 CAP
-            const float w2 = edge_function(v0, v1, &p); // w2 ABP
+            if (is_inside_triangle(&p, v0, v1, v2)) {
+                compute_barycentric(cross_product_z, &p, v0, v1, v2, lambda);
 
-            // Normalise the edge functions by dividing by the total area to get the barycentric coordinates
-
-            bool overlaps = w1 >= 0 && w0 >= 0 && w2 >= 0;
-
-            // If the point is on the edge, test if it is a top or left edge,
-            // otherwise test if the edge function is positive
-            overlaps &= (w0 == 0 ? ((edge0.y == 0 && edge0.x > 0) || edge0.y > 0) : (w0 > 0));
-            overlaps &= (w1 == 0 ? ((edge1.y == 0 && edge1.x > 0) || edge1.y > 0) : (w1 > 0));
-            overlaps &= (w2 == 0 ? ((edge2.y == 0 && edge2.x > 0) || edge2.y > 0) : (w2 > 0));
-
-            // If all the edge functions are positive, the point is inside the triangle
-            if (overlaps) {
-                const float weightA = w0 * ABCr;
-                const float weightB = w1 * ABCr;
-                const float weightC = w2 * ABCr;
                 // Interpolate the colours at point P
-                const float u = v0u * weightA + v1u * weightB + v2u * weightC;
-                const float v = v0v * weightA + v1v * weightB + v2v * weightC;
+                i64 u = ((lambda[0] * v0->u) + (lambda[1] * v1->u) + (lambda[2] * v2->u)) >> 32;
+                i64 v = ((lambda[0] * v0->v) + (lambda[1] * v1->v) + (lambda[2] * v2->v)) >> 32;
 
-                const u16 color = ts->sample(ts, static_cast<i32>(u), static_cast<i32>(v));
+                u32 color = ts->sample(ts, static_cast<i32>(u) & 0xFF, static_cast<i32>(v) & 0xFF);
 
                 // Draw the pixel
                 setpix(p.y, p.x, color & 0x7FFF, 1, color & 0x8000);
@@ -403,76 +360,33 @@ void core::RT_draw_flat_tex_triangle(RT_POINT2D *v0, RT_POINT2D *v1, RT_POINT2D 
 
 void core::RT_draw_flat_tex_triangle_semi(RT_POINT2D *v0, RT_POINT2D *v1, RT_POINT2D *v2, TEXTURE_SAMPLER *ts)
 {
-    // Calculate the edge function for the whole triangle (ABC)
-    float ABC = edge_function(v0, v1, v2);
-
-    if (ABC < 0) {
-        RT_POINT2D *sa = v2;
-        v2 = v1;
-        v1 = sa;
-        ABC = edge_function(v0, v1, v2);
-    }
-    const float ABCr = 1.0f / ABC;
-
-    const auto v0u = static_cast<float>(v0->u);
-    const auto v0v = static_cast<float>(v0->v);
-
-    const auto v1u = static_cast<float>(v1->u);
-    const auto v1v = static_cast<float>(v1->v);
-
-    const auto v2u = static_cast<float>(v2->u);
-    const auto v2v = static_cast<float>(v2->v);
-
-    // Initialise our point
-    RT_POINT2D p;
-    p.x = p.y = 0;
-
-    // Get the bounding box of the triangle
     const i32 minX = MIN3(v0->x, v1->x, v2->x);
     const i32 minY = MIN3(v0->y, v1->y, v2->y);
     const i32 maxX = MAX3(v0->x, v1->x, v2->x);
     const i32 maxY = MAX3(v0->y, v1->y, v2->y);
     if (((maxY - minY) > 511) || ((maxX - minX) > 1023)) return;
 
-    // Get edges for top-left testing...
-    RT_POINT2Df edge0, edge1, edge2;
-    edge0.x = static_cast<float>(v2->x - v1->x);
-    edge0.y = static_cast<float>(v2->y - v1->y);
+    i64 cross_product_z = cpz(v0, v1, v2);
+    if (cross_product_z < 0) {
+        RT_POINT2D *sa = v0;
+        v0 = v1;
+        v1 = sa;
+        cross_product_z = cpz(v0, v1, v2);
+    }
 
-    edge1.x = static_cast<float>(v0->x - v2->x);
-    edge1.y = static_cast<float>(v0->y - v2->y);
-
-    edge2.x = static_cast<float>(v1->x - v0->x);
-    edge2.y = static_cast<float>(v1->y - v0->y);
+    // Initialise our point
+    RT_POINT2D p;
+    i64 lambda[3];
 
     // Loop through all the pixels of the bounding box
     for (p.y = minY; p.y < maxY; p.y++) {
         for (p.x = minX; p.x < maxX; p.x++) {
-            // Calculate our edge functions
-            const float w0 = edge_function(v1, v2, &p); // w0 BCP
-            const float w1 = edge_function(v2, v0, &p); // w1 CAP
-            const float w2 = edge_function(v0, v1, &p); // w2 ABP
+            if (is_inside_triangle(&p, v0, v1, v2)) {
+                compute_barycentric(cross_product_z, &p, v0, v1, v2, lambda);
+                i64 u = ((lambda[0] * v0->u) + (lambda[1] * v1->u) + (lambda[2] * v2->u)) >> 32;
+                i64 v = ((lambda[0] * v0->v) + (lambda[1] * v1->v) + (lambda[2] * v2->v)) >> 32;
 
-            // Normalise the edge functions by dividing by the total area to get the barycentric coordinates
-
-            bool overlaps = w1 >= 0 && w0 >= 0 && w2 >= 0;
-
-            // If the point is on the edge, test if it is a top or left edge,
-            // otherwise test if the edge function is positive
-            overlaps &= (w0 == 0 ? ((edge0.y == 0 && edge0.x > 0) || edge0.y > 0) : (w0 > 0));
-            overlaps &= (w1 == 0 ? ((edge1.y == 0 && edge1.x > 0) || edge1.y > 0) : (w1 > 0));
-            overlaps &= (w2 == 0 ? ((edge2.y == 0 && edge2.x > 0) || edge2.y > 0) : (w2 > 0));
-
-            // If all the edge functions are positive, the point is inside the triangle
-            if (overlaps) {
-                const float weightA = w0 * ABCr;
-                const float weightB = w1 * ABCr;
-                const float weightC = w2 * ABCr;
-                // Interpolate the colours at point P
-                const float u = v0u * weightA + v1u * weightB + v2u * weightC;
-                const float v = v0v * weightA + v1v * weightB + v2v * weightC;
-
-                const u16 color = ts->sample(ts, static_cast<i32>(u), static_cast<i32>(v));
+                u16 color = ts->sample(ts, static_cast<i32>(u) & 0xFF, static_cast<i32>(v) & 0xFF);
 
                 // Draw the pixel
                 semipixm(p.y, p.x, color & 0x7FFF, ts->semi_mode, 1, color & 0x8000);
@@ -482,54 +396,27 @@ void core::RT_draw_flat_tex_triangle_semi(RT_POINT2D *v0, RT_POINT2D *v1, RT_POI
 }
 
 void core::RT_draw_flat_triangle_semi(RT_POINT2D *v0, RT_POINT2D *v1, RT_POINT2D *v2, u32 r, u32 g, u32 b) {
-    // XX
-    // Calculate the edge function for the whole triangle (ABC)
-    if (edge_function(v0, v1, v2) < 0) {
-        RT_POINT2D *sa = v2;
-        v2 = v1;
-        v1 = sa;
-    }
-
-    // Initialise our point
-    RT_POINT2D p;
-    p.x = p.y = 0;
-
-    // Get the bounding box of the triangle
     const i32 minX = MIN3(v0->x, v1->x, v2->x);
     const i32 minY = MIN3(v0->y, v1->y, v2->y);
     const i32 maxX = MAX3(v0->x, v1->x, v2->x);
     const i32 maxY = MAX3(v0->y, v1->y, v2->y);
     if (((maxY - minY) > 511) || ((maxX - minX) > 1023)) return;
 
-    // Get edges for top-left testing...
-    RT_POINT2Df edge0, edge1, edge2;
-    edge0.x = static_cast<float>(v2->x - v1->x);
-    edge0.y = static_cast<float>(v2->y - v1->y);
+    i64 cross_product_z = cpz(v0, v1, v2);
+    if (cross_product_z < 0) {
+        RT_POINT2D *sa = v0;
+        v0 = v1;
+        v1 = sa;
+        cross_product_z = cpz(v0, v1, v2);
+    }
 
-    edge1.x = static_cast<float>(v0->x - v2->x);
-    edge1.y = static_cast<float>(v0->y - v2->y);
-
-    edge2.x = static_cast<float>(v1->x - v0->x);
-    edge2.y = static_cast<float>(v1->y - v0->y);
+    // Initialise our point
+    RT_POINT2D p;
 
     // Loop through all the pixels of the bounding box
     for (p.y = minY; p.y < maxY; p.y++) {
         for (p.x = minX; p.x < maxX; p.x++) {
-            // Calculate our edge functions
-            const float w0 = edge_function(v1, v2, &p); // w0
-            const float w1 = edge_function(v2, v0, &p); // w2
-            const float w2 = edge_function(v0, v1, &p); // w1
-
-            bool overlaps = w1 >= 0 && w0 >= 0 && w2 >= 0;
-
-            // If the point is on the edge, test if it is a top or left edge,
-            // otherwise test if the edge function is positive
-            overlaps &= (w0 == 0 ? ((edge0.y == 0 && edge0.x > 0) || edge0.y > 0) : (w0 > 0));
-            overlaps &= (w1 == 0 ? ((edge1.y == 0 && edge1.x > 0) || edge1.y > 0) : (w1 > 0));
-            overlaps &= (w2 == 0 ? ((edge2.y == 0 && edge2.x > 0) || edge2.y > 0) : (w2 > 0));
-
-            // If all the edge functions are positive, the point is inside the triangle
-            if (overlaps) {
+            if (is_inside_triangle(&p, v0, v1, v2)) {
                 // Draw the pixel
                 semipix_split(p.y, p.x, r >> 3, g >> 3, b >> 3, 0, 1);
             }
@@ -539,81 +426,45 @@ void core::RT_draw_flat_triangle_semi(RT_POINT2D *v0, RT_POINT2D *v1, RT_POINT2D
 
 
 void core::RT_draw_shaded_triangle_semi(RT_POINT2D *v0, RT_POINT2D *v1, RT_POINT2D *v2) {
-    // Calculate the edge function for the whole triangle (ABC)
-    float ABC = edge_function(v0, v1, v2);
-
-    if (ABC < 0) {
-        RT_POINT2D *sa = v2;
-        v2 = v1;
-        v1 = sa;
-        ABC = edge_function(v0, v1, v2);
-    }
-    const float ABCr = 1.0f / ABC;
-
-    const auto v0r = static_cast<float>(v0->r);
-    const auto v0g = static_cast<float>(v0->g);
-    const auto v0b = static_cast<float>(v0->b);
-
-    const auto v1r = static_cast<float>(v1->r);
-    const auto v1g = static_cast<float>(v1->g);
-    const auto v1b = static_cast<float>(v1->b);
-
-    const auto v2r = static_cast<float>(v2->r);
-    const auto v2g = static_cast<float>(v2->g);
-    const auto v2b = static_cast<float>(v2->b);
-
-    // Initialise our point
-    RT_POINT2D p;
-    p.x = p.y = 0;
-
-    // Get the bounding box of the triangle
     const i32 minX = MIN3(v0->x, v1->x, v2->x);
     const i32 minY = MIN3(v0->y, v1->y, v2->y);
     const i32 maxX = MAX3(v0->x, v1->x, v2->x);
     const i32 maxY = MAX3(v0->y, v1->y, v2->y);
     if (((maxY - minY) > 511) || ((maxX - minX) > 1023)) return;
 
-    // Get edges for top-left testing...
-    RT_POINT2Df edge0, edge1, edge2;
-    edge0.x = static_cast<float>(v2->x - v1->x);
-    edge0.y = static_cast<float>(v2->y - v1->y);
+    i64 cross_product_z = cpz(v0, v1, v2);
+    if (cross_product_z < 0) {
+        RT_POINT2D *sa = v0;
+        v0 = v1;
+        v1 = sa;
+        cross_product_z = cpz(v0, v1, v2);
+    }
 
-    edge1.x = static_cast<float>(v0->x - v2->x);
-    edge1.y = static_cast<float>(v0->y - v2->y);
-
-    edge2.x = static_cast<float>(v1->x - v0->x);
-    edge2.y = static_cast<float>(v1->y - v0->y);
+    // Initialise our point
+    RT_POINT2D p;
+    i64 lambda[3];
 
     // Loop through all the pixels of the bounding box
     for (p.y = minY; p.y < maxY; p.y++) {
         for (p.x = minX; p.x < maxX; p.x++) {
-            // Calculate our edge functions
-            const float w0 = edge_function(v1, v2, &p); // w0 BCP
-            const float w1 = edge_function(v2, v0, &p); // w1 CAP
-            const float w2 = edge_function(v0, v1, &p); // w2 ABP
-
-            // Normalise the edge functions by dividing by the total area to get the barycentric coordinates
-
-            u32 overlaps = w1 >= 0 && w0 >= 0 && w2 >= 0;
-
-            // If the point is on the edge, test if it is a top or left edge,
-            // otherwise test if the edge function is positive
-            overlaps &= (w0 == 0 ? ((edge0.y == 0 && edge0.x > 0) || edge0.y > 0) : (w0 > 0));
-            overlaps &= (w1 == 0 ? ((edge1.y == 0 && edge1.x > 0) || edge1.y > 0) : (w1 > 0));
-            overlaps &= (w2 == 0 ? ((edge2.y == 0 && edge2.x > 0) || edge2.y > 0) : (w2 > 0));
-
-            // If all the edge functions are positive, the point is inside the triangle
-            if (overlaps) {
-                float weightA = w0 * ABCr;
-                float weightB = w1 * ABCr;
-                float weightC = w2 * ABCr;
+            if (is_inside_triangle(&p, v0, v1, v2)) {
+                compute_barycentric(cross_product_z, &p, v0, v1, v2, lambda);
                 // Interpolate the colors at point P
-                float r = v0r * weightA + v1r * weightB + v2r * weightC;
-                float g = v0g * weightA + v1g * weightB + v2g * weightC;
-                float b = v0b * weightA + v1b * weightB + v2b * weightC;
+                i64 mr = ((lambda[0] * v0->r) + (lambda[1] * v1->r) + (lambda[2] * v2->r));
+                i64 mg = ((lambda[0] * v0->g) + (lambda[1] * v1->g) + (lambda[2] * v2->g));
+                i64 mb = ((lambda[0] * v0->b) + (lambda[1] * v1->b) + (lambda[2] * v2->b));
+                if (io.GPUSTAT.dither) {
+                    u32 caddr = ditherP(p);
+                    mr += dithertable[caddr];
+                    mg += dithertable[caddr];
+                    mb += dithertable[caddr];
+                }
+                mr = CLAMP(mr, 0, 255) >> 3;
+                mg = CLAMP(mg, 0, 255) >> 3;
+                mb = CLAMP(mb, 0, 255) >> 3;
 
                 // Draw the pixel
-                semipix_split(p.y, p.x, static_cast<u32>(r) >> 3, static_cast<u32>(g) >> 3, static_cast<u32>(b) >> 3, 0, 1);
+                semipix_split(p.y, p.x, static_cast<u32>(mr) >> 3, static_cast<u32>(mg) >> 3, static_cast<u32>(mb) >> 3, 0, 1);
             }
         }
     }
