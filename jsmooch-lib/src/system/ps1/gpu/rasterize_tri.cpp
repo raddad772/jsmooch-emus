@@ -13,10 +13,10 @@ namespace PS1::GPU {
 #define CLAMP(x, low, high) ((x) < (low) ? (low) : ((x) > (high) ? (high) : (x)))
 
 static constexpr i32 dithertable[16] = {
-    -4  +0  -3  +1,
-+2  -2  +3  -1,
--3  +1  -4  +0,
-+3  -1  +2  -2,
+    -4,  +0,  -3,  +1,
++2,  -2,  +3,  -1,
+-3,  +1,  -4,  +0,
++3,  -1,  +2,  -2,
 };
 
 
@@ -32,15 +32,15 @@ float edge_function (const RT_POINT2D *a, const RT_POINT2D *b, const RT_POINT2D 
 #define MAX(a,b) ((a) > (b) ? (a) : (b))
 #endif
 
-static inline i64 MIN3(const i64 a, const i64 b, const i64 c)
+static inline i32 MIN3(const i32 a, const i32 b, const i32 c)
 {
-    const i64 mab = MIN(a,b);
+    const i32 mab = MIN(a,b);
     return MIN(mab, c);
 }
 
-static inline i64 MAX3(const i64 a, const i64 b, const i64 c)
+static inline i32 MAX3(const i32 a, const i32 b, const i32 c)
 {
-    const i64 mab = MAX(a,b);
+    const i32 mab = MAX(a,b);
     return MAX(mab, c);
 }
 
@@ -79,10 +79,10 @@ static inline void compute_barycentric(i64 cp, RT_POINT2D *p, RT_POINT2D *v0, RT
 constexpr float EDGE_EPS = 1e-5f;
 
 void core::RT_draw_flat_triangle(RT_POINT2D *v0, RT_POINT2D *v1, RT_POINT2D *v2, const u32 color) {
-    const i64 minX = MIN3(v0->x, v1->x, v2->x);
-    const i64 minY = MIN3(v0->y, v1->y, v2->y);
-    const i64 maxX = MAX3(v0->x, v1->x, v2->x);
-    const i64 maxY = MAX3(v0->y, v1->y, v2->y);
+    const i32 minX = MIN3(v0->x, v1->x, v2->x);
+    const i32 minY = MIN3(v0->y, v1->y, v2->y);
+    const i32 maxX = MAX3(v0->x, v1->x, v2->x);
+    const i32 maxY = MAX3(v0->y, v1->y, v2->y);
     if (((maxY - minY) > 511) || ((maxX - minX) > 1023)) return;
 
     i64 cross_product_z = cpz(v0, v1, v2);
@@ -108,10 +108,10 @@ void core::RT_draw_flat_triangle(RT_POINT2D *v0, RT_POINT2D *v1, RT_POINT2D *v2,
 
 void core::RT_draw_flat_tex_triangle_modulated(RT_POINT2D *v0, RT_POINT2D *v1, RT_POINT2D *v2, u32 color, TEXTURE_SAMPLER *ts)
 {
-    const i64 minX = MIN3(v0->x, v1->x, v2->x);
-    const i64 minY = MIN3(v0->y, v1->y, v2->y);
-    const i64 maxX = MAX3(v0->x, v1->x, v2->x);
-    const i64 maxY = MAX3(v0->y, v1->y, v2->y);
+    const i32 minX = MIN3(v0->x, v1->x, v2->x);
+    const i32 minY = MIN3(v0->y, v1->y, v2->y);
+    const i32 maxX = MAX3(v0->x, v1->x, v2->x);
+    const i32 maxY = MAX3(v0->y, v1->y, v2->y);
     if (((maxY - minY) > 511) || ((maxX - minX) > 1023)) return;
 
     i64 cross_product_z = cpz(v0, v1, v2);
@@ -142,7 +142,7 @@ void core::RT_draw_flat_tex_triangle_modulated(RT_POINT2D *v0, RT_POINT2D *v1, R
                 i64 mg = (((color >> 5) & 0x1f) * g_mul) >> 5;
                 i64 mb = (((color >> 10) & 0x1f) * b_mul) >> 5;
                 if (io.GPUSTAT.dither) {
-                    u32 caddr = ((p.y & 3) << 2) | (p.x & 3);
+                    u32 caddr = ditherP(p);
                     mr += dithertable[caddr];
                     mg += dithertable[caddr];
                     mb += dithertable[caddr];
@@ -158,10 +158,10 @@ void core::RT_draw_flat_tex_triangle_modulated(RT_POINT2D *v0, RT_POINT2D *v1, R
 }
 
 void core::RT_draw_flat_tex_triangle_modulated_semi(RT_POINT2D *v0, RT_POINT2D *v1, RT_POINT2D *v2, u32 color, TEXTURE_SAMPLER *ts) {
-    const i64 minX = MIN3(v0->x, v1->x, v2->x);
-    const i64 minY = MIN3(v0->y, v1->y, v2->y);
-    const i64 maxX = MAX3(v0->x, v1->x, v2->x);
-    const i64 maxY = MAX3(v0->y, v1->y, v2->y);
+    const i32 minX = MIN3(v0->x, v1->x, v2->x);
+    const i32 minY = MIN3(v0->y, v1->y, v2->y);
+    const i32 maxX = MAX3(v0->x, v1->x, v2->x);
+    const i32 maxY = MAX3(v0->y, v1->y, v2->y);
     if (((maxY - minY) > 511) || ((maxX - minX) > 1023)) return;
 
     i64 cross_product_z = cpz(v0, v1, v2);
@@ -195,7 +195,7 @@ void core::RT_draw_flat_tex_triangle_modulated_semi(RT_POINT2D *v0, RT_POINT2D *
                 i64 mg = (((color >> 5) & 0x1f) * g_mul) >> 5;
                 i64 mb = (((color >> 10) & 0x1f) * b_mul) >> 5;
                 if (io.GPUSTAT.dither) {
-                    u32 caddr = ((p.y & 3) << 2) | (p.x & 3);
+                    u32 caddr = ditherP(p);
                     mr += dithertable[caddr];
                     mg += dithertable[caddr];
                     mb += dithertable[caddr];
@@ -213,10 +213,10 @@ void core::RT_draw_flat_tex_triangle_modulated_semi(RT_POINT2D *v0, RT_POINT2D *
 
 void core::RT_draw_shaded_tex_triangle_modulated_semi(RT_POINT2D *v0, RT_POINT2D *v1, RT_POINT2D *v2, TEXTURE_SAMPLER *ts)
 {
-    const i64 minX = MIN3(v0->x, v1->x, v2->x);
-    const i64 minY = MIN3(v0->y, v1->y, v2->y);
-    const i64 maxX = MAX3(v0->x, v1->x, v2->x);
-    const i64 maxY = MAX3(v0->y, v1->y, v2->y);
+    const i32 minX = MIN3(v0->x, v1->x, v2->x);
+    const i32 minY = MIN3(v0->y, v1->y, v2->y);
+    const i32 maxX = MAX3(v0->x, v1->x, v2->x);
+    const i32 maxY = MAX3(v0->y, v1->y, v2->y);
     if (((maxY - minY) > 511) || ((maxX - minX) > 1023)) return;
 
     i64 cross_product_z = cpz(v0, v1, v2);
@@ -249,7 +249,7 @@ void core::RT_draw_shaded_tex_triangle_modulated_semi(RT_POINT2D *v0, RT_POINT2D
                 i64 mg = (((color >> 5) & 0x1f) * g_mul) >> 37;
                 i64 mb = (((color >> 10) & 0x1f) * b_mul) >> 37;
                 if (io.GPUSTAT.dither) {
-                    u32 caddr = ((p.y & 3) << 2) | (p.x & 3);
+                    u32 caddr = ditherP(p);
                     mr += dithertable[caddr];
                     mg += dithertable[caddr];
                     mb += dithertable[caddr];
@@ -267,10 +267,10 @@ void core::RT_draw_shaded_tex_triangle_modulated_semi(RT_POINT2D *v0, RT_POINT2D
 
 void core::RT_draw_shaded_tex_triangle_modulated(RT_POINT2D *v0, RT_POINT2D *v1, RT_POINT2D *v2, TEXTURE_SAMPLER *ts)
 {
-    const i64 minX = MIN3(v0->x, v1->x, v2->x);
-    const i64 minY = MIN3(v0->y, v1->y, v2->y);
-    const i64 maxX = MAX3(v0->x, v1->x, v2->x);
-    const i64 maxY = MAX3(v0->y, v1->y, v2->y);
+    const i32 minX = MIN3(v0->x, v1->x, v2->x);
+    const i32 minY = MIN3(v0->y, v1->y, v2->y);
+    const i32 maxX = MAX3(v0->x, v1->x, v2->x);
+    const i32 maxY = MAX3(v0->y, v1->y, v2->y);
     if (((maxY - minY) > 511) || ((maxX - minX) > 1023)) return;
 
     i64 cross_product_z = cpz(v0, v1, v2);
@@ -303,7 +303,7 @@ void core::RT_draw_shaded_tex_triangle_modulated(RT_POINT2D *v0, RT_POINT2D *v1,
                 i64 mg = (((color >> 5) & 0x1f) * g_mul) >> 36;
                 i64 mb = (((color >> 10) & 0x1f) * b_mul) >> 36;
                 if (io.GPUSTAT.dither) {
-                    u32 caddr = ((p.y & 3) << 2) | (p.x & 3);
+                    u32 caddr = ditherP(p);
                     mr += dithertable[caddr];
                     mg += dithertable[caddr];
                     mb += dithertable[caddr];
@@ -347,10 +347,10 @@ void core::RT_draw_flat_tex_triangle(RT_POINT2D *v0, RT_POINT2D *v1, RT_POINT2D 
     p.x = p.y = 0;
 
     // Get the bounding box of the triangle
-    const i64 minX = MIN3(v0->x, v1->x, v2->x);
-    const i64 minY = MIN3(v0->y, v1->y, v2->y);
-    const i64 maxX = MAX3(v0->x, v1->x, v2->x);
-    const i64 maxY = MAX3(v0->y, v1->y, v2->y);
+    const i32 minX = MIN3(v0->x, v1->x, v2->x);
+    const i32 minY = MIN3(v0->y, v1->y, v2->y);
+    const i32 maxX = MAX3(v0->x, v1->x, v2->x);
+    const i32 maxY = MAX3(v0->y, v1->y, v2->y);
     if (((maxY - minY) > 511) || ((maxX - minX) > 1023)) return;
 
     // Get edges for top-left testing...
@@ -428,10 +428,10 @@ void core::RT_draw_flat_tex_triangle_semi(RT_POINT2D *v0, RT_POINT2D *v1, RT_POI
     p.x = p.y = 0;
 
     // Get the bounding box of the triangle
-    const i64 minX = MIN3(v0->x, v1->x, v2->x);
-    const i64 minY = MIN3(v0->y, v1->y, v2->y);
-    const i64 maxX = MAX3(v0->x, v1->x, v2->x);
-    const i64 maxY = MAX3(v0->y, v1->y, v2->y);
+    const i32 minX = MIN3(v0->x, v1->x, v2->x);
+    const i32 minY = MIN3(v0->y, v1->y, v2->y);
+    const i32 maxX = MAX3(v0->x, v1->x, v2->x);
+    const i32 maxY = MAX3(v0->y, v1->y, v2->y);
     if (((maxY - minY) > 511) || ((maxX - minX) > 1023)) return;
 
     // Get edges for top-left testing...
@@ -495,10 +495,10 @@ void core::RT_draw_flat_triangle_semi(RT_POINT2D *v0, RT_POINT2D *v1, RT_POINT2D
     p.x = p.y = 0;
 
     // Get the bounding box of the triangle
-    const i64 minX = MIN3(v0->x, v1->x, v2->x);
-    const i64 minY = MIN3(v0->y, v1->y, v2->y);
-    const i64 maxX = MAX3(v0->x, v1->x, v2->x);
-    const i64 maxY = MAX3(v0->y, v1->y, v2->y);
+    const i32 minX = MIN3(v0->x, v1->x, v2->x);
+    const i32 minY = MIN3(v0->y, v1->y, v2->y);
+    const i32 maxX = MAX3(v0->x, v1->x, v2->x);
+    const i32 maxY = MAX3(v0->y, v1->y, v2->y);
     if (((maxY - minY) > 511) || ((maxX - minX) > 1023)) return;
 
     // Get edges for top-left testing...
@@ -567,10 +567,10 @@ void core::RT_draw_shaded_triangle_semi(RT_POINT2D *v0, RT_POINT2D *v1, RT_POINT
     p.x = p.y = 0;
 
     // Get the bounding box of the triangle
-    const i64 minX = MIN3(v0->x, v1->x, v2->x);
-    const i64 minY = MIN3(v0->y, v1->y, v2->y);
-    const i64 maxX = MAX3(v0->x, v1->x, v2->x);
-    const i64 maxY = MAX3(v0->y, v1->y, v2->y);
+    const i32 minX = MIN3(v0->x, v1->x, v2->x);
+    const i32 minY = MIN3(v0->y, v1->y, v2->y);
+    const i32 maxX = MAX3(v0->x, v1->x, v2->x);
+    const i32 maxY = MAX3(v0->y, v1->y, v2->y);
     if (((maxY - minY) > 511) || ((maxX - minX) > 1023)) return;
 
     // Get edges for top-left testing...
@@ -622,10 +622,10 @@ void core::RT_draw_shaded_triangle_semi(RT_POINT2D *v0, RT_POINT2D *v1, RT_POINT
 void core::RT_draw_shaded_triangle(RT_POINT2D *v0, RT_POINT2D *v1, RT_POINT2D *v2) {
     //float ABC = edge_function(v0, v1, v2);
     // Calculate the edge function for the whole triangle (ABC)
-    const i64 minX = MIN3(v0->x, v1->x, v2->x);
-    const i64 minY = MIN3(v0->y, v1->y, v2->y);
-    const i64 maxX = MAX3(v0->x, v1->x, v2->x);
-    const i64 maxY = MAX3(v0->y, v1->y, v2->y);
+    const i32 minX = MIN3(v0->x, v1->x, v2->x);
+    const i32 minY = MIN3(v0->y, v1->y, v2->y);
+    const i32 maxX = MAX3(v0->x, v1->x, v2->x);
+    const i32 maxY = MAX3(v0->y, v1->y, v2->y);
     //if (((maxY - minY) > 511) || ((maxX - minX) > 1023)) return;
 
     i64 cross_product_z = cpz(v0, v1, v2);
@@ -649,7 +649,7 @@ void core::RT_draw_shaded_triangle(RT_POINT2D *v0, RT_POINT2D *v1, RT_POINT2D *v
                 i64 g = ((lambda[0] * v0->g) + (lambda[1] * v1->g) + (lambda[2] * v2->g)) >> 32;
                 i64 b = ((lambda[0] * v0->b) + (lambda[1] * v1->b) + (lambda[2] * v2->b)) >> 32;
                 if (io.GPUSTAT.dither) {
-                    u32 caddr = ((p.y & 3) << 2) | (p.x & 3);
+                    u32 caddr = ditherP(p);
                     r += dithertable[caddr];
                     g += dithertable[caddr];
                     b += dithertable[caddr];

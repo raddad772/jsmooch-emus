@@ -236,6 +236,13 @@ private:
     void semipixm(i32 y, i32 x, u32 color, u32 mode, u32 is_tex, u32 tex_mask);
     void semipix_split(i32 y, i32 x, u32 r, u32 g, u32 b, u32 is_tex, u32 tex_mask);
     void update_global_texpage(u32 texpage);
+    inline u32 ditherP(RT_POINT2D &p)
+    {
+        //i32 y = io.GPUSTAT.interlacing ? p.y >> 1 : p.y;
+        i32 y = p.y;
+        return ((y & 3) << 2) | (p.x & 3);
+    }
+
 
     static inline u32 BGR24to15(u32 c)
     {
