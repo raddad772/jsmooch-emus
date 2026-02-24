@@ -1,14 +1,10 @@
 //
 // Created by . on 2/15/25.
 //
-#include <cstdlib>
-#include <cstring>
-#include <math.h>
 #include <cassert>
 
 #include "pixel_helpers.h"
 #include "../ps1_bus.h"
-#include "../ps1_timers.h"
 #include "ps1_gpu.h"
 #include "rasterize_line.h"
 
@@ -187,6 +183,7 @@ void core::get_texture_sampler_from_texpage_and_palette(u32 texpage, u32 palette
             ts->sample = &sample_tex_15bit;
             break;
         case 3:
+            default:
             NOGOHERE;
     }
 }
@@ -209,7 +206,6 @@ void core::cmd22_tri_flat_semi_transparent()
     xy_from_cmd(V1, CMD[2]);
     xy_from_cmd(V2, CMD[3]);
     V0.color24_from_cmd(CMD[0]);
-    u32 color = BGR24to15(CMD[0] & 0xFFFFFF);
 #ifdef LOG_GP0
     printf("\nGP0_20 flat tri %d,%d  %d,%d  %d,%d color:%04x", V0.x, V0.y, V1.x, V1.y, V2.x, V2.y, color);
 #endif
@@ -786,6 +782,32 @@ void core::cmd60_rect_opaque_flat()
     }
 }
 
+void core::cmd62_rect_semi_flat()
+{
+    u32 color = BGR24to15(CMD[0] & 0xFFFFFF);
+    xy_from_cmd(V0, CMD[1]);
+    i32 xsize = CMD[2] & 0xFFFF;
+    i32 ysize = CMD[2] >> 16;
+    if (xsize > 1023) xsize = 1023;
+    if (ysize > 511) ysize = 511;
+
+#ifdef LOG_GP0
+    printf("\n60_rect_opaque_flat %d %d %d %d %06x", V0.x, V0.y, xsize, ysize, CMD[0] & 0xFFFFFF);
+#endif
+
+    i32 xend = (V0.x + xsize);
+    xend = xend > 1023 ? 1023 : xend;
+
+    i32 yend = (V0.y + ysize);
+    yend = yend > 511 ? 511 : yend;
+
+    for (i32 y = V0.y; y < yend; y++) {
+        for (i32 x = V0.x; x < xend; x++) {
+            semipix(y, x, color, 1, 1);
+        }
+    }
+}
+
 void core::cmd64_rect_opaque_flat_textured_modulated()
 {
     // WRIOW GP0,(0x64<<24)+(COLOR&0xFFFFFF)      ; Write GP0 Command Word (Color+Command)
@@ -857,8 +879,8 @@ void core::cmd65_rect_opaque_flat_textured()
     if (width > 1023) width = 1023;
     if (height > 511) height = 511;
 
-    u32 xend = (V0.x + width);
-    u32 yend = (V0.y + height);
+    i32 xend = (V0.x + width);
+    i32 yend = (V0.y + height);
 #ifdef LOG_GP0
     printf("\nrect_opaque_flat %d %d %d %d", V0.x, V0.y, width, height);
 #endif
@@ -1126,6 +1148,59 @@ void core::cmd80_vram_copy()
     //printf("\nCOPY VRAM %d,%d to %d,%d size:%d,%d");
 }
 
+void core::rect_opaque_flat_xx(u32 wh)
+{
+    // WRIOW GP0,(0x64<<24)+(COLOR&0xFFFFFF)      ; Write GP0 Command Word (Color+Command)
+    //let color24 = CMD[0] & 0xFFFFFF;
+
+    // WRIOW GP0,(Y<<16)+(X&0xFFFF)               ; Write GP0  Packet Word (Vertex)
+    xy_from_cmd(V0, CMD[1]);
+    u32 color = BGR24to15(CMD[0] & 0xFFFFFF);
+
+    // WRIOW GP0,(HEIGHT<<16)+(WIDTH&0xFFFF)      ; Write GP0  Packet Word (Width+Height)
+    i32 height = wh > 511 ? 511 : wh;
+    i32 width = wh > 1023 ? 1023 : wh;
+
+    i32 xend = V0.x + width;;
+    i32 yend = V0.y + height;
+#ifdef LOG_GP0
+    printf("\nrect_opaque_flat %d %d %d %d", V0.x, V0.y, width, height);
+#endif
+
+    for (i32 y = V0.y; y < yend; y++) {
+        for (i32 x = V0.x; x < xend; x++) {
+            setpix(y, x, color & 0x7FFF, 0, color & 0x8000);
+        }
+    }
+}
+
+void core::rect_semi_flat_xx(u32 wh)
+{
+    // WRIOW GP0,(0x64<<24)+(COLOR&0xFFFFFF)      ; Write GP0 Command Word (Color+Command)
+    //let color24 = CMD[0] & 0xFFFFFF;
+
+    // WRIOW GP0,(Y<<16)+(X&0xFFFF)               ; Write GP0  Packet Word (Vertex)
+    xy_from_cmd(V0, CMD[1]);
+    u32 color = BGR24to15(CMD[0] & 0xFFFFFF);
+
+    // WRIOW GP0,(HEIGHT<<16)+(WIDTH&0xFFFF)      ; Write GP0  Packet Word (Width+Height)
+    i32 height = wh > 511 ? 511 : wh;
+    i32 width = wh > 1023 ? 1023 : wh;
+
+    i32 xend = V0.x + width;;
+    i32 yend = V0.y + height;
+#ifdef LOG_GP0
+    printf("\nrect_opaque_flat %d %d %d %d", V0.x, V0.y, width, height);
+#endif
+
+    for (i32 y = V0.y; y < yend; y++) {
+        for (i32 x = V0.x; x < xend; x++) {
+            semipix(y, x, color & 0x7FFF, 1, 1);
+        }
+    }
+}
+
+
 void core::rect_opaque_flat_textured_modulated_xx(u32 wh)
 {
     // WRIOW GP0,(0x64<<24)+(COLOR&0xFFFFFF)      ; Write GP0 Command Word (Color+Command)
@@ -1178,6 +1253,20 @@ void core::rect_opaque_flat_textured_modulated_xx(u32 wh)
         }
         v += v_increment; v &= 0xFF;
     }
+}
+void core::cmd72_rect_semi_flat_8x8() {
+    rect_semi_flat_xx(8);
+}
+void core::cmd7a_rect_semi_flat_16x16() {
+    rect_semi_flat_xx(16);
+}
+
+void core::cmd70_rect_opaque_flat_8x8() {
+    rect_opaque_flat_xx(8);
+}
+
+    void core::cmd78_rect_opaque_flat_16x16() {
+    rect_opaque_flat_xx(16);
 }
 
 void core::cmd7c_rect_opaque_flat_textured_modulated_16x16()
@@ -1524,6 +1613,7 @@ void core::gp0_cmd(u32 cmd) {
         ins_special = 0;
         cmd_arg_num = 1;
         u32 cmdr = cmd >> 24;
+        printf("\n(GPU) CMD %02x", cmdr);
 #ifdef LOG_GP0
         printf("\n(GPU) CMD %02x", cmdr);
 #endif
@@ -1633,8 +1723,11 @@ void core::gp0_cmd(u32 cmd) {
                 cmd_arg_num = 3;
                 break;
             case 0x60: // Rectangle, variable size, opaque
-            case 0x62:
                 current_ins = &core::cmd60_rect_opaque_flat;
+                cmd_arg_num = 3;
+                break;
+            case 0x62:
+                current_ins = &core::cmd62_rect_semi_flat;
                 cmd_arg_num = 3;
                 break;
             case 0x64: // Rectangle, variable size, textured, flat, opaque, modulated
@@ -1674,6 +1767,14 @@ void core::gp0_cmd(u32 cmd) {
                 current_ins = &core::cmd6f_rect_1x1_tex_semi;
                 cmd_arg_num = 3;
                 break;
+            case 0x70: // rectangle, opaque, flat, 8x8
+                current_ins = &core::cmd70_rect_opaque_flat_8x8;
+                cmd_arg_num = 2;
+                break;
+            case 0x72: // rectangle, semi-transparent, flat, 8x8
+                current_ins = &core::cmd72_rect_semi_flat_8x8;
+                cmd_arg_num = 2;
+                break;
             case 0x74: // Rectangle, 8x8, opaque, textured, modulated
                 current_ins = &core::cmd74_rect_opaque_flat_textured_modulated_8x8;
                 cmd_arg_num = 3;
@@ -1689,6 +1790,14 @@ void core::gp0_cmd(u32 cmd) {
             case 0x77: // Rectangle, 8x8, semi, textured
                 current_ins = &core::cmd77_rect_semi_flat_textured_8x8;
                 cmd_arg_num = 3;
+                break;
+            case 0x78:
+                current_ins = &core::cmd78_rect_opaque_flat_16x16;
+                cmd_arg_num = 2;
+                break;
+            case 0x7A: // rectangle, semi-transparent, flat, 16x16
+                current_ins = &core::cmd7a_rect_semi_flat_16x16;
+                cmd_arg_num = 2;
                 break;
             case 0x7C:// Rectangle, 16x16, opaque, textured, modulated
                 current_ins = &core::cmd7c_rect_opaque_flat_textured_modulated_16x16;
@@ -1945,6 +2054,7 @@ void core::write_gp1(u32 cmd)
                     r |= ((draw_y_offset & 0x7FF) << 11);
                     io.GPUREAD = r;
                     break;
+                default:
             }
             break; }
         default:
@@ -1976,6 +2086,8 @@ u32 core::get_gpustat()
         case 3:
             io.GPUSTAT.dma_data_request_bit = io.GPUSTAT.ready_vram_to_cpu;
             break;
+        default:
+            NOGOHERE;
     }
     return io.GPUSTAT.u;
 }

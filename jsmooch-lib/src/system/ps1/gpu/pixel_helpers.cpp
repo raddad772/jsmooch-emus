@@ -7,8 +7,11 @@
 #include "helpers/multisize_memaccess.cpp"
 
 namespace PS1::GPU {
-#define DOY (y + draw_y_offset)
-#define DOX (x + draw_x_offset)
+//#define DOY (y + draw_y_offset)
+//#define DOX (x + draw_x_offset)
+#define DOY (y)
+#define DOX (x)
+
 
 void core::setpix(i32 y, i32 x, u32 color, u32 is_tex, u32 tex_mask)
 {

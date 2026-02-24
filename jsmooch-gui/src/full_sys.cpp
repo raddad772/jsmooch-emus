@@ -974,6 +974,7 @@ void full_system::load_default_ROM()
             //worked = grab_ROM(&ROMs, which, "PSX/GPU/16BPP/RenderTexturePolygon/CLUT4BPP/RenderTexturePolygonCLUT4BPP.exe", nullptr);
             //worked = grab_ROM(&ROMs, which, "PSX/GPU/16BPP/RenderTexturePolygon/CLUT8BPP/RenderTexturePolygonCLUT8BPP.exe", nullptr);
             //worked = grab_ROM(&ROMs, which, "PSX/GPU/16BPP/RenderTexturePolygon/15BPP/RenderTexturePolygon15BPP.exe", nullptr);
+            worked = grab_ROM(&ROMs, which, "PSX/GPU/16BPP/RenderRectangle/RenderRectangle16BPP.exe", nullptr);
             //worked = grab_ROM(&ROMs, which, "PSX/GPU/16BPP/RenderTexturePolygon/MASK15BPP/RenderTextureRectangleMASK15BPP.exe", nullptr);
             //worked = grab_ROM(&ROMs, which, "PSX/GPU/16BPP/RenderTextureRectangle/CLUT4BPP/RenderTextureRectangleCLUT4BPP.exe", nullptr);
             //worked = grab_ROM(&ROMs, which, "PSX/GPU/16BPP/RenderTextureRectangle/CLUT8BPP/RenderTextureRectangleCLUT8BPP.exe", nullptr);
@@ -1000,7 +1001,7 @@ void full_system::load_default_ROM()
             //worked = grab_cue(&ROMs, which, "Rayman 2 - The Great Escape (USA) (En,Fr,Es)", nullptr);
             //worked = grab_cue(&ROMs, which, "Earthworm Jim 2 (Europe)", nullptr);
             //worked = grab_cue(&ROMs, which, "Castlevania - Symphony of the Night (USA)", nullptr);
-            worked = grab_cue(&ROMs, which, "Metal Gear Solid (USA) (Disc 1) (v1.1)", nullptr);
+            //worked = grab_cue(&ROMs, which, "Metal Gear Solid (USA) (Disc 1) (v1.1)", nullptr);
             break;
         case jsm::systems::GBA:
             //worked = grab_ROM(&ROMs, which, "panda.gba", nullptr);

@@ -196,6 +196,7 @@ private:
     void cmd3e_quad_opaque_shaded_textured_modulated_semi();
     void cmd40_line_opaque();
     void cmd60_rect_opaque_flat();
+    void cmd62_rect_semi_flat();
     void cmd64_rect_opaque_flat_textured_modulated();
     void cmd65_rect_opaque_flat_textured();
     void cmd66_rect_semi_flat_textured_modulated();
@@ -207,10 +208,16 @@ private:
     void cmd6f_rect_1x1_tex_semi();
     void cmd80_vram_copy();
     void rect_opaque_flat_textured_modulated_xx(u32 wh);
+    void rect_semi_flat_xx(u32 wh);
+    void rect_opaque_flat_xx(u32 wh);
+    void cmd70_rect_opaque_flat_8x8();
+    void cmd72_rect_semi_flat_8x8();
+    void cmd78_rect_opaque_flat_16x16();
     void cmd7c_rect_opaque_flat_textured_modulated_16x16();
     void cmd74_rect_opaque_flat_textured_modulated_8x8();
     void rect_opaque_flat_textured_xx(u32 wh);
     void cmd75_rect_opaque_flat_textured_8x8();
+    void cmd7a_rect_semi_flat_16x16();
     void cmd7d_rect_opaque_flat_textured_16x16();
     void rect_semi_flat_textured_modulated_xx(u32 wh);
     void cmd76_rect_semi_flat_textured_modulated_8x8();
@@ -256,6 +263,8 @@ private:
         v.y = cmd >> 16;
         v.x = SIGNe11to32(v.x);
         v.y = SIGNe11to32(v.y);
+        v.x += draw_x_offset;
+        v.y += draw_y_offset;
     }
 
 
