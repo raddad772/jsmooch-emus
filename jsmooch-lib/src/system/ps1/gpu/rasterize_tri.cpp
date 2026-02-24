@@ -299,9 +299,9 @@ void core::RT_draw_shaded_tex_triangle_modulated(RT_POINT2D *v0, RT_POINT2D *v1,
                 i64 b_mul = ((lambda[0] * v0->b) + (lambda[1] * v1->b) + (lambda[2] * v2->b));
 
                 u32 color = ts->sample(ts, static_cast<i32>(u) & 0xFF, static_cast<i32>(v) & 0xFF);
-                i64 mr = ((color & 0x1f) * r_mul) >> 37;
-                i64 mg = (((color >> 5) & 0x1f) * g_mul) >> 37;
-                i64 mb = (((color >> 10) & 0x1f) * b_mul) >> 37;
+                i64 mr = ((color & 0x1f) * r_mul) >> 36;
+                i64 mg = (((color >> 5) & 0x1f) * g_mul) >> 36;
+                i64 mb = (((color >> 10) & 0x1f) * b_mul) >> 36;
                 if (io.GPUSTAT.dither) {
                     u32 caddr = ((p.y & 3) << 2) | (p.x & 3);
                     mr += dithertable[caddr];
