@@ -251,6 +251,14 @@ private:
                ((c >> 3) & 0x1F);
     }
 
+    inline void xy_from_cmd(RT_POINT2D &v, u32 cmd) {
+        v.x = cmd & 0xFFFF;
+        v.y = cmd >> 16;
+        v.x = SIGNe11to32(v.x);
+        v.y = SIGNe11to32(v.y);
+    }
+
+
 };
 
 

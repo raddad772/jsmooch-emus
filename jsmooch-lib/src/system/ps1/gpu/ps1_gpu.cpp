@@ -115,10 +115,10 @@ static inline i32 mksigned11(u32 v)
 void core::cmd28_draw_flat4untex()
 {
     // Flat 4-vertex untextured poly
-    V0.xy_from_cmd(CMD[1]);
-    V1.xy_from_cmd(CMD[2]);
-    V2.xy_from_cmd(CMD[3]);
-    V3.xy_from_cmd(CMD[4]);
+    xy_from_cmd(V0, CMD[1]);
+    xy_from_cmd(V1, CMD[2]);
+    xy_from_cmd(V2, CMD[3]);
+    xy_from_cmd(V3, CMD[4]);
 
     u32 color = BGR24to15(CMD[0] & 0xFFFFFF);
 #ifdef LOG_DRAW_QUADS
@@ -193,9 +193,9 @@ void core::get_texture_sampler_from_texpage_and_palette(u32 texpage, u32 palette
 
 void core::cmd20_tri_flat()
 {
-    V0.xy_from_cmd(CMD[1]);
-    V1.xy_from_cmd(CMD[2]);
-    V2.xy_from_cmd(CMD[3]);
+    xy_from_cmd(V0, CMD[1]);
+    xy_from_cmd(V1, CMD[2]);
+    xy_from_cmd(V2, CMD[3]);
     u32 color = BGR24to15(CMD[0] & 0xFFFFFF);
 #ifdef LOG_GP0
     printf("\nGP0_20 flat tri %d,%d  %d,%d  %d,%d color:%04x", V0.x, V0.y, V1.x, V1.y, V2.x, V2.y, color);
@@ -205,9 +205,9 @@ void core::cmd20_tri_flat()
 
 void core::cmd22_tri_flat_semi_transparent()
 {
-    V0.xy_from_cmd(CMD[1]);
-    V1.xy_from_cmd(CMD[2]);
-    V2.xy_from_cmd(CMD[3]);
+    xy_from_cmd(V0, CMD[1]);
+    xy_from_cmd(V1, CMD[2]);
+    xy_from_cmd(V2, CMD[3]);
     V0.color24_from_cmd(CMD[0]);
     u32 color = BGR24to15(CMD[0] & 0xFFFFFF);
 #ifdef LOG_GP0
@@ -237,9 +237,9 @@ void core::cmd24_tri_raw_modulated()
 #ifdef LOG_GP0
     printf("\nPRIM 24");
 #endif
-    V0.xy_from_cmd(CMD[1]);
-    V1.xy_from_cmd(CMD[3]);
-    V2.xy_from_cmd(CMD[5]);
+    xy_from_cmd(V0, CMD[1]);
+    xy_from_cmd(V1, CMD[3]);
+    xy_from_cmd(V2, CMD[5]);
     V0.uv_from_cmd(CMD[2]);
     V1.uv_from_cmd(CMD[4]);
     V2.uv_from_cmd(CMD[6]);
@@ -266,9 +266,9 @@ void core::cmd25_tri_raw()
 #ifdef LOG_GP0
     printf("\nPRIM 25");
 #endif
-    V0.xy_from_cmd(CMD[1]);
-    V1.xy_from_cmd(CMD[3]);
-    V2.xy_from_cmd(CMD[5]);
+    xy_from_cmd(V0, CMD[1]);
+    xy_from_cmd(V1, CMD[3]);
+    xy_from_cmd(V2, CMD[5]);
     V0.uv_from_cmd(CMD[2]);
     V1.uv_from_cmd(CMD[4]);
     V2.uv_from_cmd(CMD[6]);
@@ -294,9 +294,9 @@ void core::cmd26_tri_modulated_semi_transparent()
 #ifdef LOG_GP0
     printf("\nPRIM 26");
 #endif
-    V0.xy_from_cmd(CMD[1]);
-    V1.xy_from_cmd(CMD[3]);
-    V2.xy_from_cmd(CMD[5]);
+    xy_from_cmd(V0, CMD[1]);
+    xy_from_cmd(V1, CMD[3]);
+    xy_from_cmd(V2, CMD[5]);
     V0.uv_from_cmd(CMD[2]);
     V1.uv_from_cmd(CMD[4]);
     V2.uv_from_cmd(CMD[6]);
@@ -322,9 +322,9 @@ void core::cmd27_tri_raw_semi_transparent()
 #ifdef LOG_GP0
     printf("\nPRIM 27");
 #endif
-    V0.xy_from_cmd(CMD[1]);
-    V1.xy_from_cmd(CMD[3]);
-    V2.xy_from_cmd(CMD[5]);
+    xy_from_cmd(V0, CMD[1]);
+    xy_from_cmd(V1, CMD[3]);
+    xy_from_cmd(V2, CMD[5]);
     V0.uv_from_cmd(CMD[2]);
     V1.uv_from_cmd(CMD[4]);
     V2.uv_from_cmd(CMD[6]);
@@ -338,10 +338,10 @@ void core::cmd27_tri_raw_semi_transparent()
 
 
 void core::cmd2a_quad_flat_semi_transparent() {
-    V0.xy_from_cmd(CMD[1]);
-    V1.xy_from_cmd(CMD[2]);
-    V2.xy_from_cmd(CMD[3]);
-    V3.xy_from_cmd(CMD[4]);
+    xy_from_cmd(V0, CMD[1]);
+    xy_from_cmd(V1, CMD[2]);
+    xy_from_cmd(V2, CMD[3]);
+    xy_from_cmd(V3, CMD[4]);
     V0.color24_from_cmd(CMD[0]);
     //printf("\nQUAD(2A) x/y0:%d,%d x/y1:%d,%d x/y2:%d,%d x/y3:%d,%d", V0.x, V0.y, V1.x, V1.y, V2.x, V2.y, V3.x, V3.y);
 
@@ -363,10 +363,10 @@ void core::cmd2c_quad_opaque_flat_textured_modulated() {
     // 6 WRIOW GP0,((V3&0xFF)<<8)+(U3&0xFF)           ; Write GP0  Packet Word (Texcoord3)
     // 7 WRIOW GP0,(Y4<<16)+(X4&0xFFFF)               ; Write GP0  Packet Word (Vertex4)
     // 8 WRIOW GP0,((V4&0xFF)<<8)+(U4&0xFF)           ; Write GP0  Packet Word (Texcoord4)
-    T1.xy_from_cmd(CMD[1]);
-    T2.xy_from_cmd(CMD[3]);
-    T3.xy_from_cmd(CMD[5]);
-    T4.xy_from_cmd(CMD[7]);
+    xy_from_cmd(T1, CMD[1]);
+    xy_from_cmd(T2, CMD[3]);
+    xy_from_cmd(T3, CMD[5]);
+    xy_from_cmd(T4, CMD[7]);
     T1.uv_from_cmd(CMD[2]);
     T2.uv_from_cmd(CMD[4]);
     T3.uv_from_cmd(CMD[6]);
@@ -399,10 +399,10 @@ WRIOW GP0,(0x2D<<24)                         ; Write GP0 Command Word (Command)
   WRIOW GP0,(Y4<<16)+(X4&0xFFFF)               ; Write GP0  Packet Word (Vertex4)
   WRIOW GP0,((V4&0xFF)<<8)+(U4&0xFF)           ; Write GP0  Packet Word (Texcoord4)
      */
-    T1.xy_from_cmd(CMD[1]);
-    T2.xy_from_cmd(CMD[3]);
-    T3.xy_from_cmd(CMD[5]);
-    T4.xy_from_cmd(CMD[7]);
+    xy_from_cmd(T1, CMD[1]);
+    xy_from_cmd(T2, CMD[3]);
+    xy_from_cmd(T3, CMD[5]);
+    xy_from_cmd(T4, CMD[7]);
 
     T1.uv_from_cmd(CMD[2]);
     T2.uv_from_cmd(CMD[4]);
@@ -435,10 +435,10 @@ void core::cmd2e_quad_flat_textured_modulated() {
   WRIOW GP0,(Y4<<16)+(X4&0xFFFF)               ; Write GP0  Packet Word (Vertex4)
   WRIOW GP0,((V4&0xFF)<<8)+(U4&0xFF)           ; Write GP0  Packet Word (Texcoord4)
  */
-    T1.xy_from_cmd(CMD[1]);
-    T2.xy_from_cmd(CMD[3]);
-    T3.xy_from_cmd(CMD[5]);
-    T4.xy_from_cmd(CMD[7]);
+    xy_from_cmd(T1, CMD[1]);
+    xy_from_cmd(T2, CMD[3]);
+    xy_from_cmd(T3, CMD[5]);
+    xy_from_cmd(T4, CMD[7]);
     T1.uv_from_cmd(CMD[2]);
     T2.uv_from_cmd(CMD[4]);
     T3.uv_from_cmd(CMD[6]);
@@ -471,10 +471,10 @@ void core::cmd2f_quad_flat_textured_semi() {
   WRIOW GP0,(Y4<<16)+(X4&0xFFFF)               ; Write GP0  Packet Word (Vertex4)
   WRIOW GP0,((V4&0xFF)<<8)+(U4&0xFF)           ; Write GP0  Packet Word (Texcoord4)
   */
-    T1.xy_from_cmd(CMD[1]);
-    T2.xy_from_cmd(CMD[3]);
-    T3.xy_from_cmd(CMD[5]);
-    T4.xy_from_cmd(CMD[7]);
+    xy_from_cmd(T1, CMD[1]);
+    xy_from_cmd(T2, CMD[3]);
+    xy_from_cmd(T3, CMD[5]);
+    xy_from_cmd(T4, CMD[7]);
     T1.uv_from_cmd(CMD[2]);
     T2.uv_from_cmd(CMD[4]);
     T3.uv_from_cmd(CMD[6]);
@@ -503,9 +503,9 @@ void core::cmd30_tri_shaded_opaque()
     // 3 WRIOW GP0,(Y2<<16)+(X2&0xFFFF)               ; Write GP0  Packet Word (Vertex2)
     // 4 WRIOW GP0,(COLOR3&0xFFFFFF)                  ; Write GP0  Packet Word (Color3)
     // 5 WRIOW GP0,(Y3<<16)+(X3&0xFFFF)               ; Write GP0  Packet Word (Vertex3)
-    V1.xy_from_cmd(CMD[1]);
-    V2.xy_from_cmd(CMD[3]);
-    V3.xy_from_cmd(CMD[5]);
+    xy_from_cmd(V1, CMD[1]);
+    xy_from_cmd(V2, CMD[3]);
+    xy_from_cmd(V3, CMD[5]);
     V1.color24_from_cmd(CMD[0]);
     V2.color24_from_cmd(CMD[2]);
     V3.color24_from_cmd(CMD[4]);
@@ -525,10 +525,10 @@ void core::cmd34_tri_shaded_opaque_tex_modulated()
     // 5 WRIOW GP0,(TEX<<16)+((V2&0xFF)<<8)+(U2&0xFF) ; Write GP0  Packet Word (Texcoord2+Texpage)
     // 6 WRIOW GP0,(COLOR3&0xFFFFFF)                  ; Write GP0  Packet Word (Color3)
     // 7 WRIOW GP0,(Y3<<16)+(X3&0xFFFF)               ; Write GP0  Packet Word (Vertex3)
-    // 8 WRIOW GP0,((V3&0xFF)<<8)+(U3&0xFF)           ; Write GP0  Packet Word (Texcoord    V1.xy_from_cmd(CMD[1]);
-    V1.xy_from_cmd(CMD[1]);
-    V2.xy_from_cmd(CMD[4]);
-    V3.xy_from_cmd(CMD[7]);
+    // 8 WRIOW GP0,((V3&0xFF)<<8)+(U3&0xFF)           ; Write GP0  Packet Word (Texcoord    xy_from_cmd(V1, CMD[1]);
+    xy_from_cmd(V1, CMD[1]);
+    xy_from_cmd(V2, CMD[4]);
+    xy_from_cmd(V3, CMD[7]);
     V1.color24_from_cmd(CMD[0]);
     V2.color24_from_cmd(CMD[3]);
     V3.color24_from_cmd(CMD[6]);
@@ -556,10 +556,10 @@ void core::cmd36_tri_shaded_opaque_tex_modulated_semi()
     // 5 WRIOW GP0,(TEX<<16)+((V2&0xFF)<<8)+(U2&0xFF) ; Write GP0  Packet Word (Texcoord2+Texpage)
     // 6 WRIOW GP0,(COLOR3&0xFFFFFF)                  ; Write GP0  Packet Word (Color3)
     // 7 WRIOW GP0,(Y3<<16)+(X3&0xFFFF)               ; Write GP0  Packet Word (Vertex3)
-    // 8 WRIOW GP0,((V3&0xFF)<<8)+(U3&0xFF)           ; Write GP0  Packet Word (Texcoord    V1.xy_from_cmd(CMD[1]);
-    V1.xy_from_cmd(CMD[1]);
-    V2.xy_from_cmd(CMD[4]);
-    V3.xy_from_cmd(CMD[7]);
+    // 8 WRIOW GP0,((V3&0xFF)<<8)+(U3&0xFF)           ; Write GP0  Packet Word (Texcoord    xy_from_cmd(V1, CMD[1]);
+    xy_from_cmd(V1, CMD[1]);
+    xy_from_cmd(V2, CMD[4]);
+    xy_from_cmd(V3, CMD[7]);
     V1.color24_from_cmd(CMD[0]);
     V2.color24_from_cmd(CMD[3]);
     V3.color24_from_cmd(CMD[6]);
@@ -589,9 +589,9 @@ void core::cmd32_tri_shaded_semi_transparent()
     /*struct COLOR_SAMPLER *c1 = &core::color1;
     struct COLOR_SAMPLER *c2 = &core::color2;
     struct COLOR_SAMPLER *c3 = &core::color3;*/
-    V1.xy_from_cmd(CMD[1]);
-    V2.xy_from_cmd(CMD[3]);
-    V3.xy_from_cmd(CMD[5]);
+    xy_from_cmd(V1, CMD[1]);
+    xy_from_cmd(V2, CMD[3]);
+    xy_from_cmd(V3, CMD[5]);
     V1.color24_from_cmd(CMD[0]);
     V2.color24_from_cmd(CMD[2]);
     V3.color24_from_cmd(CMD[4]);
@@ -613,13 +613,13 @@ void core::cmd38_quad_shaded_opaque()
     // WRIOW GP0,(COLOR4&0xFFFFFF)                  ; Write GP0  Packet Word (Color4)
     // WRIOW GP0,(Y4<<16)+(X4&0xFFFF)               ; Write GP0  Packet Word (Vertex4)
     T1.color24_from_cmd(CMD[0]);
-    T1.xy_from_cmd(CMD[1]);
+    xy_from_cmd(T1, CMD[1]);
     T2.color24_from_cmd(CMD[2]);
-    T2.xy_from_cmd(CMD[3]);
+    xy_from_cmd(T2, CMD[3]);
     T3.color24_from_cmd(CMD[4]);
-    T3.xy_from_cmd(CMD[5]);
+    xy_from_cmd(T3, CMD[5]);
     T4.color24_from_cmd(CMD[6]);
-    T4.xy_from_cmd(CMD[7]);
+    xy_from_cmd(T4, CMD[7]);
 
 #ifdef LOG_DRAW_QUADS
     printf("\nquad_shaded ");
@@ -644,13 +644,13 @@ void core::cmd3a_quad_shaded_semi_transparent()
     // WRIOW GP0,(COLOR4&0xFFFFFF)                  ; Write GP0  Packet Word (Color4)
     // WRIOW GP0,(Y4<<16)+(X4&0xFFFF)               ; Write GP0  Packet Word (Vertex4)
     T1.color24_from_cmd(CMD[0]);
-    T1.xy_from_cmd(CMD[1]);
+    xy_from_cmd(T1, CMD[1]);
     T2.color24_from_cmd(CMD[2]);
-    T2.xy_from_cmd(CMD[3]);
+    xy_from_cmd(T2, CMD[3]);
     T3.color24_from_cmd(CMD[4]);
-    T3.xy_from_cmd(CMD[5]);
+    xy_from_cmd(T3, CMD[5]);
     T4.color24_from_cmd(CMD[6]);
-    T4.xy_from_cmd(CMD[7]);
+    xy_from_cmd(T4, CMD[7]);
 
 #ifdef LOG_DRAW_QUADS
     printf("\nquad_shaded ");
@@ -677,10 +677,10 @@ void core::cmd3c_quad_opaque_shaded_textured_modulated() {
     //  9 WRIOW GP0,(COLOR4&0xFFFFFF)                  ; Write GP0  Packet Word (Color4)
     //  10 WRIOW GP0,(Y4<<16)+(X4&0xFFFF)               ; Write GP0  Packet Word (Vertex4)
     //  11 WRIOW GP0,((V4&0xFF)<<8)+(U4&0xFF)           ; Write GP0  Packet Word (Texcoord4)
-    T1.xy_from_cmd(CMD[1]);
-    T2.xy_from_cmd(CMD[4]);
-    T3.xy_from_cmd(CMD[7]);
-    T4.xy_from_cmd(CMD[10]);
+    xy_from_cmd(T1, CMD[1]);
+    xy_from_cmd(T2, CMD[4]);
+    xy_from_cmd(T3, CMD[7]);
+    xy_from_cmd(T4, CMD[10]);
 
     T1.uv_from_cmd(CMD[2]);
     T2.uv_from_cmd(CMD[5]);
@@ -718,10 +718,10 @@ void core::cmd3e_quad_opaque_shaded_textured_modulated_semi() {
     //  9 WRIOW GP0,(COLOR4&0xFFFFFF)                  ; Write GP0  Packet Word (Color4)
     //  10 WRIOW GP0,(Y4<<16)+(X4&0xFFFF)               ; Write GP0  Packet Word (Vertex4)
     //  11 WRIOW GP0,((V4&0xFF)<<8)+(U4&0xFF)           ; Write GP0  Packet Word (Texcoord4)
-    T1.xy_from_cmd(CMD[1]);
-    T2.xy_from_cmd(CMD[4]);
-    T3.xy_from_cmd(CMD[7]);
-    T4.xy_from_cmd(CMD[10]);
+    xy_from_cmd(T1, CMD[1]);
+    xy_from_cmd(T2, CMD[4]);
+    xy_from_cmd(T3, CMD[7]);
+    xy_from_cmd(T4, CMD[10]);
 
     T1.uv_from_cmd(CMD[2]);
     T2.uv_from_cmd(CMD[5]);
@@ -751,8 +751,8 @@ void core::cmd40_line_opaque() {
     // WRIOW GP0,(Y1<<16)+(X1&0xFFFF)         ; Write GP0  Packet Word (Vertex1)
     // WRIOW GP0,(Y2<<16)+(X2&0xFFFF)         ; Write GP0  Packet Word (Vertex2)
     u32 color = BGR24to15(CMD[0] & 0xFFFFFF);
-    V0.xy_from_cmd(CMD[1]);
-    V1.xy_from_cmd(CMD[2]);
+    xy_from_cmd(V0, CMD[1]);
+    xy_from_cmd(V1, CMD[2]);
     bresenham_opaque(&V0, &V1, color);
 #ifdef LOG_GP0
     printf("\nPRIM 40");
@@ -763,7 +763,7 @@ void core::cmd40_line_opaque() {
 void core::cmd60_rect_opaque_flat()
 {
     u32 color = BGR24to15(CMD[0] & 0xFFFFFF);
-    V0.xy_from_cmd(CMD[1]);
+    xy_from_cmd(V0, CMD[1]);
     i32 xsize = CMD[2] & 0xFFFF;
     i32 ysize = CMD[2] >> 16;
     if (xsize > 1023) xsize = 1023;
@@ -791,7 +791,7 @@ void core::cmd64_rect_opaque_flat_textured_modulated()
     // WRIOW GP0,(0x64<<24)+(COLOR&0xFFFFFF)      ; Write GP0 Command Word (Color+Command)
 
     // WRIOW GP0,(Y<<16)+(X&0xFFFF)               ; Write GP0  Packet Word (Vertex)
-    V0.xy_from_cmd(CMD[1]);
+    xy_from_cmd(V0, CMD[1]);
 
     u32 col = CMD[0] & 0xFFFFFF;
     constexpr static float mm = 1.0f / 128.0f;
@@ -847,7 +847,7 @@ void core::cmd65_rect_opaque_flat_textured()
     // 1 WRIOW GP0,(Y<<16)+(X&0xFFFF)               ; Write GP0  Packet Word (Vertex)
     // 2 WRIOW GP0,(PAL<<16)+((V&0xFF)<<8)+(U&0xFF) ; Write GP0  Packet Word (Texcoord+Palette)
     // 3 WRIOW GP0,(HEIGHT<<16)+(WIDTH&0xFFFF)      ; Write GP0  Packet Word (Width+Height)
-    V0.xy_from_cmd(CMD[1]);
+    xy_from_cmd(V0, CMD[1]);
     u32 clut = (CMD[2] >> 16) & 0xFFFF;
     i32 v = (CMD[2] >> 8) & 0xFF;
     i32 ustart = CMD[2] & 0xFF;
@@ -887,7 +887,7 @@ void core::cmd66_rect_semi_flat_textured_modulated()
     // WRIOW GP0,(0x64<<24)+(COLOR&0xFFFFFF)      ; Write GP0 Command Word (Color+Command)
 
     // WRIOW GP0,(Y<<16)+(X&0xFFFF)               ; Write GP0  Packet Word (Vertex)
-    V0.xy_from_cmd(CMD[1]);
+    xy_from_cmd(V0, CMD[1]);
 
     u32 col = CMD[0] & 0xFFFFFF;
     const static float mm = 1.0f / 128.0f;
@@ -946,7 +946,7 @@ void core::cmd67_rect_semi_flat_textured()
     // 1 WRIOW GP0,(Y<<16)+(X&0xFFFF)               ; Write GP0  Packet Word (Vertex)
     // 2 WRIOW GP0,(PAL<<16)+((V&0xFF)<<8)+(U&0xFF) ; Write GP0  Packet Word (Texcoord+Palette)
     // 3 WRIOW GP0,(HEIGHT<<16)+(WIDTH&0xFFFF)      ; Write GP0  Packet Word (Width+Height)
-    V0.xy_from_cmd(CMD[1]);
+    xy_from_cmd(V0, CMD[1]);
 
     u32 clut = (CMD[2] >> 16) & 0xFFFF;
     i32 v = (CMD[2] >> 8) & 0xFF;
@@ -984,7 +984,7 @@ void core::cmd67_rect_semi_flat_textured()
 
 void core::cmd68_rect_1x1()
 {
-    V0.xy_from_cmd(CMD[1]);
+    xy_from_cmd(V0, CMD[1]);
     u32 color = BGR24to15(CMD[0] & 0xFFFFFF);
     setpix(V0.y, V0.x, color, 0, 0);
 #ifdef LOG_GP0
@@ -994,7 +994,7 @@ void core::cmd68_rect_1x1()
 
 void core::cmd6d_rect_1x1_tex()
 {
-    V0.xy_from_cmd(CMD[1]);
+    xy_from_cmd(V0, CMD[1]);
     i32 v = (CMD[2] & 0xFF00) >> 8;
     i32 u = (CMD[2] & 0xFF);
     u32 palette = (CMD[2] >> 16);
@@ -1011,7 +1011,7 @@ void core::cmd6d_rect_1x1_tex()
 
 void core::cmd6c_rect_1x1_tex_modulated()
 {
-    V0.xy_from_cmd(CMD[1]);
+    xy_from_cmd(V0, CMD[1]);
     i32 v = (CMD[2] & 0xFF00) >> 8;
     i32 u = (CMD[2] & 0xFF);
     u32 palette = (CMD[2] >> 16);
@@ -1044,7 +1044,7 @@ void core::cmd6c_rect_1x1_tex_modulated()
 
 void core::cmd6e_rect_1x1_tex_semi_modulated()
 {
-    V0.xy_from_cmd(CMD[1]);
+    xy_from_cmd(V0, CMD[1]);
     i32 v = (CMD[2] & 0xFF00) >> 8;
     i32 u = (CMD[2] & 0xFF);
     u32 palette = (CMD[2] >> 16);
@@ -1076,7 +1076,7 @@ void core::cmd6e_rect_1x1_tex_semi_modulated()
 
 void core::cmd6f_rect_1x1_tex_semi()
 {
-    V0.xy_from_cmd(CMD[1]);
+    xy_from_cmd(V0, CMD[1]);
     i32 v = (CMD[2] & 0xFF00) >> 8;
     i32 u = (CMD[2] & 0xFF);
     u32 palette = (CMD[2] >> 16);
@@ -1132,7 +1132,7 @@ void core::rect_opaque_flat_textured_modulated_xx(u32 wh)
     //let color24 = CMD[0] & 0xFFFFFF;
 
     // WRIOW GP0,(Y<<16)+(X&0xFFFF)               ; Write GP0  Packet Word (Vertex)
-    V0.xy_from_cmd(CMD[1]);
+    xy_from_cmd(V0, CMD[1]);
 
     // WRIOW GP0,(PAL<<16)+((V&0xFF)<<8)+(U&0xFF) ; Write GP0  Packet Word (Texcoord+Palette)
     u32 clut = (CMD[2] >> 16) & 0xFFFF;
@@ -1196,7 +1196,7 @@ void core::rect_opaque_flat_textured_xx(u32 wh)
     //let color24 = CMD[0] & 0xFFFFFF;
 
     // WRIOW GP0,(Y<<16)+(X&0xFFFF)               ; Write GP0  Packet Word (Vertex)
-    V0.xy_from_cmd(CMD[1]);
+    xy_from_cmd(V0, CMD[1]);
 
     // WRIOW GP0,(PAL<<16)+((V&0xFF)<<8)+(U&0xFF) ; Write GP0  Packet Word (Texcoord+Palette)
     u32 clut = (CMD[2] >> 16) & 0xFFFF;
@@ -1248,7 +1248,7 @@ void core::rect_semi_flat_textured_modulated_xx(u32 wh)
     //let color24 = CMD[0] & 0xFFFFFF;
 
     // WRIOW GP0,(Y<<16)+(X&0xFFFF)               ; Write GP0  Packet Word (Vertex)
-    V0.xy_from_cmd(CMD[1]);
+    xy_from_cmd(V0, CMD[1]);
 
     // WRIOW GP0,(PAL<<16)+((V&0xFF)<<8)+(U&0xFF) ; Write GP0  Packet Word (Texcoord+Palette)
     u32 clut = (CMD[2] >> 16) & 0xFFFF;
@@ -1314,7 +1314,7 @@ void core::rect_semi_flat_textured_xx(u32 wh)
     //let color24 = CMD[0] & 0xFFFFFF;
 
     // WRIOW GP0,(Y<<16)+(X&0xFFFF)               ; Write GP0  Packet Word (Vertex)
-    V0.xy_from_cmd(CMD[1]);
+    xy_from_cmd(V0, CMD[1]);
 
     // WRIOW GP0,(PAL<<16)+((V&0xFF)<<8)+(U&0xFF) ; Write GP0  Packet Word (Texcoord+Palette)
     u32 clut = (CMD[2] >> 16) & 0xFFFF;
