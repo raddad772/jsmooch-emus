@@ -12,9 +12,9 @@ struct RT_POINT2D {
     void xy_from_cmd(u32 cmd) { x = cmd & 0xFFFF; y = cmd >> 16; x = SIGNe11to32(x); y = SIGNe11to32(y); }
     void color24_from_cmd(u32 cmd) { r = cmd & 0xFF; g = (cmd >> 8) & 0xFF; b = (cmd >> 16) & 0xFF; }
     void uv_from_cmd(u32 cmd) { u = cmd & 0xFF; v = (cmd >> 8) & 0xFF; }
-    i32 x{}, y{};
-    u32 u{}, v{};
-    u32 r{}, g{}, b{};
+    i64 x{}, y{};
+    i64 u{}, v{};
+    i64 r{}, g{}, b{};
 };
 
 struct RT_POINT2Df {

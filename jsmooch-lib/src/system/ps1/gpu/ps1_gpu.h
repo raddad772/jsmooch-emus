@@ -162,16 +162,16 @@ private:
 
     void unready_cmd();
     void gp0_cmd(u32 cmd);
-    void RT_draw_flat_triangle(const RT_POINT2D *v0, RT_POINT2D *v1, RT_POINT2D *v2, u32 color);
-    void RT_draw_flat_tex_triangle(const RT_POINT2D *v0, RT_POINT2D *v1, RT_POINT2D *v2, TEXTURE_SAMPLER *ts);
-    void RT_draw_flat_tex_triangle_modulated(const RT_POINT2D *v0, RT_POINT2D *v1, RT_POINT2D *v2, u32 color, TEXTURE_SAMPLER *ts);
-    void RT_draw_flat_tex_triangle_modulated_semi(const RT_POINT2D *v0, RT_POINT2D *v1, RT_POINT2D *v2, u32 color, TEXTURE_SAMPLER *ts);
-    void RT_draw_shaded_tex_triangle_modulated(const RT_POINT2D *v0, RT_POINT2D *v1, RT_POINT2D *v2, TEXTURE_SAMPLER *ts);
-    void RT_draw_shaded_tex_triangle_modulated_semi(const RT_POINT2D *v0, RT_POINT2D *v1, RT_POINT2D *v2, TEXTURE_SAMPLER *ts);
-    void RT_draw_flat_tex_triangle_semi(const RT_POINT2D *v0, RT_POINT2D *v1, RT_POINT2D *v2, TEXTURE_SAMPLER *ts);
-    void RT_draw_flat_triangle_semi(const RT_POINT2D *v0, RT_POINT2D *v1, RT_POINT2D *v2, u32 r, u32 g, u32 b);
+    void RT_draw_flat_triangle(RT_POINT2D *v0, RT_POINT2D *v1, RT_POINT2D *v2, u32 color);
+    void RT_draw_flat_tex_triangle(RT_POINT2D *v0, RT_POINT2D *v1, RT_POINT2D *v2, TEXTURE_SAMPLER *ts);
+    void RT_draw_flat_tex_triangle_modulated(RT_POINT2D *v0, RT_POINT2D *v1, RT_POINT2D *v2, u32 color, TEXTURE_SAMPLER *ts);
+    void RT_draw_flat_tex_triangle_modulated_semi(RT_POINT2D *v0, RT_POINT2D *v1, RT_POINT2D *v2, u32 color, TEXTURE_SAMPLER *ts);
+    void RT_draw_shaded_tex_triangle_modulated(RT_POINT2D *v0, RT_POINT2D *v1, RT_POINT2D *v2, TEXTURE_SAMPLER *ts);
+    void RT_draw_shaded_tex_triangle_modulated_semi(RT_POINT2D *v0, RT_POINT2D *v1, RT_POINT2D *v2, TEXTURE_SAMPLER *ts);
+    void RT_draw_flat_tex_triangle_semi(RT_POINT2D *v0, RT_POINT2D *v1, RT_POINT2D *v2, TEXTURE_SAMPLER *ts);
+    void RT_draw_flat_triangle_semi(RT_POINT2D *v0, RT_POINT2D *v1, RT_POINT2D *v2, u32 r, u32 g, u32 b);
     void RT_draw_shaded_triangle(RT_POINT2D *v0, RT_POINT2D *v1, RT_POINT2D *v2);
-    void RT_draw_shaded_triangle_semi(const RT_POINT2D *v0, RT_POINT2D *v1, RT_POINT2D *v2);
+    void RT_draw_shaded_triangle_semi(RT_POINT2D *v0, RT_POINT2D *v1, RT_POINT2D *v2);
 
     void cmd02_quick_rect();
     void cmd28_draw_flat4untex();
