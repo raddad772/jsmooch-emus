@@ -2,11 +2,21 @@
 // Created by . on 2/20/25.
 //
 
+#include <cmath>
+
 #include "rasterize_tri.h"
 #include "pixel_helpers.h"
 #include "ps1_gpu.h"
 
 namespace PS1::GPU {
+
+static constexpr i32 dithertable[16] = {
+    -4  +0  -3  +1,
++2  -2  +3  -1,
+-3  +1  -4  +0,
++3  -1  +2  -2,
+};
+
 
 float edge_function (const RT_POINT2D *a, const RT_POINT2D *b, const RT_POINT2D *c)  {
     return (b->x - a->x) * (c->y - a->y) - (b->y - a->y) * (c->x - a->x);
@@ -702,87 +712,6 @@ void core::RT_draw_flat_triangle_semi(const RT_POINT2D *v0, RT_POINT2D *v1, RT_P
 }
 
 
-void core::RT_draw_shaded_triangle(const RT_POINT2D *v0, RT_POINT2D *v1, RT_POINT2D *v2) {
-    // Calculate the edge function for the whole triangle (ABC)
-    float ABC = edge_function(v0, v1, v2);
-
-    if (ABC < 0) {
-        RT_POINT2D *sa = v2;
-        v2 = v1;
-        v1 = sa;
-        ABC = edge_function(v0, v1, v2);
-    }
-    const float ABCr = 1.0f / ABC;
-
-    const auto v0r = static_cast<float>(v0->r);
-    const auto v0g = static_cast<float>(v0->g);
-    const auto v0b = static_cast<float>(v0->b);
-
-    const auto v1r = static_cast<float>(v1->r);
-    const auto v1g = static_cast<float>(v1->g);
-    const auto v1b = static_cast<float>(v1->b);
-
-    const auto v2r = static_cast<float>(v2->r);
-    const auto v2g = static_cast<float>(v2->g);
-    const auto v2b = static_cast<float>(v2->b);
-
-    // Initialise our point
-    RT_POINT2D p;
-    p.x = p.y = 0;
-
-    // Get the bounding box of the triangle
-    const i32 minX = MIN3(v0->x, v1->x, v2->x);
-    const i32 minY = MIN3(v0->y, v1->y, v2->y);
-    const i32 maxX = MAX3(v0->x, v1->x, v2->x);
-    const i32 maxY = MAX3(v0->y, v1->y, v2->y);
-    if (((maxY - minY) > 511) || ((maxX - minX) > 1023)) return;
-
-    // Get edges for top-left testing...
-    RT_POINT2Df edge0, edge1, edge2;
-    edge0.x = static_cast<float>(v2->x - v1->x);
-    edge0.y = static_cast<float>(v2->y - v1->y);
-
-    edge1.x = static_cast<float>(v0->x - v2->x);
-    edge1.y = static_cast<float>(v0->y - v2->y);
-
-    edge2.x = static_cast<float>(v1->x - v0->x);
-    edge2.y = static_cast<float>(v1->y - v0->y);
-
-    // Loop through all the pixels of the bounding box
-    for (p.y = minY; p.y < maxY; p.y++) {
-        for (p.x = minX; p.x < maxX; p.x++) {
-            // Calculate our edge functions
-            const float w0 = edge_function(v1, v2, &p); // w0 BCP
-            const float w1 = edge_function(v2, v0, &p); // w1 CAP
-            const float w2 = edge_function(v0, v1, &p); // w2 ABP
-
-            // Normalise the edge functions by dividing by the total area to get the barycentric coordinates
-
-            bool overlaps = w1 >= 0 && w0 >= 0 && w2 >= 0;
-
-            // If the point is on the edge, test if it is a top or left edge,
-            // otherwise test if the edge function is positive
-            overlaps &= (w0 == 0 ? ((edge0.y == 0 && edge0.x > 0) || edge0.y > 0) : (w0 > 0));
-            overlaps &= (w1 == 0 ? ((edge1.y == 0 && edge1.x > 0) || edge1.y > 0) : (w1 > 0));
-            overlaps &= (w2 == 0 ? ((edge2.y == 0 && edge2.x > 0) || edge2.y > 0) : (w2 > 0));
-
-            // If all the edge functions are positive, the point is inside the triangle
-            if (overlaps) {
-                const float weightA = w0 * ABCr;
-                const float weightB = w1 * ABCr;
-                const float weightC = w2 * ABCr;
-                // Interpolate the colours at point P
-                const float r = v0r * weightA + v1r * weightB + v2r * weightC;
-                const float g = v0g * weightA + v1g * weightB + v2g * weightC;
-                const float b = v0b * weightA + v1b * weightB + v2b * weightC;
-
-                // Draw the pixel
-                setpix_split(p.y, p.x, static_cast<u32>(r) >> 3, static_cast<u32>(g) >> 3, static_cast<u32>(b) >> 3, 0, 0);
-            }
-        }
-    }
-}
-
 void core::RT_draw_shaded_triangle_semi(const RT_POINT2D *v0, RT_POINT2D *v1, RT_POINT2D *v2) {
     // Calculate the edge function for the whole triangle (ABC)
     float ABC = edge_function(v0, v1, v2);
@@ -852,13 +781,109 @@ void core::RT_draw_shaded_triangle_semi(const RT_POINT2D *v0, RT_POINT2D *v1, RT
                 float weightA = w0 * ABCr;
                 float weightB = w1 * ABCr;
                 float weightC = w2 * ABCr;
-                // Interpolate the colours at point P
+                // Interpolate the colors at point P
                 float r = v0r * weightA + v1r * weightB + v2r * weightC;
                 float g = v0g * weightA + v1g * weightB + v2g * weightC;
                 float b = v0b * weightA + v1b * weightB + v2b * weightC;
 
                 // Draw the pixel
                 semipix_split(p.y, p.x, static_cast<u32>(r) >> 3, static_cast<u32>(g) >> 3, static_cast<u32>(b) >> 3, 0, 1);
+            }
+        }
+    }
+}
+
+i64 cpz(RT_POINT2D *v0, RT_POINT2D *v1, RT_POINT2D *v2) {
+    return (v1->x - v0->x) * (v2->y - v0->y) - (v1->y - v0->y) * (v2->x - v0->x);
+}
+
+bool check3(RT_POINT2D *a, RT_POINT2D *b, RT_POINT2D *c) {
+    i64 cp = cpz(a, b, c);
+    if (cp < 0) return false;
+    if (cp == 0) {
+        if (b->y > a->y) return false;
+        if (b->y == a->y && b->x < a->x) return false;
+    }
+    return true;
+}
+
+bool is_inside_triangle(RT_POINT2D *p, RT_POINT2D *v0, RT_POINT2D *v1, RT_POINT2D *v2) {
+    if (!check3(v0, v1, p)) return false;
+    if (!check3(v1, v2, p)) return false;
+    if (!check3(v2, v0, p)) return false;
+    return true;
+}
+
+void compute_barycentric(i64 cp, RT_POINT2D *p, RT_POINT2D *v0, RT_POINT2D *v1, RT_POINT2D *v2, float *lambdas) {
+    if (cp == 0) {
+        lambdas[0] = lambdas[1] = lambdas[2] = 1.0f/3.0f;
+        return;
+    }
+    float denominator = static_cast<float>(cp);
+    float r = 1.0f / denominator;
+    lambdas[0] = static_cast<float>(cpz(v1, v2, p)) * r;
+    lambdas[1] = static_cast<float>(cpz(v2, v0, p)) * r;
+    lambdas[2] = 1.0f - lambdas[0] - lambdas[1];
+}
+
+
+void core::RT_draw_shaded_triangle(RT_POINT2D *v0, RT_POINT2D *v1, RT_POINT2D *v2) {
+    //float ABC = edge_function(v0, v1, v2);
+    // Calculate the edge function for the whole triangle (ABC)
+    const i32 minX = MIN3(v0->x, v1->x, v2->x);
+    const i32 minY = MIN3(v0->y, v1->y, v2->y);
+    const i32 maxX = MAX3(v0->x, v1->x, v2->x);
+    const i32 maxY = MAX3(v0->y, v1->y, v2->y);
+    if (((maxY - minY) > 511) || ((maxX - minX) > 1023)) return;
+
+    i64 cross_product_z = cpz(v0, v1, v2);
+    if (cross_product_z < 0) {
+        RT_POINT2D *sa = v0;
+        v0 = v1;
+        v1 = sa;
+        cross_product_z = cpz(v0, v1, v2);
+    }
+
+    // Initialise our point
+    RT_POINT2D p;
+    float lambda[3];
+    const auto v0r = static_cast<float>(v0->r);
+    const auto v0g = static_cast<float>(v0->g);
+    const auto v0b = static_cast<float>(v0->b);
+
+    const auto v1r = static_cast<float>(v1->r);
+    const auto v1g = static_cast<float>(v1->g);
+    const auto v1b = static_cast<float>(v1->b);
+
+    const auto v2r = static_cast<float>(v2->r);
+    const auto v2g = static_cast<float>(v2->g);
+    const auto v2b = static_cast<float>(v2->b);
+
+
+    // Loop through all the pixels of the bounding box
+    for (p.y = minY; p.y < maxY; p.y++) {
+        for (p.x = minX; p.x < maxX; p.x++) {
+            if (is_inside_triangle(&p, v0, v1, v2)) {
+                compute_barycentric(cross_product_z, &p, v0, v1, v2, lambda);
+                i32 r = static_cast<i32>(roundf(lambda[0] * v0r + lambda[1] * v1r + lambda[2] * v2r));
+                i32 g = static_cast<i32>(roundf(lambda[0] * v0g + lambda[1] * v1g + lambda[2] * v2g));
+                i32 b = static_cast<i32>(roundf(lambda[0] * v0b + lambda[1] * v1b + lambda[2] * v2b));
+                if (io.GPUSTAT.dither) {
+                    u32 caddr = ((p.y & 3) << 2) | (p.x & 3);
+                    r += dithertable[caddr];
+                    g += dithertable[caddr];
+                    b += dithertable[caddr];
+                }
+                r >>= 3;
+                g >>= 3;
+                b >>= 3;
+                if (r < 0) r = 0;
+                if (r > 31) r = 31;
+                if (g < 0) g = 0;
+                if (g > 31) g = 31;
+                if (b < 0) b = 0;
+                if (b > 31) b = 31;
+                setpix_split(p.y, p.x, static_cast<u32>(r), static_cast<u32>(g), static_cast<u32>(b), 0, 0);
             }
         }
     }
