@@ -742,7 +742,17 @@ void core::cmd3e_quad_opaque_shaded_textured_modulated_semi() {
     RT_draw_shaded_tex_triangle_modulated_semi(&T2, &T3, &T4, &ts);
 }
 
-void core::cmd40_line_opaque() {
+void core::cmd40_line_semi() {
+    // WRIOW GP0,(0x40<<24)+(COLOR&0xFFFFFF)  ; Write GP0 Command Word (Color+Command)
+    // WRIOW GP0,(Y1<<16)+(X1&0xFFFF)         ; Write GP0  Packet Word (Vertex1)
+    // WRIOW GP0,(Y2<<16)+(X2&0xFFFF)         ; Write GP0  Packet Word (Vertex2)
+    u32 color = BGR24to15(CMD[0] & 0xFFFFFF);
+    xy_from_cmd(V0, CMD[1]);
+    xy_from_cmd(V1, CMD[2]);
+    bresenham_semi(&V0, &V1, color);
+}
+
+void core::cmd42_line_opaque() {
     // WRIOW GP0,(0x40<<24)+(COLOR&0xFFFFFF)  ; Write GP0 Command Word (Color+Command)
     // WRIOW GP0,(Y1<<16)+(X1&0xFFFF)         ; Write GP0  Packet Word (Vertex1)
     // WRIOW GP0,(Y2<<16)+(X2&0xFFFF)         ; Write GP0  Packet Word (Vertex2)
@@ -1716,7 +1726,11 @@ void core::gp0_cmd(u32 cmd) {
                 cmd_arg_num = 12;
                 break;
             case 0x40: // monochrome line, opaque
-                current_ins = &core::cmd40_line_opaque;
+                current_ins = &core::cmd40_line_semi;
+                cmd_arg_num = 3;
+                break;
+            case 0x42: // monochrome line, opaque
+                current_ins = &core::cmd42_line_opaque;
                 cmd_arg_num = 3;
                 break;
             case 0x60: // Rectangle, variable size, opaque

@@ -133,7 +133,7 @@ u8 digital_gamepad::exchange_byte(u8 byte, u64 clock_cycle) {
                     break;
             }
             cmd = (byte == 0x42) ? PCMD_read : PCMD_unknown;
-            if (cmd == PCMD_unknown) printf("\nUnknown command %02x to controller %d", byte, pio->id);
+            if (cmd == PCMD_unknown && byte != 0x43) printf("\nUnknown command %02x to controller %d", byte, pio->id);
             if (cmd == PCMD_read) do_ack = 1;
         }
         else switch (protocol_step) {
