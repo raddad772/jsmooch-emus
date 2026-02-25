@@ -849,20 +849,22 @@ void core::cmd64_rect_opaque_flat_textured_modulated()
         i32 u = ustart;
         for (i32 x = V0.x; x < xend; x++) {
             u16 color = ts.sample(&ts, u, v);
-            u32 hbit = color & 0x8000;
-            u32 lbit = color & 0x7FFF;
+            if (color != 0) {
+                u32 hbit = color & 0x8000;
+                u32 lbit = color & 0x7FFF;
 
-            i64 r = ((color & 0x1F) * r_mul) >> 7;
-            i64 g = (((color >> 5) & 0x1F) * g_mul) >> 7;
-            i64 b = (((color >> 10) & 0x1F) * b_mul) >> 7;
-            r = CLAMP(r, 0, 31); g = CLAMP(g, 0, 31); b = CLAMP(b, 0, 31);
+                i64 r = ((color & 0x1F) * r_mul) >> 7;
+                i64 g = (((color >> 5) & 0x1F) * g_mul) >> 7;
+                i64 b = (((color >> 10) & 0x1F) * b_mul) >> 7;
+                r = CLAMP(r, 0, 31); g = CLAMP(g, 0, 31); b = CLAMP(b, 0, 31);
 
 
-            //lbit = 0x7FFF;
-            //hbit = 1;
-            setpix_split(y, x, r, g, b, 1, hbit);
-            //setpix(y, x, lbit, 0, 0x8000);
-            u += u_increment; u &= 0xFF;
+                //lbit = 0x7FFF;
+                //hbit = 1;
+                setpix_split(y, x, r, g, b, 1, hbit);
+                //setpix(y, x, lbit, 0, 0x8000);
+                u += u_increment; u &= 0xFF;
+            }
         }
         v += v_increment; v &= 0xFF;
     }
@@ -900,9 +902,11 @@ void core::cmd65_rect_opaque_flat_textured()
         i32 u = ustart;
         for (i32 x = V0.x; x < xend; x++) {
             u16 color = ts.sample(&ts, u, v);
-            u32 hbit = color & 0x8000;
-            u32 lbit = color & 0x7FFF;
-            setpix(y, x, lbit, 1, hbit);
+            if (color != 0) {
+                u32 hbit = color & 0x8000;
+                u32 lbit = color & 0x7FFF;
+                setpix(y, x, lbit, 1, hbit);
+            }
             u += u_increment; u &= 0xFF;
         }
         v += v_increment; v &= 0xFF;
@@ -948,18 +952,20 @@ void core::cmd66_rect_semi_flat_textured_modulated()
         i32 u = ustart;
         for (i32 x = V0.x; x < xend; x++) {
             u16 color = ts.sample(&ts, u, v);
-            u32 hbit = color & 0x8000;
-            u32 lbit = color & 0x7FFF;
+            if (color != 0) {
+                u32 hbit = color & 0x8000;
+                u32 lbit = color & 0x7FFF;
 
-            float r = (float)(lbit & 0x1F) * mr;
-            float g = (float)((lbit >> 5) & 0x1F) * mg;
-            float b = (float)((lbit >> 10) & 0x1F) * mb;
-            if (r > 31.0f) r = 31.0f;
-            if (g > 31.0f) g = 31.0f;
-            if (b > 31.0f) b = 31.0f;
-            lbit = ((u32)r) | ((u32)g << 5) | ((u32)b << 10);
+                float r = (float)(lbit & 0x1F) * mr;
+                float g = (float)((lbit >> 5) & 0x1F) * mg;
+                float b = (float)((lbit >> 10) & 0x1F) * mb;
+                if (r > 31.0f) r = 31.0f;
+                if (g > 31.0f) g = 31.0f;
+                if (b > 31.0f) b = 31.0f;
+                lbit = ((u32)r) | ((u32)g << 5) | ((u32)b << 10);
 
-            semipix(y, x, lbit, 1, hbit);
+                semipix(y, x, lbit, 1, hbit);
+            }
             u += u_increment; u &= 0xFF;
         }
         v += v_increment; v &= 0xFF;
@@ -999,13 +1005,15 @@ void core::cmd67_rect_semi_flat_textured()
         i32 u = ustart;
         for (i32 x = V0.x; x < xend; x++) {
             u16 color = ts.sample(&ts, u, v);
-            u32 hbit = color & 0x8000;
-            u32 lbit = color & 0x7FFF;
+            if (color != 0) {
+                u32 hbit = color & 0x8000;
+                u32 lbit = color & 0x7FFF;
 
-            //lbit = 0x7FFF;
-            //hbit = 1;
-            semipix(y, x, lbit, 1, hbit);
-            //setpix(y, x, lbit, 0, 0x8000);
+                //lbit = 0x7FFF;
+                //hbit = 1;
+                semipix(y, x, lbit, 1, hbit);
+                //setpix(y, x, lbit, 0, 0x8000);
+            }
             u += u_increment; u &= 0xFF;
         }
         v += v_increment; v &= 0xFF;
@@ -1031,7 +1039,8 @@ void core::cmd6d_rect_1x1_tex()
     TEXTURE_SAMPLER ts;
     get_texture_sampler_from_texpage_and_palette(TEXPAGE, palette, &ts);
     u32 color = ts.sample(&ts, u, v);
-    setpix(V0.y, V0.x, color & 0x7FFF, 1, color & 0x8000);
+    if (color != 0)
+        setpix(V0.y, V0.x, color & 0x7FFF, 1, color & 0x8000);
     //setpix(V0.y, V0.x, 0x7FFF, 1, 0x8000);
 #ifdef LOG_GP0
     printf("\nPRIM 6D");
@@ -1048,6 +1057,7 @@ void core::cmd6c_rect_1x1_tex_modulated()
     TEXTURE_SAMPLER ts;
     get_texture_sampler_from_texpage_and_palette(TEXPAGE, palette, &ts);
     u32 color = ts.sample(&ts, u, v);
+    if (color == 0) return;
     u32 hbit = color & 0x8000;
 
     u32 tc = CMD[0] & 0xFFFFFF;
@@ -1081,6 +1091,7 @@ void core::cmd6e_rect_1x1_tex_semi_modulated()
     TEXTURE_SAMPLER ts;
     get_texture_sampler_from_texpage_and_palette(TEXPAGE, palette, &ts);
     u32 color = ts.sample(&ts, u, v);
+    if (color == 0) return;
     u32 hbit = color & 0x8000;
 
     u32 tc = CMD[0] & 0xFFFFFF;
@@ -1113,6 +1124,7 @@ void core::cmd6f_rect_1x1_tex_semi()
     TEXTURE_SAMPLER ts;
     get_texture_sampler_from_texpage_and_palette(TEXPAGE, palette, &ts);
     u32 color = ts.sample(&ts, u, v);
+    if (color == 0) return;
     semipix(V0.y, V0.x, color & 0x7FFF, 1, color & 0x8000);
 #ifdef LOG_GP0
     printf("\nPRIM 6F");
@@ -1247,16 +1259,18 @@ void core::rect_opaque_flat_textured_modulated_xx(u32 wh)
         i32 u = ustart;
         for (i32 x = V0.x; x < xend; x++) {
             u16 color = ts.sample(&ts, u, v);
-            u32 hbit = color & 0x8000;
+            if (color != 0) {
+                u32 hbit = color & 0x8000;
 
-            float r = (float)(color & 0x1F) * rm;
-            float g = (float)((color >> 5) & 0x1F) * gm;
-            float b = (float)((color >> 10) & 0x1F) * bm;
-            if (r > 31.0f) r = 31.0f;
-            if (g > 31.0f) g = 31.0f;
-            if (b > 31.0f) b = 31.0f;
+                float r = (float)(color & 0x1F) * rm;
+                float g = (float)((color >> 5) & 0x1F) * gm;
+                float b = (float)((color >> 10) & 0x1F) * bm;
+                if (r > 31.0f) r = 31.0f;
+                if (g > 31.0f) g = 31.0f;
+                if (b > 31.0f) b = 31.0f;
 
-            setpix_split(y, x, (u32)r, (u32)g, (u32)b, 1, hbit);
+                setpix_split(y, x, (u32)r, (u32)g, (u32)b, 1, hbit);
+            }
             u += u_increment; u &= 0xFF;
         }
         v += v_increment; v &= 0xFF;
@@ -1319,9 +1333,11 @@ void core::rect_opaque_flat_textured_xx(u32 wh)
         i32 u = ustart;
         for (i32 x = V0.x; x < xend; x++) {
             u16 color = ts.sample(&ts, u, v);
-            u32 hbit = color & 0x8000;
-            u32 lbit = color & 0x7FFF;
-            setpix(y, x, lbit, 1, hbit);
+            if (color != 0) {
+                u32 hbit = color & 0x8000;
+                u32 lbit = color & 0x7FFF;
+                setpix(y, x, lbit, 1, hbit);
+            }
             u += u_increment; u &= 0xFF;
         }
         v += v_increment; v &= 0xFF;
@@ -1379,16 +1395,18 @@ void core::rect_semi_flat_textured_modulated_xx(u32 wh)
         i32 u = ustart;
         for (i32 x = V0.x; x < xend; x++) {
             u16 color = ts.sample(&ts, u, v);
-            u32 hbit = color & 0x8000;
+            if (color != 0) {
+                u32 hbit = color & 0x8000;
 
-            float r = (float)(color & 0x1F) * rm;
-            float g = (float)((color >> 5) & 0x1F) * gm;
-            float b = (float)((color >> 10) & 0x1F) * bm;
-            if (r > 31.0f) r = 31.0f;
-            if (g > 31.0f) g = 31.0f;
-            if (b > 31.0f) b = 31.0f;
+                float r = (float)(color & 0x1F) * rm;
+                float g = (float)((color >> 5) & 0x1F) * gm;
+                float b = (float)((color >> 10) & 0x1F) * bm;
+                if (r > 31.0f) r = 31.0f;
+                if (g > 31.0f) g = 31.0f;
+                if (b > 31.0f) b = 31.0f;
 
-            semipix_split(y, x, (u32)r, (u32)g, (u32)b, 1, hbit);
+                semipix_split(y, x, (u32)r, (u32)g, (u32)b, 1, hbit);
+            }
             u += u_increment; u &= 0xFF;
         }
         v += v_increment; v &= 0xFF;
@@ -1437,9 +1455,11 @@ void core::rect_semi_flat_textured_xx(u32 wh)
         i32 u = ustart;
         for (i32 x = V0.x; x < xend; x++) {
             u16 color = ts.sample(&ts, u, v);
-            u32 hbit = color & 0x8000;
-            u32 lbit = color & 0x7FFF;
-            semipix(y, x, lbit, 1, hbit);
+            if (color != 0) {
+                u32 hbit = color & 0x8000;
+                u32 lbit = color & 0x7FFF;
+                semipix(y, x, lbit, 1, hbit);
+            }
             u += u_increment; u &= 0xFF;
         }
         v += v_increment; v &= 0xFF;

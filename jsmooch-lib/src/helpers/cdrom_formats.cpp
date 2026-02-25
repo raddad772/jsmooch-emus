@@ -11,8 +11,10 @@ static inline u32 msf_to_lba(u32 m, u32 s, u32 f) {
 u8 *CDROM_DISC::ptr_to_data(u32 m, u32 s, u32 f) {
     u32 lba = msf_to_lba(m, s, f);
     u32 offset = lba * 2352;
-    if (offset >= data.sz)
+    if (offset >= data.sz) {
+        printf("\nBAD SEEK TO %02d:%02d:%02d", m, s, f);
         return nullptr;
+    }
     return data.ptr + offset;
 }
 

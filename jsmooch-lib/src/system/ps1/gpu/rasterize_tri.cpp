@@ -190,6 +190,7 @@ void core::RT_draw_flat_tex_triangle_modulated_semi(RT_POINT2D *v0, RT_POINT2D *
                 i64 v = ((lambda[0] * v0->v) + (lambda[1] * v1->v) + (lambda[2] * v2->v)) >> 32;
 
                 color = ts->sample(ts, static_cast<i32>(u) & 0xFF, static_cast<i32>(v) & 0xFF);
+                if (color == 0) continue;
                 i64 mr = ((color & 0x1f) * r_mul) >> 5;
                 i64 mg = (((color >> 5) & 0x1f) * g_mul) >> 5;
                 i64 mb = (((color >> 10) & 0x1f) * b_mul) >> 5;
@@ -244,6 +245,7 @@ void core::RT_draw_shaded_tex_triangle_modulated_semi(RT_POINT2D *v0, RT_POINT2D
                 i64 b_mul = ((lambda[0] * v0->b) + (lambda[1] * v1->b) + (lambda[2] * v2->b));
 
                 u32 color = ts->sample(ts, static_cast<i32>(u) & 0xFF, static_cast<i32>(v) & 0xFF);
+                if (color == 0) continue;
                 i64 mr = ((color & 0x1f) * r_mul) >> 37;
                 i64 mg = (((color >> 5) & 0x1f) * g_mul) >> 37;
                 i64 mb = (((color >> 10) & 0x1f) * b_mul) >> 37;
@@ -298,6 +300,7 @@ void core::RT_draw_shaded_tex_triangle_modulated(RT_POINT2D *v0, RT_POINT2D *v1,
                 i64 b_mul = ((lambda[0] * v0->b) + (lambda[1] * v1->b) + (lambda[2] * v2->b));
 
                 u32 color = ts->sample(ts, static_cast<i32>(u) & 0xFF, static_cast<i32>(v) & 0xFF);
+                if (color == 0) continue;
                 i64 mr = ((color & 0x1f) * r_mul) >> 36;
                 i64 mg = (((color >> 5) & 0x1f) * g_mul) >> 36;
                 i64 mb = (((color >> 10) & 0x1f) * b_mul) >> 36;
@@ -350,6 +353,7 @@ void core::RT_draw_flat_tex_triangle(RT_POINT2D *v0, RT_POINT2D *v1, RT_POINT2D 
                 i64 v = ((lambda[0] * v0->v) + (lambda[1] * v1->v) + (lambda[2] * v2->v)) >> 32;
 
                 u32 color = ts->sample(ts, static_cast<i32>(u) & 0xFF, static_cast<i32>(v) & 0xFF);
+                if (color == 0) continue;
 
                 // Draw the pixel
                 setpix(p.y, p.x, color & 0x7FFF, 1, color & 0x8000);
