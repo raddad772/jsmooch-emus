@@ -209,7 +209,7 @@ u32 core::mainbus_read(u32 addr, u8 sz, bool has_effect)
     static u32 e = 0;
     printf("\nUNHANDLED MAINBUS READ sz %d addr %08x", sz, raddr);
     e++;
-    if (e > 10) dbg_break("TOO MANY BAD READ", clock.master_cycle_count+clock.waitstates);
+    //if (e > 10) dbg_break("TOO MANY BAD READ", clock.master_cycle_count+clock.waitstates);
     //return 0;
     switch(sz) {
         case 1:
