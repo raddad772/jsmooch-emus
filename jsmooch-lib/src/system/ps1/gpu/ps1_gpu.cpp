@@ -1624,11 +1624,21 @@ void core::gp0_cmd(u32 cmd) {
 #ifdef LOG_GP0
         printf("\n(GPU) CMD %02x", cmdr);
 #endif
+        if ((cmdr >= 0x03) && (cmdr < 0x1F)) cmdr = 0;
         switch(cmdr) {
-            case 0: // NOP
-                //if (cmd != 0) printf("\nINTERPRETED AS NOP:%08x", cmd);
-                break;
+            case 0x00: // NOP
             case 0x01: // Clear cache (not implemented)
+            case 0x03:
+            case 0xE0:
+            case 0xE7:
+            case 0xE8:
+            case 0xE9:
+            case 0xEA:
+            case 0xEB:
+            case 0xEC:
+            case 0xED:
+            case 0xEE:
+            case 0xEF:
                 break;
             case 0x02: // Quick Rectangle
                 //console.log('Quick rectangle!');

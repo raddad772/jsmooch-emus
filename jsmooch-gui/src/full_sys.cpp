@@ -990,9 +990,9 @@ void full_system::load_default_ROM()
 
             //worked = grab_ROM(&ROMs, which, "VBLANK.exe", nullptr);
 
-            //worked = grab_cue(&ROMs, which, "Resident Evil (USA)", nullptr);
-            //worked = grab_cue(&ROMs, which, "Resident Evil 2 (USA)", nullptr);
-            //worked = grab_cue(&ROMs, which, "Silent Hill (USA)", nullptr);
+            //worked = grab_cue(&ROMs, which, "Resident Evil (USA)", nullptr); MDEC
+            //worked = grab_cue(&ROMs, which, "Resident Evil 2 (USA)", nullptr); MDEC
+            worked = grab_cue(&ROMs, which, "Silent Hill (USA)", nullptr); // MDEC but works?
             //worked = grab_cue(&ROMs, which, "Tomb Raider (USA) (Rev 1)", nullptr);
             //worked = grab_cue(&ROMs, which, "Tomb Raider II - Starring Lara Croft (USA) (Rev 2)", nullptr);
             //worked = grab_cue(&ROMs, which, "Metal Slug X (USA)", nullptr);
@@ -1001,8 +1001,7 @@ void full_system::load_default_ROM()
             //worked = grab_cue(&ROMs, which, "Tony Hawks Pro Skater 2 (USA)", nullptr);
             //worked = grab_cue(&ROMs, which, "Crash Bandicoot 1", nullptr);
             //worked = grab_cue(&ROMs, which, "mk2", nullptr);
-            //worked = grab_cue(&ROMs, which, "Crash Bandicoot 1", nullptr);
-            worked = grab_cue(&ROMs, which, "Hydro Thunder (USA)", nullptr);
+            //worked = grab_cue(&ROMs, which, "Hydro Thunder (USA)", nullptr);
             //worked = grab_cue(&ROMs, which, "Cool Boarders 2 (USA)", nullptr);
             //worked = grab_cue(&ROMs, which, "Ridge Racer (USA)", nullptr);
             //worked = grab_cue(&ROMs, which, "Mega Man X4 (USA)", nullptr);
