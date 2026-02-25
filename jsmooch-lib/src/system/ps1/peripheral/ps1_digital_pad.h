@@ -16,6 +16,7 @@ struct digital_gamepad {
     explicit digital_gamepad(PS1::core *parent);
     void latch_buttons();
     void schedule_ack(u64 clock_cycle, u64 time, u32 level);
+    u8 exchange_byte(u8 byte, u64 clock_cycle);;
     physical_io_device *pio{};
 
     core *bus;

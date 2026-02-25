@@ -30,16 +30,16 @@ void SIO0::update_rx_signal()
 
 void SIO0::update_IRQs()
 {
-    printif(ps1.sio0.irq, "\nport: update IRQs. RX.e:%d RX.s:%d DSR.e:%d DSR.s:%d", io.SIO_CTRL.rx_irq_enable, irq.rx_signal, io.SIO_CTRL.dsr_irq_enable, io.SIO_STAT.dsr_input);
+    dbgloglog_bus(PS1D_SIO0_IRQ, DBGLS_TRACE, "port: update IRQs. RX.e:%d RX.s:%d DSR.e:%d DSR.s:%d", io.SIO_CTRL.rx_irq_enable, irq.rx_signal, io.SIO_CTRL.dsr_irq_enable, io.SIO_STAT.dsr_input);
     u32 old_signal = io.SIO_STAT.irq_request;
     u32 signal = io.SIO_CTRL.rx_irq_enable && irq.rx_signal;
     signal |= io.SIO_CTRL.tx_irq_enable && irq.tx_signal;
     signal |= io.SIO_CTRL.dsr_irq_enable && io.SIO_STAT.dsr_input;
 
     io.SIO_STAT.irq_request |= signal; // It is only SET by these, not un-set
-    printif(ps1.sio0.irq, "\nport: old IRQ signal:%d new signal:%d . CPU IMASK %08x", old_signal, io.SIO_STAT.irq_request, bus->cpu.io.I_MASK);
+    //dbgloglog_bus(PS1D_SIO0_IRQ, DBGLS_TRACE, "port: old IRQ signal:%d new signal:%d . CPU IMASK %08x", old_signal, io.SIO_STAT.irq_request, bus->cpu.io.I_MASK);
     if (!old_signal && io.SIO_STAT.irq_request) {
-        printif(ps1.sio0.irq, "\nSIO0 IRQ 0->1");
+        dbgloglog_busn(PS1D_SIO0_IRQ, DBGLS_TRACE, "SIO0 IRQ 0->1");
     }
     bus->set_irq(IRQ_SIO0, signal);
 }
@@ -73,8 +73,10 @@ void SIO0::update_ACKs(SIO0_device port, u32 level)
     }
 
     u32 new_ack = cont1_ack | cont2_ack | mem1_ack | mem2_ack;
+    dbgloglog_bus(PS1D_SIO0_ACK, DBGLS_TRACE, "ACK %d", new_ack);
 
     io.SIO_STAT.dsr_input = new_ack;
+    //printf("\nC:%lld DSR_INPUT:%d", bus->clock.master_cycle_count, new_ack);
     update_IRQs();
 }
 
@@ -109,21 +111,22 @@ void SIO0::send_DTR(u32 port, u32 level)
 void SIO0::write_ctrl(u8 sz, u32 val)
 {
     //printf("\nTHING:%d  TRACES:%d", ::dbg.traces.ps1.sio0.rw, ::dbg.trace_on);
-    printif(ps1.sio0.rw, "\n\nport: SIO0 WRITE CTRL %04x", val);
+    dbgloglog_bus(PS1D_SIO0_RW, DBGLS_TRACE, "port: SIO0 WRITE CTRL %04x", val);
     //bus->dbg.dvptr->add_printf(PS1D_R3000_, bus->clock.master_cycle_count, DBGLS_TRACE, "SIO0 WRITE CTRL %04x", val);
     u32 old_rx_enable = io.SIO_CTRL.rx_enable;
     u32 old_dtr = io.SIO_CTRL.dtr_output;
     u32 old_select = io.SIO_CTRL.sio0_port_sel;
 
-    val &= ~0b1010000;
     io.SIO_CTRL.u = val & 0xFFFF;
 
-    if (io.SIO_CTRL.reset) {
+    //if (io.SIO_CTRL.reset) {
+    if (false) {
         io.SIO_CTRL.u = 0;
         io.SIO_STAT.u = 0;
         io.SIO_MODE.u = 0;
         io.RX_FIFO.num = 0;
         io.RX_FIFO.head = io.RX_FIFO.tail = 0;
+        update_rx_signal();
     }
 
     u32 new_dtr = io.SIO_CTRL.dtr_output;
@@ -144,12 +147,12 @@ void SIO0::write_ctrl(u8 sz, u32 val)
         // Clear FIFO
         io.RX_FIFO.head = io.RX_FIFO.tail = io.RX_FIFO.num = 0;
         memset(io.RX_FIFO.buf, 0, 8);
-        printif(ps1.sio0.rw, "\nCLEAR FIFO!");
+        dbgloglog_busn(PS1D_SIO0_RW, DBGLS_TRACE, "CLEAR FIFO!");
     }
 
     if (io.SIO_CTRL.ack) {
         io.SIO_CTRL.ack = 0;
-        printif(ps1.sio0.rw, "\nprogram: SIO0 ACK!");
+        dbgloglog_busn(PS1D_SIO0_ACK, DBGLS_TRACE, "program: SIO0 ACK!");
         // 3, 4, 5, 9
         io.SIO_STAT.rx_parity_error = 0;
         io.SIO_STAT._unused1 &= 0b100;
@@ -164,7 +167,7 @@ void SIO0::write_ctrl(u8 sz, u32 val)
 void SIO0::write_mode(u8 sz, u32 val)
 {
     io.SIO_MODE.u = val & 0x13F;
-    printif(ps1.sio0.rw, "\nMODE: %02x", io.SIO_MODE.u);
+    dbgloglog_bus(PS1D_SIO0_RW, DBGLS_TRACE, "MODE: %02x", io.SIO_MODE.u);
 }
 
 void SIO0::write_stat(u8 sz, u32 val)
@@ -180,16 +183,14 @@ u8 SIO0::do_exchange_byte(u8 tx_byte)
     // Determine which port...
     u8 rx_byte = 0xFF;
     if (port.controller) {
-        printif(ps1.sio0.rw, "\npad: XCHG!");
         rx_byte &= port.controller->exchange_byte(port.controller->device_ptr, tx_byte, bus->clock_current());
+        dbgloglog_bus(PS1D_SIO0_XCHG, DBGLS_TRACE, "EXCH BYTE (pad). TX:%02x, RX:%02x", tx_byte, rx_byte);
     }
     if (port.memcard) {
-        printif(ps1.sio0.rw, "\nMemcard XCHG!");
         rx_byte &= port.memcard->exchange_byte(port.memcard->device_ptr, tx_byte, bus->clock_current());
+        dbgloglog_bus(PS1D_SIO0_XCHG, DBGLS_TRACE, "EXCH BYTE (memcard). TX:%02x, RX:%02x", tx_byte, rx_byte);
     }
-
-    printif(ps1.sio0.rw, "\nEXCH BYTE. TX:%02x, RX:%02x", tx_byte, rx_byte);
-
+    //printf("\nc:%lld XCH BYTE", bus->clock.master_cycle_count);
     return rx_byte;
 }
 
@@ -209,9 +210,7 @@ void SIO0_RX_FIFO::pprint()
 
 void SIO0_RX_FIFO::push(u8 byte)
 {
-    printif(ps1.sio0.rw, "\nPush %02x to FIFO!", byte);
-    if (num == 8) {
-        printif(ps1.sio0.rw, "\nWARNING SIO0 RX FIFO OVERFLOW");
+   if (num == 8) {
         tail = (tail - 1) & 7;
         num--;
     }
@@ -237,9 +236,11 @@ void scheduled_exchange_byte(void *ptr, u64 key, u64 clock, u32 jitter)
     u8 inbyte = th->do_exchange_byte(key);
 
     if (th->io.SIO_CTRL.rx_enable || th->io.SIO_CTRL.dtr_output) {
+
         // Push to FIFO
-        //printf("\nPUSH TO FIFO!");
-        th->io.RX_FIFO.push(inbyte);
+        //printf("\nc:%lld PUSH TO FIFO!", th->bus->clock.master_cycle_count);
+        dbgloglog_thbus(PS1D_SIO0_RW, DBGLS_TRACE, "Push %02x to FIFO!", inbyte);
+         th->io.RX_FIFO.push(inbyte);
 
         // Trigger IRQ if necessary
         th->update_rx_signal();
@@ -249,6 +250,7 @@ void scheduled_exchange_byte(void *ptr, u64 key, u64 clock, u32 jitter)
     // Set SIO_STAT bit
     th->io.SIO_STAT.tx_idle = 1;
     th->io.SIO_STAT.rx_fifo_not_empty = th->io.RX_FIFO.num != 0;
+    //printf("\nRX FIFO NOT EMPTY:%d", th->io.SIO_STAT.rx_fifo_not_empty);;
 }
 
 void SIO0::write_tx_data(u8 sz, u32 val)
@@ -258,11 +260,13 @@ void SIO0::write_tx_data(u8 sz, u32 val)
     // schedule exchange_byte() for 1023 cycles out!
     io.SIO_STAT.tx_fifo_not_full = 1;
     io.SIO_STAT.tx_idle = 0;
-    printif(ps1.sio0.rw, "\nprogram: write tx %02x. Schedule exch. byte @ %lld", val & 0xFF, bus->clock_current() + 1023);
+    io.SIO_CTRL.rx_enable = 1;
+    dbgloglog_bus(PS1D_SIO0_RW, DBGLS_TRACE, "program: write tx %02x. Schedule exch. byte @ %lld", val & 0xFF, bus->clock_current() + 1023);
 
     if (still_sched) {
         printf("\nWARNING MULTIPLE EXCH BYTE SCHEDULED!?");
     }
+    //printf("\nc:%lld TX write! Schedule byte exchange for C: %lld", bus->clock_current(), bus->clock_current()+(io.baud * 8));
     sch_id = bus->scheduler.add_or_run_abs(bus->clock_current() + (io.baud * 8), val & 0xFF, this, &scheduled_exchange_byte, &still_sched);
 }
 
@@ -297,7 +301,7 @@ void SIO0::write(u32 addr, u8 sz, u32 val)
             return;
         case R_SIO_BAUD:
             io.baud = val & 0xFFFF;
-            printif(ps1.sio0.rw, "\n(SIO0) BAUD:%d", io.baud);
+            dbgloglog_bus(PS1D_SIO0_RW, DBGLS_TRACE, "(SIO0) BAUD:%d", io.baud);
             return;
     }
     printf("\nUnhandled SIO write to %08x (%d): %08x", addr, sz, val);
@@ -305,6 +309,7 @@ void SIO0::write(u32 addr, u8 sz, u32 val)
 
 u32 SIO0::read_ctrl(u8 sz) const
 {
+    dbgloglog_bus(PS1D_SIO0_RW, DBGLS_TRACE, "port: read SIO_CTRL %04x", io.SIO_CTRL.u);
     return io.SIO_CTRL.u;
 }
 
@@ -315,6 +320,12 @@ u32 SIO0::read_mode(u8 sz) const
 
 u32 SIO0::read_stat(u8 sz) const
 {
+    u32 b7 = ((io.SIO_STAT.u >> 7) & 1);
+    //if (b7)
+        //printf("\nc:%lld READ JOY_STAT bit7:%d val:%04x", bus->clock.master_cycle_count, b7, io.SIO_STAT.u);
+    if (io.SIO_STAT.u == 0x207 && ::dbg.trace_on) dbg_break("HERE!", 0);
+    dbgloglog_bus(PS1D_SIO0_RW, DBGLS_TRACE, "port: read SIO_STAT %04x", io.SIO_STAT.u);
+
     return io.SIO_STAT.u;
 }
 
@@ -330,7 +341,7 @@ u32 SIO0::read_rx_data(u8 sz)
 
         io.RX_FIFO.num--;
     }
-    printif(ps1.sio0.rw, "\nport: read RX. pop %02x from FIFO now at len:%d!", out_val, io.RX_FIFO.num);
+    dbgloglog_bus(PS1D_SIO0_RW, DBGLS_TRACE, "port: read RX. pop %02x from FIFO now at len:%d!", out_val, io.RX_FIFO.num);
 
     // Now preview the next 3...
     for (u32 i = 1; i < sz; i++) {
@@ -343,7 +354,7 @@ u32 SIO0::read_rx_data(u8 sz)
 
     update_rx_signal();
     update_IRQs();
-    printif(ps1.sio0.rw, "\nprogram: read RX data %02x", out_val);
+    dbgloglog_bus(PS1D_SIO0_RW, DBGLS_TRACE, "program: read RX data %02x", out_val);
     //pprint_fifo(&io.RX_FIFO);
     return out_val;
 }
@@ -353,13 +364,13 @@ u32 SIO0::read(u32 addr, u8 sz)
     //printf("\nRD SIO0 ADDR:%04x SZ:%d", addr, sz);
     switch(addr) {
         case R_SIO_CTRL:
-            return read_ctrl(sz);
+            return read_ctrl(sz) &masksz[sz];
         case R_SIO_MODE:
-            return read_mode(sz);
+            return read_mode(sz) &masksz[sz];
         case R_SIO_STAT:
-            return read_stat(sz);
+            return read_stat(sz) &masksz[sz];
         case R_RX_DATA:
-            return read_rx_data(sz);
+            return read_rx_data(sz) &masksz[sz];
         case R_SIO_MISC:
             return io.misc;
         case R_SIO_BAUD:

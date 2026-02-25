@@ -37,10 +37,16 @@ enum PS1_DBLOG_CATEGORIES {
 
     PS1D_BUS_IRQS,
     PS1D_BUS_IRQ_ACK,
-    PS1D_BUS_CONSOLE
+    PS1D_BUS_CONSOLE,
+
+    PS1D_SIO0_RW,
+    PS1D_SIO0_XCHG,
+    PS1D_SIO0_ACK,
+    PS1D_SIO0_IRQ,
 };
 
 #define dbgloglog(r_cat, r_severity, r_format, ...) if (dbg.dvptr->ids_enabled[r_cat]) dbg.dvptr->add_printf(r_cat, clock.master_cycle_count+clock.waitstates, r_severity, r_format, __VA_ARGS__)
 #define dbgloglog_bus(r_cat, r_severity, r_format, ...) if (bus->dbg.dvptr->ids_enabled[r_cat]) bus->dbg.dvptr->add_printf(r_cat, bus->clock.master_cycle_count+bus->clock.waitstates, r_severity, r_format, __VA_ARGS__)
+#define dbgloglog_thbus(r_cat, r_severity, r_format, ...) if (th->bus->dbg.dvptr->ids_enabled[r_cat]) th->bus->dbg.dvptr->add_printf(r_cat, th->bus->clock.master_cycle_count+th->bus->clock.waitstates, r_severity, r_format, __VA_ARGS__)
 #define dbgloglog_busn(r_cat, r_severity, r_format) if (bus->dbg.dvptr->ids_enabled[r_cat]) bus->dbg.dvptr->add_printf(r_cat, bus->clock.master_cycle_count+bus->clock.waitstates, r_severity, r_format)
 

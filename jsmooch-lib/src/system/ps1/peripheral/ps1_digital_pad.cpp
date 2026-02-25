@@ -77,12 +77,11 @@ static void scheduler_call(void *ptr, u64 key, u64 current_clock, u32 jitter);
 
 void digital_gamepad::schedule_ack(u64 clock_cycle, u64 time, u32 level)
 {
-    //printf("\ncycle:%lld Schedule ack: %d", clock_cycle, level);
-    if (level == 1) {
+    /*if (level == 1) {
         auto p = pio->id == 1 ? SIO0_controller1 : SIO0_controller2;
         bus->sio0.update_ACKs(p, 1);
         level = 0;
-    }
+    }*/
 
     sch_id = bus->scheduler.add_or_run_abs(clock_cycle + time, level, this, &scheduler_call, &still_sched);
 }
@@ -95,54 +94,66 @@ static void scheduler_call(void *ptr, u64 key, u64 current_clock, u32 jitter)
     th->bus->sio0.update_ACKs(p, key);
 
     if (key) { // Also schedule to de-assert
-        th->schedule_ack(current_clock-jitter, 75, 0);
+        th->schedule_ack(current_clock-jitter, 96, 0);
     }
     else th->sch_id = 0;
 }
 
-static u8 exchange_byte(void *ptr, u8 byte, u64 clock_cycle) {
+static u8 sch_exchange_byte(void *ptr, u8 byte, u64 clock_cycle) {
     digital_gamepad *th = static_cast<digital_gamepad *>(ptr);
-    if (!th->interface.CS) return 0xFF;
+    return th->exchange_byte(byte, clock_cycle);
+}
 
-    if (th->protocol_step == 0) {
+u8 digital_gamepad::exchange_byte(u8 byte, u64 clock_cycle) {
+    if (!interface.CS) return 0xFF;
+
+    if (protocol_step == 0) {
         if (byte == 0x01) {
-            th->selected = 1;
-            th->protocol_step++;
+            selected = 1;
+            protocol_step++;
 
             //printf("\nSELECT PAD, DO ACK.");
-            th->schedule_ack(clock_cycle, 100, 1);
+            schedule_ack(clock_cycle, 96, 1);
             return 0xFF;
         }
     }
 
     u8 r = 0xFF;
 
-    if (th->selected) {
+    if (selected) {
         u32 do_ack = 0;
-        if (th->protocol_step == 1) { // send ID lo, recv Read Command (42h)
+        if (protocol_step == 1) { // send ID lo, recv Read Command (42h)
             r = 0x41;
-            th->cmd = (byte == 0x42) ? PCMD_read : PCMD_unknown;
-            if (th->cmd == PCMD_unknown) printf("\nUnknown command %02x to controller %d", byte, th->pio->id);
-            do_ack = 1;
+            switch (byte) {
+                case 0x42:
+                    cmd = PCMD_read;
+                    break;
+                default:
+                    cmd = PCMD_unknown;
+                    break;
+            }
+            cmd = (byte == 0x42) ? PCMD_read : PCMD_unknown;
+            if (cmd == PCMD_unknown) printf("\nUnknown command %02x to controller %d", byte, pio->id);
+            if (cmd == PCMD_read) do_ack = 1;
         }
-        else switch (th->protocol_step) {
+        else switch (protocol_step) {
                 case 2: // send ID hi, recv TAP (5ah?)
                     r = 0x5A;
                     do_ack = 1;
                     break;
                 case 3: // send bit0...7 of digital switches
-                    if (th->cmd == PCMD_read) r = th->buttons[0];
+                    if (cmd == PCMD_read) r = buttons[0];
                     do_ack = 1;
                     break;
                 case 4: // send bit8...15 of digital switches
-                    if (th->cmd == PCMD_read) r = th->buttons[1];
+                    if (cmd == PCMD_read) r = buttons[1];
                     break;
                 default:
             }
-        if (do_ack) th->schedule_ack(clock_cycle, 100, 1);
+        if (do_ack) schedule_ack(clock_cycle, 100, 1);
     }
 
-    th->protocol_step++;
+    protocol_step++;
     return r;
 }
 
@@ -151,7 +162,7 @@ digital_gamepad::digital_gamepad(PS1::core *parent) : bus(parent)
     memset(this, 0, sizeof(*this));
     interface.device_ptr = this;
     interface.kind = DK_digital_pad;
-    interface.exchange_byte = &exchange_byte;
+    interface.exchange_byte = &sch_exchange_byte;
     interface.set_CS = &set_CS;
 }
 

@@ -124,6 +124,15 @@ static void setup_dbglog(debugger_interface *dbgr, core *th)
     bus.add_node(dv, "IRQ ACKs", "IRQ ACK", PS1D_BUS_IRQ_ACK, dma_c);
     bus.add_node(dv, "Console Logs", "Console", PS1D_BUS_CONSOLE, dma_c);
     th->cpu.trace.console_log_id = PS1D_BUS_CONSOLE;
+
+    dma_c = 0x00FFFF;
+    dbglog_category_node &sio = root.add_node(dv, "SIO0", nullptr, 0, dma_c);
+    sio.children.reserve(10);
+    sio.add_node(dv, "SIO0 R/W", "SIO0_RW", PS1D_SIO0_RW, dma_c);
+    sio.add_node(dv, "Data XCHG", "SIO0_XCHG", PS1D_SIO0_XCHG, dma_c);
+    sio.add_node(dv, "SIO0 ACK", "SIO0_ACK", PS1D_SIO0_ACK, dma_c);
+    sio.add_node(dv, "SIO0 IRQ", "SIO0_IRQ", PS1D_SIO0_IRQ, dma_c);
+
 }
 
 static void setup_waveforms(core& th, debugger_interface *dbgr) {

@@ -1922,7 +1922,7 @@ void core::recalc_display_area() {
     if (display_area.draw_y2 > 511) display_area.draw_y2 = 511;
     display_area.draw_height = display_area.draw_y2 - display_area.y1;
 
-    printf("\nDISPLAY AREA %d,%d to %d,%d (interlace:%d)", display_area.x1, display_area.y1, display_area.x2, display_area.y2, io.GPUSTAT.interlacing);
+    //printf("\nDISPLAY AREA %d,%d to %d,%d (interlace:%d)", display_area.x1, display_area.y1, display_area.x2, display_area.y2, io.GPUSTAT.interlacing);
 }
 
 void core::write_gp1(u32 cmd)
