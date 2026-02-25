@@ -872,8 +872,8 @@ void core::cmd64_rect_opaque_flat_textured_modulated()
                 //hbit = 1;
                 setpix_split(y, x, r, g, b, 1, hbit);
                 //setpix(y, x, lbit, 0, 0x8000);
-                u += u_increment; u &= 0xFF;
             }
+                u += u_increment; u &= 0xFF;
         }
         v += v_increment; v &= 0xFF;
     }
@@ -1650,6 +1650,7 @@ void core::gp0_cmd(u32 cmd) {
         ins_special = 0;
         cmd_arg_num = 1;
         u32 cmdr = cmd >> 24;
+        printf("\n(GPU) CMD %02x", cmdr);
 #ifdef LOG_GP0
         printf("\n(GPU) CMD %02x", cmdr);
 #endif

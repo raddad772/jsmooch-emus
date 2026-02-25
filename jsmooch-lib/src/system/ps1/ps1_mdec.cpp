@@ -58,7 +58,7 @@ void GFIFOIN::reset() {
 
     
 void MDEC::write_data(u32 val) {
-    printf("\nMDEC write %08x", val);
+    //printf("\nMDEC write %08x", val);
 }
 
 u32 MDEC::read_data() {
@@ -100,7 +100,7 @@ void MDEC::mainbus_write(u32 addr, u8 sz, u32 val) {
 
 
 u32 MDEC::read_ctrl() {
-    printf("\nWARN MDEC read ctrl");
+    //printf("\nWARN MDEC read ctrl");
     u32 o = io.stat.u & 0b11100111111111111111111111111111;
     //  28    Data-In Request  (set when DMA0 enabled and ready to receive data)
     // 27    Data-Out Request (set when DMA1 enabled and ready to send data)

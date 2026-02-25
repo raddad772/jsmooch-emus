@@ -48,9 +48,9 @@ void core::bresenham_shaded_opaque(RT_POINT2D *v1, RT_POINT2D *v2)
         i32 mr = dr >> 19;
         i32 mg = dg >> 19;
         i32 mb = dg >> 19;
-        mr = CLAMP(dr, 0, 31) >> 3;
-        mg = CLAMP(dg, 0, 31) >> 3;
-        mb = CLAMP(db, 0, 31) >> 3;
+        mr = CLAMP(mr, 0, 31) >> 3;
+        mg = CLAMP(mg, 0, 31) >> 3;
+        mb = CLAMP(mb, 0, 31) >> 3;
         setpix_split(y, x, mr, mg, mb, 0, 0);
 
         r += dr;
