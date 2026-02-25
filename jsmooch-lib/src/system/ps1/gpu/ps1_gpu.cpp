@@ -850,7 +850,7 @@ void core::cmd64_rect_opaque_flat_textured_modulated()
 
             //lbit = 0x7FFF;
             //hbit = 1;
-            setpix_split(y, x, r, g, b, 1, 1);
+            setpix_split(y, x, r, g, b, 1, hbit);
             //setpix(y, x, lbit, 0, 0x8000);
             u += u_increment; u &= 0xFF;
         }

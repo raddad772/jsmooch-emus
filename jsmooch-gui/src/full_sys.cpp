@@ -978,8 +978,8 @@ void full_system::load_default_ROM()
             //worked = grab_ROM(&ROMs, which, "PSX/GPU/16BPP/RenderTexturePolygon/MASK15BPP/RenderTextureRectangleMASK15BPP.exe", nullptr);
             //worked = grab_ROM(&ROMs, which, "PSX/GPU/16BPP/RenderTextureRectangle/CLUT4BPP/RenderTextureRectangleCLUT4BPP.exe", nullptr);
             //worked = grab_ROM(&ROMs, which, "PSX/GPU/16BPP/RenderTextureRectangle/CLUT8BPP/RenderTextureRectangleCLUT8BPP.exe", nullptr);
-            worked = grab_ROM(&ROMs, which, "PSX/GPU/16BPP/RenderTextureRectangle/15BPP/RenderTextureRectangle15BPP.exe", nullptr); // needs help!
-            //worked = grab_ROM(&ROMs, which, "PSX/GPU/16BPP/RenderTextureRectangle/MASK15BPP/RenderTexturePolygonMASK15BPP.exe", nullptr);
+            //worked = grab_ROM(&ROMs, which, "PSX/GPU/16BPP/RenderTextureRectangle/15BPP/RenderTextureRectangle15BPP.exe", nullptr); // needs help!
+            worked = grab_ROM(&ROMs, which, "PSX/GPU/16BPP/RenderTextureRectangle/MASK15BPP/RenderTextureRectangleMASK15BPP.exe", nullptr);
 
 
             //worked = grab_ROM(&ROMs, which, "PSX/GPU/16BPP/RenderTextureRectangle/CLUT4BPP/RenderTextureRectangleCLUT4BPP.exe", nullptr);
