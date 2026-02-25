@@ -1611,7 +1611,6 @@ void core::gp0_cmd(u32 cmd) {
         ins_special = 0;
         cmd_arg_num = 1;
         u32 cmdr = cmd >> 24;
-        printf("\n(GPU) CMD %02x", cmdr);
 #ifdef LOG_GP0
         printf("\n(GPU) CMD %02x", cmdr);
 #endif
