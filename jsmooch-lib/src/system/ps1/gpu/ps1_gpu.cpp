@@ -12,7 +12,7 @@
 
 //#define LOG_GP0
 //#define DBG_GP0
-
+#define CLAMP(x, min, max) ((x) < (min) ? (min) : ((x) > (max) ? (max) : (x)))
 
 namespace PS1 {
 void core::setup_dotclock()
@@ -810,30 +810,23 @@ void core::cmd62_rect_semi_flat()
 
 void core::cmd64_rect_opaque_flat_textured_modulated()
 {
-    // WRIOW GP0,(0x64<<24)+(COLOR&0xFFFFFF)      ; Write GP0 Command Word (Color+Command)
-
-    // WRIOW GP0,(Y<<16)+(X&0xFFFF)               ; Write GP0  Packet Word (Vertex)
     xy_from_cmd(V0, CMD[1]);
+    u32 c = CMD[0] & 0xFFFFFF;
+    const i64 r_mul = c & 0xFF;
+    const i64 g_mul = (c >> 8) & 0xFF;
+    const i64 b_mul = (c >> 16) & 0xFF;
 
-    u32 col = CMD[0] & 0xFFFFFF;
-    constexpr static float mm = 1.0f / 128.0f;
-    float mr = ((float)(col & 0xFF)) * mm;
-    float mg = ((float)((col >> 8) & 0xFF)) * mm;
-    float mb = ((float)((col >> 16) & 0xFF)) * mm;
-
-    // WRIOW GP0,(PAL<<16)+((V&0xFF)<<8)+(U&0xFF) ; Write GP0  Packet Word (Texcoord+Palette)
     u32 clut = (CMD[2] >> 16) & 0xFFFF;
     i32 v = (CMD[2] >> 8) & 0xFF;
     i32 ustart = CMD[2] & 0xFF;
 
-    // WRIOW GP0,(HEIGHT<<16)+(WIDTH&0xFFFF)      ; Write GP0  Packet Word (Width+Height)
     i32 height = (CMD[3] >> 16) & 0xFFFF;
     i32 width = CMD[3] & 0xFFFF;
     if (width > 1023) width = 1023;
     if (height > 511) height = 511;
 
-    i32 xend = (V0.x + width);
-    i32 yend = (V0.y + height);
+    i32 xend = V0.x + width;
+    i32 yend = V0.y + height;
 #ifdef LOG_GP0
     printf("\nrect_opaque_flat %d %d %d %d", V0.x, V0.y, width, height);
 #endif
@@ -844,19 +837,21 @@ void core::cmd64_rect_opaque_flat_textured_modulated()
     get_texture_sampler_from_texpage_and_palette(TEXPAGE, clut, &ts);
     for (i32 y = V0.y; y < yend; y++) {
         i32 u = ustart;
-        for (i32 x = V1.y; x < xend; x++) {
+        for (i32 x = V0.x; x < xend; x++) {
             u16 color = ts.sample(&ts, u, v);
             u32 hbit = color & 0x8000;
+            u32 lbit = color & 0x7FFF;
 
-            float r = (float)(color & 0x1F) * mr;
-            float g = (float)((color >> 5) & 0x1F) * mg;
-            float b = (float)((color >> 10) & 0x1F) * mb;
-            if (r > 31.0f) r = 31.0f;
-            if (g > 31.0f) g = 31.0f;
-            if (b > 31.0f) b = 31.0f;
-            u32 lbit = ((u32)r) | ((u32)g << 5) | ((u32)b << 10);
+            i64 r = ((color & 0x1F) * r_mul) >> 7;
+            i64 g = (((color >> 5) & 0x1F) * g_mul) >> 7;
+            i64 b = (((color >> 10) & 0x1F) * b_mul) >> 7;
+            r = CLAMP(r, 0, 31); g = CLAMP(g, 0, 31); b = CLAMP(b, 0, 31);
 
-            setpix(y, x, lbit, 1, hbit);
+
+            //lbit = 0x7FFF;
+            //hbit = 1;
+            setpix_split(y, x, r, g, b, 1, 1);
+            //setpix(y, x, lbit, 0, 0x8000);
             u += u_increment; u &= 0xFF;
         }
         v += v_increment; v &= 0xFF;
@@ -987,7 +982,6 @@ void core::cmd67_rect_semi_flat_textured()
     i32 u_increment = rect.texture_x_flip ? -1 : 1;
     i32 v_increment = rect.texture_y_flip ? -1 : 1;
 
-
     TEXTURE_SAMPLER ts;
     //get_texture_sampler_clut(texture_depth, page_base_x, page_base_y, clut, &ts);
     get_texture_sampler_from_texpage_and_palette(TEXPAGE, clut, &ts);
@@ -997,7 +991,11 @@ void core::cmd67_rect_semi_flat_textured()
             u16 color = ts.sample(&ts, u, v);
             u32 hbit = color & 0x8000;
             u32 lbit = color & 0x7FFF;
+
+            //lbit = 0x7FFF;
+            //hbit = 1;
             semipix(y, x, lbit, 1, hbit);
+            //setpix(y, x, lbit, 0, 0x8000);
             u += u_increment; u &= 0xFF;
         }
         v += v_increment; v &= 0xFF;
@@ -1327,7 +1325,7 @@ void core::cmd75_rect_opaque_flat_textured_8x8()
 
 void core::cmd7d_rect_opaque_flat_textured_16x16()
 {
-    rect_opaque_flat_textured_xx(16);
+   rect_opaque_flat_textured_xx(16);
 }
 
 
@@ -1842,9 +1840,9 @@ void core::gp0_cmd(u32 cmd) {
                 io.GPUSTAT.dither = (cmd >> 9) & 1;
                 io.GPUSTAT.drawing_to_display_area = (cmd >> 10) & 1;
                 io.GPUSTAT.texture_page_y_base_2 = (cmd >> 1) & 1;
-                TEXPAGE = io.GPUSTAT.u;
-                //rect.texture_x_flip = (cmd >> 12) & 1;
-                //rect.texture_y_flip = (cmd >> 13) & 1;
+                TEXPAGE = cmd & 0xFFFF;
+                rect.texture_x_flip = (cmd >> 12) & 1;
+                rect.texture_y_flip = (cmd >> 13) & 1;
                 break;
             case 0xE2: // Texture window
 #ifdef DBG_GP0
