@@ -30,10 +30,7 @@ void core::setpix(i32 y, i32 x, u32 color, u32 is_tex, u32 tex_mask)
         u16 v = cR16(VRAM, addr);
         if (v & 0x8000) return;
     }
-    if (is_tex) {
-        if (!(tex_mask || (color !=0))) return;
-    }
-    u32 mask_bit = is_tex * (tex_mask | force_set_mask);
+    u32 mask_bit = (is_tex << 15) | force_set_mask;
     cW16(VRAM, addr, color | mask_bit);
     //cW16(VRAM, addr, color);
 }
@@ -55,7 +52,7 @@ void core::setpix_split(i32 y, i32 x, u32 r, u32 g, u32 b, u32 is_tex, u32 tex_m
     if (is_tex) {
         if (!(tex_mask || (color !=0))) return;
     }
-    u32 mask_bit = is_tex * (tex_mask | force_set_mask);
+    u32 mask_bit = (is_tex << 15) | force_set_mask;
     cW16(VRAM, addr, color | mask_bit);
 }
 
@@ -188,12 +185,9 @@ void core::semipix(i32 y, i32 x, u32 color, u32 is_tex, u32 tex_mask)
         // Then blend...
         color = blend_semi15(io.GPUSTAT.semi_transparency, bg, color);
     }
-    else {
-        if (color == 0) return;
-    }
 
     // Now write...
-    u32 mask_bit = is_tex * (tex_mask | force_set_mask);
+    u32 mask_bit = (is_tex << 15) | force_set_mask;
     cW16(VRAM, addr, color | mask_bit);
 }
 
@@ -218,12 +212,9 @@ void core::semipixm(i32 y, i32 x, u32 color, u32 mode, u32 is_tex, u32 tex_mask)
         // Then blend...
         color = blend_semi15(mode, bg, color);
     }
-    else {
-        if (color == 0) return;
-    }
 
     // Now write...
-    u32 mask_bit = is_tex * (tex_mask | force_set_mask);
+    u32 mask_bit = (is_tex << 15) | force_set_mask;
     cW16(VRAM, addr, color | mask_bit);
 }
 
@@ -251,11 +242,10 @@ void core::semipix_split(i32 y, i32 x, u32 r, u32 g, u32 b, u32 is_tex, u32 tex_
     }
     else {
         color = r | (g << 5) | (b << 10);
-        if (color == 0) return;
     }
 
     // Now write...
-    u32 mask_bit = is_tex * (tex_mask | force_set_mask);
+    u32 mask_bit = (is_tex << 15) | force_set_mask;
     cW16(VRAM, addr, color | mask_bit);
 }
 

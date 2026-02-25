@@ -89,7 +89,7 @@ namespace PS1::SPU {
 #define RRA(x) (static_cast<u32>(io.reverb.regs[x]) << 3)
 #define REGRAM(x) static_cast<i16>(read_RAM(reverb_addr(RRA(x)), true, true))
 #define REGRAM2(x) static_cast<i16>(read_RAM(reverb_addr(RRA(x)-2), true, true))
-#define WREGRAM(x, y) write_RAM(reverb_addr(RRA(x)), static_cast<u16>(static_cast<i16>(y)), true);
+#define WREGRAM(x, y) if (io.SPUCNT.reverb_master_enable) write_RAM(reverb_addr(RRA(x)), static_cast<u16>(static_cast<i16>(y)), true);
 
 static constexpr i16 gauss_table[0x200] = {
     -1,-1,-1,-1,-1,-1,-1,-1,
