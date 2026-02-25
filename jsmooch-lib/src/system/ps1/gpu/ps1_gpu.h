@@ -240,9 +240,9 @@ private:
 
     void setpix(i32 y, i32 x, u32 color, u32 is_tex, u32 tex_mask);
     void setpix_split(i32 y, i32 x, u32 r, u32 g, u32 b, u32 is_tex, u32 tex_mask);
-    void semipix(i32 y, i32 x, u32 color, u32 is_tex, u32 tex_mask);
-    void semipixm(i32 y, i32 x, u32 color, u32 mode, u32 is_tex, u32 tex_mask);
-    void semipix_split(i32 y, i32 x, u32 r, u32 g, u32 b, u32 is_tex, u32 tex_mask);
+    void semipix(i32 y, i32 x, u32 color, u32 is_tex, u32 tex_mask, bool force);
+    void semipixm(i32 y, i32 x, u32 color, u32 mode, u32 is_tex, u32 tex_mask, bool force);
+    void semipix_split(i32 y, i32 x, u32 r, u32 g, u32 b, u32 is_tex, u32 tex_mask, bool force);
     void update_global_texpage(u32 texpage);
     inline u32 ditherP(RT_POINT2D &p)
     {

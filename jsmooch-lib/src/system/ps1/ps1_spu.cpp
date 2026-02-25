@@ -163,6 +163,8 @@ void VOICE::adpcm_start() {
     pitch_counter = 0;
     adpcm_decode();
 }
+static constexpr i32 filter_table_pos[16] = {0, 60, 115, 98, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0};
+static constexpr i32 filter_table_neg[16] = {0, 0, -52, -55, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0};
 
 void VOICE::adpcm_decode() {
     u8 data[16];
@@ -186,10 +188,11 @@ void VOICE::adpcm_decode() {
     }
     const u8 hd = data[0];
     u8 shift = hd & 0xF;
-    if (shift > 13) shift = 9;
-    shift = 12 - shift;
+    if (shift > 12) shift = 9;
     u8 filter = (hd >> 4) & 7;
-    if (filter > 4) filter = 4; // TODO: ??
+    if (filter > 4) filter = 0;
+    const s32 filter_pos = filter_table_pos[filter];
+    const s32 filter_neg = filter_table_neg[filter];
 
     u32 idx = 2;
     u32 nibble = 0;
@@ -197,8 +200,8 @@ void VOICE::adpcm_decode() {
     // +1 = oldest
     // +2 = older
     // +3 = old
-    i32 older = gauss.samples[(gauss.idx + 2) & 3];
-    i32 old = gauss.samples[(gauss.idx + 3) & 3];
+    i32 older = gauss.samples[(gauss.idx - 2) & 3];
+    i32 old = gauss.samples[(gauss.idx - 1) & 3];
     for (short & s_out : adpcm.samples) {
         i32 t;
         if (nibble == 0) {
@@ -210,29 +213,9 @@ void VOICE::adpcm_decode() {
         }
         nibble ^= 1;
         // t is a signed 4-bit value so convert to 32-bit signed
-        t = (t & 7) | (t & 8 ? 0xFFFFFFF8 : 0);
-        i32 s = (t << shift);
-        i32 filtered;
-        switch (filter) {
-            case 0:
-                filtered = s;
-                break;
-            case 1:
-                filtered = s + (60 * old + 32) / 64;
-                break;
-            case 2:
-                filtered = s + (115 * old - 52 * older + 32) / 64;
-                break;
-            case 3:
-                filtered = s + (98 * old - 55 * older + 32) / 64;
-                break;
-            case 4:
-                filtered = s + (122 * old - 60 * older + 32) / 64;
-                break;
-            default:
-                NOGOHERE;
-        }
-
+        t = static_cast<i16>(t << 12);
+        i32 s = t >> shift;
+        i32 filtered = s + ((static_cast<i32>(old) * filter_pos) >> 6) + ((static_cast<i32>(older) * filter_neg) >> 6);
         if (filtered < -0x8000) filtered = -0x8000;
         if (filtered > 0x7FFF) filtered = 0x7FFF;
         s_out = filtered;
@@ -445,12 +428,13 @@ void VOICE::adpcm_get_sample() {
 void VOICE::gaussian_me_up() {
     u16 gauss_index = (pitch_counter >> 4) & 0xFF;
     u32 idx = (gauss.idx + 1) & 3; // oldest
-    i32 v = (gauss_table[0xFF-gauss_index] * gauss.samples[idx]) >> 15;
+    i32 v = (gauss_table[0xFF-gauss_index] * gauss.samples[idx]);
     idx = (idx + 1) & 3; // older
-    v += (gauss_table[0x1FF-gauss_index] * gauss.samples[idx]) >> 15;
+    v += (gauss_table[0x1FF-gauss_index] * gauss.samples[idx]);
     idx = (idx + 1) & 3; // old
-    v += (gauss_table[0x100+gauss_index] * gauss.samples[idx]) >> 15;
-    v += (gauss_table[gauss_index] * gauss.samples[idx]) >> 15;
+    v += (gauss_table[0x100+gauss_index] * gauss.samples[idx]);
+    v += (gauss_table[gauss_index] * gauss.samples[idx]);
+    v >>= 15;
     if (v < -0x8000) v = -0x8000;
     if (v > 0x7FFF) v = 0x7FFF;
     sample = v;

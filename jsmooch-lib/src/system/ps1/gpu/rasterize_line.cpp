@@ -32,7 +32,7 @@ void core::bresenham_semi(RT_POINT2D *v1, RT_POINT2D *v2, u32 color)
     i32 slope_error_new = m_new - (v2->x - v1->x);
     for (i32 x = v1->x, y = v1->y; x <= v2->x; x++) {
         // Draw!
-        semipix(y, x, color, 1, 1);
+        semipix(y, x, color, 0, 0, true);
 
         // Add slope to increment angle formed
         slope_error_new += m_new;
