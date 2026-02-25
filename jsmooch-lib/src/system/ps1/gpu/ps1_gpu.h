@@ -196,6 +196,7 @@ private:
     void cmd3e_quad_opaque_shaded_textured_modulated_semi();
     void cmd40_line_semi();
     void cmd42_line_opaque();
+    void cmd50_shaded_line();
     void cmd60_rect_opaque_flat();
     void cmd62_rect_semi_flat();
     void cmd64_rect_opaque_flat_textured_modulated();
@@ -235,6 +236,7 @@ private:
 
     void bresenham_opaque(RT_POINT2D *v1, RT_POINT2D *v2, u32 color);;
     void bresenham_semi(RT_POINT2D *v1, RT_POINT2D *v2, u32 color);
+    void bresenham_shaded_opaque(RT_POINT2D *v1, RT_POINT2D *v2);
 
     void get_texture_sampler_from_texpage_and_palette(u32 texpage, u32 palette, TEXTURE_SAMPLER *ts);
 

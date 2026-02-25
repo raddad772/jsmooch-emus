@@ -752,7 +752,16 @@ void core::cmd40_line_semi() {
     bresenham_semi(&V0, &V1, color);
 }
 
-void core::cmd42_line_opaque() {
+void core::cmd50_shaded_line() {
+    xy_from_cmd(V0, CMD[1]);
+    xy_from_cmd(V1, CMD[3]);
+
+    V0.color24_from_cmd(CMD[0]);
+    V1.color24_from_cmd(CMD[2]);
+    bresenham_shaded_opaque(&V0, &V1);
+}
+
+    void core::cmd42_line_opaque() {
     // WRIOW GP0,(0x40<<24)+(COLOR&0xFFFFFF)  ; Write GP0 Command Word (Color+Command)
     // WRIOW GP0,(Y1<<16)+(X1&0xFFFF)         ; Write GP0  Packet Word (Vertex1)
     // WRIOW GP0,(Y2<<16)+(X2&0xFFFF)         ; Write GP0  Packet Word (Vertex2)
@@ -1763,11 +1772,16 @@ void core::gp0_cmd(u32 cmd) {
                 current_ins = &core::cmd42_line_opaque;
                 cmd_arg_num = 3;
                 break;
+            case 0x50:
+                current_ins = &core::cmd50_shaded_line;
+                cmd_arg_num = 5;
+                break;
             case 0x60: // Rectangle, variable size, opaque
                 current_ins = &core::cmd60_rect_opaque_flat;
                 cmd_arg_num = 3;
                 break;
             case 0x62:
+            case 0x63:
                 current_ins = &core::cmd62_rect_semi_flat;
                 cmd_arg_num = 3;
                 break;
