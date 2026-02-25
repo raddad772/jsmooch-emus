@@ -280,10 +280,13 @@ struct core {
     } read{};
 
     [[nodiscard]] u32 total_irqs_len() const { return io.irq1s.len + io.irqnot1s.len; }
-
+    void latch_seek();
     struct {
-        u8 amm{}, ass{}, asect{};
         u8 session{};
+        struct {
+            u8 amm{}, ass{}, asect{};
+            u8 session{};
+        } waiting{};
         struct {
             struct {
                 u8 amm{}, ass{}, asect{};
@@ -307,6 +310,7 @@ struct core {
         u32 sector{}, session{};
         u32 sample_index{}; // 0/2352
         bool muted{false};
+        u8 amm{}, ass{}, asect{};
     } head{};
 
     SECTOR_BUFFER sector_buf{};

@@ -320,9 +320,10 @@ void core::cmd_finish(u64 key, u64 clock) {
         case 0x16: // SeekP
             io.stat.seek = 0;
             seek.needs_seek = false;
-            seek.last_read.disc.amm = seek.amm;
-            seek.last_read.disc.asect = seek.asect;
-            seek.last_read.disc.ass = seek.ass;
+            latch_seek();
+            seek.last_read.disc.amm = head.amm;
+            seek.last_read.disc.asect = head.asect;
+            seek.last_read.disc.ass = head.ass;
             finish_CMD(true, 2);
             return;
         case 0x1A: // GetID
@@ -404,15 +405,22 @@ void core::cmd_setfilter() {
     finish_CMD(true, 3);
 }
 
+void core::latch_seek() {
+    head.amm = seek.waiting.amm;
+    head.ass = seek.waiting.ass;
+    head.asect = seek.waiting.asect;
+
+}
+
 void core::cmd_setloc() {
     //printf("\n(CDROM) CMD SetLoc");
     stat_irq();
     if (!io.MODE.ignore_bit) {
-        seek.amm = decode_bcd(io.PARAMETER.pop());
-        seek.ass = decode_bcd(io.PARAMETER.pop());
-        seek.asect = decode_bcd(io.PARAMETER.pop());
+        seek.waiting.amm = decode_bcd(io.PARAMETER.pop());
+        seek.waiting.ass = decode_bcd(io.PARAMETER.pop());
+        seek.waiting.asect = decode_bcd(io.PARAMETER.pop());
         seek.needs_seek = true;
-        dbgloglog_bus(PS1D_CDROM_SETLOC, DBGLS_INFO, "(Cmd) SetLoc %02d:%02d:%02d", seek.amm, seek.ass, seek.asect);
+        dbgloglog_bus(PS1D_CDROM_SETLOC, DBGLS_INFO, "(Cmd) SetLoc %02d:%02d:%02d", seek.waiting.amm, seek.waiting.ass, seek.waiting.asect);
     }
     else {
         dbgloglog_busn(PS1D_CDROM_SETLOC, DBGLS_INFO, "(Cmd) SetLoc ignore_bit set");
@@ -469,9 +477,9 @@ void core::cmd_play() {
         if (track > 0) {
             dbgloglog_bus(PS1D_CDROM_PLAY, DBGLS_INFO, "(Cmd) Play seek track start %d", track);
             LBA = data.tracks[track-1].data_lba;
-            seek.asect = LBA % 75;
-            seek.ass = (LBA / 75) % 60;
-            seek.amm = (LBA / (75 * 60));
+            head.asect = LBA % 75;
+            head.ass = (LBA / 75) % 60;
+            head.amm = (LBA / (75 * 60));
         }
     }
     io.stat.play = 1;
@@ -495,7 +503,7 @@ void core::cmd_reads(u64 clock) {
 }
 
 void core::do_cmd_read(u64 clock) {
-    if (read.still_sched) {
+    if (read.still_sched && !seek.needs_seek) {
         printf("\nABORT read req. processing for already going!");
         dbgloglog_busn(PS1D_CDROM_READ, DBGLS_INFO, "(Cmd) ReadN/S ABORT for already going!");
         stat_irq();
@@ -505,7 +513,9 @@ void core::do_cmd_read(u64 clock) {
     io.stat.play = 0;
     io.stat.seek = seek.needs_seek;
     io.stat.read = !io.stat.seek;
-    if (io.stat.seek) clock += seek_cycles();
+    if (io.stat.seek) {
+        clock += seek_cycles();
+    }
     schedule_read(clock);
 }
 
@@ -641,22 +651,19 @@ void core::queue_xa_sector(u8 *ptr) {
 }
 
 void core::read_sector() {
-    //printf("\n(CDROM) Read sector %02d:%02d:%02d", seek.amm, seek.ass, seek.asect);
-    dbgloglog_bus(PS1D_CDROM_SECTOR_READS, DBGLS_INFO, "(RDSEC) Read sector %02d:%02d:%02d into queue size %d", seek.amm, seek.ass, seek.asect, sector_buf.len);
+    dbgloglog_bus(PS1D_CDROM_SECTOR_READS, DBGLS_INFO, "(RDSEC) Read sector %02d:%02d:%02d into queue size %d", head.amm, head.ass, head.asect, sector_buf.len);
     // 25:14:48
-    seek.last_read.disc.amm = seek.amm;
-    seek.last_read.disc.asect = seek.asect;
-    seek.last_read.disc.ass = seek.ass;
+    seek.last_read.disc.amm = head.amm;
+    seek.last_read.disc.asect = head.asect;
+    seek.last_read.disc.ass = head.ass;
 
     if (seek.needs_seek || io.stat.seek) {
         seek.needs_seek = false;
         io.stat.seek = 0;
         io.stat.read = 1;
+        latch_seek();
     }
-    /*if ((seek.amm == 25) && (seek.ass == 14) && (seek.asect == 48)) {
-        //dbg_break("TARGET READ", 0);
-    }*/
-    u8 *ptr = data.ptr_to_data(seek.amm, seek.ass, seek.asect);
+    u8 *ptr = data.ptr_to_data(head.amm, head.ass, head.asect);
     if (io.MODE.xa_adpcm) {
         u8 v = ptr[XA_SUBHEADER_START+2];
         if (v & 0x40) { // real-time
@@ -687,15 +694,15 @@ void core::sch_read(u64 key, u64 clock) {
 }
 
 void core::next_sector() {
-    seek.asect++;
-    if (seek.asect >= 75) {
-        seek.asect = 0;
-        seek.ass++;
-        if (seek.ass>=60) {
-            seek.ass = 0;
-            seek.amm++;
-            if (seek.amm >= 74) {
-                seek.amm = 0;
+    head.asect++;
+    if (head.asect >= 75) {
+        head.asect = 0;
+        head.ass++;
+        if (head.ass>=60) {
+            head.ass = 0;
+            head.amm++;
+            if (head.amm >= 74) {
+                head.amm = 0;
             }
         }
     }
@@ -924,7 +931,7 @@ i16 core::zigzaginterp(const i16 *ringbuf, u32 p, const i32 *tabl) {
 
 void core::get_CD_audio_cdda(i16 &left, i16 &right) {
     //u32 addr = head.sample_index * 4;
-    u32 LBA = seek.asect + (seek.ass * 75) + (seek.amm * 75 * 50);
+    u32 LBA = head.asect + (head.ass * 75) + (head.amm * 75 * 50);
 
     auto *smp = reinterpret_cast<i16 *>(data.data.ptr + (LBA * 2352));
     smp += head.sample_index * 2;
