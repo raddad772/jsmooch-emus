@@ -457,9 +457,9 @@ void core::RT_draw_shaded_triangle_semi(RT_POINT2D *v0, RT_POINT2D *v1, RT_POINT
             if (is_inside_triangle(&p, v0, v1, v2)) {
                 compute_barycentric(cross_product_z, &p, v0, v1, v2, lambda);
                 // Interpolate the colors at point P
-                i64 mr = ((lambda[0] * v0->r) + (lambda[1] * v1->r) + (lambda[2] * v2->r));
-                i64 mg = ((lambda[0] * v0->g) + (lambda[1] * v1->g) + (lambda[2] * v2->g));
-                i64 mb = ((lambda[0] * v0->b) + (lambda[1] * v1->b) + (lambda[2] * v2->b));
+                i64 mr = ((lambda[0] * v0->r) + (lambda[1] * v1->r) + (lambda[2] * v2->r)) >> 32;
+                i64 mg = ((lambda[0] * v0->g) + (lambda[1] * v1->g) + (lambda[2] * v2->g)) >> 32;
+                i64 mb = ((lambda[0] * v0->b) + (lambda[1] * v1->b) + (lambda[2] * v2->b)) >> 32;
                 if (io.GPUSTAT.dither) {
                     u32 caddr = ditherP(p);
                     mr += dithertable[caddr];
