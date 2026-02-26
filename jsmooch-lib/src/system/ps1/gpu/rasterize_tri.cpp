@@ -76,16 +76,21 @@ static inline void compute_barycentric(i64 cp, RT_POINT2D *p, RT_POINT2D *v0, RT
 }
 
 constexpr float EDGE_EPS = 1e-5f;
-#define MINMAX     const i32 minX = MIN3(v0->x, v1->x, v2->x);\
-    const i32 minY = MIN3(v0->y, v1->y, v2->y);\
-    const i32 maxX = MAX3(v0->x, v1->x, v2->x);\
-    const i32 maxY = MAX3(v0->y, v1->y, v2->y);\
-    if (((maxY - minY) > 511) || ((maxX - minX) > 1023)) return
+#define MINMAX     i32 minX = MIN3(v0->x, v1->x, v2->x);\
+i32 minY = MIN3(v0->y, v1->y, v2->y);\
+i32 maxX = MAX3(v0->x, v1->x, v2->x);\
+i32 maxY = MAX3(v0->y, v1->y, v2->y);\
+if (((maxY - minY) > 511) || ((maxX - minX) > 1023)) return;\
+minX = MAX(minX, draw_area_left);\
+    maxX = MIN(maxX, draw_area_right);\
+    minY = MAX(minY, draw_area_top);\
+    maxY = MIN(maxY, draw_area_bottom);\
+    if (minX > maxX || minY > maxY) return
 
 
 void core::RT_draw_flat_triangle(RT_POINT2D *v0, RT_POINT2D *v1, RT_POINT2D *v2, const u32 color) {
-    MINMAX;
 
+    MINMAX;
     i64 cross_product_z = cpz(v0, v1, v2);
     if (cross_product_z < 0) {
         RT_POINT2D *sa = v0;
