@@ -40,7 +40,7 @@ struct MDEC {
     core *bus;
     void write_data(u32 val);
     u32 read_data();
-
+    void do_decode();
     void write_ctrl(u32 val);
     u32 read_ctrl();
     u32 mainbus_read(u32 addr, u8 sz);
@@ -49,6 +49,7 @@ struct MDEC {
     GFIFOIN fifo_in{};
     GFIFOUT fifo_out{};
     u32 num_param_words{};
+    u32 output[256];
     struct {
         union {
             struct {
