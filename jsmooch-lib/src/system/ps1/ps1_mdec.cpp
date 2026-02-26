@@ -58,22 +58,94 @@ void GFIFOIN::reset() {
 
     
 void MDEC::write_data(u32 val) {
-    //printf("\nMDEC write %08x", val);
+    switch (io.mode) {
+        case MM_Idle:
+            switch (val >> 29) {
+            case 1:
+                    io.mode = MM_DecodeMacroblock;
+                    io.offset = 0;
+                    io.num_remaining_param_words = (val & 0xFFFF) << 1;
+                    if (io.num_remaining_param_words == 0) {
+                        io.mode = MM_Idle;
+                    }
+                    break;
+            case 2:
+                    io.mode = MM_SetQuantTable;
+                    io.offset = 0;
+                    io.num_remaining_param_words = val & 1 ? 64 : 32;
+                    break;
+            case 3:
+                    io.mode = MM_SetScaleTable;
+                    io.offset = 0;
+                    io.num_remaining_param_words = 64;
+                    break;
+            }
+            if (io.mode != MM_Idle) {
+                io.stat.output_mask_bit = (val >> 25) & 1;
+                io.stat.output_sign = (val >> 26) & 1;
+                io.stat.output_depth = (val >> 27) & 3;
+                fifo_out.reset();
+            }
+            break;
+        case MM_DecodeMacroblock:
+            fifo_in.push(val & 0xFFFF);
+            fifo_in.push(val >> 16);
+            io.num_remaining_param_words -= 2;
+            if (io.num_remaining_param_words == 0) {
+                do_decode();
+                io.mode = MM_Idle;
+            }
+            break;
+        case MM_SetQuantTable:
+            if (io.offset < 64) {
+                block.luma[io.offset++ & 63] = val & 0xFF;
+                block.luma[io.offset++ & 63] = (val >> 8) & 0xFF;
+                block.luma[io.offset++ & 63] = (val >> 16) & 0xFF;
+                block.luma[io.offset++ & 63] = (val >> 24) & 0xFF;
+            }
+            else {
+                block.chroma[io.offset++ & 63] = val & 0xFF;
+                block.chroma[io.offset++ & 63] = (val >> 8) & 0xFF;
+                block.chroma[io.offset++ & 63] = (val >> 16) & 0xFF;
+                block.chroma[io.offset++ & 63] = (val >> 24) & 0xFF;
+            }
+            io.num_remaining_param_words -= 2;
+            if (io.num_remaining_param_words == 0) {
+                io.mode = MM_Idle;
+            }
+            break;
+        case MM_SetScaleTable:
+            block.scale[io.offset++ & 63] = val & 0xFFFF;
+            block.scale[io.offset++ & 63] = (val >> 16) & 0xFFFF;
+            io.num_remaining_param_words -= 2;
+            if (io.num_remaining_param_words == 0) {
+                io.mode = MM_Idle;
+            }
+            break;
+    }
 }
 
 u32 MDEC::read_data() {
-    printf("\nMDEC read");
-    return 0;
+    if (fifo_out.len == 0) {
+        printf("\n(MDEC) read when output FIFO empty?");
+    }
+    return fifo_out.pop();
 }
 
 void MDEC::write_ctrl(u32 val) {
-    printf("\nMDEC write ctrl %08x", val);
-    if (val & 0x80000000) abort();
-    else {
-        io.stat.data_in_req = (val >> 30) & 1;
-        io.stat.data_out_req = (val >> 29) & 1;
+    if (val & 0x80000000) { // reset
+        io.mode = MM_Idle;
+        io.offset = 0;
+        num_param_words = 0;
+        io.stat.current_block = 4;
+        io.stat.output_mask_bit = 0;
+        io.stat.output_sign = 0;
+        io.stat.output_depth = 0;
+        io.stat.data_out_req = 0;
+        io.stat.data_in_req = 0;
     }
-
+    io.stat.data_in_req = (val >> 30) & 1;
+    io.stat.data_out_req = (val >> 29) & 1;
 }
 
 u32 MDEC::mainbus_read(u32 addr, u8 sz) {
@@ -101,18 +173,19 @@ void MDEC::mainbus_write(u32 addr, u8 sz, u32 val) {
 
 u32 MDEC::read_ctrl() {
     //printf("\nWARN MDEC read ctrl");
-    u32 o = io.stat.u & 0b11100111111111111111111111111111;
-    //  28    Data-In Request  (set when DMA0 enabled and ready to receive data)
-    // 27    Data-Out Request (set when DMA1 enabled and ready to send data)
-    u32 dirq = io.stat.data_in_req && bus->dma.channels[0].enable;
-    u32 dorq = io.stat.data_out_req && bus->dma.channels[1].enable;
+    u32 o = ((io.num_remaining_param_words >> 1) - 1) & 0xFFFF;
+    o |= io.stat.current_block << 16;
+    o |= io.stat.output_mask_bit << 23;
+    o |= io.stat.output_sign << 24;
+    o |= io.stat.output_depth << 25;
+    u32 dirq = io.stat.data_in_req && fifo_in.len == 0;
+    u32 dorq = io.stat.data_out_req && fifo_out.len >= 32;
     o |= (dirq << 28) | (dorq << 27);
+    o |= (io.mode != MM_Idle) << 29;
+    o |= (fifo_in.len >= 64) << 30;
+    o |= (fifo_out.len == 0) << 31;
     return o;
 }
 
-void MDEC::abort() {
-    printf("\nMDEC abort recv");
-    io.stat.u = 0x80040000;
-}
 
 }

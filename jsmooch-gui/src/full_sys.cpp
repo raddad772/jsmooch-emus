@@ -1007,7 +1007,7 @@ void full_system::load_default_ROM()
             //worked = grab_cue(&ROMs, which, "Hydro Thunder (USA)", nullptr);
             //worked = grab_cue(&ROMs, which, "Cool Boarders 2 (USA)", nullptr);
             //worked = grab_cue(&ROMs, which, "Ridge Racer (USA)", nullptr);
-            //worked = grab_cue(&ROMs, which, "Mega Man X4 (USA)", nullptr);
+            worked = grab_cue(&ROMs, which, "Mega Man X4 (USA)", nullptr);
             // "either you are not handling the config commands or reset flag on ctrl reg where it resets all the other reg
             // al;so you need to reset state when switching ports?
             //worked = grab_cue(&ROMs, which, "Spyro the Dragon (USA)", nullptr);
@@ -1016,7 +1016,7 @@ void full_system::load_default_ROM()
             //worked = grab_cue(&ROMs, which, "Rayman 2 - The Great Escape (USA) (En,Fr,Es)", nullptr);
             //worked = grab_cue(&ROMs, which, "Earthworm Jim 2 (Europe)", nullptr);
             //worked = grab_cue(&ROMs, which, "Castlevania - Symphony of the Night (USA)", nullptr);
-            worked = grab_cue(&ROMs, which, "Metal Gear Solid (USA) (Disc 1) (v1.1)", nullptr);
+            //worked = grab_cue(&ROMs, which, "Metal Gear Solid (USA) (Disc 1) (v1.1)", nullptr);
             break;
         case jsm::systems::GBA:
             //worked = grab_ROM(&ROMs, which, "panda.gba", nullptr);
