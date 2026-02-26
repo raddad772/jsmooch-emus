@@ -11,7 +11,7 @@ void core::bresenham_opaque(RT_POINT2D *v1, RT_POINT2D *v2, u32 color)
     i32 slope_error_new = m_new - (v2->x - v1->x);
     for (i32 x = v1->x, y = v1->y; x <= v2->x; x++) {
         // Draw!
-        setpix(y, x, color, 0, 0);
+        setpix(y, x, color,  0);
 
         // Add slope to increment angle formed
         slope_error_new += m_new;
@@ -51,7 +51,7 @@ void core::bresenham_shaded_opaque(RT_POINT2D *v1, RT_POINT2D *v2)
         mr = CLAMP(mr, 0, 31) >> 3;
         mg = CLAMP(mg, 0, 31) >> 3;
         mb = CLAMP(mb, 0, 31) >> 3;
-        setpix_split(y, x, mr, mg, mb, 0, 0);
+        setpix_split(y, x, mr, mg, mb, 0);
 
         r += dr;
         g += dg;
@@ -71,7 +71,7 @@ void core::bresenham_semi(RT_POINT2D *v1, RT_POINT2D *v2, u32 color)
     i32 slope_error_new = m_new - (v2->x - v1->x);
     for (i32 x = v1->x, y = v1->y; x <= v2->x; x++) {
         // Draw!
-        semipix(y, x, color, 0, 0, true);
+        semipix(y, x, color, 0, true);
 
         // Add slope to increment angle formed
         slope_error_new += m_new;

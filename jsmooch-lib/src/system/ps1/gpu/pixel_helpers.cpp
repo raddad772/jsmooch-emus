@@ -13,16 +13,13 @@ namespace PS1::GPU {
 #define DOX (x)
 
 
-void core::setpix(i32 y, i32 x, u32 color, u32 is_tex, u32 tex_mask)
+void core::setpix(i32 y, i32 x, u32 color, u32 tex_mask)
 {
     // VRAM is 512 1024-wide 16-bit words. so 2048 bytes per line
     i32 ry = DOY;
     i32 rx = DOX;
     if ((ry < draw_area_top) || (ry > draw_area_bottom)) return;
     if ((rx < draw_area_left) || (rx > draw_area_right)) return;
-    /*if ((!io.GPUSTAT.drawing_to_display_area) && (rx >= display_area.x1) && (rx <= display_area.x2) && (ry >= display_area.y1) && (ry <= display_area.y2)) {
-        return;
-    }*/
 
     u32 addr = ((2048*ry)+(rx*2)) & 0xFFFFF;
 
@@ -30,12 +27,11 @@ void core::setpix(i32 y, i32 x, u32 color, u32 is_tex, u32 tex_mask)
         u16 v = cR16(VRAM, addr);
         if (v & 0x8000) return;
     }
-    u32 mask_bit = (tex_mask << 15) | force_set_mask;
+    u32 mask_bit = tex_mask | force_set_mask;
     cW16(VRAM, addr, color | mask_bit);
-    //cW16(VRAM, addr, color);
 }
 
-void core::setpix_split(i32 y, i32 x, u32 r, u32 g, u32 b, u32 is_tex, u32 tex_mask)
+void core::setpix_split(i32 y, i32 x, u32 r, u32 g, u32 b, u32 tex_mask)
 {
     // VRAM is 512 1024-wide 16-bit words. so 2048 bytes per line
     i32 ry = DOY;
@@ -49,7 +45,7 @@ void core::setpix_split(i32 y, i32 x, u32 r, u32 g, u32 b, u32 is_tex, u32 tex_m
         if (v & 0x8000) return;
     }
     u32 color = r | (g << 5) | (b << 10);
-    u32 mask_bit = (tex_mask << 15) | force_set_mask;
+    u32 mask_bit = tex_mask | force_set_mask;
     cW16(VRAM, addr, color | mask_bit);
 }
 
@@ -161,7 +157,7 @@ static u32 blend_semi15_split(u32 mode, u32 b, u32 f_r, u32 f_g, u32 f_b)
 
 
 
-void core::semipix(i32 y, i32 x, u32 color, u32 is_tex, u32 tex_mask, bool force)
+void core::semipix(i32 y, i32 x, u32 color, u32 tex_mask, bool force)
 {
     // VRAM is 512 1024-wide 16-bit words. so 2048 bytes per line
     i32 ry = DOY;
@@ -184,11 +180,11 @@ void core::semipix(i32 y, i32 x, u32 color, u32 is_tex, u32 tex_mask, bool force
     }
 
     // Now write...
-    u32 mask_bit = (tex_mask << 15) | force_set_mask;
+    u32 mask_bit = tex_mask | force_set_mask;
     cW16(VRAM, addr, color | mask_bit);
 }
 
-void core::semipixm(i32 y, i32 x, u32 color, u32 mode, u32 is_tex, u32 tex_mask, bool force)
+void core::semipixm(i32 y, i32 x, u32 color, u32 mode, u32 tex_mask, bool force)
 {
     // VRAM is 512 1024-wide 16-bit words. so 2048 bytes per line
     i32 ry = DOY;
@@ -211,11 +207,11 @@ void core::semipixm(i32 y, i32 x, u32 color, u32 mode, u32 is_tex, u32 tex_mask,
     }
 
     // Now write...
-    u32 mask_bit = (tex_mask << 15) | force_set_mask;
+    u32 mask_bit = tex_mask | force_set_mask;
     cW16(VRAM, addr, color | mask_bit);
 }
 
-void core::semipix_split(i32 y, i32 x, u32 r, u32 g, u32 b, u32 is_tex, u32 tex_mask, bool force)
+void core::semipix_split(i32 y, i32 x, u32 r, u32 g, u32 b, u32 tex_mask, bool force)
 {
     // VRAM is 512 1024-wide 16-bit words. so 2048 bytes per line
     i32 ry = DOY;
@@ -242,7 +238,7 @@ void core::semipix_split(i32 y, i32 x, u32 r, u32 g, u32 b, u32 is_tex, u32 tex_
     }
 
     // Now write...
-    u32 mask_bit = (tex_mask << 15) | force_set_mask;
+    u32 mask_bit = tex_mask | force_set_mask;
     cW16(VRAM, addr, color | mask_bit);
 }
 

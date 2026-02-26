@@ -99,7 +99,7 @@ void core::RT_draw_flat_triangle(RT_POINT2D *v0, RT_POINT2D *v1, RT_POINT2D *v2,
         for (p.x = minX; p.x < maxX; p.x++) {
             if (is_inside_triangle(&p, v0, v1, v2)) {
                 // Draw the pixel
-                setpix(p.y, p.x, color, 0, 0);
+                setpix(p.y, p.x, color, 0);
             }
         }
     }
@@ -151,7 +151,7 @@ void core::RT_draw_flat_tex_triangle_modulated(RT_POINT2D *v0, RT_POINT2D *v1, R
                 mg = CLAMP(mg, 0, 255) >> 3;
                 mb = CLAMP(mb, 0, 255) >> 3;
 
-                setpix_split(p.y, p.x, static_cast<u32>(mr), static_cast<u32>(mg), static_cast<u32>(mb), 1, color & 0x8000);
+                setpix_split(p.y, p.x, static_cast<u32>(mr), static_cast<u32>(mg), static_cast<u32>(mb), color & 0x8000);
             }
         }
     }
@@ -206,7 +206,7 @@ void core::RT_draw_flat_tex_triangle_modulated_semi(RT_POINT2D *v0, RT_POINT2D *
                 mb = CLAMP(mb, 0, 255) >> 3;
 
                 // Draw the pixe
-                semipix_split(p.y, p.x, static_cast<u32>(mr), static_cast<u32>(mg), static_cast<u32>(mb), 1, color & 0x8000, false);
+                semipix_split(p.y, p.x, static_cast<u32>(mr), static_cast<u32>(mg), static_cast<u32>(mb), color & 0x8000, false);
             }
         }
     }
@@ -261,7 +261,7 @@ void core::RT_draw_shaded_tex_triangle_modulated_semi(RT_POINT2D *v0, RT_POINT2D
                 mb = CLAMP(mb, 0, 255) >> 3;
 
                 // Draw the pixe
-                semipix_split(p.y, p.x, static_cast<u32>(mr), static_cast<u32>(mg), static_cast<u32>(mb), 1, color & 0x8000, false);
+                semipix_split(p.y, p.x, static_cast<u32>(mr), static_cast<u32>(mg), static_cast<u32>(mb), color & 0x8000, false);
             }
         }
     }
@@ -317,7 +317,7 @@ void core::RT_draw_shaded_tex_triangle_modulated(RT_POINT2D *v0, RT_POINT2D *v1,
                 u32 c = mr | (mg << 5) | (mb << 10);
 
                 // Draw the pixe
-                setpix(p.y, p.x, c | (color & 0x8000), 0, color);
+                setpix(p.y, p.x, c | (color & 0x8000), color);
             }
         }
     }
@@ -357,7 +357,7 @@ void core::RT_draw_flat_tex_triangle(RT_POINT2D *v0, RT_POINT2D *v1, RT_POINT2D 
                 if (color == 0) continue;
 
                 // Draw the pixel
-                setpix(p.y, p.x, color & 0x7FFF, 1, color & 0x8000);
+                setpix(p.y, p.x, color & 0x7FFF, color & 0x8000);
             }
         }
     }
@@ -396,7 +396,7 @@ void core::RT_draw_flat_tex_triangle_semi(RT_POINT2D *v0, RT_POINT2D *v1, RT_POI
                 if (color == 0) continue;
 
                 // Draw the pixel
-                semipixm(p.y, p.x, color & 0x7FFF, ts->semi_mode, 1, color & 0x8000, false);
+                semipixm(p.y, p.x, color & 0x7FFF, ts->semi_mode, color & 0x8000, false);
             }
         }
     }
@@ -425,7 +425,7 @@ void core::RT_draw_flat_triangle_semi(RT_POINT2D *v0, RT_POINT2D *v1, RT_POINT2D
         for (p.x = minX; p.x < maxX; p.x++) {
             if (is_inside_triangle(&p, v0, v1, v2)) {
                 // Draw the pixel
-                semipix_split(p.y, p.x, r >> 3, g >> 3, b >> 3, 0, 0, true);
+                semipix_split(p.y, p.x, r >> 3, g >> 3, b >> 3, 0, true);
             }
         }
     }
@@ -471,7 +471,7 @@ void core::RT_draw_shaded_triangle_semi(RT_POINT2D *v0, RT_POINT2D *v1, RT_POINT
                 mb = CLAMP(mb, 0, 255) >> 3;
 
                 // Draw the pixel
-                semipix_split(p.y, p.x, static_cast<u32>(mr) >> 3, static_cast<u32>(mg) >> 3, static_cast<u32>(mb) >> 3, 0, 0, true);
+                semipix_split(p.y, p.x, static_cast<u32>(mr) >> 3, static_cast<u32>(mg) >> 3, static_cast<u32>(mb) >> 3, 0, true);
             }
         }
     }
@@ -515,7 +515,7 @@ void core::RT_draw_shaded_triangle(RT_POINT2D *v0, RT_POINT2D *v1, RT_POINT2D *v
                 r = CLAMP(r, 0, 255) >> 3;
                 g = CLAMP(g, 0, 255) >> 3;
                 b = CLAMP(b, 0, 255) >> 3;
-                setpix_split(p.y, p.x, static_cast<u32>(r), static_cast<u32>(g), static_cast<u32>(b), 0, 0);
+                setpix_split(p.y, p.x, static_cast<u32>(r), static_cast<u32>(g), static_cast<u32>(b), 0);
             }
         }
     }
