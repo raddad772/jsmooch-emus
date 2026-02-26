@@ -630,7 +630,7 @@ void core::queue_xa_sector(u8 *ptr) {
     if (io.MODE.xa_filter) {
         u8 filenum = ptr[XA_SUBHEADER_START+0];
         if (filenum != xa.filter.file) {
-            printf("\nIGNORE XAPDCM FILE %02x not %02x!", filenum, xa.filter.file);
+            //printf("\nIGNORE XADPCM FILE %02x not %02x!", filenum, xa.filter.file);
             return;
         }
         u8 chnum = ptr[XA_SUBHEADER_START+1];
