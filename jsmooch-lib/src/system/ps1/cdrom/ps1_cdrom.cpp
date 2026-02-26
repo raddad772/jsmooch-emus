@@ -92,7 +92,6 @@ void core::mainbus_write(u32 addr, u32 val, u8 sz) {
     //printf("\nWR CDROM %08x: %08x", addr, val);
     switch (addr) {
         case 0x1F801800: {
-            dbgloglog_bus(PS1D_CDROM_REGRW, DBGLS_INFO, "WRITE RA %d", val & 3);
             io.HSTS.RA = val & 3;
             return;
         }

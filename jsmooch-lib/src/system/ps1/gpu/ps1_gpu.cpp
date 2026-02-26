@@ -1615,7 +1615,8 @@ void core::gp0_cmd(u32 cmd) {
     if (VRAM_to_CPU_in_progress) {
         printf("\nWARN CMD DURING VRAM TO CPU!?");
     }
-
+    static bool bad = false;
+    if (bad) { printf("\nVAL %04x", cmd); }
     // Check if we have an instruction..
     if (current_ins) {
         CMD[cmd_arg_index++] = cmd;
@@ -1632,7 +1633,6 @@ void core::gp0_cmd(u32 cmd) {
         ins_special = 0;
         cmd_arg_num = 1;
         u32 cmdr = cmd >> 24;
-        //printf("\n(GPU) CMD %02x", cmdr);
 #ifdef LOG_GP0
         printf("\n(GPU) CMD %02x", cmdr);
 #endif
@@ -1924,6 +1924,7 @@ void core::gp0_cmd(u32 cmd) {
                 break;
             default:
                 printf("\nUnknown GP0 command %08x", cmd);
+                bad = true;
                 dbg_break("BAD GP0 CMD", 0);
                 break;
         }

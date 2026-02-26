@@ -136,6 +136,7 @@ struct VOICE {
         bool noise_enable{};
     } io{};
     i16 sample{}, sample_l{}, sample_r{};
+    i16 old{}, older{};
 
     ADSR_ENVELOPE env{};
     u32 pitch_counter{}; // 17 bits?

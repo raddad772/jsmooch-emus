@@ -989,10 +989,13 @@ void full_system::load_default_ROM()
             //worked = grab_ROM(&ROMs, which, "PSX/GTE/GTETransfer/GTETransfer.exe", nullptr);
 
             //worked = grab_ROM(&ROMs, which, "VBLANK.exe", nullptr);
-
+//#define SIDELOAD_WITH_CD
+#ifdef SIDELOAD_WITH_CD
+            worked = grab_cue(&ROMs, which, "test", nullptr); // Redux CD tests
+#endif
             //worked = grab_cue(&ROMs, which, "Resident Evil (USA)", nullptr); MDEC
             //worked = grab_cue(&ROMs, which, "Resident Evil 2 (USA)", nullptr); MDEC
-            worked = grab_cue(&ROMs, which, "Silent Hill (USA)", nullptr); // MDEC but works?
+            //worked = grab_cue(&ROMs, which, "Silent Hill (USA)", nullptr); // MDEC but works?
             //worked = grab_cue(&ROMs, which, "Tomb Raider (USA) (Rev 1)", nullptr); // req. MDEC
             //worked = grab_cue(&ROMs, which, "Tomb Raider II - Starring Lara Croft (USA) (Rev 2)", nullptr);
             //worked = grab_cue(&ROMs, which, "Metal Slug X (USA)", nullptr);
@@ -1004,7 +1007,7 @@ void full_system::load_default_ROM()
             //worked = grab_cue(&ROMs, which, "Hydro Thunder (USA)", nullptr);
             //worked = grab_cue(&ROMs, which, "Cool Boarders 2 (USA)", nullptr);
             //worked = grab_cue(&ROMs, which, "Ridge Racer (USA)", nullptr);
-            //worked = grab_cue(&ROMs, which, "Mega Man X4 (USA)", nullptr);
+            worked = grab_cue(&ROMs, which, "Mega Man X4 (USA)", nullptr);
             // "either you are not handling the config commands or reset flag on ctrl reg where it resets all the other reg
             // al;so you need to reset state when switching ports?
             //worked = grab_cue(&ROMs, which, "Spyro the Dragon (USA)", nullptr);
@@ -1286,8 +1289,16 @@ void full_system::load_default_ROM()
                 if (ROMs.files.size() < 1) break;
                 if (ends_with(ROMs.files[0].name, ".exe"))
                     sys->sideload(ROMs);
-                else
+                else {
+
+#ifdef SIDELOAD_WITH_CD
+                    multi_file_set R;
+                    grab_ROM(&R, which, "test/cdlsetloc.ps-exe", nullptr);
+                    sys->sideload(R);
+#endif
                     load_ROM_into_emu(sys, IOs, ROMs);
+                }
+
             }
             worked = 1;
             break;

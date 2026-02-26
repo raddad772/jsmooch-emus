@@ -200,8 +200,6 @@ void VOICE::adpcm_decode() {
     // +1 = oldest
     // +2 = older
     // +3 = old
-    i32 older = gauss.samples[(gauss.idx - 2) & 3];
-    i32 old = gauss.samples[(gauss.idx - 1) & 3];
     for (short & s_out : adpcm.samples) {
         i32 t;
         if (nibble == 0) {
