@@ -471,7 +471,7 @@ void core::RT_draw_shaded_triangle_semi(RT_POINT2D *v0, RT_POINT2D *v1, RT_POINT
                 mb = CLAMP(mb, 0, 255) >> 3;
 
                 // Draw the pixel
-                semipix_split(p.y, p.x, static_cast<u32>(mr) >> 3, static_cast<u32>(mg) >> 3, static_cast<u32>(mb) >> 3, 0, true);
+                semipix_split(p.y, p.x, mr, mg, mb, 0, true);
             }
         }
     }
