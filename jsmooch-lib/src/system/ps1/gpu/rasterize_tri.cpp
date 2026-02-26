@@ -72,7 +72,7 @@ static inline void compute_barycentric(i64 cp, RT_POINT2D *p, RT_POINT2D *v0, RT
     i64 r = (1L << 32) / cp;
     lambdas[0] = cpz(v1, v2, p) * r;
     lambdas[1] = cpz(v2, v0, p) * r;
-    lambdas[2] = (1L << 32) - lambdas[0] - lambdas[1];
+    lambdas[2] = ((1L << 32) - lambdas[0]) - lambdas[1];
 }
 
 constexpr float EDGE_EPS = 1e-5f;
@@ -317,7 +317,7 @@ void core::RT_draw_shaded_tex_triangle_modulated(RT_POINT2D *v0, RT_POINT2D *v1,
                 u32 c = mr | (mg << 5) | (mb << 10);
 
                 // Draw the pixe
-                setpix(p.y, p.x, c | (color & 0x8000), color);
+                setpix(p.y, p.x, c, color & 0x8000);
             }
         }
     }
