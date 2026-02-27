@@ -2,6 +2,8 @@
 // Created by . on 2/19/26.
 //
 
+// I followed Ares pretty closely on this one, thanks Ares!
+
 #include "ps1_mdec.h"
 
 #include "ps1_mdec.h"
@@ -10,18 +12,19 @@
 namespace PS1 {
 
 
-void GFIFOUT::push(u16 val) {
+void GFIFOUT::push(u32 val) {
+    words[tail] = val;
     if (len >= MDEC_NUMHWORDS_OUT) {
         printf("\n(MDEC FIFO OUT) WARN PUSH TO FULL FIFO!");
+        ::dbg_break("MDEC FIFO FULL", 0);
         return;
     }
-    words[tail] = val;
     tail = (tail + 1) & (MDEC_NUMHWORDS_OUT-1);
     len++;
 }
 
-u16 GFIFOUT::pop() {
-    u16 v = words[head];
+u32 GFIFOUT::pop() {
+    u32 v = words[head];
     if (len > 0) {
         head = (head + 1) % MDEC_NUMHWORDS_OUT;
         len--;
@@ -33,18 +36,21 @@ void GFIFOUT::reset() {
     head = tail = len = 0;
 }
 
-void GFIFOIN::push(u16 val) {
+void GFIFOIN::push(u32 val) {
     if (len >= MDEC_NUMHWORDS_IN) {
         printf("\n(MDEC FIFO IN) WARN PUSH TO FULL FIFO!");
+        ::dbg_break("MDEC FIFO_IN FULL", 0);
         return;
     }
     words[tail] = val;
-    tail = (tail + 1) & (MDEC_NUMHWORDS_IN-1);
-    len++;
+    if (len < MDEC_NUMHWORDS_IN) {
+        tail = (tail + 1) % MDEC_NUMHWORDS_IN;
+        len++;
+    }
 }
 
-u16 GFIFOIN::pop() {
-    u16 v = words[head];
+u32 GFIFOIN::pop() {
+    u32 v = words[head];
     if (len > 0) {
         head = (head + 1) % MDEC_NUMHWORDS_IN;
         len--;
@@ -62,23 +68,145 @@ void GFIFOIN::reset() {
            ((c >> 3) & 0x1F);
 }
 
+#define CLAMP(x, low, high) ((x) < (low) ? (low) : ((x) > (high) ? (high) : (x)))
+
+static constexpr u8 zigzag[64] = {
+    0,  1,  5,  6, 14, 15, 27, 28,
+    2,  4,  7, 13, 16, 26, 29, 42,
+    3,  8, 12, 17, 25, 30, 41, 43,
+    9, 11, 18, 24, 31, 40, 44, 53,
+   10, 19, 23, 32, 39, 45, 52, 54,
+   20, 22, 33, 38, 46, 51, 55, 60,
+   21, 34, 37, 47, 50, 56, 59, 61,
+   35, 36, 48, 49, 57, 58, 62, 63,
+ };
+
+static constexpr u8 zagzig[64] = {
+        0,  1,  8, 16,  9,  2,  3, 10,
+       17, 24, 32, 25, 18, 11,  4,  5,
+       12, 19, 26, 33, 40, 48, 41, 34,
+       27, 20, 13,  6,  7, 14, 21, 28,
+       35, 42, 49, 56, 57, 50, 43, 36,
+       29, 22, 15, 23, 30, 37, 44, 51,
+       58, 59, 52, 45, 38, 31, 39, 46,
+       53, 60, 61, 54, 47, 55, 62, 63,
+     };
+
+void MDEC::decodeIDCT0(i16 *source, i16 *target) {
+    for (u32 x = 0; x < 8; x++) {
+        for (u32 y = 0; y < 8; y++) {
+            i32 sum = 0;
+            for (u32 z = 0; z < 8; z++) {
+                sum += source[y + z * 8] * BLOCK.scale[x + z * 8];
+            }
+            target[x + y * 8] = static_cast<i16>((sum + 0x8000) >> 16);
+        }
+    }
+}
+
+void MDEC::decodeIDCT1(i16 *source, i16 *target) {
+    for (u32 x = 0; x < 8; x++) {
+        for (u32 y = 0; y < 8; y++) {
+            i32 sum = 0;
+            for (u32 z = 0; z < 8; z++) {
+                sum += source[y + z * 8] * BLOCK.scale[x + z * 8];
+            }
+            i32 r = (static_cast<i32>(((sum + 0x8000) >> 16) & 0x1FF) << 23) >> 23;
+            r = CLAMP(r, -128, 127);
+            target[x + y * 8] = r;
+        }
+    }
+}
+
+void MDEC::convert_y(u32 *out, i16 *luma) {
+    for (u32 y = 0; y < 8; y++) {
+        for (u32 x = 0 ; x < 8; x++) {
+            i16 Y = static_cast<i16>((static_cast<i32>(luma[x + y * 8]) << 22) >> 22);
+            Y += 128;
+            Y = CLAMP(Y, 0, 255);
+            out[x + y * 8] = Y;
+        }
+    }
+}
+
+void MDEC::convert_yuv(u32 *out, i16 *luma, u32 bx, u32 by) {
+    for(u32 y = 0; y < 8; y++) {
+        for(u32 x = 0; x < 8; x++) {
+            i16 Y  = luma[x + y * 8];
+            i16 Cb = BLOCK.cb[((x + bx) >> 1) + ((y + by) >> 1) * 8];
+            i16 Cr = BLOCK.cr[((x + bx) >> 1) + ((y + by) >> 1) * 8];
+
+            s32 R = Y + (1.402 * Cr);
+            s32 G = Y - (0.334 * Cb) - (0.714 * Cr);
+            s32 B = Y + (1.722 * Cb);
+
+            R += 128;
+            G += 128;
+            B += 128;
+            R = CLAMP(R, 0, 255);
+            G = CLAMP(G, 0, 255);
+            B = CLAMP(B, 0, 255);
+
+            out[(x + bx) + (y + by) * 16] = R << 0 | G << 8 | B << 16;
+        }
+    }
+
+}
+
+bool MDEC::decode_block(i16 *block, u8 *table) {
+    memset(block, 0, sizeof(*block) * 64);
+    if (fifo_in.len == 0) return false;
+    u16 dct = fifo_in.pop();
+    while (dct == 0xfe00) { // Pad-words!
+        if (fifo_in.len == 0) return false;
+        dct = fifo_in.pop();
+    }
+    i32 current = (static_cast<i32>(dct) << 22) >> 22;
+    u16 qfactor = dct >> 10;
+    i32 value = current * table[0];
+
+    for (u32 n = 0; n < 64;) {
+        if (qfactor == 0) value = current << 1;
+        value = CLAMP(value, -1024, 1023);
+        if (qfactor > 0) {
+            block[zagzig[n]] = value;
+        }
+        else if (qfactor == 0) {
+            block[n] = value;
+        }
+        if (fifo_in.len == 0) return false;
+        u16 rle = fifo_in.pop();
+        current = (static_cast<i32>(rle) << 22) >> 22;
+        n += (rle >> 10) + 1;
+        if (n >= 64) break;
+
+        value = (current * table[n] * qfactor + 4) >> 3;
+    }
+
+    i16 array[64];
+    decodeIDCT0(block, array);
+    decodeIDCT1(array, block);
+    return true;
+}
+
 void MDEC::do_decode() {
+    printf("\n(MDEC) DECODE!");
     if (io.stat.output_depth <= 1) {
-        if (!decode_block(block.y0, block.luma)) return;
-        convert_y(output, block.y0);
+        if (!decode_block(BLOCK.y0, BLOCK.luma)) return;
+        convert_y(output, BLOCK.y0);
     }
     else {
-        if (!decode_block(block.cr, block.chroma)) return;
-        if (!decode_block(block.cb, block.chroma)) return;
-        if (!decode_block(block.y0, block.luma)) return;
-        if (!decode_block(block.y1, block.luma)) return;
-        if (!decode_block(block.y2, block.luma)) return;
-        if (!decode_block(block.y3, block.luma)) return;
+        if (!decode_block(BLOCK.cr, BLOCK.chroma)) return;
+        if (!decode_block(BLOCK.cb, BLOCK.chroma)) return;
+        if (!decode_block(BLOCK.y0, BLOCK.luma)) return;
+        if (!decode_block(BLOCK.y1, BLOCK.luma)) return;
+        if (!decode_block(BLOCK.y2, BLOCK.luma)) return;
+        if (!decode_block(BLOCK.y3, BLOCK.luma)) return;
 
-        convert_yuv(output, block.y0, 0, 0);
-        convert_yuv(output, block.y1, 8, 0);
-        convert_yuv(output, block.y2, 0, 8);
-        convert_yuv(output, block.y3, 8, 8);
+        convert_yuv(output, BLOCK.y0, 0, 0);
+        convert_yuv(output, BLOCK.y1, 8, 0);
+        convert_yuv(output, BLOCK.y2, 0, 8);
+        convert_yuv(output, BLOCK.y3, 8, 8);
     }
     // 4-bit output
     if (io.stat.output_depth == 0) {
@@ -126,7 +254,7 @@ void MDEC::do_decode() {
                     break;
                 case 1:
                     rgb |= output[index] << 24;
-                    fifo_out.push(rgb)
+                    fifo_out.push(rgb);
                     rgb = output[index++] >> 8;
                     break;
                 case 2:
@@ -142,7 +270,6 @@ void MDEC::do_decode() {
             state = state + 1 & 3;
         }
     }
-    return true;
 }
 void MDEC::write_data(u32 val) {
     switch (io.mode) {
@@ -185,16 +312,16 @@ void MDEC::write_data(u32 val) {
             break;
         case MM_SetQuantTable:
             if (io.offset < 64) {
-                block.luma[io.offset++ & 63] = val & 0xFF;
-                block.luma[io.offset++ & 63] = (val >> 8) & 0xFF;
-                block.luma[io.offset++ & 63] = (val >> 16) & 0xFF;
-                block.luma[io.offset++ & 63] = (val >> 24) & 0xFF;
+                BLOCK.luma[io.offset++ & 63] = val & 0xFF;
+                BLOCK.luma[io.offset++ & 63] = (val >> 8) & 0xFF;
+                BLOCK.luma[io.offset++ & 63] = (val >> 16) & 0xFF;
+                BLOCK.luma[io.offset++ & 63] = (val >> 24) & 0xFF;
             }
             else {
-                block.chroma[io.offset++ & 63] = val & 0xFF;
-                block.chroma[io.offset++ & 63] = (val >> 8) & 0xFF;
-                block.chroma[io.offset++ & 63] = (val >> 16) & 0xFF;
-                block.chroma[io.offset++ & 63] = (val >> 24) & 0xFF;
+                BLOCK.chroma[io.offset++ & 63] = val & 0xFF;
+                BLOCK.chroma[io.offset++ & 63] = (val >> 8) & 0xFF;
+                BLOCK.chroma[io.offset++ & 63] = (val >> 16) & 0xFF;
+                BLOCK.chroma[io.offset++ & 63] = (val >> 24) & 0xFF;
             }
             io.num_remaining_param_words -= 2;
             if (io.num_remaining_param_words == 0) {
@@ -202,8 +329,8 @@ void MDEC::write_data(u32 val) {
             }
             break;
         case MM_SetScaleTable:
-            block.scale[io.offset++ & 63] = val & 0xFFFF;
-            block.scale[io.offset++ & 63] = (val >> 16) & 0xFFFF;
+            BLOCK.scale[io.offset++ & 63] = val & 0xFFFF;
+            BLOCK.scale[io.offset++ & 63] = (val >> 16) & 0xFFFF;
             io.num_remaining_param_words -= 2;
             if (io.num_remaining_param_words == 0) {
                 io.mode = MM_Idle;
@@ -213,6 +340,7 @@ void MDEC::write_data(u32 val) {
 }
 
 u32 MDEC::read_data() {
+    printf("\n(MDEC) read_data!");
     if (fifo_out.len == 0) {
         printf("\n(MDEC) read when output FIFO empty?");
     }
@@ -259,7 +387,6 @@ void MDEC::mainbus_write(u32 addr, u8 sz, u32 val) {
 
 
 u32 MDEC::read_ctrl() {
-    //printf("\nWARN MDEC read ctrl");
     u32 o = ((io.num_remaining_param_words >> 1) - 1) & 0xFFFF;
     o |= io.stat.current_block << 16;
     o |= io.stat.output_mask_bit << 23;
@@ -271,6 +398,7 @@ u32 MDEC::read_ctrl() {
     o |= (io.mode != MM_Idle) << 29;
     o |= (fifo_in.len >= 64) << 30;
     o |= (fifo_out.len == 0) << 31;
+    printf("\nWARN MDEC read ctrl %08x", o);
     return o;
 }
 

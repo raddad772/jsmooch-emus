@@ -88,12 +88,7 @@ void DMA_channel::do_block()
                         bus->gpu.write_gp0(src_word);
                         break;
                     case DP_MDEC_in: {
-                        static u32 e = 0;
-                        if (!e) {
-                            printf("\nWARN DMA write to MDEC in!");
-                            e = 1;
-                        }
-                        //ps1!.MDEC.command(src_word);
+                        bus->mdec.write_data(src_word);
                         break; }
                     case DP_SPU: {// Ignore SPU transfer for now
                         bus->spu.DMA_write(src_word);
@@ -115,7 +110,7 @@ void DMA_channel::do_block()
                         src_word = bus->cdrom.mainbus_read(0x1F801802, 4, true);
                         break; }
                     case DP_MDEC_out:
-                        src_word = 0;
+                        src_word = bus->mdec.read_data();
                         break;
                     case DP_SPU:
                         src_word = bus->spu.DMA_read();

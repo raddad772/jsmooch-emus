@@ -8,24 +8,24 @@
 
 namespace PS1 {
 struct core;
-static constexpr u32 MDEC_NUMHWORDS_OUT = 0x40;
+static constexpr u32 MDEC_NUMHWORDS_OUT = 2048;
 static constexpr u32 MDEC_NUMHWORDS_IN = 0x10000;
 
 struct GFIFOIN {
     u32 head{}, tail{}, len{};
     u32 words[MDEC_NUMHWORDS_IN];
 
-    void push(u16 val);
-    u16 pop();
+    void push(u32 val);
+    u32 pop();
     void reset();
 };
 
 struct GFIFOUT {
-    u32 head{}, tail{}, len{};
+    i32 head{}, tail{}, len{};
     u32 words[MDEC_NUMHWORDS_OUT];
 
-    void push(u16 val);
-    u16 pop();
+    void push(u32 val);
+    u32 pop();
     void reset();
 };
 enum MDECMODE {
@@ -45,6 +45,7 @@ struct MDEC {
     u32 read_ctrl();
     u32 mainbus_read(u32 addr, u8 sz);
     void mainbus_write(u32 addr, u8 sz, u32 val);
+    bool decode_block(i16 *block, u8 *table);
 
     GFIFOIN fifo_in{};
     GFIFOUT fifo_out{};
@@ -77,7 +78,12 @@ struct MDEC {
         i16 scale[64];
         i16 cr[64], cb[64];
         s16 y0[64], y1[64], y2[64], y3[64];
-    } block;
+    } BLOCK;
+
+    void decodeIDCT0(i16 *source, i16 *target);
+    void decodeIDCT1(i16 *source, i16 *target);
+    void convert_y(u32 *out, i16 *luma);
+    void convert_yuv(u32 *out, i16 *luma, u32 bx, u32 by);
 
 private:
     void abort();
