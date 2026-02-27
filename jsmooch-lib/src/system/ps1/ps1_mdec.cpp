@@ -190,7 +190,7 @@ bool MDEC::decode_block(i16 *block, u8 *table) {
 }
 
 void MDEC::do_decode() {
-    printf("\n(MDEC) DECODE!");
+    printf("\n(MDEC) DECODE %d!", fifo_in.len);
     if (io.stat.output_depth <= 1) {
         if (!decode_block(BLOCK.y0, BLOCK.luma)) return;
         convert_y(output, BLOCK.y0);
