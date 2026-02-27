@@ -8,7 +8,7 @@
 
 namespace PS1 {
 struct core;
-static constexpr u32 MDEC_NUMHWORDS_OUT = 2048;
+static constexpr u32 MDEC_NUMHWORDS_OUT = 0x10000;
 static constexpr u32 MDEC_NUMHWORDS_IN = 0x10000;
 
 struct GFIFOIN {
