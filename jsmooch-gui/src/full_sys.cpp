@@ -904,10 +904,10 @@ void full_system::load_default_ROM()
             //worked = grab_ROM(&ROMs, which, "ps1-tests-built/dma/otc-test/otc-test.exe", nullptr);
             //worked = grab_ROM(&ROMs, which, "ps1-tests-built/dma/chain-looping/chain-looping.exe", nullptr);
             //worked = grab_ROM(&ROMs, which, "ps1-tests-built/gte/test-all/test-all.exe", nullptr);
-            worked = grab_ROM(&ROMs, which, "ps1-tests-built/timers/timers.exe", nullptr);
+            //worked = grab_ROM(&ROMs, which, "ps1-tests-built/timers/timers.exe", nullptr);
             //worked = grab_ROM(&ROMs, which, "ps1-tests-built/spu/memory-transfer/memory-transfer.exe", nullptr);
             //worked = grab_ROM(&ROMs, which, "ps1-tests-built/spu/test/test.exe", nullptr);
-            //worked = grab_ROM(&ROMs, which, "ps1-tests-built/gte-fuzz/gte-fuzz.exe", nullptr);
+            //worked = grab_ROM(&ROMs, which`, "ps1-tests-built/gte-fuzz/gte-fuzz.exe", nullptr);
             //worked = grab_ROM(&ROMs, which, "redux_cpu.exe", nullptr);
             //worked = grab_ROM(&ROMs, which, "pad.exe", nullptr);
             //worked = grab_ROM(&ROMs, which, "PSX/MDEC/DCTBlockDecode/CLUT4BPP/DCTBlockDecodeCLUT4BPP.exe", nullptr);
@@ -1000,7 +1000,7 @@ void full_system::load_default_ROM()
             //worked = grab_cue(&ROMs, which, "Tomb Raider II - Starring Lara Croft (USA) (Rev 2)", nullptr);
             //worked = grab_cue(&ROMs, which, "Metal Slug X (USA)", nullptr);
             //worked = grab_cue(&ROMs, which, "Gran Turismo 2 (USA) (Simulation Mode) (Rev 1)", nullptr);
-            //worked = grab_cue(&ROMs, which, "Final Fantasy VII (USA) (Disc 1)", nullptr); // MDEC but works
+            worked = grab_cue(&ROMs, which, "Final Fantasy VII (USA) (Disc 1)", nullptr); // MDEC but works
             //worked = grab_cue(&ROMs, which, "Tony Hawks Pro Skater 2 (USA)", nullptr); // error parsing cue
             //worked = grab_cue(&ROMs, which, "Crash Bandicoot 1", nullptr);
             //worked = grab_cue(&ROMs, which, "mk2", nullptr);

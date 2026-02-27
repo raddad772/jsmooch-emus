@@ -32,7 +32,7 @@ void TIMER::vblank(u64 key) {
     if (key == 0) { // vblank off
         if (mode.sync_enable) {
             switch (mode.sync_mode) {
-                case 0: // 0 = Pause counter during Hblank(s)
+                case 0: // 0 = Pause counter during Vblank(s)
                     disable();
                     break;
                 case 1: // 1 = Reset counter to 0000h at Hblank(s)
@@ -74,36 +74,36 @@ void TIMER::hblank(u64 key)
         if (mode.sync_enable) {
             switch (mode.sync_mode) {
                 case 0: // 0 = Pause counter during Hblank(s)
-                    disable();
-                    break;
-                case 1: // 1 = Reset counter to 0000h at Hblank(s)
-                    write(0, 4);
-                    break;
-                case 2: // 2 = Reset counter to 0000h at Hblank(s) and pause outside of Hblank
-                    write(0, 4);
                     enable();
                     break;
-                case 3: // 3 = Pause until Hblank occurs once, then switch to Free Run
+                case 1: // 1 = Reset counter to 0000h at Hblank(s)
                     break;
-            }
+                case 2: // 2 = Reset counter to 0000h at Hblank(s) and pause outside of Hblank
+                    //write(0, 4);
+                    disable();
+                    break;
+                case 3: // 3 = Pause until Hblank occurs once, then switch to Free Run
+                    break;            }
         }
     }
     else { // hblank on
         if (mode.sync_enable) {
             switch (mode.sync_mode) {
                 case 0: // 0 = Pause counter during Hblank(s)
-                    enable();
+                    disable();
                     break;
                 case 1: // 1 = Reset counter to 0000h at Hblank(s)
+                    write(0, 4);
                     break;
                 case 2: // 2 = Reset counter to 0000h at Hblank(s) and pause outside of Hblank
                     write(0, 4);
-                    disable();
+                    enable();
                     break;
                 case 3: // 3 = Pause until Hblank occurs once, then switch to Free Run
                     enable();
                     mode.sync_enable = 0;
                     break;
+
             }
         }
     }

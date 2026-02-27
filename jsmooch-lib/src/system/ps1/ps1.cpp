@@ -169,8 +169,8 @@ void core::schedule_frame(u64 start_clock, u32 is_first)
             scheduler.only_add_abs(cur_clock, 1, this, &vblank, nullptr);
         }
 
+        scheduler.only_add_abs(cur_clock + clock.timing.scanline.cycles - clock.timing.scanline.hblank.cycles, 1, this, &hblank, nullptr);
         cur_clock += clock.timing.scanline.cycles;
-        scheduler.only_add_abs(cur_clock, 1, this, &hblank, nullptr);
     }
 
     scheduler.only_add_abs(start_clock+clock.timing.frame.cycles, 0, this, &do_next_scheduled_frame, nullptr);
