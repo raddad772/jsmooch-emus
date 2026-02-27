@@ -12,6 +12,7 @@
 #include "r3000.h"
 #include "r3000_disassembler.h"
 namespace R3000 {
+    static constexpr i32 CYCLES_PER_INSTRUCTION = 1;
 static constexpr char reg_alias_arr[33][12] = {
         "r0", "at", "v0", "v1",
         "a0", "a1", "a2", "a3",
@@ -608,7 +609,7 @@ void core::cycle(i32 howmany)
 
         fetch_and_decode();
 
-        *waitstates = 2;
+        *waitstates = CYCLES_PER_INSTRUCTION;
         cycles_left -= *waitstates;
         (*clock) += *(waitstates);
         (*waitstates) = 0;

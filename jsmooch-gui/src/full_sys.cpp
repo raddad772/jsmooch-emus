@@ -904,7 +904,7 @@ void full_system::load_default_ROM()
             //worked = grab_ROM(&ROMs, which, "ps1-tests-built/dma/otc-test/otc-test.exe", nullptr);
             //worked = grab_ROM(&ROMs, which, "ps1-tests-built/dma/chain-looping/chain-looping.exe", nullptr);
             //worked = grab_ROM(&ROMs, which, "ps1-tests-built/gte/test-all/test-all.exe", nullptr);
-            //worked = grab_ROM(&ROMs, which, "ps1-tests-built/timers/timers.exe", nullptr);
+            worked = grab_ROM(&ROMs, which, "ps1-tests-built/timers/timers.exe", nullptr);
             //worked = grab_ROM(&ROMs, which, "ps1-tests-built/spu/memory-transfer/memory-transfer.exe", nullptr);
             //worked = grab_ROM(&ROMs, which, "ps1-tests-built/spu/test/test.exe", nullptr);
             //worked = grab_ROM(&ROMs, which, "ps1-tests-built/gte-fuzz/gte-fuzz.exe", nullptr);
@@ -1007,7 +1007,7 @@ void full_system::load_default_ROM()
             //worked = grab_cue(&ROMs, which, "Hydro Thunder (USA)", nullptr);
             //worked = grab_cue(&ROMs, which, "Cool Boarders 2 (USA)", nullptr);
             //worked = grab_cue(&ROMs, which, "Ridge Racer (USA)", nullptr);
-            worked = grab_cue(&ROMs, which, "Mega Man X4 (USA)", nullptr);
+            //worked = grab_cue(&ROMs, which, "Mega Man X4 (USA)", nullptr);
             // "either you are not handling the config commands or reset flag on ctrl reg where it resets all the other reg
             // al;so you need to reset state when switching ports?
             //worked = grab_cue(&ROMs, which, "Spyro the Dragon (USA)", nullptr);
