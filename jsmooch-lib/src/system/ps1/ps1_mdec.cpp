@@ -271,7 +271,6 @@ void MDEC::do_decode() {
             }
         }
     }
-    printf("\nDATA LEFT: %d", fifo_in.len);
 }
 void MDEC::write_data(u32 val) {
     switch (io.mode) {
