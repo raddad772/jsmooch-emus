@@ -16,7 +16,15 @@ static void render_image_view_sysinfo(debugger_interface *dbgr, debugger_view *d
     tb->sprintf("\nEnabled IRQs:");
     for (u32 i = 0; i < 11; i++) {
         u32 b = 1 << i;
-        if (th->cpu.io.I_MASK & b) tb->sprintf("\n %s", IRQnames[i]);
+        if (th->cpu.io.I_MASK & b) tb->sprintf("\n  %s", IRQnames[i]);
+    }
+
+    tb->sprintf("\n\nDMA channels. Master enable:%d");
+    static constexpr char DMANAMES[7][50] = {"MDEC in ", "MDEC out", "GPU     ", "CDROM   ", "SPU     ", "PIO     ", "OTC     "};
+    static constexpr char SYNCS[4][50] = {"manual ", "request", "list   ", "invalid"};
+    for (u32 i = 0; i < 7; i++) {
+        auto &ch = th->dma.channels[i];
+        tb->sprintf("\n  CH%d (%s)   m/enable:%d/%d  sync:%s  block_count:%d block_size:%x", i, DMANAMES[i], ch.master_enable, ch.enable, SYNCS[ch.sync], ch.block_count, ch.block_size);
     }
 }
 

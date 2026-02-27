@@ -8,7 +8,7 @@
 
 namespace PS1 {
 struct core;
-static constexpr u32 MDEC_NUMHWORDS_OUT = 0x10000;
+static constexpr u32 MDEC_NUMHWORDS_OUT = 0x40000;
 static constexpr u32 MDEC_NUMHWORDS_IN = 0x10000;
 
 struct GFIFOIN {
@@ -84,9 +84,13 @@ struct MDEC {
     void decodeIDCT1(i16 *source, i16 *target);
     void convert_y(u32 *out, i16 *luma);
     void convert_yuv(u32 *out, i16 *luma, u32 bx, u32 by);
+    bool can_dreq_out() const;
+    bool can_dreq_in() const;
 
 private:
     void abort();
+    void write_fifo_out(u32 w);
+    u32 read_fifo_in();
 };
 
 }

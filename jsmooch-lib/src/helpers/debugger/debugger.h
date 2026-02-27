@@ -606,7 +606,7 @@ struct debugger_widget_colorkey {
 struct debugger_widget_textbox {
     int sprintf(const char *format, ...);
     void clear();
-    jsm_string contents{4000};
+    jsm_string contents{16000};
 };
 
 struct debugger_widget {

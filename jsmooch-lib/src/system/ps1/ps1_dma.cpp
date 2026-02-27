@@ -64,6 +64,102 @@ u32 DMA_channel::transfer_size() const
     return 0;
 }
 
+void DMA_channel::do_single_block_request()
+{
+    u32 mstep = (step == D_increment) ? 4 : -4;
+    u32 copies = block_size;
+    if (block_count == 0) {
+        enable = 0;
+        return;
+    }
+    dbgloglog_bus(PS1D_DMA_CH0+num, DBGLS_INFO, "CH:%d SINGLE BLOCK  DEST:%08x  LEN:%d bytes B:%d IE:%d", num, sync_addr, copies*4, block_count, (bus->dma.irq.IE >> num) & 1);
+    //printf("\nDMA ch:%d direction:%d copies:%d base_addr:%05x", num, direction, copies, base_addr);
+
+    while (copies > 0) {
+        u32 cur_addr = sync_addr & 0x1FFFFC;
+        u32 src_word = 0;
+        switch(direction) {
+            case D_from_ram:
+                src_word = bus->mainbus_read(cur_addr, 4, true);
+                switch(num) {
+                    case DP_GPU:
+                        bus->gpu.write_gp0(src_word);
+                        break;
+                    case DP_MDEC_in: {
+                        bus->mdec.write_data(src_word);
+                        break; }
+                    case DP_SPU: {// Ignore SPU transfer for now
+                        bus->spu.DMA_write(src_word);
+                        break; }
+                    default:
+                        printf("\nUNHANDLED DMA PORT! %d", num);
+                        return;
+                }
+                break;
+            case D_to_ram:
+                switch(num) {
+                    case DP_OTC:
+                        src_word = (copies == 1) ? 0xFFFFFF : ((sync_addr - 4) & 0x1FFFFF);
+                        break;
+                    case DP_GPU:
+                        src_word = bus->gpu.get_gpuread();
+                        break;
+                    case DP_cdrom: {
+                        src_word = bus->cdrom.mainbus_read(0x1F801802, 4, true);
+                        break; }
+                    case DP_MDEC_out:
+                        src_word = bus->mdec.read_data();
+                        break;
+                    case DP_SPU:
+                        src_word = bus->spu.DMA_read();
+                        break;
+                    default:
+                        printf("\nUNKNOWN DMA PORT %d", num);
+                        src_word = 0;
+                        break;
+                }
+                //printf("\nDMA WRITE %08x: %08x", cur_addr, src_word);
+                bus->mainbus_write(cur_addr, 4, src_word);
+                break;
+            default:
+                printf("\nUnsupported direction %d", direction);
+                break;
+        }
+        sync_addr = (sync_addr + mstep) & 0xFFFFFFFF;
+        copies--;
+    }
+    block_count--;
+    if (block_count == 0) {
+        bus->dma.complete_transfer(num);
+        enable = 0;
+    }
+}
+bool DMA_channel::can_dreq() {
+    bool e = enable && sync == D_request && block_count > 0;
+    if (e) {
+        switch (num) {
+            case 0:
+                return bus->mdec.can_dreq_in();
+                break;
+            case 1:
+                return bus->mdec.can_dreq_out();
+                break;
+            default:
+                printf("\nWARN DREQ FOR CH %d???", num);;
+                break;
+        }
+    }
+    return false;
+}
+
+void DMA_channel::try_dreq() {
+    if (!(enable && sync == D_request && block_count > 0)) return;
+    while (can_dreq()) {
+        do_single_block_request();
+    }
+}
+
+
 void DMA_channel::do_block()
 {
     u32 mstep = (step == D_increment) ? 4 : -4;
@@ -154,9 +250,10 @@ void DMA_channel::do_dma()
     enable = 0;
 }
 
-bool DMA_channel::active()
+bool DMA_channel::should_trigger()
 {
     u32 menable = (sync == D_manual) ? trigger : 1;
+    if (!trigger && num == 1 && sync == D_request) menable = 0;
     return master_enable && enable && menable;
 }
 
@@ -299,6 +396,7 @@ void DMA::write(u32 addr, u32 sz, u32 val)
                     //printf("\nBASE ADDRESS WRITE CH:%d VAL:%08x", ch_num, val);
                     //fflush(stdout);
                     ch->base_addr = val & 0xFFFFFF;
+                    ch->sync_addr = ch->base_addr;
                     //if (ch->base_addr == 0x58124) dbg_break("BAD DMA BASE ADDR", 0);
                     break;
                 case 4:
@@ -313,7 +411,8 @@ void DMA::write(u32 addr, u32 sz, u32 val)
                     printf("\nUnimplemented per-channel DMA register write: %d %d %08x: %08x", ch_num, reg, addr, val);
                     return;
             }
-            if (ch->active()) ch->do_dma();
+            if (ch->should_trigger()) ch->do_dma();
+            else ch->try_dreq();
             break; }
         case 7: // common registers
             switch(reg) {

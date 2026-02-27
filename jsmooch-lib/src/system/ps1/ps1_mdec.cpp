@@ -15,7 +15,7 @@ namespace PS1 {
 void GFIFOUT::push(u32 val) {
     words[tail] = val;
     if (len >= MDEC_NUMHWORDS_OUT) {
-        printf("\n(MDEC FIFO OUT) WARN PUSH TO FULL FIFO!");
+        printf("\n(MDEC FIFO OUT) WARN PUSH TO FULL FIFO %d!", MDEC_NUMHWORDS_OUT);
         ::dbg_break("MDEC FIFO FULL", 0);
         return;
     }
@@ -153,13 +153,39 @@ void MDEC::convert_yuv(u32 *out, i16 *luma, u32 bx, u32 by) {
 
 }
 
+
+bool MDEC::can_dreq_in() const {
+    return fifo_in.len == 0 && io.stat.data_in_req;
+}
+
+bool MDEC::can_dreq_out() const {
+    return fifo_out.len >= 32 && io.stat.data_out_req;
+}
+
+u32 MDEC::read_fifo_in() {
+    u32 v = fifo_in.pop();
+    if (can_dreq_in()) {
+        // Trigger DREQ
+        bus->dma.channels[0].try_dreq();
+    }
+    return v;
+}
+
+void MDEC::write_fifo_out(u32 val) {
+    fifo_out.push(val);
+    if (can_dreq_out()) {
+        // Trigger DREQ
+        bus->dma.channels[1].try_dreq();
+    }
+}
+
 bool MDEC::decode_block(i16 *block, u8 *table) {
     memset(block, 0, sizeof(*block) * 64);
     if (fifo_in.len == 0) return false;
-    u16 dct = fifo_in.pop();
+    u16 dct = read_fifo_in();
     while (dct == 0xfe00) { // Pad-words!
         if (fifo_in.len == 0) return false;
-        dct = fifo_in.pop();
+        dct = read_fifo_in();
     }
     i32 current = (static_cast<i32>(dct) << 22) >> 22;
     u16 qfactor = dct >> 10;
@@ -175,7 +201,7 @@ bool MDEC::decode_block(i16 *block, u8 *table) {
             block[n] = value;
         }
         if (fifo_in.len == 0) return false;
-        u16 rle = fifo_in.pop();
+        u16 rle = read_fifo_in();
         current = (static_cast<i32>(rle) << 22) >> 22;
         n += (rle >> 10) + 1;
         if (n >= 64) break;
@@ -219,7 +245,7 @@ void MDEC::do_decode() {
                 u32 f = (output[index + 5] >> 4) << 20;
                 u32 g = (output[index + 6] >> 4) << 24;
                 u32 h = (output[index + 7] >> 4) << 28;
-                fifo_out.push(a | b | c | d | e | f | g | h);
+                write_fifo_out(a | b | c | d | e | f | g | h);
             }
         }
         // 8-bit output
@@ -229,7 +255,7 @@ void MDEC::do_decode() {
                 u32 b = output[index + 1] <<  8;
                 u32 c = output[index + 2] << 16;
                 u32 d = output[index + 3] << 24;
-                fifo_out.push(a | b | c | d);
+                write_fifo_out(a | b | c | d);
             }
         }
 
@@ -238,7 +264,7 @@ void MDEC::do_decode() {
             for(u32 index = 0; index < 256; index += 2) {
                 u32 a = BGR24to15(output[index + 0]) | (io.stat.output_mask_bit << 15);
                 u32 b = (BGR24to15(output[index + 1]) << 16) | (io.stat.output_mask_bit << 15);
-                fifo_out.push(a | b);
+                write_fifo_out(a | b);
             }
         }
 
@@ -254,17 +280,17 @@ void MDEC::do_decode() {
                         break;
                     case 1:
                         rgb |= output[index] << 24;
-                        fifo_out.push(rgb);
+                        write_fifo_out(rgb);
                         rgb = output[index++] >> 8;
                         break;
                     case 2:
                         rgb |= output[index] << 16;
-                        fifo_out.push(rgb);
+                        write_fifo_out(rgb);
                         rgb = output[index++] >> 16;
                         break;
                     case 3:
                         rgb |= output[index++] << 8;
-                        fifo_out.push(rgb);
+                        write_fifo_out(rgb);
                         break;
                 }
                 state = state + 1 & 3;
