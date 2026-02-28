@@ -159,6 +159,15 @@ static constexpr i16 gauss_table[0x200] = {
     0x5997, 0x599E, 0x59A4, 0x59A9, 0x59AD, 0x59B0, 0x59B2, 0x59B3
 };
 
+void SCIRCBUF::push(i16 *smps) {
+    cur_block_start = idx;
+    // Push an ADPCM block
+    for (u32 i = 0; i < 28; i++) {
+        samples[idx] = smps[i];
+        idx = (idx + 1) & 31;
+    }
+}
+
 void VOICE::adpcm_start() {
     adpcm.cur_addr = adpcm.start_addr;
     adpcm_decode();
@@ -190,9 +199,8 @@ void VOICE::adpcm_decode() {
     u8 shift = hd & 0xF;
     if (shift > 12) shift = 9;
     u8 filter = (hd >> 4) & 7;
-    if (filter > 4) filter = 0;
-    const s32 filter_pos = filter_table_pos[filter];
-    const s32 filter_neg = filter_table_neg[filter];
+    const i32 filter_pos = filter_table_pos[filter];
+    const i32 filter_neg = filter_table_neg[filter];
 
     u32 idx = 2;
     u32 nibble = 0;
@@ -211,7 +219,7 @@ void VOICE::adpcm_decode() {
         }
         nibble ^= 1;
         // t is a signed 4-bit value so convert to 32-bit signed
-        t = static_cast<i16>(t << 12);
+        t = (t << 28) >> 16;
         i32 s = t >> shift;
         i32 filtered = s + ((static_cast<i32>(old) * filter_pos) >> 6) + ((static_cast<i32>(older) * filter_neg) >> 6);
         filtered = CLAMP(filtered, -0x8000, 0x7FFF);
@@ -219,6 +227,7 @@ void VOICE::adpcm_decode() {
         older = old;
         old = filtered;
     }
+    gauss.decoded.push(adpcm.samples);
 }
 
 void FIFO::push(u16 item) {
@@ -411,29 +420,17 @@ u16 VOICE_VOL::read() {
     return io_val;
 }
 
-void VOICE::adpcm_get_sample() {
-    // Guard against repeat samples for slower playing
-    i32 sample_index = pitch_counter >> 12;
-    if (sample_index == gauss.old_sample_index) return;
-    gauss.old_sample_index = sample_index;
-    gauss.samples[gauss.idx] = adpcm.samples[sample_index];
-    gauss.idx = (gauss.idx + 1) & 3;
-}
-
 void VOICE::gaussian_me_up() {
+    u32 idx = ((pitch_counter >> 12) + gauss.decoded.cur_block_start) & 31;
     u16 gauss_index = (pitch_counter >> 4) & 0xFF;
-    u32 idx = gauss.idx; // oldest
-    i32 v = (gauss_table[0xFF-gauss_index] * gauss.samples[idx]);
-    idx = (idx + 1) & 3; // older
-    v += (gauss_table[0x1FF-gauss_index] * gauss.samples[idx]);
-    idx = (idx + 1) & 3; // old
-    v += (gauss_table[0x100+gauss_index] * gauss.samples[idx]);
-    idx = (idx + 1) & 3; // old
-    v += (gauss_table[gauss_index] * gauss.samples[idx]);
+    i32 v = (gauss_table[0xFF-gauss_index] * gauss.decoded.samples[(idx-3)&31]);
+    v += (gauss_table[0x1FF-gauss_index] * gauss.decoded.samples[(idx-2)&31]);
+    v += (gauss_table[0x100+gauss_index] * gauss.decoded.samples[(idx-1)&31]);
+    v += (gauss_table[gauss_index] * gauss.decoded.samples[idx]);
     v >>= 15;
     v = CLAMP(v, -0x8000, 0x7FFF);
-    //sample = v;
-    sample = gauss.samples[idx];
+    sample = v;
+    //sample = gauss.decoded.samples[idx];
 }
 
 void VOICE::cycle(i16 noise_level) {
@@ -457,11 +454,9 @@ void VOICE::cycle(i16 noise_level) {
 
     if (pitch_counter >= 0x1C000) {
         pitch_counter -= 0x1C000;
-        gauss.old_sample_index = -1;
         // New block!
         adpcm_decode();
     }
-    adpcm_get_sample();
     gaussian_me_up();
     if (io.noise_enable) sample = VOL(noise_level, env.adsr.output);
     else sample = VOL(sample, env.adsr.output);

@@ -111,7 +111,12 @@ struct ADPCM {
 
     i16 samples[28];
 };
-
+struct SCIRCBUF {
+    u32 idx{};
+    i16 samples[32]{};
+    u32 cur_block_start{};
+    void push(i16 *smps);
+};
 
 struct VOICE {
     void reset(PS1::core *ps1, u32 num);
@@ -148,9 +153,8 @@ struct VOICE {
     void adpcm_get_sample();
     void gaussian_me_up();
     struct {
-        i32 old_sample_index{-1};
-        i16 samples[4]{};
-        u32 idx{3};
+        SCIRCBUF decoded{};
+        u8 cur_sample_buf{0};
     } gauss{};
 private:
     void write_env_lo(u16 val);;
