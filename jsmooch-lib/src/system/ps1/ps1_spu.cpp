@@ -1106,7 +1106,7 @@ void VOICE::keyon() {
     env.phase = EP_ATTACK;
     env.adsr.output = 0;
     env.load_attack();
-    adpcm.repeat_addr = adpcm.start_addr;
+    //adpcm.repeat_addr = adpcm.start_addr;
     loop_written = false;
     pitch_counter = 0;
     adpcm_start();
