@@ -944,8 +944,8 @@ void core::cycle() {
 
     l += capture.sample.cd_l;
     r += capture.sample.cd_r;
-    //l += reverb.sample_l;
-    //r += reverb.sample_r;
+    l += reverb.sample_l;
+    r += reverb.sample_r;
 
     l = CLAMP(l, -0x8000, 0x7FFF);
     r = CLAMP(r, -0x8000, 0x7FFF);
