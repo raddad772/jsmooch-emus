@@ -1000,7 +1000,7 @@ void full_system::load_default_ROM()
             //worked = grab_cue(&ROMs, which, "Tomb Raider II - Starring Lara Croft (USA) (Rev 2)", nullptr);
             //worked = grab_cue(&ROMs, which, "Metal Slug X (USA)", nullptr);
             //worked = grab_cue(&ROMs, which, "Gran Turismo 2 (USA) (Simulation Mode) (Rev 1)", nullptr);
-            worked = grab_cue(&ROMs, which, "Final Fantasy VII (USA) (Disc 1)", nullptr); // MDEC but works
+            //worked = grab_cue(&ROMs, which, "Final Fantasy VII (USA) (Disc 1)", nullptr); // MDEC but works
             //worked = grab_cue(&ROMs, which, "Tony Hawks Pro Skater 2 (USA)", nullptr); // error parsing cue
             //worked = grab_cue(&ROMs, which, "Crash Bandicoot 1", nullptr);
             //worked = grab_cue(&ROMs, which, "mk2", nullptr);
@@ -1010,7 +1010,7 @@ void full_system::load_default_ROM()
             //worked = grab_cue(&ROMs, which, "Mega Man X4 (USA)", nullptr);
             // "either you are not handling the config commands or reset flag on ctrl reg where it resets all the other reg
             // al;so you need to reset state when switching ports?
-            //worked = grab_cue(&ROMs, which, "Spyro the Dragon (USA)", nullptr);
+            worked = grab_cue(&ROMs, which, "Spyro the Dragon (USA)", nullptr);
             //worked = grab_cue(&ROMs, which, "Spyro - Year of the Dragon (USA)", nullptr);
 
             //worked = grab_cue(&ROMs, which, "Rayman 2 - The Great Escape (USA) (En,Fr,Es)", nullptr);
