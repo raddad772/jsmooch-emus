@@ -152,30 +152,8 @@ void timer_irq_down(void *ptr, u64 key, u64 clock, u32 jitter)
 {
     auto *th = static_cast<core *>(ptr);
     auto *t = &th->timers[key];
-    t->mode.irq_request = 1;
-    th->set_irq(static_cast<IRQ>(static_cast<u64>(IRQ_TMR0)+key), 0);
-}
-
-void core::update_timer_irqs()
-{
-    for (u32 i = 0; i < 3; i++) {
-        auto &t = timers[i];
-        u32 b = t.mode.irq_on_ffff && t.mode.reached_ffff;
-        b |= t.mode.irq_on_target && t.mode.reached_target;
-        //u32 old_request = t.mode.irq_request;
-        t.mode.irq_request &= b ^ 1;
-        u32 irq_num = IRQ_TMR0 + i;
-        if ((IRQ_multiplexer.irqs[irq_num].input == 0) && b) {
-            // Set up
-            set_irq(static_cast<IRQ>(IRQ_TMR0 + i), b);
-            //printf("\nTIMER%d IRQ SET!", i);
-
-            // Schedule down-set
-            scheduler.only_add_abs(clock_current() + 100, i, this, &timer_irq_down, nullptr);
-        }
-        else
-            set_irq(static_cast<IRQ>(IRQ_TMR0 + i), 0);
-    }
+    t->mode.irq_request = 1; // 1 = no
+    th->set_irq(static_cast<IRQ>(IRQ_TMR0+key), 0);
 }
 
 u32 core::timers_read(u32 addr, u8 sz)
@@ -188,7 +166,6 @@ u32 core::timers_read(u32 addr, u8 sz)
             u32 v = timers[timer_num].mode.u;
             timers[timer_num].mode.reached_target = 0;
             timers[timer_num].mode.reached_ffff = 0;
-            update_timer_irqs();
             return v; }
         case 0x1F801108: // timer0...2 target value
             return timers[timer_num].target;
@@ -239,6 +216,23 @@ u64 core::calculate_timer1_hblank(u32 diff)
     return nd;
 }
 
+void TIMER::do_irq() {
+    if (did_irq && !mode.irq_repeat) return; // One-shot mode
+    if (mode.irq_toggle) { // 1 = toggle
+        mode.irq_request ^= 1;
+        // 0 = short 1-bit pulse. 1 = toggle
+    }
+    else {
+        mode.irq_request = 0;
+    }
+    bus->set_irq(static_cast<IRQ>(IRQ_TMR0+num), mode.irq_request ^ 1);
+    if (mode.irq_request == 0 && !mode.irq_toggle) {
+        // Schedule pulse-down
+        bus->scheduler.only_add_abs(bus->clock_current() + 20, num, bus, &timer_irq_down, nullptr);
+    }
+    did_irq = true;
+}
+
 void timer_overflow(void *ptr, u64 timer_num, u64 current_clock, u32 jitter)
 {
     u64 clk = current_clock - jitter;
@@ -249,11 +243,15 @@ void timer_overflow(void *ptr, u64 timer_num, u64 current_clock, u32 jitter)
 
     if (value == 0xFFFF) {
         t->mode.reached_ffff = 1;
+        if (t->mode.irq_on_ffff) t->do_irq();
     }
-    if (value == t->target) {
+    else if (value == t->target) {
         t->mode.reached_target = 1;
+        if (t->mode.irq_on_target) t->do_irq();
     }
-    th->bus->update_timer_irqs();
+    else {
+        printf("\nUHOH ERROR!");
+    }
 
     // Now determine if we reset...
     if ((value == 0xFFFF) || ((value == t->target) && t->mode.reset_when)) {
@@ -384,6 +382,7 @@ void TIMER::reset(u32 reset_to)
 {
     start.cycle = bus->clock_current() + ADDBUS;
     start.value = reset_to;
+    mode.irq_request = 1; // 1 = no!
 }
 
 void TIMER::write(u32 val, u8 sz)
@@ -404,12 +403,10 @@ void TIMER::write_target(u32 val, u8 sz)
 
 void TIMER::write_mode(u32 val, u8 sz)
 {
-    //printf("\nWR MODE%d:%04x @%lld", num, val, bus->clock.master_cycle_count);
-
     val &= 0b1111111111;
     u32 old_mode = mode.u;
     mode.u = (mode.u & 0b1111110000000000) | val;
-
+    did_irq = false;
     // Reset to 0
     start.value = 0;
     if (on_system_clock) start.cycle = bus->clock_current() + ADDBUS;
@@ -421,7 +418,7 @@ void TIMER::write_mode(u32 val, u8 sz)
         reschedule();
 
     mode.irq_request = 1;
-    bus->update_timer_irqs();
+    bus->set_irq(static_cast<IRQ>(IRQ_TMR0+num), 0);
 }
 
 void core::timers_write(u32 addr, u8 sz, u32 val)

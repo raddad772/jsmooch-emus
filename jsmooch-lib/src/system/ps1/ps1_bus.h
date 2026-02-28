@@ -68,7 +68,6 @@ struct core : jsm_system {
     core();
     u32 mainbus_read(u32 addr, u8 sz, bool has_effect);
     void mainbus_write(u32 addr, u8 sz, u32 val);
-    void update_timer_irqs();
     u64 calculate_timer1_hblank(u32 diff);
     void timers_write(u32 addr, u8 sz, u32 val);
     void setup_dotclock();

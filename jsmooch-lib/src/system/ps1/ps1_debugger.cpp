@@ -13,7 +13,7 @@ static void render_image_view_sysinfo(debugger_interface *dbgr, debugger_view *d
     //memset(ptr, 0, out_width * 4 * 10);
     debugger_widget_textbox *tb = &dview->options[0].textbox;
     tb->clear();
-    tb->sprintf("\nEnabled IRQs:");
+    tb->sprintf("\nI_STAT:%08x\nEnabled IRQs:", th->cpu.io.I_STAT);
     for (u32 i = 0; i < 11; i++) {
         u32 b = 1 << i;
         if (th->cpu.io.I_MASK & b) tb->sprintf("\n  %s", IRQnames[i]);
@@ -25,6 +25,13 @@ static void render_image_view_sysinfo(debugger_interface *dbgr, debugger_view *d
     for (u32 i = 0; i < 7; i++) {
         auto &ch = th->dma.channels[i];
         tb->sprintf("\n  CH%d (%s)   m/enable:%d/%d  sync:%s  block_count:%d block_size:%x", i, DMANAMES[i], ch.master_enable, ch.enable, SYNCS[ch.sync], ch.block_count, ch.block_size);
+    }
+
+    tb->sprintf("\n\nTimers:");
+    for (u32 i = 0; i < 3; i++) {
+        auto &t = th->timers[i];
+        tb->sprintf("\n. TMR%d  sync:%d/%d  reset:%d  clock_source:%d. irq_on_target:%d  irq_on_ffff:%d  target:%04x",
+            i, t.mode.sync_enable, t.mode.sync_mode, t.mode.reset_when, t.mode.clock_source, t.mode.irq_on_target, t.mode.irq_on_ffff, t.target);
     }
 }
 

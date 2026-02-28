@@ -22,6 +22,7 @@ struct TIMER {
     void write(u32 val, u8 sz);
     void write_target(u32 val, u8 sz);
     void write_mode(u32 val, u8 sz);
+    void do_irq();
     u32 read();
     core *bus; // TODO: fill this in!
     u32 num; // TODO: fill this in!
@@ -58,6 +59,7 @@ struct TIMER {
         };
         u32 u;
     } mode;
+    bool did_irq{};
 };
 
 }
