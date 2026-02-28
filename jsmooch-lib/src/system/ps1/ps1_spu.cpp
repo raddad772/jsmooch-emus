@@ -417,7 +417,7 @@ void VOICE::adpcm_get_sample() {
     if (sample_index == gauss.old_sample_index) return;
     gauss.old_sample_index = sample_index;
     gauss.idx = (gauss.idx + 1) & 3;
-    gauss.samples[gauss.idx] = adpcm.samples[pitch_counter >> 12];
+    gauss.samples[gauss.idx] = adpcm.samples[sample_index];
 }
 
 void VOICE::gaussian_me_up() {
@@ -457,6 +457,7 @@ void VOICE::cycle(i16 noise_level) {
     if (pitch_counter >= 0x1C000) {
         pitch_counter -= 0x1C000;
         gauss.old_sample_index = -1;
+        // New block!
         adpcm_decode();
     }
     adpcm_get_sample();
