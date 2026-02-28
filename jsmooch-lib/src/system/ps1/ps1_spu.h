@@ -113,7 +113,7 @@ struct ADPCM {
 };
 struct SCIRCBUF {
     u32 idx{};
-    i16 samples[32]{};
+    i32 samples[32]{};
     u32 cur_block_start{};
     void push(i16 *smps);
 };
