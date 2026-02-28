@@ -416,23 +416,24 @@ void VOICE::adpcm_get_sample() {
     i32 sample_index = pitch_counter >> 12;
     if (sample_index == gauss.old_sample_index) return;
     gauss.old_sample_index = sample_index;
-    gauss.idx = (gauss.idx + 1) & 3;
     gauss.samples[gauss.idx] = adpcm.samples[sample_index];
+    gauss.idx = (gauss.idx + 1) & 3;
 }
 
 void VOICE::gaussian_me_up() {
     u16 gauss_index = (pitch_counter >> 4) & 0xFF;
-    u32 idx = (gauss.idx + 1) & 3; // oldest
+    u32 idx = gauss.idx; // oldest
     i32 v = (gauss_table[0xFF-gauss_index] * gauss.samples[idx]);
     idx = (idx + 1) & 3; // older
     v += (gauss_table[0x1FF-gauss_index] * gauss.samples[idx]);
     idx = (idx + 1) & 3; // old
     v += (gauss_table[0x100+gauss_index] * gauss.samples[idx]);
-    v += (gauss_table[gauss_index] * gauss.samples[gauss.idx]);
+    idx = (idx + 1) & 3; // old
+    v += (gauss_table[gauss_index] * gauss.samples[idx]);
     v >>= 15;
     v = CLAMP(v, -0x8000, 0x7FFF);
     //sample = v;
-    sample = gauss.samples[gauss.idx];
+    sample = gauss.samples[idx];
 }
 
 void VOICE::cycle(i16 noise_level) {
