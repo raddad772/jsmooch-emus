@@ -173,8 +173,8 @@ void VOICE::adpcm_start() {
     adpcm.cur_addr = adpcm.start_addr;
     adpcm_decode();
 }
-static constexpr i32 filter_table_pos[16] = {0, 60, 115, 98, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0};
-static constexpr i32 filter_table_neg[16] = {0, 0, -52, -55, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0};
+static constexpr i32 filter_table_pos[16] = {0, 60, 115, 98, 122, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0};
+static constexpr i32 filter_table_neg[16] = {0, 0, -52, -55, -60, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0};
 
 void VOICE::adpcm_decode() {
     u8 data[16];
