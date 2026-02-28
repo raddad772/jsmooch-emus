@@ -8,7 +8,20 @@
 
 namespace PS1 {
 
-static void render_image_view_sysinfo(debugger_interface *dbgr, debugger_view *dview, void *ptr, u32 out_width) {
+static void render_image_view_spuinfo(debugger_interface *dbgr, debugger_view *dview, void *ptr, u32 out_width) {
+    auto *th = static_cast<core *>(ptr);
+    //memset(ptr, 0, out_width * 4 * 10);
+    debugger_widget_textbox *tb = &dview->options[0].textbox;
+    tb->clear();
+    static constexpr char EPNAMES[4][50] = {"Attack ", "Decay  ", "Sustain", "Release"};
+    for (u32 i = 0; i < 24; i++) {
+        auto &v = th->spu.voices[i];
+
+        tb->sprintf("\nV%d  env.vol:%04x   env.phase:%s",  i, v.env.adsr.output, EPNAMES[v.env.phase]);
+    }
+}
+
+    static void render_image_view_sysinfo(debugger_interface *dbgr, debugger_view *dview, void *ptr, u32 out_width) {
     auto *th = static_cast<core *>(ptr);
     //memset(ptr, 0, out_width * 4 * 10);
     debugger_widget_textbox *tb = &dview->options[0].textbox;
@@ -34,6 +47,7 @@ static void render_image_view_sysinfo(debugger_interface *dbgr, debugger_view *d
             i, t.mode.sync_enable, t.mode.sync_mode, t.mode.reset_when, t.mode.clock_source, t.mode.irq_on_target, t.mode.irq_on_ffff, t.target);
     }
 }
+
 
 static void render_image_view_vram(debugger_interface *dbgr, debugger_view *dview, void *ptr, u32 out_width) {
     auto *th = static_cast<core *>(ptr);
@@ -238,6 +252,28 @@ static void setup_image_view_sysinfo(core* th, debugger_interface *dbgr) {
     debugger_widgets_add_textbox(dview->options, "blah!", 1);
 }
 
+    static void setup_image_view_spuinfo(core* th, debugger_interface *dbgr) {
+    debugger_view *dview;
+    th->dbg.image_views.sysinfo = dbgr->make_view(dview_image);
+    dview = &th->dbg.image_views.sysinfo.get();
+    image_view *iv = &dview->image;
+
+    iv->width = 10;
+    iv->height = 10;
+    iv->viewport.exists = true;
+    iv->viewport.enabled = true;
+    iv->viewport.p[0] = (ivec2){ 0, 0 };
+    iv->viewport.p[1] = (ivec2){ 10, 10 };
+
+    iv->update_func.ptr = th;
+    iv->update_func.func = &render_image_view_spuinfo;
+
+    snprintf(iv->label, sizeof(iv->label), "SPU Info View");
+
+    debugger_widgets_add_textbox(dview->options, "blah!", 1);
+}
+
+
 void core::setup_debugger_interface(debugger_interface &dbgr)
 {
     dbg.interface = &dbgr;
@@ -249,6 +285,7 @@ void core::setup_debugger_interface(debugger_interface &dbgr)
     setup_dbglog(&dbgr, this);
     setup_waveforms(*this, &dbgr);
     setup_image_view_sysinfo(this, &dbgr);
+    setup_image_view_spuinfo(this, &dbgr);
     setup_image_view_vram(this, &dbgr);
 
 }

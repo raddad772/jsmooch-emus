@@ -90,6 +90,7 @@ namespace PS1::SPU {
 #define REGRAM(x) static_cast<i16>(read_RAM(reverb_addr(RRA(x)), true, true))
 #define REGRAM2(x) static_cast<i16>(read_RAM(reverb_addr(RRA(x)-2), true, true))
 #define WREGRAM(x, y) if (io.SPUCNT.reverb_master_enable) write_RAM(reverb_addr(RRA(x)), static_cast<u16>(static_cast<i16>(y)), true);
+#define CLAMP(x, low, high) ((x) < (low) ? (low) : ((x) > (high) ? (high) : (x)))
 
 static constexpr i16 gauss_table[0x200] = {
     -1,-1,-1,-1,-1,-1,-1,-1,
@@ -160,7 +161,6 @@ static constexpr i16 gauss_table[0x200] = {
 
 void VOICE::adpcm_start() {
     adpcm.cur_addr = adpcm.start_addr;
-    pitch_counter = 0;
     adpcm_decode();
 }
 static constexpr i32 filter_table_pos[16] = {0, 60, 115, 98, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0};
@@ -214,8 +214,7 @@ void VOICE::adpcm_decode() {
         t = static_cast<i16>(t << 12);
         i32 s = t >> shift;
         i32 filtered = s + ((static_cast<i32>(old) * filter_pos) >> 6) + ((static_cast<i32>(older) * filter_neg) >> 6);
-        if (filtered < -0x8000) filtered = -0x8000;
-        if (filtered > 0x7FFF) filtered = 0x7FFF;
+        filtered = CLAMP(filtered, -0x8000, 0x7FFF);
         s_out = filtered;
         older = old;
         old = filtered;
@@ -322,12 +321,10 @@ void ADSR_GENERATOR::cycle() {
 
     output += adsr_step;
     if (!decreasing) {
-        if (output < -0x8000) output = -0x8000;
-        if (output > 0x7FFF) output = 0x7FFF;
+        output = CLAMP(output, -0x8000, 0x7FFF);
     }
     else if (negative) {
-        if (output < -0x8000) output = -0x8000;
-        if (output > 0) output = 0;
+        output = CLAMP(output, -0x8000, 0);
     }
     else {
         output = MAX(output, 0);
@@ -431,11 +428,11 @@ void VOICE::gaussian_me_up() {
     v += (gauss_table[0x1FF-gauss_index] * gauss.samples[idx]);
     idx = (idx + 1) & 3; // old
     v += (gauss_table[0x100+gauss_index] * gauss.samples[idx]);
-    v += (gauss_table[gauss_index] * gauss.samples[idx]);
+    v += (gauss_table[gauss_index] * gauss.samples[gauss.idx]);
     v >>= 15;
-    if (v < -0x8000) v = -0x8000;
-    if (v > 0x7FFF) v = 0x7FFF;
-    sample = v;
+    v = CLAMP(v, -0x8000, 0x7FFF);
+    //sample = v;
+    sample = gauss.samples[gauss.idx];
 }
 
 void VOICE::cycle(i16 noise_level) {
@@ -752,21 +749,17 @@ void core::process_reverb() {
     if (!reverb.counter) { // 22050 clock
         // Actually run reverb now...
         i32 l = RVOL(reverb.filter_l.in.run(), RR(vLIN));
-        if (l < -0x8000) l = -0x8000;
-        if (l > 0x7FFF) l = 0x7FFF;
+        l = CLAMP(l, -0x8000, 0x7FFF);
         i32 r = RVOL(reverb.filter_r.in.run(), RR(vRIN));
-        if (r < -0x8000) r = -0x8000;
-        if (r > 0x7FFF) r = 0x7FFF;
+        r = CLAMP(r, -0x8000, 0x7FFF);
         apply_reflection(l, r);
         apply_comb_filter();
         apply_all_pass_filter_1();
         apply_all_pass_filter_2();
         reverb.proc_l = RVOL(reverb.proc_l, io.reverb.vol_out_l);
         reverb.proc_r = RVOL(reverb.proc_r, io.reverb.vol_out_r);
-        if (reverb.proc_l < -0x8000) reverb.proc_l = -0x8000;
-        if (reverb.proc_l > 0x7FFF) reverb.proc_l = 0x7FFF;
-        if (reverb.proc_r < -0x8000) reverb.proc_r = -0x8000;
-        if (reverb.proc_r > 0x7FFF) reverb.proc_r = 0x7FFF;
+        reverb.proc_l = CLAMP(reverb.proc_l, -0x8000, 0x7FFF);
+        reverb.proc_r = CLAMP(reverb.proc_r, -0x8000, 0x7FFF);
         reverb.filter_l.out.add_sample(reverb.proc_l);
         reverb.filter_r.out.add_sample(reverb.proc_r);
         reverb.buf_addr = (reverb.buf_addr + 2) % reverb.buf_len;
@@ -779,10 +772,8 @@ void core::process_reverb() {
     // Run the sample filter to get our 44kHz output
     reverb.sample_l = reverb.filter_l.out.run() << 1;
     reverb.sample_r = reverb.filter_r.out.run() << 1;
-    if (reverb.sample_l < -0x8000) reverb.sample_l = -0x8000;
-    if (reverb.sample_l > 0x7FFF) reverb.sample_l = 0x7FFF;
-    if (reverb.sample_r < -0x8000) reverb.sample_r = -0x8000;
-    if (reverb.sample_r > 0x7FFF) reverb.sample_r = 0x7FFF;
+    reverb.sample_l = CLAMP(reverb.sample_l, -0x8000, 0x7FFF);
+    reverb.sample_r = CLAMP(reverb.sample_r, -0x8000, 0x7FFF);
 
     reverb.counter ^= 1;
 }
@@ -803,8 +794,7 @@ void core::apply_all_pass_filter_1() {
     // Lout=Lout-vAPF1*[mLAPF1-dAPF1]
     s = reverb.proc_l - RVOL(RR(vAPF1), r_mLAPF1dAPF1);
     // [mLAPF1]=Lout,
-    if (s < -0x8000) s = -0x8000;
-    if (s > 0x7FFF) s = 0x7FFF;
+    s = CLAMP(s, -0x8000, 0x7FFF);
     WREGRAM(mLAPF1, s);
     // Lout=Lout*vAPF1+[mLAPF1-dAPF1]
     s = RVOL(s, RR(vAPF1)) + r_mLAPF1dAPF1;
@@ -814,8 +804,7 @@ void core::apply_all_pass_filter_1() {
     s = reverb.proc_r - RVOL(RR(vAPF1), r_mRAPF1dAPF1);
 
     // [mRAPF1]=Rout
-    if (s < -0x8000) s = -0x8000;
-    if (s > 0x7FFF) s = 0x7FFF;
+    s = CLAMP(s, -0x8000, 0x7FFF);
     WREGRAM(mRAPF1, s);
 
     // Rout=Rout*vAPF1+[mRAPF1-dAPF1]
@@ -829,8 +818,7 @@ void core::apply_all_pass_filter_2() {
     // Lout=Lout-vAPF2*[mLAPF2-dAPF2]
     s = reverb.proc_l - RVOL(RR(vAPF2), reverb.r_mLAPF2dAPF2);
     // [mLAPF2]=Lout
-    if (s < -0x8000) s = -0x8000;
-    if (s > 0x7FFF) s = 0x7FFF;
+    s = CLAMP(s, -0x8000, 0x7FFF);
     WREGRAM(mLAPF2, s);
     // Lout=Lout*vAPF2+[mLAPF2-dAPF2]
     s = RVOL(s, RR(vAPF2)) + reverb.r_mLAPF2dAPF2;
@@ -840,8 +828,7 @@ void core::apply_all_pass_filter_2() {
     s = reverb.proc_r - RVOL(RR(vAPF2), reverb.r_mRAPF2dAPF2);
 
     // [mRAPF2]=Rout
-    if (s < -0x8000) s = -0x8000;
-    if (s > 0x7FFF) s = 0x7FFF;
+    s = CLAMP(s, -0x8000, 0x7FFF);
     WREGRAM(mRAPF2, s);
 
     // Rout=Rout*vAPF2+[mRAPF2-dAPF2]
@@ -874,10 +861,8 @@ void core::apply_comb_filter() {
     r += RVOL(RR(vCOMB2), r_mRCOMB2);
     r += RVOL(RR(vCOMB3), r_mRCOMB3);
     r += RVOL(RR(vCOMB4), r_mRCOMB4);
-    if (l < -0x8000) l = -0x8000;
-    if (l > 0x7FFF) l = 0x7FFF;
-    if (r < -0x8000) r = -0x8000;
-    if (r > 0x7FFF) r = 0x7FFF;
+    l = CLAMP(l, -0x8000, 0x7FFF);
+    r = CLAMP(r, -0x8000, 0x7FFF);
     reverb.proc_l = l;
     reverb.proc_r = r;
 }
@@ -897,16 +882,14 @@ void core::apply_reflection(i32 l, i32 r) {
     i32 s = l + RVOL(r_dLSAME, RR(vWALL)) - r_mLSAME2;
     s = RVOL(s, RR(vIIR));
     s += r_mLSAME2;
-    if (s < -0x8000) s = -0x8000;
-    if (s > 0x7FFF) s = 0x7FFF;
+    s = CLAMP(s, -0x8000, 0x7FFF);
     WREGRAM(mLSAME, s);
 
     //[mRSAME] = (Rin + [dRSAME]*vWALL - [mRSAME-2])*vIIR + [mRSAME-2]  ;R-to-R
     s = r + RVOL(r_dRSAME, RR(vWALL)) - r_mRSAME2;
     s= RVOL(s, RR(vIIR));
     s += r_mRSAME2;
-    if (s < -0x8000) s = -0x8000;
-    if (s > 0x7FFF) s = 0x7FFF;
+    s = CLAMP(s, -0x8000, 0x7FFF);
     WREGRAM(mRSAME, s);
     // XXXX REVERB   mLSame            mRSame          <-- WRITE becomes READ if REVERB DISABLED.
 
@@ -921,16 +904,14 @@ void core::apply_reflection(i32 l, i32 r) {
     s = l + RVOL(r_dRDIFF, RR(vWALL)) - r_mLDIFF2;
     s = RVOL(s, RR(vIIR));
     s += r_mLDIFF2;
-    if (s < -0x8000) s = -0x8000;
-    if (s > 0x7FFF) s = 0x7FFF;
+    s = CLAMP(s, -0x8000, 0x7FFF);
     WREGRAM(mLDIFF, s);
 
     //[mRDIFF] = (Rin + [dLDIFF]*vWALL - [mRDIFF-2])*vIIR + [mRDIFF-2]  ;L-to-R
     s = r + RVOL(r_dLDIFF, RR(vWALL)) - r_mRDIFF2;
     s = RVOL(s, RR(vIIR));
     s += r_mRDIFF2;
-    if (s < -0x8000) s = -0x8000;
-    if (s > 0x7FFF) s = 0x7FFF;
+    s = CLAMP(s, -0x8000, 0x7FFF);
     WREGRAM(mRDIFF, s);
     // XXXX REVERB   mLDiff            mRDiff          <-- WRITE becomes READ if REVERB DISABLED.
 }
@@ -960,22 +941,17 @@ void core::cycle() {
         reverb.in_l += capture.sample.cd_l;
         reverb.in_r += capture.sample.cd_r;
     }
-    if (reverb.in_l < -0x8000) reverb.in_l = -0x8000;
-    if (reverb.in_l > 0x7FFF) reverb.in_l = 0x7FFF;
-    if (reverb.in_r < -0x8000) reverb.in_r = -0x8000;
-    if (reverb.in_r > 0x7FFF) reverb.in_r = 0x7FFF;
+    reverb.in_l = CLAMP(reverb.in_l, -0x8000, 0x7FFF);
+    reverb.in_r = CLAMP(reverb.in_r, -0x8000, 0x7FFF);
     process_reverb();
 
     l += capture.sample.cd_l;
     r += capture.sample.cd_r;
-    l += reverb.sample_l;
-    r += reverb.sample_r;
+    //l += reverb.sample_l;
+    //r += reverb.sample_r;
 
-    if (l < -0x8000) l = -0x8000;
-    if (l > 0x7FFF) l = 0x7FFF;
-
-    if (r < -0x8000) r = -0x8000;
-    if (r > 0x7FFF) r = 0x7FFF;
+    l = CLAMP(l, -0x8000, 0x7FFF);
+    r = CLAMP(r, -0x8000, 0x7FFF);
 
     // TODO: test DMA IRQs
     sample_l = static_cast<i16>(l);
@@ -1134,6 +1110,7 @@ void VOICE::keyon() {
     env.load_attack();
     adpcm.repeat_addr = adpcm.start_addr;
     loop_written = false;
+    pitch_counter = 0;
     adpcm_start();
 }
 
