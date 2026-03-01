@@ -66,19 +66,21 @@ struct FIFO_IRQ {
 
 
 struct DATA_BUF {
-    u8 *ptr;
+    u8 data[0x930];
+    u8 *ptr{};
     u32 pos{};
     i32 len{};
     u32 read_byte() {
         u8 v;
-        if (pos >= len) v = ptr[pos-1];
+        if (len == 0) v = 0;
+        else if (pos >= len) v = ptr[len-1];
         else {
             v = ptr[pos];
             pos++;
         }
         return v;
     }
-    void clear() { ptr = nullptr; len = 0; pos = 0; }
+    void clear() { ptr = data; len = 0; pos = 0; }
 };
 
 struct IO {
@@ -231,6 +233,15 @@ struct DECODER {
 };
 }
 
+struct BUGGED_SECTOR_BUFFER {
+    u32 pos{};
+    i32 old{-1}, latest{-1};
+    u8 bufs[8][0x930];
+    u8 *push();
+    u8 *pop();
+    void reset();
+    u32 len();
+};
 
 struct SECTOR_BUFFER {
     u32 head{}, tail{}, len{};
@@ -313,7 +324,7 @@ struct core {
         u8 amm{}, ass{}, asect{};
     } head{};
 
-    SECTOR_BUFFER sector_buf{};
+    BUGGED_SECTOR_BUFFER sector_buf{};
 
     struct {
         u8 subcmd{};

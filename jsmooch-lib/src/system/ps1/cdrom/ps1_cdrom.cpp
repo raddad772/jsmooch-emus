@@ -16,6 +16,61 @@ static u32 constexpr masksz[5] = {0, 0xFF, 0xFFFF, 0, 0xFFFFFFFF };
 
 #define UKN_TIME ONEFRAME
 #define TIME_IN_SEC static_cast<double>(bus->clock.master_cycle_count) / 33868800.0
+
+    // no old, no latest: latest = this
+    // old, no latest: latest = this
+    // no old, latest: old = latest, latest = this
+    // old, latest: latest = this
+
+u8 *BUGGED_SECTOR_BUFFER::push() {
+    u8 *p = bufs[pos];
+    if (old != -1 && latest != -1) { // Len of 2+
+        static int num = 0;
+        if (num == 0) {
+            printf("\nBUGGED WARN SECTOR BUF FILL!");
+        }
+        if (num == 3) {
+            dbg_break("BUGGED SECTOR BUF FILLED!", 0);
+        }
+        num++;
+    }
+    if (old == -1 && latest != -1) {
+        old = latest;
+    }
+    latest = pos;
+    pos = (pos + 1) & 7;
+    return p;
+}
+
+u8 *BUGGED_SECTOR_BUFFER::pop() {
+    i32 to_use;
+    if (old != -1) {
+        to_use = old;
+        old = -1;
+    }
+    else {
+        if (latest == -1) {
+            printf("\nPOP LATEST!?");
+            to_use = pos;
+        }
+        else {
+            to_use = latest;
+            latest = -1;
+        }
+    }
+    return bufs[to_use];
+}
+
+void BUGGED_SECTOR_BUFFER::reset() {
+    old = latest = -1;
+}
+
+u32 BUGGED_SECTOR_BUFFER::len() {
+    if (old != -1) return 2;
+    if (latest != -1) return 1;
+    return 0;
+}
+
 void FIFO_IRQ::reset() {
     head = tail = len = 0;
 }
@@ -77,7 +132,7 @@ u32 core::mainbus_read(u32 addr, u8 sz, bool has_effect) {
         case 0x1F801800: {
             recalc_HSTS();
             u32 v = io.HSTS.u | (io.HSTS.u << 8) | (io.HSTS.u << 16) | (io.HSTS.u << 24);
-            dbgloglog_bus(PS1D_CDROM_REGRW, DBGLS_INFO, "READ HSTS %02x   buf_len:%d  pos/len:%d/%d", v & 0xFF, sector_buf.len, io.RDDATA.pos, io.RDDATA.len);
+            dbgloglog_bus(PS1D_CDROM_REGRW, DBGLS_INFO, "READ HSTS %02x   buf_len:%d  pos/len:%d/%d", v & 0xFF, sector_buf.len(), io.RDDATA.pos, io.RDDATA.len);
             return v & masksz[sz];
         }
         case 0x1F801801: return read_01(sz, has_effect);
@@ -152,7 +207,7 @@ void core::recalc_HSTS() {
     io.HSTS.PRMEMPT = io.PARAMETER.len == 0;
     io.HSTS.PRMWRDY = io.PARAMETER.len != 16;
     io.HSTS.RSLRRDY = io.results_out.len > 0;
-    io.HSTS.DRQSTS = (io.RDDATA.pos < io.RDDATA.len) && io.HCHPCTL.BFRD;
+    io.HSTS.DRQSTS = io.HCHPCTL.BFRD && io.RDDATA.pos < io.RDDATA.len;
 }
 
 void core::write_CMD(u32 val) {
@@ -418,7 +473,7 @@ void core::latch_seek() {
     head.amm = seek.waiting.amm;
     head.ass = seek.waiting.ass;
     head.asect = seek.waiting.asect;
-    dbgloglog_bus(PS1D_CDROM_SEEK, DBGLS_INFO, "(SEEK) Latching seek to %02d:%02d:%02d", head.amm, head.ass, head.asect, sector_buf.len);
+    dbgloglog_bus(PS1D_CDROM_SEEK, DBGLS_INFO, "(SEEK) Latching seek to %02d:%02d:%02d", head.amm, head.ass, head.asect, sector_buf.len());
 }
 
 void core::cmd_setloc() {
@@ -681,20 +736,14 @@ void core::read_sector() {
                 //(v & 0x8)) { // data, real-time data = audio
                 //if (v & 0x8) printf("\nWARN REALTIME DATA!");
                 queue_xa_sector(ptr);
-    dbgloglog_bus(PS1D_CDROM_SECTOR_READS, DBGLS_INFO, "(READ) Read sector for XA-ADPCM %02d:%02d:%02d into queue size %d", head.amm, head.ass, head.asect, sector_buf.len);
+    dbgloglog_bus(PS1D_CDROM_SECTOR_READS, DBGLS_INFO, "(READ) Read sector for XA-ADPCM %02d:%02d:%02d into queue size %d", head.amm, head.ass, head.asect, sector_buf.len());
                 return;
             }
         }
     }
-    dbgloglog_bus(PS1D_CDROM_SECTOR_READS, DBGLS_INFO, "(READ) Read sector %02d:%02d:%02d into queue size %d", head.amm, head.ass, head.asect, sector_buf.len);
+    dbgloglog_bus(PS1D_CDROM_SECTOR_READS, DBGLS_INFO, "(READ) Read sector %02d:%02d:%02d into queue size %d", head.amm, head.ass, head.asect, sector_buf.len());
 
-    memcpy(sector_buf.bufs[sector_buf.tail], ptr, 0x930);
-    sector_buf.tail = (sector_buf.tail + 1) & 7;
-    sector_buf.len++;
-    if (sector_buf.len > 1) {
-        printf("\nWARN SECTOR BUF LEN %d", sector_buf.len);
-        dbg_break("SECTOR BUF FILL", 0);
-    }
+    memcpy(sector_buf.push(), ptr, 0x930);
     result(io.stat.u);
     queue_interrupt(1);
 }
@@ -1091,7 +1140,7 @@ void core::cmd_setmode() {
 void core::cmd_reset() {
     printf("\n(CDROM) CMD RESET.");
     finish_CMD(true, 3);
-    sector_buf.head = sector_buf.tail = sector_buf.len = 0;
+    sector_buf.reset();
     io.irq1s.reset();
     io.irqnot1s.reset();
     io.results_in.reset();
@@ -1355,16 +1404,14 @@ void core::write_02(u32 val, u8 sz) {
     }
 }
 void core::queue_sector_RDDATA() {
-    if (sector_buf.len == 0) {
+    if (sector_buf.len() == 0) {
         dbgloglog_busn(PS1D_CDROM_RDDATA_START, DBGLS_WARN, "WARN: RDDATA requested with no buffers.");
-        printf("\nNO BUFS TO RDDATA!?");
         return;
     }
     if (io.RDDATA.pos < io.RDDATA.len) {
-        dbgloglog_bus(PS1D_CDROM_RDDATA_START, DBGLS_INFO, "RDDATA when pos/len:%d/%d", io.RDDATA.pos, io.RDDATA.len);
+        dbgloglog_bus(PS1D_CDROM_RDDATA_START, DBGLS_DEBUG, "RDDATA when pos/len:%d/%d", io.RDDATA.pos, io.RDDATA.len);
     }
     io.RDDATA.clear();
-    io.RDDATA.ptr = sector_buf.bufs[sector_buf.head];
     if (io.latch.MODE_sector_size) {
         io.RDDATA.len = 0x924;
         io.RDDATA.ptr += 0x0C; // drop sync bytes
@@ -1373,9 +1420,8 @@ void core::queue_sector_RDDATA() {
         io.RDDATA.len = 0x800;
         io.RDDATA.ptr += 0x18;
     }
-    sector_buf.head = (sector_buf.head + 1) & 7;
-    sector_buf.len--;
-    dbgloglog_bus(PS1D_CDROM_RDDATA_START, DBGLS_INFO, "RDDATA request sz:%03x  sectors left in buffer:%d", io.RDDATA.len, sector_buf.len);
+    memcpy(io.RDDATA.data, sector_buf.pop(), 0x930);
+    dbgloglog_bus(PS1D_CDROM_RDDATA_START, DBGLS_INFO, "RDDATA request sz:%03x  sectors left in buffer:%d", io.RDDATA.len, sector_buf.len());
 }
 
 void core::write_03(u32 val, u8 sz) {
@@ -1383,7 +1429,7 @@ void core::write_03(u32 val, u8 sz) {
         case 0:
             dbgloglog_bus(PS1D_CDROM_REGRW, DBGLS_INFO, "WRITE HCHPCTL %02x", val);
             io.HCHPCTL.u = val & 0b11100000;
-            if (io.HCHPCTL.BFRD && sector_buf.len > 0) {
+            if (io.HCHPCTL.BFRD && sector_buf.len() > 0) {
                 queue_sector_RDDATA();
             }
             else if (!io.HCHPCTL.BFRD) {
