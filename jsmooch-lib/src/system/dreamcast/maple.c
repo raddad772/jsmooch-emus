@@ -19,7 +19,7 @@ void MAPLE_port_init(MAPLE_port* this)
     this->write_device = NULL;
 }
 
-void maple_write(DC* this, u32 addr, u64 val, u32 sz, u32* success)
+void maple_write(DC* this, u32 addr, u64 val, u32 sz, bool* success)
 {
     addr &= 0x1FFFFFFF;
     switch(addr) {
@@ -33,7 +33,7 @@ void maple_write(DC* this, u32 addr, u64 val, u32 sz, u32* success)
     *success = 0;
 }
 
-u64 maple_read(DC* this, u32 addr, enum DC_MEM_SIZE sz, u32* success)
+u64 maple_read(DC* this, u32 addr, enum DC_MEM_SIZE sz, bool* success)
 {
     addr &= 0x1FFFFFFF;
     switch(addr) {

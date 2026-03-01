@@ -210,7 +210,7 @@ _DDT: 15: 0b1
 0xFFD00000: ICR
 u16, flags
 access_16, rw
-on_write=SH4_IPR_update(this)
+on_write=IPR_update()
 IRLM: 7
 NMIE: 8
 NMIB: 9
@@ -220,7 +220,7 @@ NMIL: 15
 0xFFD00004: IPRA
 u16, flags
 access_16, rw
-on_write=SH4_IPR_update(this)
+on_write=IPR_update()
 RTC: 0-3
 TMU2: 4-7
 TMU1: 8-11
@@ -229,7 +229,7 @@ TMU0: 12-15
 0xFFD00008: IPRB
 u16, flags
 access_16, rw
-on_write=SH4_IPR_update(this)
+on_write=IPR_update()
 _: 0-3
 SCI1: 4-7
 REF: 8-11
@@ -238,7 +238,7 @@ WDT: 12-15
 0xFFD0000C: IPRC
 u32, flags
 access_16, rw
-on_write=SH4_IPR_update(this)
+on_write=IPR_update()
 UDI: 0-3
 SCIF: 4-7
 DMAC: 8-11
@@ -332,12 +332,12 @@ access_32, rw
 0xFFE8000C: SCIF_SCFTDR2
 u32
 access_32, rw
-on_write=console_add(this, val, sz);
+on_write=console_add(val, sz);
 
 0xFFE80010: SCIF_SCFSR2
 u32
 access_32, rw
-r_override=if (sz==DC16) return 0x60; return this->regs.SCIF_SCFSR2;
+r_override=if (sz==2) return 0x60; return this->regs.SCIF_SCFSR2;
 
 0xFFE80014: SCIF_SCFRDR2
 u32

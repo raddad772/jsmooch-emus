@@ -27,8 +27,8 @@ struct DC;
 
 void MAPLE_port_init(MAPLE_port*);
 
-u64 maple_read(DC*, u32 addr, u32 sz, u32* success);
-void maple_write(DC*, u32 addr, u64 val, u32 sz, u32* success);
+u64 maple_read(DC*, u32 addr, u32 sz, bool* success);
+void maple_write(DC*, u32 addr, u64 val, u32 sz, bool* success);
 void maple_dma_init(DC*);
 
 

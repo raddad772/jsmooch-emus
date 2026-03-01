@@ -540,19 +540,19 @@ void DCJ_old_load_ROM(JSM, multi_file_set* mfs)
 
     // Thanks Senryoku!
     // RTE - Some interrupts jump there instead of having their own RTE, I have NO idea why.
-    this->sh4.write(this->sh4.mptr, 0x8C000010, 0x00090009, DC32); // nop nop
-    this->sh4.write(this->sh4.mptr, 0x8C000014, 0x0009002B, DC32); // rte nop
+    this->sh4.write(this->sh4.mptr, 0x8C000010, 0x00090009, 4); // nop nop
+    this->sh4.write(this->sh4.mptr, 0x8C000014, 0x0009002B, 4); // rte nop
     // RTS
-    this->sh4.write(this->sh4.mptr, 0x8C000018, 0x00090009, DC32);
-    this->sh4.write(this->sh4.mptr, 0x8C00001C, 0x0009000B, DC32);
+    this->sh4.write(this->sh4.mptr, 0x8C000018, 0x00090009, 4);
+    this->sh4.write(this->sh4.mptr, 0x8C00001C, 0x0009000B, 4);
 
     // Write some values to HOLLY...
-    this->sh4.write(this->sh4.mptr, 0x005F8048, 6, DC32);          // FB_W_CTRL
-    this->sh4.write(this->sh4.mptr, 0x005F8060, 0x00600000, DC32); // FB_W_SOF1
-    this->sh4.write(this->sh4.mptr, 0x005F8064, 0x00600000, DC32); // FB_W_SOF2
-    this->sh4.write(this->sh4.mptr, 0x005F8044, 0x0080000D, DC32); // FB_R_CTRL
-    this->sh4.write(this->sh4.mptr, 0x005F8050, 0x00200000, DC32); // FB_R_SOF1
-    this->sh4.write(this->sh4.mptr, 0x005F8054, 0x00200000, DC32); // FB_R_SOF2
+    this->sh4.write(this->sh4.mptr, 0x005F8048, 6, 4);          // FB_W_CTRL
+    this->sh4.write(this->sh4.mptr, 0x005F8060, 0x00600000, 4); // FB_W_SOF1
+    this->sh4.write(this->sh4.mptr, 0x005F8064, 0x00600000, 4); // FB_W_SOF2
+    this->sh4.write(this->sh4.mptr, 0x005F8044, 0x0080000D, 4); // FB_R_CTRL
+    this->sh4.write(this->sh4.mptr, 0x005F8050, 0x00200000, 4); // FB_R_SOF1
+    this->sh4.write(this->sh4.mptr, 0x005F8054, 0x00200000, 4); // FB_R_SOF2
 
     DC_schedule_frame(this);
 }
@@ -616,26 +616,26 @@ static void DC_RAM_state_after_boot_rom(DC* this, read_file_buf *IPBIN)
     memset(&this->RAM[0x00200000], 0, 0x1000000);
 
     for (u32 i = 0; i < 16; i++) {
-        this->sh4.write(this, 0x8C0000E0 + 2 * i, this->sh4.read(this, 0x800000FE - 2 * i, DC16), DC16);
+        this->sh4.write(this, 0x8C0000E0 + 2 * i, this->sh4.read(this, 0x800000FE - 2 * i, 2), 2);
     }
-    this->sh4.write(this, 0xA05F74E4, 0x001FFFFF, DC32);
+    this->sh4.write(this, 0xA05F74E4, 0x001FFFFF, 4);
 
     memcpy(&this->RAM[0x100], ((u8 *)this->BIOS.ptr) + 0x100, 0x3F00);
     memcpy(&this->RAM[0x8000], ((u8 *)this->BIOS.ptr) + 0x8000, 0x1F800);
 
-    this->sh4.write(this, 0x8C0000B0, 0x8C003C00, DC32);
-    this->sh4.write(this, 0x8C0000B4, 0x8C003D80, DC32);
-    this->sh4.write(this, 0x8C0000B8, 0x8C003D00, DC32);
-    this->sh4.write(this, 0x8C0000BC, 0x8C001000, DC32);
-    this->sh4.write(this, 0x8C0000C0, 0x8C0010F0, DC32);
-    this->sh4.write(this, 0x8C0000E0, 0x8C000800, DC32);
+    this->sh4.write(this, 0x8C0000B0, 0x8C003C00, 4);
+    this->sh4.write(this, 0x8C0000B4, 0x8C003D80, 4);
+    this->sh4.write(this, 0x8C0000B8, 0x8C003D00, 4);
+    this->sh4.write(this, 0x8C0000BC, 0x8C001000, 4);
+    this->sh4.write(this, 0x8C0000C0, 0x8C0010F0, 4);
+    this->sh4.write(this, 0x8C0000E0, 0x8C000800, 4);
 
-    this->sh4.write(this, 0x8C0000AC, 0xA05F7000, DC32);
-    this->sh4.write(this, 0x8C0000A8, 0xA0200000, DC32);
-    this->sh4.write(this, 0x8C0000A4, 0xA0100000, DC32);
-    this->sh4.write(this, 0x8C0000A0, 0, DC32);
-    this->sh4.write(this, 0x8C00002C, 0, DC32);
-    this->sh4.write(this, 0x8CFFFFF8, 0x8C000128, DC32);
+    this->sh4.write(this, 0x8C0000AC, 0xA05F7000, 4);
+    this->sh4.write(this, 0x8C0000A8, 0xA0200000, 4);
+    this->sh4.write(this, 0x8C0000A4, 0xA0100000, 4);
+    this->sh4.write(this, 0x8C0000A0, 0, 4);
+    this->sh4.write(this, 0x8C00002C, 0, 4);
+    this->sh4.write(this, 0x8CFFFFF8, 0x8C000128, 4);
 
     //         // Load IP.bin from disk (16 first sectors of the last track)
     //        // FIXME: Here we assume the last track is the 3rd.
@@ -647,27 +647,27 @@ static void DC_RAM_state_after_boot_rom(DC* this, read_file_buf *IPBIN)
 
 
     // IP.bin patches
-    this->sh4.write(this, 0xAC0090Db, 0x5113, DC16);
-    this->sh4.write(this, 0xAC00940A, 0xB, DC16);
-    this->sh4.write(this, 0xAC00940C, 0x9, DC16);
+    this->sh4.write(this, 0xAC0090Db, 0x5113, 2);
+    this->sh4.write(this, 0xAC00940A, 0xB, 2);
+    this->sh4.write(this, 0xAC00940C, 0x9, 2);
 
-    this->sh4.write(this, 0x8C000000, 0x00090009, DC32);
-    this->sh4.write(this, 0x8C000004, 0x001B0009, DC32);
-    this->sh4.write(this, 0x8C000008, 0x0009AFFD, DC32);
+    this->sh4.write(this, 0x8C000000, 0x00090009, 4);
+    this->sh4.write(this, 0x8C000004, 0x001B0009, 4);
+    this->sh4.write(this, 0x8C000008, 0x0009AFFD, 4);
 
-    this->sh4.write(this, 0x8C00000C, 0, DC16);
-    this->sh4.write(this, 0x8C00000E, 0, DC16);
+    this->sh4.write(this, 0x8C00000C, 0, 2);
+    this->sh4.write(this, 0x8C00000E, 0, 2);
 
-    this->sh4.write(this, 0x8C000010, 0x00090009, DC32);
-    this->sh4.write(this, 0x8C000014, 0x0009002B, DC32);
+    this->sh4.write(this, 0x8C000010, 0x00090009, 4);
+    this->sh4.write(this, 0x8C000014, 0x0009002B, 4);
 
-    this->sh4.write(this, 0x8C000018, 0x00090009, DC32);
-    this->sh4.write(this, 0x8C00001C, 0x0009000B, DC32);
+    this->sh4.write(this, 0x8C000018, 0x00090009, 4);
+    this->sh4.write(this, 0x8C00001C, 0x0009000B, 4);
 
     this->sh4.write(this, 0x8C00002C, 0x16, DC8);
-    this->sh4.write(this, 0x8C000064, 0x8C008100, DC32);
-    this->sh4.write(this, 0x8C000090, 0, DC16);
-    this->sh4.write(this, 0x8C000092, -128, DC16);
+    this->sh4.write(this, 0x8C000064, 0x8C008100, 4);
+    this->sh4.write(this, 0x8C000090, 0, 2);
+    this->sh4.write(this, 0x8C000092, -128, 2);
 
     this->maple.SB_MDST = 0;
     this->g2.SB_DDST = 0;

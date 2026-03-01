@@ -27,8 +27,8 @@
 //#define SH4_INS_BRK 0x80000000
 
 u64 DCread_flash(DC* this, u32 addr, u32 *success, u32 sz);
-void G1_write(DC* this, u32 addr, u64 val, u32 bits, u32* success);
-u64 G1_read(DC* this, u32 addr, u32 sz, u32* success);
+void G1_write(DC* this, u32 addr, u64 val, u32 bits, bool* success);
+u64 G1_read(DC* this, u32 addr, u32 sz, bool* success);
 
 #define B32(b31_b28, b27_24,b23_20,b19_16,b15_12,b11_8,b7_4,b3_0) ( \
   ((0b##b31_b28) << 28) | ((0b##b27_24) << 24) | \
@@ -42,13 +42,13 @@ u64 G1_read(DC* this, u32 addr, u32 sz, u32* success);
 static u32 dcms(enum DC_MEM_SIZE sz)
 {
     switch(sz) {
-        case DC8:
+        case 1:
             return 8;
-        case DC16:
+        case 2:
             return 16;
-        case DC32:
+        case 4:
             return 32;
-        case DC64:
+        case 8:
             return 64;
     }
 }
@@ -96,7 +96,7 @@ static void DC_write_SDST(DC* this, u32 val)
     return 0;
  }
 
- void write_empty(void* ptr, u32 addr, u64 val, enum DC_MEM_SIZE sz, u32* success)
+ void write_empty(void* ptr, u32 addr, u64 val, enum DC_MEM_SIZE sz, bool* success)
  {
      MTHIS;
      printf("\nWrite empty addr %08x full:%08X val:%08llx", (addr & 0x1FFFFFFF), addr, val);
@@ -104,11 +104,11 @@ static void DC_write_SDST(DC* this, u32 val)
      *success = 0;
  }
 
-static u64 aica_read(DC* this, u32 addr, u32 sz, u32* success) {
+static u64 aica_read(DC* this, u32 addr, u32 sz, bool* success) {
     return cR[sz](this->aica.mem, addr & 0x7FFF);
 }
 
-static void aica_write(DC* this, u32 addr, u64 val, u32 sz, u32* success)
+static void aica_write(DC* this, u32 addr, u64 val, u32 sz, bool* success)
 {
     cW[sz](this->aica.mem, addr & 0x7FFF, val);
 }
@@ -120,7 +120,7 @@ static u32 RTC_read(DC* this)
     return (t + 631152000) & 0xFFFFFFFF;
 }
 
-u64 read_area0(void* ptr, u32 addr, enum DC_MEM_SIZE sz, u32* success)
+u64 read_area0(void* ptr, u32 addr, enum DC_MEM_SIZE sz, bool* success)
  {
      MTHIS;
      u32 full_addr = addr;
@@ -204,7 +204,7 @@ u64 read_area0(void* ptr, u32 addr, enum DC_MEM_SIZE sz, u32* success)
      return 0;
  }
 
- void write_area0(void* ptr, u32 addr, u64 val, enum DC_MEM_SIZE sz, u32* success)
+ void write_area0(void* ptr, u32 addr, u64 val, enum DC_MEM_SIZE sz, bool* success)
  {
     MTHIS;
     u32 full_addr = addr;
@@ -271,7 +271,7 @@ u64 read_area0(void* ptr, u32 addr, enum DC_MEM_SIZE sz, u32* success)
      *success = 0;
  }
 
-u64 read_area1(void* ptr, u32 addr, enum DC_MEM_SIZE sz, u32* success)
+u64 read_area1(void* ptr, u32 addr, enum DC_MEM_SIZE sz, bool* success)
 {
     MTHIS;
     u32 full_addr = addr;
@@ -284,7 +284,7 @@ u64 read_area1(void* ptr, u32 addr, enum DC_MEM_SIZE sz, u32* success)
     return 0;
 }
 
-void write_area1(void* ptr, u32 addr, u64 val, enum DC_MEM_SIZE sz, u32* success)
+void write_area1(void* ptr, u32 addr, u64 val, enum DC_MEM_SIZE sz, bool* success)
 {
     MTHIS;
     addr &= 0x1FFFFFFF; // only 29 bits of real addresses I guess
@@ -300,7 +300,7 @@ void write_area1(void* ptr, u32 addr, u64 val, enum DC_MEM_SIZE sz, u32* success
     *success = 0;
 }
 
-u64 read_area3(void* ptr, u32 addr, enum DC_MEM_SIZE sz, u32* success)
+u64 read_area3(void* ptr, u32 addr, enum DC_MEM_SIZE sz, bool* success)
 {
     MTHIS;
     addr &= 0x1FFFFFFF;
@@ -311,7 +311,7 @@ u64 read_area3(void* ptr, u32 addr, enum DC_MEM_SIZE sz, u32* success)
     return 0;
 }
 
-void write_area3(void* ptr, u32 addr, u64 val, enum DC_MEM_SIZE sz, u32* success)
+void write_area3(void* ptr, u32 addr, u64 val, enum DC_MEM_SIZE sz, bool* success)
 {
     MTHIS;
     addr &= 0x1FFFFFFF;
@@ -323,14 +323,14 @@ void write_area3(void* ptr, u32 addr, u64 val, enum DC_MEM_SIZE sz, u32* success
     *success = 0;
 }
 
-u64 read_area4(void* ptr, u32 addr, enum DC_MEM_SIZE sz, u32* success)
+u64 read_area4(void* ptr, u32 addr, enum DC_MEM_SIZE sz, bool* success)
 {
     MTHIS;
     assert(1==0);
     return 0;
 }
 
-void write_area4(void* ptr, u32 addr, u64 val, enum DC_MEM_SIZE sz, u32* success)
+void write_area4(void* ptr, u32 addr, u64 val, enum DC_MEM_SIZE sz, bool* success)
 {
     MTHIS;
     assert(1==0);
@@ -583,7 +583,7 @@ u64 DCread_noins(void *ptr, u32 addr, u32 sz)
     return DCread(ptr, addr, sz, false);
 }
 
-u64 G1_read(DC* this, u32 addr, u32 sz, u32* success)
+u64 G1_read(DC* this, u32 addr, u32 sz, bool* success)
 {
     addr &= 0x1FFFFFFF;
     if ((addr >= 0x005F7000) && (addr <= 0x005F709C)) {
@@ -599,7 +599,7 @@ u64 G1_read(DC* this, u32 addr, u32 sz, u32* success)
     return 0;
 }
 
-void G1_write(DC* this, u32 addr, u64 val, u32 bits, u32* success)
+void G1_write(DC* this, u32 addr, u64 val, u32 bits, bool* success)
 {
     addr &= 0x1FFFFFFF;
     if ((addr >= 0x005F7000) && (addr <= 0x005F709C)) {

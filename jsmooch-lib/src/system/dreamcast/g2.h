@@ -7,8 +7,8 @@
 
 #include "dreamcast.h"
 
-void G2_write(DC*, u32 addr, u64 val, u32 bits, u32* success);
-u64 G2_read(DC*, u32 addr, u32 sz, u32* success);
+void G2_write(DC*, u32 addr, u64 val, u32 bits, bool* success);
+u64 G2_read(DC*, u32 addr, u32 sz, bool* success);
 
 void G2_write_ADST(DC*, u64 val);
 void G2_write_E1ST(DC*, u64 val);

@@ -49,8 +49,8 @@ union HOLLY_ISP_TSP_IWORD {
 void holly_init(DC*);
 void holly_delete(DC*);
 
-void holly_write(DC*, u32 addr, u32 val, u32* success);
-u64 holly_read(DC*, u32 addr, u32* success);
+void holly_write(DC*, u32 addr, u32 val, bool* success);
+u64 holly_read(DC*, u32 addr, bool* success);
 void holly_reset(DC*);
 void DC_recalc_frame_timing(DC*);
 void holly_vblank_in(DC*);

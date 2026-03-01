@@ -400,19 +400,19 @@ def parse_regs_file(fname: str, out_path: str) -> None:
             out_writes[fname] = ''
         for register in sections[sstr]:
             out_decls[section] += register.decl(oo)
-            out_writes[fname] += register.switch_write(oo, section, 'this->', 'val')
-            out_reads[fname] += register.switch_read(oo, section, 'this->')
+            out_writes[fname] += register.switch_write(oo, section, '', 'val')
+            out_reads[fname] += register.switch_read(oo, section, '')
 
     for section in out_decls:
         with open(out_path + '/' + section + '_decls.h', 'w') as outfile:
             outfile.write(out_decls[section])
 
     for fname in out_reads:
-        with open(out_path + '/' + fname + '_reads.c', 'w') as outfile:
+        with open(out_path + '/' + fname + '_reads.cpp', 'w') as outfile:
             outfile.write(out_reads[fname])
 
     for fname in out_writes:
-        with open(out_path + '/' + fname + '_writes.c', 'w') as outfile:
+        with open(out_path + '/' + fname + '_writes.cpp', 'w') as outfile:
             outfile.write(out_writes[fname])
 
 

@@ -20,7 +20,7 @@ static void update_dma_triggers(DC* this, u32 addr, u64 val)
     //if (val & 1) printf("\nG2 TRIGGER TO DMA %08x", addr);
 }
 
-void G2_write(DC* this, u32 addr, u64 val, u32 bits, u32* success)
+void G2_write(DC* this, u32 addr, u64 val, u32 bits, bool* success)
 {
     addr &= 0x1FFFFFFF;
     switch(addr) {
@@ -31,7 +31,7 @@ void G2_write(DC* this, u32 addr, u64 val, u32 bits, u32* success)
     printf("\nUnhandled G2 reg write %02x val %04llx bits %d", addr, val, bits);
 }
 
-u64 G2_read(DC* this, u32 addr, u32 sz, u32* success)
+u64 G2_read(DC* this, u32 addr, u32 sz, bool* success)
 {
     addr &= 0x1FFFFFFF;
     switch(addr) {

@@ -98,7 +98,7 @@ struct sh4test {
 };
 
 struct sh4_test_overview {
-    struct SH4 cpu;
+    struct SH4::core cpu;
     struct scheduler_t scheduler;
     struct sh4test current_test;
     u64 trace_cycles;

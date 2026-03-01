@@ -196,7 +196,7 @@ static u32 holly_get_SPG_line(DC* this) {
     return cycle_num / this->clock.cycles_per_line;
 }
 
-u64 holly_read(DC* this, u32 addr, u32* success) {
+u64 holly_read(DC* this, u32 addr, bool* success) {
     *success = 1;
     u32 v;
     switch ((addr & 0x0000FFFF) | 0x005F0000) {
@@ -224,7 +224,7 @@ u64 holly_read(DC* this, u32 addr, u32* success) {
     return 0;
 }
 
-void holly_write(DC* this, u32 addr, u32 val, u32* success)
+void holly_write(DC* this, u32 addr, u32 val, bool* success)
 {
     *success = 1;
     addr = (addr & 0x0000FFFF) | 0x005F0000;

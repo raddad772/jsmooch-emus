@@ -84,7 +84,7 @@ typedef double f64;
 
 
 #define SIGNe4to32(x) (((((x) >> 3) & 1) * 0xFFFFFFF8) | ((x) & 7))
-#define SIGNe7to32(x) (((((x) >> 6) & 1) * 0xFFFFFF0C0) | ((x) & 0x3F))
+#define SIGNe7to32(x) (((((x) >> 6) & 1) * 0xFFFFFFC0) | ((x) & 0x3F))
 #define SIGNe8to32(x) (((((x) >> 7) & 1) * 0xFFFFFF80) | ((x) & 0x7F))
 #define SIGNe8to64(x) (((((x) >> 7) & 1) * 0xFFFFFFFFFFFFFF80) | ((x) & 0x7F))
 #define SIGNe9to32(x) (((((x) >> 8) & 1) * 0xFFFFFF00) | ((x) & 0xFF))

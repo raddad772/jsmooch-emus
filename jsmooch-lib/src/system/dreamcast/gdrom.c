@@ -297,7 +297,7 @@ static void GDROM_ATA_command(DC* this)
     printf("\nUNKNOWN GDROM COMMAND %02x", this->gdrom.ata_cmd);
 }
 
-void GDROM_write(DC* this, u32 addr, u64 val, u32 sz, u32* success)
+void GDROM_write(DC* this, u32 addr, u64 val, u32 sz, bool* success)
 {
     //printf("\nGDROM WRITE! %llu", this->sh4.clock.trace_cycles);
     addr &= 0x1FFFFFFF;
@@ -357,7 +357,7 @@ void GDROM_write(DC* this, u32 addr, u64 val, u32 sz, u32* success)
     printf("\nUnhandled GDR reg write %02x val %04llx", addr, val);
 }
 
-u64 GDROM_read(DC* this, u32 addr, u32 bits, u32* success)
+u64 GDROM_read(DC* this, u32 addr, u32 bits, bool* success)
 {
     addr &= 0x1FFFFFFF;
     switch(addr) {

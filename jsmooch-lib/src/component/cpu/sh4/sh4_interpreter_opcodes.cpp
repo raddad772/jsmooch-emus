@@ -2,81 +2,74 @@
 // Created by Dave on 2/10/2024.
 //
 
-#include "math.h"
-#include <cstring>
+#include <cmath>
 #include <cassert>
-#include "stdio.h"
 
 #include "fsca.h"
 #include "sh4_interpreter.h"
 #include "sh4_interpreter_opcodes.h"
 
-#define SH4args  struct SH4* this, SH4_ins_t *ins
-#define PCinc rPC += 2
-#define rPC this->regs.PC
+namespace SH4 {
 
-#define R(x) this->regs.R[x]
+#define SH4args  ins_t *ins
+#define PCinc rPC += 2
+#define rPC regs.PC
+
+#define R(x) regs.R[x]
 #define RM R(ins->Rm)
 #define RN R(ins->Rn)
 
-#define fFR this->regs.FPSCR.FR
+#define fFR regs.FPSCR.FR
 #define IMM ins->imm
 #define DISP ins->disp
 
-#define rMACL this->regs.MACL
-#define rMACH this->regs.MACH
+#define rMACL regs.MACL
+#define rMACH regs.MACH
 
-#define fpFR(x) this->regs.fb[0].FP32[(x) ^ 1]
+#define fpFR(x) regs.fb[0].FP32[(x) ^ 1]
 #define fpFRn fpFR(ins->Rn)
 #define fpFRm fpFR(ins->Rm)
-#define fpFRU(x) this->regs.fb[0].U32[(x) ^ 1]
-#define fpFRUn this->regs.fb[0].U32[ins->Rn ^ 1]
-#define fpFRUm this->regs.fb[0].U32[ins->Rm ^ 1]
-#define fpDR(x) this->regs.fb[0].FP64[(x)]
-#define fpDRU(x) this->regs.fb[0].U64[(x)]
-#define fpXF(x) this->regs.fb[1].FP32[(x) ^ 1]
-#define fpXFU(x) this->regs.fb[1].U32[(x) ^ 1]
-#define fpXD(x) this->regs.fb[1].FP64[(x)]
-#define fpXDU(x) this->regs.fb[1].U64[(x)]
-#define fpFV(x) this->regs.fb[0].FV[(x)]
-#define fpXMTX(x) this->regs.fb[1].MTX
+#define fpFRU(x) regs.fb[0].U32[(x) ^ 1]
+#define fpFRUn regs.fb[0].U32[ins->Rn ^ 1]
+#define fpFRUm regs.fb[0].U32[ins->Rm ^ 1]
+#define fpDR(x) regs.fb[0].FP64[(x)]
+#define fpDRU(x) regs.fb[0].U64[(x)]
+#define fpXF(x) regs.fb[1].FP32[(x) ^ 1]
+#define fpXFU(x) regs.fb[1].U32[(x) ^ 1]
+#define fpXD(x) regs.fb[1].FP64[(x)]
+#define fpXDU(x) regs.fb[1].U64[(x)]
+#define fpFV(x) regs.fb[0].FV[(x)]
+#define fpXMTX(x) regs.fb[1].MTX
 
-#define BADOPCODE { printf("\nUNIMPLEMENTED INSTRUCTION %s PR=%d SZ=%d", __func__, this->regs.FPSCR.PR, this->regs.FPSCR.SZ); fflush(stdout); dbg_printf("\nUNIMPLEMENTED INSTRUCTION %s PR=%d SZ=%d", __func__, this->regs.FPSCR.PR, this->regs.FPSCR.SZ); }
+#define BADOPCODE { printf("\nUNIMPLEMENTED INSTRUCTION %s PR=%d SZ=%d", __func__, regs.FPSCR.PR, regs.FPSCR.SZ); fflush(stdout); dbg_printf("\nUNIMPLEMENTED INSTRUCTION %s PR=%d SZ=%d", __func__, regs.FPSCR.PR, regs.FPSCR.SZ); }
 
-#define READ8(addr) this->read(this->mptr, addr, DC8)
-#define READ16(addr) this->read(this->mptr, addr, DC16)
-#define READ32(addr) this->read(this->mptr, addr, DC32)
-#define READ64(addr) this->read(this->mptr, addr, DC64)
-#define WRITE8(addr, val) this->write(this->mptr, addr, (val) & 0xFF, DC8)
-#define WRITE16(addr, val) this->write(this->mptr, addr, (val) & 0xFFFF, DC16)
-#define WRITE32(addr, val) this->write(this->mptr, addr, (val) & 0xFFFFFFFF, DC32)
-#define WRITE64(addr, val) this->write(this->mptr, addr, val, DC64)
+#define READ8(addr) read(mptr, addr, 1)
+#define READ16(addr) read(mptr, addr, 2)
+#define READ32(addr) read(mptr, addr, 4)
+#define READ64(addr) read(mptr, addr, 8)
+#define WRITE8(addr, val) write(mptr, addr, (val) & 0xFF, 1)
+#define WRITE16(addr, val) write(mptr, addr, (val) & 0xFFFF, 2)
+#define WRITE32(addr, val) write(mptr, addr, (val) & 0xFFFFFFFF, 4)
+#define WRITE64(addr, val) write(mptr, addr, val, 8)
 
 
 #define FP64SAVE(addr, from) u64 v = (from); WRITE64(addr, (v << 32) | (v >> 32))
 #define FP64LOAD(addr, to) u64 v = READ64(addr); (to) = (v << 32) | (v >> 32)
 
 
-#define SH4ins(x) void SH4_##x(SH4args)
+#define SH4ins(x) void core::ins_##x(SH4args)
 
-#define DELAY_SLOT { PCinc; SH4_fetch_and_exec(this, 1); }
-
-enum MSIZE {
-    DC8 = 1,
-    DC16 = 2,
-    DC32 = 4,
-    DC64 = 8
-};
+#define DELAY_SLOT { PCinc; fetch_and_exec(true); }
 
 static float fixNaN(float f) {
-    u32 hex = *(u32 *)&f;
+    u32 hex = *reinterpret_cast<u32 *>(&f);
 	if ((hex & 0x7fffffff) > 0x7f800000)
 		hex = 0x7fbfffff;
     return f;
 }
 
 SH4ins(EMPTY) {
-    printf("\nUNKNOWN OPCODE EXECUTION ATTEMPTED: %08x %04x %llu", this->regs.PC, ins->opcode, *this->trace.cycles);
+    printf("\nUNKNOWN OPCODE EXECUTION ATTEMPTED: %08x %04x %llu", regs.PC, ins->opcode, *trace.cycles);
     fflush(stdout);
     PCinc;
 }
@@ -92,7 +85,7 @@ SH4ins(MOVI) {
 }
 
 SH4ins(MOVA) {
-    this->regs.R[0] = (rPC & 0xFFFFFFFC) + (DISP*4) + 4;
+    regs.R[0] = (rPC & 0xFFFFFFFC) + (DISP*4) + 4;
     PCinc;
 }
 
@@ -265,39 +258,39 @@ SH4ins(MOVLS0) { // Rm -> (R0 + Rn)
 }
 
 SH4ins(MOVBLG) { // (disp + GBR) -> sign extension -> R0
-    u32 val = READ8(ins->disp + this->regs.GBR);
+    u32 val = READ8(ins->disp + regs.GBR);
     R(0) = SIGNe8to32(val);
     PCinc;
 }
 
 SH4ins(MOVWLG) { // (disp*2 + GBR) -> sign extension -> R0
-    u32 val = READ8((ins->disp*2) + this->regs.GBR);
+    u32 val = READ8((ins->disp*2) + regs.GBR);
     R(0) = SIGNe16to32(val);
     PCinc;
 }
 
 SH4ins(MOVLLG) { // (disp*4 + GBR) -> R0
-    R(0) = READ32((ins->disp*4) + this->regs.GBR);
+    R(0) = READ32((ins->disp*4) + regs.GBR);
     PCinc;
 }
 
 SH4ins(MOVBSG) { // R0 -> (disp + GBR)
-    WRITE8(ins->disp + this->regs.GBR, R(0));
+    WRITE8(ins->disp + regs.GBR, R(0));
     PCinc;
 }
 
 SH4ins(MOVWSG) { // R0 -> (disp*2 + GBR)
-    WRITE16((ins->disp << 1) + this->regs.GBR, R(0));
+    WRITE16((ins->disp << 1) + regs.GBR, R(0));
     PCinc;
 }
 
 SH4ins(MOVLSG) { // R0 -> (disp*4 + GBR)
-    WRITE32((ins->disp << 2) + this->regs.GBR, R(0));
+    WRITE32((ins->disp << 2) + regs.GBR, R(0));
     PCinc;
 }
 
 SH4ins(MOVT) { // T -> Rn
-    RN = this->regs.SR.T;
+    RN = regs.SR.T;
     assert(RN < 2); // TODO: remove
     PCinc;
 }
@@ -332,24 +325,23 @@ SH4ins(ADDI) { // Rn + (sign extension)imm
 }
 
 SH4ins(ADDC) { // Rn + Rm + T -> Rn, carry -> T
-    u32 tmp0, tmp1;
-    tmp1 = RN + RM;
-    tmp0 = RN;
-    RN = tmp1 + this->regs.SR.T;
+    u32 tmp1 = RN + RM;
+    u32 tmp0 = RN;
+    RN = tmp1 + regs.SR.T;
 
-    this->regs.SR.T = tmp0 > tmp1;
+    regs.SR.T = tmp0 > tmp1;
 
     if (tmp1 > RN)
-        this->regs.SR.T = 1;
+        regs.SR.T = 1;
 
     PCinc;
 }
 
 SH4ins(ADDV) { // Rn + Rm -> Rn, overflow -> T
     // Thanks Reicast!
-    s64 br=(s64)(s32)RN+(s64)(s32)RM;
+    i64 br=static_cast<i64>(static_cast<i32>(RN))+static_cast<i64>(static_cast<i32>(RM));
 
-    this->regs.SR.T = (br >=0x80000000) || (br < (s64) (0xFFFFFFFF80000000u));
+    regs.SR.T = (br >=0x80000000) || (br < static_cast<i64>(0xFFFFFFFF80000000u));
 
     RN += RM;
 
@@ -357,76 +349,76 @@ SH4ins(ADDV) { // Rn + Rm -> Rn, overflow -> T
 }
 
 SH4ins(CMPIM) { // If R0 = (sign extension)imm: 1 -> T, Else: 0 -> T
-    this->regs.SR.T = R(0) == SIGNe8to32(IMM);
+    regs.SR.T = R(0) == SIGNe8to32(IMM);
     PCinc;
 }
 
 SH4ins(CMPEQ) { // If Rn = Rm: 1 -> T, Else: 0 -> T
-    this->regs.SR.T = RN == RM;
+    regs.SR.T = RN == RM;
     PCinc;
 }
 
 SH4ins(CMPHS) { // If Rn >= Rm (unsigned): 1 -> T, Else: 0 -> T
-    this->regs.SR.T = RN >= RM;
+    regs.SR.T = RN >= RM;
     PCinc;
 }
 
 SH4ins(CMPGE) { // If Rn >= Rm (signed): 1 -> T, Else: 0 -> T
-    this->regs.SR.T = ((i32)RN >= (i32)RM);
+    regs.SR.T = (static_cast<i32>(RN) >= static_cast<i32>(RM));
     PCinc;
 }
 
 SH4ins(CMPHI) { // If Rn > Rm (unsigned): 1 -> T, Else: 0 -> T
-    this->regs.SR.T = RN > RM;
+    regs.SR.T = RN > RM;
     PCinc;
 }
 
 SH4ins(CMPGT) { // If Rn > Rm (signed): 1 -> T, Else: 0 -> T
-    this->regs.SR.T = ((i32)RN) > ((i32)RM);
+    regs.SR.T = static_cast<i32>(RN) > static_cast<i32>(RM);
     PCinc;
 }
 
 SH4ins(CMPPL) { // If Rn > 0 (signed): 1 -> T, Else: 0 -> T
-    this->regs.SR.T = ((i32)RN) > 0;
+    regs.SR.T = static_cast<i32>(RN) > 0;
     PCinc;
 }
 
 SH4ins(CMPPZ) { // If Rn >= 0 (signed): 1 -> T, Else: 0 -> T
-    this->regs.SR.T = ((i32)RN) >= 0;
+    regs.SR.T = static_cast<i32>(RN) >= 0;
     PCinc;
 }
 
 SH4ins(CMPSTR) { // If Rn and Rm have an equal byte: 1 -> T, Else: 0 -> T
     u32 r = RN ^ RM;
-    this->regs.SR.T = (!(r & 0xFF000000)) || (!(r & 0xFF0000)) || (!(r & 0xFF00)) || (!(r & 0xFF));
+    regs.SR.T = (!(r & 0xFF000000)) || (!(r & 0xFF0000)) || (!(r & 0xFF00)) || (!(r & 0xFF));
     PCinc;
 }
 
 SH4ins(DIV0S) { // MSB of Rn -> Q, MSB of Rm -> M, M ^ Q -> T
-    this->regs.SR.Q = (RN & 0x80000000) != 0;
+    regs.SR.Q = (RN & 0x80000000) != 0;
 
-    this->regs.SR.M = (RM & 0x80000000) != 0;
+    regs.SR.M = (RM & 0x80000000) != 0;
 
-    this->regs.SR.T = ! (this->regs.SR.M == this->regs.SR.Q);
+    regs.SR.T = regs.SR.M != regs.SR.Q;
     PCinc;
 }
 
 SH4ins(DIV0U) { // 0 -> M, 0 -> Q, 0 -> T
-    this->regs.SR.M = this->regs.SR.Q = this->regs.SR.T = 0;
+    regs.SR.M = regs.SR.Q = regs.SR.T = 0;
     PCinc;
 }
 
-#define fQ this->regs.SR.Q
-#define fM this->regs.SR.M
-#define fT this->regs.SR.T
+#define fQ regs.SR.Q
+#define fM regs.SR.M
+#define fT regs.SR.T
 
 SH4ins(DIV1) { // 1-step division (Rn / Rm)
-    unsigned long tmp0, tmp2;
-    unsigned char old_q, tmp1;
+    unsigned long tmp0;
+    unsigned char tmp1;
 
-    old_q = fQ;
+    unsigned char old_q = fQ;
     fQ = (0x80000000 & RN) != 0;
-    tmp2 = RM;
+    unsigned long tmp2 = RM;
     RN <<= 1;
     RN |= fT;
 
@@ -477,11 +469,11 @@ SH4ins(DIV1) { // 1-step division (Rn / Rm)
 }
 
 SH4ins(DMULS) { // Signed, Rn * Rm -> MACH:MACL, 32 * 32 -> 64 bits
-    i64 rn = (i64)(i32)RN;
-    i64 rm = (i64)(i32)RM;
-    i64 r = rn * rm;
-    this->regs.MACH = (u32)(r >> 32);
-    this->regs.MACL = (u32)(r & 0xFFFFFFFF);
+    const i64 rn = (i64)static_cast<i32>(RN);
+    const i64 rm = (i64)static_cast<i32>(RM);
+    const i64 r = rn * rm;
+    regs.MACH = static_cast<u32>(r >> 32);
+    regs.MACL = static_cast<u32>(r & 0xFFFFFFFF);
     PCinc;
 }
 
@@ -490,14 +482,14 @@ SH4ins(DMULU) { // Unsigned, Rn * Rm -> MACH:MACL, 32 * 32 -> 64 bits
     u64 n = RN;
     u64 m = RM;
     u64 r = n * m;
-    this->regs.MACH = ((r >> 32) & 0xFFFFFFFF);
-    this->regs.MACL = r & 0xFFFFFFFF;
+    regs.MACH = ((r >> 32) & 0xFFFFFFFF);
+    regs.MACL = r & 0xFFFFFFFF;
     PCinc;
 }
 
 SH4ins(DT) { // Rn-1 -> Rn, If Rn = 0: 1 -> T, Else: 0 -> T
     RN--;
-    this->regs.SR.T = RN == 0;
+    regs.SR.T = RN == 0;
     PCinc;
 }
 
@@ -524,26 +516,26 @@ SH4ins(EXTUW) { // Rm zero-extended from word -> Rn
 }
 
 SH4ins(MACL) { // Signed, (Rn) * (Rm) + MAC -> MAC, 32 * 32 + 64 -> 64 bits
-    i64 rn = (i64)(i32)READ32(RN);
-    i64 rm = (i64)(i32)READ32(RM);
+    i64 rn = (i64)static_cast<i32>(READ32(RN));
+    i64 rm = (i64)static_cast<i32>(READ32(RM));
     RM += 4;
     RN += 4;
-    i64 mac = ((i64)this->regs.MACH << 32) | this->regs.MACL;
-    i64 r = (RN * RM) + mac;
-    this->regs.MACH = (r >> 32);
-    this->regs.MACL = (r & 0xFFFFFFFF);
+    i64 mac = (static_cast<i64>(regs.MACH) << 32) | regs.MACL;
+    i64 r = (rn * rm) + mac;
+    regs.MACH = (r >> 32);
+    regs.MACL = (r & 0xFFFFFFFF);
     PCinc;
 }
 
 SH4ins(MACW) { // Signed, (Rn) * (Rm) + MAC -> MAC, SH1: 16 * 16 + 42 -> 42 bits, Other: 16 * 16 + 64 -> 64 bits
-    i64 rn = (i64)(i16)READ16(RN);
-    i64 rm = (i64)(i16)READ16(RM);
+    i64 rn = (i64)static_cast<i16>(READ16(RN));
+    i64 rm = (i64)static_cast<i16>(READ16(RM));
     RN += 2;
     RM += 2;
-    i64 mac = ((i64)this->regs.MACH << 32) | this->regs.MACL;
-    i64 r = (RN * RM) + mac;
-    this->regs.MACH = (u32)(i32)(r >> 32);
-    this->regs.MACL = (u32)(i32)(r & 0xFFFFFFFF);
+    i64 mac = (static_cast<i64>(regs.MACH) << 32) | regs.MACL;
+    i64 r = (rn * rm) + mac;
+    regs.MACH = static_cast<u32>(static_cast<i32>(r >> 32));
+    regs.MACL = static_cast<u32>(static_cast<i32>(r & 0xFFFFFFFF));
     PCinc;
 }
 
@@ -553,31 +545,31 @@ SH4ins(MULL) { // Rn * Rm -> MACL, 32 * 32 -> 32 bits
 }
 
 SH4ins(MULS) { // Signed, Rn * Rm -> MACL, 16 * 16 -> 32 bits
-    this->regs.MACL = (u32)((i32)(i16)RN * (i32)(i16)RM);
+    regs.MACL = static_cast<u32>(static_cast<i32>(static_cast<i16>(RN)) * static_cast<i32>(static_cast<i16>(RM)));
     PCinc;
 }
 
 SH4ins(MULU) { // Unsigned, Rn * Rm -> MACL, 16 * 16 -> 32 bits
-    this->regs.MACL = (RN & 0xFFFF) * (RM & 0xFFFF);
+    regs.MACL = (RN & 0xFFFF) * (RM & 0xFFFF);
     PCinc;
 }
 
 SH4ins(NEG) { // 0 - Rm -> Rn
-    RN = (u32)(0 - ((i32)RM));
+    RN = static_cast<u32>(0 - static_cast<i32>(RM));
     PCinc;
 }
 
 SH4ins(NEGC) { // 0 - Rm - T -> Rn, borrow -> T
     u32 temp = 0 - RM;
-    RN = temp - this->regs.SR.T;
+    RN = temp - regs.SR.T;
 
     if (0 < temp)
-        this->regs.SR.T = 1;
+        regs.SR.T = 1;
     else
-        this->regs.SR.T = 0;
+        regs.SR.T = 0;
 
     if (temp < RN)
-        this->regs.SR.T = 1;
+        regs.SR.T = 1;
     PCinc;
 }
 
@@ -587,14 +579,13 @@ SH4ins(SUB) { // Rn - Rm -> Rn
 }
 
 SH4ins(SUBC) { // Rn - Rm - T -> Rn, borrow -> T
-    u32 tmp0, tmp1;
-    tmp1 = RN - RM;
-    tmp0 = RN;
-    RN = tmp1 - this->regs.SR.T;
+    u32 tmp1 = RN - RM;
+    u32 tmp0 = RN;
+    RN = tmp1 - regs.SR.T;
 
-    this->regs.SR.T = tmp0 < tmp1;
+    regs.SR.T = tmp0 < tmp1;
     if (tmp1 < RN)
-        this->regs.SR.T = 1;
+        regs.SR.T = 1;
 
     PCinc;
 }
@@ -603,11 +594,11 @@ SH4ins(SUBV) { // Rn - Rm -> Rn, underflow -> T
     /*u32 original_rn = RN;
     u32 original_rm = RM;
     RN -= RM;
-    this->regs.SR.T = original_rn < original_rm;*/
+    regs.SR.T = original_rn < original_rm;*/
 
-    s64 br=(s64)(s32)RN-(s64)(s32)RM;
+    i64 br=static_cast<i64>(static_cast<i32>(RN))-static_cast<i64>(static_cast<i32>(RM));
 
-    this->regs.SR.T = (br >=0x80000000) || (br < (s64) (0xFFFFFFFF80000000u));
+    regs.SR.T = (br >=0x80000000) || (br < static_cast<i64>(0xFFFFFFFF80000000u));
     RN -= RM;
 
     PCinc;
@@ -624,8 +615,8 @@ SH4ins(ANDI) { // R0 & (zero extend)imm -> R0
 }
 
 SH4ins(ANDM) { // (R0 + GBR) & (zero extend)imm -> (R0 + GBR)
-    u32 r = READ8(R(0) + this->regs.GBR) & IMM & 0xFF;
-    WRITE8(R(0) + this->regs.GBR, r);
+    u32 r = READ8(R(0) + regs.GBR) & IMM & 0xFF;
+    WRITE8(R(0) + regs.GBR, r);
     PCinc;
 }
 
@@ -645,32 +636,32 @@ SH4ins(ORI) { // R0 | (zero extend)imm -> R0
 }
 
 SH4ins(ORM) { // (R0 + GBR) | (zero extend)imm -> (R0 + GBR)
-    u32 addr = this->regs.GBR + R(0);
+    u32 addr = regs.GBR + R(0);
     WRITE8(addr, READ8(addr) | IMM);
     PCinc;
 }
 
 SH4ins(TAS) { // If (Rn) = 0: 1 -> T, Else: 0 -> T, 1 -> MSB of (Rn)
     u32 val = READ8(RN);
-    this->regs.SR.T = val == 0;
+    regs.SR.T = val == 0;
     val |= 0x80;
     WRITE8(RN, val);
     PCinc;
 }
 
 SH4ins(TST) { // If Rn & Rm = 0: 1 -> T, Else: 0 -> T
-    this->regs.SR.T = (RN & RM) == 0;
+    regs.SR.T = (RN & RM) == 0;
     PCinc;
 }
 
 SH4ins(TSTI) { // If R0 & (zero extend)imm = 0: 1 -> T, Else: 0 -> T
-    this->regs.SR.T = (R(0) & IMM) == 0;
+    regs.SR.T = (R(0) & IMM) == 0;
     PCinc;
 }
 
 SH4ins(TSTM) { // If (R0 + GBR) & (zero extend)imm = 0: 1 -> T, Else 0: -> T
-    u32 tmp = READ8(R(0) + this->regs.GBR);
-    this->regs.SR.T = (tmp & IMM) == 0;
+    u32 tmp = READ8(R(0) + regs.GBR);
+    regs.SR.T = (tmp & IMM) == 0;
     PCinc;
 }
 
@@ -685,37 +676,37 @@ SH4ins(XORI) { // R0 ^ (zero extend)imm -> R0
 }
 
 SH4ins(XORM) { // (R0 + GBR) ^ (zero extend)imm -> (R0 + GBR)
-    u32 tmp = READ8(R(0) + this->regs.GBR) ^ IMM;
-    WRITE8(R(0) + this->regs.GBR, tmp);
+    u32 tmp = READ8(R(0) + regs.GBR) ^ IMM;
+    WRITE8(R(0) + regs.GBR, tmp);
     PCinc;
 }
 
 SH4ins(ROTCL) { // T << Rn << T
     u32 v = (RN >> 31);
-    assert(this->regs.SR.T < 2);
-    RN = (RN << 1) | this->regs.SR.T;
-    this->regs.SR.T = v;
+    assert(regs.SR.T < 2);
+    RN = (RN << 1) | regs.SR.T;
+    regs.SR.T = v;
     PCinc;
 }
 
 SH4ins(ROTCR) { // T >> Rn >> T
     u32 tmp = RN & 1;
-    assert(this->regs.SR.T < 2);
-    RN = (RN >> 1) | (this->regs.SR.T << 31);
-    this->regs.SR.T = tmp;
+    assert(regs.SR.T < 2);
+    RN = (RN >> 1) | (regs.SR.T << 31);
+    regs.SR.T = tmp;
     PCinc;
 }
 
 SH4ins(ROTL) { // T << Rn << MSB
-    this->regs.SR.T = RN >> 31;
+    regs.SR.T = RN >> 31;
     RN <<= 1;
-    RN |= this->regs.SR.T;
+    RN |= regs.SR.T;
     PCinc;
 }
 
 SH4ins(ROTR) { // LSB >> Rn >> T
-    this->regs.SR.T = RN & 1;
-    RN = (RN >> 1) | (this->regs.SR.T << 31);
+    regs.SR.T = RN & 1;
+    RN = (RN >> 1) | (regs.SR.T << 31);
     PCinc;
 }
 
@@ -733,19 +724,19 @@ SH4ins(SHAD) { // If Rm >= 0: Rn << Rm -> Rn, If Rm < 0: Rn >> |Rm| -> [MSB -> R
             RN = 0xFFFFFFFF;
     }
     else
-        RN = (u32)((i32)RN >> ((~RM & 0x1F) + 1));
+        RN = static_cast<u32>(static_cast<i32>(RN) >> ((~RM & 0x1F) + 1));
 
     PCinc;
 }
 
 SH4ins(SHAL) { // T << Rn << 0
-    this->regs.SR.T = RN >> 31;
+    regs.SR.T = RN >> 31;
     RN <<= 1;
     PCinc;
 }
 
 SH4ins(SHAR) { // MSB >> Rn >> T
-    this->regs.SR.T = RN & 1;
+    regs.SR.T = RN & 1;
     RN = (RN >> 1) | (RN & 0x80000000);
     PCinc;
 }
@@ -764,7 +755,7 @@ SH4ins(SHLD) { // If Rm >= 0: Rn << Rm -> Rn, If Rm < 0: Rn >> |Rm| -> [0 -> Rn]
 }
 
 SH4ins(SHLL) { // T << Rn << 0
-    this->regs.SR.T = (RN >> 31) & 1;
+    regs.SR.T = (RN >> 31) & 1;
     RN <<= 1;
     PCinc;
 }
@@ -785,7 +776,7 @@ SH4ins(SHLL16) { // Rn << 16 -> Rn
 }
 
 SH4ins(SHLR) { // 0 >> Rn >> T
-    this->regs.SR.T = RN & 1;
+    regs.SR.T = RN & 1;
     RN >>= 1;
     PCinc;
 }
@@ -806,33 +797,33 @@ SH4ins(SHLR16) { // Rn >> 16 -> [0 -> Rn]
 }
 
 SH4ins(BF) { // If T = 0: disp*2 + PC + 4 -> PC, Else: nop
-    //printf("\nBF! %llu", this->clock.trace_cycles);
-    assert(this->regs.SR.T < 2);
+    //printf("\nBF! %llu", clock.trace_cycles);
+    assert(regs.SR.T < 2);
     // PC += 2, kind is normal
     // add ((2 * DISP) + 2) * !T
     // so it'll add 0 if T=1
     // it'll add (2*DISP)+2 if T=0
     /*i64 val = rPC + 2;
-    val += ((2 * (i32)SIGNe8to32(DISP)) + 2) * (i32)(this->regs.SR.T ^ 1);
+    val += ((2 * (i32)SIGNe8to32(DISP)) + 2) * (i32)(regs.SR.T ^ 1);
     rPC = (u32)val;*/
 
-    i32 disp = (i32)SIGNe8to32(DISP);
+    i32 disp = static_cast<i32>(SIGNe8to32(DISP));
 
-    if (this->regs.SR.T == 0)
+    if (regs.SR.T == 0)
         rPC += 4 + (disp << 1);
     else
         rPC += 2;
 }
 
 SH4ins(BFS) { // If T = 0: disp*2 + PC + 4 -> PC, Else: nop, (Delayed branch)
-    //printf("\nBFS! %llu", this->clock.trace_cycles);
+    //printf("\nBFS! %llu", clock.trace_cycles);
     // PC is gonna be +4 no matter what, kind is correct
     // then we add 2*disp to that after if T = 0
     /*i64 val = (i64)rPC + 4;
-    val += (2 * (i32)SIGNe8to32(DISP)) * (i32)(this->regs.SR.T ^ 1);
+    val += (2 * (i32)SIGNe8to32(DISP)) * (i32)(regs.SR.T ^ 1);
     DELAY_SLOT;
-    rPC = (u32)val; // DISP*2 * !this->regs.SR.T*/
-    i32 disp = (i32)SIGNe8to32(DISP);
+    rPC = (u32)val; // DISP*2 * !regs.SR.T*/
+    i32 disp = static_cast<i32>(SIGNe8to32(DISP));
     u32 temp = rPC;
     if (fT == 0)
         temp += 4 + (disp << 1);
@@ -846,9 +837,9 @@ SH4ins(BFS) { // If T = 0: disp*2 + PC + 4 -> PC, Else: nop, (Delayed branch)
 
 SH4ins(BT) { // If T = 1: disp*2 + rPC + 4 -> rPC, Else: nop
     /*i64 val = (i64)rPC + 2;
-    val += ((2 * (i32)SIGNe8to32(DISP)) + 2) * (i32)this->regs.SR.T;
+    val += ((2 * (i32)SIGNe8to32(DISP)) + 2) * (i32)regs.SR.T;
     rPC = (u32)val;*/
-    i32 disp = (i32)SIGNe8to32(DISP);
+    i32 disp = static_cast<i32>(SIGNe8to32(DISP));
 
     if (fT == 1)
         rPC += 4 + (disp << 1);
@@ -858,8 +849,8 @@ SH4ins(BT) { // If T = 1: disp*2 + rPC + 4 -> rPC, Else: nop
 
 SH4ins(BTS) { // If T = 1: disp*2 + PC + 4 -> PC, Else: nop, (Delayed branch)
     /*i64 val = (i64)rPC + 4;
-    val += (2 * (i32)SIGNe8to32(DISP)) * (i32)this->regs.SR.T;*/
-    i32 disp = (i32)SIGNe8to32(DISP);
+    val += (2 * (i32)SIGNe8to32(DISP)) * (i32)regs.SR.T;*/
+    i32 disp = static_cast<i32>(SIGNe8to32(DISP));
     u32 temp = rPC;
 
     if (fT == 1)
@@ -868,7 +859,7 @@ SH4ins(BTS) { // If T = 1: disp*2 + PC + 4 -> PC, Else: nop, (Delayed branch)
         temp += 4;
 
     DELAY_SLOT;
-    rPC = temp; // DISP*2 * !this->regs.SR.T
+    rPC = temp; // DISP*2 * !regs.SR.T
 }
 
 SH4ins(BRA) { // disp*2 + PC + 4 -> PC, (Delayed branch)
@@ -876,7 +867,7 @@ SH4ins(BRA) { // disp*2 + PC + 4 -> PC, (Delayed branch)
     val += (2 * (i32)SIGNe12to32(DISP));
     DELAY_SLOT;
     rPC = (u32)val;*/
-    i32 disp = (i32)SIGNe12to32(DISP);
+    i32 disp = static_cast<i32>(SIGNe12to32(DISP));
     u32 temp = rPC;
     temp += 4 + (disp << 1);
     DELAY_SLOT;
@@ -891,21 +882,21 @@ SH4ins(BRAF) { // Rm + PC + 4 -> PC, (Delayed branch)
 
 SH4ins(BSR) { // PC + 4 -> PR, disp*2 + PC + 4 -> PC, (Delayed branch)
     /*i64 val = (i32)SIGNe12to32(DISP) * 2;
-    this->regs.PR = rPC + 4;
+    regs.PR = rPC + 4;
     val = rPC + 4 + val;
     DELAY_SLOT;
     rPC = (u32)val;*/
-    i32 disp = (i32)SIGNe12to32(DISP);
+    i32 disp = static_cast<i32>(SIGNe12to32(DISP));
     u32 temp = rPC;
 
-    this->regs.PR = rPC + 4;
+    regs.PR = rPC + 4;
     temp += 4 + (disp << 1);
     DELAY_SLOT;
     rPC = temp;
 }
 
 SH4ins(BSRF) { // PC + 4 -> PR, Rm + PC + 4 -> PC, (Delayed branch)
-    this->regs.PR = rPC + 4;
+    regs.PR = rPC + 4;
     u32 val = RM + rPC + 4;
     DELAY_SLOT;
     rPC = val;
@@ -918,107 +909,107 @@ SH4ins(JMP) { // Rm -> PC, (Delayed branch)
 }
 
 SH4ins(JSR) { // PC + 4 -> PR, Rm -> PC, (Delayed branch)
-    this->regs.PR = rPC + 4;
+    regs.PR = rPC + 4;
     u32 val = RM;
     DELAY_SLOT;
     rPC = val;
 }
 
 SH4ins(RTS) { // PR -> PC, Delayed branch
-    u32 val = this->regs.PR;
+    u32 val = regs.PR;
     DELAY_SLOT;
     rPC = val;
 }
 
 SH4ins(CLRMAC) { // 0 -> MACH, 0 -> MACL
-    this->regs.MACH = this->regs.MACL = 0;
+    regs.MACH = regs.MACL = 0;
     PCinc;
 }
 
 SH4ins(CLRS) { // 0 -> S
-    this->regs.SR.S = 0;
+    regs.SR.S = 0;
     PCinc;
 }
 
 SH4ins(CLRT) { // 0 -> T
-    this->regs.SR.T = 0;
+    regs.SR.T = 0;
     PCinc;
 }
 
 SH4ins(LDCSR) { // Rm -> SR
-    SH4_SR_set(this, RM & 0x700083F3);
+    regs.SR_set(RM & 0x700083F3);
     PCinc;
 }
 
 SH4ins(LDCMSR) { // (Rm) -> SR, Rm+4 -> Rm
     u32 r = READ32(RM) & 0x700083F3;
     RM += 4;
-    SH4_SR_set(this, r);
+    regs.SR_set(r);
    PCinc;
 }
 
 SH4ins(LDCGBR) { // Rm -> GBR
-    this->regs.GBR = RM;
+    regs.GBR = RM;
     PCinc;
 }
 
 SH4ins(LDCMGBR) { // (Rm) -> GBR, Rm+4 -> Rm
-    this->regs.GBR = READ32(RM);
+    regs.GBR = READ32(RM);
     RM += 4;
     PCinc;
 }
 
 SH4ins(LDCVBR) { // Rm -> VBR
-    this->regs.VBR = RM;
+    regs.VBR = RM;
     PCinc;
 }
 
 SH4ins(LDCMVBR) { // (Rm) -> VBR, Rm+4 -> Rm
-    this->regs.VBR = READ32(RM);
+    regs.VBR = READ32(RM);
     RM += 4;
     PCinc;
 }
 
 SH4ins(LDCSSR) { // Rm -> SSR
-    this->regs.SSR = RM;
+    regs.SSR = RM;
     PCinc;
 }
 
 SH4ins(LDCMSSR) { // (Rm) -> SSR, Rm+4 -> Rm
-    this->regs.SSR = READ32(RM);
+    regs.SSR = READ32(RM);
     RM += 4;
     PCinc;
 }
 
 SH4ins(LDCSPC) { // Rm -> SPC
-    this->regs.SPC = RM;
+    regs.SPC = RM;
     PCinc;
 }
 
 SH4ins(LDCMSPC) { // (Rm) -> SPC, Rm+4 -> Rm
-    this->regs.SPC = READ32(RM);
+    regs.SPC = READ32(RM);
     RM += 4;
     PCinc;
 }
 
 SH4ins(LDCDBR) { // Rm -> DBR
-    this->regs.DBR = RM;
+    regs.DBR = RM;
     PCinc;
 }
 
 SH4ins(LDCMDBR) { // (Rm) -> DBR, Rm+4 -> Rm
-    this->regs.DBR = READ32(RM);
+    regs.DBR = READ32(RM);
     RM += 4;
     PCinc;
 }
 
 SH4ins(LDCRn_BANK) { // Rm -> Rn_BANK (n = 0-7)
-    this->regs.R_[ins->Rn] = RM;
+    regs.R_[ins->Rn] = RM;
     PCinc;
 }
 
 SH4ins(LDCMRn_BANK) { // (Rm) -> Rn_BANK, Rm+4 -> Rm
-    this->regs.R_[ins->Rn] = READ32(RM);
+    regs.R_[ins->Rn] = READ32(RM);
     RM += 4;
     PCinc;
 }
@@ -1040,18 +1031,18 @@ SH4ins(LDSMACL) { // Rm -> MACL
 }
 
 SH4ins(LDSMMACL) { // (Rm) -> MACL, Rm+4 -> Rm
-    this->regs.MACL = READ32(RM);
+    regs.MACL = READ32(RM);
     RM += 4;
     PCinc;
 }
 
 SH4ins(LDSPR) { // Rm -> PR
-    this->regs.PR = RM;
+    regs.PR = RM;
     PCinc;
 }
 
 SH4ins(LDSMPR) { // (Rm) -> PR, Rm+4 -> Rm
-    this->regs.PR = READ32(RM);
+    regs.PR = READ32(RM);
     RM += 4;
     PCinc;
 }
@@ -1089,9 +1080,9 @@ SH4ins(PREF) { // (Rn) -> operand cache
     // Flush store queue to RAM!
     if ((addr & 0xEC000000) == 0xE0000000) {
         u32 sq = (addr >> 5) & 1;
-        u32 naddr = addr & 0x03FFFFE0 | (((this->regs.QACR[sq]) & 0b11100) << 24);
+        u32 naddr = addr & 0x03FFFFE0 | (((regs.QACR[sq]) & 0b11100) << 24);
         for (u32 i = 0; i < 8; i++) {
-            WRITE32(naddr, *(u32*)&this->SQ[sq][i<<2]);
+            WRITE32(naddr, *reinterpret_cast<u32 *>(&SQ[sq][i << 2]));
             naddr += 4;
         }
     }
@@ -1108,124 +1099,124 @@ SH4ins(PREF) { // (Rn) -> operand cache
 }
 
 SH4ins(RTE) { // Delayed branch, SH1*,SH2*: stack area -> PC/SR, SH3*,SH4*: SSR/SPC -> SR/PC
-    u32 val = this->regs.SPC;
+    u32 val = regs.SPC;
     DELAY_SLOT;
-    SH4_SR_set(this, this->regs.SSR);
+    regs.SR_set(regs.SSR);
     rPC = val;
 }
 
 SH4ins(SETS) { // 1 -> S
-    this->regs.SR.S = 1;
+    regs.SR.S = 1;
     PCinc;
 }
 
 SH4ins(SETT) { // 1 -> T
-    this->regs.SR.T = 1;
+    regs.SR.T = 1;
     PCinc;
 }
 
 SH4ins(SLEEP) { // Sleep or standby
-    dbg_break("Sh4 SLEEP", *this->trace.cycles);
+    dbg_break("Sh4 SLEEP", *trace.cycles);
     dbg_LT_dump();
     PCinc;
 }
 
 SH4ins(STCSR) { // SR -> Rn
-    RN = SH4_regs_SR_get(&this->regs.SR);
+    RN = regs.SR_get();
     PCinc;
 }
 
 SH4ins(STCMSR) { // Rn-4 -> Rn, SR -> (Rn)
     RN -= 4;
-    WRITE32(RN, SH4_regs_SR_get(&this->regs.SR));
+    WRITE32(RN, regs.SR_get());
     PCinc;
 }
 
 SH4ins(STCGBR) { // GBR -> Rn
-    RN = this->regs.GBR;
+    RN = regs.GBR;
     PCinc;
 }
 
 SH4ins(STCMGBR) { // Rn-4 -> Rn, GBR -> (Rn)
     RN -= 4;
-    WRITE32(RN, this->regs.GBR);
+    WRITE32(RN, regs.GBR);
     PCinc;
 }
 
 SH4ins(STCVBR) { // VBR -> Rn
-    RN = this->regs.VBR;
+    RN = regs.VBR;
     PCinc;
 }
 
 SH4ins(STCMVBR) { // Rn-4 -> Rn, VBR -> (Rn)
     RN -= 4;
-    WRITE32(RN, this->regs.VBR);
+    WRITE32(RN, regs.VBR);
     PCinc;
 }
 
 SH4ins(STCSGR) { // SGR -> Rn
-    RN = this->regs.SGR;
+    RN = regs.SGR;
     PCinc;
 }
 
 SH4ins(STCMSGR) { // Rn-4 -> Rn, SGR -> (Rn)
     RN -= 4;
-    WRITE32(RN, this->regs.SGR);
+    WRITE32(RN, regs.SGR);
     PCinc;
 }
 
 SH4ins(STCSSR) { // SSR -> Rn
-    RN = this->regs.SSR;
+    RN = regs.SSR;
     PCinc;
 }
 
 SH4ins(STCMSSR) { // Rn-4 -> Rn, SSR -> (Rn)
     RN -= 4;
-    WRITE32(RN, this->regs.SSR);
+    WRITE32(RN, regs.SSR);
     PCinc;
 }
 
 SH4ins(STCSPC) { // SPC -> Rn
-    RN = this->regs.SPC;
+    RN = regs.SPC;
     PCinc;
 }
 
 SH4ins(STCMSPC) { // Rn-4 -> Rn, SPC -> (Rn)
     RN -= 4;
-    WRITE32(RN, this->regs.SPC);
+    WRITE32(RN, regs.SPC);
     PCinc;
 }
 
 SH4ins(STCDBR) { // DBR -> Rn
-    RN = this->regs.DBR;
+    RN = regs.DBR;
     PCinc;
 }
 
 SH4ins(STCMDBR) { // Rn-4 -> Rn, DBR -> (Rn)
     RN -= 4;
-    WRITE32(RN, this->regs.DBR);
+    WRITE32(RN, regs.DBR);
     PCinc;
 }
 
 SH4ins(STCRm_BANK) { // Rm_BANK -> Rn (m = 0-7)
-    RN = this->regs.R_[ins->Rm];
+    RN = regs.R_[ins->Rm];
     PCinc;
 }
 
 SH4ins(STCMRm_BANK) { // Rn-4 -> Rn, Rm_BANK -> (Rn) (m = 0-7)
     RN -= 4;
-    WRITE32(RN, this->regs.R_[ins->Rm]);
+    WRITE32(RN, regs.R_[ins->Rm]);
     PCinc;
 }
 
 SH4ins(STSMACH) { // MACH -> Rn
-    RN = this->regs.MACH;
+    RN = regs.MACH;
     PCinc;
 }
 
 SH4ins(STSMMACH) { // Rn-4 -> Rn, MACH -> (Rn)
     RN -= 4;
-    WRITE32(RN, this->regs.MACH);
+    WRITE32(RN, regs.MACH);
     PCinc;
 }
 
@@ -1236,83 +1227,83 @@ SH4ins(STSMACL) { // MACL -> Rn
 
 SH4ins(STSMMACL) { // Rn-4 -> Rn, MACL -> (Rn)
     RN -= 4;
-    WRITE32(RN, this->regs.MACL);
+    WRITE32(RN, regs.MACL);
     PCinc;
 }
 
 SH4ins(STSPR) { // PR -> Rn
-    RN = this->regs.PR;
+    RN = regs.PR;
     PCinc;
 }
 
 SH4ins(STSMPR) { // Rn-4 -> Rn, PR -> (Rn)
     RN -= 4;
-    WRITE32(RN, this->regs.PR);
+    WRITE32(RN, regs.PR);
     PCinc;
 }
 
 SH4ins(TRAPA) { // SH1*,SH2*: PC/SR -> stack area, (imm*4 + VBR) -> PC, SH3*,SH4*: PC/SR -> SPC/SSR, imm*4 -> TRA, 0x160 -> EXPEVT, VBR + 0x0100 -> PC
-/*    this->regs.TRAPA = IMM << 2;
-    this->regs.SSR = SH4_regs_SR_get(&this->regs.SR);
-    this->regs.SPC = this->regs.PC + 2;
-    this->regs.SGR = R(15);
-    SH4_SR_set(this, this->regs.SSR | 0x70000000); // MD, BL, and RB
-    this->regs.EXPEVT = 0x160;
-    this->regs.PC = this->regs.VBR + 0x00000100;*/
+/*    regs.TRAPA = IMM << 2;
+    regs.SSR = regs.SR_get();
+    regs.SPC = regs.PC + 2;
+    regs.SGR = R(15);
+    regs.SR_set(regs.SSR | 0x70000000); // MD, BL, and RB
+    regs.EXPEVT = 0x160;
+    regs.PC = regs.VBR + 0x00000100;*/
     PCinc;
 }
 
 SH4ins(FMOV) { // FRm -> FRn
-    if (this->regs.FPSCR.SZ == 0) { // 32-bit
+    if (regs.FPSCR.SZ == 0) { // 32-bit
         fpFRUn = fpFRUm;
     }  else BADOPCODE;
     PCinc;
 }
 
 SH4ins(FMOV_LOAD) { // (Rm) -> FRn
-    if (this->regs.FPSCR.SZ == 0) { // 32-bit
+    if (regs.FPSCR.SZ == 0) { // 32-bit
         fpFRUn = READ32(RM);
     } else BADOPCODE;
     PCinc;
 }
 
 SH4ins(FMOV_STORE) { // FRm -> (Rn)
-    if (this->regs.FPSCR.SZ == 0) { // 32-bit
+    if (regs.FPSCR.SZ == 0) { // 32-bit
         WRITE32(RN, fpFRUm);
     } else BADOPCODE;
     PCinc;
 }
 
 SH4ins(FMOV_RESTORE) { // (Rm) -> FRn, Rm+4 -> Rm
-    if (this->regs.FPSCR.SZ == 0) {// float
+    if (regs.FPSCR.SZ == 0) {// float
         fpFRUn = READ32(RM);
         RM += 4;
     }  else {
-        printf("\nWAIT WHAT2? %d %d", this->regs.FPSCR.SZ, this->regs.FPSCR.PR);
+        printf("\nWAIT WHAT2? %d %d", regs.FPSCR.SZ, regs.FPSCR.PR);
     }
     PCinc;
 }
 
 SH4ins(FMOV_SAVE) { // Rn-4 -> Rn, FRm -> (Rn)
-    if (this->regs.FPSCR.SZ == 0) { // 32-bit
+    if (regs.FPSCR.SZ == 0) { // 32-bit
         RN -= 4;
         WRITE32(RN, fpFRUm);
     } else {
-        printf("\nWAIT WAHT? %d %d", this->regs.FPSCR.SZ, this->regs.FPSCR.PR);
+        printf("\nWAIT WAHT? %d %d", regs.FPSCR.SZ, regs.FPSCR.PR);
         BADOPCODE;
     }
     PCinc;
 }
 
 SH4ins(FMOV_INDEX_LOAD) { // (R0 + Rm) -> FRn
-    if (this->regs.FPSCR.SZ == 0) { // 32-bit
+    if (regs.FPSCR.SZ == 0) { // 32-bit
         fpFRUn = READ32(R(0) + RM);
     }  else BADOPCODE;
     PCinc;
 }
 
 SH4ins(FMOV_INDEX_STORE) { // FRm -> (R0 + Rn)
-    if (this->regs.FPSCR.SZ == 0) { // 32-bit
+    if (regs.FPSCR.SZ == 0) { // 32-bit
         WRITE32(R(0) + RN, fpFRUm);
     } else BADOPCODE;
     PCinc;
@@ -1414,12 +1405,12 @@ SH4ins(FLDI1) { // 0x3F800000 -> FRn
 }
 
 SH4ins(FLDS) { // FRm -> FPUL
-    this->regs.FPUL.u = this->regs.fb[0].U32[ins->Rm ^ 1];
+    regs.FPUL.u = regs.fb[0].U32[ins->Rm ^ 1];
     PCinc;
 }
 
 SH4ins(FSTS) { // FPUL -> FRn
-    fpFRn = this->regs.FPUL.f;
+    fpFRn = regs.FPUL.f;
     PCinc;
 }
 
@@ -1451,7 +1442,7 @@ SH4ins(FMUL) { // FRn * FRm -> FRn
 
 SH4ins(FMAC) { // FR0 * FRm + FRn -> FRn
     //double res = (double)fpFRn + ((double)fpFR(0) * (double)fpFRm);
-    fpFRn =(f32) ((f64)fpFRn+(f64)fpFR(0) * (f64)fpFRm);
+    fpFRn =static_cast<f32>(static_cast<f64>(fpFRn) + static_cast<f64>(fpFR(0)) * static_cast<f64>(fpFRm));
     //fpFRn = (float)res;
     PCinc;
 }
@@ -1469,19 +1460,19 @@ SH4ins(FSQRT) { // sqrt (FRn) -> FRn
 }
 
 SH4ins(FCMP_EQ) { // If FRn = FRm: 1 -> T, Else: 0 -> T
-    this->regs.SR.T = !!(fpFRm == fpFRn);
+    regs.SR.T = !!(fpFRm == fpFRn);
     PCinc;
 }
 
 SH4ins(FCMP_GT) { // If FRn > FRm: 1 -> T, Else: 0 -> T
     //TODO: better accuracy
-    this->regs.SR.T = fpFRn > fpFRm;
+    regs.SR.T = fpFRn > fpFRm;
     PCinc;
 }
 
 SH4ins(FLOAT_single) { // (float)FPUL -> FRn
-    if (this->regs.FPSCR.PR == 0) { // single precision
-        fpFRn = (float)((i32)this->regs.FPUL.u);
+    if (regs.FPSCR.PR == 0) { // single precision
+        fpFRn = static_cast<float>(static_cast<i32>(regs.FPUL.u));
     } else { // double precision
         BADOPCODE;
     }
@@ -1491,28 +1482,27 @@ SH4ins(FLOAT_single) { // (float)FPUL -> FRn
 // Thanks to the amazing website for how to implement this properly
 
 SH4ins(FTRC_single) { // (long)FRm -> FPUL
-    this->regs.FPUL.u = (u32)(s32)(fpFRm < 2147483520.0f ? fpFRm : 2147483520.0f);     // IEEE 754: 0x4effffff
+    regs.FPUL.u = static_cast<u32>(static_cast<i32>((fpFRm < 2147483520.0f ? fpFRm : 2147483520.0f)));     // IEEE 754: 0x4effffff
     // thanks reicast
     // Intel CPUs convert out of range float numbers to 0x80000000. Manually set the correct sign
-    if (this->regs.FPUL.u == 0x80000000)
+    if (regs.FPUL.u == 0x80000000)
     {
-        if (*(int *)&fpFRm > 0) // Using integer math to avoid issues with Inf and NaN
-            this->regs.FPUL.u--;
+        if (*reinterpret_cast<int *>(&fpFRm) > 0) // Using integer math to avoid issues with Inf and NaN
+            regs.FPUL.u--;
     }
 
     PCinc;
 }
 // thanks Reicast
 SH4ins(FIPR) { // inner_product (FVm, FVn) -> FR[n+3]
-    if (this->regs.FPSCR.PR == 0)
+    if (regs.FPSCR.PR == 0)
     {
         //clear_cause ();
         i64 n=(ins->Rn & 3) << 2;
         i64 m=(ins->Rm & 3) << 2;
         assert(ins->Rn < 4);
         assert(ins->Rm < 4);
-        float idp;
-        idp  = fpFR(n+0) * fpFR(m+0);
+        float idp = fpFR(n+0) * fpFR(m+0);
         idp += fpFR(n+1) * fpFR(m+1);
         idp += fpFR(n+2) * fpFR(m+2);
         idp += fpFR(n+3) * fpFR(m+3);
@@ -1530,27 +1520,25 @@ SH4ins(FTRV) { // transform_vector (XMTRX, FVn) -> FVn
     u32 n=ins->Rn;
     assert(ins->Rn < 4);
 
-    if (this->regs.FPSCR.PR==0)
+    if (regs.FPSCR.PR==0)
     {
 
-        float v1, v2, v3, v4;
-
-        v1 = fpXF(0)  * fpFR(n + 0) +
+        float v1 = fpXF(0)  * fpFR(n + 0) +
              fpXF(4)  * fpFR(n + 1) +
              fpXF(8)  * fpFR(n + 2) +
              fpXF(12) * fpFR(n + 3);
 
-        v2 = fpXF(1)  * fpFR(n + 0) +
+        float v2 = fpXF(1)  * fpFR(n + 0) +
              fpXF(5)  * fpFR(n + 1) +
              fpXF(9)  * fpFR(n + 2) +
              fpXF(13) * fpFR(n + 3);
 
-        v3 = fpXF(2)  * fpFR(n + 0) +
+        float v3 = fpXF(2)  * fpFR(n + 0) +
              fpXF(6)  * fpFR(n + 1) +
              fpXF(10) * fpFR(n + 2) +
              fpXF(14) * fpFR(n + 3);
 
-        v4 = fpXF(3)  * fpFR(n + 0) +
+        float v4 = fpXF(3)  * fpFR(n + 0) +
              fpXF(7)  * fpFR(n + 1) +
              fpXF(11) * fpFR(n + 2) +
              fpXF(15) * fpFR(n + 3);
@@ -1608,86 +1596,86 @@ SH4ins(FSQRTDR) { // sqrt (DRn) -> DRn
 }
 
 SH4ins(FCMP_EQDR) { // If DRn = DRm: 1 -> T, Else: 0 -> T
-    this->regs.SR.T = fpDRU(ins->Rn) == fpDRU(ins->Rm);
+    regs.SR.T = fpDRU(ins->Rn) == fpDRU(ins->Rm);
     PCinc;
 }
 
 SH4ins(FCMP_GTDR) { // If DRn > DRm: 1 -> T, Else: 0 -> T
-    this->regs.SR.T = fpDR(ins->Rn) > fpDR(ins->Rm);
+    regs.SR.T = fpDR(ins->Rn) > fpDR(ins->Rm);
     PCinc;
 }
 
 SH4ins(FLOAT_double) { // (double)FPUL -> DRn
-    fpDR(ins->Rn) = (double)this->regs.FPUL.u; // ????? !!!! WHAT!?
+    fpDR(ins->Rn) = static_cast<double>(regs.FPUL.u); // ????? !!!! WHAT!?
     PCinc;
 }
 
 SH4ins(FTRC_double) { // (long)DRm -> FPUL
-    this->regs.FPUL.u = (u32)(i32)fpDR(ins->Rm);
+    regs.FPUL.u = static_cast<u32>(static_cast<i32>(fpDR(ins->Rm)));
     PCinc;
 }
 
 SH4ins(FCNVDS) { // double_to_float (DRm) -> FPUL
-    this->regs.FPUL.f = (float)fpDR(ins->Rm);
+    regs.FPUL.f = static_cast<float>(fpDR(ins->Rm));
     PCinc;
 }
 
 SH4ins(FCNVSD) { // float_to_double (FPUL) -> DRn
-    if (this->regs.FPSCR.PR == 1)
-        fpDR(ins->Rn) = (double)this->regs.FPUL.f;
+    if (regs.FPSCR.PR == 1)
+        fpDR(ins->Rn) = static_cast<double>(regs.FPUL.f);
     else
         printf("\nInvalid FCNVSD when PR=0");
     PCinc;
 }
 
 SH4ins(LDSFPSCR) { // Rm -> FPSCR
-    SH4_regs_FPSCR_set(&this->regs, RM); //  & 0x003FFFFF);
+    regs.FPSCR_set(RM); //  & 0x003FFFFF);
     PCinc;
 }
 
 SH4ins(STSFPSCR) { // FPSCR -> Rn
-    RN = SH4_regs_FPSCR_get(&this->regs.FPSCR);
+    RN = regs.FPSCR_get();
     PCinc;
 }
 
 SH4ins(LDSMFPSCR) { // (Rm) -> FPSCR, Rm+4 -> Rm
-    SH4_regs_FPSCR_set(&this->regs, READ32(RM));
+    regs.FPSCR_set(READ32(RM));
     RM += 4;
     PCinc;
 }
 
 SH4ins(STSMFPSCR) { // Rn-4 -> Rn, FPSCR -> (Rn)
     RN -= 4;
-    WRITE32(RN, SH4_regs_FPSCR_get(&this->regs.FPSCR));
+    WRITE32(RN, regs.FPSCR_get());
     PCinc;
 }
 
 SH4ins(LDSFPUL) { // Rm -> FPUL
-    this->regs.FPUL.u = RM;
+    regs.FPUL.u = RM;
     PCinc;
 }
 
 SH4ins(STSFPUL) { // FPUL -> Rn
-    RN = this->regs.FPUL.u;
+    RN = regs.FPUL.u;
     PCinc;
 }
 
 SH4ins(LDSMFPUL) { // (Rm) -> FPUL, Rm+4 -> Rm
-    this->regs.FPUL.u = READ32(RM);
+    regs.FPUL.u = READ32(RM);
     RM += 4;
     PCinc;
 }
 
 SH4ins(STSMFPUL) { // Rn-4 -> Rn, FPUL -> (Rn)
     RN -= 4;
-    WRITE32(RN, this->regs.FPUL.u);
+    WRITE32(RN, regs.FPUL.u);
     PCinc;
 }
 
 SH4ins(FRCHG) { // If FPSCR.PR = 0: ~FPSCR.FR -> FPSCR.FR, Else: Undefined Operation
-    if (this->regs.FPSCR.PR == 0) {
-        this->regs.FPSCR.FR ^= 1;
-        SH4_regs_FPSCR_bankswitch(&this->regs);
+    if (regs.FPSCR.PR == 0) {
+        regs.FPSCR.FR ^= 1;
+        regs.FPSCR_bankswitch();
     } else {
         assert(1==0);
     }
@@ -1695,8 +1683,8 @@ SH4ins(FRCHG) { // If FPSCR.PR = 0: ~FPSCR.FR -> FPSCR.FR, Else: Undefined Opera
 }
 
 SH4ins(FSCHG) { // If FPSCR.PR = 0: ~FPSCR.SZ -> FPSCR.SZ, Else: Undefined Operation
-    if (this->regs.FPSCR.PR == 0) {
-        this->regs.FPSCR.SZ ^= 1;
+    if (regs.FPSCR.PR == 0) {
+        regs.FPSCR.SZ ^= 1;
     }
     else assert(1==0);
 
@@ -1706,7 +1694,7 @@ SH4ins(FSCHG) { // If FPSCR.PR = 0: ~FPSCR.SZ -> FPSCR.SZ, Else: Undefined Opera
 SH4ins(FSRRA) { //1.0 / sqrt (FRn) -> FRn
     //PC += 2;
     //clear_cause();
-    if (this->regs.FPSCR.PR != 0) {
+    if (regs.FPSCR.PR != 0) {
         BADOPCODE;
     }
     else {
@@ -1759,13 +1747,13 @@ SH4ins(FSRRA) { //1.0 / sqrt (FRn) -> FRn
 
 SH4ins(FSCA) { // sin (FPUL) -> FRn, cos (FPUL) -> FR[n+1]
     // thanks to dRk|Raziel for this! using tables dumped from real DC
-    if (this->regs.FPSCR.PR==0)
+    if (regs.FPSCR.PR==0)
     {
         u32 n = ins->Rn & 0xE;
-        u32 pi_index=(u16)this->regs.FPUL.u;
+        u32 pi_index=static_cast<u16>(regs.FPUL.u);
 
-        fpFR(n | 0) = SH4_sin_table[pi_index];//sinf(real_pi);
-        fpFR(n | 1) = SH4_sin_table[0x4000 + pi_index];//cosf(real_pi);    // -> no need for warparound, sin_table has 0x4000 more entries
+        fpFR(n | 0) = sin_table[pi_index];//sinf(real_pi);
+        fpFR(n | 1) = sin_table[0x4000 + pi_index];//cosf(real_pi);    // -> no need for warparound, sin_table has 0x4000 more entries
     }
     else {
         BADOPCODE;
@@ -1780,19 +1768,19 @@ SH4ins(FSCA) { // sin (FPUL) -> FRn, cos (FPUL) -> FR[n+1]
 #undef IMM
 #undef DISP
 
-/*#define OE(counter, ins) opcode = counter; sd = &SH4_decoded[opcode]; assert(sd->exec=NULL); sd->exec = &ins
+/*#define OE(counter, ins) opcode = counter; sd = &decoded[opcode]; assert(sd->exec=nullptr); sd->exec = &ins
 #define OErmrn(counter, ins) OE(counter, ins); sd->Rm = rm; sd->Rn = rn*/
 /*
              opcode = 0b0110000000000011 | (rm << 8) | (rn << 4);
-            sd = &SH4_decoded[opcode];
+            sd = &decoded[opcode];
 *
  */
 
-struct SH4_ins_t SH4_decoded[4][65536];
-char SH4_disassembled[4][65536][30];
-char SH4_mnemonic[4][65536][30];
+struct ins_t decoded[4][65536];
+char disassembled[4][65536][30];
+char mnemonic[4][65536][30];
 
-void process_SH4_instruct(sh4_str_ret *r, const char* stri)
+void process_instruct(sh4_str_ret *r, const char* stri)
 {
     memset(r, 0, sizeof(sh4_str_ret));
 
@@ -1802,17 +1790,15 @@ void process_SH4_instruct(sh4_str_ret *r, const char* stri)
         in_n,
         in_m,
         in_i
-    } doing, new_doing;
+    } doing=nothing, new_doing=nothing;
 
-    doing = nothing;
-    new_doing = nothing;
     u32 val = 0x10000;
 
     for (u32 i = 0; i < 16; i++) {
         val >>= 1;
         u8 chr = stri[i];
-        u32 *max = NULL;
-        u32 *msk = NULL;
+        u32 *max = nullptr;
+        u32 *msk = nullptr;
         if ((chr == '0') || (chr == '1')) {
             if (chr == '1') r->mask |= val;
             switch(doing) {
@@ -1876,15 +1862,15 @@ void process_SH4_instruct(sh4_str_ret *r, const char* stri)
     }
 }
 
-static void emplace_mnemonic(u32 opcode, const char *mnemonic, u32 n, u32 m, u32 d, u32 imm, u32 szpr)
+static void emplace_mnemonic(u32 opcode, const char *mnon, u32 n, u32 m, u32 d, u32 imm, u32 szpr)
 {
-    strcpy(SH4_mnemonic[szpr][opcode], mnemonic);
+    strcpy(mnemonic[szpr][opcode], mnon);
 
-    char *copy_to = SH4_disassembled[szpr][opcode];
+    char *copy_to = disassembled[szpr][opcode];
     *copy_to = 0;
 
     u32 l = 0;
-    for (char *mn = (char *)mnemonic; *mn!=0; mn++) {
+    for (const char *mn = const_cast<char *>(mnon); *mn!=0; mn++) {
         if ((*mn == 'R') && ((*(mn+1) == 'n') || (*(mn+1) == 'm'))) {
             // Rm or Rn
             u32 rl = snprintf(copy_to, 30, "R%d", *(mn+1) == 'n' ? n : m);
@@ -1916,14 +1902,13 @@ static void emplace_mnemonic(u32 opcode, const char *mnemonic, u32 n, u32 m, u32
 }
 
 static void cpSH4(u32 dest, u32 src) {
-    memcpy(&SH4_decoded[dest], &SH4_decoded[src], 65536*sizeof(SH4_ins_t));
-    memcpy(&SH4_disassembled[dest][0], &SH4_disassembled[src][0], 65536*30);
-    memcpy(&SH4_mnemonic[dest][0], &SH4_mnemonic[src][0], 65535*30);
+    memcpy(&decoded[dest], &decoded[src], 65536*sizeof(ins_t));
+    memcpy(&disassembled[dest][0], &disassembled[src][0], 65536*30);
+    memcpy(&mnemonic[dest][0], &mnemonic[src][0], 65535*30);
 }
 
-static void iterate_opcodes(sh4_str_ret* r, SH4_ins_func ins, const char* mnemonic, u32 override, u32 szpr)
+static void iterate_opcodes(sh4_str_ret* r, ins_func ins, const char* mnem, u32 override, u32 szpr)
 {
-    u32 d_times = 1;
     // Go at least once through each of n, m, d, and i
     u32 n_max = r->n_max ? r->n_max : 1;
     u32 m_max = r->m_max ? r->m_max : 1;
@@ -1933,6 +1918,7 @@ static void iterate_opcodes(sh4_str_ret* r, SH4_ins_func ins, const char* mnemon
         for (u32 m = 0; m < m_max; m++) {
             for (u32 d = 0; d < d_max; d++) {
                 for (u32 i = 0; i < i_max; i++) {
+                    u32 d_times = 1;
                     u32 opcode = 0;
                     if (r->n_max > 0) opcode |= (n << r->n_shift);
                     if (r->m_max > 0) opcode |= (m << r->m_shift);
@@ -1940,7 +1926,7 @@ static void iterate_opcodes(sh4_str_ret* r, SH4_ins_func ins, const char* mnemon
                     if (r->i_max > 0) opcode |= (i << r->i_shift);
                     opcode |= r->mask;
 
-                    struct SH4_ins_t *is = &SH4_decoded[szpr][opcode];
+                    ins_t *is = &decoded[szpr][opcode];
                     if ((!override) && (is->decoded != 0)) { // If no override and already decoded
                         assert(1==0);
                     }
@@ -1950,72 +1936,74 @@ static void iterate_opcodes(sh4_str_ret* r, SH4_ins_func ins, const char* mnemon
                     is->Rn = n;
                     is->Rm = m;
                     is->imm = i;
-                    is->disp = (i32)(d*d_times);
+                    is->disp = static_cast<i32>(d * d_times);
                     is->exec = ins;
-                    is->decoded = 1;
-                    emplace_mnemonic(opcode, mnemonic, n, m, d, i, szpr);
+                    is->decoded = true;
+                    emplace_mnemonic(opcode, mnem, n, m, d, i, szpr);
 
                     if (szpr > 0) {
                         // copy to szpr=3
-                        memcpy(&SH4_decoded[3][opcode], &SH4_decoded[szpr][opcode], sizeof(SH4_ins_t));
-                        memcpy(&SH4_disassembled[3][opcode][0], &SH4_disassembled[szpr][opcode][0], 30);
-                        memcpy(&SH4_mnemonic[3][opcode][0], &SH4_mnemonic[szpr][opcode][0], 30);
+                        memcpy(&decoded[3][opcode], &decoded[szpr][opcode], sizeof(ins_t));
+                        memcpy(&disassembled[3][opcode][0], &disassembled[szpr][opcode][0], 30);
+                        memcpy(&mnemonic[3][opcode][0], &mnemonic[szpr][opcode][0], 30);
                     }
-                    //printf("\n%s", SH4_disassembled[0][opcode]);
+                    //printf("\n%s", disassembled[0][opcode]);
                 }
             }
         }
     }
 }
 
-static void decode_and_iterate_opcodes(const char* inpt, SH4_ins_func ins, const char *mnemonic, u32 override, u32 szpr)
+static void decode_and_iterate_opcodes(const char* inpt, ins_func ins, const char *mnem, u32 override, u32 szpr)
 {
-    struct sh4_str_ret a;
-    process_SH4_instruct(&a, inpt);
-    iterate_opcodes(&a, ins, mnemonic, override, szpr);
+    sh4_str_ret a;
+    process_instruct(&a, inpt);
+    iterate_opcodes(&a, ins, mnem, override, szpr);
 }
 
 
 #define OE(opcstr, func, mn) decode_and_iterate_opcodes(opcstr, func, mn, 0, 0)
 #define OEo(opcstr, func, mn, sz, pr) decode_and_iterate_opcodes(opcstr, func, mn, 1, ((sz<<1) | pr))
 
-void do_sh4_decode() {
-    static int decode_done = 0;
+void core::do_sh4_decode() {
+    static bool decode_done = false;
     if (decode_done) {
         printf("\nDUPLICATE DECODE DO!?");
         return;
     }
     generate_fsca_table();
-    decode_done = 1;
+    decode_done = true;
     for (u32 szpr = 0; szpr < 4; szpr++) {
         for (u32 i = 0; i < 65536; i++) {
-            SH4_decoded[szpr][i] = (SH4_ins_t) {
-                    .opcode = i,
-                    .Rn = -1,
+            decoded[szpr][i] = (ins_t) {
+                    .opcode = static_cast<u16>(i),
                     .Rm = -1,
-                    .imm = 0,
+                    .Rn = -1,
                     .disp = 0,
-                    .exec = NULL,
-                    .decoded = 0
+                    .imm = 0,
+                    .exec = nullptr,
+                    .decoded = false
             };
-            SH4_disassembled[szpr][i][0] = 0;
-            SH4_mnemonic[szpr][i][0] = 0;
+            disassembled[szpr][i][0] = 0;
+            mnemonic[szpr][i][0] = 0;
         }
     }
 
     u32 r = 0;
 
-#include "sh4_decodings.c"
+#include "sh4_decodings.cpp"
 
     u32 unencoded = 0;
     for (u32 szpr = 0; szpr < 4; szpr++) {
         for (u32 i = 0; i < 65536; i++) {
-            if (SH4_decoded[szpr][i].decoded == 0) {
-                SH4_decoded[szpr][i].exec = &SH4_EMPTY;
-                snprintf(SH4_disassembled[szpr][i], 30, "UNKNOWN OPCODE %04x", i);
-                snprintf(SH4_mnemonic[szpr][i], 30, "UNKNOWN OPCODE %04x", i);
+            if (!decoded[szpr][i].decoded) {
+                decoded[szpr][i].exec = &core::ins_EMPTY;
+                snprintf(disassembled[szpr][i], 30, "UNKNOWN OPCODE %04x", i);
+                snprintf(mnemonic[szpr][i], 30, "UNKNOWN OPCODE %04x", i);
                 unencoded++;
+                decoded[szpr][i].decoded = true;
             }
         }
     }
+}
 }

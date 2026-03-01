@@ -26,8 +26,8 @@ enum gd_states {
     gds_process_set_mode,
 };
 
-void GDROM_write(DC*, u32 reg, u64 val, u32 sz, u32* success);
-u64 GDROM_read(DC*, u32 reg, u32 sz, u32* success);
+void GDROM_write(DC*, u32 reg, u64 val, u32 sz, bool* success);
+u64 GDROM_read(DC*, u32 reg, u32 sz, bool* success);
 void GDROM_reset(DC*);
 void GDROM_init(DC*);
 

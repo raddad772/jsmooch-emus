@@ -30,9 +30,9 @@
 
 enum DC_MEM_SIZE {
     DC8 = 1,
-    DC16 = 2,
-    DC32 = 4,
-    DC64 = 8
+    2 = 2,
+    4 = 4,
+    8 = 8
 };
 
 enum HOLLY_PCW_listtype {
@@ -62,30 +62,30 @@ void DC_delete(jsm_system* system);
 #define HOLLY_VRAM_SIZE 8*1024*1024
 
 struct DC {
-    struct SH4 sh4;
-    struct SH4_memaccess_t sh4mem;
+    SH4::core sh4;
+    SH4::memaccess_t sh4mem;
 
     u64 trace_cycles;
     u64 waitstates;
 
-    struct DC_controller c1;
-    struct DC_controller c2;
+    DC_controller c1;
+    DC_controller c2;
 
-    struct elf_symbol_list32 elf_symbols;
+    elf_symbol_list32 elf_symbols;
 
     u8 RAM[16 * 1024 * 1024];
     u8 VRAM[HOLLY_VRAM_SIZE];
 
     u32 described_inputs;
-    struct cvec* IOs;
+    cvec* IOs;
 
-    struct buf BIOS;
-    struct buf ROM;
+    buf BIOS;
+    buf ROM;
 
-    struct scheduler_t scheduler;
+    scheduler_t scheduler;
 
     struct {
-        struct buf buf;
+        buf buf;
     } flash;
 
     struct {
@@ -144,11 +144,11 @@ struct DC {
             u32 tri_type;
 
             u32 cmd_buffer_index;
-            struct cvec cmd_buffer;
+            cvec cmd_buffer;
         } ta;
 
-        struct JSM_DISPLAY* display;
-        struct cvec_ptr display_ptr;
+        JSM_DISPLAY* display;
+        cvec_ptr display_ptr;
     } holly;
 
     struct {
@@ -242,7 +242,7 @@ struct DC {
             };
         } interrupt_reason;
 
-        struct SPI_packet_cmd packet_cmd;
+        SPI_packet_cmd packet_cmd;
 
         struct GDROM_PIOBUF {
             u32 next_state;
@@ -251,7 +251,7 @@ struct DC {
             u16 data[0x8000]; //64 kb
         } pio_buff;
 
-        struct GDI_image gdi;
+        GDI_image gdi;
     } gdrom;
 
     struct {
@@ -263,7 +263,7 @@ struct DC {
 #include "generated/maple_decls.h"
         u32 vblank_repeat_trigger;
 
-        struct MAPLE_port ports[4];
+        MAPLE_port ports[4];
     } maple;
 
     struct {
