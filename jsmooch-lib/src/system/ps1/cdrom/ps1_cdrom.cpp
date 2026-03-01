@@ -251,6 +251,9 @@ void core::cmd_start(u64 key, u64 clock) {
         case 0x09:
             cmd_pause(clock);
             return;
+        case 0x0b:
+            cmd_mute();
+            return;
         case 0x12:
             cmd_set_session(clock);
             return;
@@ -302,6 +305,13 @@ void core::cmd_finish(u64 key, u64 clock) {
             return;
         case 0x08: // stop
             io.stat.motor_fullspeed = 0;
+            io.stat.read = 0;
+            io.stat.play = 0;
+            io.stat.seek = 0;
+            head.amm = 0;
+            head.asect = 0;
+            head.ass = 2;
+            if (read.still_sched) bus->scheduler.delete_if_exist(read.sched_id);
             finish_CMD(true, 2);
             return;
         case 0x09:
@@ -408,7 +418,7 @@ void core::latch_seek() {
     head.amm = seek.waiting.amm;
     head.ass = seek.waiting.ass;
     head.asect = seek.waiting.asect;
-
+    dbgloglog_bus(PS1D_CDROM_SEEK, DBGLS_INFO, "(SEEK) Latching seek to %02d:%02d:%02d", head.amm, head.ass, head.asect, sector_buf.len);
 }
 
 void core::cmd_setloc() {
@@ -508,10 +518,13 @@ void core::do_cmd_read(u64 clock) {
         stat_irq();
         return;
     }
-    finish_CMD(true, 3);
+    if (seek.needs_seek) {
+        dbgloglog_busn(PS1D_CDROM_READ, DBGLS_INFO, "(Cmd) ReadN/S: Seek processing adds time...");
+    }
     io.stat.play = 0;
     io.stat.seek = seek.needs_seek;
     io.stat.read = !io.stat.seek;
+    finish_CMD(true, 3);
     if (io.stat.seek) {
         clock += seek_cycles();
     }
@@ -650,8 +663,6 @@ void core::queue_xa_sector(u8 *ptr) {
 }
 
 void core::read_sector() {
-    dbgloglog_bus(PS1D_CDROM_SECTOR_READS, DBGLS_INFO, "(RDSEC) Read sector %02d:%02d:%02d into queue size %d", head.amm, head.ass, head.asect, sector_buf.len);
-    // 25:14:48
     seek.last_read.disc.amm = head.amm;
     seek.last_read.disc.asect = head.asect;
     seek.last_read.disc.ass = head.ass;
@@ -670,10 +681,12 @@ void core::read_sector() {
                 //(v & 0x8)) { // data, real-time data = audio
                 //if (v & 0x8) printf("\nWARN REALTIME DATA!");
                 queue_xa_sector(ptr);
+    dbgloglog_bus(PS1D_CDROM_SECTOR_READS, DBGLS_INFO, "(READ) Read sector for XA-ADPCM %02d:%02d:%02d into queue size %d", head.amm, head.ass, head.asect, sector_buf.len);
                 return;
             }
         }
     }
+    dbgloglog_bus(PS1D_CDROM_SECTOR_READS, DBGLS_INFO, "(READ) Read sector %02d:%02d:%02d into queue size %d", head.amm, head.ass, head.asect, sector_buf.len);
 
     memcpy(sector_buf.bufs[sector_buf.tail], ptr, 0x930);
     sector_buf.tail = (sector_buf.tail + 1) & 7;
@@ -710,12 +723,16 @@ void core::next_sector() {
 void core::get_CD_audio(i16 &left, i16 &right) {
     left = right = 0;
     if (io.MODE.xa_adpcm) {
+        if (!io.stat.read) return;
         get_CD_audio_xa(left, right);
     }
     else {
         if (!io.stat.play) return;
         if (head.mode != HM_AUDIO) return;
         get_CD_audio_cdda(left, right);
+    }
+    if (head.muted) {
+        left = right = 0;
     }
 }
 
@@ -982,8 +999,15 @@ void core::cmd_motor_on_finish() {
 void core::cmd_stop(u64 clock) {
     printf("\n(CDROM) CMD Stop");
     io.stat.seek = 0;
+    io.stat.read = 0;
+    io.stat.play = 0;
     stat_irq();
     schedule_finish(clock + (ONEFRAME * 60 * 2));
+}
+
+void core::cmd_mute() {
+    head.muted= true;
+    finish_CMD(true, 3);
 }
 
 void core::cmd_pause(u64 clock) {
@@ -1056,7 +1080,9 @@ void core::cmd_setmode() {
     dbgloglog_bus(PS1D_CDROM_READ, DBGLS_INFO, "(Cmd) SetMode %02x", mode);
     if (!(mode & 0x10)) {
         io.latch.MODE_sector_size = (mode >> 5) & 1;
-        //io.latch.MODE_sector_size = 0;
+    }
+    if (((mode >> 7) & 1) != io.MODE.speed) {
+        speed_changed = 20321280;
     }
     io.MODE.u = mode;
     finish_CMD(true, 3);
@@ -1173,7 +1199,12 @@ void core::schedule_step_3(u64 clock) {
 }
 
 i64 core::seek_cycles() {
-    return (ONEFRAME*24);
+
+    //i64 r = (ONEFRAME*20);
+    i64 r = 30000; // "max" speedup from duckstation
+    //r += speed_changed;
+    speed_changed = 0;
+    return r;
 }
 
 void core::schedule_seek_finish(u64 clock) {

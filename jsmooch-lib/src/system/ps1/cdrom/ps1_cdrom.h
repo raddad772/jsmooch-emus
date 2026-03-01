@@ -299,7 +299,7 @@ struct core {
         bool needs_seek{};
     } seek;
 
-    static i64 seek_cycles();
+    i64 seek_cycles();
 
     struct {
         CDHEAD_MODE mode{};
@@ -334,6 +334,8 @@ struct core {
 
         SECTOR_BUFFER sector_buf{};
     } xa{};
+    i64 speed_changed{};
+
 
 private:
     void next_sector();
@@ -369,6 +371,7 @@ private:
     void cmd_motor_on_finish();
     void cmd_stop(u64 clock);
     void cmd_pause(u64 clock);
+    void cmd_mute();
     void cmd_init(u64 clock);
     void cmd_setmode();
     void cmd_reset();

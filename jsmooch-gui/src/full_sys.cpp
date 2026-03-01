@@ -993,14 +993,14 @@ void full_system::load_default_ROM()
 #ifdef SIDELOAD_WITH_CD
             worked = grab_cue(&ROMs, which, "test", nullptr); // Redux CD tests
 #endif
-            //worked = grab_cue(&ROMs, which, "Resident Evil (USA)", nullptr); MDEC
-            //worked = grab_cue(&ROMs, which, "Resident Evil 2 (USA)", nullptr); MDEC
-            //worked = grab_cue(&ROMs, which, "Silent Hill (USA)", nullptr); // MDEC but works?
+            worked = grab_cue(&ROMs, which, "Resident Evil (USA)", nullptr);
+            //worked = grab_cue(&ROMs, which, "Resident Evil 2 (USA)", nullptr);
+            //worked = grab_cue(&ROMs, which, "Silent Hill (USA)", nullptr);
             //worked = grab_cue(&ROMs, which, "Tomb Raider (USA) (Rev 1)", nullptr); // req. MDEC
             //worked = grab_cue(&ROMs, which, "Tomb Raider II - Starring Lara Croft (USA) (Rev 2)", nullptr);
             //worked = grab_cue(&ROMs, which, "Metal Slug X (USA)", nullptr);
             //worked = grab_cue(&ROMs, which, "Gran Turismo 2 (USA) (Simulation Mode) (Rev 1)", nullptr);
-            //worked = grab_cue(&ROMs, which, "Final Fantasy VII (USA) (Disc 1)", nullptr); // MDEC but works
+            //worked = grab_cue(&ROMs, which, "Final Fantasy VII (USA) (Disc 1)", nullptr);
             //worked = grab_cue(&ROMs, which, "Tony Hawks Pro Skater 2 (USA)", nullptr); // error parsing cue
             //worked = grab_cue(&ROMs, which, "Crash Bandicoot 1", nullptr);
             //worked = grab_cue(&ROMs, which, "mk2", nullptr);
@@ -1008,10 +1008,11 @@ void full_system::load_default_ROM()
             //worked = grab_cue(&ROMs, which, "Cool Boarders 2 (USA)", nullptr);
             //worked = grab_cue(&ROMs, which, "Ridge Racer (USA)", nullptr);
             //worked = grab_cue(&ROMs, which, "Mega Man X4 (USA)", nullptr);
-            // "either you are not handling the config commands or reset flag on ctrl reg where it resets all the other reg
-            // al;so you need to reset state when switching ports?
-            worked = grab_cue(&ROMs, which, "Spyro the Dragon (USA)", nullptr);
+            //worked = grab_cue(&ROMs, which, "Spyro the Dragon (USA)", nullptr);
             //worked = grab_cue(&ROMs, which, "Spyro - Year of the Dragon (USA)", nullptr);
+            //worked = grab_cue(&ROMs, which, "Metal Slug X (USA)", nullptr);
+            //worked = grab_cue(&ROMs, which, "Myst (USA)", nullptr);
+            //worked = grab_cue(&ROMs, which, "Frogger (USA)", nullptr);
 
             //worked = grab_cue(&ROMs, which, "Rayman 2 - The Great Escape (USA) (En,Fr,Es)", nullptr);
             //worked = grab_cue(&ROMs, which, "Earthworm Jim 2 (Europe)", nullptr);
@@ -1159,7 +1160,7 @@ void full_system::load_default_ROM()
             //worked = grab_ROM(&ROMs, which, "screen_dim.pce", nullptr);
             //worked = grab_ROM(&ROMs, which, "cpu_test.pce", nullptr);
             //worked = grab_ROM(&ROMs, which, "wavy_sky.pce", nullptr);
-            worked = grab_ROM(&ROMs, which, "magical_chase.pce", nullptr); // works
+            //worked = grab_ROM(&ROMs, which, "magical_chase.pce", nullptr); // works
             //worked = grab_ROM(&ROMs, which, "rtype.pce", nullptr); // seems perfect
             //worked = grab_ROM(&ROMs, which, "airzonk.pce", nullptr); // seems to work
             //worked = grab_ROM(&ROMs, which, "alien_crush.pce", nullptr); // does nothing
