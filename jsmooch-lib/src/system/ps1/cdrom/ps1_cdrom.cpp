@@ -1250,10 +1250,11 @@ void core::schedule_step_3(u64 clock) {
 
 i64 core::seek_cycles() {
 
-    //i64 r = (ONEFRAME*20);
-    i64 r = 30000; // "max" speedup from duckstation
-    //r += speed_changed;
+    i64 r = (ONEFRAME*20);
+
+    r += speed_changed;
     speed_changed = 0;
+    //r = 30000; // "max" speedup from duckstation
     return r;
 }
 
@@ -1311,6 +1312,7 @@ void core::finish_CMD(bool do_stat_irq, u32 irq_num) {
     if (io.results_in.len > 0) {
         printf("\nWARN CMD %02x STILL HAS IN RESULTS: %d", io.CMD, io.results_in.len);
     }
+    io.PARAMETER.reset();
     //printif(ps1.cdrom.cmd, "\n(CDROM) CMD FINISH");
     //printf("\nfinish_CMD %02x", io.CMD);
 
