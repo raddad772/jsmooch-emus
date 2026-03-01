@@ -30,7 +30,7 @@ u8 *BUGGED_SECTOR_BUFFER::push() {
             printf("\nBUGGED WARN SECTOR BUF FILL!");
         }
         if (num == 3) {
-            dbg_break("BUGGED SECTOR BUF FILLED!", 0);
+            dbg_break("BUGGED SECTOR BUF OVERRUN x4!", 0);
         }
         num++;
     }
@@ -180,6 +180,7 @@ u32 core::read_02(u8 sz, bool has_effect) {
         if (io.RDDATA.pos >= io.RDDATA.len) {
             dbgloglog_busn(PS1D_CDROM_RDDATA_FINISH, DBGLS_INFO, "RDDATA consumed");
             io.HSTS.DRQSTS = 0;
+            io.HCHPCTL.BFRD = 0;
         }
         return v;
     }
@@ -207,7 +208,7 @@ void core::recalc_HSTS() {
     io.HSTS.PRMEMPT = io.PARAMETER.len == 0;
     io.HSTS.PRMWRDY = io.PARAMETER.len != 16;
     io.HSTS.RSLRRDY = io.results_out.len > 0;
-    io.HSTS.DRQSTS = io.HCHPCTL.BFRD && io.RDDATA.pos < io.RDDATA.len;
+    io.HSTS.DRQSTS = io.HCHPCTL.BFRD;
 }
 
 void core::write_CMD(u32 val) {

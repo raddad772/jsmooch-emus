@@ -1008,13 +1008,13 @@ void full_system::load_default_ROM()
             //worked = grab_cue(&ROMs, which, "Cool Boarders 2 (USA)", nullptr);
             //worked = grab_cue(&ROMs, which, "Ridge Racer (USA)", nullptr);
             //worked = grab_cue(&ROMs, which, "Mega Man X4 (USA)", nullptr);
-            worked = grab_cue(&ROMs, which, "Spyro the Dragon (USA)", nullptr);
+            //worked = grab_cue(&ROMs, which, "Spyro the Dragon (USA)", nullptr);
             //worked = grab_cue(&ROMs, which, "Spyro - Year of the Dragon (USA)", nullptr);
             //worked = grab_cue(&ROMs, which, "Metal Slug X (USA)", nullptr);
             //worked = grab_cue(&ROMs, which, "Myst (USA)", nullptr);
             //worked = grab_cue(&ROMs, which, "Frogger (USA)", nullptr);
 
-            //worked = grab_cue(&ROMs, which, "Rayman 2 - The Great Escape (USA) (En,Fr,Es)", nullptr);
+            worked = grab_cue(&ROMs, which, "Rayman 2 - The Great Escape (USA) (En,Fr,Es)", nullptr);
             //worked = grab_cue(&ROMs, which, "Earthworm Jim 2 (Europe)", nullptr);
             //worked = grab_cue(&ROMs, which, "Castlevania - Symphony of the Night (USA)", nullptr);
             //worked = grab_cue(&ROMs, which, "Metal Gear Solid (USA) (Disc 1) (v1.1)", nullptr);
