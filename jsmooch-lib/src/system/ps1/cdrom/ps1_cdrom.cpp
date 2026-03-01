@@ -29,9 +29,9 @@ u8 *BUGGED_SECTOR_BUFFER::push() {
         if (num == 0) {
             printf("\nBUGGED WARN SECTOR BUF FILL!");
         }
-        if (num == 3) {
+        /*if (num == 3) {
             dbg_break("BUGGED SECTOR BUF OVERRUN x4!", 0);
-        }
+        }*/
         num++;
     }
     if (old == -1 && latest != -1) {
