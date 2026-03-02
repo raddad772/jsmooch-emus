@@ -420,36 +420,42 @@ static void setup_waveforms_ym2612(core& th, debugger_interface *dbgr)
     snprintf(dw->name, sizeof(dw->name), "CH1");
     dw->kind = dwk_channel;
     dw->samples_requested = 200;
+    dw->is_unsigned = false;
 
     dw = &wv->waveforms.emplace_back();
     th.dbg.waveforms_ym2612.chan[1].make(wv->waveforms, wv->waveforms.size()-1);
     snprintf(dw->name, sizeof(dw->name), "CH2");
     dw->kind = dwk_channel;
     dw->samples_requested = 200;
+    dw->is_unsigned = false;
 
     dw = &wv->waveforms.emplace_back();
     th.dbg.waveforms_ym2612.chan[2].make(wv->waveforms, wv->waveforms.size()-1);
     snprintf(dw->name, sizeof(dw->name), "CH3");
     dw->kind = dwk_channel;
     dw->samples_requested = 200;
+    dw->is_unsigned = false;
 
     dw = &wv->waveforms.emplace_back();
     th.dbg.waveforms_ym2612.chan[3].make(wv->waveforms, wv->waveforms.size()-1);
     snprintf(dw->name, sizeof(dw->name), "CH4");
     dw->kind = dwk_channel;
     dw->samples_requested = 200;
+    dw->is_unsigned = false;
 
     dw = &wv->waveforms.emplace_back();
     th.dbg.waveforms_ym2612.chan[4].make(wv->waveforms, wv->waveforms.size()-1);
     snprintf(dw->name, sizeof(dw->name), "CH5");
     dw->kind = dwk_channel;
     dw->samples_requested = 200;
+    dw->is_unsigned = false;
 
     dw = &wv->waveforms.emplace_back();
     th.dbg.waveforms_ym2612.chan[5].make(wv->waveforms, wv->waveforms.size()-1);
     snprintf(dw->name, sizeof(dw->name), "CH6/PCM");
     dw->kind = dwk_channel;
     dw->samples_requested = 200;
+    dw->is_unsigned = false;
 }
 
 

@@ -2,7 +2,7 @@
 // Created by Dave on 1/25/2024.
 //
 
-#include <stdio.h>
+#include <cstdio>
 #include <cstring>
 
 //#include "z80_drag_race.h"

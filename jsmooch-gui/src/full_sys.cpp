@@ -1188,7 +1188,7 @@ void full_system::load_default_ROM()
         case jsm::systems::GENESIS_JAP:
         case jsm::systems::MEGADRIVE_PAL:
             //dbg_enable_trace();
-            worked = grab_ROM(&ROMs, which, "sonic2.md", nullptr); // works!
+            //worked = grab_ROM(&ROMs, which, "sonic2.md", nullptr); // works!
             //worked = grab_ROM(&ROMs, which, "sonic3.md", nullptr); // works!
             //worked = grab_ROM(&ROMs, which, "sor3.md", nullptr);
             //worked = grab_ROM(&ROMs, which, "xmen.md", nullptr); // works!
@@ -1196,7 +1196,7 @@ void full_system::load_default_ROM()
             //worked = grab_ROM(&ROMs, which, "sonick3.md", nullptr); // works!
             //worked = grab_ROM(&ROMs, which, "ecco.md", nullptr); // works!
             //worked = grab_ROM(&ROMs, which, "ecco2.md", nullptr); // cant detect console properly
-            //worked = grab_ROM(&ROMs, which, "gunstar_heroes.md", nullptr); // works fine!
+            worked = grab_ROM(&ROMs, which, "gunstar_heroes.md", nullptr); // works fine!
             //worked = grab_ROM(&ROMs, which, "overdrive.bin", nullptr);
             //worked = grab_ROM(&ROMs, which, "overdrive2.bin", nullptr);
             //worked = grab_ROM(&ROMs, which, "dynamite_headdy.bin", nullptr); // works!
@@ -1204,7 +1204,7 @@ void full_system::load_default_ROM()
             //worked = grab_ROM(&ROMs, which, "castlevania_b.md", nullptr); // works!
             //worked = grab_ROM(&ROMs, which, "contra_hc_jp.md", nullptr); // works great!
             //worked = grab_ROM(&ROMs, which, "sor2.md", nullptr); // works fine
-            //worked = grab_ROM(&ROMs, which, "s1built.bin", nullptr); // works!
+            worked = grab_ROM(&ROMs, which, "s1built.bin", nullptr); // works!
             //worked = grab_ROM(&ROMs, which, "batman.md", nullptr); // works!
             //worked = grab_ROM(&ROMs, which, "gen_test_ym.bin", nullptr); // works!
             //worked = grab_ROM(&ROMs, which, "outrun2019.bin", nullptr); // works!
@@ -1919,7 +1919,7 @@ void full_system::waveform2_wf_present(W2FORM& wf) {
 void full_system::waveform_view_present(WVIEW &wv)
 {
     for (auto& wf : wv.waveforms) {
-            u32 szpo2 = 512;
+            u32 szpo2 = 1024;
         if (!wf.tex.is_good) {
             TS(wf.tex, wf.wf->name, szpo2, szpo2);
             assert(wf.tex.is_good);
@@ -1932,7 +1932,7 @@ void full_system::waveform_view_present(WVIEW &wv)
         // Draw box around
         float hrange = wf.height / 2.0f;
         u32 *ptr = (u32 *)(wf.drawbuf.data());
-        draw_box(ptr, 0, 0, wf.wf->samples_requested-1, wf.height-1, 512, 1024, 0xFF808080);
+        draw_box(ptr, 0, 0, wf.wf->samples_requested-1, wf.height-1, szpo2, szpo2, 0xFF808080);
         i32 last_y = 0;
         if (wf.wf->samples_rendered > 0) {
             float *b = (float *)wf.wf->buf.ptr;
@@ -1946,10 +1946,10 @@ void full_system::waveform_view_present(WVIEW &wv)
                     u32 starty = iy < last_y ? iy : last_y;
                     u32 endy = iy > last_y ? iy : last_y;
                     for (u32 sy = starty; sy <= endy; sy++) {
-                        ptr[(sy * 1024) + x] = 0xFFFFFFFF;
+                        ptr[(sy * szpo2) + x] = 0xFFFFFFFF;
                     }
                 }
-                ptr[(iy * 1024) + x] = 0xFFFFFFFF;
+                ptr[(iy * szpo2) + x] = 0xFFFFFFFF;
                 last_y = iy;
                 b++;
             }
