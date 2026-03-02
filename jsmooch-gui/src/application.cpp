@@ -1266,14 +1266,12 @@ void imgui_jsmooch_app::setup_wgpu()
 
 int imgui_jsmooch_app::do_setup_before_mainloop()
 {
-#ifdef DO_DREAMCAST
     which = jsm::systems::DREAMCAST;
-#else
     //which = jsm::systems::ATARI2600;
     //which = jsm::systems::GBC;
     //which = jsm::systems::APPLEIIe;
     //which = jsm::systems::DMG;
-    which = jsm::systems::PS1;
+    //which = jsm::systems::PS1;
     //which = jsm::systems::SMS2;
     //which = jsm::systems::GG;
     //which = jsm::systems::ZX_SPECTRUM_48K;
@@ -1294,7 +1292,6 @@ int imgui_jsmooch_app::do_setup_before_mainloop()
     //which = jsm::systems::COMMODORE64;
     //which = jsm::systems::GALAKSIJA;
     //dbg_enable_trace();
-#endif
 
     fsys.setup_system(which);
     if (!fsys.worked) {

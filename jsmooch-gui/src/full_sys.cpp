@@ -18,7 +18,6 @@
 #include "helpers/debug.h"
 #include "helpers/buf.h"
 #include "full_sys.h"
-#include "system/dreamcast/gdi.h"
 #include "helpers/physical_io.h"
 #include "helpers/debugger/debugger.h"
 #include "helpers/user.h"
@@ -27,8 +26,6 @@
 // mac overlay - 14742566
 // i get to    - 88219648
 
-//#define DO_DREAMCAST
-//#define SIDELOAD
 
 #ifdef JSM_SDLR3
 #define TS(f,a,b,c) f.setup(renderer, a, b, c);
@@ -57,25 +54,6 @@ static u32 get_closest_pow2(u32 b)
         assert(out < 0x40000000);
     }
     return out;
-}
-
-void test_gdi() {
-/*    GDI_image foo{};
-    GDI_init(&foo);
-    const char *homeDir = getenv("HOME");
-
-    if (!homeDir) {
-        passwd* pwd = getpwuid(getuid());
-        if (pwd)
-            homeDir = pwd->pw_dir;
-    }
-
-    char PATH[500];
-    snprintf(PATH, sizeof(PATH), "%s/Documents/emu/rom/dreamcast/crazy_taxi", homeDir);
-    printf("\nHEY! %s", PATH);
-    GDI_load(PATH, "crazy_taxi/crazytaxi.gdi", &foo);
-
-    GDI_delete(&foo);*/
 }
 
 u32 grab_BIOSes(multi_file_set* BIOSes, jsm::systems which)
@@ -329,6 +307,81 @@ void mfs_add_IP_BIN(multi_file_set* mfs)
     printf("\nLOADED IP.BIN SIZE %04lx", mfs->files[1].buf.size);
 }
 
+u32 grab_gdi(multi_file_set* ROMs, jsm::systems which, const char* fname, const char* sec_path) {
+    char BASE_PATH[255];
+    //char ROM_PATH[255];
+    u32 worked = 0;
+
+    GET_HOME_BASE_SYS(BASE_PATH, sizeof(BASE_PATH), which, sec_path, &worked);
+    char BASER_PATH[255];
+    if (!worked) {
+        printf("\nEARLY QUIT!");
+        return 0;
+    }
+    snprintf(BASER_PATH, sizeof(BASER_PATH), "%s/%s", BASE_PATH, fname);
+    printf("\nBASER_PATH %s", BASER_PATH);
+
+    ROMs->clear();
+    char fname2[500];
+    snprintf(fname2, sizeof(fname2), "%s.gdi", fname);
+    ROMs->add(fname2, BASER_PATH);
+    // Now parse through it!!! GPT time!
+    const char *gdi = (const char *)ROMs->files[0].buf.ptr;
+    size_t gdi_sz = ROMs->files[0].buf.size;
+
+    const char *p = gdi;
+    const char *end = gdi + gdi_sz;
+
+    auto next_line = [&](char *out, size_t out_sz) -> bool {
+        if (p >= end) return false;
+        while (p < end && (*p == '\n' || *p == '\r')) p++;
+        if (p >= end) return false;
+
+        size_t i = 0;
+        while (p < end && *p != '\n' && *p != '\r') {
+            if (i + 1 < out_sz)
+                out[i++] = *p;
+            p++;
+        }
+        out[i] = 0;
+        return true;
+    };
+
+    char line[512]{};
+
+    // First line = track count (informational)
+    if (!next_line(line, sizeof(line)))
+        return false;
+
+    int declared_tracks = atoi(line);
+    (void)declared_tracks;
+
+    // Parse track lines
+    while (next_line(line, sizeof(line))) {
+        if (!line[0])
+            continue;
+
+        int track_no{};
+        u32 start_lba{};
+        int type{};
+        int sector_size{};
+        char fname[256]{};
+        u32 file_offset{};
+
+        if (sscanf(line, "%d %u %d %d %255s %u",
+                   &track_no,
+                   &start_lba,
+                   &type,
+                   &sector_size,
+                   fname,
+                   &file_offset) != 6)
+            continue;
+        ROMs->add(fname, BASER_PATH);
+    }
+
+}
+
+
 u32 grab_cue(multi_file_set* ROMs, jsm::systems which, const char* fname, const char* sec_path) {
     char BASE_PATH[255];
     //char ROM_PATH[255];
@@ -427,6 +480,7 @@ physical_io_device* load_ROM_into_emu(jsm_system* sys, std::vector<physical_io_d
                 pio = &IOs.at(i);
                 if (pio->kind == HID_DISC_DRIVE) {
                     printf("\nINSERT DISC!");
+                    pio->disc_drive.open_drive(sys);
                     pio->disc_drive.insert_disc(sys, *pio, mfs);
                     pio->disc_drive.close_drive(sys);
                     break;
@@ -795,7 +849,7 @@ void full_system::load_default_ROM()
             worked = grab_ROM(&ROMs, which, "frogger.a26", nullptr);
             break;
         case jsm::systems::DREAMCAST:
-            worked = grab_ROM(&ROMs, which, "crazytaxi.gdi", "crazy_taxi");
+            worked = grab_gdi(&ROMs, which, "crazy_taxi/crazytaxi.gdi", "crazy_taxi");
             break;
         case jsm::systems::MAC512K:
         case jsm::systems::MAC128K:
@@ -1285,6 +1339,19 @@ void full_system::load_default_ROM()
     }
 
     switch (which) {
+        case jsm::systems::DREAMCAST: {
+            if (ends_with(ROMs.files[0].name, "elf")) {
+                // ELF's
+                mfs_add_IP_BIN(&ROMs);
+                sys->sideload(ROMs);
+            }
+            else {
+                // Disc!
+                load_ROM_into_emu(sys, IOs, ROMs);
+            }
+
+        break; }
+
         case jsm::systems::PS1:
             if (worked) {
                 if (ROMs.files.size() < 1) break;
@@ -1497,15 +1564,6 @@ void full_system::setup_system(jsm::systems which)
     setup_bios();
 
     load_default_ROM();
-
-#ifdef SIDELOAD
-    multi_file_set sideload_image;
-    mfs_init(&sideload_image);
-    grab_ROM(&sideload_image, which, "gl_matrix.elf", "kos");
-    mfs_add_IP_BIN(&sideload_image);
-    sys->sideload(sys, &sideload_image);
-    mfs_delete(&sideload_image);
-#endif
 
     setup_audio();
 

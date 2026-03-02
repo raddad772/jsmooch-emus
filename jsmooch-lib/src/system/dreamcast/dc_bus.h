@@ -15,7 +15,6 @@
 #include "component/cpu/sh4/sh4_interpreter.h"
 #include "dc_mem.h"
 #include "spi.h"
-#include "gdi.h"
 #include "maple.h"
 #include "controller.h"
 #include "holly.h"
