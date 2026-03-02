@@ -7,17 +7,14 @@
 // Created by Dave on 2/13/2024.
 //
 
-#include <time.h>
 #include <cassert>
-#include "stdio.h"
+#include "dc_bus.h"
 #include "dc_mem.h"
 #include "holly.h"
-#include "gdrom.h"
-#include "maple.h"
 #include "g2.h"
 #include "helpers/elf_helpers.h"
 
-#include "helpers/multisize_memaccess.c"
+#include "helpers/multisize_memaccess.cpp"
 
 //#define func_printf(...) printf(__VA_ARGS__)
 #define func_printf(...) (void)0
@@ -26,154 +23,129 @@
 //#define SH4MEM_BRK 0x005F7018
 //#define SH4_INS_BRK 0x80000000
 
-u64 DCread_flash(DC* this, u32 addr, u32 *success, u32 sz);
-void G1_write(DC* this, u32 addr, u64 val, u32 bits, bool* success);
-u64 G1_read(DC* this, u32 addr, u32 sz, bool* success);
-
 #define B32(b31_b28, b27_24,b23_20,b19_16,b15_12,b11_8,b7_4,b3_0) ( \
   ((0b##b31_b28) << 28) | ((0b##b27_24) << 24) | \
   ((0b##b23_20) << 20) | ((0b##b19_16) << 16) | \
   ((0b##b15_12) << 12) | ((0b##b11_8) << 8) | \
   ((0b##b7_4) << 4) | (0b##b3_0))
 
+namespace DC {
 
-#define THIS struct DC* this = (DC*)ptr
-
-static u32 dcms(enum DC_MEM_SIZE sz)
+void core::write_C2DST(u32 val)
 {
-    switch(sz) {
-        case 1:
-            return 8;
-        case 2:
-            return 16;
-        case 4:
-            return 32;
-        case 8:
-            return 64;
-    }
-}
-
-
-static void gdrom_dma_start(DC* this)
-{
-    if (this->g1.SB_GDST) printf("\nGDROM DMA REQUEST!");
-}
-
-static void DC_write_C2DST(DC* this, u32 val)
-{
-    if (this->io.SB_C2DST) { // TA FIFO DMA!
-        printf(DBGC_GREEN "\nTA FIFO DMA START! %llu", this->trace_cycles);
-        u32 addr = this->io.SB_C2DSTAT;
+    if (io.SB_C2DST) { // TA FIFO DMA!
+        printf(DBGC_GREEN "\nTA FIFO DMA START! %llu", trace_cycles);
+        u32 addr = io.SB_C2DSTAT;
         if (addr == 0) addr = 0x10000000;
         // TA polygon FIFO
         if (((addr >= 0x10000000) && (addr <= 0x107FFFE0)) ||
             (addr >= 0x12000000) && (addr <= 0x127FFFE0)) {
-            holly_TA_FIFO_DMA(this, this->sh4.regs.DMAC_SAR2, this->io.SB_C2DLEN, this->VRAM, HOLLY_VRAM_SIZE);
+            holly.TA_FIFO_DMA(sh4.regs.DMAC_SAR2, io.SB_C2DLEN, VRAM, HOLLY_VRAM_SIZE);
         }
         else {
             printf(DBGC_RED "\nUNSUPPORTED CH2 DMA TO %08x" DBGC_RST, addr);
         }
-        this->io.SB_C2DST = 0;
+        io.SB_C2DST = 0;
     }
 
 }
 
-static void DC_write_SDST(DC* this, u32 val)
+void core::write_SDST(u32 val)
 {
     if (val & 1)
         printf(DBGC_RED "\nSORT DMA START REQUEST" DBGC_RST);
 }
 
-#define MTHIS struct DC* this = (DC*)ptr
+#define MTHIS auto *th = static_cast<core *>(ptr)
 
- u64 read_empty(void* ptr, u32 addr, enum DC_MEM_SIZE sz, u32 *success)
+ u64 read_empty(void* ptr, u32 addr, u8 sz, bool *success)
  {
     MTHIS;
-    *success = 0;
+    *success = false;
 
     printf("\nRead empty addr %08x full:%08X", (addr & 0x1FFFFFFF), addr);
     fflush(stdout);
     return 0;
  }
 
- void write_empty(void* ptr, u32 addr, u64 val, enum DC_MEM_SIZE sz, bool* success)
+ void write_empty(void* ptr, u32 addr, u64 val, u8 sz, bool* success)
  {
      MTHIS;
      printf("\nWrite empty addr %08x full:%08X val:%08llx", (addr & 0x1FFFFFFF), addr, val);
      fflush(stdout);
-     *success = 0;
+     *success = false;
  }
 
-static u64 aica_read(DC* this, u32 addr, u32 sz, bool* success) {
-    return cR[sz](this->aica.mem, addr & 0x7FFF);
+u64 core::aica_read(u32 addr, u8 sz, bool* success) {
+    return cR[sz](aica.mem, addr & 0x7FFF);
 }
 
-static void aica_write(DC* this, u32 addr, u64 val, u32 sz, bool* success)
+void core::aica_write(u32 addr, u64 val, u8 sz, bool* success)
 {
-    cW[sz](this->aica.mem, addr & 0x7FFF, val);
+    cW[sz](aica.mem, addr & 0x7FFF, val);
 }
 
-static u32 RTC_read(DC* this)
+u32 core::RTC_read()
 {
     // Dreamcast epoch is 1950-something, ours is 1970, so...add 20 years!
-    time_t t = time(NULL);
+    time_t t = time(nullptr);
     return (t + 631152000) & 0xFFFFFFFF;
 }
 
-u64 read_area0(void* ptr, u32 addr, enum DC_MEM_SIZE sz, bool* success)
- {
-     MTHIS;
+u64 pread_area0(void* ptr, u32 addr, u8 sz, bool* success) {
+    MTHIS;
+    return th->read_area0(addr, sz, success);
+}
+
+u64 core::read_area0(u32 addr, u8 sz, bool* success) {
      u32 full_addr = addr;
      addr &= 0x1FFFFFFF; // only 29 bits of real addresses I guess
      if (addr <= 0x001FFFFF)
-         return cR[sz](this->BIOS.ptr, addr & 0x1FFFFF);
+         return cR[sz](BIOS.ptr, addr & 0x1FFFFF);
      if ((addr >= 0x00200000) && (addr <= 0x0021FFFF))
-         return DCread_flash(this, addr, success, sz);
+         return read_flash(addr, success, sz);
 
      if ((addr >= 0x005F8000) && (addr <= 0x005FFFFF))
-         return holly_read(this, addr, success);
+         return holly.read(addr, success);
 
      if ((addr >= 0x005F6C00) && (addr <= 0x005F6CFF)) { // Maple commands!
-         return maple_read(this, full_addr, sz, success);
+         return maple.read(full_addr, sz, success);
      }
 
      if ((addr >= 0x005F7800) && (addr <= 0x005F78FF)) {
-         return G2_read(this, full_addr, sz, success);
+         return G2_read(full_addr, sz, success);
      }
 
      if ((addr >= 0x005F7C00) && (addr <= 0x005F7CFF)) {
-         return G2_read(this, full_addr, sz, success);
+         return G2_read(full_addr, sz, success);
      }
-
-
 
      if ((addr >= 0x00600000) && (addr <= 0x006FFFFF))
          return 0; // asynchronous modem area
 
      addr &= 0x1FFFFFFF;
      if ((addr >= 0x005F7000) && (addr <= 0x005F70FF)) { // General G1 commands
-         return G1_read(this, full_addr, sz, success);
+         return G1_read(full_addr, sz, success);
      }
 
      if ((addr >= 0x005F7400) && (addr <= 0x005F74FF)) { // GDROM commands
-         return G1_read(this, full_addr, sz, success);
+         return G1_read(full_addr, sz, success);
      }
-
 
      // handle Operand Cache access
      if ((full_addr >= 0x7C000000) && (full_addr <= 0x7FFFFFFF)) {
-         if (this->sh4.regs.CCR.OIX == 0)
-             return cR[sz](this->sh4.OC, ((addr & 0x2000) >> 1) | (addr & 0xFFF));
+         if (sh4.regs.CCR.OIX == 0)
+             return cR[sz](sh4.OC, ((addr & 0x2000) >> 1) | (addr & 0xFFF));
          else
-             return cR[sz](this->sh4.OC, ((addr & 0x02000000) >> 13) | (addr & 0xFFF));
+             return cR[sz](sh4.OC, ((addr & 0x02000000) >> 13) | (addr & 0xFFF));
      }
 
      if ((addr >= 0x00700000) && (addr <= 0x00707FE0)) {
-         return aica_read(this, addr, sz, success);
+         return aica_read(addr, sz, success);
      }
 
      if ((addr >= 0x00800000) && (addr <= 0x009FFFFF)) {
-         return cR[sz](this->aica.wave_mem, addr & 0x1FFFFF);
+         return cR[sz](aica.wave_mem, addr & 0x1FFFFF);
      }
 
 
@@ -182,168 +154,189 @@ u64 read_area0(void* ptr, u32 addr, enum DC_MEM_SIZE sz, bool* success)
              return 0x0B;
          case 0x005F688C: // SB_FFST
             // REICAST here
-             this->sb.SB_FFST_rc++;
-             if (this->sb.SB_FFST_rc & 0x8)
+             sb.SB_FFST_rc++;
+             if (sb.SB_FFST_rc & 0x8)
              {
-                 this->sb.SB_FFST ^= 31;
+                 sb.SB_FFST ^= 31;
              }
-             return this->sb.SB_FFST; // does the fifo status has really to be faked ?
+             return sb.SB_FFST; // does the fifo status has really to be faked ?
 // NOLINTNEXTLINE(bugprone-suspicious-include)
-#include "generated/area0_reads.c"
+#include "generated/area0_reads.cpp"
      }
 
      switch(full_addr) {
          case 0xA0710000: // upper 16 bits of RTC
-             return RTC_read(this) >> 16;
+             return RTC_read() >> 16;
          case 0xA0710004: // lower 16 bits of RTC
-             return RTC_read(this) & 0xFFFF;
+             return RTC_read() & 0xFFFF;
 
      }
 
-     *success = 0;
+     *success = false;
      return 0;
  }
 
- void write_area0(void* ptr, u32 addr, u64 val, enum DC_MEM_SIZE sz, bool* success)
- {
-    MTHIS;
+ void pwrite_area0(void* ptr, u32 addr, u64 val, u8 sz, bool* success) {
+    auto *th = static_cast<core *>(ptr);
+    th->write_area0(addr, val, sz, success);
+}
+
+void core::write_area0(u32 addr, u64 val, u8 sz, bool* success) {
     u32 full_addr = addr;
     addr &= 0x1FFFFFFF;
 
      if (addr <= 0x001FFFFF) {
-         dbg_break("DC BIOS write", this->trace_cycles);
-         printf("\nBIOS write %08x %llu", addr, this->trace_cycles);
+         dbg_break("DC BIOS write", trace_cycles);
+         printf("\nBIOS write %08x %llu", addr, trace_cycles);
          return;
      }
     if ((full_addr >= 0x7C000000) && (full_addr <= 0x7FFFFFFF)) {
-         if (this->sh4.regs.CCR.OIX == 0)
-             cW[sz](this->sh4.OC, ((full_addr & 0x2000) >> 1) | (full_addr & 0xFFF), val);
+         if (sh4.regs.CCR.OIX == 0)
+             cW[sz](sh4.OC, ((full_addr & 0x2000) >> 1) | (full_addr & 0xFFF), val);
          else
-             cW[sz](this->sh4.OC, ((full_addr & 0x02000000) >> 13) | (full_addr & 0xFFF), val);
+             cW[sz](sh4.OC, ((full_addr & 0x02000000) >> 13) | (full_addr & 0xFFF), val);
          return;
      }
 
      addr &= 0x1FFFFFFF;
      if ((addr >= 0x005F7000) && (addr <= 0x005F70FF)) { // General G1 commands
-         G1_write(this, full_addr, val, sz, success);
+         G1_write(full_addr, val, sz, success);
          return;
      }
 
      if ((addr >= 0x005F7400) && (addr <= 0x005F74FF)) { // GDROM commands
-         G1_write(this, full_addr, val, sz, success);
+         G1_write(full_addr, val, sz, success);
          return;
      }
 
      if ((addr >= 0x005F7800) && (addr <= 0x005F78FF)) {
-         G2_write(this, full_addr, val, sz, success);
+         G2_write(full_addr, val, sz, success);
          return;
      }
 
      if ((addr >= 0x005F7C00) && (addr <= 0x005F7CFF)) {
-         G2_write(this, full_addr, val, sz, success);
+         G2_write(full_addr, val, sz, success);
          return;
      }
 
      if ((addr >= 0x005F6C00) && (addr <= 0x005F6CFF)) { // Maple commands!
-         maple_write(this, full_addr, val, sz, success);
+         maple.write(full_addr, val, sz, success);
          return;
      }
 
      if ((addr >= 0x005F8000) && (addr <= 0x005FFFFF)) {
-         holly_write(this, addr, val, success);
+         holly.write(addr, val, success);
          return;
      }
 
      if ((addr >= 0x00700000) && (addr <= 0x00707FE0)) {
-         aica_write(this, addr, val, sz, success);
+         aica_write(addr, val, sz, success);
          return;
      }
 
      if ((addr >= 0x00800000) && (addr <= 0x009FFFFF)) {
-         cW[sz](this->aica.wave_mem, addr & 0x1FFFFF, val);
+         cW[sz](aica.wave_mem, addr & 0x1FFFFF, val);
          return;
      }
 
      switch(addr) {
-#include "generated/area0_writes.c"
+#include "generated/area0_writes.cpp"
      }
 
-     *success = 0;
+     *success = false;
  }
 
-u64 read_area1(void* ptr, u32 addr, enum DC_MEM_SIZE sz, bool* success)
-{
+u64 pread_area1(void* ptr, u32 addr, u8 sz, bool* success) {
     MTHIS;
+    return th->read_area1(addr, sz, success);
+}
+
+u64 core::read_area1(u32 addr, u8 sz, bool* success) {
     u32 full_addr = addr;
     addr &= 0x1FFFFFFF; // only 29 bits of real addresses I guess
 
     if ((addr >= 0x05000000) && (addr <= 0x05800000)) // VRAM access
-        return cR[sz](this->VRAM, addr & 0x007FFFFF);
+        return cR[sz](VRAM, addr & 0x007FFFFF);
 
-    *success = 0;
+    *success = false;
     return 0;
 }
 
-void write_area1(void* ptr, u32 addr, u64 val, enum DC_MEM_SIZE sz, bool* success)
-{
+void pwrite_area1(void* ptr, u32 addr, u64 val, u8 sz, bool* success) {
     MTHIS;
+    th->write_area1(addr, val, sz, success);
+}
+
+void core::write_area1(u32 addr, u64 val, u8 sz, bool* success) {
     addr &= 0x1FFFFFFF; // only 29 bits of real addresses I guess
     if ((addr >= 0x04000000) && (addr <= 0x04800000)) {
-        cW[sz](this->VRAM, addr & 0x007FFFFF, val);
+        cW[sz](VRAM, addr & 0x007FFFFF, val);
         return;
     }
     if ((addr >= 0x05000000) && (addr <= 0x05800000)) { // VRAM 32bit access
-        cW[sz](this->VRAM, addr & 0x007FFFFF, val);
+        cW[sz](VRAM, addr & 0x007FFFFF, val);
         return;
     }
 
-    *success = 0;
+    *success = false;
 }
 
-u64 read_area3(void* ptr, u32 addr, enum DC_MEM_SIZE sz, bool* success)
-{
+u64 pread_area3(void* ptr, u32 addr, u8 sz, bool* success) {
     MTHIS;
+    return th->read_area3(addr, sz, success);
+}
+
+u64 core::read_area3(u32 addr, u8 sz, bool* success) {
     addr &= 0x1FFFFFFF;
     if (((addr >= 0x0C000000) && (addr <= 0x0DFFFFFF)))// || ((addr >= 0x0E000000) && (addr <= 0x0EFFFFFF)))
-        return cR[sz](this->RAM, addr & 0xFFFFFF);
+        return cR[sz](RAM, addr & 0xFFFFFF);
 
-    *success = 0;
+    *success = false;
     return 0;
 }
 
-void write_area3(void* ptr, u32 addr, u64 val, enum DC_MEM_SIZE sz, bool* success)
-{
+void pwrite_area3(void* ptr, u32 addr, u64 val, u8 sz, bool* success) {
     MTHIS;
+    th->write_area3(addr, val, sz, success);
+}
+
+void core::write_area3(u32 addr, u64 val, u8 sz, bool* success) {
     addr &= 0x1FFFFFFF;
     if (((addr >= 0x0C000000) && (addr <= 0x0DFFFFFF))) {//|| ((addr >= 0x0E000000) && (addr <= 0x0EFFFFFF))) {
-        cW[sz](this->RAM, addr & 0xFFFFFF, val);
+        cW[sz](RAM, addr & 0xFFFFFF, val);
         return;
     }
 
-    *success = 0;
+    *success = false;
 }
 
-u64 read_area4(void* ptr, u32 addr, enum DC_MEM_SIZE sz, bool* success)
-{
+u64 pread_area4(void* ptr, u32 addr, u8 sz, bool* success) {
     MTHIS;
+    return th->read_area4(addr, sz, success);
+}
+
+u64 core::read_area4(u32 addr, u8 sz, bool* success) {
     assert(1==0);
     return 0;
 }
 
-void write_area4(void* ptr, u32 addr, u64 val, enum DC_MEM_SIZE sz, bool* success)
-{
+void pwrite_area4(void* ptr, u32 addr, u64 val, u8 sz, bool* success) {
     MTHIS;
+    th->write_area4(addr, val, sz, success);
+}
+
+void core::write_area4(u32 addr, u64 val, u8 sz, bool* success) {
     assert(1==0);
 }
 
 
-void DC_mem_init(DC* this)
+void core::mem_init()
 {
     for (u32 i = 0; i < 0x40; i++) {
-        this->mem.read[i] = &read_empty;
-        this->mem.write[i] = &write_empty;
-        this->mem.wptr[i] = NULL;
-        this->mem.rptr[i] = NULL;
+        mem.read[i] = &read_empty;
+        mem.write[i] = &write_empty;
+        mem.wptr[i] = nullptr;
+        mem.rptr[i] = nullptr;
     }
 
 #if defined(_MSC_VER)
@@ -351,23 +344,23 @@ void DC_mem_init(DC* this)
 #pragma warning(disable: 4113) // warning C4113: 'u64 (__cdecl *)(void *,u32,u32,u32 *)' differs in parameter lists from 'u64 (__cdecl *)(void *,u32,DC_MEM_SIZE,u32 *)'
 #endif
 
-#define MAP(addr, rdfunc, wrfunc, obj) this->mem.read[(addr)>>2] = (rdfunc); this->mem.write[(addr)>>2] = (wrfunc); this->mem.rptr[(addr) >> 2] = ((void *)obj); this->mem.wptr[(addr) >> 2] = ((void *)obj)
+#define MAP(addr, rdfunc, wrfunc, obj) mem.read[(addr)>>2] = (rdfunc); mem.write[(addr)>>2] = (wrfunc); mem.rptr[(addr) >> 2] = ((void *)obj); mem.wptr[(addr) >> 2] = ((void *)obj)
     // All of P0. P1, P2, P3 should mirror the lower half of P0?
     u32 areas[5] = { 0x00, 0x60, 0x80, 0xA0, 0xC0 };
     for (u32 i = 0; i < 5; i++) {
         u32 area = areas[i];
-        MAP(area + 0x00, &read_area0, &write_area0, this);
-        MAP(area + 0x04, &read_area1, &write_area1, this);
+        MAP(area + 0x00, &pread_area0, &pwrite_area0, this);
+        MAP(area + 0x04, &pread_area1, &pwrite_area1, this);
         //MAP(0x08, read_area[1], write_area[1]);
-        MAP(area + 0x0C, &read_area3, &write_area3, this);
-        MAP(area + 0x10, &read_area4, &write_area4, this);
+        MAP(area + 0x0C, &pread_area3, &pwrite_area3, this);
+        MAP(area + 0x10, &pread_area4, &pwrite_area4, this);
         //MAP(0x14, read_area5, write_area5);
         //MAP(0x18, read_area6, write_area6);
-        MAP(area + 0x1C, this->sh4mem.read, this->sh4mem.write, &this->sh4);
+        MAP(area + 0x1C, sh4mem.read, sh4mem.write, &sh4);
     }
 
     for (u32 addr = 0xE0; addr < 0x100; addr += 4) {
-        MAP(addr, this->sh4mem.read, this->sh4mem.write, &this->sh4);
+        MAP(addr, sh4mem.read, sh4mem.write, &sh4);
     }
 #undef MAP
 }
@@ -415,9 +408,8 @@ static char WFORM[9][100] = {
 };
 
 
-void DCwrite(void *ptr, u32 addr, u64 val, u32 sz) {
-    THIS;
-    u32 success = 1;
+void core::mainbus_write(u32 addr, u64 val, u8 sz) {
+    bool success = true;
     val &= VMASK[sz];
 #ifdef SH4MEM_BRK
     if (addr == SH4MEM_BRK) {
@@ -434,11 +426,11 @@ void DCwrite(void *ptr, u32 addr, u64 val, u32 sz) {
     dbg_LT_printf(WFORM[sz], WFO);
     dbg_LT_endline();
 #endif
-    this->mem.write[addr >> 26](this->mem.wptr[addr>>26], addr, val, sz, &success);
+    mem.write[addr >> 26](mem.wptr[addr>>26], addr, val, sz, &success);
 
     if (!success) {
         //printf("\nwrite%d unknown addr %08x %08x val %02llu cycle:%llu", dcms(sz), addr & 0x1FFFFFFF, addr, val,
-        //       this->sh4.clock.trace_cycles);
+        //       sh4.clock.trace_cycles);
         if (addr >= 0xFF000000)
             func_printf("\n0x%08X: UKN%08X\nu32\naccess_32, rw\n", addr, addr);
         else
@@ -447,17 +439,15 @@ void DCwrite(void *ptr, u32 addr, u64 val, u32 sz) {
         dbg.var++;
 #ifdef QUIT_ON_TOO_MANY
         if (dbg.var > QUIT_ON_TOO_MANY) {
-            dbg_break("TOO MANY BAD ACCESS", this->trace_cycles);
+            dbg_break("TOO MANY BAD ACCESS", trace_cycles);
         }
 #endif
     }
 }
 
-u64 DCread(void *ptr, u32 addr, u32 sz, bool is_ins_fetch)
-{
-    THIS;
-    u32 success = 1;
-    u64 ret = this->mem.read[addr >> 26](this->mem.rptr[addr>>26], addr, sz, &success) & VMASK[sz];
+u64 core::mainbus_read(u32 addr, u8 sz, bool is_ins_fetch) {
+    bool success = true;
+    u64 ret = mem.read[addr >> 26](mem.rptr[addr>>26], addr, sz, &success) & VMASK[sz];
 #ifdef SH4_DBG_SUPPORT
     if (!is_ins_fetch) {
         if (dbg.trace_on) {
@@ -488,7 +478,7 @@ u64 DCread(void *ptr, u32 addr, u32 sz, bool is_ins_fetch)
         dbg.var++;
 #ifdef QUIT_ON_TOO_MANY
         if (dbg.var > QUIT_ON_TOO_MANY) {
-            dbg_break("TOO MANY BAD ACCESS", this->trace_cycles);
+            dbg_break("TOO MANY BAD ACCESS", trace_cycles);
         }
 #endif
         return 0;
@@ -496,37 +486,36 @@ u64 DCread(void *ptr, u32 addr, u32 sz, bool is_ins_fetch)
     return ret;
 }
 
-
-u64 DCread_flash(DC* this, u32 addr, u32 *success, u32 sz)
+u64 core::read_flash(u32 addr, bool *success, u8 sz)
 {
-    *success =  1;
+    *success = true;
     u32 full_addr = addr;
     addr &= 0x1FFFF;
     if (sz == 1) {
         switch (addr) {
             case 0x1A002:
             case 0x1A0A2:
-                if (this->settings.region <= 2)
-                    return '0' + this->settings.region;
+                if (settings.region <= 2)
+                    return '0' + settings.region;
                 break;
             case 0x1A003:
             case 0x1A0A3:
-                if (this->settings.language <= 5)
-                    return '0' + this->settings.language;
+                if (settings.language <= 5)
+                    return '0' + settings.language;
                 break;
             case 0x1A004:
             case 0x1A0A4: {
 #if defined(LYCODER) || defined(REICAST_DIFF)
                 return 0x30;
 #endif
-                if (this->settings.broadcast <= 3)
-                    return '0' + this->settings.broadcast;
+                if (settings.broadcast <= 3)
+                    return '0' + settings.broadcast;
                 break;
             }
         }
     }
-    return cR[sz](this->flash.buf.ptr, addr);
-    //return *(u32 *)((u8*)this->flash.buf.ptr + (addr & 0x1FFFF));
+    return cR[sz](flash.buf.ptr, addr);
+    //return *(u32 *)((u8*)flash.buf.ptr + (addr & 0x1FFFF));
 }
 
 static char *ptr_seek(char *ptr, u32 current, u32 pos)
@@ -540,21 +529,20 @@ static char *ptr_seek(char *ptr, u32 current, u32 pos)
     return ptr;
 }
 
-u32 DCfetch_ins(void *ptr, u32 addr)
-{
-    u32 val = DCread(ptr, addr, 2, true);
+u32 core::fetch_ins(u32 addr) {
+    u32 val = mainbus_read(addr, 2, true);
 #ifdef DC_ELF_PRINT_FUNCS
 #ifdef DC_SUPPORT_ELF
     THIS;
-    struct elf_symbol32* sym = elf_symbol_list32_find(&this->elf_symbols, addr, 0x1FFFFFFF);
+    struct elf_symbol32* sym = elf_symbol_list32_find(&elf_symbols, addr, 0x1FFFFFFF);
 #ifdef SH4_INS_BRK
     if (addr == SH4_INS_BRK) dbg_break();
 #endif
 #ifdef DC_ELF_NO_LOOP_SYMBOLS
-    if ((sym != NULL) && (sym->name[0] != 'L') && (sym->name[1] != '_')) {
+    if ((sym != nullptr) && (sym->name[0] != 'L') && (sym->name[1] != '_')) {
 
 #else
-    if (sym != NULL) {
+    if (sym != nullptr) {
 #endif
         char buf[500];
         char *mptr = buf;
@@ -562,7 +550,7 @@ u32 DCfetch_ins(void *ptr, u32 addr)
         mptr = ptr_seek(mptr, mptr - buf, 20);
         mptr += sprintf(mptr, "(%s)", sym->fname);
         mptr = ptr_seek(mptr, mptr - buf, 32);
-        mptr += sprintf(mptr, "PC:%08x R4:%08x R5:%08x R6:%08x cycl:%lld", this->sh4.regs.PC, this->sh4.regs.R[4], this->sh4.regs.R[5], this->sh4.regs.R[6], this->sh4.clock.trace_cycles);
+        mptr += sprintf(mptr, "PC:%08x R4:%08x R5:%08x R6:%08x cycl:%lld", sh4.regs.PC, sh4.regs.R[4], sh4.regs.R[5], sh4.regs.R[6], sh4.clock.trace_cycles);
         func_printf("%s", buf);
         //printf("%s", buf);
     }
@@ -578,43 +566,38 @@ u32 DCfetch_ins(void *ptr, u32 addr)
     return val;
 }
 
-u64 DCread_noins(void *ptr, u32 addr, u32 sz)
-{
-    return DCread(ptr, addr, sz, false);
-}
-
-u64 G1_read(DC* this, u32 addr, u32 sz, bool* success)
+u64 core::G1_read(u32 addr, u8 sz, bool* success)
 {
     addr &= 0x1FFFFFFF;
     if ((addr >= 0x005F7000) && (addr <= 0x005F709C)) {
-        return GDROM_read(this, addr, sz, success);
+        return gdrom.read(addr, sz, success);
     }
 
     switch(addr) {
 // NOLINTNEXTLINE(bugprone-suspicious-include)
-#include "generated/g1_reads.c"
+#include "generated/g1_reads.cpp"
     }
 
-    *success = 0;
+    *success = false;
     return 0;
 }
 
-void G1_write(DC* this, u32 addr, u64 val, u32 bits, bool* success)
+void core::G1_write(u32 addr, u64 val, u8 sz, bool* success)
 {
     addr &= 0x1FFFFFFF;
     if ((addr >= 0x005F7000) && (addr <= 0x005F709C)) {
-        GDROM_write(this, addr, val, bits, success);
+        gdrom.write(addr, val, sz, success);
         return;
     }
     switch(addr) {
 // NOLINTNEXTLINE(bugprone-suspicious-include)
-#include "generated/g1_writes.c"
+#include "generated/g1_writes.cpp"
         case 0x005F74E4: { // Secret GDROM unlock register!
             return;
         }
     }
-    *success = 0;
-    printf("\nUnhandled G1 reg write %02x val %04llx bits %d", addr, val, bits);
+    *success = false;
+    printf("\nUnhandled G1 reg write %02x val %04llx (%d)", addr, val, sz);
 }
 
 
@@ -646,3 +629,4 @@ the mmu isn't needed though
 #if defined(__clang__)
 #pragma clang diagnostic pop
 #endif
+}

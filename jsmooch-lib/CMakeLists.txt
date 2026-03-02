@@ -528,6 +528,29 @@ set(SOURCE_LIST
         src/helpers/present/ps1_present.cpp
         src/helpers/present/ps1_present.h
         src/system/ps1/ps1_display_values.h
+        src/system/dreamcast/dc_bus.cpp
+        src/system/dreamcast/dc_bus.h
+        src/system/dreamcast/aica_mem.cpp
+        src/system/dreamcast/aica_mem.h
+        src/system/dreamcast/controller.cpp
+        src/system/dreamcast/controller.h
+        src/system/dreamcast/dc_mem.cpp
+        src/system/dreamcast/dc_mem.h
+        src/system/dreamcast/dreamcast.cpp
+        src/system/dreamcast/dreamcast.h
+        src/system/dreamcast/g2.cpp
+        src/system/dreamcast/g2.h
+        src/system/dreamcast/gdrom.cpp
+        src/system/dreamcast/gdrom.h
+        src/system/dreamcast/gdrom_reply.h
+        src/system/dreamcast/holly.cpp
+        src/system/dreamcast/holly.h
+        src/system/dreamcast/holly_regs.h
+        src/system/dreamcast/holly_sw.cpp
+        src/system/dreamcast/holly_sw.h
+        src/system/dreamcast/maple.cpp
+        src/system/dreamcast/maple.h
+        src/system/dreamcast/spi.h
 )
 
 # TODO: Fix elf-parser repo for windows

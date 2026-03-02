@@ -163,7 +163,7 @@ struct ins_t;
 struct core {
     explicit core(scheduler_t *scheduler_in);
     void reset();
-    void setup_tracing(jsm_debug_read_trace *rt, i64 *trace_cycles_in);
+    void setup_tracing(jsm_debug_read_trace *rt, u64 *trace_cycles_in);
     REGS regs{};
     clock clock{};
 
@@ -176,8 +176,8 @@ struct core {
 
     struct {
         bool ok{};
-        i64 *cycles{};
-        i64 my_cycles{};
+        u64 *cycles{};
+        u64 my_cycles{};
     } trace{};
 
     jsm_debug_read_trace read_trace{};

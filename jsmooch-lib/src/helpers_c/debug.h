@@ -74,7 +74,6 @@ extern "C" {
 //#define warn_printf(...) printf(__VA_ARGS__)
 #define warn_printf(...) (void)0
 
-struct DC;
 struct last_traces_t {
     char entries[LAST_TRACES_LEN][LAST_TRACES_MSG_LEN];
     u32 head;
@@ -153,7 +152,7 @@ struct jsm_debug_struct {
 
     struct last_traces_t last_traces;
     u32 var;
-    struct DC *dcptr;
+    DC::core *dcptr;
 };
 
 struct jsm_debug_read_trace {

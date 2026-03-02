@@ -68,7 +68,6 @@
 //#define warn_printf(...) printf(__VA_ARGS__)
 #define warn_printf(...) (void)0
 
-struct DC;
 struct last_traces_t {
     char entries[LAST_TRACES_LEN][LAST_TRACES_MSG_LEN]{};
     u32 head{};
@@ -91,6 +90,9 @@ struct cpu_break_struct {
 };
 
 #define MAX_DEBUG_MSG 2000000
+namespace DC {
+    struct core;
+}
 struct jsm_debug_struct {
     u32 do_break{};
     u32 did_breakpoint{};
@@ -154,7 +156,7 @@ struct jsm_debug_struct {
 
     last_traces_t last_traces{};
     u32 var{};
-    DC *dcptr{};
+    DC::core *dcptr{};
 };
 
 struct jsm_debug_read_trace {

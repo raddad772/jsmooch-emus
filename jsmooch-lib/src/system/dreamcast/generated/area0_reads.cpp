@@ -17,7 +17,7 @@
         case 0x005F68A0:  { return io.SB_RBSPLT; }
         case 0x005F68A4:  { return io.SB_UKN5F68A4; }
         case 0x005F68AC:  { return io.SB_UKN5F68AC; }
-        case 0x005F6900: { return (this->io.SB_ISTNRM.u) | ((this->io.SB_ISTERR.u > 0) << 30) | ((this->io.SB_ISTEXT.u > 0) << 31); }
+        case 0x005F6900: { return (io.SB_ISTNRM.u) | ((io.SB_ISTERR.u > 0) << 30) | ((io.SB_ISTEXT.u > 0) << 31); }
         case 0x005F6904:  { return io.SB_ISTEXT.u; }
         case 0x005F6908:  { return io.SB_ISTERR.u; }
         case 0x005F6910:  { return io.SB_IML2NRM; }

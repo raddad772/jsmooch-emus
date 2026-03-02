@@ -6,67 +6,72 @@
 #include "stdio.h"
 #include <cstdlib> // abort()
 #include "dreamcast.h"
+#include "dc_bus.h"
 #include "holly.h"
 #include "maple.h"
 #include "controller.h"
+namespace DC::MAPLE {
 
-void MAPLE_port_init(MAPLE_port* this)
-{
-    this->device_kind = MAPLE_NONE;
-    this->device_ptr = NULL;
-    this->port = this;
-    this->read_device = NULL;
-    this->write_device = NULL;
+core::core(DC::core *parent) :
+    bus(parent),
+    ports {MAPLE::PORT(parent), MAPLE::PORT(parent), MAPLE::PORT(parent), MAPLE::PORT(parent)}
+    {}
+
+PORT::PORT(DC::core *parent) : bus(parent) {
+    device_kind = DK_NONE;
+    device_ptr = nullptr;
+    port = this;
+    read_device = nullptr;
+    write_device = nullptr;
+
 }
 
-void maple_write(DC* this, u32 addr, u64 val, u32 sz, bool* success)
+void core::write(u32 addr, u64 val, u8 sz, bool* success)
 {
     addr &= 0x1FFFFFFF;
     switch(addr) {
 // NOLINTNEXTLINE(bugprone-suspicious-include)
-#include "generated/maple_writes.c"
+#include "generated/maple_writes.cpp"
         case 0x005F6C88: // SB_MSHTCL
-            if (val & 1) this->maple.vblank_repeat_trigger = 0;
+            if (val & 1) bus->maple.vblank_repeat_trigger = 0;
             return;
     }
     printf("\nYEAH GOT HERE SORRY DAWG");
-    *success = 0;
+    *success = false;
 }
 
-u64 maple_read(DC* this, u32 addr, enum DC_MEM_SIZE sz, bool* success)
+u64 core::read(u32 addr, u8 sz, bool* success)
 {
     addr &= 0x1FFFFFFF;
     switch(addr) {
 // NOLINTNEXTLINE(bugprone-suspicious-include)
-#include "generated/maple_reads.c"
+#include "generated/maple_reads.cpp"
     }
     printf("\nYEAH GOT HERE SORRY DAWG2");
-    *success = 0;
+    *success = false;
     return 0;
 }
 
-static u32 maple_port_in(DC* this, u32 port, u32* more)
+u32 PORT::read(u32* more)
 {
-    struct MAPLE_port* p = &this->maple.ports[port];
-    switch(p->device_kind) {
-        case MAPLE_NONE:
+    switch(device_kind) {
+        case DK_NONE:
             *more = 0;
             return 0xFFFFFFFF;
-        case MAPLE_CONTROLLER:
-            return p->read_device(p->device_ptr, more);
+        case DK_CONTROLLER:
+            return read_device(device_ptr, more);
     }
     NOGOHERE;
     return 0;
 }
 
-static void maple_port_out(DC* this, u32 port, u32 data)
+void PORT::write(u32 data)
 {
-    struct MAPLE_port* p = &this->maple.ports[port];
-    switch(p->device_kind) {
-        case MAPLE_NONE:
+    switch(device_kind) {
+        case DK_NONE:
             return;
-        case MAPLE_CONTROLLER:
-            p->write_device(p->device_ptr, data);
+        case DK_CONTROLLER:
+            write_device(device_ptr, data);
             return;
     }
     NOGOHERE;
@@ -81,7 +86,7 @@ union MAPLE_CMD {
         u32 : 13;
         u32 end_flag: 1;
     };
-    u32 u;
+    u32 u{};
 };
 
 u32 bin3[8] = {
@@ -96,41 +101,41 @@ u32 bin3[8] = {
 };
 
 
-void maple_dma_init(DC* this)
+void core::dma_init()
 {
-    if (this->maple.SB_MDEN == 0) {
+    if (SB_MDEN == 0) {
         printf("\nCan't enable maple dma if disabled globally!");
         return;
     }
-    if (this->maple.vblank_repeat_trigger && this->maple.SB_MDTSEL == 1) {
+    if (vblank_repeat_trigger && SB_MDTSEL == 1) {
         printf("\nSkipping MapleDMA due to vblank repeat trigger");
         return;
     }
-    if (this->maple.SB_MDTSEL == 1) this->maple.vblank_repeat_trigger = 1;
-    printf("\nMAPLE DMA TRANSFER cycle:%llu", this->trace_cycles);
-    u32 caddr = this->maple.SB_MDSTAR;
+    if (SB_MDTSEL == 1) vblank_repeat_trigger = 1;
+    printf("\nMAPLE DMA TRANSFER cycle:%llu", bus->trace_cycles);
+    u32 caddr = SB_MDSTAR;
     for (u32 i = 0; i < 0xFFFF; i++) {
-        union MAPLE_CMD cmd;
-        cmd.u = DCread((void *)this, caddr, 4, 0);
+        MAPLE_CMD cmd;
+        cmd.u = bus->mainbus_read(caddr, 4, false);
         caddr+=4;
         printf("\nMAPLE CMD %d (%08x): %08x (pattern:%03d transfer_len:%d port: %d)", i, caddr, cmd.u, cmd.pattern, cmd.transfer_len, cmd.port_select);
         assert(cmd.pattern == 0b000);
 
-        u32 receieve_ptr = DCread((void *)this, caddr, 4, 0);
+        u32 receieve_ptr = bus->mainbus_read(caddr, 4, 0);
         caddr += 4;
 
         for (u32 tx_index = 0; tx_index < (cmd.transfer_len+1); tx_index++) {
-            u32 data = DCread((void *)this, caddr, 4, 0);
+            u32 data = bus->mainbus_read(caddr, 4, 0);
             caddr += 4;
-            maple_port_out(this, cmd.port_select, data);
+            ports[cmd.port_select].write(data);
         }
 
         // Now receive
         u32 more;
         for (u32 rx_ct = 0; rx_ct < 128; rx_ct++) {
-            u32 data = maple_port_in(this, cmd.port_select, &more);
+            u32 data = ports[cmd.port_select].read(&more);
             //printf("\n%08x more:%d write to %08x", data, more, receieve_ptr);
-            DCwrite((void*)this, receieve_ptr, data, 4);
+            bus->mainbus_write(receieve_ptr, data, 4);
             receieve_ptr += 4;
             if ((rx_ct == 0) && (data == 0xFFFFFFFF)) break;
             if (!more) {
@@ -140,7 +145,8 @@ void maple_dma_init(DC* this)
         }
         if (cmd.end_flag) break;
     }
-    holly_raise_interrupt(this, hirq_maple_dma, -1);
-    this->maple.SB_MDST = 0;
+    bus->holly.raise_interrupt(HOLLY::hirq_maple_dma, -1);
+    SB_MDST = 0;
 }
 
+}

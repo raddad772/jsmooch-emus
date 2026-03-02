@@ -159,14 +159,13 @@ u8 digital_gamepad::exchange_byte(u8 byte, u64 clock_cycle) {
 
 digital_gamepad::digital_gamepad(PS1::core *parent) : bus(parent)
 {
-    memset(this, 0, sizeof(*this));
     interface.device_ptr = this;
     interface.kind = DK_digital_pad;
     interface.exchange_byte = &sch_exchange_byte;
     interface.set_CS = &set_CS;
 }
 
-void SIO0::gamepad_setup_pio(physical_io_device *d, u32 num, const char*name, u32 connected)
+void SIO0::gamepad_setup_pio(physical_io_device *d, u32 num, const char*name, bool connected)
 {
     d->init(HID_CONTROLLER, connected, connected, true, false);
 

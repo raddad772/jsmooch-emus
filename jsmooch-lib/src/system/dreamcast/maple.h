@@ -2,34 +2,50 @@
 // Created by RadDad772 on 3/13/24.
 //
 
-#ifndef JSMOOCH_EMUS_MAPLE_H
-#define JSMOOCH_EMUS_MAPLE_H
+#pragma once
 
+#include "component/gpu/cdp1861/cdp1861.h"
 #include "helpers/int.h"
+namespace DC {
+    struct core;
+}
 
-enum MAPLE_devices {
-    MAPLE_NONE,
-    MAPLE_CONTROLLER
+namespace DC::MAPLE {
+
+enum devices {
+    DK_NONE,
+    DK_CONTROLLER
 };
 
-struct MAPLE_port;
 
-struct MAPLE_port {
-    struct MAPLE_port *port;
-    enum MAPLE_devices device_kind;
-    void *device_ptr;
+struct PORT {
+    explicit PORT(DC::core *parent);
+    u32 read(u32* more);
+    void write(u32 data);
+    DC::core *bus;
+    PORT *port{};
+    u32 num{};
 
-    u32 (*read_device)(void *, u32*);
-    void (*write_device)(void *,u32);
+
+    devices device_kind{};
+    void *device_ptr{};
+
+    u32 (*read_device)(void*, u32*){};
+    void (*write_device)(void *,u32){};
 };
 
-struct DC;
+struct core{
+#include "generated/maple_decls.h"
+    explicit core(DC::core *parent);
+    DC::core *bus;
+    u32 vblank_repeat_trigger{};
 
-void MAPLE_port_init(MAPLE_port*);
+    PORT ports[4];
+    void dma_init();
+    void write(u32 addr, u64 val, u8 sz, bool* success);
+    u64 read(u32 addr, u8 sz, bool* success);
+};
 
-u64 maple_read(DC*, u32 addr, u32 sz, bool* success);
-void maple_write(DC*, u32 addr, u64 val, u32 sz, bool* success);
-void maple_dma_init(DC*);
 
 
-#endif //JSMOOCH_EMUS_MAPLE_H
+}

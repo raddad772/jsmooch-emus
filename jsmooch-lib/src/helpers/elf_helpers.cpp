@@ -30,7 +30,13 @@ void elf_symbol_list32::add(u32 offset, const char* fname, const char*name, elf_
     elf_symbol32* sym;
     sym = &symbols.emplace_back();
     snprintf(sym->name, sizeof(sym->name), "%s", name);
-    snprintf(sym->fname, sizeof(sym->fname), "%s", fname);
+    if (fname == nullptr) {
+        snprintf(sym->fname, sizeof(sym->fname), "");
+    }
+    else {
+        snprintf(sym->fname, sizeof(sym->fname), "%s", fname);
+    }
+
     sym->offset = offset;
     sym->kind = kind;
     num++;

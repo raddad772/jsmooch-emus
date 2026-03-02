@@ -14,6 +14,7 @@ class OutOptions:
         self.decl_indent = 2
         self.switch_indent = 2
         self.init_indent = 1
+        self.do_section = True
 
 
 def di(num: int) -> str:
@@ -122,7 +123,7 @@ class Register:
         indent2 = di(oo.decl_indent + 1)
         indent3 = di(oo.decl_indent + 2)
         if not self.has_and_bits:
-            return '\n' + indent1 + self.data_sz + ' ' + self.name + ';  // ' + self.hex_address
+            return '\n' + indent1 + self.data_sz + ' ' + self.name + '{};  // ' + self.hex_address
         o = '\n' + indent1 + 'union {  // ' + self.name + '\n'
         o += indent2 + 'struct {\n'
         my_bitfields = sorted(self.and_bitfields, key=lambda x: x.start, reverse=False)
@@ -135,7 +136,7 @@ class Register:
             o += indent3 + self.data_sz + ' ' + bf.name + ' : ' + str((bf.end - bf.start) + 1) + ';\n'
             last_end = bf.end
         o += indent2 + '};\n'
-        o += indent2 + self.data_sz + ' u;\n'
+        o += indent2 + self.data_sz + ' u{};\n'
         o += indent1 + '} ' + self.name + ';  // ' + self.hex_address
 
         return o
@@ -163,7 +164,10 @@ class Register:
         else:
             if self.w_cond is not None:
                 o += 'if (' + self.w_cond + ') { '
-            o += pref + section + '.' + self.name
+            if oo.do_section:
+                o += pref + section + '.' + self.name
+            else:
+                o += pref + self.name
             if self.has_and_bits:
                 o += '.u'
             o += ' = '
@@ -209,7 +213,10 @@ class Register:
                 o += ';'
             o += ' }'
         else:
-            o += ' { return ' + pref + section + '.' + self.name
+            if oo.do_section:
+                o += ' { return ' + pref + section + '.' + self.name
+            else:
+                o += ' { return ' + pref + self.name
             if self.has_and_bits:
                 o += '.u'
 
@@ -377,9 +384,6 @@ def parse_regs_file(fname: str, out_path: str) -> None:
                     break
     oo = OutOptions()
 
-    decl = ''
-    switch_write = ''
-    switch_read = ''
     for section in sections:
         se = sections[section]
         sections[section] = sorted(se, key=lambda x: x.address, reverse=False)
@@ -391,6 +395,9 @@ def parse_regs_file(fname: str, out_path: str) -> None:
     for sstr in sections:
         section, fname = sstr.split(',')
         fname = fname.strip().split('=')[1]
+
+        if 'holly' in section or 'maple' in section:
+            oo.do_section = False
 
         if section not in out_decls:
             out_decls[section] = ''
@@ -405,6 +412,7 @@ def parse_regs_file(fname: str, out_path: str) -> None:
 
     for section in out_decls:
         with open(out_path + '/' + section + '_decls.h', 'w') as outfile:
+            print(section + '_decls.h')
             outfile.write(out_decls[section])
 
     for fname in out_reads:

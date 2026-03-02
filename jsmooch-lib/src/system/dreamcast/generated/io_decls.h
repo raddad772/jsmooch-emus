@@ -1,21 +1,21 @@
 
-        u32 SB_C2DSTAT;  // 0x005F6800
-        u32 SB_C2DLEN;  // 0x005F6804
-        u32 SB_C2DST;  // 0x005F6808
-        u32 SB_SDSTAW;  // 0x005F6810
-        u32 SB_SDBAAW;  // 0x005F6814
-        u32 SB_SDWLT;  // 0x005F6818
-        u32 SB_SDLAS;  // 0x005F681C
-        u32 SB_SDST;  // 0x005F6820
-        u32 SB_DBREQM;  // 0x005F6840
-        u32 SB_BAVLWC;  // 0x005F6844
-        u32 SB_C2DPRYC;  // 0x005F6848
-        u32 SB_C2DMAXL;  // 0x005F684C
-        u32 SB_LMMODE0;  // 0x005F6884
-        u32 SB_LMMODE1;  // 0x005F6888
-        u32 SB_RBSPLT;  // 0x005F68A0
-        u32 SB_UKN5F68A4;  // 0x005F68A4
-        u32 SB_UKN5F68AC;  // 0x005F68AC
+        u32 SB_C2DSTAT{};  // 0x005F6800
+        u32 SB_C2DLEN{};  // 0x005F6804
+        u32 SB_C2DST{};  // 0x005F6808
+        u32 SB_SDSTAW{};  // 0x005F6810
+        u32 SB_SDBAAW{};  // 0x005F6814
+        u32 SB_SDWLT{};  // 0x005F6818
+        u32 SB_SDLAS{};  // 0x005F681C
+        u32 SB_SDST{};  // 0x005F6820
+        u32 SB_DBREQM{};  // 0x005F6840
+        u32 SB_BAVLWC{};  // 0x005F6844
+        u32 SB_C2DPRYC{};  // 0x005F6848
+        u32 SB_C2DMAXL{};  // 0x005F684C
+        u32 SB_LMMODE0{};  // 0x005F6884
+        u32 SB_LMMODE1{};  // 0x005F6888
+        u32 SB_RBSPLT{};  // 0x005F68A0
+        u32 SB_UKN5F68A4{};  // 0x005F68A4
+        u32 SB_UKN5F68AC{};  // 0x005F68AC
         union {  // SB_ISTNRM
             struct {
                 u32 render_end_video : 1;
@@ -41,7 +41,7 @@
                 u32 end_of_sort_dma : 1;
                 u32 end_of_tx_ptl : 1;
             };
-            u32 u;
+            u32 u{};
         } SB_ISTNRM;  // 0x005F6900
         union {  // SB_ISTEXT
             struct {
@@ -50,7 +50,7 @@
                 u32 modem : 1;
                 u32 ext_device : 1;
             };
-            u32 u;
+            u32 u{};
         } SB_ISTEXT;  // 0x005F6904
         union {  // SB_ISTERR
             struct {
@@ -86,9 +86,9 @@
                 u32 : 2;
                 u32 sh4_if : 1;
             };
-            u32 u;
+            u32 u{};
         } SB_ISTERR;  // 0x005F6908
-        u32 SB_IML2NRM;  // 0x005F6910
+        u32 SB_IML2NRM{};  // 0x005F6910
         union {  // SB_IML2EXT
             struct {
                 u32 gdrom : 1;
@@ -96,7 +96,7 @@
                 u32 modem : 1;
                 u32 ext_device : 1;
             };
-            u32 u;
+            u32 u{};
         } SB_IML2EXT;  // 0x005F6914
         union {  // SB_IML2ERR
             struct {
@@ -132,9 +132,9 @@
                 u32 : 2;
                 u32 sh4_if : 1;
             };
-            u32 u;
+            u32 u{};
         } SB_IML2ERR;  // 0x005F6918
-        u32 SB_IML4NRM;  // 0x005F6920
+        u32 SB_IML4NRM{};  // 0x005F6920
         union {  // SB_IML4EXT
             struct {
                 u32 gdrom : 1;
@@ -142,7 +142,7 @@
                 u32 modem : 1;
                 u32 ext_device : 1;
             };
-            u32 u;
+            u32 u{};
         } SB_IML4EXT;  // 0x005F6924
         union {  // SB_IML4ERR
             struct {
@@ -178,9 +178,9 @@
                 u32 : 2;
                 u32 sh4_if : 1;
             };
-            u32 u;
+            u32 u{};
         } SB_IML4ERR;  // 0x005F6928
-        u32 SB_IML6NRM;  // 0x005F6930
+        u32 SB_IML6NRM{};  // 0x005F6930
         union {  // SB_IML6EXT
             struct {
                 u32 gdrom : 1;
@@ -188,7 +188,7 @@
                 u32 modem : 1;
                 u32 ext_device : 1;
             };
-            u32 u;
+            u32 u{};
         } SB_IML6EXT;  // 0x005F6934
         union {  // SB_IML6ERR
             struct {
@@ -224,9 +224,9 @@
                 u32 : 2;
                 u32 sh4_if : 1;
             };
-            u32 u;
+            u32 u{};
         } SB_IML6ERR;  // 0x005F6938
-        u32 SB_PDTNRM;  // 0x005F6940
-        u32 SB_PDTEXT;  // 0x005F6944
-        u32 SB_G2DTNRM;  // 0x005F6950
-        u32 SB_GD2TEXT;  // 0x005F6954
+        u32 SB_PDTNRM{};  // 0x005F6940
+        u32 SB_PDTEXT{};  // 0x005F6944
+        u32 SB_G2DTNRM{};  // 0x005F6950
+        u32 SB_GD2TEXT{};  // 0x005F6954

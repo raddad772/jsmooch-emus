@@ -13,7 +13,7 @@ void GDI_init(GDI_image *this)
 {
     this->num_tracks = 0;
     for (u32 i = 0; i < 50; i++) {
-        this->tracks[i].data = NULL;
+        this->tracks[i].data = nullptr;
         this->tracks[i].data_sz = 0;
     }
 }
@@ -21,7 +21,7 @@ void GDI_init(GDI_image *this)
 void GDI_clear(GDI_image* this)
 {
     for (u32 i = 0; i < 50; i++) {
-        if (this->tracks[i].data != NULL) {
+        if (this->tracks[i].data != nullptr) {
             free(this->tracks[i].data);
         }
         this->tracks[i].data_sz = 0;

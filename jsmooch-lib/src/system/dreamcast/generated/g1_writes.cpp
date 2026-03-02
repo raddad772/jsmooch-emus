@@ -3,7 +3,7 @@
         case 0x005F7408: { g1.SB_GDLEN = (val & 0x01FFFFFF); return; }
         case 0x005F740C: { g1.SB_GDDIR = (val & 1); return; }
         case 0x005F7414: { g1.SB_GDEN = (val & 1); return; }
-        case 0x005F7418: { g1.SB_GDST = (val & 1); gdrom_dma_start(this); return; }
+        case 0x005F7418: { g1.SB_GDST = (val & 1); gdrom.dma_start(); return; }
         case 0x005F7480: { g1.SB_G1RRC = val; return; }
         case 0x005F7484: { g1.SB_G1RWC = val; return; }
         case 0x005F7488: { g1.SB_G1FRC = val; return; }

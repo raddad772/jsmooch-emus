@@ -2,23 +2,18 @@
 // Created by RadDad772 on 3/10/24.
 //
 
-#ifndef JSMOOCH_EMUS_SPI_H
-#define JSMOOCH_EMUS_SPI_H
+#pragma once
 
 #include "helpers/int.h"
 
-struct SPI_packet_cmd
-{
-    u32 index;
-    union
-    {
+struct SPI_packet_cmd {
+    u32 index{};
+    union {
         u16 data_16[6];
         u8 data_8[12];
         //Spi command structs
-        union
-        {
-            struct
-            {
+        union {
+            struct {
                 u8 cc;
                 u8 prmtype  : 1 ;
                 u8 expdtype : 3 ;
@@ -30,12 +25,9 @@ struct SPI_packet_cmd
                 u8 block[10];
             };
 
-            struct
-            {
-                u8 b[12];
+            struct {
+                u8 b[12]{};
             };
-        }GDReadBlock;
+        } GDReadBlock{};
     };
 } ;
-
-#endif //JSMOOCH_EMUS_SPI_H
