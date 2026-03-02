@@ -313,18 +313,19 @@ u32 grab_gdi(multi_file_set* ROMs, jsm::systems which, const char* fname, const 
     u32 worked = 0;
 
     GET_HOME_BASE_SYS(BASE_PATH, sizeof(BASE_PATH), which, sec_path, &worked);
-    char BASER_PATH[255];
+    printf("\nBASE_PATH:%s", BASE_PATH);
+    //char BASER_PATH[255];
     if (!worked) {
         printf("\nEARLY QUIT!");
         return 0;
     }
-    snprintf(BASER_PATH, sizeof(BASER_PATH), "%s/%s", BASE_PATH, fname);
-    printf("\nBASER_PATH %s", BASER_PATH);
+    //snprintf(BASER_PATH, sizeof(BASER_PATH), "%s/%s", BASE_PATH, fname);
+    //printf("\nBASER_PATH %s", BASER_PATH);
 
     ROMs->clear();
     char fname2[500];
     snprintf(fname2, sizeof(fname2), "%s.gdi", fname);
-    ROMs->add(fname2, BASER_PATH);
+    ROMs->add(fname2, BASE_PATH);
     // Now parse through it!!! GPT time!
     const char *gdi = (const char *)ROMs->files[0].buf.ptr;
     size_t gdi_sz = ROMs->files[0].buf.size;
@@ -376,9 +377,9 @@ u32 grab_gdi(multi_file_set* ROMs, jsm::systems which, const char* fname, const 
                    fname,
                    &file_offset) != 6)
             continue;
-        ROMs->add(fname, BASER_PATH);
+        ROMs->add(fname, BASE_PATH);
     }
-
+    return true;
 }
 
 
@@ -849,7 +850,7 @@ void full_system::load_default_ROM()
             worked = grab_ROM(&ROMs, which, "frogger.a26", nullptr);
             break;
         case jsm::systems::DREAMCAST:
-            worked = grab_gdi(&ROMs, which, "crazy_taxi/crazytaxi.gdi", "crazy_taxi");
+            worked = grab_gdi(&ROMs, which, "crazytaxi", "crazy_taxi");
             break;
         case jsm::systems::MAC512K:
         case jsm::systems::MAC128K:

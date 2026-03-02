@@ -34,8 +34,8 @@ static void run_block(void *ptr, u64 num_cycles, u64 clock, u32 jitter) {
 }
 
 core::core() :
-        sh4(&scheduler),
         scheduler(&trace_cycles),
+        sh4(&scheduler),
         holly(this),
         gdrom(this),
         maple(this)
@@ -71,19 +71,19 @@ core::core() :
     }
     connect_controller(0, &c1);
 
-    gdrom.reset();
+    //gdrom.reset();
 
     clock.frame_cycle = 0;
     clock.cycles_per_frame = DC_CYCLES_PER_SEC / 60;
 
     sb.SB_FFST = sb.SB_FFST_rc = 0;
 
-    holly.reset();
+    //holly.reset();
     holly.master_frame = -1;
 
-    new_frame(0);
+    //new_frame(false);
 
-    gdrom.reset();
+    //gdrom.reset();
 
     settings.broadcast = 4; // NTSC
     settings.region = 0; //1; // EN

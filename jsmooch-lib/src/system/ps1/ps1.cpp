@@ -580,7 +580,6 @@ static void setup_crt(JSM_DISPLAY *d)
 */
 
 void IO_insert_disc(jsm_system *ptr, physical_io_device &pio, multi_file_set& mfs) {
-    printf("\nJSM INSERT DISC");
     auto *th = static_cast<core *>(ptr);
     th->cdrom.insert_disc(mfs);
 }

@@ -31,6 +31,7 @@ namespace DC {
 
 struct core : jsm_system {
     core();
+    scheduler_t scheduler;
     SH4::core sh4;
     SH4::memaccess_t sh4mem{};
 
@@ -89,7 +90,6 @@ struct core : jsm_system {
     buf BIOS{};
     buf ROM{};
 
-    scheduler_t scheduler;
 
     struct {
         buf buf{};

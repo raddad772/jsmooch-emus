@@ -118,7 +118,9 @@ void core::reset()
     holly.reset();
     gdrom.reset();
     scheduler.clear();
-    schedule_frame(true);
+    holly.master_frame = 0;
+    trace_cycles = 0;
+    new_frame(false);
 }
 
 
@@ -193,9 +195,6 @@ static void sch_frame_end(void *ptr, u64 key, u64 clock, u32 jitter) {
 
 void core::schedule_frame(bool is_first)
 {
-    if (is_first) {
-        holly.master_frame = 0;
-    }
     // events
     // frame start @0.
     // vblank_in_start @?
@@ -267,7 +266,9 @@ static void DCIO_remove_disc(jsm_system *ptr)
 
 static void DCIO_insert_disc(jsm_system *ptr, physical_io_device &pio, multi_file_set &mfs)
 {
-        //GDI_load(mfs.files[0].path, mfs.files[0].name, &gdrom.gdi);
+    printf("\nJSM INSERT DISC");
+    auto *th = static_cast<core *>(ptr);
+    th->gdrom.insert_disc(mfs);
 }
 
 

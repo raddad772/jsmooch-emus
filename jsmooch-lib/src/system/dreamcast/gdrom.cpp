@@ -15,6 +15,10 @@
 namespace DC::GDROM {
 // LOTS of help/code from Reicast. I honestly just don't like this
 
+void DRIVE::insert_disc(multi_file_set &mfs) {
+    disc.parse_gdi(mfs);
+}
+
 void DRIVE::dma_start() {
     if (bus->g1.SB_GDST) printf("\nGDROM DMA REQUEST!");
 }

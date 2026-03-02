@@ -432,9 +432,9 @@ void core::mainbus_write(u32 addr, u64 val, u8 sz) {
         //printf("\nwrite%d unknown addr %08x %08x val %02llu cycle:%llu", dcms(sz), addr & 0x1FFFFFFF, addr, val,
         //       sh4.clock.trace_cycles);
         if (addr >= 0xFF000000)
-            func_printf("\n0x%08X: UKN%08X\nu32\naccess_32, rw\n", addr, addr);
+            printf("\n0x%08X: UKN%08X\nu32\naccess_32, rw\n", addr, addr);
         else
-            func_printf("\n0x%08X: \nu32\naccess_32, rw\n", addr & 0x1FFFFFFF);
+            printf("\n0x%08X: \nu32\naccess_32, rw\n", addr & 0x1FFFFFFF);
         //fflush(stdout);
         dbg.var++;
 #ifdef QUIT_ON_TOO_MANY
@@ -469,11 +469,11 @@ u64 core::mainbus_read(u32 addr, u8 sz, bool is_ins_fetch) {
 #endif
 
     if (!success) {
-        func_printf("\n(READ) %08x", addr);
+        //func_printf("\n(READ) %08x", addr);
         if (addr >= 0xFF000000)
-            func_printf("\n0x%08X: UKN%08X\nu32\naccess_32, rw\n", addr, addr);
+            printf("\n0x%08X: UKN%08X\nu32\naccess_32, rw\n", addr, addr);
         else
-            func_printf("\n0x%08X: \nu32\naccess_32, rw\n", addr & 0x1FFFFFFF);
+            printf("\n0x%08X: \nu32\naccess_32, rw\n", addr & 0x1FFFFFFF);
         //fflush(stdout);
         dbg.var++;
 #ifdef QUIT_ON_TOO_MANY

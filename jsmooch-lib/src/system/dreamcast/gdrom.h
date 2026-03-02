@@ -4,11 +4,11 @@
 
 #pragma once
 
+#include "helpers/cdrom_formats.h"
 #include "helpers/int.h"
 #include "dreamcast.h"
 #include "dc_mem.h"
 #include "spi.h"
-#include "component/gpu/cdp1861/cdp1861.h"
 
 namespace DC {
     struct core;
@@ -41,6 +41,7 @@ struct DRIVE {
     void write(u32 addr, u64 val, u8 sz, bool* success);
     u64 read(u32 addr, u8 sz, bool* success);
     void dma_start();
+    void insert_disc(multi_file_set &mfs);
     core *bus;
     union {
         struct {
@@ -133,6 +134,8 @@ struct DRIVE {
         u32 size{};
         u16 data[0x8000]{}; //64 kb
     } pio_buff{};
+
+    CDROM_DISC disc{};
 
 private:
     void spi_pio_end(const u8* buffer, u32 len, gd_states next_state);

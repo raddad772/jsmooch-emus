@@ -360,7 +360,7 @@ core::core(scheduler_t* scheduler_in) :
     read = nullptr;
     write = nullptr;
 #ifndef TEST_SH4
-    tmu.reset();
+    //tmu.reset();
 #endif
 }
 
@@ -398,6 +398,7 @@ Initialize_CPU();
 Initialize_Module(PowerOn);
 PC = H'A0000000;*
      */
+    tmu.reset();
     regs.VBR = 0;
     regs.PC = 0xA0000000;
     regs.GBR = 0x8c000000;
