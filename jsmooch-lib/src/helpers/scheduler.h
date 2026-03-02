@@ -42,6 +42,7 @@ struct scheduler_event {
 #define SCHEDULER_DELETE_NUM 2500 // Genesis can get 1.2k going pretty easily
 struct scheduler_t {
     explicit scheduler_t(u64 *in_clock);
+    explicit scheduler_t(i64 *in_clock);
     ~scheduler_t();
 
     u64 max_block_size{};

@@ -11,15 +11,16 @@
 #include <pwd.h>
 #include <dirent.h>
 #endif
-#include <stdio.h>
+#include <cstdio>
 #include <cstring>
 
 #include <sys/types.h>
 
 #include "component/cpu/sh4/sh4_interpreter.h"
-#include "helpers/multisize_memaccess.c"
+#include "helpers/multisize_memaccess.cpp"
 #include "helpers/debug.h"
 #include "helpers/user.h"
+#include "helpers/inifile.h"
 
 #define M8 1
 #define M16 2
@@ -76,17 +77,17 @@ struct SH4_test_state {
         u64 U64[8];
         float FP32[16];
         float FP64[8];
-        struct SH4_FV FV[4];
-        struct SH4_mtx MTX;
+        SH4::FV FV[4];
+        SH4::mtx MTX;
     } fb[3]; // floating-point banked registers, 2 banks + a third for swaps
 };
 
 struct sh4test {
-    struct SH4_test_state initial;
-    struct SH4_test_state final;
+    SH4_test_state initial;
+    SH4_test_state final;
     u32 opcodes[5]; // 0-3 are the flow, #5 is for after the jump
     u32 test_base;
-    struct test_cycle cycles[4];
+    test_cycle cycles[4];
     u32 read_failed;
     u32 read_addr;
     u32 read_addr_expected;
@@ -98,19 +99,12 @@ struct sh4test {
 };
 
 struct sh4_test_overview {
-    struct SH4::core cpu;
-    struct scheduler_t scheduler;
-    struct sh4test current_test;
-    u64 trace_cycles;
+    sh4_test_overview() : cpu(&scheduler), scheduler(&trace_cycles) {}
+    SH4::core cpu;
+    scheduler_t scheduler;
+    sh4test current_test{};
+    i64 trace_cycles{};
 };
-
-static char *construct_path(char* w, const char* who)
-{
-    const char *homeDir = get_user_dir();
-    char *tp = w;
-    tp += sprintf(tp, "%s/dev/%s", homeDir, who);
-    return tp;
-}
 
 #define TB_NONE 0
 #define TB_INITIAL_STATE 1
@@ -186,7 +180,7 @@ static u32 read_cycles(u8 *ptr, test_cycle *cycles)
     assert(magic_number==TB_CYCLES);
     assert(num == 4);
     for (u32 cycle = 0; cycle < 4; cycle++) {
-        struct test_cycle *c = &cycles[cycle];
+        test_cycle *c = &cycles[cycle];
         R32(c->actions);
         assert(c->actions < 10);
 
@@ -259,13 +253,13 @@ static u32 cval_f(float mine, float theirs, const char* display_str, const char 
     return 0;
 }
 
-static void pprint_SR(struct SH4_regs *regs) {
-    printf("\n\nSR   : %08x", SH4_regs_SR_get(&regs->SR));
-    printf("\nFPSCR: %08x", SH4_regs_FPSCR_get(&regs->FPSCR));
+static void pprint_SR(SH4::REGS *regs) {
+    printf("\n\nSR   : %08x", regs->SR_get());
+    printf("\nFPSCR: %08x", regs->FPSCR_get());
 }
 
 #define tassert(rn) if (sh4->regs. rn != s-> rn) { dbg_LT_dump(); assert(sh4->regs. rn == s-> rn); }
-static u32 compare_state_to_cpu(struct SH4* sh4, SH4_test_state *s, SH4_test_state *initial)
+static u32 compare_state_to_cpu(SH4::core* sh4, SH4_test_state *s, SH4_test_state *initial)
 {
 #define CP(rn, rname) all_passed &= cval(sh4->regs. rn, s-> rn, initial-> rn, "%08llx", rname)
 #define CPf(bank, rn, rname) all_passed &= cval_f(sh4->regs.fb[bank].FP32[(rn) ^ 1], s->fb[bank].FP32[rn], "%f", rname)
@@ -338,8 +332,8 @@ static u32 compare_state_to_cpu(struct SH4* sh4, SH4_test_state *s, SH4_test_sta
     CP(MACH, "MACH");
     CP(PR, "PR");
 
-    all_passed &= cval(SH4_regs_SR_get(&sh4->regs.SR), s->SR, initial->SR, "%08llx", "SR");
-    all_passed &= cval(SH4_regs_FPSCR_get(&sh4->regs.FPSCR), s->FPSCR, initial->FPSCR, "%08llx", "FPSCR");
+    all_passed &= cval(sh4->regs.SR_get(), s->SR, initial->SR, "%08llx", "SR");
+    all_passed &= cval(sh4->regs.FPSCR_get(), s->FPSCR, initial->FPSCR, "%08llx", "FPSCR");
     u32 ar = cval(sh4->regs.FPUL.u, s->FPUL, initial->FPUL, "%08llx", "FPUL");
     if ((!ar) && (sh4->regs.FPUL.u == 0x7FFFFF80)) {
         (void)0;
@@ -357,11 +351,11 @@ static u32 compare_state_to_cpu(struct SH4* sh4, SH4_test_state *s, SH4_test_sta
     return all_passed;
 }
 
-static void copy_state_to_cpu(struct SH4* sh4, SH4_test_state *s)
+static void copy_state_to_cpu(SH4::core* sh4, SH4_test_state *s)
 {
 #define CP(rn) sh4->regs. rn = s-> rn
-    SH4_SR_set(sh4, s->SR & 0x700083F3);
-    SH4_regs_FPSCR_set(&sh4->regs, s->FPSCR);
+    sh4->regs.SR_set(s->SR & 0x700083F3);
+    sh4->regs.FPSCR_set(s->FPSCR);
     for (u32 i = 0; i < 16; i++) {
         CP(R[i]);
         if (i < 8) CP(R_[i]);
@@ -382,12 +376,12 @@ static void copy_state_to_cpu(struct SH4* sh4, SH4_test_state *s)
 #undef CP
 }
 
-static u32 do_test(struct sh4_test_overview *ts, const char*file, const char *fname)
+static u32 do_test(sh4_test_overview *ts, const char*file, const char *fname)
 {
     printf("\nRunning test %s", fname);
 
     FILE *f = fopen(file, "rb");
-    if (f == NULL) {
+    if (f == nullptr) {
         printf("\nBAD FILE! %s", file);
         return 0;
     }
@@ -415,7 +409,7 @@ static u32 do_test(struct sh4_test_overview *ts, const char*file, const char *fn
         ts->trace_cycles = 0;
         ts->current_test.read_failed = 0;
         ts->current_test.write_failed = 0;
-        SH4_run_cycles(&ts->cpu, 4);
+        ts->cpu.run_cycles(4);
 
         if ((ts->current_test.read_failed) || ((ts->current_test.write_failed)) || (!compare_state_to_cpu(&ts->cpu, &ts->current_test.final, &ts->current_test.initial))) {
             printf("\nTest result for test %d", i);
@@ -440,9 +434,9 @@ static u32 do_test(struct sh4_test_overview *ts, const char*file, const char *fn
 
 u32 test_fetch_ins(void *ptr, u32 addr)
 {
-    struct sh4_test_overview *t = (struct sh4_test_overview *)ptr;
+    sh4_test_overview *t = (sh4_test_overview *)ptr;
     assert(t->trace_cycles < 5);
-    struct test_cycle *c = &t->current_test.cycles[t->trace_cycles];
+    test_cycle *c = &t->current_test.cycles[t->trace_cycles];
     u32 base_addr = t->current_test.initial.PC;
 
 
@@ -456,11 +450,11 @@ u32 test_fetch_ins(void *ptr, u32 addr)
     return v;
 }
 
-static u64 test_read(void *ptr, u32 addr, u32 sz)
+static u64 test_read(void *ptr, u32 addr, u8 sz)
 {
-    struct sh4_test_overview *t = (struct sh4_test_overview *)ptr;
+    sh4_test_overview *t = (sh4_test_overview *)ptr;
     assert(t->trace_cycles < 5);
-    struct test_cycle *c = &t->current_test.cycles[1];
+    test_cycle *c = &t->current_test.cycles[1];
     t->current_test.read_addr = addr;
     if (c->read_addr != addr) {
         t->current_test.read_failed = 1;
@@ -469,11 +463,11 @@ static u64 test_read(void *ptr, u32 addr, u32 sz)
     return c->read_val;
 }
 
-static void test_write(void *ptr, u32 addr, u64 val, u32 sz)
+static void test_write(void *ptr, u32 addr, u64 val, u8 sz)
 {
-    struct sh4_test_overview *t = (struct sh4_test_overview *)ptr;
+    sh4_test_overview *t = (sh4_test_overview *)ptr;
     assert(t->trace_cycles < 5);
-    struct test_cycle *c = &t->current_test.cycles[1];
+    test_cycle *c = &t->current_test.cycles[1];
     t->current_test.write_addr = addr;
     t->current_test.write_val = val;
     if ((c->write_addr != addr) || (c->write_val != val)){
@@ -484,9 +478,8 @@ static void test_write(void *ptr, u32 addr, u64 val, u32 sz)
 }
 
 void test_sh4() {
-    struct sh4_test_overview test_struct;
+    sh4_test_overview test_struct{};
     //scheduler_init(&test_struct.scheduler, &);
-    SH4_init(&test_struct.cpu, &test_struct.scheduler);
     dbg_init();
     test_struct.cpu.read = &test_read;
     test_struct.cpu.write = &test_write;
@@ -494,7 +487,7 @@ void test_sh4() {
     test_struct.cpu.mptr = &test_struct;
 
     char PATH[500];
-    construct_path(PATH,"sh4_json/");
+    construct_path_with_home(PATH, sizeof(PATH), "dev/sh4_json/");
 
     char mfp[500][500];
     char mfn[500][500];
@@ -520,15 +513,15 @@ void test_sh4() {
     }
 #else
     DIR *dp;
-    struct dirent *ep;
+    dirent *ep;
     dp = opendir (PATH);
 
-    if (dp != NULL)
+    if (dp != nullptr)
     {
-        while ((ep = readdir (dp)) != NULL) {
-            if (strstr(ep->d_name, ".json.bin") != NULL) {
-                sprintf(mfp[num_files], "%s%s", PATH, ep->d_name);
-                sprintf(mfn[num_files], "%s", ep->d_name);
+        while ((ep = readdir (dp)) != nullptr) {
+            if (strstr(ep->d_name, ".json.bin") != nullptr) {
+                snprintf(mfp[num_files], sizeof(mfp[num_files]), "%s%s", PATH, ep->d_name);
+                snprintf(mfn[num_files], sizeof(mfn[num_files]), "%s", ep->d_name);
                 num_files++;
             }
         }

@@ -31,6 +31,11 @@ scheduler_t::scheduler_t(u64 *in_clock) : clock(in_clock)
 {
 }
 
+scheduler_t::scheduler_t(i64 *in_clock) : clock(reinterpret_cast<u64 *>(in_clock))
+{
+}
+
+
 scheduler_t::~scheduler_t()
 {
     clear();
