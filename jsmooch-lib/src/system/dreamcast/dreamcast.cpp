@@ -19,7 +19,9 @@
 #include "controller.h"
 
 #ifdef DC_SUPPORT_ELF
+extern "C" {
 #include "vendor/elf-parser/elf-parser.h"
+    }
 #endif
 
 #define IP_BIN
@@ -41,6 +43,9 @@ void DC_delete(jsm_system *sys) {
 }
 
 namespace DC {
+
+void core::set_audiobuf(audiobuf *ab)
+{}
 
 void core::setup_debugger_interface(debugger_interface &intf)
 {

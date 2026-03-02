@@ -10,7 +10,7 @@
 #include "system/snes/snes.h"
 #include "system/sms_gg/sms_gg.h"
 #include "system/commodore64/commodore64.h"
-//#include "system/dreamcast/dreamcast.h"
+#include "system/dreamcast/dreamcast.h"
 #include "system/ps1/ps1.h"
 //#include "system/atari2600/atari2600.h"
 #include "system/zxspectrum/zxspectrum.h"
@@ -82,10 +82,10 @@ jsm_system* new_system(jsm::systems which)
         case jsm::systems::GG:
             out = SMSGG_new(which, jsm::regions::USA);
             break;
-        /*case jsm::systems::DREAMCAST:
-            DC_new(out);
+        case jsm::systems::DREAMCAST:
+            out = DC_new();
             break;
-        case jsm::systems::APPLEIIe:
+        /*case jsm::systems::APPLEIIe:
             apple2_new(out);
             break;*/
         case jsm::systems::ZX_SPECTRUM_48K:
