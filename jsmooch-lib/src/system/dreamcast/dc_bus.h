@@ -63,11 +63,16 @@ struct core : jsm_system {
     u32 fetch_ins(u32 addr);
     void new_frame(bool copy_buf);
     void copy_fb(u32* where);
-    void schedule_frame();
+    void schedule_frame(bool is_first);
     void CPU_state_after_boot_rom();
     void old_ROM_load(multi_file_set &mfs);
     void RAM_state_after_boot_rom(read_file_buf *IPBIN);
     void update_dma_triggers(u32 addr, u64 val);
+
+    void frame_start(u64 clk);
+    void vblank_in(u64 clk);
+    void vblank_out(u64 clk);
+    void frame_end(u64 clk);
 
     u64 trace_cycles{};
     u64 waitstates{};

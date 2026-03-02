@@ -113,7 +113,7 @@ void core::reset()
     holly.reset();
     gdrom.reset();
     scheduler.clear();
-    schedule_frame();
+    schedule_frame(true);
 }
 
 
@@ -131,7 +131,7 @@ void core::new_frame(bool copy_buf)
     holly.recalc_frame_timing();
     if (copy_buf) copy_fb(holly.cur_output);
     holly.master_frame++;
-    schedule_frame();
+    schedule_frame(false);
 }
 
 enum frame_events {
@@ -142,111 +142,88 @@ enum frame_events {
     evt_FRAME_END,
 };
 
-static void handle_keyed_event(void *ptr, u64 key, u64 clock, u32 jitter)
-{
-    auto *th = static_cast<core *>(ptr);
-    switch ((enum frame_events)key) {
-        case evt_FRAME_START:
-            sched_printf("\nFRAME START: %llu", trace_cycles);
-            th->clock.frame_cycle = 0;
-            th->clock.frame_start_cycle = (i64)th->trace_cycles;
-            th->clock.in_vblank = 1;
-            break;
-        case evt_VBLANK_IN:
-            th->holly.vblank_in();
-            break;
-        case evt_VBLANK_OUT:
-            th->holly.vblank_out();
-            break;
-        case evt_EMPTY:
-            break;
-        case evt_FRAME_END:
-            sched_printf("\nEVENT: FRAME END %llu", trace_cycles);
-            th->new_frame(true);
-            break;
-        default:
-            printf("\nUNKNOWN FRAME EVENT %d", th->clock.frame_cycle);
-            break;
-    }
+void core::frame_start(u64 clk) {
+    sched_printf("\nFRAME START: %llu", trace_cycles);
+    clock.frame_cycle = 0;
+    clock.frame_start_cycle = (i64)trace_cycles;
+    clock.in_vblank = 1;
+
 }
 
-void core::schedule_frame()
+void core::vblank_in(u64 clk) {
+    holly.vblank_in();
+
+}
+
+void core::vblank_out(u64 clk) {
+    holly.vblank_out();
+
+}
+
+void core::frame_end(u64 clk) {
+    sched_printf("\nEVENT: FRAME END %llu", trace_cycles);
+    new_frame(true);
+}
+
+static void sch_frame_start(void *ptr, u64 key, u64 clock, u32 jitter) {
+    auto *th = static_cast<core *>(ptr);
+    th->frame_start(clock - jitter);
+}
+
+static void sch_vblank_in(void *ptr, u64 key, u64 clock, u32 jitter) {
+    auto *th = static_cast<core *>(ptr);
+    th->vblank_in(clock - jitter);
+}
+
+static void sch_vblank_out(void *ptr, u64 key, u64 clock, u32 jitter) {
+    auto *th = static_cast<core *>(ptr);
+    th->vblank_out(clock - jitter);
+}
+
+static void sch_frame_end(void *ptr, u64 key, u64 clock, u32 jitter) {
+    auto *th = static_cast<core *>(ptr);
+    th->frame_end(clock - jitter);
+}
+
+
+void core::schedule_frame(bool is_first)
 {
+    if (is_first) {
+        holly.master_frame = 0;
+    }
     // events
     // frame start @0.
     // vblank_in_start @?
     // vblank_out_start @?
     // frame end @200mil
     sched_printf("\nScheduling frame @ %lld", clock.frame_start_cycle);
-    scheduler.add_or_run_abs(clock.frame_start_cycle, evt_FRAME_START, this, &handle_keyed_event, nullptr);
-    scheduler.add_or_run_abs(clock.frame_start_cycle + clock.interrupt.vblank_in_start, evt_VBLANK_IN, this, &handle_keyed_event, nullptr);
-    scheduler.add_or_run_abs(clock.frame_start_cycle + clock.interrupt.vblank_out_start, evt_VBLANK_OUT, this, &handle_keyed_event, nullptr);
-    scheduler.add_or_run_abs(clock.frame_start_cycle+DC_CYCLES_PER_FRAME, evt_FRAME_END, this, &handle_keyed_event, nullptr);
+    scheduler.add_or_run_abs(clock.frame_start_cycle, 0, this, &sch_frame_start, nullptr);
+    scheduler.add_or_run_abs(clock.frame_start_cycle + clock.interrupt.vblank_in_start, 0, this, &sch_vblank_in, nullptr);
+    scheduler.add_or_run_abs(clock.frame_start_cycle + clock.interrupt.vblank_out_start, evt_VBLANK_OUT, this, &sch_vblank_out, nullptr);
+    scheduler.only_add_abs_w_tag(clock.frame_start_cycle+DC_CYCLES_PER_FRAME, evt_FRAME_END, this, &sch_frame_end, nullptr, 2);
 }
 
 u32 core::finish_frame()
 {
-    step_master(DC_CYCLES_PER_FRAME - clock.frame_cycle);
+    scheduler.run_til_tag(2);
     return 0;
 }
 
 u32 core::finish_scanline()
 {
-        assert(1==0);
+    assert(1==0);
     return 0;
 }
 
 u32 core::step_master(u32 howmany)
 {
-        /*
-    i64 steps_done = 0;
-
-    if (scheduler.first_event == nullptr)
-        DC_schedule_frame();
-    u32 quit = 0;
-    i64 cycles_left = (i64)howmany;
-
-    i64 cycles_start = trace_cycles;
-
-    u64 key;
-    while(cycles_left > 0) {
-        // Clear scheduled events
-        while((key = scheduler_next_event_if_any(&scheduler)) != -1) {
-            // handle an event if any exist
-            if (dbg.do_break) break;
-        }
-        if (quit || dbg.do_break) {
-            break;
-        }
-        i64 til_next_event = scheduler_til_next_event(trace_cycles);
-        if (til_next_event > cycles_left) til_next_event = cycles_left;
-
-        i64 timer_old_cycles = (i64)sh4.clock.timer_cycles;
-        i64 old_cycles = (i64)trace_cycles;
-        u64 old_tcb = sh4.clock.trace_cycles_blocks;
-
-        SH4_run_cycles(&sh4, til_next_event);
-        i64 timer_ran_cycles = (i64)sh4.clock.timer_cycles - timer_old_cycles;
-        i64 ran_cycles = (i64)trace_cycles - old_cycles;
-
-        sh4.clock.trace_cycles_blocks += timer_ran_cycles;
-        clock.frame_cycle += ran_cycles;
-        //scheduler_ran_cycles(ran_cycles);
-        cycles_left -= ran_cycles;
-
-        if (dbg.do_break) break;
-    }
-    sched_printf("\nSTEPS:%lli BRK:%d", trace_cycles - cycles_start, dbg.do_break);
-
-    printf("\n\nCONSOLE:\n---\n%s", sh4.console.ptr);
-    return steps_done;*/
-    assert(1==2);
+    scheduler.run_for_cycles(howmany);
     return 0;
 }
 
 void core::load_BIOS(multi_file_set& mfs)
 {
-        // We expect dc_boot.bin and dc_flash.bin
+    // We expect dc_boot.bin and dc_flash.bin
     u32 found = 0;
     for (u32 i = 0; i < mfs.files.size(); i++) {
         struct read_file_buf* rfb = &mfs.files[i];

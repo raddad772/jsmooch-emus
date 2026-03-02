@@ -28,6 +28,10 @@ static u64 DCread_noins(void *ptr, u32 addr, u8 sz)
     return DCread(ptr, addr, sz, false);
 }
 
+static void run_block(void *ptr, u64 num_cycles, u64 clock, u32 jitter) {
+    auto *th = static_cast<core *>(ptr);
+    th->sh4.run_cycles(num_cycles);
+}
 
 core::core() :
         sh4(&scheduler),
@@ -44,6 +48,8 @@ core::core() :
 
     fflush(stdout);
     scheduler.max_block_size = 150;
+    scheduler.run.func = &run_block;
+    scheduler.run.ptr = this;
     snprintf(label, sizeof(label), "Sega Dreamcast");
 
     dbg.dcptr = this;
