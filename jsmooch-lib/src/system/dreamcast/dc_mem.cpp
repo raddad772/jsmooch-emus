@@ -13,6 +13,7 @@
 #include "holly.h"
 #include "g2.h"
 #include "helpers/elf_helpers.h"
+#include "dc_debugger.h"
 
 #include "helpers/multisize_memaccess.cpp"
 
@@ -417,15 +418,7 @@ void core::mainbus_write(u32 addr, u64 val, u8 sz) {
     }
 #endif
 
-#ifdef SH4_DBG_SUPPORT
-    if (dbg.trace_on) {
-        dbg_printf(WFORM[sz], WFO);
-    }
-#endif
-#ifdef DO_LAST_TRACES
-    dbg_LT_printf(WFORM[sz], WFO);
-    dbg_LT_endline();
-#endif
+    dbgloglog(DCD_MAINBUS_WRITE, DBGLS_TRACE, WFORM[sz], WFO);
     mem.write[addr >> 26](mem.wptr[addr>>26], addr, val, sz, &success);
 
     if (!success) {
@@ -436,9 +429,9 @@ void core::mainbus_write(u32 addr, u64 val, u8 sz) {
         else
             printf("\n0x%08X: \nu32\naccess_32, rw\n", addr & 0x1FFFFFFF);
         //fflush(stdout);
-        dbg.var++;
+        ::dbg.var++;
 #ifdef QUIT_ON_TOO_MANY
-        if (dbg.var > QUIT_ON_TOO_MANY) {
+        if (::dbg.var > QUIT_ON_TOO_MANY) {
             dbg_break("TOO MANY BAD ACCESS", trace_cycles);
         }
 #endif
@@ -448,23 +441,13 @@ void core::mainbus_write(u32 addr, u64 val, u8 sz) {
 u64 core::mainbus_read(u32 addr, u8 sz, bool is_ins_fetch) {
     bool success = true;
     u64 ret = mem.read[addr >> 26](mem.rptr[addr>>26], addr, sz, &success) & VMASK[sz];
-#ifdef SH4_DBG_SUPPORT
     if (!is_ins_fetch) {
-        if (dbg.trace_on) {
-            dbg_printf(RFORM[sz], RFO);
-        }
+        dbgloglog(DCD_MAINBUS_WRITE, DBGLS_TRACE, RFORM[sz], RFO);
     }
-#endif
+
 #ifdef SH4MEM_BRK
     if (addr == SH4MEM_BRK) {
         printf(RFORM[sz], RFO);
-    }
-#endif
-
-#ifdef DO_LAST_TRACES
-    if (!is_ins_fetch) {
-        dbg_LT_printf(RFORM[sz], RFO);
-        dbg_LT_endline();
     }
 #endif
 
@@ -475,9 +458,9 @@ u64 core::mainbus_read(u32 addr, u8 sz, bool is_ins_fetch) {
         else
             printf("\n0x%08X: \nu32\naccess_32, rw\n", addr & 0x1FFFFFFF);
         //fflush(stdout);
-        dbg.var++;
+        ::dbg.var++;
 #ifdef QUIT_ON_TOO_MANY
-        if (dbg.var > QUIT_ON_TOO_MANY) {
+        if (::dbg.var > QUIT_ON_TOO_MANY) {
             dbg_break("TOO MANY BAD ACCESS", trace_cycles);
         }
 #endif

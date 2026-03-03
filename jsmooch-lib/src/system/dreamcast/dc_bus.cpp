@@ -52,14 +52,12 @@ core::core() :
     scheduler.run.ptr = this;
     snprintf(label, sizeof(label), "Sega Dreamcast");
 
-    dbg.dcptr = this;
-
-    struct jsm_debug_read_trace rt;
-    rt.ptr = (void *)this;
+    jsm_debug_read_trace rt;
+    rt.ptr = static_cast<void *>(this);
     sh4.setup_tracing(&rt, &trace_cycles);
     trace_cycles = 0;
     described_inputs = false;
-    sh4.mptr = (void *)this;
+    sh4.mptr = static_cast<void *>(this);
     sh4.read = &DCread_noins;
     sh4.write = &DCwrite;
     sh4.fetch_ins = &DCfetch_ins;

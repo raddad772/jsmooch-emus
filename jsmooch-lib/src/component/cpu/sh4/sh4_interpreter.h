@@ -7,6 +7,7 @@
 #include "helpers/int.h"
 #include "helpers/debug.h"
 #include "helpers/scheduler.h"
+#include "helpers/debugger/debuggerdefs.h"
 
 #include "tmu.h"
 
@@ -175,9 +176,14 @@ struct core {
     u8 OC[8 * 1024]{}; // Operand Cache!
 
     struct {
+        jsm_string str{100};
+        jsm_string str2{100};
         bool ok{};
         u64 *cycles{};
         u64 my_cycles{};
+
+        u32 exception_id{};
+        u32 ins_id{};
     } trace{};
 
     jsm_debug_read_trace read_trace{};
@@ -186,6 +192,7 @@ struct core {
     IRQ_SOURCE* interrupt_map[SH4I_NUM]{};
     u32 interrupt_highest_priority{}; // used to compare to IMASK
     TMU tmu;
+    void trace_format(ins_t *ins);
 
     void *mptr{};
     u32 (*fetch_ins)(void* ptr,u32 addr){};
@@ -201,6 +208,11 @@ struct core {
     u64 ma_read(u32 addr, u8 sz, bool* success);
     void ma_write(u32 addr, u64 val, u8 sz, bool* success);
     void give_memaccess(memaccess_t* to);
+
+    DBG_START
+        DBG_LOG_VIEW
+    DBG_END
+
 
 private:
     void console_add(u32 val, u8 sz);

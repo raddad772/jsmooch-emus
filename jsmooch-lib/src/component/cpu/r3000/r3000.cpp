@@ -525,7 +525,7 @@ void core::dbglog_exception(u32 code, u32 vector, u32 raddr, bool branch_delay) 
 }
 
 
-    void core::trace_format() {
+void core::trace_format() {
     bool do_dbglog = false;
     if (dbg.dvptr) {
         do_dbglog = dbg.dvptr->ids_enabled[dbg.dv_id];

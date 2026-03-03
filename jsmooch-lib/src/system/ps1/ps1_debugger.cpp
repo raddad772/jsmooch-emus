@@ -21,7 +21,7 @@ static void render_image_view_spuinfo(debugger_interface *dbgr, debugger_view *d
     }
 }
 
-    static void render_image_view_sysinfo(debugger_interface *dbgr, debugger_view *dview, void *ptr, u32 out_width) {
+static void render_image_view_sysinfo(debugger_interface *dbgr, debugger_view *dview, void *ptr, u32 out_width) {
     auto *th = static_cast<core *>(ptr);
     //memset(ptr, 0, out_width * 4 * 10);
     debugger_widget_textbox *tb = &dview->options[0].textbox;
@@ -252,7 +252,7 @@ static void setup_image_view_sysinfo(core* th, debugger_interface *dbgr) {
     debugger_widgets_add_textbox(dview->options, "blah!", 1);
 }
 
-    static void setup_image_view_spuinfo(core* th, debugger_interface *dbgr) {
+static void setup_image_view_spuinfo(core* th, debugger_interface *dbgr) {
     debugger_view *dview;
     th->dbg.image_views.sysinfo = dbgr->make_view(dview_image);
     dview = &th->dbg.image_views.sysinfo.get();

@@ -551,6 +551,9 @@ set(SOURCE_LIST
         src/system/dreamcast/maple.cpp
         src/system/dreamcast/maple.h
         src/system/dreamcast/spi.h
+        src/system/dreamcast/dc_debugger.cpp
+        src/system/dreamcast/dc_debugger.h
+        src/component/cpu/sh4/sh4_debugger.h
 )
 
 # TODO: Fix elf-parser repo for windows

@@ -4,9 +4,11 @@
 
 #include <cassert>
 #include <cstdio>
+#include "helpers/debugger/debugger.h"
 #include "sh4_interpreter.h"
 #include "sh4_interpreter_opcodes.h"
 #include "fsca.h"
+#include "sh4_debugger.h"
 #include "tmu.h"
 //#include "system/dreamcast/dreamcast.h"
 #include "sh4_interrupts.h"
@@ -180,6 +182,31 @@ void REGS::FPSCR_set(u32 val) {
     FPSCR_update(old_RM, old_DN);
 }
 
+void core::trace_format(ins_t *ins) {
+    bool do_dbglog = false;
+    if (dbg.dvptr) {
+        do_dbglog = dbg.dvptr->ids_enabled[dbg.dv_id];
+    }
+    if (do_dbglog) {
+        trace.str.quickempty();
+        dbglog_view *dv = dbg.dvptr;
+        dv->add_printf(dbg.dv_id, *trace.cycles, DBGLS_TRACE, "%08x  %s", regs.PC, disassembled[SH4_decoded_index][ins->opcode]);
+        bool spaces_needed = false;
+        if (ins->Rn != -1) {
+            spaces_needed = true;
+            trace.str.sprintf("R%02d:%08x", ins->Rn, regs.R[ins->Rn]);
+        }
+        if (ins->Rm != -1) {
+            if (spaces_needed) trace.str.sprintf("  ");
+            spaces_needed = true;
+            trace.str.sprintf("R%02d:%08x", ins->Rm, regs.R[ins->Rm]);
+        }
+        if (spaces_needed) trace.str.sprintf("  ");
+        trace.str.sprintf("IMASK:%x  HIGHEST:%x  T:%d", regs.SR.IMASK, interrupt_highest_priority, regs.SR.T);
+        dv->extra_printf("%s", trace.str.ptr);
+    }
+}
+
 void core::pprint(ins_t *ins, bool last_traces)
 {
     u32 had_any = 0;
@@ -263,7 +290,7 @@ void core::pprint(ins_t *ins, bool last_traces)
 
 void core::lycoder_print(u32 opcode)
 {
-    if (dbg.trace_on)
+    if (::dbg.trace_on)
         dbg_printf("\n%08x %04x %08x %08x %08x %08x %08x %08x %08x %08x %08x %08x %08x %08x %08x %08x %08x %08x %08x %08x",
                    regs.PC, opcode,
                    regs.R[0], regs.R[1], regs.R[2],
@@ -277,13 +304,6 @@ void core::lycoder_print(u32 opcode)
 void core::fetch_and_exec(bool is_delay_slot)
 {
     u32 opcode = fetch_ins(mptr, regs.PC);
-#ifdef DBG_SUPPORT
-#ifdef BRK
-    if (regs.PC == BRK) {
-        dbg_break();
-    }
-#endif // BRK
-#endif
 
     *trace.cycles += CLOCK_DIVIDER;
 
@@ -294,22 +314,8 @@ void core::fetch_and_exec(bool is_delay_slot)
 
     cycles -= CLOCK_DIVIDER;
     ins_t *ins = &decoded[SH4_decoded_index][opcode];
-#ifdef DO_LAST_TRACES
-    dbg_LT_printf(SH_DISA_P_ARGS);
-    pprint(ins, true);
-    dbg_LT_endline();
-#endif
-#if defined(LYCODER) || defined(REICAST_DIFF)
-    lycoder_print(opcode);
-#else // !LYCODER and !REICAST_DIFF
-#ifdef DBG_SUPPORT
-    if (dbg.trace_on) {
-        dbg_printf(SH_DISA_P_ARGS);
-        pprint(ins, false);
-    }
-#endif // DBG_SUPPORT
-#endif // else !LYCODER and !REICAST_DIFF
 
+    trace_format(ins);
     (this->*ins->exec)(ins);
 }
 
@@ -319,24 +325,11 @@ void core::run_cycles(u32 howmany) {
     while(cycles > 0) {
         fetch_and_exec(false);
         if ((regs.SR.BL == 0) && (interrupt_highest_priority > regs.SR.IMASK)) {
-#ifdef BRK_ON_NMIRQ
-            dbg_break();
-#endif
-#ifdef IRQ_DBG
-#define THING "\nINTERRUPT SERVICED AT %llu R0:%08x SR:%08x SSR:%08x IMASK:%d SB_ISTNRM:%08x SB_ISTEXT:%08x", clock.trace_cycles, regs.R[0], regs.SR_get(), regs.SSR, regs.SR.IMASK, dbg.dcptr->io.SB_ISTNRM.u, dbg.dcptr->io.SB_ISTEXT.u
-            dbg_LT_printf(THING);
-            dbg_printf(THING);
-            printf(THING);
-#undef THING
-#endif
-            interrupt();
+            if (::dbg.do_break) {
+                cycles = 0;
+                break;
+            }
         }
-#ifdef DBG_SUPPORT
-        if (dbg.do_break) {
-            cycles = 0;
-            break;
-        }
-#endif
     }
 }
 

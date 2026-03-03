@@ -1086,7 +1086,7 @@ SH4ins(PREF) { // (Rn) -> operand cache
             naddr += 4;
         }
     }
-    else if (dbg.trace_on)
+    else if (::dbg.trace_on)
     {
 #ifndef LYCODER
 #ifndef REICAST_DIFF

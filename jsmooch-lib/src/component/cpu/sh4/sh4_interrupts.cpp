@@ -3,10 +3,14 @@
 //
 
 #include <cassert>
-#include <cstdlib>
-#include <cstdio>
 
+#include "helpers/debugger/debuggerdefs.h"
+#include "helpers/debugger/debugger.h"
+
+#include "sh4_debugger.h"
+#include "sh4_interpreter.h"
 #include "sh4_interrupts.h"
+
 namespace SH4 {
 
 void core::IRQ_set_highest_priority()
@@ -35,9 +39,9 @@ void core::exec_interrupt()
 }
 
 void core::interrupt() {
-    if (dbg.trace_on) {
-        dbg_printf("\nIRQ PRIO:%d IMASK:%d", interrupt_highest_priority, regs.SR.IMASK);
-    }
+    dbgloglog(trace.exception_id, DBGLS_TRACE, "IRQ PRIO:%d IMASK:%d", interrupt_highest_priority, regs.SR.IMASK);
+        //dbg_printf("\nIRQ PRIO:%d IMASK:%d", interrupt_highest_priority, regs.SR.IMASK);
+    //}
 
     IRQ_SOURCE* src = nullptr;
     for (u32 i = 0; i < SH4I_NUM; i++) {
@@ -48,11 +52,6 @@ void core::interrupt() {
     }
     assert(src);
     regs.INTEVT = src->intevt;
-#ifdef DBG_SUPPORT
-    if (dbg.trace_on) {
-        dbg_printf("\nRaising interrupt %d cyc:%llu", *trace.cycles);
-    }
-#endif
     if (src->source != IRQ_irl) src->raised = 0; // IRL is de-asserted externally
     IRQ_set_highest_priority();
     exec_interrupt();

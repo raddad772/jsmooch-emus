@@ -8,6 +8,8 @@
 #include "helpers/buf.h"
 #include "helpers/sys_interface.h"
 #include "helpers/scheduler.h"
+#include "helpers/debugger/debugger.h"
+#include "helpers/debugger/debuggerdefs.h"
 #include "helpers/cvec.h"
 #include "helpers/elf_helpers.h"
 
@@ -157,6 +159,13 @@ struct core : jsm_system {
         u64 (*read[0x40])(void*, u32, u8 sz, bool*){};
         void (*write[0x40])(void*, u32, u64, u8 sz, bool*){};
     } mem{};
+
+    DBG_START
+    DBG_LOG_VIEW
+    DBG_IMAGE_VIEWS_START
+        MDBG_IMAGE_VIEW(sysinfo)
+    DBG_IMAGE_VIEWS_END
+    DBG_END
 
 public:
     void play() final;
