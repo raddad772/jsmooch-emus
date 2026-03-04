@@ -47,12 +47,6 @@ namespace DC {
 void core::set_audiobuf(audiobuf *ab)
 {}
 
-void core::setup_debugger_interface(debugger_interface &intf)
-{
-    intf.supported_by_core = false;
-    printf("\nWARNING: debugger interface not supported on core: dreamcast");
-}
-
 void core::copy_fb(u32* where) {
     auto* ptr = reinterpret_cast<u32 *>(VRAM);
     ptr += holly.FB_R_SOF1.field;

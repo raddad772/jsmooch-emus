@@ -408,6 +408,32 @@ static char WFORM[9][100] = {
         "\n" DBGC_WRITE " write64  (%08x) %016llx" DBGC_RST // 8 = 64-bit
 };
 
+static char RFORM2[9][100] = {
+        "",
+        "read8    (%08x) %02x",
+        "read16   (%08x) %04x",
+        "",
+        "read32   (%08x) %08x",
+        "",
+        "",
+        "",
+        "read64   (%08x) %016llx"
+};
+
+
+static char WFORM2[9][100] = {
+        "",
+        " write8   (%08x) %02llx", // 1 = 8-bit
+        " write16  (%08x) %04llx", // 2 = 16-bit
+        "",
+        " write32  (%08x) %08llx", // 4 = 32-bit
+        "",
+        "",
+        "",
+        "write64  (%08x) %016llx" // 8 = 64-bit
+};
+
+
 
 void core::mainbus_write(u32 addr, u64 val, u8 sz) {
     bool success = true;
@@ -418,7 +444,7 @@ void core::mainbus_write(u32 addr, u64 val, u8 sz) {
     }
 #endif
 
-    dbgloglog(DCD_MAINBUS_WRITE, DBGLS_TRACE, WFORM[sz], WFO);
+    dbgloglog(DCD_MAINBUS_WRITE, DBGLS_TRACE, WFORM2[sz], WFO);
     mem.write[addr >> 26](mem.wptr[addr>>26], addr, val, sz, &success);
 
     if (!success) {
@@ -442,7 +468,7 @@ u64 core::mainbus_read(u32 addr, u8 sz, bool is_ins_fetch) {
     bool success = true;
     u64 ret = mem.read[addr >> 26](mem.rptr[addr>>26], addr, sz, &success) & VMASK[sz];
     if (!is_ins_fetch) {
-        dbgloglog(DCD_MAINBUS_WRITE, DBGLS_TRACE, RFORM[sz], RFO);
+        dbgloglog(DCD_MAINBUS_READ, DBGLS_TRACE, RFORM2[sz], RFO);
     }
 
 #ifdef SH4MEM_BRK

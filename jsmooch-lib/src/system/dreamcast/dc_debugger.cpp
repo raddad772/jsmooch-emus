@@ -55,14 +55,15 @@ static void setup_dbglog(debugger_interface *dbgr, core *th) {
     //sh4.add_node(dv, "IRQs", "IRQ", PS1D_R3000_IRQ, 0xFFFFFF);
     sh4.add_node(dv, "Exceptions", "Except", DCD_SH4_EXCEPTION, 0xFFFFFF);
 
-    u32 dma_c = 0xFFFF00;
+    u32 dma_c = 0x20E0A0;
     dbglog_category_node &bus = root.add_node(dv, "Main Bus", nullptr, 0, dma_c);
-    sh4.children.reserve(10);
-    sh4.add_node(dv, "Reads", "Read", DCD_MAINBUS_READ, dma_c);
-    sh4.add_node(dv, "Writes", "Write", DCD_MAINBUS_WRITE, dma_c);
+    bus.children.reserve(10);
+    bus.add_node(dv, "Reads", "Read", DCD_MAINBUS_READ, dma_c);
+    bus.add_node(dv, "Writes", "Write", DCD_MAINBUS_WRITE, dma_c);
 }
 
 void core::setup_debugger_interface(debugger_interface &dbgr) {
+    printf("\nDEBUGGER SETUP!");
     dbg.interface = &dbgr;
     dbgr.views.reserve(15);
 

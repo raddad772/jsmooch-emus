@@ -103,7 +103,7 @@ struct sh4_test_overview {
     SH4::core cpu;
     scheduler_t scheduler;
     sh4test current_test{};
-    i64 trace_cycles{};
+    u64 trace_cycles{};
 };
 
 #define TB_NONE 0

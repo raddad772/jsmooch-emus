@@ -101,8 +101,8 @@ int main()
     //test_z80();
     //generate_sh4();
     //generate_sh4_tests(); // NOTE: reicast tests superceded these
-    test_sh4();
-    //test_m68000();
+    //test_sh4();
+    test_m68000();
     //test_bitbuf();
     //test_dasm_ranges();
     //test_nesm6502();

@@ -386,7 +386,7 @@ void imgui_jsmooch_app::render_memory_view() {
 
 void imgui_jsmooch_app::render_event_view()
 {
-    managed_window *mw = register_managed_window(100, mwk_debug_events, "Event Viewer", EVENT_VIEWER_DEFAULT_ENABLE);
+    managed_window *mw = register_managed_window(0x25, mwk_debug_events, "Event Viewer", EVENT_VIEWER_DEFAULT_ENABLE);
     if (mw->enabled && fsys.events.view && fsys.has_played_once) {
         if (ImGui::Begin("Event Viewer")) {
             static bool ozoom = false;
@@ -822,7 +822,7 @@ void imgui_jsmooch_app::render_waveform2_view(W2VIEW &wview, u32 num) {
 
 void imgui_jsmooch_app::render_waveform_view(WVIEW &wview, u32 num)
 {
-    managed_window *mw = register_managed_window(0x600 + num, mwk_debug_sound, wview.view->name, WAVEFORM_VIEW_DEFAULT_ENABLE);
+    managed_window *mw = register_managed_window(0x8600 + num, mwk_debug_sound, wview.view->name, WAVEFORM_VIEW_DEFAULT_ENABLE);
     if (mw->enabled) {
         fsys.waveform_view_present(wview);
         u32 num_per_line = 2;
@@ -1266,7 +1266,7 @@ void imgui_jsmooch_app::setup_wgpu()
 
 int imgui_jsmooch_app::do_setup_before_mainloop()
 {
-    which = jsm::systems::DREAMCAST;
+    //which = jsm::systems::DREAMCAST;
     //which = jsm::systems::ATARI2600;
     //which = jsm::systems::GBC;
     //which = jsm::systems::APPLEIIe;
@@ -1284,7 +1284,7 @@ int imgui_jsmooch_app::do_setup_before_mainloop()
     //which = jsm::systems::SNES;
     //which = jsm::systems::COSMAC_VIP_2k;
     //which = jsm::systems::COSMAC_VIP_4k;
-    //which = jsm::systems::GENESIS_USA;
+    which = jsm::systems::GENESIS_USA;
     //which = jsm::systems::MEGADRIVE_PAL;
     //which = jsm::systems::NDS;
     //which = jsm::systems::TURBOGRAFX16;
