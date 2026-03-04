@@ -612,7 +612,8 @@ void DC_present(physical_io_device &device, void *out_buf, u32 out_width, u32 ou
             u32 b_out = (outyw + x);
 
             u32 color = dco[di];
-            img32[b_out] = color;
+            if (rx == 10) color = 0xFFFFFFFF;
+            img32[b_out] = 0xFF000000 | color;
         }
     }
 }

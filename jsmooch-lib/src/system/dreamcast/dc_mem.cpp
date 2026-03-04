@@ -172,7 +172,7 @@ u64 core::read_area0(u32 addr, u8 sz, bool* success) {
              return RTC_read() & 0xFFFF;
 
      }
-
+    printf("\nMissed area0 read %08x", addr);
      *success = false;
      return 0;
  }
@@ -243,9 +243,9 @@ void core::write_area0(u32 addr, u64 val, u8 sz, bool* success) {
      switch(addr) {
 #include "generated/area0_writes.cpp"
      }
-
-     *success = false;
- }
+    printf("\nMissed area0 write %08x(%d): %08llx", addr, sz, val);
+    *success = false;
+}
 
 u64 pread_area1(void* ptr, u32 addr, u8 sz, bool* success) {
     MTHIS;
@@ -259,6 +259,7 @@ u64 core::read_area1(u32 addr, u8 sz, bool* success) {
     if ((addr >= 0x05000000) && (addr <= 0x05800000)) // VRAM access
         return cR[sz](VRAM, addr & 0x007FFFFF);
 
+    printf("\nMissed area1 read %08x", addr);
     *success = false;
     return 0;
 }
@@ -279,6 +280,7 @@ void core::write_area1(u32 addr, u64 val, u8 sz, bool* success) {
         return;
     }
 
+    printf("\nMissed area1 write %08x(%d): %08llx", addr, sz, val);
     *success = false;
 }
 
@@ -292,6 +294,7 @@ u64 core::read_area3(u32 addr, u8 sz, bool* success) {
     if (((addr >= 0x0C000000) && (addr <= 0x0DFFFFFF)))// || ((addr >= 0x0E000000) && (addr <= 0x0EFFFFFF)))
         return cR[sz](RAM, addr & 0xFFFFFF);
 
+    printf("\nMissed area3 read %08x", addr);
     *success = false;
     return 0;
 }
@@ -308,6 +311,7 @@ void core::write_area3(u32 addr, u64 val, u8 sz, bool* success) {
         return;
     }
 
+    printf("\nMissed area3 write %08x(%d):%08llx", addr, sz, val);
     *success = false;
 }
 
@@ -587,6 +591,7 @@ u64 core::G1_read(u32 addr, u8 sz, bool* success)
 #include "generated/g1_reads.cpp"
     }
 
+    printf("\nMissed G1 read %08x", addr);
     *success = false;
     return 0;
 }

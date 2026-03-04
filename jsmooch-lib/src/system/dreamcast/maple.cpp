@@ -36,7 +36,7 @@ void core::write(u32 addr, u64 val, u8 sz, bool* success)
             if (val & 1) bus->maple.vblank_repeat_trigger = 0;
             return;
     }
-    printf("\nYEAH GOT HERE SORRY DAWG");
+    printf("\nYEAH GOT HERE SORRY DAWG3");
     *success = false;
 }
 
@@ -47,7 +47,7 @@ u64 core::read(u32 addr, u8 sz, bool* success)
 // NOLINTNEXTLINE(bugprone-suspicious-include)
 #include "generated/maple_reads.cpp"
     }
-    printf("\nYEAH GOT HERE SORRY DAWG2");
+    printf("\nYEAH GOT HERE SORRY DAWG4");
     *success = false;
     return 0;
 }

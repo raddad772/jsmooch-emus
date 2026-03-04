@@ -1290,8 +1290,7 @@ u32 core::fetch_sprites(spr_out *sprites, u32 vcount, u32 sprites_max_on_line)
         if ((compare_y >= sprites->vpos) && (compare_y < sprite_max)) {
             sprites->hpos = sp[3] & 0x1FF;
             if (sprites->hpos == 0) {
-                if (num==0 && !line.dot_overflow) continue; // Masking not effective if first sprite
-                line.dot_overflow = false;
+                if (num==0 && !line.dot_overflow) continue; // Masking not effective if first sprite and no overflow
                 return num;
             }
             sprites->hsize = ((sp[1] >> 10) & 3) + 1;

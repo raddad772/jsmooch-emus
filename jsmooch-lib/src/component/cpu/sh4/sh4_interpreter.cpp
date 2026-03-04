@@ -428,6 +428,7 @@ u64 core::ma_read(u32 addr, u8 sz, bool* success) {
 
     switch (addr | 0xE0000000) {
 // NOLINTNEXTLINE(bugprone-suspicious-include)
+#include "generated/regs_reads.cpp"
         case 0xFF000030: // Undocumented CPU_VERSION
             return 0x040205c1;
         /*case 0xEC380A50: // unknown?
@@ -467,7 +468,7 @@ u64 core::ma_read(u32 addr, u8 sz, bool* success) {
         }
     }
 
-    dbg_printf("\nMISSED SH4 READ %08x PC:%08x", full_addr, regs.PC);
+    printf("\nMISSED SH4 READ %08x PC:%08x", full_addr, regs.PC);
     *success = false;
     return 0;
 }
