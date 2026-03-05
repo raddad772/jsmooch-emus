@@ -467,7 +467,7 @@ void VOICE::cycle(i16 noise_level) {
         adpcm_decode();
     }
     gaussian_me_up();
-    if (io.noise_enable) sample = VOL(noise_level, env.adsr.output);;
+    if (io.noise_enable) sample = VOL(noise_level, env.adsr.output);
     else sample = VOL(sample, env.adsr.output);
     sample_l = VOL(io.vol_l.sweep.output, sample);
     sample_r = VOL(io.vol_r.sweep.output, sample);
