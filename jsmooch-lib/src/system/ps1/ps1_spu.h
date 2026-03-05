@@ -4,6 +4,7 @@
 
 #pragma once
 #include "helpers/int.h"
+#include <cstdio>
 
 namespace PS1 {
     struct core;
@@ -171,8 +172,6 @@ struct core {
     void reset();
     PS1::core *bus;
 
-    u64 local_clock{};
-
     void update_IRQs();
     void schedule_FIFO_transfer(u64 clock);
 
@@ -296,6 +295,9 @@ private:
     void write_reverb_reg(u32 addr, u8 sz, u32 val);
     u32 read_reverb_reg(u32 addr, u8 sz);
     void apply_reflection(i32 l, i32 r);
+    FILE *fout;
+    void write_file_stereo(i16 l, i16 r);
+    void write_file_mono(i16 s);
     inline u32 reverb_addr(u32 inaddr) {
         u32 a = (inaddr + reverb.buf_addr) % reverb.buf_len;
         return a + io.reverb.mBASE;

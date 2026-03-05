@@ -11,6 +11,8 @@
 #include "helpers/multisize_memaccess.cpp"
 #include "system/snes/snes_apu.h"
 
+//#define TRANSIENT
+
 namespace PS1::SPU {
 
 #define VOL(a,b) (static_cast<i16>(((static_cast<i32>(a) * static_cast<i32>(b)) >> 15)))
@@ -205,10 +207,10 @@ void VOICE::adpcm_decode() {
 
     u32 idx = 2;
     u32 nibble = 0;
-    // +0 = current
-    // +1 = oldest
-    // +2 = older
-    // +3 = old
+#ifdef TRANSIENT
+    static int num_with_val = 0;
+    bool flatten = num_with_val > 0;
+#endif
     for (short & s_out : adpcm.samples) {
         i32 t;
         if (nibble == 0) {
@@ -225,6 +227,12 @@ void VOICE::adpcm_decode() {
         i32 filtered = s + ((static_cast<i32>(old) * filter_pos) >> 6) + ((static_cast<i32>(older) * filter_neg) >> 6);
         filtered = CLAMP(filtered, -0x8000, 0x7FFF);
         s_out = filtered;
+#ifdef TRANSIENT
+        if (s_out >= 0x7000) {
+            num_with_val++;
+        }
+        if (flatten) s_out = 0;
+#endif
         older = old;
         old = filtered;
     }
@@ -745,6 +753,7 @@ void core::process_reverb() {
     reverb.filter_r.in.add_sample(reverb.in_r);
 
     if (!reverb.counter) { // 22050 clock
+    //if (true) {
         // Actually run reverb now...
         i32 l = RVOL(reverb.filter_l.in.run(), RR(vLIN));
         l = CLAMP(l, -0x8000, 0x7FFF);
@@ -754,8 +763,6 @@ void core::process_reverb() {
         apply_comb_filter();
         apply_all_pass_filter_1();
         apply_all_pass_filter_2();
-        reverb.proc_l = RVOL(reverb.proc_l, io.reverb.vol_out_l);
-        reverb.proc_r = RVOL(reverb.proc_r, io.reverb.vol_out_r);
         reverb.proc_l = CLAMP(reverb.proc_l, -0x8000, 0x7FFF);
         reverb.proc_r = CLAMP(reverb.proc_r, -0x8000, 0x7FFF);
         reverb.filter_l.out.add_sample(reverb.proc_l);
@@ -770,6 +777,8 @@ void core::process_reverb() {
     // Run the sample filter to get our 44kHz output
     reverb.sample_l = reverb.filter_l.out.run() << 1;
     reverb.sample_r = reverb.filter_r.out.run() << 1;
+    reverb.sample_l = RVOL(reverb.sample_l, io.reverb.vol_out_l);
+    reverb.sample_r = RVOL(reverb.sample_r, io.reverb.vol_out_r);
     reverb.sample_l = CLAMP(reverb.sample_l, -0x8000, 0x7FFF);
     reverb.sample_r = CLAMP(reverb.sample_r, -0x8000, 0x7FFF);
 
@@ -923,8 +932,6 @@ void core::cycle() {
     }
     do_capture();
 
-    local_clock++;
-
     i32 l = 0;
     i32 r = 0;
     for (u32 i = 0; i < 24; i++) {
@@ -934,6 +941,12 @@ void core::cycle() {
             reverb.in_l += voices[i].sample_l;
             reverb.in_r += voices[i].sample_r;
         }
+    }
+    if (io.SPUCNT.master_mute == 0) {
+        l = 0;
+        r = 0;
+        reverb.in_l = 0;
+        reverb.in_r = 0;
     }
     if (io.SPUCNT.cd_audio_reverb) {
         reverb.in_l += capture.sample.cd_l;
@@ -947,6 +960,10 @@ void core::cycle() {
     r += capture.sample.cd_r;
     l += reverb.sample_l;
     r += reverb.sample_r;
+    write_file_stereo(reverb.sample_l, reverb.sample_r);
+
+    l = VOL(l, io.vol_L);
+    r = VOL(r, io.vol_R);
 
     l = CLAMP(l, -0x8000, 0x7FFF);
     r = CLAMP(r, -0x8000, 0x7FFF);
@@ -954,6 +971,22 @@ void core::cycle() {
     // TODO: test DMA IRQs
     sample_l = static_cast<i16>(l);
     sample_r = static_cast<i16>(r);
+    if (fout && (bus->clock.master_cycle_count % 44100) == 0) fflush(fout);
+}
+
+void core::write_file_mono(i16 s) {
+    if (fout == nullptr) {
+        fout = fopen("/Users/dave/out.raw", "wb");
+    }
+    fwrite(&s, 2, 1, fout);
+}
+
+void core::write_file_stereo(i16 l, i16 r) {
+    if (fout == nullptr) {
+        fout = fopen("/Users/dave/out.raw", "wb");
+    }
+    fwrite(&l, 2, 1, fout);
+    fwrite(&r, 2, 1, fout);
 }
 
 void core::mainbus_write(u32 addr, u8 sz, u32 val)

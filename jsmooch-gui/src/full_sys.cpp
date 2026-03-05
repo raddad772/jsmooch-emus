@@ -928,7 +928,10 @@ void full_system::load_default_ROM()
             //worked = grab_ROM(&ROMs, which, "nintendogs.nds", nullptr);
             //worked = grab_ROM(&ROMs, which, "dbz2.nds", nullptr);
             //worked = grab_ROM(&ROMs, which, "rayman.nds", nullptr);
-            worked = grab_ROM(&ROMs, which, "mutha_truckers.nds", nullptr);
+            //worked = grab_ROM(&ROMs, which, "mutha_truckers.nds", nullptr);
+            //worked = grab_ROM(&ROMs, which, "barnyard_blast.nds", nullptr);
+            //worked = grab_ROM(&ROMs, which, "cars.nds", nullptr);
+            worked = grab_ROM(&ROMs, which, "dolphin_trainer.nds", nullptr);
             //worked = grab_ROM(&ROMs, which, "recruit.nds", nullptr);
             //worked = grab_ROM(&ROMs, which, "tloz.nds", nullptr);
             //worked = grab_ROM(&ROMs, which, "dq9.nds", nullptr);

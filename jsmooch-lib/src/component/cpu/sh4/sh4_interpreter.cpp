@@ -481,6 +481,7 @@ void core::set_QACR(u32 num, u32 val)
 
 void core::console_add(u32 val, u8 sz)
 {
+    printf("\nADD %c", val);
     if (sz == 1) {
         if (val == '\n' || (console.cur - console.ptr) >= (console.allocated_len-1)) {
             printf("\n(CONSOLE) %s", console.ptr);
