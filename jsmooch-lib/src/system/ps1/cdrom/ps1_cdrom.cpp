@@ -412,6 +412,17 @@ void core::cmd_test() {
     test.subcmd = sub;
     //printf("\n(CDROM) TEST %02x", sub);
     switch (sub) {
+        case 0x04: // Reset SCEx counters
+            io.stat.motor_fullspeed = true;
+            finish_CMD(true, 3);
+            return;
+        case 0x05: // Read SCEx counters
+            result(io.stat.u);
+            result(0); // # of TOC reads
+            result(0); // # of SCEx strings
+            queue_interrupt(3);
+            finish_CMD(false, 0);
+            return;
         case 0x20: // CDROM BIOS version 94h,09h,19h,C0h
             result(0x94);
             result(0x09);
@@ -444,22 +455,6 @@ void core::cmd_test() {
             result(0x10);
             queue_interrupt(5);
             return;
-        case 0x04: // Read SCEx string (and force motor on)
-            if (io.stat.shell_open) {
-                test.counterlo = test.counterhi = 0;
-            }
-            else {
-                test.counterlo = test.counterhi = 1;
-            }
-            finish_CMD(true, 3);
-            io.stat.motor_fullspeed = 1;
-            return;
-        case 0x05: // Read total/success
-            result(test.counterlo);
-            result(test.counterhi);
-            queue_interrupt(3);
-            finish_CMD(false, 0);
-            return;
     }
     printf("\n(CDROM) TEST UNKNOWN CMD %02x", sub);
 }
@@ -476,20 +471,30 @@ void core::latch_seek() {
     head.asect = seek.waiting.asect;
     dbgloglog_bus(PS1D_CDROM_SEEK, DBGLS_INFO, "(SEEK) Latching seek to %02d:%02d:%02d", head.amm, head.ass, head.asect, sector_buf.len());
 }
+static constexpr u32 INVALID_ARG = 0x10;
+static constexpr u32 INCORRECT_NUM_PARAMS = 0x20;
+static constexpr u32 INVALID_COMMAND = 0x40;
+static constexpr u32 NOT_READY = 0x80;
 
 void core::cmd_setloc() {
     //printf("\n(CDROM) CMD SetLoc");
+    u32 mm = io.PARAMETER.pop();
+    u32 ss = io.PARAMETER.pop();
+    u32 ff = io.PARAMETER.pop();
+    if (((mm & 0x0F) > 0x09) || (mm > 0x99) || ((ss & 0x0F) > 0x09) || (ss >= 0x60) || ((ff & 0x0F) > 0x09) || (ff >= 0x75)){
+        result(io.stat.u | 1);
+        result(INVALID_ARG);
+        queue_interrupt(5);
+        finish_CMD(false, 0);
+        return;
+    }
+
     stat_irq();
-    if (!io.MODE.ignore_bit) {
-        seek.waiting.amm = decode_bcd(io.PARAMETER.pop());
-        seek.waiting.ass = decode_bcd(io.PARAMETER.pop());
-        seek.waiting.asect = decode_bcd(io.PARAMETER.pop());
-        seek.needs_seek = true;
-        dbgloglog_bus(PS1D_CDROM_SETLOC, DBGLS_INFO, "(Cmd) SetLoc %02d:%02d:%02d", seek.waiting.amm, seek.waiting.ass, seek.waiting.asect);
-    }
-    else {
-        dbgloglog_busn(PS1D_CDROM_SETLOC, DBGLS_INFO, "(Cmd) SetLoc ignore_bit set");
-    }
+    seek.waiting.amm = decode_bcd(mm);
+    seek.waiting.ass = decode_bcd(ss);
+    seek.waiting.asect = decode_bcd(ff);
+    seek.needs_seek = true;
+    dbgloglog_bus(PS1D_CDROM_SETLOC, DBGLS_INFO, "(Cmd) SetLoc %02d:%02d:%02d", seek.waiting.amm, seek.waiting.ass, seek.waiting.asect);
     finish_CMD(false, 0);
 }
 
@@ -515,21 +520,17 @@ u32 core::get_track_from_LBA(u32 LBA) {
 }
 
 void core::cmd_play() {
-    printf("\n\n\nPLAY!");
     dbgloglog_busn(PS1D_CDROM_PLAY, DBGLS_INFO, "(Cmd) Play");
-    if (io.stat.seek || io.stat.read || !io.stat.motor_fullspeed) {
-        dbgloglog_bus(PS1D_CDROM_PLAY, DBGLS_INFO, "(Cmd) Play error can't. SEEK:%d READ:%d FULLSPEED:%d", io.stat.seek, io.stat.read, io.stat.motor_fullspeed);
-        result(0x10);
-        result(0x80);
+    if (io.stat.shell_open) {
+        result(io.stat.u | 1);
+        result(NOT_READY);
         queue_interrupt(5);
         finish_CMD(false, 0);
+        return;
     }
-    if (io.MODE.report && head.mode == HM_AUDIO) {
-        dbgloglog_busn(PS1D_CDROM_PLAY, DBGLS_INFO, "(Cmd) Play req. with reports requested!");
-        printf("\nWARN Play with report interrupts done!");
-    }
-    if (io.PARAMETER.len > 0) {
-        u32 track = io.PARAMETER.pop();
+    stat_irq();
+    u32 track = io.PARAMETER.len > 0 ? decode_bcd(io.PARAMETER.pop()) : 0;
+    if (track != 0) {
         u32 LBA;
         if (track >= data.num_tracks + 1) {
             dbgloglog_busn(PS1D_CDROM_PLAY, DBGLS_INFO, "(Cmd) Play restart current track");
@@ -548,8 +549,9 @@ void core::cmd_play() {
         }
     }
     io.stat.play = 1;
+    sector_buf.reset();
+    finish_CMD(false, 0);
 
-    finish_CMD(true, 3);
 }
 
 void core::cmd_forward() {
@@ -580,6 +582,7 @@ void core::do_cmd_read(u64 clock) {
     io.stat.play = 0;
     io.stat.seek = seek.needs_seek;
     io.stat.read = !io.stat.seek;
+    sector_buf.reset();
     finish_CMD(true, 3);
     if (io.stat.seek) {
         clock += seek_cycles();
@@ -638,7 +641,6 @@ void core::cmd_seekp(u64 clock) {
     io.stat.read = 0;
     io.stat.play = 0;
     head.mode = HM_AUDIO;
-    printf("\nHEAD MODE AUDIO!!!");
     schedule_seek_finish(clock+seek_cycles());
 }
 
@@ -1458,6 +1460,7 @@ void core::write_03(u32 val, u8 sz) {
                     io.HINTSTS.INTSTS = io.irq1s.pop_irq(io.results_out);
                     dbgloglog_bus(PS1D_CDROM_IRQ_ASSERT, DBGLS_INFO, "IRQ assert: %d num_left:%d", io.HINTSTS.INTSTS, total_irqs_len());
                 }
+                recalc_HSTS();
             }
             if (old != io.HINTSTS.u) update_IRQs();
             //printf("\n(CDROM) HCLRCTL write %02x. new HINTSTS %02x", val, io.HINTSTS.u);
@@ -1468,6 +1471,7 @@ void core::write_03(u32 val, u8 sz) {
             if (val & 0x40) {
                 //printf("\n(CDROM) Clear parameter stack");
                 io.PARAMETER.reset();
+                recalc_HSTS();
             }
              if (val & 0x20) {
                  printf("\n(CDROM) Clear sound map XA-ADPCM buffer");

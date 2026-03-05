@@ -1266,7 +1266,7 @@ void imgui_jsmooch_app::setup_wgpu()
 
 int imgui_jsmooch_app::do_setup_before_mainloop()
 {
-    which = jsm::systems::DREAMCAST;
+    //which = jsm::systems::DREAMCAST;
     //which = jsm::systems::ATARI2600;
     //which = jsm::systems::GBC;
     //which = jsm::systems::APPLEIIe;
