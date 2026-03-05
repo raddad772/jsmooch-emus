@@ -467,7 +467,7 @@ void VOICE::cycle(i16 noise_level) {
         adpcm_decode();
     }
     gaussian_me_up();
-    if (io.noise_enable) sample = VOL(noise_level, env.adsr.output);
+    if (io.noise_enable) sample = noise_level;
     else sample = VOL(sample, env.adsr.output);
     sample_l = VOL(io.vol_l.sweep.output, sample);
     sample_r = VOL(io.vol_r.sweep.output, sample);
@@ -740,10 +740,10 @@ i32 FIR_filter::run() {
     i32 o = 0;
     u32 p = pos;
     for (const i32 s : reverb_FIR) {
-        o += (samples[p] * s) >> 15;
+        o += (samples[p] * s);// >> 15;
         p = (p + 1) % 39;
     }
-    return o;
+    return o >> 15;
 }
 #define RVOL(a,b) ((static_cast<i32>(a)*static_cast<i32>(b))>>15)
 
