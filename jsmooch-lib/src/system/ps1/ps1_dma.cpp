@@ -11,6 +11,7 @@
 namespace PS1 {
 void DMA_channel::do_linked_list()
 {
+    if (num==0) printf("\nMDEC IN LL!");
     //printf("\nDo linked list CH%d", num);
     u32 addr = base_addr & 0x1FFFFC;
     dbgloglog_bus(PS1D_DMA_CH0+num, DBGLS_INFO, "CH:%d LINKED LIST  DEST:%08x  IE:%d", num, addr, (bus->dma.irq.IE >> num) & 1);
@@ -66,13 +67,14 @@ u32 DMA_channel::transfer_size() const
 
 void DMA_channel::do_single_block_request()
 {
+    //if (num==0) printf("\nMDEC IN BLOCK REQ!");
     u32 mstep = (step == D_increment) ? 4 : -4;
     u32 copies = block_size;
     if (block_count == 0) {
         enable = 0;
         return;
     }
-    dbgloglog_bus(PS1D_DMA_CH0+num, DBGLS_INFO, "CH:%d SINGLE BLOCK  DEST:%08x  LEN:%d bytes B:%d IE:%d", num, sync_addr, copies*4, block_count, (bus->dma.irq.IE >> num) & 1);
+    dbgloglog_bus(PS1D_DMA_CH0+num, DBGLS_INFO, "CH:%d SINGLE BLOCKDRQ  DIR:%d DEST:%08x  LEN:%d bytes BLOCK_COUNT:%d IE:%d", num, direction, sync_addr, copies*4, block_count, (bus->dma.irq.IE >> num) & 1);
     //printf("\nDMA ch:%d direction:%d copies:%d base_addr:%05x", num, direction, copies, base_addr);
 
     while (copies > 0) {
@@ -134,8 +136,10 @@ void DMA_channel::do_single_block_request()
         enable = 0;
     }
 }
+
 bool DMA_channel::can_dreq() {
     bool e = enable && sync == D_request && block_count > 0;
+    //if (num == 0 && bus->mdec.can_dreq_in() && sync == D_request && block_count > 0 && bus->cdrom.io.HSTS.DRQSTS) return true;
     if (e) {
         switch (num) {
             case 0:
@@ -153,7 +157,8 @@ bool DMA_channel::can_dreq() {
 }
 
 void DMA_channel::try_dreq() {
-    if (!(enable && sync == D_request && block_count > 0)) return;
+    //if (num != 0)
+    if (!enable || sync != D_request || block_count <1) return;
     while (can_dreq()) {
         do_single_block_request();
     }
@@ -162,6 +167,7 @@ void DMA_channel::try_dreq() {
 
 void DMA_channel::do_block()
 {
+    if (num==0) printf("\nMDEC IN BLOCK!");
     u32 mstep = (step == D_increment) ? 4 : -4;
     u32 addr = base_addr;
     u32 copies = transfer_size();;
@@ -253,7 +259,7 @@ void DMA_channel::do_dma()
 bool DMA_channel::should_trigger()
 {
     u32 menable = (sync == D_manual) ? trigger : 1;
-    if (!trigger && num == 1 && sync == D_request) menable = 0;
+    if (!trigger && num <= 1 && sync == D_request) menable = 0;
     return master_enable && enable && menable;
 }
 

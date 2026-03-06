@@ -1448,6 +1448,7 @@ void core::queue_sector_RDDATA() {
     io.RDDATA.pos = 0;
     io.RDDATA.len = b->len;
     dbgloglog_bus(PS1D_CDROM_RDDATA_START, DBGLS_INFO, "RDDATA request sz:%03x  sectors left in buffer:%d", io.RDDATA.len, sector_buf.len());
+    printf("\nCAN DMA GO? %d", bus->dma.channels[0].can_dreq());
     bus->dma.channels[0].try_dreq();
 }
 

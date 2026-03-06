@@ -32,7 +32,7 @@ static void render_image_view_sysinfo(debugger_interface *dbgr, debugger_view *d
         if (th->cpu.io.I_MASK & b) tb->sprintf("\n  %s", IRQnames[i]);
     }
 
-    tb->sprintf("\n\nDMA channels. Master enable:%d");
+    tb->sprintf("\n\nDMA channels. Master enable:%08x");
     static constexpr char DMANAMES[7][50] = {"MDEC in ", "MDEC out", "GPU     ", "CDROM   ", "SPU     ", "PIO     ", "OTC     "};
     static constexpr char SYNCS[4][50] = {"manual ", "request", "list   ", "invalid"};
     for (u32 i = 0; i < 7; i++) {
