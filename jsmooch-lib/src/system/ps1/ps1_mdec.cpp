@@ -299,7 +299,7 @@ void MDEC::do_decode() {
     }
 }
 void MDEC::write_data(u32 val) {
-    printf("\nMDEC WRITE %08x MODE:%d", val, io.mode);
+    //printf("\nMDEC WRITE %08x MODE:%d", val, io.mode);
     switch (io.mode) {
         case MM_Idle:
             switch (val >> 29) {
@@ -307,7 +307,7 @@ void MDEC::write_data(u32 val) {
                     io.mode = MM_DecodeMacroblock;
                     io.offset = 0;
                     io.num_remaining_param_words = (val & 0xFFFF) << 1;
-                    printf("\nDECODE %d WORDS MACROBLOCK!", io.num_remaining_param_words);
+                    //printf("\nDECODE %d WORDS MACROBLOCK!", io.num_remaining_param_words);
                     if (io.num_remaining_param_words == 0) {
                         io.mode = MM_Idle;
                     }
@@ -316,10 +316,10 @@ void MDEC::write_data(u32 val) {
                     io.mode = MM_SetQuantTable;
                     io.offset = 0;
                     io.num_remaining_param_words = val & 1 ? 64 : 32;
-                    printf("\nSET QUANT TABLE %d WORDS!", io.num_remaining_param_words);
+                    //printf("\nSET QUANT TABLE %d WORDS!", io.num_remaining_param_words);
                     break;
             case 3:
-                    printf("\nSET SCALE TABLE 64 WORDS!");
+                    //printf("\nSET SCALE TABLE 64 WORDS!");
                     io.mode = MM_SetScaleTable;
                     io.offset = 0;
                     io.num_remaining_param_words = 64;
@@ -356,7 +356,7 @@ void MDEC::write_data(u32 val) {
             }
             io.num_remaining_param_words -= 2;
             if (io.num_remaining_param_words == 0) {
-                printf("\nFINISH QUANT BLOCK!");
+                //printf("\nFINISH QUANT BLOCK!");
                 io.mode = MM_Idle;
             }
             break;
@@ -365,7 +365,7 @@ void MDEC::write_data(u32 val) {
             BLOCK.scale[io.offset++ & 63] = (val >> 16) & 0xFFFF;
             io.num_remaining_param_words -= 2;
             if (io.num_remaining_param_words == 0) {
-                printf("\nFINISH SCALE TABLE! OFFSET:%d", io.offset);
+                //printf("\nFINISH SCALE TABLE! OFFSET:%d", io.offset);
                 io.mode = MM_Idle;
             }
             break;
@@ -380,7 +380,7 @@ u32 MDEC::read_data() {
 }
 
 void MDEC::write_ctrl(u32 val) {
-    printf("\nMDEC CTRL %08x", val);
+    //printf("\nMDEC CTRL %08x", val);
     if (val & 0x80000000) { // reset
         io.mode = MM_Idle;
         io.offset = 0;

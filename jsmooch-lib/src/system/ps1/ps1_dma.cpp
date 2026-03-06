@@ -163,7 +163,7 @@ void DMA_channel::try_dreq() {
     //if (num != 0)
     if (!enable || sync != D_request || block_count <1) return;
     while (can_dreq()) {
-        if (num == 0) printf("\nDREQ! SRC ADDR:%08x", base_addr);
+        //if (num == 0) printf("\nDREQ! SRC ADDR:%08x", base_addr);
         do_single_block_request();
     }
 }
@@ -278,8 +278,8 @@ u32 DMA_channel::get_control() {
            (enable << 24) |
            (trigger << 28) |
            (unknown << 29);
-    if (num < 2) printf("\nRETURN CTRL%d: %08x", num, v);
-    if ((num == 1) && ::dbg.trace_on) dbg_break("THE PLACE", bus->clock.master_cycle_count);
+    //if (num < 2) printf("\nRETURN CTRL%d: %08x", num, v);
+    //if ((num == 1) && ::dbg.trace_on) dbg_break("THE PLACE", bus->clock.master_cycle_count);
     return v;
 }
 
@@ -331,7 +331,7 @@ u32 DMA::read(u32 addr, u32 sz)
     u32 ch_num = ((addr - 0x80) & 0x70) >> 4;
     u32 reg = (addr & 0x0F);
     i64 v = -1;
-    printf("\nDMA READ CH_NUM:%d REG:%d", ch_num, reg);
+    //printf("\nDMA READ CH_NUM:%d REG:%d", ch_num, reg);
     switch(ch_num) {
         case 0:
         case 1:
@@ -405,7 +405,7 @@ void DMA::write(u32 addr, u32 sz, u32 val)
             auto *ch = &channels[ch_num];
             switch(reg) {
                 case 0:
-                    if (ch_num == 0) printf("\nBASE ADDRESS WRITE CH:%d VAL:%08x", ch_num, val);
+                    //if (ch_num == 0) printf("\nBASE ADDRESS WRITE CH:%d VAL:%08x", ch_num, val);
                     //fflush(stdout);
                     ch->base_addr = val & 0xFFFFFF;
                     //if (ch->base_addr == 0x58124) dbg_break("BAD DMA BASE ADDR", 0);
