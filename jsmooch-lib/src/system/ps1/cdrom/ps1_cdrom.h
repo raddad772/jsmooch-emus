@@ -233,12 +233,17 @@ struct DECODER {
 };
 }
 
+struct BUGGED_SECTOR_BUFFER_BUF {
+    u8 data[0x930];
+    u32 len{};
+};
+
 struct BUGGED_SECTOR_BUFFER {
     u32 pos{};
     i32 old{-1}, latest{-1};
-    u8 bufs[8][0x930];
-    u8 *push();
-    u8 *pop();
+    BUGGED_SECTOR_BUFFER_BUF bufs[8];
+    BUGGED_SECTOR_BUFFER_BUF *push();
+    BUGGED_SECTOR_BUFFER_BUF *pop();
     void reset();
     u32 len();
 };

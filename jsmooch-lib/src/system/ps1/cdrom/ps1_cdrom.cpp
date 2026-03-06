@@ -22,8 +22,8 @@ static u32 constexpr masksz[5] = {0, 0xFF, 0xFFFF, 0, 0xFFFFFFFF };
     // no old, latest: old = latest, latest = this
     // old, latest: latest = this
 
-u8 *BUGGED_SECTOR_BUFFER::push() {
-    u8 *p = bufs[pos];
+BUGGED_SECTOR_BUFFER_BUF *BUGGED_SECTOR_BUFFER::push() {
+    auto *p = &bufs[pos];
     if (old != -1 && latest != -1) { // Len of 2+
         static int num = 0;
         if (num == 0) {
@@ -42,7 +42,7 @@ u8 *BUGGED_SECTOR_BUFFER::push() {
     return p;
 }
 
-u8 *BUGGED_SECTOR_BUFFER::pop() {
+BUGGED_SECTOR_BUFFER_BUF *BUGGED_SECTOR_BUFFER::pop() {
     i32 to_use;
     if (old != -1) {
         to_use = old;
@@ -58,7 +58,7 @@ u8 *BUGGED_SECTOR_BUFFER::pop() {
             latest = -1;
         }
     }
-    return bufs[to_use];
+    return &bufs[to_use];
 }
 
 void BUGGED_SECTOR_BUFFER::reset() {
@@ -241,6 +241,9 @@ void core::cmd_start(u64 key, u64 clock) {
     if (cmd >= 0x60) cmd = 0;
     printif(ps1.cdrom.cmd, "\n(CDROM) EXEC CMD %02x", io.CMD);
     dbgloglog_bus(PS1D_CDROM_CMD, DBGLS_INFO, "Exec cmd %02x", io.CMD);
+    /*if ((cmd != 0x1B) && (cmd != 0x06)) {
+        printf("\n(CDROM) CMD %02x", cmd);
+    }*/
     switch(cmd) {
         case 0x0D: // setfilter
             cmd_setfilter();
@@ -570,20 +573,21 @@ void core::cmd_reads(u64 clock) {
 }
 
 void core::do_cmd_read(u64 clock) {
+    stat_irq();
     if (read.still_sched && !seek.needs_seek) {
-        printf("\nABORT read req. processing for already going!");
         dbgloglog_busn(PS1D_CDROM_READ, DBGLS_INFO, "(Cmd) ReadN/S ABORT for already going!");
-        stat_irq();
         return;
     }
+    // TODO: check if we're going to seek to the nextp ending sector anyway and ignore if so
+
     if (seek.needs_seek) {
         dbgloglog_busn(PS1D_CDROM_READ, DBGLS_INFO, "(Cmd) ReadN/S: Seek processing adds time...");
     }
-    io.stat.play = 0;
-    io.stat.seek = seek.needs_seek;
-    io.stat.read = !io.stat.seek;
     sector_buf.reset();
-    finish_CMD(true, 3);
+    // TODO: clear cmd second response
+
+    io.stat.seek = seek.needs_seek;
+    finish_CMD(false, 0);
     if (io.stat.seek) {
         clock += seek_cycles();
     }
@@ -721,9 +725,7 @@ void core::queue_xa_sector(u8 *ptr) {
 }
 
 void core::read_sector() {
-    seek.last_read.disc.amm = head.amm;
-    seek.last_read.disc.asect = head.asect;
-    seek.last_read.disc.ass = head.ass;
+    io.stat.seek_error = 0;
 
     if (seek.needs_seek || io.stat.seek) {
         seek.needs_seek = false;
@@ -731,22 +733,45 @@ void core::read_sector() {
         io.stat.read = 1;
         latch_seek();
     }
+    seek.last_read.disc.amm = head.amm;
+    seek.last_read.disc.asect = head.asect;
+    seek.last_read.disc.ass = head.ass;
+
+
     u8 *ptr = data.ptr_to_data(head.amm, head.ass, head.asect);
+
+    u8 subheader = ptr[XA_SUBHEADER_START+2];
     if (io.MODE.xa_adpcm) {
-        u8 v = ptr[XA_SUBHEADER_START+2];
-        if (v & 0x40) { // real-time
-            if ((v & 0x4)) {// || // audio
-                //(v & 0x8)) { // data, real-time data = audio
-                //if (v & 0x8) printf("\nWARN REALTIME DATA!");
-                queue_xa_sector(ptr);
-    dbgloglog_bus(PS1D_CDROM_SECTOR_READS, DBGLS_INFO, "(READ) Read sector for XA-ADPCM %02d:%02d:%02d into queue size %d", head.amm, head.ass, head.asect, sector_buf.len());
-                return;
-            }
+        if ((subheader & 0x44) == 0x44) {
+            // real-time audio
+            //(v & 0x8)) { // data, real-time data = audio
+            //if (v & 0x8) printf("\nWARN REALTIME DATA!");
+            queue_xa_sector(ptr);
+            dbgloglog_bus(PS1D_CDROM_SECTOR_READS, DBGLS_INFO, "(READ) Read sector for XA-ADPCM %02d:%02d:%02d into queue size %d", head.amm, head.ass, head.asect, sector_buf.len());
+            return;
         }
     }
     dbgloglog_bus(PS1D_CDROM_SECTOR_READS, DBGLS_INFO, "(READ) Read sector %02d:%02d:%02d into queue size %d", head.amm, head.ass, head.asect, sector_buf.len());
 
-    memcpy(sector_buf.push(), ptr, 0x930);
+    BUGGED_SECTOR_BUFFER_BUF *b = sector_buf.push();
+    if (io.MODE.sector_size) {
+        memcpy(b->data, ptr+12, 0x924);
+        b->len = 0x924;
+    }
+    else {
+        // Copy only the data...
+        // Since we only support mode2 r,
+        // form1 800, form2 914
+        if (subheader & 0x20) {
+            //   5   Form2             (0=Form1/800h-byte data, 1=Form2, 914h-byte data)
+            memcpy(b->data, ptr+0x18, 0x914);
+            b->len = 0x914;
+        }
+        else {
+            memcpy(b->data, ptr+0x18, 0x800);
+            b->len = 0x800;
+        }
+    }
     result(io.stat.u);
     queue_interrupt(1);
 }
@@ -1083,7 +1108,7 @@ void core::cmd_gettn() {
 
 void core::cmd_gettd() {
     u32 track_num = decode_bcd(io.PARAMETER.pop());
-    printf("\n(CDROM) CMD GetTD %d", track_num);
+    //printf("\n(CDROM) CMD GetTD %d", track_num);
     if (track_num > data.num_tracks) {
         result(0x10);
         queue_interrupt(5);
@@ -1408,6 +1433,7 @@ void core::write_02(u32 val, u8 sz) {
             return;
     }
 }
+
 void core::queue_sector_RDDATA() {
     if (sector_buf.len() == 0) {
         dbgloglog_busn(PS1D_CDROM_RDDATA_START, DBGLS_WARN, "WARN: RDDATA requested with no buffers.");
@@ -1417,16 +1443,12 @@ void core::queue_sector_RDDATA() {
         dbgloglog_bus(PS1D_CDROM_RDDATA_START, DBGLS_DEBUG, "RDDATA when pos/len:%d/%d", io.RDDATA.pos, io.RDDATA.len);
     }
     io.RDDATA.clear();
-    if (io.latch.MODE_sector_size) {
-        io.RDDATA.len = 0x924;
-        io.RDDATA.ptr += 0x0C; // drop sync bytes
-    }
-    else {
-        io.RDDATA.len = 0x800;
-        io.RDDATA.ptr += 0x18;
-    }
-    memcpy(io.RDDATA.data, sector_buf.pop(), 0x930);
+    BUGGED_SECTOR_BUFFER_BUF *b = sector_buf.pop();
+    memcpy(io.RDDATA.data, b->data, b->len);
+    io.RDDATA.pos = 0;
+    io.RDDATA.len = b->len;
     dbgloglog_bus(PS1D_CDROM_RDDATA_START, DBGLS_INFO, "RDDATA request sz:%03x  sectors left in buffer:%d", io.RDDATA.len, sector_buf.len());
+    bus->dma.channels[0].try_dreq();
 }
 
 void core::write_03(u32 val, u8 sz) {
@@ -1434,7 +1456,9 @@ void core::write_03(u32 val, u8 sz) {
         case 0:
             dbgloglog_bus(PS1D_CDROM_REGRW, DBGLS_INFO, "WRITE HCHPCTL %02x", val);
             io.HCHPCTL.u = val & 0b11100000;
+            recalc_HSTS();
             if (io.HCHPCTL.BFRD && sector_buf.len() > 0) {
+                //printf("\nQueue sector read!");
                 queue_sector_RDDATA();
             }
             else if (!io.HCHPCTL.BFRD) {

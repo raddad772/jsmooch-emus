@@ -139,7 +139,7 @@ bool DMA_channel::can_dreq() {
     if (e) {
         switch (num) {
             case 0:
-                return bus->mdec.can_dreq_in();
+                return bus->mdec.can_dreq_in() && bus->cdrom.io.HSTS.DRQSTS;
                 break;
             case 1:
                 return bus->mdec.can_dreq_out();
