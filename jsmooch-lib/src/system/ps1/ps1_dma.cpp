@@ -74,11 +74,11 @@ void DMA_channel::do_single_block_request()
         enable = 0;
         return;
     }
-    dbgloglog_bus(PS1D_DMA_CH0+num, DBGLS_INFO, "CH:%d SINGLE BLOCKDRQ  DIR:%d DEST:%08x  LEN:%d bytes BLOCK_COUNT:%d IE:%d", num, direction, sync_addr, copies*4, block_count, (bus->dma.irq.IE >> num) & 1);
+    dbgloglog_bus(PS1D_DMA_CH0+num, DBGLS_INFO, "CH:%d SINGLE BLOCKDRQ  DIR:%d DEST:%08x  LEN:%d bytes BLOCK_COUNT:%d IE:%d", num, direction, base_addr, copies*4, block_count, (bus->dma.irq.IE >> num) & 1);
     //printf("\nDMA ch:%d direction:%d copies:%d base_addr:%05x", num, direction, copies, base_addr);
 
     while (copies > 0) {
-        u32 cur_addr = sync_addr & 0x1FFFFC;
+        u32 cur_addr = base_addr & 0x1FFFFC;
         u32 src_word = 0;
         switch(direction) {
             case D_from_ram:
@@ -101,7 +101,7 @@ void DMA_channel::do_single_block_request()
             case D_to_ram:
                 switch(num) {
                     case DP_OTC:
-                        src_word = (copies == 1) ? 0xFFFFFF : ((sync_addr - 4) & 0x1FFFFF);
+                        src_word = (copies == 1) ? 0xFFFFFF : ((base_addr - 4) & 0x1FFFFF);
                         break;
                     case DP_GPU:
                         src_word = bus->gpu.get_gpuread();
@@ -127,7 +127,7 @@ void DMA_channel::do_single_block_request()
                 printf("\nUnsupported direction %d", direction);
                 break;
         }
-        sync_addr = (sync_addr + mstep) & 0xFFFFFFFF;
+        base_addr = (base_addr + mstep) & 0xFFFFFFFF;
         copies--;
     }
     block_count--;
@@ -143,10 +143,13 @@ bool DMA_channel::can_dreq() {
     if (e) {
         switch (num) {
             case 0:
-                return bus->mdec.can_dreq_in() && bus->cdrom.io.HSTS.DRQSTS;
+                return bus->mdec.can_dreq_in();
                 break;
             case 1:
                 return bus->mdec.can_dreq_out();
+                break;
+            case 3:
+                return bus->cdrom.io.HSTS.DRQSTS;
                 break;
             default:
                 printf("\nWARN DREQ FOR CH %d???", num);;
@@ -160,6 +163,7 @@ void DMA_channel::try_dreq() {
     //if (num != 0)
     if (!enable || sync != D_request || block_count <1) return;
     while (can_dreq()) {
+        if (num == 0) printf("\nDREQ! SRC ADDR:%08x", base_addr);
         do_single_block_request();
     }
 }
@@ -274,7 +278,8 @@ u32 DMA_channel::get_control() {
            (enable << 24) |
            (trigger << 28) |
            (unknown << 29);
-    //printf("\nRETURN CTRL: %08x", v);
+    if (num < 2) printf("\nRETURN CTRL%d: %08x", num, v);
+    if ((num == 1) && ::dbg.trace_on) dbg_break("THE PLACE", bus->clock.master_cycle_count);
     return v;
 }
 
@@ -326,6 +331,7 @@ u32 DMA::read(u32 addr, u32 sz)
     u32 ch_num = ((addr - 0x80) & 0x70) >> 4;
     u32 reg = (addr & 0x0F);
     i64 v = -1;
+    printf("\nDMA READ CH_NUM:%d REG:%d", ch_num, reg);
     switch(ch_num) {
         case 0:
         case 1:
@@ -399,10 +405,9 @@ void DMA::write(u32 addr, u32 sz, u32 val)
             auto *ch = &channels[ch_num];
             switch(reg) {
                 case 0:
-                    //printf("\nBASE ADDRESS WRITE CH:%d VAL:%08x", ch_num, val);
+                    if (ch_num == 0) printf("\nBASE ADDRESS WRITE CH:%d VAL:%08x", ch_num, val);
                     //fflush(stdout);
                     ch->base_addr = val & 0xFFFFFF;
-                    ch->sync_addr = ch->base_addr;
                     //if (ch->base_addr == 0x58124) dbg_break("BAD DMA BASE ADDR", 0);
                     break;
                 case 4:

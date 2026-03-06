@@ -132,7 +132,7 @@ u32 core::mainbus_read(u32 addr, u8 sz, bool has_effect) {
         case 0x1F801800: {
             recalc_HSTS();
             u32 v = io.HSTS.u | (io.HSTS.u << 8) | (io.HSTS.u << 16) | (io.HSTS.u << 24);
-            dbgloglog_bus(PS1D_CDROM_REGRW, DBGLS_INFO, "READ HSTS %02x   buf_len:%d  pos/len:%d/%d", v & 0xFF, sector_buf.len(), io.RDDATA.pos, io.RDDATA.len);
+            dbgloglog_bus(PS1D_CDROM_REGRW, DBGLS_INFO, "READ HSTS %02x   buf_len:%d  pos/len:%d/%d DRQSTS:%d", v & 0xFF, sector_buf.len(), io.RDDATA.pos, io.RDDATA.len, v & 0x40);
             return v & masksz[sz];
         }
         case 0x1F801801: return read_01(sz, has_effect);
@@ -170,7 +170,7 @@ u32 core::read_01(u8 sz, bool has_effect) {
 u32 core::read_02(u8 sz, bool has_effect) {
     // RDDATA
     // if DRQSTS is set, the datablock (disk sector) can be then read from this register
-    if (io.HCHPCTL.BFRD && io.HSTS.DRQSTS) {
+    if (io.HCHPCTL.BFRD) {
         u32 v = io.RDDATA.read_byte();
         if (sz >= 2) v |= io.RDDATA.read_byte() << 8;
         if (sz == 4) {
@@ -747,31 +747,51 @@ void core::read_sector() {
             //(v & 0x8)) { // data, real-time data = audio
             //if (v & 0x8) printf("\nWARN REALTIME DATA!");
             queue_xa_sector(ptr);
-            dbgloglog_bus(PS1D_CDROM_SECTOR_READS, DBGLS_INFO, "(READ) Read sector for XA-ADPCM %02d:%02d:%02d into queue size %d", head.amm, head.ass, head.asect, sector_buf.len());
+            dbgloglog_bus(PS1D_CDROM_SECTOR_READS, DBGLS_INFO, "(READ) Read sector for XA-ADPCM %02d:%02d:%02d into queue size %d raw_sector:%d", head.amm, head.ass, head.asect, sector_buf.len(), io.MODE.sector_size);
             return;
         }
     }
-    dbgloglog_bus(PS1D_CDROM_SECTOR_READS, DBGLS_INFO, "(READ) Read sector %02d:%02d:%02d into queue size %d", head.amm, head.ass, head.asect, sector_buf.len());
+    dbgloglog_bus(PS1D_CDROM_SECTOR_READS, DBGLS_INFO, "(READ) Read sector %02d:%02d:%02d into queue size %d  raw_sector:%d", head.amm, head.ass, head.asect, sector_buf.len(), io.MODE.sector_size);
 
     BUGGED_SECTOR_BUFFER_BUF *b = sector_buf.push();
+    u8 mode = ptr[15];
+    /*
+    // if (raw_sector) {
+    // } else {
+    //   if not mode1 or mode2, ignore with warning!
+    //   offset = mode_1 ? 12 + 4, 12 + 12
+    //   len = 0x800
+    // }
+    */
     if (io.MODE.sector_size) {
-        memcpy(b->data, ptr+12, 0x924);
-        b->len = 0x924;
-    }
-    else {
-        // Copy only the data...
-        // Since we only support mode2 r,
-        // form1 800, form2 914
-        if (subheader & 0x20) {
-            //   5   Form2             (0=Form1/800h-byte data, 1=Form2, 914h-byte data)
-            memcpy(b->data, ptr+0x18, 0x914);
-            b->len = 0x914;
+        if (mode == 1) {
+            //   if mode == 1 {
+            //     copy mode-1 header over (4 bytes)
+            //     memset 8 more bytes to 0
+            //     copy 0x800 bytes after that
+            //     total len = 0x80C
+            //   }
+            memcpy(b->data, ptr+12, 4);
+            memset(b->data+4, 0, 8);
+            memcpy(b->data+12, ptr+24, 0x800);
+            b->len = 0x80C;
         }
         else {
-            memcpy(b->data, ptr+0x18, 0x800);
-            b->len = 0x800;
+            //     offset = 12
+            //     len = 0x924
+            memcpy(b->data, ptr+12, 0x924);
+            b->len = 0x924;
         }
     }
+    else {
+        //   if not mode1 or mode2, ignore with warning!
+        //   offset = mode_1 ? 12 + 4, 12 + 12
+        //   len = 0x800
+        u32 offset = mode == 1 ? 16 : 24;
+        memcpy(b->data, ptr+offset, 0x800);
+        b->len = 0x800;
+    }
+
     result(io.stat.u);
     queue_interrupt(1);
 }
@@ -799,6 +819,7 @@ void core::next_sector() {
 
 void core::get_CD_audio(i16 &left, i16 &right) {
     left = right = 0;
+    io.HSTS.ADPBUSY = 0;
     if (io.MODE.xa_adpcm) {
         if (!io.stat.read) return;
         get_CD_audio_xa(left, right);
@@ -1005,6 +1026,7 @@ void core::get_CD_audio_xa(i16 &left, i16 &right) {
             return;
         }
     }
+    io.HSTS.ADPBUSY = 1;
 
     // Advance in our current block!
     left = xa.decoder.out_samples.l[xa.decoder.out_samples.pos];
@@ -1448,18 +1470,16 @@ void core::queue_sector_RDDATA() {
     io.RDDATA.pos = 0;
     io.RDDATA.len = b->len;
     dbgloglog_bus(PS1D_CDROM_RDDATA_START, DBGLS_INFO, "RDDATA request sz:%03x  sectors left in buffer:%d", io.RDDATA.len, sector_buf.len());
-    printf("\nCAN DMA GO? %d", bus->dma.channels[0].can_dreq());
-    bus->dma.channels[0].try_dreq();
+    //printf("\nCAN DMA GO? %d", bus->dma.channels[0].can_dreq());
+    bus->dma.channels[3].try_dreq();
 }
 
 void core::write_03(u32 val, u8 sz) {
     switch (io.HSTS.RA) {
         case 0:
-            dbgloglog_bus(PS1D_CDROM_REGRW, DBGLS_INFO, "WRITE HCHPCTL %02x", val);
             io.HCHPCTL.u = val & 0b11100000;
-            recalc_HSTS();
+            dbgloglog_bus(PS1D_CDROM_REGRW, DBGLS_INFO, "WRITE HCHPCTL %02x/%02x", val,io.HCHPCTL.u);
             if (io.HCHPCTL.BFRD && sector_buf.len() > 0) {
-                //printf("\nQueue sector read!");
                 queue_sector_RDDATA();
             }
             else if (!io.HCHPCTL.BFRD) {

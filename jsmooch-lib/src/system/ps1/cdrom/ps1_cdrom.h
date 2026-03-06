@@ -111,13 +111,13 @@ struct IO {
 
     union {
         struct {
-            u8 RA : 2; // current register
-            u8 ADPBUSY : 1; // 1=playing xa-adpcm
-            u8 PRMEMPT : 1; // 1=parameter FIFO empty
-            u8 PRMWRDY : 1; // 1=parameter FIFO not full
-            u8 RSLRRDY : 1; // 1=result FIFO not empty
-            u8 DRQSTS : 1; // 1=one or more RDDATA or WRDATA pending
-            u8 BUSYSTS : 1; // 1=HC05 busy acknowledging command
+            u8 RA : 2; // 0-1. current register   1,2
+            u8 ADPBUSY : 1; // 2. 1=playing xa-adpcm 4
+            u8 PRMEMPT : 1; // 3. 1=parameter FIFO empty 8
+            u8 PRMWRDY : 1; // 4. 0x10 1=parameter FIFO not full 0x10
+            u8 RSLRRDY : 1; // 5. 0x20 1=result FIFO not empty 0x20
+            u8 DRQSTS : 1; // 6. 0x40 1=one or more RDDATA or WRDATA pending 0x40
+            u8 BUSYSTS : 1; // 7. 1=HC05 busy acknowledging command 0x80
         };
         u8 u{};
     } HSTS{};

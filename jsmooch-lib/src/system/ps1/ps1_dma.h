@@ -41,7 +41,6 @@ struct DMA_channel {
     u32 chop_dma_size{}, chop_cpu_size{};
     u32 unknown{};
     u32 base_addr{};
-    u32 sync_addr{};
     u32 block_size{}, block_count{};
     DMA_step step{D_increment};
     DMA_sync sync{D_manual};

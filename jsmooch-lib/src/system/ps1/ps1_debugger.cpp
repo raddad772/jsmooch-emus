@@ -152,6 +152,7 @@ static void setup_dbglog(debugger_interface *dbgr, core *th)
     bus.add_node(dv, "IRQs", "IRQ", PS1D_BUS_IRQS, dma_c);
     bus.add_node(dv, "IRQ ACKs", "IRQ ACK", PS1D_BUS_IRQ_ACK, dma_c);
     bus.add_node(dv, "Console Logs", "Console", PS1D_BUS_CONSOLE, dma_c);
+    bus.add_node(dv, "IO area R/W", "IO RW", PS1D_BUS_REGAREA, dma_c);
     th->cpu.trace.console_log_id = PS1D_BUS_CONSOLE;
 
     dma_c = 0x00FFFF;
