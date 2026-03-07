@@ -742,8 +742,10 @@ void core::read_sector() {
     u8 *ptr = data.ptr_to_data(head.amm, head.ass, head.asect);
 
     u8 subheader = ptr[XA_SUBHEADER_START+2];
+    u8 mode = ptr[15];
+    if (mode==0) printf("\nWARNMODE0?");
     if (io.MODE.xa_adpcm) {
-        if ((subheader & 0x44) == 0x44) {
+        if (mode == 2 && ((subheader & 0x44) == 0x44)) {
             // real-time audio
             //(v & 0x8)) { // data, real-time data = audio
             //if (v & 0x8) printf("\nWARN REALTIME DATA!");
@@ -755,7 +757,6 @@ void core::read_sector() {
     dbgloglog_bus(PS1D_CDROM_SECTOR_READS, DBGLS_INFO, "(READ) Read sector %02d:%02d:%02d into queue size %d  raw_sector:%d", head.amm, head.ass, head.asect, sector_buf.len(), io.MODE.sector_size);
 
     BUGGED_SECTOR_BUFFER_BUF *b = sector_buf.push();
-    u8 mode = ptr[15];
     /*
     // if (raw_sector) {
     // } else {
@@ -1102,6 +1103,7 @@ void core::cmd_stop(u64 clock) {
     io.stat.read = 0;
     io.stat.play = 0;
     stat_irq();
+    if (read.still_sched) bus->scheduler.delete_if_exist(read.sched_id);
     schedule_finish(clock + (ONEFRAME * 60 * 2));
 }
 

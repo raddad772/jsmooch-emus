@@ -155,7 +155,7 @@ void MDEC::convert_yuv(u32 *out, i16 *luma, u32 bx, u32 by) {
 
 
 bool MDEC::can_dreq_in() const {
-    return fifo_in.len < (MDEC_NUMHWORDS_IN-128) && io.stat.data_in_req;
+    return (io.num_remaining_param_words > 0) || (fifo_in.len < (MDEC_NUMHWORDS_IN-128)) && io.stat.data_in_req;
 }
 
 bool MDEC::can_dreq_out() const {
