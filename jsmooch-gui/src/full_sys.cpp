@@ -1054,7 +1054,7 @@ void full_system::load_default_ROM()
             //worked = grab_cue(&ROMs, which, "Resident Evil (USA)", nullptr); // appears to work somewhat
             //worked = grab_cue(&ROMs, which, "Resident Evil 2 (USA)", nullptr);
             //worked = grab_cue(&ROMs, which, "Silent Hill (USA)", nullptr);
-            worked = grab_cue(&ROMs, which, "Tomb Raider (USA) (Rev 1)", nullptr); // req. MDEC
+            //worked = grab_cue(&ROMs, which, "Tomb Raider (USA) (Rev 1)", nullptr); // req. MDEC
             //worked = grab_cue(&ROMs, which, "Tomb Raider II - Starring Lara Croft (USA) (Rev 2)", nullptr);
             //worked = grab_cue(&ROMs, which, "Metal Slug X (USA)", nullptr);
             //worked = grab_cue(&ROMs, which, "Gran Turismo 2 (USA) (Simulation Mode) (Rev 1)", nullptr);
