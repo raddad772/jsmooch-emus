@@ -87,17 +87,25 @@ void core::cmd02_quick_rect()
     unready_all();
     u32 ysize = (CMD[2] >> 16) & 0xFFFF;
     u32 xsize = (CMD[2]) & 0xFFFF;
-    u32 BGR = BGR24to15(CMD[0] & 0xFFFFFF);
+    u32 BGR = BGR24to15(CMD[0] & 0xFFFFFF) & 0x7FFF;
     u32 start_y = (CMD[1] >> 16) & 0xFFFF;
     u32 start_x = (CMD[1]) & 0xFFFF;
+    if (start_x > 1023) start_x = 1023;
+    if (start_y > 511) start_y = 511;
+    u32 end_x = start_x + xsize;
+    u32 end_y = start_y + ysize;
+    if (end_x > 1023) end_x = 1023;
+    if (end_y > 511) end_y = 511;
     //printf("\nX:%d  Y:%d  XS:%d  YS:%d", start_x, start_y, xsize, ysize);
 
     //if (LOG_DRAW_QUADS) console.log('QUICKRECT! COLOR', hex4(BGR), 'X Y', start_x, start_y, 'SZ X SZ Y', xsize, ysize);
-    for (u32 y = start_y; y < (start_y+ysize); y++) {
-        for (u32 x = start_x; x < (start_x + xsize); x++) {
-            u32 addr = (2048*y)+(x*2);
-            cW16(VRAM, addr & 0xFFFFF, BGR);
-            set_cmd_px(y, x);
+    for (u32 y = start_y; y < end_y; y++) {
+        for (u32 x = start_x; x < end_x; x++) {
+            //if ((x >= draw_area_left) && (x < draw_area_right) && (y >= draw_area_top) && (y < draw_area_bottom)) {
+                u32 addr = (2048*y)+(x*2);
+                cW16(VRAM, addr & 0xFFFFF, BGR);
+                set_cmd_px(y, x);
+            //}
         }
     }
 
@@ -1600,12 +1608,10 @@ void core::gp0_image_load_continue(u32 cmd)
             u32 draw_it = 1;
             if (io.GPUSTAT.preserve_masked_pixels) {
                 u16 v = cR16(VRAM, addr);
-                if (v & 0x8000) draw_it = 0;
+                if (v & 0x8000) continue;
             }
-            if (draw_it) {
-                cW16(VRAM, addr & 0xFFFFF, px | force_set_mask);
-                set_cmd_px(y, x);
-            }
+            cW16(VRAM, addr & 0xFFFFF, px | force_set_mask);
+            set_cmd_px(y, x);
         }
 
         load_buffer.img_x++;
