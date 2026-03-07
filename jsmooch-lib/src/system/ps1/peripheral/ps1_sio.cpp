@@ -71,7 +71,6 @@ void SIO0::update_ACKs(SIO0_device port, u32 level)
             cont2_ack = level;
             break;
     }
-
     u32 new_ack = cont1_ack | cont2_ack | mem1_ack | mem2_ack;
     dbgloglog_bus(PS1D_SIO0_ACK, DBGLS_TRACE, "ACK %d", new_ack);
 

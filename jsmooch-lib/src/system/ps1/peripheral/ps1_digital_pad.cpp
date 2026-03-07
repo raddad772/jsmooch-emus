@@ -56,6 +56,7 @@ static void set_CS(void *ptr, u32 level, u64 clock_cycle) {
     if (old_CS != th->interface.CS) {
         th->selected = 0;
         th->protocol_step = 0;
+        printf("\nGAMEPAD SELECT DOWN!");
         if (th->interface.CS) {
             printif(ps1.pad, "\npad: CS 0->1, latch buttons");
             th->latch_buttons();
@@ -91,6 +92,7 @@ static void scheduler_call(void *ptr, u64 key, u64 current_clock, u32 jitter)
     digital_gamepad *th = static_cast<digital_gamepad *>(ptr);
     auto p = th->pio->id == 1 ? SIO0_controller1 : SIO0_controller2;
     //printf("\ncyc:%lld Callback execute ack: %lld", current_clock, key);
+    th->interface.ACK = key;
     th->bus->sio0.update_ACKs(p, key);
 
     if (key) { // Also schedule to de-assert
@@ -110,6 +112,7 @@ u8 digital_gamepad::exchange_byte(u8 byte, u64 clock_cycle) {
     if (protocol_step == 0) {
         if (byte == 0x01) {
             selected = 1;
+            printf("\nSELECT GAMEPAD!");
             protocol_step++;
 
             //printf("\nSELECT PAD, DO ACK.");
@@ -122,10 +125,11 @@ u8 digital_gamepad::exchange_byte(u8 byte, u64 clock_cycle) {
 
     if (selected) {
         u32 do_ack = 0;
+        printf("\nGP CHECK...");
         if (protocol_step == 1) { // send ID lo, recv Read Command (42h)
-            r = 0x41;
             switch (byte) {
                 case 0x42:
+                    r = 0x41;
                     cmd = PCMD_read;
                     break;
                 default:
@@ -136,7 +140,8 @@ u8 digital_gamepad::exchange_byte(u8 byte, u64 clock_cycle) {
             if (cmd == PCMD_unknown && byte != 0x43) printf("\nUnknown command %02x to controller %d", byte, pio->id);
             if (cmd == PCMD_read) do_ack = 1;
         }
-        else switch (protocol_step) {
+        else {
+            switch (protocol_step) {
                 case 2: // send ID hi, recv TAP (5ah?)
                     r = 0x5A;
                     do_ack = 1;
@@ -146,10 +151,14 @@ u8 digital_gamepad::exchange_byte(u8 byte, u64 clock_cycle) {
                     do_ack = 1;
                     break;
                 case 4: // send bit8...15 of digital switches
-                    if (cmd == PCMD_read) r = buttons[1];
+                    if (cmd == PCMD_read) {
+                        r = buttons[1];
+                        printf("\nFINISH GP READ!");
+                    }
                     break;
                 default:
             }
+        }
         if (do_ack) schedule_ack(clock_cycle, 100, 1);
     }
 

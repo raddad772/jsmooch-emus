@@ -23,6 +23,7 @@ struct memcard {
     u8 do_write(u8 byte);
 
     core *bus;
+    bool do_ack{};
 
     struct {
         u32 addr{};

@@ -22,9 +22,10 @@ static void set_CS(void *ptr, u32 level, u64 clock_cycle) {
     th->interface.CS = level;
     if (old_CS != th->interface.CS) {
         th->selected = 0;
+        printf("\nMECARD SELECT DOWN!");
         th->protocol_step = 0;
         if (th->interface.CS) {
-            printif(ps1.pad, "\npad: CS 0->1, latch buttons");
+            printif(ps1.pad, "\npad: CS 0->1");
         }
         else {
             printif(ps1.pad, "\npad: CS 1->0");
@@ -55,8 +56,9 @@ void memcard::schedule_ack(u64 clock_cycle, u64 time, u32 level)
 static void scheduler_call(void *ptr, u64 key, u64 current_clock, u32 jitter)
 {
     memcard *th = static_cast<memcard *>(ptr);
-    auto p = th->pio->id == 1 ? SIO0_controller1 : SIO0_controller2;
+    auto p = th->pio->id == 1 ? SIO0_mem1 : SIO0_mem2;
     //printf("\ncyc:%lld Callback execute ack: %lld", current_clock, key);
+    th->interface.ACK = key;
     th->bus->sio0.update_ACKs(p, key);
 
     if (key) { // Also schedule to de-assert
@@ -73,6 +75,7 @@ static u8 sch_exchange_byte(void *ptr, u8 byte, u64 clock_cycle) {
 u8 memcard::do_read(u8 byte) {
     u8 last_byte = io.last_byte;
     io.last_byte = byte;
+    do_ack = true;
     if ((protocol_step >= 10) && (protocol_step <= 137)) {
         u32 addr = (io.addr << 10) + (protocol_step - 10);
         u8 v = static_cast<u8 *>(pio->memcard.store.data)[addr];
@@ -104,14 +107,18 @@ u8 memcard::do_read(u8 byte) {
         case 138:
             return io.CKSUM;
         case 139:
+            printf("\nFINISH READ");
+            do_ack = false;
             return 0x47;
     }
+    printf("\nUHOH READ GOT HERE");
     return 0;
 }
 
 u8 memcard::do_write(u8 byte) {
     u8 last_byte = io.last_byte;
     io.last_byte = byte;
+    do_ack = true;
     //printf("\nWRITE STEP %d", protocol_step);
     //if ((protocol_step >= 10) && (protocol_step <= 137)) {
     if ((protocol_step >= 6) && (protocol_step <= 133)) {
@@ -135,15 +142,17 @@ u8 memcard::do_write(u8 byte) {
             io.CKSUM ^= byte;
             return last_byte;
         case 134:
-            printf("\nMATCH? %d", io.CKSUM == byte);
             return last_byte;
         case 135:
             return 0x5C;
         case 136:
             return 0x5D;
         case 137:
+            do_ack = false;
+            printf("\nFINISH WRITE");
             return 0x47;
     }
+    printf("\nUHOH WRITE GOT HERE");
     return 0;
 
 }
@@ -167,7 +176,7 @@ u8 memcard::exchange_byte(u8 byte, u64 clock_cycle) {
     u8 r = 0xFF;
 
     if (selected) {
-        bool do_ack = false;
+        do_ack = false;
         if (protocol_step == 1) { // send ID lo, recv Read Command (42h)
             r = FLAG;
             switch (byte) {
@@ -191,23 +200,21 @@ u8 memcard::exchange_byte(u8 byte, u64 clock_cycle) {
             switch (cmd) {
                 case PCMD_read:
                     r = do_read(byte);
-                    do_ack = true;
                     break;
                 case PCMD_write:
                     r = do_write(byte);
-                    do_ack = true;
                     break;
                 case PCMD_unknown:
                     printf("\nHUH?");
                     break;
                 case PCMD_get_card_id:
                     printf("\nUHHH");
-                    do_ack = false;
                     break;
             }
         }
-
         if (do_ack) schedule_ack(clock_cycle, 100, 1);
+        do_ack = false;
+
     }
 
     protocol_step++;
@@ -217,7 +224,7 @@ u8 memcard::exchange_byte(u8 byte, u64 clock_cycle) {
 memcard::memcard(PS1::core *parent) : bus(parent)
 {
     interface.device_ptr = this;
-    interface.kind = DK_digital_pad;
+    interface.kind = DK_mem_card;
     interface.exchange_byte = &sch_exchange_byte;
     interface.set_CS = &set_CS;
 }

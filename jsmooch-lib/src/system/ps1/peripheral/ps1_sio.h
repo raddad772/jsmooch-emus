@@ -28,7 +28,8 @@ enum SIO0_device {
 
 enum device_kinds {
     DK_none,
-    DK_digital_pad
+    DK_digital_pad,
+    DK_mem_card
 };
 
 struct device {
