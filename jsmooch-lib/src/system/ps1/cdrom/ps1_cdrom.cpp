@@ -555,7 +555,6 @@ void core::cmd_play() {
     io.stat.play = 1;
     sector_buf.reset();
     finish_CMD(false, 0);
-
 }
 
 void core::cmd_forward() {
@@ -579,7 +578,6 @@ void core::do_cmd_read(u64 clock) {
         dbgloglog_busn(PS1D_CDROM_READ, DBGLS_INFO, "(Cmd) ReadN/S ABORT for already going!");
         return;
     }
-    // TODO: check if we're going to seek to the nextp ending sector anyway and ignore if so
 
     if (seek.needs_seek) {
         dbgloglog_busn(PS1D_CDROM_READ, DBGLS_INFO, "(Cmd) ReadN/S: Seek processing adds time...");

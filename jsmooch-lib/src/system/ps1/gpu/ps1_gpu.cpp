@@ -97,6 +97,7 @@ void core::cmd02_quick_rect()
         for (u32 x = start_x; x < (start_x + xsize); x++) {
             u32 addr = (2048*y)+(x*2);
             cW16(VRAM, addr & 0xFFFFF, BGR);
+            set_cmd_px(y, x);
         }
     }
 
@@ -1231,8 +1232,9 @@ void core::cmd80_vram_copy()
             u32 vram_idx = (vram_y * 1024 + vram_x) * 2;
             u16 v = cR16(VRAM, vram_idx & 0xFFFFF);
 
-            vram_x = (dest_x + col) & 1023;
-            vram_y = (dest_y + row) & 511;
+            vram_x = dest_x + col;
+            vram_y = dest_y + row;
+            if ((vram_x > 1023) || (vram_y > 511)) continue;
             vram_idx = (vram_y * 1024 + vram_x) * 2;
 
             if (io.GPUSTAT.preserve_masked_pixels) {
@@ -1240,7 +1242,8 @@ void core::cmd80_vram_copy()
                 if (t & 0x8000) continue;
             }
             cW16(VRAM, vram_idx & 0xFFFFF, v | force_set_mask);
-            //cW16(VRAM, vram_idx & 0xFFFFF, 0xFFFF);
+            set_cmd_px(vram_y, vram_x)
+;            //cW16(VRAM, vram_idx & 0xFFFFF, 0xFFFF);
         }
     }
 
@@ -1608,6 +1611,7 @@ void core::gp0_image_load_continue(u32 cmd)
         }
         if (draw_it) {
             cW16(VRAM, addr & 0xFFFFF, px | force_set_mask);
+            set_cmd_px(y, x);
         }
 
         load_buffer.img_x++;

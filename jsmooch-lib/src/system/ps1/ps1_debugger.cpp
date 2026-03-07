@@ -81,8 +81,8 @@ static void render_image_view_vram(debugger_interface *dbgr, debugger_view *dvie
     debugger_widget_textbox *tb = &dview->options[0].textbox;
     tb->clear();
     tb->sprintf("COORD %d,%d  ", mx, my);
-    if ((mx >= 0) && (mx <= 1023) || (my >= 0) || (my <= 511)) {
-        tb->sprintf("CMD %02x", th->gpu.dbg.cmdbuf[(my * 1024) + mx]);
+    if ((mx >= 0) && (mx <= 1023) && (my >= 0) && (my <= 511)) {
+        tb->sprintf("CMD %02x", th->gpu.dbg.cmdbuf[(my * 1024) + iv->mouse_x]);
     }
 }
 
