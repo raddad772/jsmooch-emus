@@ -19,9 +19,19 @@ struct memcard {
     u8 exchange_byte(u8 byte, u64 clock_cycle);;
     physical_io_device *pio{};
 
+    u8 do_read(u8 byte);
+    u8 do_write(u8 byte);
+
     core *bus;
 
+    struct {
+        u32 addr{};
+        u8 last_byte{};
+        u8 CKSUM{};
+    } io{};
+
     device interface{};
+    u8 FLAG{8};
 
     u32 protocol_step{};
     u32 selected{};

@@ -10,6 +10,8 @@
 namespace PS1::SIO {
 enum cmd_kinds {
     PCMD_read,
+    PCMD_write,
+    PCMD_get_card_id,
     PCMD_unknown
 };
 
@@ -68,6 +70,83 @@ static u8 sch_exchange_byte(void *ptr, u8 byte, u64 clock_cycle) {
     return th->exchange_byte(byte, clock_cycle);
 }
 
+u8 memcard::do_read(u8 byte) {
+    u8 last_byte = io.last_byte;
+    io.last_byte = byte;
+    if ((protocol_step >= 10) && (protocol_step <= 137)) {
+        u32 addr = (io.addr << 10) + (protocol_step - 10);
+        u8 v = static_cast<u8 *>(pio->memcard.store.data)[addr];
+        io.CKSUM ^= v;
+        return v;
+    }
+    switch (protocol_step) {
+        case 2:
+            return 0x5A;
+        case 3:
+            return 0x5D;
+        case 4: // MSB
+            io.addr = byte << 8;
+            io.CKSUM = byte;
+            return 0;
+        case 5: // LSB
+            io.addr |= byte;
+            io.CKSUM ^= byte;
+            printf("\nREAD ADDR %04x", io.addr);
+            return last_byte;
+        case 6:
+            return 0x5C;
+        case 7:
+            return 0x5D;
+        case 8:
+            return io.addr >> 8;
+        case 9:
+            return io.addr & 0xFF;
+        case 138:
+            return io.CKSUM;
+        case 139:
+            return 0x47;
+    }
+    return 0;
+}
+
+u8 memcard::do_write(u8 byte) {
+    u8 last_byte = io.last_byte;
+    io.last_byte = byte;
+    printf("\nWRITE STEP %d", protocol_step);
+    //if ((protocol_step >= 10) && (protocol_step <= 137)) {
+    if ((protocol_step >= 6) && (protocol_step <= 133)) {
+        u32 addr = (io.addr << 10) + (protocol_step - 6);
+        static_cast<u8 *>(pio->memcard.store.data)[addr] = byte;
+        io.CKSUM ^= byte;
+        return last_byte;
+    }
+    switch (protocol_step) {
+        case 2:
+            return 0x5A;
+        case 3:
+            return 0x5D;
+        case 4:
+            io.addr = byte << 8;
+            io.CKSUM = byte;
+            return 0x00;
+        case 5:
+            io.addr |= byte;
+            io.CKSUM ^= byte;
+            return last_byte;
+        case 134:
+            return io.CKSUM;
+        case 135:
+            return 0x5C;
+        case 136:
+            return 0x5D;
+        case 137:
+            return 0x47;
+    }
+    return 0;
+
+}
+
+
 u8 memcard::exchange_byte(u8 byte, u64 clock_cycle) {
     if (!interface.CS) return 0xFF;
 
@@ -86,35 +165,46 @@ u8 memcard::exchange_byte(u8 byte, u64 clock_cycle) {
     u8 r = 0xFF;
 
     if (selected) {
-        u32 do_ack = 0;
+        bool do_ack = false;
         if (protocol_step == 1) { // send ID lo, recv Read Command (42h)
-            r = 0x41;
+            r = FLAG;
             switch (byte) {
-                case 0x42:
+                case 0x52:
                     cmd = PCMD_read;
                     break;
+                case 0x57:
+                    cmd = PCMD_write;
+                    break;
+                case 0x53:
+                    //cmd = PCMD_get_card_id;
+                    //break;
                 default:
                     cmd = PCMD_unknown;
                     break;
             }
-            cmd = (byte == 0x42) ? PCMD_read : PCMD_unknown;
-            if (cmd == PCMD_unknown && byte != 0x43) printf("\nUnknown command %02x to memcard %d", byte, pio->id);
-            if (cmd == PCMD_read) do_ack = 1;
+            if (cmd == PCMD_unknown) printf("\nUnknown command %02x to memcard %d", byte, pio->id);
+            else do_ack = true;
         }
-        else switch (protocol_step) {
-                case 2: // send ID hi, recv TAP (5ah?)
-                    r = 0x5A;
-                    do_ack = 1;
+        else {
+            switch (cmd) {
+                case PCMD_read:
+                    r = do_read(byte);
+                    do_ack = true;
                     break;
-                case 3: // send bit0...7 of digital switches
-                    if (cmd == PCMD_read) r = buttons[0];
-                    do_ack = 1;
+                case PCMD_write:
+                    r = do_write(byte);
+                    do_ack = true;
                     break;
-                case 4: // send bit8...15 of digital switches
-                    if (cmd == PCMD_read) r = buttons[1];
+                case PCMD_unknown:
+                    printf("\nHUH?");
                     break;
-                default:
+                case PCMD_get_card_id:
+                    printf("\nUHHH");
+                    do_ack = false;
+                    break;
             }
+        }
+
         if (do_ack) schedule_ack(clock_cycle, 100, 1);
     }
 
