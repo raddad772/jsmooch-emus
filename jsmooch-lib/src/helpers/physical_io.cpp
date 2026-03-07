@@ -16,6 +16,7 @@ void physical_io_device::move_from(physical_io_device&& other) noexcept {
     // Move the correct union member
     switch (kind) {
         case HID_CONTROLLER: new(&controller) JSM_CONTROLLER(std::move(other.controller)); break;
+        case HID_MEM_CARD: new(&memcard) JSM_MEMCARD(std::move(other.memcard)); break;
         case HID_KEYBOARD: new(&keyboard) JSM_KEYBOARD(std::move(other.keyboard)); break;
         case HID_DISPLAY: new(&display) JSM_DISPLAY(std::move(other.display)); break;
         case HID_MOUSE: new(&mouse) JSM_MOUSE(std::move(other.mouse)); break;
@@ -47,6 +48,9 @@ void physical_io_device::init(IO_CLASSES inkind, bool inenabled, bool inconnecte
             break;
         case HID_CONTROLLER:
             new (&controller)JSM_CONTROLLER();
+            break;
+        case HID_MEM_CARD:
+            new (&memcard)JSM_MEMCARD();
             break;
         case HID_DISPLAY:
             new (&display)JSM_DISPLAY();
@@ -88,6 +92,9 @@ void physical_io_device::destroy_active_member() noexcept
             break;
         case HID_CONTROLLER:
             controller.~JSM_CONTROLLER();
+            break;
+        case HID_MEM_CARD:
+            memcard.~JSM_MEMCARD();
             break;
         case HID_DISPLAY:
             display.~JSM_DISPLAY();

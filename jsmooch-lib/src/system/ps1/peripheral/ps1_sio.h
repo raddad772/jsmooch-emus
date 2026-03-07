@@ -71,6 +71,7 @@ struct SIO0 {
     explicit SIO0(PS1::core *parent);
     void update_ACKs(SIO0_device port, u32 level);
     void gamepad_setup_pio(physical_io_device *d, u32 num, const char*name, bool connected);
+    void memcard_setup_pio(physical_io_device *d, u32 num, const char*name, bool connected);
     PS1::core *bus;
     void update_rx_signal();
     void update_IRQs();

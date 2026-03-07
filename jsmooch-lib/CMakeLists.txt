@@ -319,6 +319,8 @@ set(SOURCE_LIST
         src/system/ps1/gpu/rasterize_tri.h
         src/system/ps1/peripheral/ps1_digital_pad.cpp
         src/system/ps1/peripheral/ps1_digital_pad.h
+        src/system/ps1/peripheral/ps1_memcard.cpp
+        src/system/ps1/peripheral/ps1_memcard.h
         src/system/ps1/peripheral/ps1_sio.cpp
         src/system/ps1/peripheral/ps1_sio.h
         src/system/nds/nds.cpp

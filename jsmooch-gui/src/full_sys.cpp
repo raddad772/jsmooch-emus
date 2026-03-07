@@ -618,6 +618,9 @@ void full_system::setup_ios()
             case HID_CART_PORT:
                 io.cartridge_port.make(IOs, i);
                 break;
+            case HID_MEM_CARD:
+                io.mem_card.make(IOs, i);
+                break;
             case HID_AUDIO_CASSETTE:
                 io.audio_cassette.make(IOs, i);
                 break;
@@ -1066,7 +1069,7 @@ void full_system::load_default_ROM()
             //worked = grab_cue(&ROMs, which, "Cool Boarders 2 (USA)", nullptr);
             //worked = grab_cue(&ROMs, which, "Ridge Racer (USA)", nullptr);
             //worked = grab_cue(&ROMs, which, "Mega Man X4 (USA)", nullptr);
-            //worked = grab_cue(&ROMs, which, "Spyro the Dragon (USA)", nullptr);
+            worked = grab_cue(&ROMs, which, "Spyro the Dragon (USA)", nullptr);
             //worked = grab_cue(&ROMs, which, "Spyro - Year of the Dragon (USA)", nullptr);
             //worked = grab_cue(&ROMs, which, "Metal Slug X (USA)", nullptr);
             //worked = grab_cue(&ROMs, which, "Myst (USA)", nullptr);
@@ -1371,7 +1374,7 @@ void full_system::load_default_ROM()
 #endif
                     load_ROM_into_emu(sys, IOs, ROMs);
                 }
-
+                setup_persistent_store(io.mem_card.get().memcard.store, ROMs);
             }
             worked = 1;
             break;

@@ -159,7 +159,8 @@ enum IO_CLASSES {
     HID_DISC_DRIVE,
     HID_AUDIO_CASSETTE,
     HID_TOUCHSCREEN,
-    HID_HEX_KEYPAD
+    HID_HEX_KEYPAD,
+    HID_MEM_CARD
 };
 
 enum DIGITAL_BUTTON_KIND {
@@ -188,6 +189,11 @@ struct HID_analog_axis {
 };
 
 struct jsm_system;
+
+struct JSM_MEMCARD {
+    char name[50]{};
+    persistent_store store{};
+};
 
 struct JSM_CONTROLLER {
     char name[50]{};
@@ -354,6 +360,7 @@ struct physical_io_device {
 
     union {
         JSM_CONTROLLER controller{};
+        JSM_MEMCARD memcard;
         JSM_KEYBOARD keyboard;
         JSM_DISPLAY display;
         JSM_MOUSE mouse;

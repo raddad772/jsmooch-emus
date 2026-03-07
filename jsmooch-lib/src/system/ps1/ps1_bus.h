@@ -20,6 +20,7 @@
 #include "ps1_dma.h"
 #include "peripheral/ps1_sio.h"
 #include "peripheral/ps1_digital_pad.h"
+#include "peripheral/ps1_memcard.h"
 #include "ps1_timers.h"
 #include "cdrom/ps1_cdrom.h"
 #include "ps1_mdec.h"
@@ -120,6 +121,7 @@ struct core : jsm_system {
     struct {
         bool cached_isolated{};
         SIO::digital_gamepad controller1;
+        SIO::memcard memcard1;
         u32 spu_delay{};
     } io;
 

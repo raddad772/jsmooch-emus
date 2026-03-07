@@ -186,6 +186,7 @@ public:
         cvec_ptr<physical_io_device> cartridge_port{};
         cvec_ptr<physical_io_device> disk_drive{};
         cvec_ptr<physical_io_device> audio_cassette{};
+        cvec_ptr<physical_io_device> mem_card{};
 
         fsio() = default;
     } io{};

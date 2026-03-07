@@ -75,7 +75,7 @@ core::core() :
     gpu(this),
     spu(this),
     dma(this),
-    io{ false, SIO::digital_gamepad(this) }
+    io{ false, SIO::digital_gamepad(this), SIO::memcard(this) }
     {
     for (u32 i = 0; i < 3; i++) {
         timers[i].num = i;

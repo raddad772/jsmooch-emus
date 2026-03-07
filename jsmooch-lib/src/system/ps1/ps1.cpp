@@ -630,6 +630,12 @@ void core::describe_io()
     IOs.reserve(15);
 
     // controllers
+    physical_io_device *memcard = &IOs.emplace_back();
+    sio0.memcard_setup_pio(memcard, 1, "Memcard 1", 1);
+    io.memcard1.pio = memcard;
+    io.memcard1.bus = this;
+    sio0.io.mem1 = &io.memcard1.interface;
+
     physical_io_device *controller = &IOs.emplace_back();
     sio0.gamepad_setup_pio(controller, 1, "Controller 1", 1);
     io.controller1.pio = controller;

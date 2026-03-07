@@ -165,6 +165,21 @@ digital_gamepad::digital_gamepad(PS1::core *parent) : bus(parent)
     interface.set_CS = &set_CS;
 }
 
+void SIO0::memcard_setup_pio(physical_io_device *d, u32 num, const char*name, bool connected) {
+    d->init(HID_MEM_CARD, connected, connected, true, true);
+    snprintf(d->memcard.name, sizeof(d->memcard.name), "%s", name);
+    d->id = num;
+    d->kind = HID_MEM_CARD;
+    d->connected = connected;
+    d->enabled = connected;
+
+    JSM_MEMCARD *m = &d->memcard;
+    m->store.persistent = true;
+    m->store.requested_size = 128 * 1024;
+    m->store.fill_value = 0;
+    m->store.dirty = true;
+}
+
 void SIO0::gamepad_setup_pio(physical_io_device *d, u32 num, const char*name, bool connected)
 {
     d->init(HID_CONTROLLER, connected, connected, true, false);
