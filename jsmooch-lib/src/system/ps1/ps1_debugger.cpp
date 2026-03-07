@@ -60,6 +60,8 @@ static void render_image_view_vram(debugger_interface *dbgr, debugger_view *dvie
     u8 *a = th->gpu.VRAM;
     u16 *gbao = reinterpret_cast<u16 *>(a);
     u32 *img32 = outbuf;
+    i32 mx = iv->mouse_x - 2;
+    i32 my = iv->mouse_y - 2;
 
     for (u32 ry = 0; ry < 512; ry++) {
         u32 y = ry;
@@ -69,15 +71,18 @@ static void render_image_view_vram(debugger_interface *dbgr, debugger_view *dvie
             u32 di = ((y * 1024) + x);
 
             u32 color = ps1_to_screen(gbao[di]);
+            if (rx == mx && ry == my) {
+                color ^= 0xFFFFFF;
+            }
             *line_out_ptr = color;
             line_out_ptr++;
         }
     }
     debugger_widget_textbox *tb = &dview->options[0].textbox;
     tb->clear();
-    tb->sprintf("COORD %d,%d  ", iv->mouse_x, iv->mouse_y);
-    if ((iv->mouse_x >= 0) && (iv->mouse_x <= 1023) || (iv->mouse_y >= 0) || (iv->mouse_y <= 511)) {
-        tb->sprintf("CMD %02x", th->gpu.dbg.cmdbuf[(iv->mouse_y * 1024) + iv->mouse_x]);
+    tb->sprintf("COORD %d,%d  ", mx, my);
+    if ((mx >= 0) && (mx <= 1023) || (my >= 0) || (my <= 511)) {
+        tb->sprintf("CMD %02x", th->gpu.dbg.cmdbuf[(my * 1024) + mx]);
     }
 }
 
