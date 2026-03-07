@@ -47,7 +47,7 @@ struct imgui_jsmooch_app {
     void render_debug_views(ImGuiIO& io, bool update_dasm_scroll, u64 cur_time);
     void render_memory_view();
     void render_event_view();
-    void render_image_views();
+    void render_image_views(ImGuiIO& io);
     void render_dbglog_views(bool update_dasm_scroll, u64 cur_time);
     void render_trace_view(bool update_dasm_scroll);
     void render_console_view(bool update_dasm_scroll);

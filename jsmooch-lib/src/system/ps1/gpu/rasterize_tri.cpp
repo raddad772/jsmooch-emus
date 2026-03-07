@@ -214,6 +214,7 @@ void core::RT_draw_flat_tex_triangle_modulated(RT_POINT2D *v0, RT_POINT2D *v1, R
 void core::RT_draw_shaded_tex_triangle_modulated_semi(RT_POINT2D *v0, RT_POINT2D *v1, RT_POINT2D *v2, TEXTURE_SAMPLER *ts)
 {
     MINMAX;
+    // SoTN cloud
 
     i64 cross_product_z = cpz(v0, v1, v2);
     if (cross_product_z < 0) {
@@ -265,6 +266,7 @@ void core::RT_draw_shaded_tex_triangle_modulated_semi(RT_POINT2D *v0, RT_POINT2D
 void core::RT_draw_shaded_tex_triangle_modulated(RT_POINT2D *v0, RT_POINT2D *v1, RT_POINT2D *v2, TEXTURE_SAMPLER *ts)
 {
     MINMAX;
+    // SotN menu
 
     i64 cross_product_z = cpz(v0, v1, v2);
     if (cross_product_z < 0) {

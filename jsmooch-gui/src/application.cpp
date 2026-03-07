@@ -207,7 +207,7 @@ static void render_emu_window(full_system &fsys, ImGuiIO& io, u32 frame_multi)
 #define DISASM_VIEW_DEFAULT_ENABLE 0
 #define SOURCE_LIST_VIEW_DEFAULT_ENABLE 0
 #define IMAGE_VIEW_DEFAULT_ENABLE 0
-#define DBGLOG_VIEW_DEFAULT_ENABLE 1
+#define DBGLOG_VIEW_DEFAULT_ENABLE 0
 #define TRACE_VIEW_DEFAULT_ENABLE 0
 #define CONSOLE_VIEW_DEFAULT_ENABLE 0
 #define WAVEFORM_VIEW_DEFAULT_ENABLE 0
@@ -1142,13 +1142,17 @@ void imgui_jsmooch_app::render_dbglog_views(bool update_dasm_scroll, u64 cur_tim
     }
 }
 
-void imgui_jsmooch_app::render_image_views()
+void imgui_jsmooch_app::render_image_views(ImGuiIO& io)
 {
     u32 i=0;
     for (auto &myv: fsys.images) {
         managed_window *mw = register_managed_window(0x500 + (i++), mwk_debug_image, myv.view->image.label, IMAGE_VIEW_DEFAULT_ENABLE);
         if (mw->enabled) {
             if (ImGui::Begin(myv.view->image.label)) {
+                mouse_emu_struct a{};
+                get_mouse_coords(io, a);
+                myv.view->image.mouse_x = a.x;
+                myv.view->image.mouse_y = a.y + 6;
                 if (ImGui::IsWindowFocused(ImGuiFocusedFlags_RootAndChildWindows) && myv.view->image.FPS_controls.enable) {
                     window_steal_input = true;
                     // TODO: get inputs here!
@@ -1183,7 +1187,7 @@ void imgui_jsmooch_app::render_debug_views(ImGuiIO& io, bool update_dasm_scroll,
     render_memory_view();
     render_disassembly_views(update_dasm_scroll);
     render_dbglog_views(update_dasm_scroll, cur_time);
-    render_image_views();
+    render_image_views(io);
     render_trace_view(update_dasm_scroll);
     render_console_view(update_dasm_scroll);
     render_source_list_view(update_dasm_scroll);

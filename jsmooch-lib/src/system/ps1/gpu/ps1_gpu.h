@@ -151,6 +151,11 @@ struct core {
     cvec_ptr<physical_io_device> display_ptr{};
     JSM_DISPLAY *display{};
 
+    struct {
+        u8 CMD{};
+        u8 cmdbuf[1024 * 1024 * 1]{}; // Same size as VRAM but 8-bit...
+    } dbg{};
+
 private:
     void recalc_display_area();
     void unready_recv_dma() { io.GPUSTAT.ready_recv_dma = 0; }
@@ -190,9 +195,11 @@ private:
     void cmd30_tri_shaded_opaque();
     void cmd32_tri_shaded_semi_transparent();
     void cmd34_tri_shaded_opaque_tex_modulated();
-    void cmd35_tri_extured_opaque_raw();
+    void cmd35_tri_textured_opaque_raw();
+    void set_cmd_px(i32 y, i32 x);
     void cmd36_tri_shaded_opaque_tex_modulated_semi();
     void cmd38_quad_shaded_opaque();
+    void cmdnop() {}
     void cmd3a_quad_shaded_semi_transparent();
     void cmd3c_quad_opaque_shaded_textured_modulated();
     void cmd3d_quad_shaded_textured_modulated_semi();

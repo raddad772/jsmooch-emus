@@ -539,6 +539,7 @@ struct image_view {
     u32 ready_for_display{};
     u32 width{}, height{};
     u32 draw_which_buf{};
+    i32 mouse_x{}, mouse_y{};
 
     struct {
         bool enable{false};

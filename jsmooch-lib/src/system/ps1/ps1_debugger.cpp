@@ -55,7 +55,7 @@ static void render_image_view_vram(debugger_interface *dbgr, debugger_view *dvie
     image_view *iv = &dview->image;
     iv->draw_which_buf ^= 1;
     u32 *outbuf = static_cast<u32 *>(iv->img_buf[iv->draw_which_buf].ptr);
-    memset(outbuf, 0, 1280*512*4);
+    memset(outbuf, 0, 1024*512*4);
 
     u8 *a = th->gpu.VRAM;
     u16 *gbao = reinterpret_cast<u16 *>(a);
@@ -73,8 +73,13 @@ static void render_image_view_vram(debugger_interface *dbgr, debugger_view *dvie
             line_out_ptr++;
         }
     }
+    debugger_widget_textbox *tb = &dview->options[0].textbox;
+    tb->clear();
+    tb->sprintf("COORD %d,%d  ", iv->mouse_x, iv->mouse_y);
+    if ((iv->mouse_x >= 0) && (iv->mouse_x <= 1023) || (iv->mouse_y >= 0) || (iv->mouse_y <= 511)) {
+        tb->sprintf("CMD %02x", th->gpu.dbg.cmdbuf[(iv->mouse_y * 1024) + iv->mouse_x]);
+    }
 }
-
 
 void setup_console_view(core* th, debugger_interface *dbgr)
 {
@@ -220,7 +225,7 @@ static void setup_image_view_vram(core* th, debugger_interface *dbgr) {
     th->dbg.image_views.vram = dbgr->make_view(dview_image);
     auto *dview = &th->dbg.image_views.vram.get();
     image_view *iv = &dview->image;
-    iv->width = 1280;
+    iv->width = 1024;
     iv->height = 512;
     iv->viewport.exists = true;
     iv->viewport.enabled = true;
@@ -230,6 +235,7 @@ static void setup_image_view_vram(core* th, debugger_interface *dbgr) {
     iv->update_func.ptr = th;
     iv->update_func.func = &render_image_view_vram;
     snprintf(iv->label, sizeof(iv->label), "VRAM view");
+    debugger_widgets_add_textbox(dview->options, "blah!", 1);
 }
 
 static void setup_image_view_sysinfo(core* th, debugger_interface *dbgr) {

@@ -570,7 +570,7 @@ void core::cmd34_tri_shaded_opaque_tex_modulated()
     RT_draw_shaded_tex_triangle_modulated(&V1, &V2, &V3, &ts);
 }
 
-void core::cmd35_tri_extured_opaque_raw() {
+void core::cmd35_tri_textured_opaque_raw() {
     // color veretx and UV per, but ignore color
     xy_from_cmd(T1, CMD[1]);
     xy_from_cmd(T2, CMD[4]);
@@ -1733,6 +1733,7 @@ void core::gp0_cmd(u32 cmd) {
 #endif
         polyline_verts = false;
         if ((cmdr >= 0x03) && (cmdr < 0x1F)) cmdr = 0;
+        dbg.CMD = cmdr;
         switch(cmdr) {
             case 0x00: // NOP
             case 0x01: // Clear cache (not implemented)
@@ -1823,8 +1824,8 @@ void core::gp0_cmd(u32 cmd) {
                 current_ins = &core::cmd34_tri_shaded_opaque_tex_modulated;
                 cmd_arg_num = 9;
                 break;
-            case 0x35: // triangle shaded textured opaque modulated
-                current_ins = &core::cmd35_tri_extured_opaque_raw;
+            case 0x35: // triangle shaded textured opaque raw
+                current_ins = &core::cmd35_tri_textured_opaque_raw;
                 cmd_arg_num = 9;
                 break;
             case 0x36: // opaque shaded textured semi-transparent triangle modulated
@@ -1832,9 +1833,11 @@ void core::gp0_cmd(u32 cmd) {
                 cmd_arg_num = 9;
                 break;
             case 0x38: // polygon, 4 points, gouraud-shaded
+            case 0x39: // polygon, 4 points, gouraud-shaded
                 current_ins = &core::cmd38_quad_shaded_opaque;
                 cmd_arg_num = 8;
                 break;
+            case 0x3B:
             case 0x3A: // polygon, 4 points, goraud-shaded, semi-transparent
                 current_ins = &core::cmd3a_quad_shaded_semi_transparent;
                 cmd_arg_num = 8;
@@ -1868,6 +1871,7 @@ void core::gp0_cmd(u32 cmd) {
                 current_ins = &core::cmd48_polyline_flat;
                 polyline_verts = true;
                 break;
+            case 0x52:
             case 0x50:
                 current_ins = &core::cmd50_shaded_line;
                 cmd_arg_num = 5;

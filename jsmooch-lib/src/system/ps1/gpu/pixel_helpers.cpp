@@ -29,6 +29,7 @@ void core::setpix(i32 y, i32 x, u32 color, u32 tex_mask)
     }
     u32 mask_bit = tex_mask | force_set_mask;
     cW16(VRAM, addr, color | mask_bit);
+    set_cmd_px(ry, rx);
 }
 
 void core::setpix_split(i32 y, i32 x, u32 r, u32 g, u32 b, u32 tex_mask)
@@ -47,6 +48,7 @@ void core::setpix_split(i32 y, i32 x, u32 r, u32 g, u32 b, u32 tex_mask)
     u32 color = r | (g << 5) | (b << 10);
     u32 mask_bit = tex_mask | force_set_mask;
     cW16(VRAM, addr, color | mask_bit);
+    set_cmd_px(ry, rx);
 }
 
 static inline u32 BLEND1(u32 b, u32 f)
@@ -182,6 +184,7 @@ void core::semipix(i32 y, i32 x, u32 color, u32 tex_mask, bool force)
     // Now write...
     u32 mask_bit = tex_mask | force_set_mask;
     cW16(VRAM, addr, color | mask_bit);
+    set_cmd_px(ry, rx);
 }
 
 void core::semipixm(i32 y, i32 x, u32 color, u32 mode, u32 tex_mask, bool force)
@@ -209,6 +212,7 @@ void core::semipixm(i32 y, i32 x, u32 color, u32 mode, u32 tex_mask, bool force)
     // Now write...
     u32 mask_bit = tex_mask | force_set_mask;
     cW16(VRAM, addr, color | mask_bit);
+    set_cmd_px(ry, rx);
 }
 
 void core::semipix_split(i32 y, i32 x, u32 r, u32 g, u32 b, u32 tex_mask, bool force)
@@ -240,6 +244,12 @@ void core::semipix_split(i32 y, i32 x, u32 r, u32 g, u32 b, u32 tex_mask, bool f
     // Now write...
     u32 mask_bit = tex_mask | force_set_mask;
     cW16(VRAM, addr, color | mask_bit);
+    set_cmd_px(ry, rx);
 }
 
+void core::set_cmd_px(i32 y, i32 x) {
+    if ((x < 0) || (x > 1023)) return;
+    if ((y < 0) || (y > 511)) return;
+    dbg.cmdbuf[(y * 1024) + x] = dbg.CMD;
+}
 }
