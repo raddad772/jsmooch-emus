@@ -1590,28 +1590,22 @@ void core::gp0_image_save_continue() {
 
 void core::gp0_image_load_continue(u32 cmd)
 {
-    /*recv_gp0[recv_gp0_len] = cmd;
-    recv_gp0_len++;
-    if (recv_gp0_len >= (1024*1024)) {
-        printf("\nWARNING GP0 TRANSFER OVERFLOW!");
-        recv_gp0_len--;
-    }*/
-    // Put in 2 16-bit pixels
-    //console.log('TRANSFERRING!', gp0_transfer_remaining);
     for (u32 i = 0; i < 2; i++) {
         u32 px = cmd & 0xFFFF;
         cmd >>= 16;
         u32 y = load_buffer.y+load_buffer.img_y;
         u32 x = load_buffer.x+load_buffer.img_x;
-        u32 addr = (2048*y)+(x*2) & 0xFFFFF;
-        u32 draw_it = 1;
-        if (io.GPUSTAT.preserve_masked_pixels) {
-            u16 v = cR16(VRAM, addr);
-            if (v & 0x8000) draw_it = 0;
-        }
-        if (draw_it) {
-            cW16(VRAM, addr & 0xFFFFF, px | force_set_mask);
-            set_cmd_px(y, x);
+        if ((y < 511) && (x < 1023)) {
+            u32 addr = (2048*y)+(x*2) & 0xFFFFF;
+            u32 draw_it = 1;
+            if (io.GPUSTAT.preserve_masked_pixels) {
+                u16 v = cR16(VRAM, addr);
+                if (v & 0x8000) draw_it = 0;
+            }
+            if (draw_it) {
+                cW16(VRAM, addr & 0xFFFFF, px | force_set_mask);
+                set_cmd_px(y, x);
+            }
         }
 
         load_buffer.img_x++;
