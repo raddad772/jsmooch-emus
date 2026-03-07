@@ -155,7 +155,7 @@ void MDEC::convert_yuv(u32 *out, i16 *luma, u32 bx, u32 by) {
 
 
 bool MDEC::can_dreq_in() const {
-    return fifo_in.len == 0 && io.stat.data_in_req;
+    return fifo_in.len < (MDEC_NUMHWORDS_IN-128) && io.stat.data_in_req;
 }
 
 bool MDEC::can_dreq_out() const {
@@ -431,7 +431,7 @@ u32 MDEC::read_ctrl() {
     o |= (io.mode != MM_Idle) << 29;
     o |= (fifo_in.len >= 64) << 30;
     o |= (fifo_out.len == 0) << 31;
-    printf("\nMDEC RET STATUS %08x", o);
+    //printf("\nMDEC RET STATUS %08x", o);
     return o;
 }
 

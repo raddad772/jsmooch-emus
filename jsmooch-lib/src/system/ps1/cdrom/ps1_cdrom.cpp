@@ -28,6 +28,7 @@ BUGGED_SECTOR_BUFFER_BUF *BUGGED_SECTOR_BUFFER::push() {
         static int num = 0;
         if (num == 0) {
             printf("\nBUGGED WARN SECTOR BUF FILL!");
+            dbg_break("YO", 0);
         }
         /*if (num == 3) {
             dbg_break("BUGGED SECTOR BUF OVERRUN x4!", 0);
