@@ -89,7 +89,8 @@ struct core {
     u32 IRQ_bit{};
 
     u32 CMD[32]{};
-    u32 cmd_arg_num{}, cmd_arg_index{};
+    i32 cmd_arg_num{}, cmd_arg_index{};
+    bool polyline_verts{false};
     PS1::core *bus{};
     u32 ins_special{};
 
@@ -196,6 +197,7 @@ private:
     void cmd3e_quad_opaque_shaded_textured_modulated_semi();
     void cmd40_line_semi();
     void cmd42_line_opaque();
+    void cmd48_polyline_flat();
     void cmd50_shaded_line();
     void cmd60_rect_opaque_flat();
     void cmd62_rect_semi_flat();

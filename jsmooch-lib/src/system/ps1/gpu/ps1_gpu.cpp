@@ -761,7 +761,7 @@ void core::cmd50_shaded_line() {
     bresenham_shaded_opaque(&V0, &V1);
 }
 
-    void core::cmd42_line_opaque() {
+void core::cmd42_line_opaque() {
     // WRIOW GP0,(0x40<<24)+(COLOR&0xFFFFFF)  ; Write GP0 Command Word (Color+Command)
     // WRIOW GP0,(Y1<<16)+(X1&0xFFFF)         ; Write GP0  Packet Word (Vertex1)
     // WRIOW GP0,(Y2<<16)+(X2&0xFFFF)         ; Write GP0  Packet Word (Vertex2)
@@ -772,6 +772,17 @@ void core::cmd50_shaded_line() {
 #ifdef LOG_GP0
     printf("\nPRIM 40");
 #endif
+}
+
+void core::cmd48_polyline_flat() {
+    u16 color = BGR24to15(CMD[0] & 0xFFFFFF);
+    xy_from_cmd(V0, CMD[1]);
+
+    for (u32 i = 2; i < cmd_arg_index; i++) {
+        xy_from_cmd(V1, CMD[i]);
+        bresenham_opaque(&V0, &V1, color);
+        V0.copyxy(V1);
+    }
 }
 
 
@@ -1616,7 +1627,21 @@ void core::gp0_cmd(u32 cmd) {
         printf("\nWARN CMD DURING VRAM TO CPU!?");
     }
     static bool bad = false;
-    if (bad) { printf("\nVAL %04x", cmd); }
+    if (bad) { printf("\nVAL %08x", cmd); }
+    if (polyline_verts) {
+        // The vertex list is terminated by the bits 12-15 and 28-31 equaling 0x5, or (word & 0xF000F000) == 0x50005000.
+        CMD[cmd_arg_index++] = cmd;
+        if ((cmd & 0xF000F000) == 0x50005000) {
+            polyline_verts = false;
+            (this->*current_ins)();
+            current_ins = nullptr;
+            cmd_arg_index = 0;
+            return;
+        }
+        if (cmd_arg_index > 60) {
+            printf("\nWARN HUGE POLYLINE!");
+        }
+    }
     // Check if we have an instruction..
     if (current_ins) {
         CMD[cmd_arg_index++] = cmd;
@@ -1636,6 +1661,7 @@ void core::gp0_cmd(u32 cmd) {
 #ifdef LOG_GP0
         printf("\n(GPU) CMD %02x", cmdr);
 #endif
+        polyline_verts = false;
         if ((cmdr >= 0x03) && (cmdr < 0x1F)) cmdr = 0;
         switch(cmdr) {
             case 0x00: // NOP
@@ -1754,6 +1780,11 @@ void core::gp0_cmd(u32 cmd) {
             case 0x42: // monochrome line, opaque
                 current_ins = &core::cmd42_line_opaque;
                 cmd_arg_num = 3;
+                break;
+            case 0x48: // poly-line, opaque, flat
+            case 0x4C:
+                current_ins = &core::cmd48_polyline_flat;
+                polyline_verts = true;
                 break;
             case 0x50:
                 current_ins = &core::cmd50_shaded_line;

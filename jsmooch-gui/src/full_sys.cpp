@@ -1051,7 +1051,7 @@ void full_system::load_default_ROM()
 #ifdef SIDELOAD_WITH_CD
             worked = grab_cue(&ROMs, which, "test", nullptr); // Redux CD tests
 #endif
-            worked = grab_cue(&ROMs, which, "Resident Evil (USA)", nullptr);
+            //worked = grab_cue(&ROMs, which, "Resident Evil (USA)", nullptr); // appears to work somewhat
             //worked = grab_cue(&ROMs, which, "Resident Evil 2 (USA)", nullptr);
             //worked = grab_cue(&ROMs, which, "Silent Hill (USA)", nullptr);
             //worked = grab_cue(&ROMs, which, "Tomb Raider (USA) (Rev 1)", nullptr); // req. MDEC
@@ -1076,7 +1076,7 @@ void full_system::load_default_ROM()
             //worked = grab_cue(&ROMs, which, "Rayman 2 - The Great Escape (USA) (En,Fr,Es)", nullptr);
             //worked = grab_cue(&ROMs, which, "Earthworm Jim 2 (Europe)", nullptr);
             //worked = grab_cue(&ROMs, which, "Castlevania - Symphony of the Night (USA)", nullptr);
-            //worked = grab_cue(&ROMs, which, "Metal Gear Solid (USA) (Disc 1) (v1.1)", nullptr);
+            worked = grab_cue(&ROMs, which, "Metal Gear Solid (USA) (Disc 1) (v1.1)", nullptr);
             break;
         case jsm::systems::GBA:
             //worked = grab_ROM(&ROMs, which, "panda.gba", nullptr);

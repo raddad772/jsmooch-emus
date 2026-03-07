@@ -11,6 +11,7 @@ namespace PS1::GPU {
 struct RT_POINT2D {
     void color24_from_cmd(u32 cmd) { r = cmd & 0xFF; g = (cmd >> 8) & 0xFF; b = (cmd >> 16) & 0xFF; }
     void uv_from_cmd(u32 cmd) { u = cmd & 0xFF; v = (cmd >> 8) & 0xFF; }
+    void copyxy(const RT_POINT2D &other) { x = other.x; y = other.y; }
     i32 x{}, y{};
     u32 u{}, v{};
     u32 r{}, g{}, b{};
