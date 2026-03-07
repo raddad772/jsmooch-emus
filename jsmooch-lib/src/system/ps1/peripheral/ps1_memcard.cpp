@@ -91,7 +91,7 @@ u8 memcard::do_read(u8 byte) {
         case 5: // LSB
             io.addr |= byte;
             io.CKSUM ^= byte;
-            printf("\nREAD ADDR %04x", io.addr);
+            printf("\nREAD ADDR %03x", io.addr);
             return last_byte;
         case 6:
             return 0x5C;
@@ -112,7 +112,7 @@ u8 memcard::do_read(u8 byte) {
 u8 memcard::do_write(u8 byte) {
     u8 last_byte = io.last_byte;
     io.last_byte = byte;
-    printf("\nWRITE STEP %d", protocol_step);
+    //printf("\nWRITE STEP %d", protocol_step);
     //if ((protocol_step >= 10) && (protocol_step <= 137)) {
     if ((protocol_step >= 6) && (protocol_step <= 133)) {
         u32 addr = (io.addr << 10) + (protocol_step - 6);
@@ -131,10 +131,12 @@ u8 memcard::do_write(u8 byte) {
             return 0x00;
         case 5:
             io.addr |= byte;
+            printf("\nWRITE ADDR %03x", io.addr);
             io.CKSUM ^= byte;
             return last_byte;
         case 134:
-            return io.CKSUM;
+            printf("\nMATCH? %d", io.CKSUM == byte);
+            return last_byte;
         case 135:
             return 0x5C;
         case 136:
