@@ -490,6 +490,34 @@ void core::cmd2f_quad_flat_textured_semi() {
     RT_draw_flat_tex_triangle_semi(&T2, &T3, &T4, &ts);
 }
 
+void core::cmd3d_quad_shaded_textured_modulated_semi() {
+    V0.color24_from_cmd(CMD[0]);
+    xy_from_cmd(V0, CMD[1]);
+    V0.uv_from_cmd(CMD[2]);
+
+    V1.color24_from_cmd(CMD[3]);
+    xy_from_cmd(V1, CMD[4]);
+    V1.uv_from_cmd(CMD[5]);
+
+    V2.color24_from_cmd(CMD[6]);
+    xy_from_cmd(V2, CMD[7]);
+    V2.uv_from_cmd(CMD[8]);
+
+    V3.color24_from_cmd(CMD[9]);
+    xy_from_cmd(V3, CMD[10]);
+    V3.uv_from_cmd(CMD[11]);
+
+    u16 texpage = CMD[5] >> 16;
+    u16 palette = CMD[2] >> 16;
+
+    TEXTURE_SAMPLER ts;
+    get_texture_sampler_from_texpage_and_palette(texpage, palette, &ts);
+    update_global_texpage(texpage);
+
+    RT_draw_shaded_tex_triangle_modulated_semi(&V0, &V1, &V2, &ts);
+    RT_draw_shaded_tex_triangle_modulated_semi(&V1, &V2, &V3, &ts);
+
+}
 
 void core::cmd30_tri_shaded_opaque()
 {
@@ -540,6 +568,23 @@ void core::cmd34_tri_shaded_opaque_tex_modulated()
     printf("\nPRIM 34");
 #endif
     RT_draw_shaded_tex_triangle_modulated(&V1, &V2, &V3, &ts);
+}
+
+void core::cmd35_tri_extured_opaque_raw() {
+    // color veretx and UV per, but ignore color
+    xy_from_cmd(T1, CMD[1]);
+    xy_from_cmd(T2, CMD[4]);
+    xy_from_cmd(T3, CMD[7]);
+    T1.uv_from_cmd(CMD[2]);
+    T2.uv_from_cmd(CMD[5]);
+    T3.uv_from_cmd(CMD[8]);
+    u16 texpage = CMD[5] >> 16;
+    u16 palette = CMD[2] >> 16;
+    TEXTURE_SAMPLER ts;
+    get_texture_sampler_from_texpage_and_palette(texpage, palette, &ts);
+    update_global_texpage(texpage);
+    RT_draw_flat_tex_triangle(&T1, &T2, &T3, &ts);
+
 }
 
 void core::cmd36_tri_shaded_opaque_tex_modulated_semi()
@@ -699,6 +744,31 @@ void core::cmd3c_quad_opaque_shaded_textured_modulated() {
 
     RT_draw_shaded_tex_triangle_modulated(&T1, &T2, &T3, &ts);
     RT_draw_shaded_tex_triangle_modulated(&T2, &T3, &T4, &ts);
+}
+
+void core::cmd3f_quad_shaded_semi_textured_raw() {
+    xy_from_cmd(T1, CMD[1]);
+    xy_from_cmd(T2, CMD[4]);
+    xy_from_cmd(T3, CMD[7]);
+    xy_from_cmd(T4, CMD[10]);
+
+    T1.uv_from_cmd(CMD[2]);
+    T2.uv_from_cmd(CMD[5]);
+    T3.uv_from_cmd(CMD[8]);
+    T4.uv_from_cmd(CMD[11]);
+
+    /*T1.color24_from_cmd(CMD[0]);
+    T2.color24_from_cmd(CMD[3]);
+    T3.color24_from_cmd(CMD[6]);
+    T4.color24_from_cmd(CMD[9]);*/
+
+    u16 texpage = CMD[5] >> 16;
+    u16 palette = CMD[2] >> 16;
+    TEXTURE_SAMPLER ts;
+    get_texture_sampler_from_texpage_and_palette(texpage, palette, &ts);
+    update_global_texpage(texpage);
+    RT_draw_flat_tex_triangle_semi(&T1, &T2, &T3, &ts);
+    RT_draw_flat_tex_triangle_semi(&T2, &T3, &T4, &ts);
 }
 
 void core::cmd3e_quad_opaque_shaded_textured_modulated_semi() {
@@ -1753,6 +1823,10 @@ void core::gp0_cmd(u32 cmd) {
                 current_ins = &core::cmd34_tri_shaded_opaque_tex_modulated;
                 cmd_arg_num = 9;
                 break;
+            case 0x35: // triangle shaded textured opaque modulated
+                current_ins = &core::cmd35_tri_extured_opaque_raw;
+                cmd_arg_num = 9;
+                break;
             case 0x36: // opaque shaded textured semi-transparent triangle modulated
                 current_ins = &core::cmd36_tri_shaded_opaque_tex_modulated_semi;
                 cmd_arg_num = 9;
@@ -1773,6 +1847,10 @@ void core::gp0_cmd(u32 cmd) {
                 current_ins = &core::cmd3e_quad_opaque_shaded_textured_modulated_semi;
                 cmd_arg_num = 12;
                 break;
+            case 0x3F: // polygon, 4 points, goraud-shaded, semi-transparent, textured & raw??
+                current_ins = &core::cmd3f_quad_shaded_semi_textured_raw;
+                cmd_arg_num = 12;
+                break;
             case 0x40: // monochrome line, opaque
                 current_ins = &core::cmd40_line_semi;
                 cmd_arg_num = 3;
@@ -1780,6 +1858,10 @@ void core::gp0_cmd(u32 cmd) {
             case 0x42: // monochrome line, opaque
                 current_ins = &core::cmd42_line_opaque;
                 cmd_arg_num = 3;
+                break;
+            case 0x3D: // 4 verts, gaurad, textured, semi-transparent, modulated
+                current_ins = &core::cmd3d_quad_shaded_textured_modulated_semi;
+                cmd_arg_num = 12;
                 break;
             case 0x48: // poly-line, opaque, flat
             case 0x4C:

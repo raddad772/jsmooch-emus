@@ -1075,8 +1075,8 @@ void full_system::load_default_ROM()
 
             //worked = grab_cue(&ROMs, which, "Rayman 2 - The Great Escape (USA) (En,Fr,Es)", nullptr);
             //worked = grab_cue(&ROMs, which, "Earthworm Jim 2 (Europe)", nullptr);
-            //worked = grab_cue(&ROMs, which, "Castlevania - Symphony of the Night (USA)", nullptr);
-            worked = grab_cue(&ROMs, which, "Metal Gear Solid (USA) (Disc 1) (v1.1)", nullptr);
+            worked = grab_cue(&ROMs, which, "Castlevania - Symphony of the Night (USA)", nullptr);
+            //worked = grab_cue(&ROMs, which, "Metal Gear Solid (USA) (Disc 1) (v1.1)", nullptr); // seems to work
             break;
         case jsm::systems::GBA:
             //worked = grab_ROM(&ROMs, which, "panda.gba", nullptr);
