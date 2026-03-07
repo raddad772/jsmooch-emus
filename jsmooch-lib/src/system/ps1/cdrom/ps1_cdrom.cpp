@@ -715,7 +715,8 @@ void core::queue_xa_sector(u8 *ptr) {
         }
     }
     if (xa.sector_buf.len > 2) {
-        printf("\nWARN XA AUDIO UP TO 2 BUFFERS!");
+        printf("\nWARN XA AUDIO UP TO %d BUFFERS! FILTER:%d  ", xa.sector_buf.len, io.MODE.xa_filter);
+        printf("\nXA MODE:%d", io.MODE.xa_adpcm);
     }
     if (xa.sector_buf.len >= 8) {
         printf("\nWARN DROP XA BUFFER!");
@@ -823,7 +824,6 @@ void core::get_CD_audio(i16 &left, i16 &right) {
     left = right = 0;
     io.HSTS.ADPBUSY = 0;
     if (io.MODE.xa_adpcm) {
-        if (!io.stat.read) return;
         get_CD_audio_xa(left, right);
     }
     else {

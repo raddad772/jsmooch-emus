@@ -1051,7 +1051,7 @@ void full_system::load_default_ROM()
 #ifdef SIDELOAD_WITH_CD
             worked = grab_cue(&ROMs, which, "test", nullptr); // Redux CD tests
 #endif
-            //worked = grab_cue(&ROMs, which, "Resident Evil (USA)", nullptr);
+            worked = grab_cue(&ROMs, which, "Resident Evil (USA)", nullptr);
             //worked = grab_cue(&ROMs, which, "Resident Evil 2 (USA)", nullptr);
             //worked = grab_cue(&ROMs, which, "Silent Hill (USA)", nullptr);
             //worked = grab_cue(&ROMs, which, "Tomb Raider (USA) (Rev 1)", nullptr); // req. MDEC
@@ -1066,7 +1066,7 @@ void full_system::load_default_ROM()
             //worked = grab_cue(&ROMs, which, "Cool Boarders 2 (USA)", nullptr);
             //worked = grab_cue(&ROMs, which, "Ridge Racer (USA)", nullptr);
             //worked = grab_cue(&ROMs, which, "Mega Man X4 (USA)", nullptr);
-            worked = grab_cue(&ROMs, which, "Spyro the Dragon (USA)", nullptr);
+            //worked = grab_cue(&ROMs, which, "Spyro the Dragon (USA)", nullptr);
             //worked = grab_cue(&ROMs, which, "Spyro - Year of the Dragon (USA)", nullptr);
             //worked = grab_cue(&ROMs, which, "Metal Slug X (USA)", nullptr);
             //worked = grab_cue(&ROMs, which, "Myst (USA)", nullptr);
