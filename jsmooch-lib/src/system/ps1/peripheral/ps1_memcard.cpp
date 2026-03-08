@@ -22,7 +22,6 @@ static void set_CS(void *ptr, u32 level, u64 clock_cycle) {
     th->interface.CS = level;
     if (old_CS != th->interface.CS) {
         th->selected = 0;
-        printf("\nMECARD SELECT DOWN!");
         th->protocol_step = 0;
         if (th->interface.CS) {
             printif(ps1.pad, "\npad: CS 0->1");
@@ -119,6 +118,7 @@ u8 memcard::do_write(u8 byte) {
     u8 last_byte = io.last_byte;
     io.last_byte = byte;
     do_ack = true;
+    FLAG = 0;
     //printf("\nWRITE STEP %d", protocol_step);
     //if ((protocol_step >= 10) && (protocol_step <= 137)) {
     if ((protocol_step >= 6) && (protocol_step <= 133)) {
@@ -164,7 +164,6 @@ u8 memcard::exchange_byte(u8 byte, u64 clock_cycle) {
     if (protocol_step == 0) {
         if (byte == 0x81) {
             selected = 1;
-            printf("\nSELECT MEMCARD!");
             protocol_step++;
 
             //printf("\nSELECT PAD, DO ACK.");

@@ -1065,6 +1065,7 @@ void full_system::load_default_ROM()
             //worked = grab_cue(&ROMs, which, "Tony Hawks Pro Skater 2 (USA)", nullptr); // error parsing cue
             //worked = grab_cue(&ROMs, which, "Crash Bandicoot 1", nullptr);
             //worked = grab_cue(&ROMs, which, "mk2", nullptr);
+            //worked = grab_cue(&ROMs, which, "Doom (USA)", nullptr);
             //worked = grab_cue(&ROMs, which, "Hydro Thunder (USA)", nullptr);
             //worked = grab_cue(&ROMs, which, "Cool Boarders 2 (USA)", nullptr);
             //worked = grab_cue(&ROMs, which, "Ridge Racer (USA)", nullptr);

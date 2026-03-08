@@ -56,7 +56,6 @@ static void set_CS(void *ptr, u32 level, u64 clock_cycle) {
     if (old_CS != th->interface.CS) {
         th->selected = 0;
         th->protocol_step = 0;
-        printf("\nGAMEPAD SELECT DOWN!");
         if (th->interface.CS) {
             printif(ps1.pad, "\npad: CS 0->1, latch buttons");
             th->latch_buttons();
@@ -112,7 +111,6 @@ u8 digital_gamepad::exchange_byte(u8 byte, u64 clock_cycle) {
     if (protocol_step == 0) {
         if (byte == 0x01) {
             selected = 1;
-            printf("\nSELECT GAMEPAD!");
             protocol_step++;
 
             //printf("\nSELECT PAD, DO ACK.");
@@ -125,7 +123,6 @@ u8 digital_gamepad::exchange_byte(u8 byte, u64 clock_cycle) {
 
     if (selected) {
         u32 do_ack = 0;
-        printf("\nGP CHECK...");
         if (protocol_step == 1) { // send ID lo, recv Read Command (42h)
             switch (byte) {
                 case 0x42:
@@ -153,7 +150,6 @@ u8 digital_gamepad::exchange_byte(u8 byte, u64 clock_cycle) {
                 case 4: // send bit8...15 of digital switches
                     if (cmd == PCMD_read) {
                         r = buttons[1];
-                        printf("\nFINISH GP READ!");
                     }
                     break;
                 default:
