@@ -93,7 +93,6 @@ u8 memcard::do_read(u8 byte) {
         case 5: // LSB
             io.addr |= byte;
             io.CKSUM ^= byte;
-            printf("\nREAD ADDR %03x", io.addr);
             return last_byte;
         case 6:
             return 0x5C;
@@ -106,7 +105,6 @@ u8 memcard::do_read(u8 byte) {
         case 138:
             return io.CKSUM;
         case 139:
-            printf("\nFINISH READ");
             do_ack = false;
             return 0x47;
     }
@@ -138,7 +136,6 @@ u8 memcard::do_write(u8 byte) {
             return 0x00;
         case 5:
             io.addr |= byte;
-            printf("\nWRITE ADDR %03x", io.addr);
             io.CKSUM ^= byte;
             return last_byte;
         case 134:
@@ -149,7 +146,7 @@ u8 memcard::do_write(u8 byte) {
             return 0x5D;
         case 137:
             do_ack = false;
-            printf("\nFINISH WRITE");
+            pio->memcard.store.dirty = true;
             return 0x47;
     }
     printf("\nUHOH WRITE GOT HERE");
