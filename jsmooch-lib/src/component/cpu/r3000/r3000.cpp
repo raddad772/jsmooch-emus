@@ -25,46 +25,6 @@ static constexpr char reg_alias_arr[33][12] = {
         "unknown reg"
 };
 
-pipeline_item *pipeline::push()
-{
-    if (num_items == 2) return &empty_item;
-    num_items++;
-    switch(num_items) {
-        case 1:
-            return &item0;
-        case 2:
-            return &item1;
-        default:
-            NOGOHERE;
-    }
-}
-
-void pipeline_item::clear()
-{
-    target = -1;
-    value = 0;
-    new_PC = 0xFFFFFFFF;
-}
-
-void pipeline::clear()
-{
-    item0.clear();
-    item1.clear();
-    current.clear();
-    num_items = 0;
-}
-
-pipeline_item *pipeline::move_forward()
-{
-    if (num_items == 0) return &empty_item;
-    current = item0;
-    item0 = item1;
-
-    item1.clear();
-    num_items--;
-
-    return &current;
-}
 
 void core::do_decode_table() {
     for (u32 op1 = 0; op1 < 0x3F; op1++) {
@@ -350,8 +310,6 @@ core::core(u64 *master_clock_in, u64 *waitstates_in, scheduler_t *scheduler_in, 
     io.I_STAT = IRQ_multiplexer_in;
 
     do_decode_table();
-
-    pipe.clear();
 }
 
 void core::setup_tracing(jsm_debug_read_trace &strct, u64 *trace_cycle_pointer, i32 source_id)
@@ -365,8 +323,11 @@ void core::setup_tracing(jsm_debug_read_trace &strct, u64 *trace_cycle_pointer, 
 
 void core::reset()
 {
-    pipe.clear();
     regs.PC = 0xBFC00000;
+    delay.branch[0] = {};
+    delay.branch[1] = {};
+    delay.load[0] = {};
+    delay.load[1] = {};
 }
 
 void core::add_to_console(u32 ch)
@@ -383,49 +344,8 @@ void core::add_to_console(u32 ch)
     //printf("%c", ch);
 }
 
-void core::delay_slots(pipeline_item &which)
+void core::exception(u32 code, u32 cop0)
 {
-    // Load delay slot from instruction before this one
-    if (which.target > 0) {// R0 stays 0
-        regs.R[which.target] = which.value;
-        //printf("\nDelay slot %s set to %08x", reg_alias_arr[which.target], which.value);
-        which.target = -1;
-    }
-
-    // Branch delay slot
-    if (which.new_PC != 0xFFFFFFFF) {
-        regs.PC = which.new_PC;
-        if ((regs.PC & 0x1FFFFFFF) == 0x6BA0) {
-            dbg_break("WOOPSIE", 0);
-        }
-        if ((regs.PC == 0xA0 && regs.R[9] == 0x3C) || (regs.PC == 0xB0 && regs.R[9] == 0x3D)) {
-            if (regs.R[9] == 0x3D) {
-                add_to_console(regs.R[4]);
-            }
-        }
-        which.new_PC = 0xFFFFFFFF;
-    }
-
-}
-
-void core::flush_pipe()
-{
-    delay_slots(pipe.current);
-    delay_slots(pipe.item0);
-    delay_slots(pipe.item1);
-    pipe.move_forward();
-    pipe.move_forward();
-}
-
-void core::exception(u32 code, u32 branch_delay, u32 cop0)
-{
-    //if (code == 4) dbg_break("Address Unaligned Error!", *clock);
-    //else if (code == 0) {
-    //            dbg_break("IRQ!", *clock);
-    //}
-        //printf("\nCurrent PC at exception: %08x  Current instruction address:%08x", regs.PC, pipe.current.addr);
-    //printf("\nCurrent PC at exception: %08x  Current instruction address:%08x", regs.PC, pipe.current.addr);
-
     u32 mycode = code;
     code <<= 2;
     u32 vector = 0x80000080;
@@ -433,53 +353,51 @@ void core::exception(u32 code, u32 branch_delay, u32 cop0)
         vector = 0xBFC00180;
     }
     u32 raddr;
-    if (!branch_delay) {
-        raddr = regs.PC;
-        //printf("\nNOT BRANCH DELAY? SO DO %08x", raddr);
+    if (delay.branch[0].taken) {
+        raddr = regs.PC - 4;
+        code |= 0x80000000;
+        code |= static_cast<u32>(delay.branch[0].taken) << 30;
+        regs.COP0[RCR_TAR] = delay.branch[0].target;
     }
     else
     {
-        raddr = regs.PC - 4;
-        code |= 0x80000000;
-        //printf("\nBRANCH DELAY!? SO DO %08x", raddr);
-        //dbg_break("BRANCH DELAY", *clock);
+        raddr = regs.PC;
     }
     regs.COP0[RCR_EPC] = raddr;
-    flush_pipe();
 
     if (cop0)
         vector -= 0x40;
 
-    dbglog_exception(mycode, vector, raddr, branch_delay);
+    dbglog_exception(mycode, vector, raddr);
     regs.PC = vector;
     regs.COP0[RCR_Cause] = code;
     u32 lstat = regs.COP0[RCR_SR];
     regs.COP0[RCR_SR] = (lstat & 0xFFFFFFC0) | ((lstat & 0x0F) << 2);
 }
 
-void core::decode(u32 IR, pipeline_item &current)
+void core::decode(u32 IR)
 {
     u32 p1 = (IR & 0xFC000000) >> 26;
 
     if (p1 == 0) {
-        current.op = &decode_table[0x3F + (IR & 0x3F)];
+        cur_ins = &decode_table[0x3F + (IR & 0x3F)];
     }
     else {
-        current.op = &decode_table[p1];
+        cur_ins = &decode_table[p1];
     }
 }
 
-void core::fetch_and_decode()
+bool core::fetch_and_decode()
 {
     if (regs.PC & 3) {
-        exception(4, 0, 0);
+        exception(4, 0);
+        return false;
     }
-    u32 IR = read(read_ptr, regs.PC, 4, 1);
-    auto &current = *pipe.push();
-    decode(IR, current);
-    current.opcode = IR;
-    current.addr = regs.PC;
+    regs.IR = read(read_ptr, regs.PC, 4, 1);
+    decode(regs.IR);
+    cur_ins->opcode = regs.IR;
     regs.PC += 4;
+    return true;
 }
 
 void core::print_context(ctxt &ct, jsm_string &out)
@@ -495,31 +413,15 @@ void core::print_context(ctxt &ct, jsm_string &out)
             out.sprintf("%s:%08x", reg_alias_arr[i], regs.R[i]);
         }
     }
-    if (pipe.current.op->func == &core::fSYSCALL) out.sprintf("\nr4:%08x", regs.R[4]);
+    //if (pipe.current.op->func == &core::fSYSCALL) out.sprintf("\nr4:%08x", regs.R[4]);
 }
 
-void core::lycoder_trace_format(jsm_string &out)
-{
-    ctxt ct{};
-    ct.cop = 0;
-    ct.regs = 0;
-    ct.gte = 0;
-    dbg_printf("\n%08x: %08x cyc:%lld", pipe.current.addr, pipe.current.opcode, *clock);
-    R3000_disassemble(pipe.current.opcode, out, pipe.current.addr, &ct);
-    dbg_printf("     %s", out.ptr);
-    out.quickempty();
-    print_context(ct, out);
-    if ((out.cur - out.ptr) > 1) {
-        dbg_printf("             \t; %s", out.ptr);
-    }
-}
-
-void core::dbglog_exception(u32 code, u32 vector, u32 raddr, bool branch_delay) {
+void core::dbglog_exception(u32 code, u32 vector, u32 raddr) {
     if (!dbg.dvptr) return;
     if (dbg.dvptr->ids_enabled[trace.exception_id]) {
         if (dbg.dvptr->id_break[trace.exception_id]) dbg_break("Exception", *clock);
         trace.str.quickempty();
-        trace.str.sprintf("Exception. Code:%d Vector:%08x ReturnAddr:%08x Delay:%d", code, vector, raddr, branch_delay);
+        trace.str.sprintf("Exception. Code:%d Vector:%08x ReturnAddr:%08x Delay:%d", code, vector, raddr, delay.branch[0].taken);
         dbg.dvptr->add_printf(trace.exception_id, *clock, DBGLS_TRACE, "%s", trace.str.ptr);
     }
 }
@@ -536,12 +438,12 @@ void core::trace_format() {
         ct.regs = 0;
         ct.gte = 0;
         //dbg_printf("\n%08x: %08x cyc:%lld", pipe.current.addr, pipe.current.opcode, *clock);
-        R3000_disassemble(pipe.current.opcode, trace.str, pipe.current.addr, &ct);
+        R3000_disassemble(regs.IR, trace.str, regs.PC, &ct);
         //if (pipe.current.addr == 0x80059ddc) dbg_break("SysBad instruction or whatever", *clock);
         trace.str2.quickempty();
         print_context(ct, trace.str2);
         dbglog_view *dv = dbg.dvptr;
-        dv->add_printf(dbg.dv_id, *clock, DBGLS_TRACE, "%08x  %s", pipe.current.addr, trace.str.ptr);
+        dv->add_printf(dbg.dv_id, *clock, DBGLS_TRACE, "%08x  %s", regs.PC, trace.str.ptr);
         dv->extra_printf("%s", trace.str2.ptr);
     }
 }
@@ -554,9 +456,9 @@ void core::trace_format_console(jsm_string &out)
     ct.regs = 0;
     ct.gte = 0;
     //dbg_printf("\n%08x: %08x cyc:%lld", pipe.current.addr, pipe.current.opcode, *clock);
-    R3000_disassemble(pipe.current.opcode, out, pipe.current.addr, &ct);
+    R3000_disassemble(regs.IR, out, regs.PC, &ct);
     //if (pipe.current.addr == 0xbfc0d8e8) dbg_break("SysBad instruction or whatever", *clock);
-    printf("\n%08x  (%08x)   %s", pipe.current.addr, pipe.current.opcode, out.ptr);
+    printf("\n%08x  (%08x)   %s", regs.PC, regs.IR, out.ptr);
     out.quickempty();
     print_context(ct, out);
     if ((out.cur - out.ptr) > 1) {
@@ -568,20 +470,56 @@ static bool is_gte(u32 opcode) {
     return  (opcode &0xfe000000) == 0x4a000000;
 }
 
+u32 core::peek_next_instruction() const {
+    return peek(peek_ptr, regs.PC);
+}
+
 void core::check_IRQ()
 {
-    if (pipe.num_items < 1)
-        fetch_and_decode();
-    if (pins.IRQ && (regs.COP0[12] & 0x400) && (regs.COP0[12] & 1) && pipe.item0.new_PC == 0xFFFFFFFF) {
-        if (is_gte(pipe.item0.opcode)) {
+    if (pins.IRQ && (regs.COP0[12] & 0x400) && (regs.COP0[12] & 1) && !delay.branch[0].slot) {
+        u32 ni = peek_next_instruction();
+        if (is_gte(ni)) {
             // Execute opcode "early" before exception!
-            gte.command(pipe.item0.opcode, current_clock());
+            gte.command(ni, current_clock());
         }
-        regs.PC -= 4;
-        exception(0, pipe.item0.new_PC != 0xFFFFFFFF, 0);
-        //dbg_enable_trace();
-        //dbg_break("YO", 0);
+        exception(0, 0);
     }
+}
+
+void core::after_ins() {
+    regs.PC = regs.PC_next;
+    regs.PC_next += 4;
+
+    // Delay loads
+    if (delay.load[0].target != -1) {
+        regs.R[delay.load[0].target] = delay.load[0].value;
+    }
+    regs.R[0] = 0;
+    delay.load[0] = delay.load[1];
+    delay.load[1].target = -1;
+
+    if (delay.branch[0].taken) {
+        regs.PC_next = delay.branch[0].target;
+    }
+
+    delay.branch[0] = delay.branch[1];
+    delay.branch[1] = {};
+    check_IRQ();
+
+}
+
+void core::instruction() {
+    if (!fetch_and_decode()) {
+        after_ins();
+        return;
+    };
+
+    trace_format();
+    (this->*cur_ins->func)(regs.IR, cur_ins);
+
+    after_ins();
+
+    *waitstates = CYCLES_PER_INSTRUCTION;
 }
 
 void core::cycle(i32 howmany)
@@ -589,29 +527,9 @@ void core::cycle(i32 howmany)
     i64 cycles_left = howmany;
     assert(regs.R[0] == 0);
     while(cycles_left > 0) {
-        if (pipe.num_items < 1)
-            fetch_and_decode();
-        auto *current = pipe.move_forward();
-
-#ifdef LYCODER
-        //lycoder_trace_format(&trace.str);
-#else
-        if (::dbg.trace_on && ::dbg.traces.r3000.instruction) {
-            trace_format_console(trace.str);
-        }
-#endif
-        trace_format();
-        (this->*current->op->func)(current->opcode, current->op);
-
-        delay_slots(*current);
-
-        current->clear();
-
-        fetch_and_decode();
-
-        *waitstates = CYCLES_PER_INSTRUCTION;
-        cycles_left -= *waitstates;
+        instruction();
         (*clock) += *(waitstates);
+        cycles_left -= *waitstates;
         (*waitstates) = 0;
 
         if (::dbg.do_break) break;

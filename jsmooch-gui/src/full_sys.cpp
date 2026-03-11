@@ -1066,12 +1066,13 @@ void full_system::load_default_ROM()
             //worked = grab_cue(&ROMs, which, "Crash Bandicoot 1", nullptr);
             //worked = grab_cue(&ROMs, which, "mk2", nullptr);
             //worked = grab_cue(&ROMs, which, "Doom (USA)", nullptr);
-            //worked = grab_cue(&ROMs, which, "Hydro Thunder (USA)", nullptr);
+            worked = grab_cue(&ROMs, which, "Hydro Thunder (USA)", nullptr);
             //worked = grab_cue(&ROMs, which, "Cool Boarders 2 (USA)", nullptr);
             //worked = grab_cue(&ROMs, which, "Ridge Racer (USA)", nullptr);
             //worked = grab_cue(&ROMs, which, "Mega Man X4 (USA)", nullptr);
-            worked = grab_cue(&ROMs, which, "Spyro the Dragon (USA)", nullptr);
+            //worked = grab_cue(&ROMs, which, "Spyro the Dragon (USA)", nullptr);
             //worked = grab_cue(&ROMs, which, "Spyro - Year of the Dragon (USA)", nullptr);
+            //worked = grab_cue(&ROMs, which, "CTR - Crash Team Racing (USA)", nullptr);
             //worked = grab_cue(&ROMs, which, "Metal Slug X (USA)", nullptr);
             //worked = grab_cue(&ROMs, which, "Myst (USA)", nullptr);
             //worked = grab_cue(&ROMs, which, "Frogger (USA)", nullptr);
@@ -1267,7 +1268,7 @@ void full_system::load_default_ROM()
             //worked = grab_ROM(&ROMs, which, "castlevania_b.md", nullptr); // works!
             //worked = grab_ROM(&ROMs, which, "contra_hc_jp.md", nullptr); // works great!
             //worked = grab_ROM(&ROMs, which, "sor2.md", nullptr); // works fine
-            //worked = grab_ROM(&ROMs, which, "s1built.bin", nullptr); // works!
+            worked = grab_ROM(&ROMs, which, "s1built.bin", nullptr); // works!
             //worked = grab_ROM(&ROMs, which, "batman.md", nullptr); // works!
             //worked = grab_ROM(&ROMs, which, "gen_test_ym.bin", nullptr); // works!
             //worked = grab_ROM(&ROMs, which, "outrun2019.bin", nullptr); // works!
@@ -1331,7 +1332,7 @@ void full_system::load_default_ROM()
             //worked = grab_ROM(&ROMs, which, "sonic_3d_blast.md", nullptr); // FMV vibrates up and down. otherwise works well
             //worked = grab_ROM(&ROMs, which, "blockout.md", nullptr); // works well
             //worked = grab_ROM(&ROMs, which, "street_fighter_2_special_championship.md", nullptr); // works great!
-            worked = grab_ROM(&ROMs, which, "sprite_masking_test.bin", nullptr); // works great!
+            //worked = grab_ROM(&ROMs, which, "sprite_masking_test.bin", nullptr); // works great!
             //worked = grab_ROM(&ROMs, which, "direct_color_dma.bin", nullptr); // does nothing
             //worked = grab_ROM(&ROMs, which, "alien_soldier_jp.md", nullptr); // works well
             //worked = grab_ROM(&ROMs, which, "alien_soldier_usa.md", nullptr);

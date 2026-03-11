@@ -17,6 +17,8 @@ struct REGS {
     u32 R[32]{};
     u32 COP0[32]{};
     u32 PC{};
+    u32 PC_next{};
+    u32 IR{};
 };
 
 enum MN {
@@ -49,50 +51,46 @@ struct OPCODE {
     i32 arg{};
 };
 
-struct pipeline_item {
-    void clear();
-    i32 target{};
-    u32 value{};
-    u32 opcode{}, new_PC{0xFFFFFFFF}, addr{};
-    OPCODE *op{};
-};
 
-struct pipeline {
-    void clear();
-    void reset();
-    pipeline_item *push();
-    pipeline_item *move_forward();
-    u32 base{}, num_items{};
-    pipeline_item current{}, empty_item{}, item0{}, item1{};
-};
-
-struct ctxt;
+    struct ctxt;
 struct core {
     core(u64 *master_clock_in, u64 *waitstates_in, scheduler_t *scheduler_in, IRQ_multiplexer_b *IRQ_multiplexer_in);
     void setup_tracing(jsm_debug_read_trace &strct, u64 *trace_cycle_pointer, i32 source_id);
     void add_to_console(u32 ch);
-    void delay_slots(pipeline_item &which);
-    void flush_pipe();
-    void exception(u32 code, u32 branch_delay, u32 cop0);
-    void decode(u32 IR, pipeline_item &current);
-    void fetch_and_decode();
+    void exception(u32 code, u32 cop0);
+    void after_ins();
+    void decode(u32 IR);
+    bool fetch_and_decode();
     void print_context(ctxt &ct, jsm_string &out);
-    void lycoder_trace_format(jsm_string &out);
     void trace_format_console(jsm_string &out);
     void trace_format();
-    void dbglog_exception(u32 code, u32 vector, u32 raddr, bool branch_delay);
+    void dbglog_exception(u32 code, u32 vector, u32 raddr);
     void check_IRQ();
     void cycle(i32 howmany);
+    void instruction();
     void reset();
     void update_I_STAT();
     void write_reg(u32 addr, u8 sz, u32 val);
     u32 read_reg(u32 addr, u8 sz);
+    [[nodiscard]] u32 peek_next_instruction() const;
     void idle(u32 howlong);
 
     REGS regs{};
-    pipeline pipe{};
     multiplier multiplier{};
     jsm_string console{4096};
+
+    struct {
+        struct {
+            i32 target{-1};
+            u32 value{};
+        } load[2]{};
+
+        struct {
+            bool slot{false};
+            bool taken{false};
+            u32 target{};
+        } branch[2]{};
+    } delay{};
 
     scheduler_t *scheduler{};
     u64 *clock{};
@@ -124,10 +122,13 @@ struct core {
 
     GTE::core gte{};
 
+    OPCODE *cur_ins{};
+
     OPCODE decode_table[0x7F]{};
 
-    void *fetch_ptr{}, *read_ptr{}, *write_ptr{}, *update_sr_ptr{};
+    void *fetch_ptr{}, *read_ptr{}, *write_ptr{}, *peek_ptr{}, *update_sr_ptr{};
     u32 (*fetch_ins)(void *ptr, u32 addr, u8 sz){};
+    u32 (*peek)(void *ptr, u32 addr);
     u32 (*read)(void *ptr, u32 addr, u8 sz, u32 has_effect){};
     void (*write)(void *ptr, u32 addr, u8 sz, u32 val){};
     void (*update_sr)(void *ptr, core *mcore, u32 val){};
@@ -211,24 +212,20 @@ private:
 
     void fs_reg_delay(const i32 target, const u32 value)
     {
-        auto *p = &pipe.item0;
-        p->target = target;
-        p->value = value;
+        delay.load[1].target = target;
+        delay.load[1].value = value;
 
-        if (pipe.current.target == target) {
-            pipe.current.target = -1;
-        }
+        if (delay.load[0].target == target) { delay.load[0].target = -1; }
     }
 
     void fs_reg_write(u32 target, u32 value)
     {
-        if (target != 0) regs.R[target] = value;
+        regs.R[target] = value;
 
         //if (trace_on) debug_reg_list.push(target);
 
         // cancel in-pipeline write to register
-        auto *p = &pipe.current;
-        if (p->target == target) p->target = -1;
+        if (delay.load[0].target == target) delay.load[0].target = -1;
     }
 
 };

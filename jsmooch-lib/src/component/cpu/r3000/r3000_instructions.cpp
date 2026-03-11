@@ -62,12 +62,9 @@ u32 core::COP_read_reg(u32 COP, u32 num)
 
 void core::branch(i64 rel, u32 doit, u32 link, u32 link_reg)
 {
-    if (doit) {
-        if (pipe.current.new_PC != 0xFFFFFFFF)
-            pipe.item0.new_PC = pipe.current.new_PC + rel;
-        else
-            pipe.item0.new_PC = regs.PC + rel;
-    }
+    delay.branch[1].slot = true;
+    delay.branch[1].taken = doit;
+    delay.branch[1].target = regs.PC_next + rel;
 
     if (link)
         fs_reg_write(link_reg, regs.PC+4);
@@ -75,21 +72,19 @@ void core::branch(i64 rel, u32 doit, u32 link, u32 link_reg)
 
 void core::jump(u32 new_addr, u32 doit, u32 link, u32 link_reg)
 {
-    pipe.item0.new_PC = new_addr;
+    delay.branch[1].slot = delay.branch[1].taken = true;
+    delay.branch[1].target = new_addr;
 
     if (link)
         fs_reg_write(link_reg, regs.PC+4);
 }
 
 u32 core::fs_reg_delay_read(i32 target) {
-    auto *p = &pipe.current;
-    if (p->target == target) {
-        p->target = -1;
-        return p->value;
+    if (delay.load[0].target == target) {
+        delay.load[0].target = -1;
+        return delay.load[0].value;
     }
-    else {
-        return regs.R[target];
-    }
+    return regs.R[target];
 }
     
 void core::fNA(u32 opcode, OPCODE *op)
@@ -173,13 +168,13 @@ void core::fJALR(u32 opcode, OPCODE *op)
 void core::fSYSCALL(u32 opcode, OPCODE *op)
 {
     regs.PC -= 4;
-    exception(8, 0, 0);
+    exception(8, 0);
 }
 
 void core::fBREAK(u32 opcode, OPCODE *op)
 {
     regs.PC -= 4;
-    exception(9, 0, 0);
+    exception(9, 0);
 }
 
 void core::wait_for(u64 timecode)
@@ -291,7 +286,7 @@ void core::fADD(u32 opcode, OPCODE *op)
     int r;
     if (sadd_overflow(regs.R[rs], regs.R[rt], &r)) {
         regs.PC -= 4;
-        exception(0xC, 0, 0);
+        exception(0xC, 0);
         return;
     }
     fs_reg_write(rd, r);
@@ -317,7 +312,7 @@ void core::fSUB(u32 opcode, OPCODE *op)
     int r;
     if (ssub_overflow(regs.R[rs], regs.R[rt], &r)) {
         regs.PC -= 4;
-        exception(0xC, 0, 0);
+        exception(0xC, 0);
         return;
     }
 
@@ -472,7 +467,7 @@ void core::fADDI(u32 opcode, OPCODE *op)
     int r;
     if (sadd_overflow(regs.R[rs], imm, &r)) {
         regs.PC -= 4;
-        exception(0xC, 0, 0);
+        exception(0xC, 0);
         return;
     }
 
@@ -616,7 +611,7 @@ void core::fCOP(u32 opcode, OPCODE *op)
     else {
         if (copnum != 2) {
             printf("\nBAD COP INS? %08x", opcode);
-            exception(8, 0, 0);
+            exception(8, 0);
             return;
         }
         if (opcode & 0x2000000) {
@@ -671,7 +666,7 @@ void core::fLH(u32 opcode, OPCODE *op)
 
     if (addr & 1) {
         regs.PC -= 4;
-        exception(4, 0, 0);
+        exception(4, 0);
         return;
     }
 
@@ -721,7 +716,7 @@ void core::fLW(u32 opcode, OPCODE *op)
 
     if (addr & 3) {
         regs.PC -= 4;
-        exception(4, 0, 0);
+        exception(4, 0);
         return;
     }
 
@@ -748,7 +743,7 @@ void core::fLHU(u32 opcode, OPCODE *op)
     u32 addr = regs.R[rs] + imm16;
     if (addr & 1) {
         regs.PC -= 4;
-        exception(4, 0, 0);
+        exception(4, 0);
         return;
     }
 
@@ -806,7 +801,7 @@ void core::fSH(u32 opcode, OPCODE *op)
     u32 addr = regs.R[rs] + imm16;
     if (addr & 1) {
         regs.PC -= 4;
-        exception(5, 0, 0);
+        exception(5, 0);
         return;
     }
 
@@ -852,7 +847,7 @@ void core::fSW(u32 opcode, OPCODE *op)
 
     if (addr & 3) {
         regs.PC -= 4;
-        exception(5, 0, 0);
+        exception(5, 0);
         return;
     }
 
@@ -917,7 +912,7 @@ void core::fSWC(u32 opcode, OPCODE *op)
             rd = gte.read_reg(rt);
             break;
         default:
-            exception(0x0B, 0, 0);
+            exception(0x0B, 0);
             return;
     }
 

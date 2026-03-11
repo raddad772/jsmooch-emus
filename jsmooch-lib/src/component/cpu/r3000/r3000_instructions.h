@@ -18,7 +18,8 @@ enum R3000_COP0_reg {
     RCR_BusCtrl = 2,
     RCR_PortSize = 10,
     RCR_Count = 9,
-    RCR_Compare = 11
+    RCR_Compare = 11,
+    RCR_TAR = 6
 };
 
 }

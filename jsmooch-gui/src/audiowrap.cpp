@@ -2,7 +2,7 @@
 // Created by . on 9/5/24.
 //
 #include <cstring>
-#define SRATE 44100
+#define SRATE 48000
 //#define SRATE 48000
 
 #define MINIAUDIO_IMPLEMENTATION
