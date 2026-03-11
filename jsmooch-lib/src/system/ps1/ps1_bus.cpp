@@ -22,10 +22,10 @@ static u32 read_trace_cpu(void *ptr, u32 addr, u8 sz)
     return th->mainbus_read(addr, sz, false);
 }
 
-static u32 mainbus_fetchins(void *ptr, u32 addr, u8 sz)
+static u32 mainbus_fetchins(void *ptr, u32 addr)
 {
     auto *th = static_cast<core *>(ptr);
-    return th->mainbus_read(addr, sz, true);
+    return th->mainbus_read(addr, 4, true);
 }
 
 static void run_block(void *bound_ptr, u64 num, u64 current_clock, u32 jitter)
@@ -36,10 +36,10 @@ static void run_block(void *bound_ptr, u64 num, u64 current_clock, u32 jitter)
     th->cpu.cycle(num);
 }
 
-static u32 snoop_read(void *ptr, u32 addr, u8 sz, u32 has_effect)
+static u32 snoop_read(void *ptr, u32 addr, u8 sz)
 {
     auto *th = static_cast<core *>(ptr);
-    u32 r = th->mainbus_read(addr, sz, has_effect);
+    u32 r = th->mainbus_read(addr, sz, true);
     //printf("\nread %08x (%d): %08x", addr, sz, r);
     return r;
 }
@@ -110,7 +110,7 @@ core::core() :
     //cpu.read = &PS1_mainbus_read;
     cpu.write = &snoop_write;
     //cpu.write = &PS1_mainbus_write;
-    cpu.fetch_ptr = this;
+    cpu.fetch_ins_ptr = this;
     cpu.fetch_ins = &mainbus_fetchins;
     cpu.update_sr_ptr = this;
     cpu.update_sr = &update_SR;
