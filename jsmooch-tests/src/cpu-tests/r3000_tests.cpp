@@ -186,6 +186,21 @@ static bool do_test(const char *file, const char *fname) {
 
     for (u32 i = 0; i < num_tests; i++) {
         ptr = decode_test(ptr);
+        copy_state_to_cpu();
+        gstate.waitstates = gstate.clock = 0;
+
+        gstate.cpu.instruction();
+
+        if (gstate.clock != gstate.test.num_cycles) {
+            // FAIL for num cycles
+        }
+        if (!compare_state_to_cpu()) {
+            // FAIL for this
+        }
+        if (!compare_cycles()) {
+            // FAIL for this
+        }
+        if (gstate.failed) return false;
     }
 
     return true;
