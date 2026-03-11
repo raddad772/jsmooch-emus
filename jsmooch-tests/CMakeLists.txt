@@ -40,6 +40,8 @@ set(SOURCE_LIST
         ".editorconfig"
         src/cpu-tests/cdp1802_tests.cpp
         src/cpu-tests/cdp1802_tests.h
+        src/cpu-tests/r3000_tests.cpp
+        src/cpu-tests/r3000_tests.h
 )
 
 add_executable(jsmooch-tests ${SOURCE_LIST})

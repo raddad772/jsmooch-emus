@@ -358,6 +358,7 @@ void core::exception(u32 code, u32 cop0)
         code |= 0x80000000;
         code |= static_cast<u32>(delay.branch[0].taken) << 30;
         regs.COP0[RCR_TAR] = delay.branch[0].target;
+        delay.branch[0] = {};
     }
     else
     {
@@ -370,6 +371,7 @@ void core::exception(u32 code, u32 cop0)
 
     dbglog_exception(mycode, vector, raddr);
     regs.PC = vector;
+    regs.PC_next = vector;
     regs.COP0[RCR_Cause] = code;
     u32 lstat = regs.COP0[RCR_SR];
     regs.COP0[RCR_SR] = (lstat & 0xFFFFFFC0) | ((lstat & 0x0F) << 2);
@@ -393,10 +395,9 @@ bool core::fetch_and_decode()
         exception(4, 0);
         return false;
     }
-    regs.IR = read(read_ptr, regs.PC, 4, 1);
+    regs.IR = fetch_ins(fetch_ins_ptr, regs.PC);
     decode(regs.IR);
     cur_ins->opcode = regs.IR;
-    regs.PC += 4;
     return true;
 }
 
@@ -471,7 +472,7 @@ static bool is_gte(u32 opcode) {
 }
 
 u32 core::peek_next_instruction() const {
-    return peek(peek_ptr, regs.PC);
+    return peek_ins(peek_ins_ptr, regs.PC);
 }
 
 void core::check_IRQ()

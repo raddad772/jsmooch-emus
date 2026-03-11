@@ -651,7 +651,7 @@ void core::fLB(u32 opcode, OPCODE *op)
     u32 imm16 = static_cast<u32>(static_cast<i16>(opcode & 0xFFFF));
     u32 addr = regs.R[rs] + imm16;
 
-    u32 rd = read(read_ptr, addr, 1, 1) & 0xFF;
+    u32 rd = read(read_ptr, addr, 1) & 0xFF;
     rd = SIGNe8to32(rd);
     fs_reg_delay(rt, rd);
 }
@@ -670,7 +670,7 @@ void core::fLH(u32 opcode, OPCODE *op)
         return;
     }
 
-    u32 rd = read(read_ptr, addr, 2, 1) & 0xFFFF;
+    u32 rd = read(read_ptr, addr, 2) & 0xFFFF;
     rd = SIGNe16to32(rd);
 
     //rd = (u32)((rd << 16) >> 16);
@@ -688,7 +688,7 @@ void core::fLWL(u32 opcode, OPCODE *op)
     u32 cur_v = fs_reg_delay_read(rt);
 
     u32 aligned_addr = addr & 0xFFFFFFFC;
-    u32 aligned_word = read(read_ptr, aligned_addr, 4, 1);
+    u32 aligned_word = read(read_ptr, aligned_addr, 4);
     u32 fv = 0;
     switch(addr & 3) {
         case 0:
@@ -721,7 +721,7 @@ void core::fLW(u32 opcode, OPCODE *op)
     }
 
     //printf("\nLW imm16:%04x addr:%08x", imm16, addr);
-    fs_reg_delay(rt, read(read_ptr, addr, 4, 1));
+    fs_reg_delay(rt, read(read_ptr, addr, 4));
 }
 
 void core::fLBU(u32 opcode, OPCODE *op)
@@ -731,7 +731,7 @@ void core::fLBU(u32 opcode, OPCODE *op)
     u32 imm16 = static_cast<u32>(static_cast<i16>(opcode & 0xFFFF));
     u32 addr = regs.R[rs] + imm16;
 
-    u32 rd = read(read_ptr, addr, 1, 1);
+    u32 rd = read(read_ptr, addr, 1);
     fs_reg_delay(rt, rd&0xFF);
 }
 
@@ -747,7 +747,7 @@ void core::fLHU(u32 opcode, OPCODE *op)
         return;
     }
 
-    u32 rd = read(read_ptr, addr, 2, 1);
+    u32 rd = read(read_ptr, addr, 2);
     fs_reg_delay(rt, rd&0xFFFF);
 }
 
@@ -762,7 +762,7 @@ void core::fLWR(u32 opcode, OPCODE *op)
     u32 cur_v = fs_reg_delay_read(rt);
 
     u32 aligned_addr = addr & 0xFFFFFFFC;
-    u32 aligned_word = read(read_ptr, aligned_addr, 4, 1);
+    u32 aligned_word = read(read_ptr, aligned_addr, 4);
     u32 fv = 0;
     switch(addr & 3) {
         case 0:
@@ -818,7 +818,7 @@ void core::fSWL(u32 opcode, OPCODE *op)
     u32 v = regs.R[rt];
 
     u32 aligned_addr = (addr & 0xFFFFFFFC)>>0;
-    u32 cur_mem = read(read_ptr, aligned_addr, 4, 1);
+    u32 cur_mem = read(read_ptr, aligned_addr, 4);
 
     switch(addr & 3) {
         case 0: // upper 8
@@ -863,7 +863,7 @@ void core::fSWR(u32 opcode, OPCODE *op)
     u32 v = regs.R[rt];
 
     u32 aligned_addr = (addr & 0xFFFFFFFC)>>0;
-    u32 cur_mem = read(read_ptr, aligned_addr, 4, 1);
+    u32 cur_mem = read(read_ptr, aligned_addr, 4);
 
     switch(addr & 3) {
         case 0: // upper 8
@@ -890,7 +890,7 @@ void core::fLWC(u32 opcode, OPCODE *op)
     u32 imm16 = static_cast<u32>(static_cast<i16>(opcode & 0xFFFF));
     u32 addr = regs.R[rs] + imm16;
 
-    u32 rd = read(read_ptr, addr, 4, 1);
+    u32 rd = read(read_ptr, addr, 4);
     // TODO: add the 1-cycle delay to this
     COP_write_reg(op->arg, rt, rd);
     idle(1);

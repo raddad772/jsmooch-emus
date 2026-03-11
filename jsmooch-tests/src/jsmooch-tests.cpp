@@ -21,6 +21,7 @@
 #include "helper-tests/scheduler-tests.h"
 #include "cpu-tests/arm7tdmi_tests.h"*/
 #include "helpers/debug.h"
+#include "cpu-tests/r3000_tests.h"
 //#include "helpers/bitbuffer.h"
 
 #if 0 // unresolved external symbol bitbuf_read_bits referenced in function test_bitbuf
@@ -102,7 +103,8 @@ int main()
     //generate_sh4();
     //generate_sh4_tests(); // NOTE: reicast tests superceded these
     //test_sh4();
-    test_m68000();
+    //test_m68000();
+    test_r3000();
     //test_bitbuf();
     //test_dasm_ranges();
     //test_nesm6502();
