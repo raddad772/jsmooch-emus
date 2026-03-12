@@ -241,6 +241,8 @@ static void copy_state_to_cpu() {
     gstate.irq_multiplexer.IF = (s.CAUSE >> 8) & 0b11111111;
 
     gstate.cpu.regs.COP0[6] = s.TAR;
+
+    if (gstate.cpu.delay.branch[0].taken) gstate.cpu.regs.PC_next = gstate.cpu.delay.branch[0].target;
 }
 
 static bool compare_cause() {

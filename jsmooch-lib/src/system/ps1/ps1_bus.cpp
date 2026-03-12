@@ -22,6 +22,12 @@ static u32 read_trace_cpu(void *ptr, u32 addr, u8 sz)
     return th->mainbus_read(addr, sz, false);
 }
 
+static u32 mainbus_peekins(void *ptr, u32 addr)
+{
+    auto *th = static_cast<core *>(ptr);
+    return th->mainbus_read(addr, 4, false);
+}
+
 static u32 mainbus_fetchins(void *ptr, u32 addr)
 {
     auto *th = static_cast<core *>(ptr);
@@ -106,6 +112,8 @@ core::core() :
 
     cpu.read_ptr = this;
     cpu.write_ptr = this;
+    cpu.peek_ins = &mainbus_peekins;
+    cpu.peek_ins_ptr = this;
     cpu.read = &snoop_read;
     //cpu.read = &PS1_mainbus_read;
     cpu.write = &snoop_write;
@@ -191,6 +199,7 @@ u32 core::mainbus_read(u32 addr, u8 sz, bool has_effect)
             return 0x00070777;
         case 0x1F8010A8: // DMA2 GPU thing
         case 0x1F801810: // GP0/GPUREAD
+            printf("\nGPUREAD!?");
             return gpu.get_gpuread();
         case 0x1F801814: // GPUSTAT Read GPU Status Register
             return gpu.get_gpustat();

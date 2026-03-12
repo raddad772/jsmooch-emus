@@ -201,7 +201,7 @@ private:
     void COP_write_reg(u32 COP, u32 num, u32 val);
     u32 COP_read_reg(u32 COP, u32 num);
     void branch(i64 rel, bool doit, bool link, u32 link_reg);
-    void jump(u32 new_addr, bool doit, bool link, u32 link_reg);
+    void jump(u32 new_addr, bool link, u32 link_reg);
     u32 fs_reg_delay_read(i32 target);
     u64 current_clock() { return *clock + *waitstates; }
 

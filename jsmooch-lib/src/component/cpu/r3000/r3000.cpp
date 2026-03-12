@@ -260,6 +260,7 @@ void core::setup_tracing(jsm_debug_read_trace &strct, u64 *trace_cycle_pointer, 
 void core::reset()
 {
     regs.PC = 0xBFC00000;
+    regs.PC_next = regs.PC + 4;
     delay.branch[0] = {};
     delay.branch[1] = {};
     delay.load[0] = {};
@@ -424,7 +425,8 @@ u32 core::peek_next_instruction() const {
 
 void core::check_IRQ()
 {
-    if (pins.IRQ && (regs.COP0[12] & 0x400) && (regs.COP0[12] & 1) && !delay.branch[0].slot) {
+    if (pins.IRQ && (regs.COP0[12] & 0x400) && (regs.COP0[12] & 1)) {
+        printf("\nIRQ TRIGGER");
         u32 ni = peek_next_instruction();
         if (is_gte(ni)) {
             // Execute opcode "early" before exception!
@@ -446,8 +448,8 @@ void core::after_ins() {
     delay.load[0] = delay.load[1];
     delay.load[1].target = -1;
 
-    if (delay.branch[0].taken) {
-        regs.PC_next = delay.branch[0].target;
+    if (delay.branch[1].taken) {
+        regs.PC_next = delay.branch[1].target;
     }
 
     delay.branch[0] = delay.branch[1];
@@ -458,6 +460,7 @@ void core::after_ins() {
 
 void core::instruction() {
     if (!fetch_and_decode()) {
+        printf("\n!FAD!");
         after_ins();
         return;
     };

@@ -71,13 +71,13 @@ void core::branch(i64 rel, bool doit, bool link, u32 link_reg)
     }
 }
 
-void core::jump(u32 new_addr, bool doit, bool link, u32 link_reg)
+void core::jump(u32 new_addr, bool link, u32 link_reg)
 {
     delay.branch[1].slot = delay.branch[1].taken = true;
     delay.branch[1].target = new_addr;
 
     if (link)
-        fs_reg_write(link_reg, regs.PC+8);
+        fs_reg_write(link_reg, regs.PC_next+4);
 }
 
 u32 core::fs_reg_delay_read(i32 target) {
@@ -156,14 +156,14 @@ void core::fSRAV(u32 opcode, OPCODE *op)
 void core::fJR(u32 opcode, OPCODE *op)
 {
     u32 rs = (opcode >> 21) & 0x1F;
-    jump(regs.R[rs], true, false, DEFAULT_LINKREG);
+    jump(regs.R[rs], false, DEFAULT_LINKREG);
 }
 
 void core::fJALR(u32 opcode, OPCODE *op)
 {
     u32 rs = (opcode >> 21) & 0x1F;
     u32 rd = (opcode >> 11) & 0x1F;
-    jump(regs.R[rs], true, true, rd);
+    jump(regs.R[rs], true, rd);
 }
 
 void core::fSYSCALL(u32 opcode, OPCODE *op)
@@ -410,14 +410,14 @@ void core::fBcondZ(u32 opcode, OPCODE *op) {
 void core::fJ(u32 opcode, OPCODE *op)
 {
 //  00001x | <---------immediate26bit---------> | j/jal
-    jump((regs.PC & 0xF0000000) + ((opcode & 0x3FFFFFF) << 2), true, false, DEFAULT_LINKREG);
+    jump((regs.PC & 0xF0000000) + ((opcode & 0x3FFFFFF) << 2), false, DEFAULT_LINKREG);
 }
 
 void core::fJAL(u32 opcode, OPCODE *op)
 {
 
 //  00001x | <---------immediate26bit---------> | j/jal
-    jump((regs.PC & 0xF0000000) + ((opcode & 0x3FFFFFF) << 2), true, true, DEFAULT_LINKREG);
+    jump((regs.PC & 0xF0000000) + ((opcode & 0x3FFFFFF) << 2), true, DEFAULT_LINKREG);
 }
 
 void core::fBEQ(u32 opcode, OPCODE *op)
