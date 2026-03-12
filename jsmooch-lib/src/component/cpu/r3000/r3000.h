@@ -77,7 +77,7 @@ struct core {
     struct {
         struct {
             i32 target{-1};
-            u32 value{};
+            u32 value{0};
         } load[2]{};
 
         struct {
@@ -210,13 +210,13 @@ private:
         delay.load[1].target = target;
         delay.load[1].value = value;
 
-        if (delay.load[0].target == target) { delay.load[0].target = -1; }
+        if (delay.load[0].target == target) { delay.load[0] = {}; }
     }
 
     void fs_reg_write(u32 target, u32 value)
     {
         // cancel in-pipeline write to register
-        if (delay.load[0].target == target) delay.load[0].target = -1;
+        if (delay.load[0].target == target) delay.load[0] = {};
 
         regs.R[target] = value;
     }

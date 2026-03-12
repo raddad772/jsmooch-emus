@@ -760,11 +760,11 @@ void core::fLWR(u32 opcode, OPCODE *op)
 
     switch(addr & 3) {
         case 0:
-            data = read(read_ptr, addr & ~3, 4);;
+            data = read(read_ptr, addr & ~3, 4);
             break;
         case 1:
             data &= 0xFF000000;
-            data |= (read(read_ptr, addr & ~3 | 1, 1) & 0xFF);
+            data |= (read(read_ptr, (addr & ~3) | 1, 1) & 0xFF);
             data |= (read(read_ptr, addr & ~3 | 2, 2) & 0xFFFF) << 8;
             break;
         case 2:
@@ -772,7 +772,7 @@ void core::fLWR(u32 opcode, OPCODE *op)
             data |= read(read_ptr, addr & ~3 | 2, 2) & 0xFFFF;
             break;
         case 3:
-            data = 0xFFFFFF00;
+            data &= 0xFFFFFF00;
             data |= read(read_ptr, addr & ~3 | 3, 1) & 0xFF;
             break;
         default:
