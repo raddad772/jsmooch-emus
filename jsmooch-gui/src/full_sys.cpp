@@ -958,7 +958,7 @@ void full_system::load_default_ROM()
         case jsm::systems::PS1:
             //RenderPolygon16BPP
             //worked = grab_ROM(&ROMs, which, "PS1MiniPadTestV0.4.exe", nullptr); // slammin'!
-            worked = grab_ROM(&ROMs, which, "psxtest_cpu.exe", nullptr); // slammin'!
+            //worked = grab_ROM(&ROMs, which, "psxtest_cpu.exe", nullptr); // slammin'!
             //worked = grab_ROM(&ROMs, which, "psxtest_cpx.exe", nullptr);
             //worked = grab_ROM(&ROMs, which, "psxtest_gte.exe", nullptr);
             //worked = grab_ROM(&ROMs, which, "ps1-tests-built/cpu/cop/cop.exe", nullptr);
@@ -1064,7 +1064,7 @@ void full_system::load_default_ROM()
             //worked = grab_cue(&ROMs, which, "Final Fantasy VII (USA) (Disc 1)", nullptr);
             //worked = grab_cue(&ROMs, which, "Tony Hawks Pro Skater 2 (USA)", nullptr); // error parsing cue
             //worked = grab_cue(&ROMs, which, "Crash Bandicoot 1", nullptr);
-            //worked = grab_cue(&ROMs, which, "mk2", nullptr);
+            worked = grab_cue(&ROMs, which, "mk2", nullptr);
             //worked = grab_cue(&ROMs, which, "Doom (USA)", nullptr);
             //worked = grab_cue(&ROMs, which, "Hydro Thunder (USA)", nullptr);
             //worked = grab_cue(&ROMs, which, "Cool Boarders 2 (USA)", nullptr);

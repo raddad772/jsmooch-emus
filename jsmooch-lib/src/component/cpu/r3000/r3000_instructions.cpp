@@ -758,7 +758,6 @@ void core::fLWR(u32 opcode, OPCODE *op)
 
     // Fetch register from delay if it's there, and also clobber it
     u32 data = fs_reg_delay_read(rt);
-    printf("\nDATA START:%08x   ADDR&3:%d", data, addr & 3);
 
     switch(addr & 3) {
         case 0:
@@ -781,7 +780,6 @@ void core::fLWR(u32 opcode, OPCODE *op)
             NOGOHERE;
     }
     fs_reg_delay(rt, data);
-    printf("\nVAL: %08x", data);
 }
 
 void core::fSB(u32 opcode, OPCODE *op)
