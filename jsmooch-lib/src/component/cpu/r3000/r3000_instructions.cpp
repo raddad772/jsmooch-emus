@@ -82,8 +82,9 @@ void core::jump(u32 new_addr, bool link, u32 link_reg)
 
 u32 core::fs_reg_delay_read(i32 target) {
     if (delay.load[0].target == target) {
-        delay.load[0].target = -1;
-        return delay.load[0].value;
+        u32 v = delay.load[0].value;
+        delay.load[0] = {};
+        return v;
     }
     return regs.R[target];
 }
@@ -410,14 +411,14 @@ void core::fBcondZ(u32 opcode, OPCODE *op) {
 void core::fJ(u32 opcode, OPCODE *op)
 {
 //  00001x | <---------immediate26bit---------> | j/jal
-    jump((regs.PC & 0xF0000000) + ((opcode & 0x3FFFFFF) << 2), false, DEFAULT_LINKREG);
+    jump((regs.PC_next & 0xF0000000) + ((opcode & 0x3FFFFFF) << 2), false, DEFAULT_LINKREG);
 }
 
 void core::fJAL(u32 opcode, OPCODE *op)
 {
 
 //  00001x | <---------immediate26bit---------> | j/jal
-    jump((regs.PC & 0xF0000000) + ((opcode & 0x3FFFFFF) << 2), true, DEFAULT_LINKREG);
+    jump((regs.PC_next & 0xF0000000) + ((opcode & 0x3FFFFFF) << 2), true, DEFAULT_LINKREG);
 }
 
 void core::fBEQ(u32 opcode, OPCODE *op)
@@ -757,6 +758,7 @@ void core::fLWR(u32 opcode, OPCODE *op)
 
     // Fetch register from delay if it's there, and also clobber it
     u32 data = fs_reg_delay_read(rt);
+    printf("\nDATA START:%08x   ADDR&3:%d", data, addr & 3);
 
     switch(addr & 3) {
         case 0:
@@ -779,6 +781,7 @@ void core::fLWR(u32 opcode, OPCODE *op)
             NOGOHERE;
     }
     fs_reg_delay(rt, data);
+    printf("\nVAL: %08x", data);
 }
 
 void core::fSB(u32 opcode, OPCODE *op)

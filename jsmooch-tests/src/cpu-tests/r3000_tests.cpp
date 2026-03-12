@@ -85,6 +85,8 @@ u32 do_read(void *ptr, u32 addr, u8 sz) {
                 printf("\nFAIL WRONG CLOCK MINE:%lld  THEIRS:%d", gstate.real_clock, i);
                 gstate.failed = true;
             }
+            c.my_addr = addr;
+            c.my_val = c.val;
             gstate.real_clock++;
             return c.val;
         }
@@ -261,7 +263,7 @@ static void compare_state_to_cpu() {
     auto &s = gstate.test.final;
     for (u32 i = 0; i < 32; i++) {
         if (gstate.cpu.regs.R[i] != s.R[i]) {
-            printf("\nFAIL R%d:my:%08x theirs:%08x", i, gstate.cpu.regs.R[i], s.R[i]);
+            printf("\nFAIL R%d:my:%08x theirs:%08x  initial:%08x", i, gstate.cpu.regs.R[i], s.R[i], gstate.test.initial.R[i]);
             gstate.failed = true;
         }
     }
@@ -289,6 +291,23 @@ static void compare_state_to_cpu() {
         printf("\nFAIL LO:my:%08x theirs:%08x", gstate.cpu.multiplier.lo, s.lo);
         gstate.failed = true;
     }
+
+    // Compare branch delay
+    if ((gstate.cpu.delay.branch[0].taken != s.delay.branch.take) ||
+        (gstate.cpu.delay.branch[0].slot != s.delay.branch.slot) ||
+        (gstate.cpu.delay.branch[0].target != s.delay.branch.target))
+        {
+            printf("\nFAIL BRANCH DELAY! MY TAKEN:%d SLOT:%d TARGET:%08x    tHEIR TAKEN:%d SLOT:%d TARGET:%08x", gstate.cpu.delay.branch[0].taken, gstate.cpu.delay.branch[0].slot, gstate.cpu.delay.branch[0].target,
+                s.delay.branch.take, s.delay.branch.slot, s.delay.branch.target);
+            gstate.failed = true;
+    }
+
+    // Compare load delay
+    if ((gstate.cpu.delay.load[0].target != s.delay.load.target) ||
+        (gstate.cpu.delay.load[0].value != s.delay.load.val)) {
+        printf("\nFAIL LOAD DELAY! ");
+        gstate.failed = true;
+        }
 }
 
 static void compare_cycles() {
@@ -333,7 +352,11 @@ static void pprint_cycles() {
     else printf("\n  | ");
     printf("%c     %c     %08x  | ", gstate.test.final.delay.branch.slot ? 'Y' : 'N', gstate.test.final.delay.branch.take ? 'Y' : 'N', gstate.test.final.delay.branch.target);
     printf("%c     %c     %08x", gstate.cpu.delay.branch[0].slot ? 'Y' : 'N', gstate.cpu.delay.branch[0].taken ? 'Y' : 'N', gstate.cpu.delay.branch[0].target);
-    printf("\n\nBegin PC: %08x", gstate.test.opcode_addr);
+
+    printf("\n\nLOAD DELAY STATUS START. TARGET:%d VAL:%08x", gstate.test.initial.delay.load.target, gstate.test.initial.delay.load.val);
+    printf("\n\nLOAD DELAY STATUS END. THEIR_TARGET:%d THEIR_VAL:%08x MY_TARGET:%d MY_VAL:%08x", gstate.test.final.delay.load.target, gstate.test.final.delay.load.val, gstate.cpu.delay.load[0].target, gstate.cpu.delay.load[0].value);
+
+    printf("\n\nBegin PC: %08x   R10:%08x", gstate.test.opcode_addr, gstate.test.initial.R[10]);
     printf("\n\n");
 }
 
@@ -371,7 +394,7 @@ static bool do_test(const char *file, const char *fname) {
         compare_cycles();
         if (gstate.failed) {
             pprint_cycles();
-            printf("\n\nFAILED TEST %d NAME:%s", i, gstate.test.name);
+            printf("\n\nFAILED TEST %d NAME:%s OPCODE:%08x", i, gstate.test.name, gstate.test.opcode);
             return false;
         }
     }
