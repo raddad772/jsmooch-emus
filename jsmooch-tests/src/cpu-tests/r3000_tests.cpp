@@ -107,7 +107,6 @@ void do_write(void *ptr, u32 addr, u8 sz, u32 val) {
 u32 do_fetch_ins(void *ptr, u32 addr) {
     for (u32 i = 0; i < gstate.test.num_cycles; i++) {
         auto &c = gstate.test.cycles[i];
-        printf("\n%08llx", c.addr);
         if (c.addr == addr) {
             c.visited = true;
             c.my_actions |= FETCH;
@@ -170,9 +169,8 @@ static u32 decode_test(u32 offset) {
         c.actions = R32;
         c.addr = R64;
         c.sz = R32;
-        printf("\nCycle %d actions:%d sz:%d addr:%04llx val:%04llx", i, c.actions, c.sz, c.addr, c.val);
+        //printf("\nCycle %d actions:%d sz:%d addr:%04llx val:%04llx", i, c.actions, c.sz, c.addr, c.val);
     }
-    printf("\nNEXT TEST %d", offset);
     return offset;
 }
 
@@ -182,7 +180,6 @@ static void copy_state_to_cpu() {
         gstate.cpu.regs.R[i] = s.R[i];
     }
     gstate.cpu.regs.PC = s.PC;
-    printf("\nSET PC: %08x", s.PC);
     gstate.cpu.multiplier.hi = s.hi;
     gstate.cpu.multiplier.lo = s.lo;
     gstate.cpu.delay.branch[0].taken = s.delay.branch.take;
@@ -245,7 +242,6 @@ static bool do_test(const char *file, const char *fname) {
     fseek(f, 0, SEEK_SET);
     fread(filebuf, 1, len, f);
     fclose(f);
-    printf("\nTEST FILE %d BYTES", len);
     auto *ptr = reinterpret_cast<u8 *>(filebuf);
     u32 offset = 0;
     u32 num_tests = R32;
@@ -308,8 +304,8 @@ void test_r3000() {
 
     printf("\nFound %d tests!", num_files);
     u32 completed_tests = 0;
-    for (u32 i = 1; i < num_files; i++) {
-        printf("\nDoing test %s / %s", mfn[i], mfp[i]);
+    for (u32 i = 0; i < num_files; i++) {
+        printf("\n\nDoing test %s / %s", mfn[i], mfp[i]);
         if (!do_test(mfp[i], mfn[i])) break;
         completed_tests++;
     }
