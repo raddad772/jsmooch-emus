@@ -958,7 +958,7 @@ void full_system::load_default_ROM()
         case jsm::systems::PS1:
             //RenderPolygon16BPP
             //worked = grab_ROM(&ROMs, which, "PS1MiniPadTestV0.4.exe", nullptr); // slammin'!
-            worked = grab_ROM(&ROMs, which, "psxtest_cpu.exe", nullptr); // slammin'!
+            //worked = grab_ROM(&ROMs, which, "psxtest_cpu.exe", nullptr); // slammin'!
             //worked = grab_ROM(&ROMs, which, "psxtest_cpx.exe", nullptr);
             //worked = grab_ROM(&ROMs, which, "psxtest_gte.exe", nullptr);
             //worked = grab_ROM(&ROMs, which, "ps1-tests-built/cpu/cop/cop.exe", nullptr);
@@ -969,7 +969,7 @@ void full_system::load_default_ROM()
             //worked = grab_ROM(&ROMs, which, "ps1-tests-built/spu/memory-transfer/memory-transfer.exe", nullptr);
             //worked = grab_ROM(&ROMs, which, "ps1-tests-built/spu/test/test.exe", nullptr);
             //worked = grab_ROM(&ROMs, which`, "ps1-tests-built/gte-fuzz/gte-fuzz.exe", nullptr);
-            //worked = grab_ROM(&ROMs, which, "redux_cpu.exe", nullptr);
+            worked = grab_ROM(&ROMs, which, "redux_cpu.exe", nullptr);
             //worked = grab_ROM(&ROMs, which, "pad.exe", nullptr);
             //worked = grab_ROM(&ROMs, which, "PSX/MDEC/DCTBlockDecode/CLUT4BPP/DCTBlockDecodeCLUT4BPP.exe", nullptr);
             // DCTBlockDecodeCLUT4BPP

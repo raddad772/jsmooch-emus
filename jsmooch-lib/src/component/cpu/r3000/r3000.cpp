@@ -427,8 +427,7 @@ u32 core::peek_next_instruction() const {
 
 void core::check_IRQ()
 {
-    if (pins.IRQ && (regs.COP0[12] & 0x400) && (regs.COP0[12] & 1)) {
-        printf("\nIRQ TRIGGER");
+    if (pins.IRQ && (regs.COP0[12] & 0x400) && (regs.COP0[12] & 1) && (!delay.branch[0].slot)) {
         u32 ni = peek_next_instruction();
         if (is_gte(ni)) {
             // Execute opcode "early" before exception!
@@ -448,7 +447,7 @@ void core::after_ins() {
     }
     regs.R[0] = 0;
     delay.load[0] = delay.load[1];
-    delay.load[1].target = -1;
+    delay.load[1] = {};
 
     if (delay.branch[1].taken) {
         regs.PC_next = delay.branch[1].target;
@@ -457,7 +456,6 @@ void core::after_ins() {
     delay.branch[0] = delay.branch[1];
     delay.branch[1] = {};
     check_IRQ();
-
 }
 
 void core::instruction() {
