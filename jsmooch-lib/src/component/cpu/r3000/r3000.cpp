@@ -25,7 +25,6 @@ static constexpr char reg_alias_arr[33][12] = {
         "unknown reg"
 };
 
-
 void core::do_decode_table() {
     for (u32 op1 = 0; op1 < 0x3F; op1++) {
         OPCODE *mo = &decode_table[op1];

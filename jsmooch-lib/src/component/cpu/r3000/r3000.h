@@ -13,6 +13,7 @@
 #include "helpers/scheduler.h"
 #include "gte.h"
 namespace R3000 {
+static constexpr bool DIVMUL_INSTANT = true;
 struct REGS {
     u32 R[32]{};
     u32 COP0[32]{};

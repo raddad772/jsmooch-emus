@@ -209,9 +209,11 @@ static void compare_state_to_cpu() {
     }
     if (gstate.cpu.multiplier.hi != s.hi) {
         printf("\nFAIL HI:my:%08x theirs:%08x", gstate.cpu.multiplier.hi, s.hi);
+        gstate.failed = true;
     }
     if (gstate.cpu.multiplier.lo != s.lo) {
         printf("\nFAIL LO:my:%08x theirs:%08x", gstate.cpu.multiplier.lo, s.lo);
+        gstate.failed = true;
     }
 }
 

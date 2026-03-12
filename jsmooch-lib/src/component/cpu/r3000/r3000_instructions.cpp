@@ -76,7 +76,7 @@ void core::jump(u32 new_addr, u32 doit, u32 link, u32 link_reg)
     delay.branch[1].target = new_addr;
 
     if (link)
-        fs_reg_write(link_reg, regs.PC+4);
+        fs_reg_write(link_reg, regs.PC+8);
 }
 
 u32 core::fs_reg_delay_read(i32 target) {

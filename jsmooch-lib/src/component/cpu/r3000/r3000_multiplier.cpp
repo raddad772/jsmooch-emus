@@ -5,6 +5,7 @@
 #include <cstdlib>
 #include <cassert>
 #include "r3000_multiplier.h"
+#include "r3000.h"
 namespace R3000 {
 void multiplier::set(u32 hi_in, u32 lo_in, u32 op1_in, u32 op2_in, u32 op_kind_in, u32 cycles_in, u64 current_clock_in)
 {
@@ -13,10 +14,17 @@ void multiplier::set(u32 hi_in, u32 lo_in, u32 op1_in, u32 op2_in, u32 op_kind_i
     op1 = op1_in;
     op2 = op2_in;
 
-    op_going = true;
     op_kind = op_kind_in;
-    clock_start = current_clock_in;
-    clock_end = (current_clock_in + cycles_in) - 1;
+    if constexpr (R3000::DIVMUL_INSTANT) {
+        op_going = true;
+        finish();
+        op_going = false;
+    }
+    else {
+        op_going = true;
+        clock_start = current_clock_in;
+        clock_end = (current_clock_in + cycles_in) - 1;
+    }
 }
 
 static void u32_multiply(u32 a, u32 b, u32 *hi, u32 *lo)
