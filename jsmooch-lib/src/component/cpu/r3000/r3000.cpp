@@ -2,7 +2,6 @@
 // Created by . on 2/11/25.
 //
 #include <cstdlib>
-#include <cstring>
 #include <cassert>
 #include <cstdio> // printf
 #include "helpers/debug.h"
@@ -29,7 +28,6 @@ void core::do_decode_table() {
     for (u32 op1 = 0; op1 < 0x3F; op1++) {
         OPCODE *mo = &decode_table[op1];
         insfunc o = &core::fNA;
-        MN m = MN_NA;
         i32 a = 0;
         switch (op1) {
             case 0: {// SPECIAL
@@ -37,251 +35,192 @@ void core::do_decode_table() {
                     a = 0;
                     switch (op2) {
                         case 0: // SLL
-                            m = MN_J;
                             o = &core::fSLL;
                             break;
                         case 0x02: // SRL
-                            m = MN_SRL;
                             o = &core::fSRL;
                             break;
                         case 0x03: // SRA
-                            m = MN_SRA;
                             o = &core::fSRA;
                             break;
                         case 0x4: // SLLV
-                            m = MN_SLLV;
                             o = &core::fSLLV;
                             break;
                         case 0x06: // SRLV
-                            m = MN_SRLV;
                             o = &core::fSRLV;
                             break;
                         case 0x07: // SRAV
-                            m = MN_SRAV;
                             o = &core::fSRAV;
                             break;
                         case 0x08: // JR
-                            m = MN_JR;
                             o = &core::fJR;
                             break;
                         case 0x09: // JALR
-                            m = MN_JALR;
                             o = &core::fJALR;
                             break;
                         case 0x0C: // SYSCALL
-                            m = MN_SYSCALL;
                             o = &core::fSYSCALL;
                             break;
                         case 0x0D: // BREAK
-                            m = MN_BREAK;
                             o = &core::fBREAK;
                             break;
                         case 0x10: // MFHI
-                            m = MN_MFHI;
                             o = &core::fMFHI;
                             break;
                         case 0x11: // MTHI
-                            m = MN_MTHI;
                             o = &core::fMTHI;
                             break;
                         case 0x12: // MFLO
-                            m = MN_MFLO;
                             o = &core::fMFLO;
                             break;
                         case 0x13: // MTLO
-                            m = MN_MTLO;
                             o = &core::fMTLO;
                             break;
                         case 0x18: // MULT
-                            m = MN_MULT;
                             o = &core::fMULT;
                             break;
                         case 0x19: // MULTU
-                            m = MN_MULTU;
                             o = &core::fMULTU;
                             break;
                         case 0x1A: // DIV
-                            m = MN_DIV;
                             o = &core::fDIV;
                             break;
                         case 0x1B: // DIVU
-                            m = MN_DIVU;
                             o = &core::fDIVU;
                             break;
                         case 0x20: // ADD
-                            m = MN_ADD;
                             o = &core::fADD;
                             break;
                         case 0x21: // ADDU
-                            m = MN_ADDU;
                             o = &core::fADDU;
                             break;
                         case 0x22: // SUB
-                            m = MN_SUB;
                             o = &core::fSUB;
                             break;
                         case 0x23: // SUBU
-                            m = MN_SUBU;
                             o = &core::fSUBU;
                             break;
                         case 0x24: // AND
-                            m = MN_AND;
                             o = &core::fAND;
                             break;
                         case 0x25: // OR
-                            m = MN_OR;
                             o = &core::fOR;
                             break;
                         case 0x26: // XOR
-                            m = MN_XOR;
                             o = &core::fXOR;
                             break;
                         case 0x27: // NOR
-                            m = MN_NOR;
                             o = &core::fNOR;
                             break;
                         case 0x2A: // SLT
-                            m = MN_SLT;
                             o = &core::fSLT;
                             break;
                         case 0x2B: // SLTU
-                            m = MN_SLTU;
                             o = &core::fSLTU;
                             break;
                         default:
-                            m = MN_NA;
                             o = &core::fNA;
                             break;
                     }
                     mo = &decode_table[op2 + 0x3F];
                     mo->func = o;
                     mo->opcode = op2;
-                    mo->mn = m;
                     mo->arg = a;
                 }
                 continue;
             }
             case 0x01: // BcondZ
-                m = MN_BcondZ;
                 o = &core::fBcondZ;
                 break;
             case 0x02: // J
-                m = MN_J;
                 o = &core::fJ;
                 break;
             case 0x03: // JAL
-                m = MN_JAL;
                 o = &core::fJAL;
                 break;
             case 0x04: // BEQ
-                m = MN_BEQ;
                 o = &core::fBEQ;
                 break;
             case 0x05: // BNE
-                m = MN_BNE;
                 o = &core::fBNE;
                 break;
             case 0x06: // BLEZ
-                m = MN_BLEZ;
                 o = &core::fBLEZ;
                 break;
             case 0x07: // BGTZ
-                m = MN_BGTZ;
                 o = &core::fBGTZ;
                 break;
             case 0x08: // ADDI
-                m = MN_ADDI;
                 o = &core::fADDI;
                 break;
             case 0x09: // ADDIU
-                m = MN_ADDIU;
                 o = &core::fADDIU;
                 break;
             case 0x0A: // SLTI
-                m = MN_SLTI;
                 o = &core::fSLTI;
                 break;
             case 0x0B: // SLTIU
-                m = MN_SLTIU;
                 o = &core::fSLTIU;
                 break;
             case 0x0C: // ANDI
-                m = MN_ANDI;
                 o = &core::fANDI;
                 break;
             case 0x0D: // ORI
-                m = MN_ORI;
                 o = &core::fORI;
                 break;
             case 0x0E: // XORI
-                m = MN_XORI;
                 o = &core::fXORI;
                 break;
             case 0x0F: // LUI
-                m = MN_LUI;
                 o = &core::fLUI;
                 break;
             case 0x13: // COP3
             case 0x12: // COP2
             case 0x11: // COP1
             case 0x10: // COP0
-                m = MN_COPx;
                 o = &core::fCOP;
                 a = (op1 - 0x10);
                 break;
             case 0x20: // LB
-                m = MN_LB;
                 o = &core::fLB;
                 break;
             case 0x21: // LH
-                m = MN_LH;
                 o = &core::fLH;
                 break;
             case 0x22: // LWL
-                m = MN_LWL;
                 o = &core::fLWL;
                 break;
             case 0x23: // LW
-                m = MN_LW;
                 o = &core::fLW;
                 break;
             case 0x24: // LBU
-                m = MN_LBU;
                 o = &core::fLBU;
                 break;
             case 0x25: // LHU
-                m = MN_LHU;
                 o = &core::fLHU;
                 break;
             case 0x26: // LWR
-                m = MN_LWR;
                 o = &core::fLWR;
                 break;
             case 0x28: // SB
-                m = MN_SB;
                 o = &core::fSB;
                 break;
             case 0x29: // SH
-                m = MN_SH;
                 o = &core::fSH;
                 break;
             case 0x2A: // SWL
-                m = MN_SWL;
                 o = &core::fSWL;
                 break;
             case 0x2B: // SW
-                m = MN_SW;
                 o = &core::fSW;
                 break;
             case 0x2E: // SWR
-                m = MN_SWR;
                 o = &core::fSWR;
                 break;
             case 0x33: // LWC3
             case 0x32: // LWC2
             case 0x31: // LWC1
             case 0x30: // LWC0
-                m = MN_LWCx;
                 o = &core::fLWC;
                 a = op1 - 0x30;
                 break;
@@ -289,13 +228,11 @@ void core::do_decode_table() {
             case 0x3A: // SWC2
             case 0x39: // SWC1
             case 0x38: // SWC0
-                m = MN_SWCx;
                 o = &core::fSWC;
                 a = op1 - 0x38;
                 break;
         }
         mo->opcode = op1;
-        mo->mn = m;
         mo->func = o;
         mo->arg = a;
     }
@@ -353,7 +290,7 @@ void core::exception(u32 code, u32 cop0)
     }
     u32 raddr;
     if (delay.branch[0].taken) {
-        raddr = regs.PC - 4;
+        raddr = regs.PC;
         code |= 0x80000000;
         code |= static_cast<u32>(delay.branch[0].taken) << 30;
         regs.COP0[RCR_TAR] = delay.branch[0].target;
@@ -361,7 +298,7 @@ void core::exception(u32 code, u32 cop0)
     }
     else
     {
-        raddr = regs.PC;
+        raddr = regs.PC + 4;
     }
     regs.COP0[RCR_EPC] = raddr;
 

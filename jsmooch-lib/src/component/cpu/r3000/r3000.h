@@ -22,31 +22,11 @@ struct REGS {
     u32 IR{};
 };
 
-enum MN {
-    MN_SPECIAL = 0, MN_BcondZ = 1, MN_J = 2, MN_JAL = 3, MN_BEQ = 4,
-    MN_BNE = 5, MN_BLEZ = 6, MN_BGTZ = 7, MN_ADDI = 8, MN_ADDIU = 9,
-    MN_SLTI = 10, MN_SLTIU = 11, MN_ANDI = 12, MN_ORI = 13, MN_XORI = 14,
-    MN_LUI = 15, MN_COP0 = 16, MN_COP1 = 17, MN_COP2 = 18, MN_COP3 = 19,
-    MN_LB = 20, MN_LH = 21, MN_LWL = 22, MN_LW = 23, MN_LBU = 24,
-    MN_LHU = 25, MN_LWR = 26, MN_SB = 27, MN_SH = 28, MN_SWL = 29,
-    MN_SW = 30, MN_SWR = 31, MN_SWC0 = 32, MN_SWC1 = 33, MN_SWC2 = 34,
-    MN_SWC3 = 35, MN_SLL = 36, MN_SRL = 37, MN_SRA = 38, MN_SLLV = 39,
-    MN_SRLV = 40, MN_SRAV = 41, MN_JR = 42, MN_JALR = 43, MN_SYSCALL = 44,
-    MN_BREAK = 45, MN_MFHI = 46, MN_MTHI = 47, MN_MFLO = 48, MN_MTLO = 49,
-    MN_MULT = 50, MN_MULTU = 51, MN_DIV = 52, MN_DIVU = 53, MN_ADD = 54,
-    MN_ADDU = 55, MN_SUB = 56, MN_SUBU = 57, MN_AND = 58, MN_OR = 59,
-    MN_XOR = 60, MN_NOR = 61, MN_SLT = 62, MN_SLTU = 63, MN_NA = 64,
-    MN_LWCx = 65, MN_SWCx = 66, MN_COPx = 67, MN_MFC = 68, MN_CFC = 69,
-    MN_MTC = 70, MN_CTC = 71, MN_BCF = 72, MN_BCT = 73, MN_COPimm = 74,
-    MN_RFE = 75
-};
-
 struct OPCODE;
 struct core;
 typedef void (core::*insfunc)(u32 opcode, OPCODE *op);
 
 struct OPCODE {
-    MN mn{};
     u32 opcode{};
     insfunc func{};
     i32 arg{};

@@ -45,6 +45,8 @@ struct test_cycle {
     u32 sz{}; // 4
 
     bool visited{};
+    u32 my_addr{};
+    u32 my_val{};
     u32 my_actions{};
 };
 
@@ -59,6 +61,7 @@ struct test {
 struct gstate_t {
     u64 waitstates{};
     u64 clock{};
+    u64 real_clock{};
     scheduler_t scheduler{&clock};
     IRQ_multiplexer_b irq_multiplexer{0};
     R3000::core cpu {&clock, &waitstates, &scheduler, &irq_multiplexer};
@@ -76,11 +79,20 @@ u32 do_read(void *ptr, u32 addr, u8 sz) {
                 gstate.failed = true;
                 printf("\nFAIL WRONG READ SIZE");
             }
+            if (i != gstate.real_clock) {
+                printf("\nFAIL WRONG CLOCK MINE:%lld  THEIRS:%d", gstate.real_clock, i);
+                gstate.failed = true;
+            }
+            gstate.real_clock++;
             return c.val;
         }
     }
+    auto &c = gstate.test.cycles[gstate.real_clock];
+    c.my_addr = addr;
+    c.actions |= READ;
     gstate.failed = true;
     printf("\nFAIL WRONG READ ADDR %08x", addr);
+    gstate.real_clock++;
     return 0;
 }
 
@@ -88,6 +100,7 @@ void do_write(void *ptr, u32 addr, u8 sz, u32 val) {
     for (u32 i = 0; i < gstate.test.num_cycles; i++) {
         auto &c = gstate.test.cycles[i];
         if (c.addr == addr) {
+            c.my_val = val;
             c.visited = true;
             c.my_actions |= WRITE;
             if (c.sz != sz) {
@@ -98,9 +111,19 @@ void do_write(void *ptr, u32 addr, u8 sz, u32 val) {
                 gstate.failed = true;
                 printf("\nFAIL WRONG WRITE VALUE");
             }
+            if (i != gstate.real_clock) {
+                printf("\nFAIL WRITE WRONG CLOCK MINE:%lld THEIRS:%d", gstate.real_clock, i);
+                gstate.failed = true;
+            }
+            gstate.real_clock++;
             return;
         }
     }
+    auto &c = gstate.test.cycles[gstate.real_clock];
+    c.my_addr = addr;
+    c.my_val = val;
+    c.actions |= WRITE;
+    gstate.real_clock++;
     printf("\nFAIL BAD WRITE ADDRESS %08x", addr);
 }
 
@@ -110,9 +133,20 @@ u32 do_fetch_ins(void *ptr, u32 addr) {
         if (c.addr == addr) {
             c.visited = true;
             c.my_actions |= FETCH;
+            c.my_addr = addr;
+            c.my_val = c.val;
+            if (i != gstate.real_clock) {
+                printf("\nFAIL WRONG FETCH CYCLE. THEIRS:%d  MINE:%lld", i, gstate.real_clock);
+                gstate.failed = true;
+            }
+            gstate.real_clock++;
             return c.val;
         }
     }
+    auto &c = gstate.test.cycles[gstate.real_clock];
+    c.my_addr = addr;
+    c.actions |= FETCH;
+    gstate.real_clock++;
     gstate.failed = true;
     printf("\nFAIL WRONG FETCH ADDR %08x", addr);
     return 0;
@@ -231,6 +265,25 @@ static void compare_cycles() {
     }
 }
 
+static void pprint_cycles() {
+    printf("\n\nTEST CYCLES. READ = 1, WRITE = 2, FETCH = 4");
+
+    printf("\n    THEM                      ME");
+    printf("\nD | Act. Address   Value    | Act. Address   Value    Visited");
+    for (u32 i = 0; i < gstate.test.num_cycles; i++) {
+        auto &c = gstate.test.cycles[i];
+        bool diff = false;
+        if ((c.my_actions != c.actions) || (!c.visited) || (c.my_addr != c.addr) || (c.my_val != c.val)) {
+            diff = true;
+        }
+        if (diff) printf("\n* | ");
+        else      printf("\n  | ");
+        printf("%d    %08llx  %08llx | ", c.actions, c.addr, c.val);
+        printf("%d    %08x  %08x", c.my_actions, c.my_addr, c.my_val);
+    }
+    printf("\n\n");
+}
+
 static bool do_test(const char *file, const char *fname) {
     FILE *f = fopen(file, "rb");
     if (f == nullptr) {
@@ -254,15 +307,20 @@ static bool do_test(const char *file, const char *fname) {
         offset = decode_test(offset);
         copy_state_to_cpu();
         gstate.waitstates = gstate.clock = 0;
+        gstate.real_clock = 0;
 
         gstate.cpu.instruction();
 
-        if (gstate.clock != gstate.test.num_cycles) {
-            // FAIL for num cycles
+        if (gstate.real_clock != gstate.test.num_cycles) {
+            printf("\nFAIL wrong num cycles their:%d  mine:%lld", gstate.test.num_cycles, gstate.real_clock);
+            gstate.failed = true;
         }
         compare_state_to_cpu();
         compare_cycles();
-        if (gstate.failed) return false;
+        if (gstate.failed) {
+            pprint_cycles();
+            return false;
+        }
     }
 
     return true;
