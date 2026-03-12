@@ -68,7 +68,6 @@ void core::branch(i64 rel, bool doit, bool link, u32 link_reg)
 
     if (link) {
         fs_reg_write(link_reg, regs.PC_next+4);
-        printf("\nLINK REG %d", link_reg);
     }
 }
 
@@ -384,7 +383,6 @@ void core::fBcondZ(u32 opcode, OPCODE *op) {
     u32 rs = (opcode >> 21) & 0x1F;
     u32 w = (opcode >> 16) & 0x1F;
     if ((w < 0x10) || (w > 0x11)) w &= 1;
-    printf("\nW before:%02x AFTER:%02x", (opcode >> 16) & 0x1F, w);
     i32 imm = opcode & 0xFFFF;
     imm = SIGNe16to32(imm);
     u32 take = regs.R[rs] >> 31;
