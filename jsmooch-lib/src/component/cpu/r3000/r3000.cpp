@@ -276,8 +276,10 @@ void core::add_to_console(u32 ch)
         printf("\n(CONSOLE) %s", console.ptr);
         dbgloglog(trace.console_log_id, DBGLS_INFO, "%s", console.ptr);
         console.quickempty();
-    } else
+    } else {
+        printf("%c", ch);
         console.sprintf("%c", ch);
+    }
     //printf("%c", ch);
 }
 
@@ -460,7 +462,6 @@ void core::after_ins() {
 
 void core::instruction() {
     if (!fetch_and_decode()) {
-        printf("\n!FAD!");
         after_ins();
         return;
     };
