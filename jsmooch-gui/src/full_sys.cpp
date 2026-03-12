@@ -969,7 +969,7 @@ void full_system::load_default_ROM()
             //worked = grab_ROM(&ROMs, which, "ps1-tests-built/spu/memory-transfer/memory-transfer.exe", nullptr);
             //worked = grab_ROM(&ROMs, which, "ps1-tests-built/spu/test/test.exe", nullptr);
             //worked = grab_ROM(&ROMs, which`, "ps1-tests-built/gte-fuzz/gte-fuzz.exe", nullptr);
-            worked = grab_ROM(&ROMs, which, "redux_cpu.exe", nullptr);
+            //worked = grab_ROM(&ROMs, which, "redux_cpu.exe", nullptr);
             //worked = grab_ROM(&ROMs, which, "pad.exe", nullptr);
             //worked = grab_ROM(&ROMs, which, "PSX/MDEC/DCTBlockDecode/CLUT4BPP/DCTBlockDecodeCLUT4BPP.exe", nullptr);
             // DCTBlockDecodeCLUT4BPP
@@ -1064,7 +1064,7 @@ void full_system::load_default_ROM()
             //worked = grab_cue(&ROMs, which, "Final Fantasy VII (USA) (Disc 1)", nullptr);
             //worked = grab_cue(&ROMs, which, "Tony Hawks Pro Skater 2 (USA)", nullptr); // error parsing cue
             //worked = grab_cue(&ROMs, which, "Crash Bandicoot 1", nullptr);
-            //worked = grab_cue(&ROMs, which, "mk2", nullptr);
+            worked = grab_cue(&ROMs, which, "mk2", nullptr);
             //worked = grab_cue(&ROMs, which, "Doom (USA)", nullptr);
             //worked = grab_cue(&ROMs, which, "Hydro Thunder (USA)", nullptr);
             //worked = grab_cue(&ROMs, which, "Cool Boarders 2 (USA)", nullptr);

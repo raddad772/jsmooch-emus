@@ -370,7 +370,7 @@ void core::print_context(ctxt &ct, jsm_string &out)
 void core::dbglog_exception(u32 code, u32 vector, u32 raddr) {
     if (!dbg.dvptr) return;
     if (dbg.dvptr->ids_enabled[trace.exception_id]) {
-        if (dbg.dvptr->id_break[trace.exception_id]) dbg_break("Exception", *clock);
+        if (code == 0 && dbg.dvptr->id_break[trace.exception_id]) dbg_break("Exception", *clock);
         trace.str.quickempty();
         trace.str.sprintf("Exception. Code:%d Vector:%08x ReturnAddr:%08x Delay:%d", code, vector, raddr, delay.branch[0].taken);
         dbg.dvptr->add_printf(trace.exception_id, *clock, DBGLS_TRACE, "%s", trace.str.ptr);
@@ -434,12 +434,19 @@ void core::check_IRQ()
             gte.command(ni, current_clock());
         }
         exception(0, 0);
+        after_ins();
     }
 }
 
 void core::after_ins() {
     regs.PC = regs.PC_next;
     regs.PC_next += 4;
+
+    if ((regs.PC == 0xA0 && regs.R[9] == 0x3C) || (regs.PC == 0xB0 && regs.R[9] == 0x3D)) {
+        if (regs.R[9] == 0x3D) {
+            add_to_console(regs.R[4]);
+        }
+    }
 
     // Delay loads
     if (delay.load[0].target != -1) {

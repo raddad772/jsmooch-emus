@@ -199,7 +199,6 @@ u32 core::mainbus_read(u32 addr, u8 sz, bool has_effect)
             return 0x00070777;
         case 0x1F8010A8: // DMA2 GPU thing
         case 0x1F801810: // GP0/GPUREAD
-            printf("\nGPUREAD!?");
             return gpu.get_gpuread();
         case 0x1F801814: // GPUSTAT Read GPU Status Register
             return gpu.get_gpustat();
