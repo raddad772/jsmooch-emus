@@ -282,33 +282,44 @@ void core::add_to_console(u32 ch)
 
 void core::exception(u32 code, u32 cop0)
 {
-    u32 mycode = code;
-    code <<= 2;
+    CAUSE c;
+    c.u = 0;
+    c.exception_code = code;
+    c.IP = io.I_STAT->IF;
     u32 vector = 0x80000080;
     if (regs.COP0[RCR_SR] & 0x400000) {
         vector = 0xBFC00180;
     }
-    u32 raddr;
-    if (delay.branch[0].taken) {
-        raddr = regs.PC;
-        code |= 0x80000000;
-        code |= static_cast<u32>(delay.branch[0].taken) << 30;
-        regs.COP0[RCR_TAR] = delay.branch[0].target;
-        delay.branch[0] = {};
-    }
-    else
-    {
-        raddr = regs.PC + 4;
+    u32 raddr = regs.PC;
+    c.BT = delay.branch[0].taken;
+    c.BD = delay.branch[0].slot;
+    if (delay.branch[0].slot) {
+        raddr -= 4;
+        if (delay.branch[0].taken) {
+            regs.COP0[RCR_TAR] = delay.branch[0].target;
+        }
+        else {
+            regs.COP0[RCR_TAR] = regs.PC_next;
+        }
     }
     regs.COP0[RCR_EPC] = raddr;
 
     if (cop0)
         vector -= 0x40;
 
-    dbglog_exception(mycode, vector, raddr);
+    if(code != 6 && code !=7) {
+        c.CE = (regs.IR >> 26) & 3;
+    }
+    else {
+        c.CE = (regs.COP0[RCR_Cause] >> 28) & 3;
+    }
+
+    dbglog_exception(code, vector, raddr);
+    delay.branch[0] = {};
+    delay.branch[1] = {};
     regs.PC = vector;
     regs.PC_next = vector;
-    regs.COP0[RCR_Cause] = code;
+    regs.COP0[RCR_Cause] = c.u;
     u32 lstat = regs.COP0[RCR_SR];
     regs.COP0[RCR_SR] = (lstat & 0xFFFFFFC0) | ((lstat & 0x0F) << 2);
 }

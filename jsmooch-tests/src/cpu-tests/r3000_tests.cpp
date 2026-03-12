@@ -21,7 +21,7 @@
 
 struct test_cpu_state {
     u32 R[32]{};
-    u32 hi{}, lo{}, EPC{}, PC{};
+    u32 hi{}, lo{}, EPC{}, TAR{}, CAUSE{}, PC{};
     struct {
         struct {
             i32 target;
@@ -47,6 +47,7 @@ struct test_cycle {
     bool visited{};
     u32 my_addr{};
     u32 my_val{};
+    u32 my_sz{};
     u32 my_actions{};
 };
 
@@ -63,7 +64,7 @@ struct gstate_t {
     u64 clock{};
     u64 real_clock{};
     scheduler_t scheduler{&clock};
-    IRQ_multiplexer_b irq_multiplexer{0};
+    IRQ_multiplexer_b irq_multiplexer{8};
     R3000::core cpu {&clock, &waitstates, &scheduler, &irq_multiplexer};
     test test{};
     bool failed{};
@@ -75,9 +76,10 @@ u32 do_read(void *ptr, u32 addr, u8 sz) {
         if (c.addr == addr) {
             c.visited = true;
             c.my_actions |= READ;
+            c.my_sz = sz;
             if (c.sz != sz) {
                 gstate.failed = true;
-                printf("\nFAIL WRONG READ SIZE");
+                printf("\nFAIL WRONG READ SIZE MINE:%d THEIRS:%d", sz, c.sz);
             }
             if (i != gstate.real_clock) {
                 printf("\nFAIL WRONG CLOCK MINE:%lld  THEIRS:%d", gstate.real_clock, i);
@@ -89,6 +91,7 @@ u32 do_read(void *ptr, u32 addr, u8 sz) {
     }
     auto &c = gstate.test.cycles[gstate.real_clock];
     c.my_addr = addr;
+    c.my_sz = sz;
     c.actions |= READ;
     gstate.failed = true;
     printf("\nFAIL WRONG READ ADDR %08x", addr);
@@ -103,9 +106,10 @@ void do_write(void *ptr, u32 addr, u8 sz, u32 val) {
             c.my_val = val;
             c.visited = true;
             c.my_actions |= WRITE;
+            c.my_sz = sz;
             if (c.sz != sz) {
                 gstate.failed = true;
-                printf("\nFAIL WRONG WRITE SIZE");
+                printf("\nFAIL WRONG WRITE SIZE MINE:%d THEIRS:%d", sz, c.sz);
             }
             if (c.val != val) {
                 gstate.failed = true;
@@ -122,6 +126,7 @@ void do_write(void *ptr, u32 addr, u8 sz, u32 val) {
     auto &c = gstate.test.cycles[gstate.real_clock];
     c.my_addr = addr;
     c.my_val = val;
+    c.my_sz = sz;
     c.actions |= WRITE;
     gstate.real_clock++;
     printf("\nFAIL BAD WRITE ADDRESS %08x", addr);
@@ -134,6 +139,7 @@ u32 do_fetch_ins(void *ptr, u32 addr) {
             c.visited = true;
             c.my_actions |= FETCH;
             c.my_addr = addr;
+            c.my_sz = 4;
             c.my_val = c.val;
             if (i != gstate.real_clock) {
                 printf("\nFAIL WRONG FETCH CYCLE. THEIRS:%d  MINE:%lld", i, gstate.real_clock);
@@ -146,6 +152,7 @@ u32 do_fetch_ins(void *ptr, u32 addr) {
     auto &c = gstate.test.cycles[gstate.real_clock];
     c.my_addr = addr;
     c.actions |= FETCH;
+    c.my_sz = 4;
     gstate.real_clock++;
     gstate.failed = true;
     printf("\nFAIL WRONG FETCH ADDR %08x", addr);
@@ -166,6 +173,8 @@ static u32 load_state(test_cpu_state &state, u32 offset) {
     state.hi = R32;
     state.lo = R32;
     state.EPC = R32;
+    state.TAR = R32;
+    state.CAUSE = R32;
     state.PC = R32;
     state.delay.branch.target = R32;
     state.delay.branch.slot = R32;
@@ -219,7 +228,6 @@ static void copy_state_to_cpu() {
     gstate.cpu.delay.branch[0].taken = s.delay.branch.take;
     gstate.cpu.delay.branch[0].slot = s.delay.branch.slot;
     gstate.cpu.delay.branch[0].target = s.delay.branch.target;
-    gstate.cpu.delay.branch[0].taken = false;
     gstate.cpu.delay.branch[1] = {};
 
     gstate.cpu.delay.load[0].target = s.delay.load.target;
@@ -227,6 +235,24 @@ static void copy_state_to_cpu() {
     gstate.cpu.delay.load[1] = {};
 
     gstate.cpu.regs.PC_next = gstate.cpu.regs.PC + 4;
+
+    gstate.cpu.regs.COP0[14] = s.EPC;
+    gstate.cpu.regs.COP0[13] = s.CAUSE & 0b11110000000000000000000011111100;
+    gstate.irq_multiplexer.IF = (s.CAUSE >> 8) & 0b11111111;
+
+    gstate.cpu.regs.COP0[6] = s.TAR;
+}
+
+static bool compare_cause() {
+    if (gstate.irq_multiplexer.IF != ((gstate.test.final.CAUSE >> 8) & 0b11111111)) {
+        printf("\nIF FAIL!");
+        return false;
+    }
+    if ((gstate.cpu.regs.COP0[13] & 0b11110000000000000000000011111100) != (gstate.test.final.CAUSE & 0b11110000000000000000000011111100)) {
+        printf("\nREST FAIL!");
+        return false;
+    }
+    return true;
 }
 
 static void compare_state_to_cpu() {
@@ -239,6 +265,18 @@ static void compare_state_to_cpu() {
     }
     if (gstate.cpu.regs.PC != s.PC) {
         printf("\nFAIL PC:my:%08x theirs:%08x", gstate.cpu.regs.PC, s.PC);
+        gstate.failed = true;
+    }
+    if (gstate.cpu.regs.COP0[14] != s.EPC) {
+        printf("\nFAIL EPC:my:%08x theirs:%08x", gstate.cpu.regs.COP0[14], s.EPC);
+        gstate.failed = true;
+    }
+    if (!compare_cause()) {
+        printf("\nFAIL CAUSE:my:%08llx theirs:%08x initial:%08x", gstate.cpu.regs.COP0[13] | (gstate.irq_multiplexer.IF << 8), s.CAUSE, gstate.test.initial.CAUSE);
+        gstate.failed = true;
+    }
+    if (gstate.cpu.regs.COP0[6] != s.TAR) {
+        printf("\nFAIL TAR:my:%08x theirs:%08x", gstate.cpu.regs.COP0[6], s.TAR);
         gstate.failed = true;
     }
     if (gstate.cpu.multiplier.hi != s.hi) {
@@ -269,7 +307,7 @@ static void pprint_cycles() {
     printf("\n\nTEST CYCLES. READ = 1, WRITE = 2, FETCH = 4");
 
     printf("\n    THEM                      ME");
-    printf("\nD | Act. Address   Value    | Act. Address   Value    Visited");
+    printf("\n  | Act. Address   Sz  Value    | Act. Address   Sz  Value     Visited");
     for (u32 i = 0; i < gstate.test.num_cycles; i++) {
         auto &c = gstate.test.cycles[i];
         bool diff = false;
@@ -278,9 +316,22 @@ static void pprint_cycles() {
         }
         if (diff) printf("\n* | ");
         else      printf("\n  | ");
-        printf("%d    %08llx  %08llx | ", c.actions, c.addr, c.val);
-        printf("%d    %08x  %08x", c.my_actions, c.my_addr, c.my_val);
+        printf("%d    %08llx  %d   %08llx | ", c.actions, c.addr, c.sz, c.val);
+        printf("%d    %08x  %d   %08x  %c", c.my_actions, c.my_addr, c.my_sz, c.my_val, c.visited ? 'Y' : 'N');
     }
+
+    printf("\n\nBRANCH DELAY STATUS.");
+    printf("\n  THEIRS                  MINE");
+    printf("\n  | Slot  Take  Address   | Slot  Take  Address");
+    if ((gstate.test.final.delay.branch.slot != gstate.cpu.delay.branch[0].slot) ||
+        (gstate.test.final.delay.branch.take != gstate.cpu.delay.branch[0].taken) ||
+        (gstate.test.final.delay.branch.target != gstate.cpu.delay.branch[0].target)) {
+        printf("\n* | ");
+    }
+    else printf("\n  | ");
+    printf("%c     %c     %08x  | ", gstate.test.final.delay.branch.slot ? 'Y' : 'N', gstate.test.final.delay.branch.take ? 'Y' : 'N', gstate.test.final.delay.branch.target);
+    printf("%c     %c     %08x", gstate.cpu.delay.branch[0].slot ? 'Y' : 'N', gstate.cpu.delay.branch[0].taken ? 'Y' : 'N', gstate.cpu.delay.branch[0].target);
+    printf("\n\nBegin PC: %08x", gstate.test.opcode_addr);
     printf("\n\n");
 }
 
@@ -303,7 +354,6 @@ static bool do_test(const char *file, const char *fname) {
     printf("\n%d tests in file!", num_tests);
 
     for (u32 i = 0; i < num_tests; i++) {
-        //printf("\nDECODE %d", i);
         offset = decode_test(offset);
         copy_state_to_cpu();
         gstate.waitstates = gstate.clock = 0;
@@ -319,6 +369,7 @@ static bool do_test(const char *file, const char *fname) {
         compare_cycles();
         if (gstate.failed) {
             pprint_cycles();
+            printf("\n\nFAILED TEST %d NAME:%s", i, gstate.test.name);
             return false;
         }
     }

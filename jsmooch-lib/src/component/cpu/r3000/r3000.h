@@ -22,6 +22,20 @@ struct REGS {
     u32 IR{};
 };
 
+    union CAUSE {
+        struct {
+            u32 _ : 2;
+            u32 exception_code : 5;
+            u32 __ : 1;
+            u32 IP : 8;
+            u32 ___ : 12;
+            u32 CE : 2;
+            u32 BT : 1;
+            u32 BD : 1;
+        };
+        u32 u{};
+    };
+
 struct OPCODE;
 struct core;
 typedef void (core::*insfunc)(u32 opcode, OPCODE *op);
@@ -186,8 +200,8 @@ private:
 
     void COP_write_reg(u32 COP, u32 num, u32 val);
     u32 COP_read_reg(u32 COP, u32 num);
-    void branch(i64 rel, u32 doit, u32 link, u32 link_reg);
-    void jump(u32 new_addr, u32 doit, u32 link, u32 link_reg);
+    void branch(i64 rel, bool doit, bool link, u32 link_reg);
+    void jump(u32 new_addr, bool doit, bool link, u32 link_reg);
     u32 fs_reg_delay_read(i32 target);
     u64 current_clock() { return *clock + *waitstates; }
 
@@ -201,12 +215,10 @@ private:
 
     void fs_reg_write(u32 target, u32 value)
     {
-        regs.R[target] = value;
-
-        //if (trace_on) debug_reg_list.push(target);
-
         // cancel in-pipeline write to register
         if (delay.load[0].target == target) delay.load[0].target = -1;
+
+        regs.R[target] = value;
     }
 
 };

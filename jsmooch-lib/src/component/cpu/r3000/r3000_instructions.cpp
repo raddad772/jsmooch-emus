@@ -60,17 +60,19 @@ u32 core::COP_read_reg(u32 COP, u32 num)
 
 // default link reg to 31
 
-void core::branch(i64 rel, u32 doit, u32 link, u32 link_reg)
+void core::branch(i64 rel, bool doit, bool link, u32 link_reg)
 {
     delay.branch[1].slot = true;
     delay.branch[1].taken = doit;
     delay.branch[1].target = regs.PC_next + rel;
 
-    if (link)
-        fs_reg_write(link_reg, regs.PC+4);
+    if (link) {
+        fs_reg_write(link_reg, regs.PC_next+4);
+        printf("\nLINK REG %d", link_reg);
+    }
 }
 
-void core::jump(u32 new_addr, u32 doit, u32 link, u32 link_reg)
+void core::jump(u32 new_addr, bool doit, bool link, u32 link_reg)
 {
     delay.branch[1].slot = delay.branch[1].taken = true;
     delay.branch[1].target = new_addr;
@@ -155,25 +157,23 @@ void core::fSRAV(u32 opcode, OPCODE *op)
 void core::fJR(u32 opcode, OPCODE *op)
 {
     u32 rs = (opcode >> 21) & 0x1F;
-    jump(regs.R[rs], 1, 0, DEFAULT_LINKREG);
+    jump(regs.R[rs], true, false, DEFAULT_LINKREG);
 }
 
 void core::fJALR(u32 opcode, OPCODE *op)
 {
     u32 rs = (opcode >> 21) & 0x1F;
     u32 rd = (opcode >> 11) & 0x1F;
-    jump(regs.R[rs], 1, 1, rd);
+    jump(regs.R[rs], true, true, rd);
 }
 
 void core::fSYSCALL(u32 opcode, OPCODE *op)
 {
-    regs.PC -= 4;
     exception(8, 0);
 }
 
 void core::fBREAK(u32 opcode, OPCODE *op)
 {
-    regs.PC -= 4;
     exception(9, 0);
 }
 
@@ -285,7 +285,6 @@ void core::fADD(u32 opcode, OPCODE *op)
     u32 rd = (opcode >> 11) & 0x1F;
     int r;
     if (sadd_overflow(regs.R[rs], regs.R[rt], &r)) {
-        regs.PC -= 4;
         exception(0xC, 0);
         return;
     }
@@ -311,7 +310,6 @@ void core::fSUB(u32 opcode, OPCODE *op)
     u32 rd = (opcode >> 11) & 0x1F;
     int r;
     if (ssub_overflow(regs.R[rs], regs.R[rt], &r)) {
-        regs.PC -= 4;
         exception(0xC, 0);
         return;
     }
@@ -386,9 +384,11 @@ void core::fBcondZ(u32 opcode, OPCODE *op) {
     u32 rs = (opcode >> 21) & 0x1F;
     u32 w = (opcode >> 16) & 0x1F;
     if ((w < 0x10) || (w > 0x11)) w &= 1;
+    printf("\nW before:%02x AFTER:%02x", (opcode >> 16) & 0x1F, w);
     i32 imm = opcode & 0xFFFF;
     imm = SIGNe16to32(imm);
     u32 take = regs.R[rs] >> 31;
+    bool link = false;
     switch (w) {
         case 0: // BLTZ
             break;
@@ -396,30 +396,30 @@ void core::fBcondZ(u32 opcode, OPCODE *op) {
             take ^= 1;
             break;
         case 0x10: // BLTZAL
-            fs_reg_write(31, regs.PC + 4);
+            link = true;
             break;
         case 0x11: // BGEZAL
             take ^= 1;
-            fs_reg_write(31, regs.PC + 4);
+            link = true;
             break;
         default:
             printf("\nBad B..Z instruction! %08x", opcode);
             return;
     }
-    branch(imm * 4, take, 0, DEFAULT_LINKREG);
+    branch(imm * 4, take, link, DEFAULT_LINKREG);
 }
 
 void core::fJ(u32 opcode, OPCODE *op)
 {
 //  00001x | <---------immediate26bit---------> | j/jal
-    jump((regs.PC & 0xF0000000) + ((opcode & 0x3FFFFFF) << 2), 1, 0, DEFAULT_LINKREG);
+    jump((regs.PC & 0xF0000000) + ((opcode & 0x3FFFFFF) << 2), true, false, DEFAULT_LINKREG);
 }
 
 void core::fJAL(u32 opcode, OPCODE *op)
 {
 
 //  00001x | <---------immediate26bit---------> | j/jal
-    jump((regs.PC & 0xF0000000) + ((opcode & 0x3FFFFFF) << 2), 1, 1, DEFAULT_LINKREG);
+    jump((regs.PC & 0xF0000000) + ((opcode & 0x3FFFFFF) << 2), true, true, DEFAULT_LINKREG);
 }
 
 void core::fBEQ(u32 opcode, OPCODE *op)
@@ -427,7 +427,7 @@ void core::fBEQ(u32 opcode, OPCODE *op)
     branch(
                  (static_cast<u32>(static_cast<i16>(opcode & 0xFFFF))*4),
                  regs.R[(opcode >> 21) & 0x1F] == regs.R[(opcode >> 16) & 0x1F],
-                 0, DEFAULT_LINKREG);
+                 false, DEFAULT_LINKREG);
 }
 
 void core::fBNE(u32 opcode, OPCODE *op)
@@ -436,7 +436,7 @@ void core::fBNE(u32 opcode, OPCODE *op)
     branch(
                  (static_cast<u32>(static_cast<i16>(opcode & 0xFFFF))*4),
                  regs.R[(opcode >> 21) & 0x1F] != regs.R[(opcode >> 16) & 0x1F],
-                 0, DEFAULT_LINKREG);
+                 false, DEFAULT_LINKREG);
 }
 
 void core::fBLEZ(u32 opcode, OPCODE *op)
@@ -445,7 +445,7 @@ void core::fBLEZ(u32 opcode, OPCODE *op)
     branch(
                  (static_cast<u32>(static_cast<i16>(opcode & 0xFFFF))*4),
                  static_cast<i32>(regs.R[(opcode >> 21) & 0x1F]) <= 0,
-                 0, DEFAULT_LINKREG);
+                 false, DEFAULT_LINKREG);
 }
 
 void core::fBGTZ(u32 opcode, OPCODE *op)
@@ -454,7 +454,7 @@ void core::fBGTZ(u32 opcode, OPCODE *op)
     branch(
                  (static_cast<u32>(static_cast<i16>(opcode & 0xFFFF))*4),
                  static_cast<i32>(regs.R[(opcode >> 21) & 0x1F])  > 0,
-                 0, DEFAULT_LINKREG);
+                 false, DEFAULT_LINKREG);
 }
 
 void core::fADDI(u32 opcode, OPCODE *op)
@@ -466,7 +466,6 @@ void core::fADDI(u32 opcode, OPCODE *op)
     imm = SIGNe16to32(imm);
     int r;
     if (sadd_overflow(regs.R[rs], imm, &r)) {
-        regs.PC -= 4;
         exception(0xC, 0);
         return;
     }
@@ -604,6 +603,7 @@ void core::fCOP(u32 opcode, OPCODE *op)
                 case 0x10:
                     fCOP0_RFE(opcode, op);
                     return;
+                default:
             }
         }
         printf("\nBAD COP0 INSTRUCTION! %08x", opcode);
@@ -665,7 +665,6 @@ void core::fLH(u32 opcode, OPCODE *op)
     u32 addr = regs.R[rs] + imm16;
 
     if (addr & 1) {
-        regs.PC -= 4;
         exception(4, 0);
         return;
     }
@@ -685,26 +684,28 @@ void core::fLWL(u32 opcode, OPCODE *op)
     u32 addr = regs.R[rs] + imm16;
 
     // Fetch register from delay if it's there, and also clobber it
-    u32 cur_v = fs_reg_delay_read(rt);
-
-    u32 aligned_addr = addr & 0xFFFFFFFC;
-    u32 aligned_word = read(read_ptr, aligned_addr, 4);
-    u32 fv = 0;
-    switch(addr & 3) {
+    u32 data = fs_reg_delay_read(rt);
+    switch (addr & 3) {
         case 0:
-            fv = ((cur_v & 0x00FFFFFF) | (aligned_word << 24));
+            data &= 0x00FFFFFF;
+            data |= (read(read_ptr, addr & ~3 | 0, 1) & 0xFF) << 24;
             break;
         case 1:
-            fv = ((cur_v & 0x0000FFFF) | (aligned_word << 16));
+            data &= 0x0000FFFF;
+            data |= (read(read_ptr, addr & ~3 | 0, 2) & 0xFFFF) << 16;
             break;
         case 2:
-            fv = ((cur_v & 0x000000FF) | (aligned_word << 8));
+            data &= 0x000000FF;
+            data |= (read(read_ptr, addr & ~3 | 0, 2) & 0xFFFF) << 8;
+            data |= (read(read_ptr, addr & ~3 | 2, 1) & 0xFF) << 24;
             break;
         case 3:
-            fv = aligned_word;
+            data = read(read_ptr, addr & ~3, 4);
             break;
+        default:
+            NOGOHERE;
     }
-    fs_reg_delay(rt, fv);
+    fs_reg_delay(rt, data);
 }
 
 void core::fLW(u32 opcode, OPCODE *op)
@@ -715,7 +716,6 @@ void core::fLW(u32 opcode, OPCODE *op)
     u32 addr = regs.R[rs] + imm16;
 
     if (addr & 3) {
-        regs.PC -= 4;
         exception(4, 0);
         return;
     }
@@ -742,7 +742,6 @@ void core::fLHU(u32 opcode, OPCODE *op)
     u32 imm16 = static_cast<u32>(static_cast<i16>(opcode & 0xFFFF));
     u32 addr = regs.R[rs] + imm16;
     if (addr & 1) {
-        regs.PC -= 4;
         exception(4, 0);
         return;
     }
@@ -759,26 +758,29 @@ void core::fLWR(u32 opcode, OPCODE *op)
     u32 addr = regs.R[rs] + imm16;
 
     // Fetch register from delay if it's there, and also clobber it
-    u32 cur_v = fs_reg_delay_read(rt);
+    u32 data = fs_reg_delay_read(rt);
 
-    u32 aligned_addr = addr & 0xFFFFFFFC;
-    u32 aligned_word = read(read_ptr, aligned_addr, 4);
-    u32 fv = 0;
     switch(addr & 3) {
         case 0:
-            fv = aligned_word;
+            data = read(read_ptr, addr & ~3, 4);;
             break;
         case 1:
-            fv = ((cur_v & 0xFF000000) | (aligned_word >> 8));
+            data &= 0xFF000000;
+            data |= (read(read_ptr, addr & ~3 | 1, 1) & 0xFF);
+            data |= (read(read_ptr, addr & ~3 | 2, 2) & 0xFFFF) << 8;
             break;
         case 2:
-            fv = ((cur_v & 0xFFFF0000) | (aligned_word >> 16));
+            data &= 0xFFFF0000;
+            data |= read(read_ptr, addr & ~3 | 2, 2) & 0xFFFF;
             break;
         case 3:
-            fv = ((cur_v & 0xFFFFFF00) | (aligned_word >> 24));
+            data = 0xFFFFFF00;
+            data |= read(read_ptr, addr & ~3 | 3, 1) & 0xFF;
             break;
+        default:
+            NOGOHERE;
     }
-    fs_reg_delay(rt, fv);
+    fs_reg_delay(rt, data);
 }
 
 void core::fSB(u32 opcode, OPCODE *op)
@@ -800,7 +802,6 @@ void core::fSH(u32 opcode, OPCODE *op)
     u32 imm16 = static_cast<u32>(static_cast<i16>(opcode & 0xFFFF));
     u32 addr = regs.R[rs] + imm16;
     if (addr & 1) {
-        regs.PC -= 4;
         exception(5, 0);
         return;
     }
@@ -815,26 +816,24 @@ void core::fSWL(u32 opcode, OPCODE *op)
     u32 imm16 = static_cast<u32>(static_cast<i16>(opcode & 0xFFFF));
     u32 addr = regs.R[rs] + imm16;
 
-    u32 v = regs.R[rt];
-
-    u32 aligned_addr = (addr & 0xFFFFFFFC)>>0;
-    u32 cur_mem = read(read_ptr, aligned_addr, 4);
+    u32 data = regs.R[rt];
 
     switch(addr & 3) {
         case 0: // upper 8
-            cur_mem = ((cur_mem & 0xFFFFFF00) | (v >> 24));
+            write(write_ptr, addr & ~3, 1, data >> 24);
             break;
         case 1:
-            cur_mem = ((cur_mem & 0xFFFF0000) | (v >> 16));
+            write(write_ptr, addr & ~3, 2, data >> 16);
             break;
         case 2:
-            cur_mem = ((cur_mem & 0xFF000000) | (v >> 8));
+            write(write_ptr, addr & ~3, 2, data >> 8);
+            write(write_ptr, addr & ~3 | 2, 1, data >> 24);
             break;
         case 3:
-            cur_mem = v;
+            write(write_ptr, addr & ~3, 4, data);
             break;
+        default: NOGOHERE;
     }
-    write(write_ptr, aligned_addr, 4, cur_mem);
 }
 
 void core::fSW(u32 opcode, OPCODE *op)
@@ -846,7 +845,6 @@ void core::fSW(u32 opcode, OPCODE *op)
     u32 addr = regs.R[rs] + imm16;
 
     if (addr & 3) {
-        regs.PC -= 4;
         exception(5, 0);
         return;
     }
@@ -860,26 +858,25 @@ void core::fSWR(u32 opcode, OPCODE *op)
     u32 rt = (opcode >> 16) & 0x1F;
     u32 imm16 = static_cast<u32>(static_cast<i16>(opcode & 0xFFFF));
     u32 addr = regs.R[rs] + imm16;
-    u32 v = regs.R[rt];
-
-    u32 aligned_addr = (addr & 0xFFFFFFFC)>>0;
-    u32 cur_mem = read(read_ptr, aligned_addr, 4);
+    u32 data = regs.R[rt];
 
     switch(addr & 3) {
         case 0: // upper 8
-            cur_mem = v;
+            write(write_ptr, addr & ~3, 4, data);
             break;
         case 1:
-            cur_mem = ((cur_mem & 0x000000FF) | (v << 8));
+            write(write_ptr, addr & ~3 | 1, 1, data);
+            write(write_ptr, addr & ~3 | 2, 2, data >> 8);
             break;
         case 2:
-            cur_mem = ((cur_mem & 0x0000FFFF) | (v << 16));
+            write(write_ptr, addr & ~3 | 2, 2, data);
             break;
         case 3:
-            cur_mem = ((cur_mem & 0x00FFFFFF) | (v << 24));
+            write(write_ptr, addr & ~3 | 3, 1, data);
             break;
+        default:
+            NOGOHERE;
     }
-    write(write_ptr, aligned_addr, 4, cur_mem);
 }
 
 void core::fLWC(u32 opcode, OPCODE *op)
