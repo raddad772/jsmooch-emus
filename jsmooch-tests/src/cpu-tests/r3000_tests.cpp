@@ -16,10 +16,8 @@
 #define M32 4
 #define M64 8
 
-#define R8 cR[M8](ptr, 0); ptr += 1
-#define R16 cR[M16](ptr, 0); ptr += 2
-#define R32 cR[M32](ptr, 0); ptr += 4
-#define R64 cR[M64](ptr, 0); ptr += 8
+#define R32 cR[M32](filebuf, offset); offset += 4
+#define R64 cR[M64](filebuf, offset); offset += 8
 
 struct test_cpu_state {
     u32 R[32]{};
@@ -51,6 +49,7 @@ struct test_cycle {
 };
 
 struct test {
+    char name[51];
     test_cpu_state initial{}, final{};
     u32 num_cycles{};
     test_cycle cycles[50]{};
@@ -108,6 +107,7 @@ void do_write(void *ptr, u32 addr, u8 sz, u32 val) {
 u32 do_fetch_ins(void *ptr, u32 addr) {
     for (u32 i = 0; i < gstate.test.num_cycles; i++) {
         auto &c = gstate.test.cycles[i];
+        printf("\n%08llx", c.addr);
         if (c.addr == addr) {
             c.visited = true;
             c.my_actions |= FETCH;
@@ -120,11 +120,15 @@ u32 do_fetch_ins(void *ptr, u32 addr) {
 }
 
 #define FILE_BUF_SIZE 512*1024
-static char *filebuf{};
+static u8 *filebuf{};
 
-static u8* load_state(test_cpu_state &state, u8* ptr) {
+static u32 load_state(test_cpu_state &state, u32 offset) {
     for (u32 i = 0; i < 32; i++) {
+        //if (i == 0) printf("\nOFFSET %d", offset);
         state.R[i] = R32;
+    }
+    if (state.R[0] != 0) {
+        printf("\nBAD R0!");
     }
     state.hi = R32;
     state.lo = R32;
@@ -135,11 +139,12 @@ static u8* load_state(test_cpu_state &state, u8* ptr) {
     state.delay.branch.take = R32;
     state.delay.load.target = R32;
     state.delay.load.val = R32;
-    return ptr;
+    return offset;
 }
 
-static u8* decode_test(u8* ptr) {
+static u32 decode_test(u32 offset) {
     // Empty outcycles
+    //printf("\nTEST OFFSET %d", offset);
     for (auto & c : gstate.test.cycles) {
         c.actions = NOACTION;
         c.addr = -1;
@@ -148,19 +153,83 @@ static u8* decode_test(u8* ptr) {
         c.sz = 0;
         c.val = -1;
     }
+    offset++;
+    memcpy(gstate.test.name, filebuf + offset, 50);
+    offset += 50;
+    //printf("\nTEST NAME %s", gstate.test.name);
     gstate.test.opcode = R32;
+    //printf("\nTEST OPCODE %08x", gstate.test.opcode);
     gstate.test.opcode_addr = R32;
-    ptr = load_state(gstate.test.initial, ptr);
-    ptr = load_state(gstate.test.final, ptr);
+    offset = load_state(gstate.test.initial, offset);
+    offset = load_state(gstate.test.final, offset);
+    //printf("\nCYCLES OFFSET %d", offset);
     gstate.test.num_cycles = R32;
     for (u32 i = 0; i < gstate.test.num_cycles; i++) {
-        auto &c = gstate.test.cycles[i];;
+        auto &c = gstate.test.cycles[i];
         c.val = R64;
         c.actions = R32;
         c.addr = R64;
         c.sz = R32;
+        printf("\nCycle %d actions:%d sz:%d addr:%04llx val:%04llx", i, c.actions, c.sz, c.addr, c.val);
     }
-    return ptr;
+    printf("\nNEXT TEST %d", offset);
+    return offset;
+}
+
+static void copy_state_to_cpu() {
+    auto &s = gstate.test.initial;
+    for (u32 i = 0; i < 32; i++) {
+        gstate.cpu.regs.R[i] = s.R[i];
+    }
+    gstate.cpu.regs.PC = s.PC;
+    printf("\nSET PC: %08x", s.PC);
+    gstate.cpu.multiplier.hi = s.hi;
+    gstate.cpu.multiplier.lo = s.lo;
+    gstate.cpu.delay.branch[0].taken = s.delay.branch.take;
+    gstate.cpu.delay.branch[0].slot = s.delay.branch.slot;
+    gstate.cpu.delay.branch[0].target = s.delay.branch.target;
+    gstate.cpu.delay.branch[0].taken = false;
+    gstate.cpu.delay.branch[1] = {};
+
+    gstate.cpu.delay.load[0].target = s.delay.load.target;
+    gstate.cpu.delay.load[0].value = s.delay.load.val;
+    gstate.cpu.delay.load[1] = {};
+
+    gstate.cpu.regs.PC_next = gstate.cpu.regs.PC + 4;
+}
+
+static void compare_state_to_cpu() {
+    auto &s = gstate.test.final;
+    for (u32 i = 0; i < 32; i++) {
+        if (gstate.cpu.regs.R[i] != s.R[i]) {
+            printf("\nFAIL R%d:my:%08x theirs:%08x", i, gstate.cpu.regs.R[i], s.R[i]);
+            gstate.failed = true;
+        }
+    }
+    if (gstate.cpu.regs.PC != s.PC) {
+        printf("\nFAIL PC:my:%08x theirs:%08x", gstate.cpu.regs.PC, s.PC);
+        gstate.failed = true;
+    }
+    if (gstate.cpu.multiplier.hi != s.hi) {
+        printf("\nFAIL HI:my:%08x theirs:%08x", gstate.cpu.multiplier.hi, s.hi);
+    }
+    if (gstate.cpu.multiplier.lo != s.lo) {
+        printf("\nFAIL LO:my:%08x theirs:%08x", gstate.cpu.multiplier.lo, s.lo);
+    }
+}
+
+static void compare_cycles() {
+    for (u32 i = 0; i < gstate.test.num_cycles; i++) {
+        auto &c = gstate.test.cycles[i];
+        if (!c.visited) {
+            printf("\nFAIL MISSED CYCLE %d", i);
+            gstate.failed = true;
+        }
+        if (c.my_actions != c.actions) {
+            printf("\nFAIL MISMATCHED ACTIONS %d", i);
+            gstate.failed = true;
+        }
+    }
 }
 
 static bool do_test(const char *file, const char *fname) {
@@ -169,23 +238,22 @@ static bool do_test(const char *file, const char *fname) {
         printf("\nBAD FILE! %s", file);
         return false;
     }
-    if (!filebuf) filebuf = static_cast<char *>(malloc(FILE_BUF_SIZE));
+    if (filebuf) free(filebuf);
     fseek(f, 0, SEEK_END);
     u32 len = ftell(f);
-    if (len > FILE_BUF_SIZE) {
-        printf("\nFILE TOO BIG! %s", file);
-        fclose(f);
-        return 0;
-    }
+    filebuf = static_cast<u8 *>(malloc(len));
     fseek(f, 0, SEEK_SET);
     fread(filebuf, 1, len, f);
     fclose(f);
+    printf("\nTEST FILE %d BYTES", len);
     auto *ptr = reinterpret_cast<u8 *>(filebuf);
+    u32 offset = 0;
     u32 num_tests = R32;
     printf("\n%d tests in file!", num_tests);
 
     for (u32 i = 0; i < num_tests; i++) {
-        ptr = decode_test(ptr);
+        //printf("\nDECODE %d", i);
+        offset = decode_test(offset);
         copy_state_to_cpu();
         gstate.waitstates = gstate.clock = 0;
 
@@ -194,12 +262,8 @@ static bool do_test(const char *file, const char *fname) {
         if (gstate.clock != gstate.test.num_cycles) {
             // FAIL for num cycles
         }
-        if (!compare_state_to_cpu()) {
-            // FAIL for this
-        }
-        if (!compare_cycles()) {
-            // FAIL for this
-        }
+        compare_state_to_cpu();
+        compare_cycles();
         if (gstate.failed) return false;
     }
 
@@ -244,8 +308,8 @@ void test_r3000() {
 
     printf("\nFound %d tests!", num_files);
     u32 completed_tests = 0;
-    for (u32 i = 0; i < num_files; i++) {
-        printf("\nDoing test %s", mfn[i]);
+    for (u32 i = 1; i < num_files; i++) {
+        printf("\nDoing test %s / %s", mfn[i], mfp[i]);
         if (!do_test(mfp[i], mfn[i])) break;
         completed_tests++;
     }

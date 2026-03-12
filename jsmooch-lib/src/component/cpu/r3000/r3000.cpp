@@ -391,6 +391,7 @@ void core::decode(u32 IR)
 
 bool core::fetch_and_decode()
 {
+    printf("\nPC: %08x", regs.PC);
     if (regs.PC & 3) {
         exception(4, 0);
         return false;
