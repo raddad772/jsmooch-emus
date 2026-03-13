@@ -1439,7 +1439,7 @@ void core::write_03(u32 val, u8 sz) {
             io.HCHPCTL.u = val & 0b11100000;
             dbgloglog_bus(PS1D_CDROM_REGRW, DBGLS_INFO, "WRITE HCHPCTL %02x/%02x", val,io.HCHPCTL.u);
             if (io.HCHPCTL.BFRD) {
-                dbgloglog_busn(PS1D_CDROM_RDDATA_START, DBGLS_WARN, "RDDATA REQUEST!");
+                dbgloglog_busn(PS1D_CDROM_RDDATA_START, DBGLS_TRACE, "RDDATA REQUEST!");
             }
             bus->dma.channels[3].try_dreq();
             return;
