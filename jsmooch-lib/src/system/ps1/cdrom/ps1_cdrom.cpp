@@ -163,6 +163,7 @@ void core::mainbus_write(u32 addr, u32 val, u8 sz) {
 u32 core::read_01(u8 sz, bool has_effect) {
     // RESULT
     u8 v = io.results_out.pop();
+    dbg_printf("\nRESULT %02x", v);
     recalc_HSTS();
     dbgloglog_bus(PS1D_CDROM_RESULT, DBGLS_INFO, "POP RESULT %02x", v);
     return v;
@@ -183,8 +184,10 @@ u32 core::read_02(u8 sz, bool has_effect) {
             io.HSTS.DRQSTS = 0;
             io.HCHPCTL.BFRD = 0;
         }
+        dbg_printf("\nRD@%d: %08x", io.RDDATA.pos-4, v);
         return v;
     }
+    dbg_printf("\nRD.B %08x", masksz[sz]);
     return masksz[sz];
 }
 
@@ -241,6 +244,7 @@ void core::cmd_start(u64 key, u64 clock) {
     if ((cmd >= 0x20) && (cmd <= 0x4F)) cmd = 0;
     if (cmd >= 0x60) cmd = 0;
     printif(ps1.cdrom.cmd, "\n(CDROM) EXEC CMD %02x", io.CMD);
+    dbg_printf("\nCMD %02x", io.CMD);
     dbgloglog_bus(PS1D_CDROM_CMD, DBGLS_INFO, "Exec cmd %02x", io.CMD);
     /*if ((cmd != 0x1B) && (cmd != 0x06)) {
         printf("\n(CDROM) CMD %02x", cmd);
@@ -754,7 +758,7 @@ void core::read_sector() {
         }
     }
     dbgloglog_bus(PS1D_CDROM_SECTOR_READS, DBGLS_INFO, "(READ) Read sector %02d:%02d:%02d into queue size %d  raw_sector:%d", head.amm, head.ass, head.asect, sector_buf.len(), io.MODE.sector_size);
-
+    dbg_printf("\nRead sector %02d:%02d:%02d", head.amm, head.ass, head.asect);
     BUGGED_SECTOR_BUFFER_BUF *b = sector_buf.push();
     /*
     // if (raw_sector) {
@@ -1338,14 +1342,22 @@ void core::queue_interrupt(u32 level) {
     //.   there are no non-level1 IRQs
     //    and there are no in-process commands
     if (io.HINTSTS.INTSTS == 0 && (level != 1 || (io.irqnot1s.len == 0 && !io.HSTS.BUSYSTS))) {
+        dbg_printf("\nAssert IRQ %d", level);
         io.HINTSTS.INTSTS = level;
         io.results_out.copy(io.results_in);
         io.results_in.reset();
+        for (u32 i = 0; i < io.results_out.len; i++) {
+            dbg_printf(" %02x", io.results_out.data[(io.results_out.head + i) & 15]);
+        }
         dbgloglog_bus(PS1D_CDROM_IRQ_ASSERT, DBGLS_INFO, "IRQ assert: %d  CMD:%02x", level, io.CMD);
         recalc_HSTS();
         update_IRQs();
     }
     else {
+        dbg_printf("\nQueue IRQ %d", level);
+        for (u32 i = 0; i < io.results_in.len; i++) {
+            dbg_printf(" %02x", io.results_in.data[(io.results_in.head + i) & 15]);
+        }
         dbgloglog_bus(PS1D_CDROM_IRQ_QUEUE, DBGLS_INFO, "IRQ queued %d", level);
         if (level == 1) io.irq1s.push_irq(level, io.results_in);
         else io.irqnot1s.push_irq(level, io.results_in);
@@ -1501,10 +1513,12 @@ void core::write_03(u32 val, u8 sz) {
                 if (io.irqnot1s.len > 0) {
                     io.HINTSTS.INTSTS = io.irqnot1s.pop_irq(io.results_out);
                     dbgloglog_bus(PS1D_CDROM_IRQ_ASSERT, DBGLS_INFO, "IRQ assert: %d num_left:%d", io.HINTSTS.INTSTS, total_irqs_len());
+                    dbg_printf("\nIRQ Deferred %d", io.HINTSTS.INTSTS);
                 }
                 else if (io.irq1s.len > 0 && !io.HSTS.BUSYSTS) {
                     io.HINTSTS.INTSTS = io.irq1s.pop_irq(io.results_out);
                     dbgloglog_bus(PS1D_CDROM_IRQ_ASSERT, DBGLS_INFO, "IRQ assert: %d num_left:%d", io.HINTSTS.INTSTS, total_irqs_len());
+                    dbg_printf("\nIRQ Deferred %d", io.HINTSTS.INTSTS);;
                 }
                 recalc_HSTS();
             }

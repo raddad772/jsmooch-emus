@@ -131,7 +131,7 @@ void dbg_flush()
 #ifdef DBG_LOG_TO_FILE
     char fpath[250];
     printf("\nOUTPUTTING...");
-    construct_path(fpath, sizeof(fpath), "my_spu.txt");
+    construct_path(fpath, sizeof(fpath), "good_cdrom.txt");
     if (dbg.first_flush) {
         dbg.first_flush = 0;
         remove(fpath);
