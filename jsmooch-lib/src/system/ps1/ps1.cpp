@@ -490,7 +490,7 @@ void core::reset()
     printf("\nPS1 reset!");
     if (sideloaded.size > 0) {
         sideload_EXE(&sideloaded);
-        amidog_print_console();
+        //amidog_print_console();
     }
 
     cdrom.open_drive();

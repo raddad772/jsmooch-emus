@@ -277,7 +277,6 @@ void core::add_to_console(u32 ch)
         dbgloglog(trace.console_log_id, DBGLS_INFO, "%s", console.ptr);
         console.quickempty();
     } else {
-        printf("%c", ch);
         console.sprintf("%c", ch);
     }
     //printf("%c", ch);

@@ -161,6 +161,9 @@ bool CDROM_DISC::parse_cue(multi_file_set &mfs) {
                     current_track->mode = CDMODE_MODE1;
                 else if (!strcmp(mode, "MODE2/2352"))
                     current_track->mode = CDMODE_MODE2;
+                else {
+                    printf("\nWARN UNKNOWN MODE TYPE");
+                }
             }
         }
 
@@ -200,7 +203,10 @@ bool CDROM_DISC::parse_cue(multi_file_set &mfs) {
         CDROM_cue_track &t = tracks[i];
 
         t.start_lba = cur_lba;
-        t.data_lba  = cur_lba + t.pregap_lba;
+        t.data_lba  = cur_lba + t.pregap_lba + t.file_lba;
+        u8 mmm, mms, mmf;
+        //lba_to_msf(t.data_lba, mmm, mms, mmf);
+        //printf("\nT %ld LBA:%d MSF: %02d:%02d:%02d", i, cur_lba, mmm, mms, mmf);
 
         read_file_buf &f = mfs.files[t.file_index];
         u32 file_sectors = (u32)(f.buf.size / 2352);

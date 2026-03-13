@@ -2223,6 +2223,41 @@ void core::write_gp1(u32 cmd)
     }
 }
 
+u32 core::read(u32 addr, u8 sz) {
+    if (sz == 1) {
+        return read(addr & ~3, 4) >> (8 * (addr & 3)) & 0xFF;
+    }
+    if (sz == 2) {
+        return read(addr & ~3, 4) >> (8 * (addr & 3)) & 0xFFFF;
+    }
+    switch (addr) {
+        case 0x1F801810: // GP0/GPUREAD
+            return get_gpuread();
+        case 0x1F801814: // GPUSTAT Read GPU Status Register
+            return get_gpustat();
+        default:
+            NOGOHERE;
+    }
+
+}
+
+void core::write(u32 addr, u8 sz, u32 val) {
+    if (sz < 4) {
+        write(addr & ~3, 4, val << (8 * (addr & 3)));
+        return;
+    }
+    switch (addr) {
+        case 0x1F801810: // GP0 Send GP0 Commands/Packets (Rendering and VRAM Access)
+            write_gp0(val);
+            return;
+        case 0x1F801814: // GP1
+            write_gp1(val);
+            return;
+        default:
+            NOGOHERE;
+    }
+}
+
 u32 core::get_gpuread()
 {
     u32 v = io.GPUREAD;

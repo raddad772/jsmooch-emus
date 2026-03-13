@@ -198,6 +198,7 @@ u32 core::read_03(u8 sz, bool has_effect) {
             return v;
         case 1:
         case 3: // HINTSTS
+            io.HINTSTS.BFWRDY = io.MODE.xa_adpcm;
             v = io.HINTSTS.u | 0b11100000;
             dbgloglog_bus(PS1D_CDROM_REGRW, DBGLS_INFO, "READ HINTSTS %02x", v);
             return v;
@@ -240,8 +241,47 @@ void core::cmd_start(u64 key, u64 clock) {
     u32 cmd = io.CMD;
     if ((cmd >= 0x20) && (cmd <= 0x4F)) cmd = 0;
     if (cmd >= 0x60) cmd = 0;
-    printif(ps1.cdrom.cmd, "\n(CDROM) EXEC CMD %02x", io.CMD);
-    dbgloglog_bus(PS1D_CDROM_CMD, DBGLS_INFO, "Exec cmd %02x", io.CMD);
+    //printif(ps1.cdrom.cmd, "\n(CDROM) EXEC CMD %02x", io.CMD);
+    if (bus->dbg.dvptr->ids_enabled[PS1D_CDROM_CMD]) {
+        char cmdstr[256];
+        char *ptr = cmdstr;
+#define CDEF(n, x) case n: ptr += snprintf(cmdstr, sizeof(cmdstr), #x); break
+        switch (cmd) {
+            CDEF(0x0D, "SetFilter");
+            CDEF(0x19, "Test");
+            CDEF(0x01, "NOP");
+            CDEF(0x02, "SetLoc");
+            CDEF(0x03, "Play");
+            CDEF(0x04, "Forward");
+            CDEF(0x05, "Backward");
+            CDEF(0x13, "GetTN");
+            CDEF(0x14, "GetTD");
+            CDEF(0x1B, "ReadS");
+            CDEF(0x06, "ReadN");
+            CDEF(0x07, "MotorOn");
+            CDEF(0x08, "Stop");
+            CDEF(0x09, "Pause");
+            CDEF(0x0b, "Mute");
+            CDEF(0x12, "SetSession");
+            CDEF(0x0a, "Init");
+            CDEF(0x0c, "Demute");
+            CDEF(0x0e, "SetMode");
+            CDEF(0x15, "SeekL");
+            CDEF(0x11, "GetLocP");
+            CDEF(0x16, "SeekP");
+            CDEF(0x1a, "GetID");
+            CDEF(0x1c, "Reset");
+            default:
+                ptr += snprintf(cmdstr, sizeof(cmdstr), "Unknown");
+                break;
+        }
+        for (u32 i = 0; i < io.PARAMETER.len; i++) {
+            u32 e = (io.PARAMETER.head + i) & 15;
+            ptr += snprintf(ptr, sizeof(cmdstr) - (ptr - cmdstr), " %02x", int(io.PARAMETER.entries[e]));
+        }
+        dbgloglog_bus(PS1D_CDROM_CMD, DBGLS_INFO, "Exec cmd %02x: %s", io.CMD, cmdstr);
+    }
+
     /*if ((cmd != 0x1B) && (cmd != 0x06)) {
         printf("\n(CDROM) CMD %02x", cmd);
     }*/
@@ -481,11 +521,12 @@ static constexpr u32 INVALID_COMMAND = 0x40;
 static constexpr u32 NOT_READY = 0x80;
 
 void core::cmd_setloc() {
-    //printf("\n(CDROM) CMD SetLoc");
     u32 mm = io.PARAMETER.pop();
     u32 ss = io.PARAMETER.pop();
     u32 ff = io.PARAMETER.pop();
+    printf("\n(CDROM) CMD SetLoc %02x:%02x:%02x", mm, ss, ff);
     if (((mm & 0x0F) > 0x09) || (mm > 0x99) || ((ss & 0x0F) > 0x09) || (ss >= 0x60) || ((ff & 0x0F) > 0x09) || (ff >= 0x75)){
+        printf("\nBAD SETLOC!");
         result(io.stat.u | 1);
         result(INVALID_ARG);
         queue_interrupt(5);
@@ -497,6 +538,7 @@ void core::cmd_setloc() {
     seek.waiting.amm = decode_bcd(mm);
     seek.waiting.ass = decode_bcd(ss);
     seek.waiting.asect = decode_bcd(ff);
+    printf("\nACTUAL TIME %02d:%02d:%02d", seek.waiting.amm, seek.waiting.ass, seek.waiting.asect);
     seek.needs_seek = true;
     dbgloglog_bus(PS1D_CDROM_SETLOC, DBGLS_INFO, "(Cmd) SetLoc %02d:%02d:%02d", seek.waiting.amm, seek.waiting.ass, seek.waiting.asect);
     finish_CMD(false, 0);
@@ -740,20 +782,22 @@ void core::read_sector() {
 
     u8 *ptr = data.ptr_to_data(head.amm, head.ass, head.asect);
 
-    u8 subheader = ptr[XA_SUBHEADER_START+2];
+    u8 subheader = ptr[18];
     u8 mode = ptr[15];
-    if (mode==0) printf("\nWARNMODE0?");
-    if (io.MODE.xa_adpcm) {
-        if (mode == 2 && ((subheader & 0x44) == 0x44)) {
-            // real-time audio
-            //(v & 0x8)) { // data, real-time data = audio
-            //if (v & 0x8) printf("\nWARN REALTIME DATA!");
+    u32 form = (subheader & 0x20) ? 2 : 1;
+    if (mode == 2) {
+        if (io.MODE.xa_filter) {
+            if (ptr[16] != xa.filter.file) return;
+            if (ptr[17] != xa.filter.channel) return;
+        }
+        if (io.MODE.xa_adpcm && ((subheader & 0x44) == 0x44)) {
             queue_xa_sector(ptr);
-            dbgloglog_bus(PS1D_CDROM_SECTOR_READS, DBGLS_INFO, "(READ) Read sector for XA-ADPCM %02d:%02d:%02d into queue size %d raw_sector:%d", head.amm, head.ass, head.asect, sector_buf.len(), io.MODE.sector_size);
             return;
         }
+        if (io.MODE.xa_filter && ((subheader & 0x44) == 0x44)) return;
     }
-    dbgloglog_bus(PS1D_CDROM_SECTOR_READS, DBGLS_INFO, "(READ) Read sector %02d:%02d:%02d into queue size %d  raw_sector:%d", head.amm, head.ass, head.asect, sector_buf.len(), io.MODE.sector_size);
+    printf("\nMODE:%d SUBHEADER:%02x", mode, subheader);
+    dbgloglog_bus(PS1D_CDROM_SECTOR_READS, DBGLS_INFO, "(READ) Read sector %02d:%02d:%02d  qs:%d  raw_sector:%d  LBA:%d  mode:%d  form:%d  subheader:%02x", head.amm, head.ass, head.asect, sector_buf.len(), io.MODE.sector_size, get_cur_LBA(), mode, form, subheader);
 
     BUGGED_SECTOR_BUFFER_BUF *b = sector_buf.push();
     /*
@@ -764,33 +808,13 @@ void core::read_sector() {
     //   len = 0x800
     // }
     */
-    if (io.MODE.sector_size) {
-        if (mode == 1) {
-            //   if mode == 1 {
-            //     copy mode-1 header over (4 bytes)
-            //     memset 8 more bytes to 0
-            //     copy 0x800 bytes after that
-            //     total len = 0x80C
-            //   }
-            memcpy(b->data, ptr+12, 4);
-            memset(b->data+4, 0, 8);
-            memcpy(b->data+12, ptr+24, 0x800);
-            b->len = 0x80C;
-        }
-        else {
-            //     offset = 12
-            //     len = 0x924
-            memcpy(b->data, ptr+12, 0x924);
-            b->len = 0x924;
-        }
+    if (io.MODE.sector_size == 0) {
+        memcpy(b->data, ptr + 24, 0x800);
+        b->len = 0x800;
     }
     else {
-        //   if not mode1 or mode2, ignore with warning!
-        //   offset = mode_1 ? 12 + 4, 12 + 12
-        //   len = 0x800
-        u32 offset = mode == 1 ? 16 : 24;
-        memcpy(b->data, ptr+offset, 0x800);
-        b->len = 0x800;
+        memcpy(b->data, ptr + 12, 0x924);
+        b->len = 0x924;
     }
 
     result(io.stat.u);
@@ -917,7 +941,6 @@ bool core::xa_decode_next_sector() {
     u8 CI;
     u8 *dat = xa_get_sector(CI);
     if (dat == nullptr) {
-        //printf("\nNO DATA...");
         return false;
     }
     auto channels = static_cast<XA::XA_CH>(CI & 3);
@@ -1114,9 +1137,9 @@ void core::cmd_pause(u64 clock) {
     //printf("\n(CDROM) CMD Pause");
     dbgloglog_busn(PS1D_CDROM_PAUSE, DBGLS_INFO, "(Cmd) Pause");
     stat_irq();
-    if (read.still_sched) bus->scheduler.delete_if_exist(read.sched_id);
     io.stat.read = 0;
-    schedule_finish(clock + ONEFRAME/60);
+    if (read.still_sched) bus->scheduler.delete_if_exist(read.sched_id);
+    schedule_finish(clock + ONEFRAME);
 }
 
 void core::cmd_gettn() {
@@ -1176,10 +1199,11 @@ void core::cmd_init(u64 clock) {
 
 void core::cmd_setmode() {
     u8 mode = io.PARAMETER.pop();
-    //printf("\n(CDROM) CMD SETMODE %02x", mode);
+    printf("\n(CDROM) CMD SETMODE %02x", mode);
     dbgloglog_bus(PS1D_CDROM_READ, DBGLS_INFO, "(Cmd) SetMode %02x", mode);
+    //io.latch.MODE_sector_size = (mode >> 5) & 1;
     if (!(mode & 0x10)) {
-        io.latch.MODE_sector_size = (mode >> 5) & 1;
+        //io.latch.MODE_sector_size = (mode >> 5) & 1;
     }
     if (((mode >> 7) & 1) != io.MODE.speed) {
         speed_changed = 20321280;

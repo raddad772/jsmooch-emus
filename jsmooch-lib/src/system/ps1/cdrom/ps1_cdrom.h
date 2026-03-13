@@ -150,7 +150,7 @@ struct IO {
             u8 xa_filter : 1; // 1=process only XA-ADPCM sectors that match SetFilter
             u8 ignore_bit : 1; // 1=ignore sectroc size and setloc positions
             u8 sector_size : 1; // 0=800h data_only, 1=924h whole sector except sync bytes
-            u8 xa_adpcm : 1; // 1= send XA-ADPCM sectors to SPU Audio Input
+            u8 xa_adpcm : 1; // 1= send XA-ADPCM sectors to SPU Audio Input, 0= don't
             u8 speed : 1; // 0=normal/1x, 1=double/2x
         };
         u8 u{};

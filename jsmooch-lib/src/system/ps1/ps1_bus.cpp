@@ -198,10 +198,7 @@ u32 core::mainbus_read(u32 addr, u8 sz, bool has_effect)
         case 0x1F80101C: // Expansion 2 Delay/size
             return 0x00070777;
         case 0x1F8010A8: // DMA2 GPU thing
-        case 0x1F801810: // GP0/GPUREAD
-            return gpu.get_gpuread();
-        case 0x1F801814: // GPUSTAT Read GPU Status Register
-            return gpu.get_gpustat();
+
         case 0x1F000084: // PIO
             //console.log('PIO READ!');
             return 0;
@@ -209,6 +206,7 @@ u32 core::mainbus_read(u32 addr, u8 sz, bool has_effect)
             return io.spu_delay;
     }
 
+    if (addr >= 0x1F801810 && addr < 0x1F801818) return gpu.read(addr, sz);
     if ((addr >= 0x1F801100) && (addr < 0x1F801130)) return timers_read(addr, sz);
 
     static u32 e = 0;
@@ -300,12 +298,6 @@ void core::mainbus_write(u32 addr, u8 sz, u32 val)
         case 0x1F802041: // F802041h 1 PSX: POST (external 7 segment display, indicate BIOS boot status
             //printf("\nWRITE POST STATUS! %d", val);
             return;
-        case 0x1F801810: // GP0 Send GP0 Commands/Packets (Rendering and VRAM Access)
-            gpu.write_gp0(val);
-            return;
-        case 0x1F801814: // GP1
-            gpu.write_gp1(val);
-            return;
         case 0x1F801000: // Expansion 1 base addr
         case 0x1F801004: // Expansion 2 base addr
         case 0x1F801008: // Expansion 1 delay/size
@@ -322,6 +314,10 @@ void core::mainbus_write(u32 addr, u8 sz, u32 val)
 
     }
 
+    if ((addr >= 0x1F801810) && (addr < 0x1F801818)) {
+        gpu.write(addr, sz, val);
+        return;
+    }
     if ((addr >= 0x1F801100) && (addr < 0x1F801130)) {
         timers_write(addr, sz, val);
         return;

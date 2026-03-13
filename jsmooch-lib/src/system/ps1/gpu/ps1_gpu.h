@@ -36,6 +36,8 @@ struct VERTEX2 {
 struct core {
     explicit core(PS1::core *parent);
     void reset();
+    u32 read(u32 addr, u8 sz);
+    void write(u32 addr, u8 sz, u32 val);
     void write_gp0(u32 cmd);
     void write_gp1(u32 cmd);
     [[nodiscard]] u32 get_gpuread();

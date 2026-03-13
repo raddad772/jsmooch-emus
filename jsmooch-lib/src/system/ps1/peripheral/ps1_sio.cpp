@@ -322,7 +322,6 @@ u32 SIO0::read_stat(u8 sz) const
     u32 b7 = ((io.SIO_STAT.u >> 7) & 1);
     //if (b7)
         //printf("\nc:%lld READ JOY_STAT bit7:%d val:%04x", bus->clock.master_cycle_count, b7, io.SIO_STAT.u);
-    if (io.SIO_STAT.u == 0x207 && ::dbg.trace_on) dbg_break("HERE!", 0);
     dbgloglog_bus(PS1D_SIO0_RW, DBGLS_TRACE, "port: read SIO_STAT %04x", io.SIO_STAT.u);
 
     return io.SIO_STAT.u;
