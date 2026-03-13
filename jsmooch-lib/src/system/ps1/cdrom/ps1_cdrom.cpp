@@ -105,12 +105,13 @@ void core::mainbus_write(u32 addr, u32 val, u8 sz) {
 u32 core::read_01(u8 sz, bool has_effect) {
     // RESULT
     u8 v = io.response.pop();
+    dbg_printf("\nRESULT %02x", v);
     dbgloglog_bus(PS1D_CDROM_RESULT, DBGLS_INFO, "POP RESULT %02x", v);
     return v;
 }
 
 u32 core::read_02(u8 sz, bool has_effect) {
-    u8 v = io.buffered_data.pop();
+    u32 v = io.buffered_data.pop();
     if (sz >= 2) v |= io.buffered_data.pop() << 8;
     if (sz == 4) {
         v |= io.buffered_data.pop() << 16;
@@ -119,6 +120,7 @@ u32 core::read_02(u8 sz, bool has_effect) {
     if (io.buffered_data.pos >= io.buffered_data.len) {
         dbgloglog_busn(PS1D_CDROM_RDDATA_FINISH, DBGLS_TRACE, "RDDATA FIFO emptied!");
     }
+    dbg_printf("\nRD@%d: %08x", io.buffered_data.pos - 4, v);
     return v;
 }
 
@@ -183,6 +185,7 @@ void core::cmd_start(u64 key, u64 clock) {
     u32 cmd = io.CMD;
     if ((cmd >= 0x20) && (cmd <= 0x4F)) cmd = 0;
     if (cmd >= 0x60) cmd = 0;
+    dbg_printf("\nCMD %02x", cmd);
     //printif(ps1.cdrom.cmd, "\n(CDROM) EXEC CMD %02x", io.CMD);
     if (bus->dbg.dvptr->ids_enabled[PS1D_CDROM_CMD]) {
         char cmdstr[256];
@@ -395,7 +398,7 @@ void core::cmd_test() {
     //printf("\n(CDROM) TEST %02x", sub);
     switch (sub) {
         case 0x04: // Reset SCEx counters
-            io.stat.motor_fullspeed = true;
+            io.stat.motor_fullspeed = 1;
             finish_CMD(true, 3);
             return;
         case 0x05: // Read SCEx counters
@@ -703,6 +706,7 @@ void core::read_sector() {
     //   len = 0x800
     // }
     */
+    dbg_printf("\nRead sector %02d:%02d:%02d", head.amm, head.ass, head.asect);
     if (io.MODE.sector_size == 0) {
         io.buffered_data.push(ptr + 24, 0x800);
     }
@@ -1080,10 +1084,10 @@ void core::cmd_demute() {
 void core::cmd_init(u64 clock) {
     //printf("\n(CDROM) CMD Init");
     io.MODE.u = 0x20;
+    result(3, {io.stat.u});
     io.stat.read = 0;
     io.stat.motor_fullspeed = 1;
     io.stat.shell_open = !disk.inserted;
-    result(2, {io.stat.u});
     schedule_finish(clock + UKN_TIME);
 }
 
@@ -1247,6 +1251,8 @@ void core::result(u32 level, std::initializer_list<u8> rdata) {
     //    and there are no in-process commands
 
     if (!irq.pending()) {
+        dbg_printf("\nAssert IRQ %d", level);
+        for (auto & n : rdata) dbg_printf(" %02x", n);
         dbgloglog_bus(PS1D_CDROM_IRQ_ASSERT, DBGLS_TRACE, "IRQ Assert %d", level);
         io.response.reset();
         for (auto & n : rdata) io.response.push(n);
@@ -1267,6 +1273,7 @@ void core::result(u32 level, std::initializer_list<u8> rdata) {
         update_IRQs();
         return;
     }
+    printf("\nUHOH DEFER IRQ!?");
     dbgloglog_bus(PS1D_CDROM_IRQ_ASSERT, DBGLS_TRACE, "IRQ Queue %d", level);
     switch (level) {
         case 1: // Ready data only happens if there isn't already one
@@ -1476,6 +1483,7 @@ void core::reset_decoder() {
 
 void core::reset() {
     io.HSTS.u = 0b00001000;
+    io.stat.motor_fullspeed = 1;
 }
 
 }

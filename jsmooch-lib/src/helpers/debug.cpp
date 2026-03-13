@@ -124,14 +124,15 @@ static void construct_path(char* w, size_t sz, const char* who)
 void dbg_flush()
 {
     if (!dbg.trace_on) return;
-#if !defined(LYCODER) && !defined(REICAST_DIFF)
+#if !defined(LYCODER) && !defined(REICAST_DIFF) && !defined(DBG_LOG_TO_FILE)
+
     printf("%s", dbg.msg.ptr);
     fflush(stdout);
 #endif
 #ifdef DBG_LOG_TO_FILE
     char fpath[250];
-    printf("\nOUTPUTTING...");
-    construct_path(fpath, sizeof(fpath), "my_spu.txt");
+    //printf("\nOUTPUTTING...");
+    construct_path(fpath, sizeof(fpath), "new_cdrom.txt");
     if (dbg.first_flush) {
         dbg.first_flush = 0;
         remove(fpath);
