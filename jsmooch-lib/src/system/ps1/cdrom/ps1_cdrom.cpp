@@ -170,7 +170,7 @@ void core::recalc_HSTS() {
 void core::write_CMD(u32 val) {
     // TODO: this
     if (io.HSTS.BUSYSTS) {
-        printf("\n(CDROM) WARN IGNORE CMD %02x", val);
+        printf("\n(CDROM) WARN IGNORE CMD %02x FOR CURRENT %02x", val, io.CMD);
         //cancel_CMD();
         return;
     }
@@ -535,6 +535,7 @@ void core::do_cmd_read(u64 clock) {
     stat_irq();
     if (read.still_sched && !seek.needs_seek) {
         dbgloglog_busn(PS1D_CDROM_READ, DBGLS_INFO, "(Cmd) ReadN/S ABORT for already going!");
+        finish_CMD(false, 0);
         return;
     }
 
@@ -577,7 +578,6 @@ void core::cmd_getid_finish() {
         finish_CMD(false, 0);
         return;
     }
-    printf("\nGetID SCEA!");
     result(2, {io.stat.u, 0x00, 0x20,0x00, 'S', 'C', 'E', 'A'});
     finish_CMD(false, 0);
 }
@@ -1276,7 +1276,6 @@ void core::result(u32 level, std::initializer_list<u8> rdata) {
         update_IRQs();
         return;
     }
-    printf("\nUHOH DEFER IRQ!?");
     dbgloglog_bus(PS1D_CDROM_IRQ_ASSERT, DBGLS_TRACE, "IRQ Queue %d", level);
     switch (level) {
         case 1: // Ready data only happens if there isn't already one
