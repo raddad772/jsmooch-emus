@@ -9,6 +9,10 @@
 #include "../ps1_bus.h"
 
 namespace PS1::CDROM {
+static constexpr u32 INVALID_ARG = 0x10;
+static constexpr u32 INCORRECT_NUM_PARAMS = 0x20;
+static constexpr u32 INVALID_COMMAND = 0x40;
+static constexpr u32 NOT_READY = 0x80;
 
 static u32 constexpr masksz[5] = {0, 0xFF, 0xFFFF, 0, 0xFFFFFFFF };
 #define CYCLES_PER_SEC 33868800
@@ -21,105 +25,52 @@ static u32 constexpr masksz[5] = {0, 0xFF, 0xFFFF, 0, 0xFFFFFFFF };
     // old, no latest: latest = this
     // no old, latest: old = latest, latest = this
     // old, latest: latest = this
-
-BUGGED_SECTOR_BUFFER_BUF *BUGGED_SECTOR_BUFFER::push() {
-    auto *p = &bufs[pos];
-    if (old != -1 && latest != -1) { // Len of 2+
-        static int num = 0;
-        if (num == 0) {
-            printf("\nBUGGED WARN SECTOR BUF FILL!");
-            dbg_break("YO", 0);
+void SECTOR_FIFO::push(u8 *ptr, u32 num) {
+    for (u32 i = 0; i < num; i++) {
+        if (len >= 0x930) {
+            printf("\nOVERFLOW SECTOR FIFO!?");
+            return;
         }
-        /*if (num == 3) {
-            dbg_break("BUGGED SECTOR BUF OVERRUN x4!", 0);
-        }*/
-        num++;
+        data[tail] = ptr[i];
+        tail = (tail + 1) % 0x930;
+        len++;
     }
-    if (old == -1 && latest != -1) {
-        old = latest;
-    }
-    latest = pos;
-    pos = (pos + 1) & 7;
-    return p;
 }
 
-BUGGED_SECTOR_BUFFER_BUF *BUGGED_SECTOR_BUFFER::pop() {
-    i32 to_use;
-    if (old != -1) {
-        to_use = old;
-        old = -1;
+u8 SECTOR_FIFO::pop() {
+    u32 p = head;
+    if (len) {
+        head = (head + 1) % 0x930;
+        len--;
     }
-    else {
-        if (latest == -1) {
-            printf("\nPOP LATEST!?");
-            to_use = pos;
-        }
-        else {
-            to_use = latest;
-            latest = -1;
-        }
-    }
-    return &bufs[to_use];
+    return data[p];
 }
 
-void BUGGED_SECTOR_BUFFER::reset() {
-    old = latest = -1;
-}
-
-u32 BUGGED_SECTOR_BUFFER::len() {
-    if (old != -1) return 2;
-    if (latest != -1) return 1;
-    return 0;
-}
-
-void FIFO_IRQ::reset() {
+void SECTOR_FIFO::clear() {
     head = tail = len = 0;
 }
 
-void FIFO_IRQ::push_irq(u32 val, FIFO_RESULTS_BUF &inbuf) {
-    if (len >= 16) {
-        printf("\n(CDR IRQ FIFO)ATTEMPT TO PUSH WHEN FULL!");
-        return;
-    }
-    auto &e = entries[tail];
-    e.results.copy(inbuf);
-    inbuf.reset();
-    e.val = val;
-    tail = (tail + 1) & 15;
-    len++;
-}
-
-u8 FIFO_IRQ::pop_irq(FIFO_RESULTS_BUF &outbuf) {
-    if (len == 0) { printf("\n(CDR IRQ FIFO)EMPTY POP!"); return 0; }
-    auto &e = entries[head];
-    head = (head + 1) & 15;
-    len--;
-
-    outbuf.copy(e.results);
-    return e.val;
-};
-
-void FIFO::reset() {
+void FIFO16::reset() {
     head = tail = len = 0;
-    memset(entries, 0, sizeof(entries));
 }
 
-void FIFO::push(u32 val) {
-    if (len == 16) {
-        printf("\n(CDROM) ATTEMPT TO PUSH TO FULL FIFO!");
-        dbg_break("CDROM FIFO FULL", 0);
-        return;
-    }
+void FIFO16::push(u8 val) {
     entries[tail] = val;
+    if (len >= 16) {
+        printf("\nPUSH FULL FIFO16!");
+        return;
+    }
     tail = (tail + 1) & 15;
     len++;
 }
 
-u8 FIFO::pop() {
-    u8 v = entries[head];
-    head = (head + 1) & 15;
-    if (len) len--;
-    return v;
+u8 FIFO16::pop() {
+    u8 o = entries[head];
+    if (len) {
+        head = (head + 1) & 15;
+        len--;
+    }
+    return o;
 }
 
 u32 core::mainbus_read(u32 addr, u8 sz, bool has_effect) {
@@ -133,7 +84,7 @@ u32 core::mainbus_read(u32 addr, u8 sz, bool has_effect) {
         case 0x1F801800: {
             recalc_HSTS();
             u32 v = io.HSTS.u | (io.HSTS.u << 8) | (io.HSTS.u << 16) | (io.HSTS.u << 24);
-            dbgloglog_bus(PS1D_CDROM_REGRW, DBGLS_INFO, "READ HSTS %02x   buf_len:%d  pos/len:%d/%d DRQSTS:%d", v & 0xFF, sector_buf.len(), io.RDDATA.pos, io.RDDATA.len, v & 0x40);
+            dbgloglog_bus(PS1D_CDROM_REGRW, DBGLS_INFO, "READ HSTS %02x", io.HSTS.u);
             return v & masksz[sz];
         }
         case 0x1F801801: return read_01(sz, has_effect);
@@ -162,30 +113,19 @@ void core::mainbus_write(u32 addr, u32 val, u8 sz) {
 
 u32 core::read_01(u8 sz, bool has_effect) {
     // RESULT
-    u8 v = io.results_out.pop();
-    recalc_HSTS();
+    u8 v = io.response.pop();
     dbgloglog_bus(PS1D_CDROM_RESULT, DBGLS_INFO, "POP RESULT %02x", v);
     return v;
 }
 
 u32 core::read_02(u8 sz, bool has_effect) {
-    // RDDATA
-    // if DRQSTS is set, the datablock (disk sector) can be then read from this register
-    if (io.HCHPCTL.BFRD) {
-        u32 v = io.RDDATA.read_byte();
-        if (sz >= 2) v |= io.RDDATA.read_byte() << 8;
-        if (sz == 4) {
-            v |= io.RDDATA.read_byte() << 16;
-            v |= io.RDDATA.read_byte() << 24;
-        }
-        if (io.RDDATA.pos >= io.RDDATA.len) {
-            dbgloglog_busn(PS1D_CDROM_RDDATA_FINISH, DBGLS_INFO, "RDDATA consumed");
-            io.HSTS.DRQSTS = 0;
-            io.HCHPCTL.BFRD = 0;
-        }
-        return v;
+    u8 v = io.buffered_data.pop();
+    if (sz == 2) v |= io.buffered_data.pop() << 8;
+    if (sz == 4) {
+        v |= io.buffered_data.pop() << 16;
+        v |= io.buffered_data.pop() << 24;
     }
-    return masksz[sz];
+    return v;
 }
 
 u32 core::read_03(u8 sz, bool has_effect) {
@@ -193,24 +133,39 @@ u32 core::read_03(u8 sz, bool has_effect) {
     switch (io.HSTS.RA) {
         case 0:
         case 2: // HINTMSK
-            v = io.HINTMSK.u | 0b11100000;
+            v = irq.ready.enable;
+            v |= irq.complete.enable << 1;
+            v |= irq.ack.enable << 2;
+            v |= irq.end.enable << 3;
+            v |= irq.error.enable << 4;
+            v |= 0b11100000;
             dbgloglog_bus(PS1D_CDROM_REGRW, DBGLS_INFO, "READ HINTMSK %02x", v);
             return v;
         case 1:
-        case 3: // HINTSTS
-            io.HINTSTS.BFWRDY = io.MODE.xa_adpcm;
-            v = io.HINTSTS.u | 0b11100000;
+        case 3: {
+            // HINTSTS
+            v = 0;
+            if (irq.error.flag) v = 5;
+            if (irq.end.flag) v = 4;
+            if (irq.ack.flag) v = 3;
+            if (irq.complete.flag) v = 2;
+            if (irq.ready.flag) v = 1;
+            v |= irq.end.flag << 3;
+            v |= irq.error.flag << 4;
+            v |= 0b11100000;
             dbgloglog_bus(PS1D_CDROM_REGRW, DBGLS_INFO, "READ HINTSTS %02x", v);
             return v;
+        }
     }
     NOGOHERE;
 }
 
 void core::recalc_HSTS() {
-    io.HSTS.PRMEMPT = io.PARAMETER.len == 0;
-    io.HSTS.PRMWRDY = io.PARAMETER.len != 16;
-    io.HSTS.RSLRRDY = io.results_out.len > 0;
-    io.HSTS.DRQSTS = io.HCHPCTL.BFRD;
+    io.HSTS.ADPBUSY = 0;
+    io.HSTS.PRMEMPT = io.param.len == 0;
+    io.HSTS.PRMWRDY = io.param.len == 16;
+    io.HSTS.RSLRRDY = io.response.len > 0;
+    io.HSTS.DRQSTS = io.HCHPCTL.BFRD && io.buffered_data.len > 0;
 }
 
 void core::write_CMD(u32 val) {
@@ -226,15 +181,8 @@ void core::write_CMD(u32 val) {
     schedule_CMD();
 }
 
-void core::result_string(const char *s) {
-    for (u32 i = 0; i < strlen(s); i++) {
-        if (s[i] != 0) result(s[i]);
-    }
-}
-
-void core::result(u32 val) {
-    dbgloglog_bus(PS1D_CDROM_RESULT, DBGLS_INFO, "PUSH RESULT %02x", val);
-    io.results_in.push(val);
+void core::result_error(u8 code) {
+    result(5, {static_cast<u8>(io.stat.u | 1), code});
 }
 
 void core::cmd_start(u64 key, u64 clock) {
@@ -275,9 +223,9 @@ void core::cmd_start(u64 key, u64 clock) {
                 ptr += snprintf(cmdstr, sizeof(cmdstr), "Unknown");
                 break;
         }
-        for (u32 i = 0; i < io.PARAMETER.len; i++) {
-            u32 e = (io.PARAMETER.head + i) & 15;
-            ptr += snprintf(ptr, sizeof(cmdstr) - (ptr - cmdstr), " %02x", int(io.PARAMETER.entries[e]));
+        for (u32 i = 0; i < io.param.len; i++) {
+            u32 e = (io.param.head + i) & 15;
+            ptr += snprintf(ptr, sizeof(cmdstr) - (ptr - cmdstr), " %02x", int(io.param.entries[e]));
         }
         dbgloglog_bus(PS1D_CDROM_CMD, DBGLS_INFO, "Exec cmd %02x: %s", io.CMD, cmdstr);
     }
@@ -292,9 +240,7 @@ void core::cmd_start(u64 key, u64 clock) {
         case 0x00:
         case 0x17:
         case 0x18:
-            result(0x11);
-            result(0x40);
-            queue_interrupt(5);
+            result_error(INVALID_COMMAND);
             finish_CMD(false, 3);
             return;
         case 0x19:
@@ -388,9 +334,7 @@ void core::cmd_start(u64 key, u64 clock) {
 void core::cmd_step3(u64 key, u64 clock) {
     switch (io.CMD) {
         case 0x12:
-            result(0x06);
-            result(0x40);
-            queue_interrupt(5);
+            result(5, { 0x06, 0x40} );
             finish_CMD(false, 0);
             return;
         default:
@@ -452,7 +396,7 @@ static u8 encode_bcd(u8 val) {
 }
 
 void core::cmd_test() {
-    u8 sub = io.PARAMETER.pop();
+    u8 sub = io.param.pop();
     test.subcmd = sub;
     //printf("\n(CDROM) TEST %02x", sub);
     switch (sub) {
@@ -461,51 +405,34 @@ void core::cmd_test() {
             finish_CMD(true, 3);
             return;
         case 0x05: // Read SCEx counters
-            result(io.stat.u);
-            result(0); // # of TOC reads
-            result(0); // # of SCEx strings
-            queue_interrupt(3);
+            result(3, {io.stat.u, 0, 0});
             finish_CMD(false, 0);
             return;
         case 0x20: // CDROM BIOS version 94h,09h,19h,C0h
-            result(0x94);
-            result(0x09);
-            result(0x19);
-            result(0xC0);
-            queue_interrupt(3);
+            result(3, {0x94, 0x09, 0x19, 0xC0});
             finish_CMD(false, 0);
             return;
         case 0x21: { // Status of POS0 and DOOR switches
-            u32 v = head.sector == 0;
+            u8 v = head.sector == 0;
             v |= io.stat.shell_open << 1;
-            result(v);
-            queue_interrupt(3);
+            result(3, {v});
             finish_CMD(false, 0);
             return; }
         case 0x22: // Not supported/higher BIOS version
-            result(0x11);
-            result(0x10);
-            queue_interrupt(5);
-            finish_CMD(false, 0);
-            return;
-        case 0x23: // Servo Amplifier
-        case 0x24: // Signal processor
-            result_string("CXD2940Q");
-            queue_interrupt(3);
+            result_error(INVALID_ARG);
             finish_CMD(false, 0);
             return;
         case 0x25: // Not supported/higher BIOS version
-            result(0x11);
-            result(0x10);
-            queue_interrupt(5);
+            result_error(INVALID_ARG);
             return;
     }
     printf("\n(CDROM) TEST UNKNOWN CMD %02x", sub);
+    result_error(INVALID_ARG);
 }
 
 void core::cmd_setfilter() {
-    xa.filter.file = io.PARAMETER.pop();
-    xa.filter.channel = io.PARAMETER.pop() & 0x1F; // TODO: ?
+    xa.filter.file = io.param.pop();
+    xa.filter.channel = io.param.pop() & 0x1F; // TODO: ?
     finish_CMD(true, 3);
 }
 
@@ -513,23 +440,17 @@ void core::latch_seek() {
     head.amm = seek.waiting.amm;
     head.ass = seek.waiting.ass;
     head.asect = seek.waiting.asect;
-    dbgloglog_bus(PS1D_CDROM_SEEK, DBGLS_INFO, "(SEEK) Latching seek to %02d:%02d:%02d", head.amm, head.ass, head.asect, sector_buf.len());
+    dbgloglog_bus(PS1D_CDROM_SEEK, DBGLS_INFO, "(SEEK) Latching seek to %02d:%02d:%02d", head.amm, head.ass, head.asect);
 }
-static constexpr u32 INVALID_ARG = 0x10;
-static constexpr u32 INCORRECT_NUM_PARAMS = 0x20;
-static constexpr u32 INVALID_COMMAND = 0x40;
-static constexpr u32 NOT_READY = 0x80;
 
 void core::cmd_setloc() {
-    u32 mm = io.PARAMETER.pop();
-    u32 ss = io.PARAMETER.pop();
-    u32 ff = io.PARAMETER.pop();
+    u32 mm = io.param.pop();
+    u32 ss = io.param.pop();
+    u32 ff = io.param.pop();
     printf("\n(CDROM) CMD SetLoc %02x:%02x:%02x", mm, ss, ff);
     if (((mm & 0x0F) > 0x09) || (mm > 0x99) || ((ss & 0x0F) > 0x09) || (ss >= 0x60) || ((ff & 0x0F) > 0x09) || (ff >= 0x75)){
         printf("\nBAD SETLOC!");
-        result(io.stat.u | 1);
-        result(INVALID_ARG);
-        queue_interrupt(5);
+        result_error(INVALID_ARG);
         finish_CMD(false, 0);
         return;
     }
@@ -568,14 +489,12 @@ u32 core::get_track_from_LBA(u32 LBA) {
 void core::cmd_play() {
     dbgloglog_busn(PS1D_CDROM_PLAY, DBGLS_INFO, "(Cmd) Play");
     if (io.stat.shell_open) {
-        result(io.stat.u | 1);
-        result(NOT_READY);
-        queue_interrupt(5);
+        result_error(NOT_READY);
         finish_CMD(false, 0);
         return;
     }
     stat_irq();
-    u32 track = io.PARAMETER.len > 0 ? decode_bcd(io.PARAMETER.pop()) : 0;
+    u32 track = io.param.len > 0 ? decode_bcd(io.param.pop()) : 0;
     if (track != 0) {
         u32 LBA;
         if (track >= data.num_tracks + 1) {
@@ -595,7 +514,6 @@ void core::cmd_play() {
         }
     }
     io.stat.play = 1;
-    sector_buf.reset();
     finish_CMD(false, 0);
 }
 
@@ -624,7 +542,6 @@ void core::do_cmd_read(u64 clock) {
     if (seek.needs_seek) {
         dbgloglog_busn(PS1D_CDROM_READ, DBGLS_INFO, "(Cmd) ReadN/S: Seek processing adds time...");
     }
-    sector_buf.reset();
     // TODO: clear cmd second response
 
     io.stat.seek = seek.needs_seek;
@@ -638,16 +555,12 @@ void core::do_cmd_read(u64 clock) {
 void core::cmd_getid(u64 clock) {
     //printf("\n(CDROM) CMD GetID");
     if (io.stat.shell_open) {
-        result(0x11);
-        result(0x80);
-        queue_interrupt(5);
+        result_error(NOT_READY);
         finish_CMD(false, 0);
         return;
     }
     if (motor.spinning_up) {
-        result(0x01);
-        result(0x80);
-        queue_interrupt(5);
+        result_error(NOT_READY);
         finish_CMD(false, 0);
         return;
     }
@@ -658,24 +571,11 @@ void core::cmd_getid(u64 clock) {
 
 void core::cmd_getid_finish() {
     if (!disk.inserted) {
-        result(0x08);
-        result(0x40);
-        result(0x00);
-        result(0x00);
-        result(0x00);
-        result(0x00);
-        result(0x00);
-        result(0x00);
-        queue_interrupt(3);
+        result(3, {0x08, 0x40, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00});
         finish_CMD(false, 0);
         return;
     }
-    result(0x02);
-    result(0x00);
-    result(0x20);
-    result(0x00);
-    result_string("SCEA");
-    queue_interrupt(2);
+    result(2, {0x02, 0x00, 0x20, 0x00, 'S', 'C', 'E', 'A'});
     finish_CMD(false, 0);
 }
 
@@ -690,22 +590,21 @@ void core::cmd_seekp(u64 clock) {
 }
 
 void core::cmd_getlocp() {
-    u32 track = get_track_from_LBA(get_cur_LBA());
-    result(encode_bcd(track)); // track
-    result(1); // index
     // Within track
     update_track_loc();
-    result(encode_bcd(seek.last_read.track.amm));
-    result(encode_bcd(seek.last_read.track.ass));
-    result(encode_bcd(seek.last_read.track.asect));
-
-    // Within disk
-    result(encode_bcd(seek.last_read.disc.amm));
-    result(encode_bcd(seek.last_read.disc.ass));
-    result(encode_bcd(seek.last_read.disc.asect));
-    queue_interrupt(3);
+    result(3, {
+        encode_bcd(get_track_from_LBA(get_cur_LBA())), // track #
+        1, // index
+        encode_bcd(seek.last_read.track.amm), // track amm/ass/asect
+        encode_bcd(seek.last_read.track.ass),
+        encode_bcd(seek.last_read.track.asect),
+        encode_bcd(seek.last_read.disc.amm), // global amm/ass/asect
+        encode_bcd(seek.last_read.disc.ass),
+        encode_bcd(seek.last_read.disc.asect),
+    });
     finish_CMD(false, 0);
 }
+
 void core::cmd_seekl(u64 clock) {
     //printf("\n(CDROM) CMD SeekL");
     dbgloglog_busn(PS1D_CDROM_SEEK, DBGLS_INFO, "(Cmd) Seek");
@@ -797,9 +696,8 @@ void core::read_sector() {
         if (io.MODE.xa_filter && ((subheader & 0x44) == 0x44)) return;
     }
     printf("\nMODE:%d SUBHEADER:%02x", mode, subheader);
-    dbgloglog_bus(PS1D_CDROM_SECTOR_READS, DBGLS_INFO, "(READ) Read sector %02d:%02d:%02d  qs:%d  raw_sector:%d  LBA:%d  mode:%d  form:%d  subheader:%02x", head.amm, head.ass, head.asect, sector_buf.len(), io.MODE.sector_size, get_cur_LBA(), mode, form, subheader);
-
-    BUGGED_SECTOR_BUFFER_BUF *b = sector_buf.push();
+    dbgloglog_bus(PS1D_CDROM_SECTOR_READS, DBGLS_INFO, "(READ) Read sector %02d:%02d:%02d  raw_sector:%d  LBA:%d  mode:%d  form:%d  subheader:%02x", head.amm, head.ass, head.asect, io.MODE.sector_size, get_cur_LBA(), mode, form, subheader);
+    io.buffered_data.clear();
     /*
     // if (raw_sector) {
     // } else {
@@ -809,16 +707,14 @@ void core::read_sector() {
     // }
     */
     if (io.MODE.sector_size == 0) {
-        memcpy(b->data, ptr + 24, 0x800);
-        b->len = 0x800;
+        io.buffered_data.push(ptr + 24, 0x800);
     }
     else {
-        memcpy(b->data, ptr + 12, 0x924);
-        b->len = 0x924;
+        io.buffered_data.push(ptr + 12, 0x924);
     }
 
-    result(io.stat.u);
-    queue_interrupt(1);
+    result(1, {io.stat.u});
+    bus->dma.channels[3].try_dreq();
 }
 
 void core::sch_read(u64 key, u64 clock) {
@@ -936,7 +832,7 @@ void core::xa_decode_28(u8 *ptr, u32 blk, u32 nibble, u8 hd, i16 &old, i16 &olde
            {-0x0005, 0x0011,  -0x0023, 0x0046, -0x0017, -0x0044, 0x015B,  -0x0347, 0x080E, -0x1249,
             0x3C07,  0x53E0,  -0x16FA, 0x0AFA, -0x0548, 0x027B,  -0x00EB, 0x001A,  0x002B, -0x0023,
             0x0010,  -0x0008, 0x0002,  0x0,    0x0,     0x0,     0x0,     0x0,     0x0}};
-    
+
 bool core::xa_decode_next_sector() {
     u8 CI;
     u8 *dat = xa_get_sector(CI);
@@ -1103,18 +999,15 @@ void core::get_CD_audio_cdda(i16 &left, i16 &right) {
 }
 
 void core::cmd_motor_on_finish() {
-    if (io.stat.motor_fullspeed) {
+    /*if (io.stat.motor_fullspeed) {
         // Give error INT5!
-        result(io.stat.u);
-        result(0x20);
-        queue_interrupt(5);
+        result(5, {static_cast<u8>(io.stat.u | 1), INVALID_COMMAND});
     }
-    else {
+    else {*/
         io.stat.motor_fullspeed = 1;
         motor.spinning_up = 0;
-        result(io.stat.u);
-        queue_interrupt(2);
-    }
+        result(2, {io.stat.u});
+    //}
     finish_CMD(false, 3);
 }
 
@@ -1144,24 +1037,24 @@ void core::cmd_pause(u64 clock) {
 
 void core::cmd_gettn() {
     // int3 stat,first,last
-    result(io.stat.u);
-    result(1);
-    result(data.num_tracks);
-    queue_interrupt(3);
+    result(3, {io.stat.u, 1, static_cast<u8>(data.num_tracks)} );
     printf("\nGetTN NUMBER OF TRACKS: %d", data.num_tracks);
     finish_CMD(false, 0);
 }
 
 void core::cmd_gettd() {
-    u32 track_num = decode_bcd(io.PARAMETER.pop());
-    //printf("\n(CDROM) CMD GetTD %d", track_num);
-    if (track_num > data.num_tracks) {
-        result(0x10);
-        queue_interrupt(5);
+    if (io.param.len != 1) {
+        result_error(INCORRECT_NUM_PARAMS);
         finish_CMD(false, 0);
         return;
     }
-    result(io.stat.u);
+    u32 track_num = decode_bcd(io.param.pop());
+    //printf("\n(CDROM) CMD GetTD %d", track_num);
+    if (track_num > data.num_tracks) {
+        result_error(INVALID_ARG);
+        finish_CMD(false, 0);
+        return;
+    }
     // mm, ss
     u32 calc;
     if (track_num == 0) {
@@ -1177,9 +1070,7 @@ void core::cmd_gettd() {
     static constexpr u32 sec_val = 75;
     u32 mm = calc / min_val;
     u32 ss = (calc % min_val) / sec_val;
-    result(encode_bcd(mm));
-    result(encode_bcd(ss));
-    queue_interrupt(3);
+    result(3, {io.stat.u, encode_bcd(mm), encode_bcd(ss)});
     finish_CMD(false, 0);
 }
 
@@ -1198,7 +1089,7 @@ void core::cmd_init(u64 clock) {
 }
 
 void core::cmd_setmode() {
-    u8 mode = io.PARAMETER.pop();
+    u8 mode = io.param.pop();
     printf("\n(CDROM) CMD SETMODE %02x", mode);
     dbgloglog_bus(PS1D_CDROM_READ, DBGLS_INFO, "(Cmd) SetMode %02x", mode);
     //io.latch.MODE_sector_size = (mode >> 5) & 1;
@@ -1213,8 +1104,9 @@ void core::cmd_setmode() {
 }
 
 void core::cmd_reset() {
-    printf("\n(CDROM) CMD RESET.");
+    printf("\n(CDROM) CMD RESET!?");
     finish_CMD(true, 3);
+    /*buffered
     sector_buf.reset();
     io.irq1s.reset();
     io.irqnot1s.reset();
@@ -1227,22 +1119,19 @@ void core::cmd_reset() {
         bus->scheduler.delete_if_exist(CMD.sched_id);
     }
 
-    io.PARAMETER.reset();
+    io.PARAMETER.reset();*/
 }
 
 void core::cmd_set_session(u64 clock) {
     //printf("\n(CDROM) CMD SetSession");
-    seek.session = io.PARAMETER.pop();
+    seek.session = io.param.pop();
     if (seek.session == 0) {
-        result(0x03);
-        result(0x10);
-        queue_interrupt(5);
+        result_error(INVALID_ARG);
         finish_CMD(false, 0);
         return;
     }
     if (io.stat.play || io.stat.read) {
-        result(0x80);
-        queue_interrupt(5);
+        result_error(NOT_READY);
         printf("\nWARN SETSESSION ERR!");
         return;
     }
@@ -1257,9 +1146,7 @@ void core::cmd_set_session_finish(u64 clock) {
     io.stat.seek = 0;
     if (disk.num_sessions == 1){
         if (seek.session > 1) {
-            result(0x06);
-            result(0x40);
-            queue_interrupt(5);
+            result(5, {0x06, 0x40});
             schedule_step_3(clock + UKN_TIME);
             io.stat.seek = 1;
         }
@@ -1270,9 +1157,7 @@ void core::cmd_set_session_finish(u64 clock) {
     }
     else {
         if (seek.session >= (disk.num_sessions + 1)) {
-            result(0x06);
-            result(0x20);
-            queue_interrupt(5);
+            result_error(INCORRECT_NUM_PARAMS);
             finish_CMD(false, 0);
         }
         else {
@@ -1354,47 +1239,70 @@ void core::schedule_CMD() {
 #undef STD
 }
 
-void core::queue_interrupt(u32 level) {
+void core::result(u32 level, std::initializer_list<u8> rdata) {
     //printf("\n(CDROM) QUEUE INT %d", level);
     // if there's no IRQ, AND
     //. ((the IRQ isn't a level 1),
     //.   or, if it *IS* a level 1,
     //.   there are no non-level1 IRQs
     //    and there are no in-process commands
-    if (io.HINTSTS.INTSTS == 0 && (level != 1 || (io.irqnot1s.len == 0 && !io.HSTS.BUSYSTS))) {
-        io.HINTSTS.INTSTS = level;
-        io.results_out.copy(io.results_in);
-        io.results_in.reset();
-        dbgloglog_bus(PS1D_CDROM_IRQ_ASSERT, DBGLS_INFO, "IRQ assert: %d  CMD:%02x", level, io.CMD);
-        recalc_HSTS();
+
+    if (!irq.pending()) {
+        io.response.reset();
+        for (auto & n : rdata) io.response.push(n);
+        switch (level) {
+            case 1:
+                irq.ready.flag = true; break;
+            case 2:
+                irq.complete.flag = true; break;
+            case 3:
+                irq.ack.flag = true; break;
+            case 4:
+                irq.end.flag = true; break;
+            case 5:
+                irq.error.flag = true; break;
+            default:
+                NOGOHERE;
+        }
         update_IRQs();
+        return;
     }
-    else {
-        dbgloglog_bus(PS1D_CDROM_IRQ_QUEUE, DBGLS_INFO, "IRQ queued %d", level);
-        if (level == 1) io.irq1s.push_irq(level, io.results_in);
-        else io.irqnot1s.push_irq(level, io.results_in);
+    switch (level) {
+        case 1: // Ready data only happens if there isn't already one
+            if (irq.deferred.ready.kind == 0) {
+                irq.deferred.ready.kind = level;
+                irq.deferred.ready.data.reset();
+                for (auto & n : rdata) irq.deferred.ready.data.push(n);
+            }
+            break;
+        case 2: // Complete always overwrites what's there
+            irq.deferred.complete.kind = level;
+            irq.deferred.complete.data.reset();
+            for (auto & n : rdata) irq.deferred.complete.data.push(n);
+            break;
+        case 3: // ack
+        case 4: // end
+        case 5: // error - any of these 3 all overwrite the "ack"
+            irq.deferred.ack.kind = level;
+            irq.deferred.ack.data.reset();
+            for (auto &n : rdata) irq.deferred.ack.data.push(n);
+            break;
     }
 }
 
 void core::stat_irq() {
-    result(io.stat.u);
-    queue_interrupt(3);
+    result(3, {io.stat.u});
 }
 
 void core::finish_CMD(bool do_stat_irq, u32 irq_num) {
     io.HSTS.BUSYSTS = 0;
-    if (io.results_in.len > 0) {
-        printf("\nWARN CMD %02x STILL HAS IN RESULTS: %d", io.CMD, io.results_in.len);
-    }
-    io.PARAMETER.reset();
+    io.param.reset();
     //printif(ps1.cdrom.cmd, "\n(CDROM) CMD FINISH");
     //printf("\nfinish_CMD %02x", io.CMD);
 
     if (do_stat_irq) {
-        result(io.stat.u);
-        queue_interrupt(irq_num);
+        result(irq_num, {io.stat.u});
     }
-    // TODO: parameter reset?     io.PARAMETER.reset();
     dbgloglog_busn(PS1D_CDROM_FINISH_CMD, DBGLS_INFO, "(Cmd) finish");
 }
 
@@ -1450,7 +1358,7 @@ void core::insert_disc(multi_file_set &mfs) {
 }
 
 void core::update_IRQs() {
-    u32 lvl = (io.HINTMSK.u & io.HINTSTS.u & 0b11111) != 0;
+    u32 lvl = irq.any_can_fire();
     set_irq_lvl(set_irq_ptr, lvl);
     //printf("\n(CDROM) IRQ update %d", lvl);
 }
@@ -1458,21 +1366,26 @@ void core::update_IRQs() {
 void core::write_02(u32 val, u8 sz) {
     switch (io.HSTS.RA) {
         case 0: // PARAMETER
-            //printf("\n(CDROM) PARAMETER write %02x", val);
-            dbgloglog_bus(PS1D_CDROM_REGRW, DBGLS_INFO, "WRITE PARAMETER %02x", val);
-            io.PARAMETER.push(val);
-            recalc_HSTS();
+            if (io.param.len < 16) {
+                dbgloglog_bus(PS1D_CDROM_REGRW, DBGLS_INFO, "WRITE PARAMETER %02x", val);
+                io.param.push(val & 0xFF);
+                return;
+            }
+            printf("\nCDROM drive PARAM overflow!");
             return;
         case 1: {
             // HINTMSK
-            u32 old = io.HINTMSK.u;
-            io.HINTMSK.u = (val & 0b11111) | 0b11100000;
-            if (io.HINTMSK.u != old) update_IRQs();
             dbgloglog_bus(PS1D_CDROM_REGRW, DBGLS_INFO, "WRITE HINTMASK %02x", val);
+            irq.ready.enable = val & 1;
+            irq.complete.enable = (val >> 1) & 1;
+            irq.ack.enable = (val >> 2) & 1;
+            irq.end.enable = (val >> 3) & 1;
+            irq.error.enable = (val >> 4) & 1;
+            update_IRQs();
             return; }
         case 2: // ATV0 L->L
-            io.L_L = val & 0xFF;
             dbgloglog_bus(PS1D_CDROM_REGRW, DBGLS_INFO, "WRITE L->L %02x", val);
+            io.L_L = val & 0xFF;
             return;
         case 3: // ATV3 R->L
             io.R_L = val & 0xFF;
@@ -1481,22 +1394,36 @@ void core::write_02(u32 val, u8 sz) {
     }
 }
 
-void core::queue_sector_RDDATA() {
-    if (sector_buf.len() == 0) {
-        dbgloglog_busn(PS1D_CDROM_RDDATA_START, DBGLS_WARN, "WARN: RDDATA requested with no buffers.");
-        return;
+    void flush_deferred_IRQs() {
+    // TODO: this
+}
+
+bool core::deliver_deferred(IRQSTRUCT::DEFERREDSTRUCT::DEFERREDSTRUCTITEM &item) {
+    if (item.kind == 0) return false;
+    io.response.reset();
+    for (u32 i = 0; i < item.data.len; i++) io.response.push(item.data.pop());
+    item.data.reset();
+
+    u8 t = item.kind;
+    item.kind = 0;
+
+    switch (t) {
+        case 1: irq.ready.flag = true; break;
+        case 2: irq.complete.flag = true; break;
+        case 3: irq.ack.flag = true; break;
+        case 4: irq.end.flag = true; break;
+        case 5: irq.error.flag = true; break;
     }
-    if (io.RDDATA.pos < io.RDDATA.len) {
-        dbgloglog_bus(PS1D_CDROM_RDDATA_START, DBGLS_DEBUG, "RDDATA when pos/len:%d/%d", io.RDDATA.pos, io.RDDATA.len);
-    }
-    io.RDDATA.clear();
-    BUGGED_SECTOR_BUFFER_BUF *b = sector_buf.pop();
-    memcpy(io.RDDATA.data, b->data, b->len);
-    io.RDDATA.pos = 0;
-    io.RDDATA.len = b->len;
-    dbgloglog_bus(PS1D_CDROM_RDDATA_START, DBGLS_INFO, "RDDATA request sz:%03x  sectors left in buffer:%d", io.RDDATA.len, sector_buf.len());
-    //printf("\nCAN DMA GO? %d", bus->dma.channels[0].can_dreq());
-    bus->dma.channels[3].try_dreq();
+
+    update_IRQs();
+    return true;
+}
+
+void core::flush_deferred_IRQs() {
+    if (irq.pending()) return;
+    if (deliver_deferred(irq.deferred.ack)) return;
+    if (deliver_deferred(irq.deferred.complete)) return;
+    if (deliver_deferred(irq.deferred.ready)) return;
 }
 
 void core::write_03(u32 val, u8 sz) {
@@ -1504,49 +1431,26 @@ void core::write_03(u32 val, u8 sz) {
         case 0:
             io.HCHPCTL.u = val & 0b11100000;
             dbgloglog_bus(PS1D_CDROM_REGRW, DBGLS_INFO, "WRITE HCHPCTL %02x/%02x", val,io.HCHPCTL.u);
-            if (io.HCHPCTL.BFRD && sector_buf.len() > 0) {
-                queue_sector_RDDATA();
+            if (io.HCHPCTL.BFRD) {
+                dbgloglog_busn(PS1D_CDROM_RDDATA_START, DBGLS_WARN, "RDDATA REQUEST!");
             }
-            else if (!io.HCHPCTL.BFRD) {
-                //io.RDDATA.pos = 0;
-                // TODO: can break some games!?!?
-            }
-            recalc_HSTS();
+            bus->dma.channels[3].try_dreq();
             return;
         case 1: {
             // HCLRCTL
             dbgloglog_bus(PS1D_CDROM_REGRW, DBGLS_INFO, "WRITE HCLRCTL %02x", val);
-            u32 old = io.HINTMSK.u;
-            io.HINTSTS.u &= ((val & 0b11111) ^ 0b11111);
-            io.HINTSTS.u |= 0b11100000;
-            //printf("\n(CDROM) reset RESULTs on HCLRCTL write");
-            if (io.HINTSTS.INTSTS == 0) {
-                io.results_out.reset();
-                if (io.irqnot1s.len > 0) {
-                    io.HINTSTS.INTSTS = io.irqnot1s.pop_irq(io.results_out);
-                    dbgloglog_bus(PS1D_CDROM_IRQ_ASSERT, DBGLS_INFO, "IRQ assert: %d num_left:%d", io.HINTSTS.INTSTS, total_irqs_len());
-                }
-                else if (io.irq1s.len > 0 && !io.HSTS.BUSYSTS) {
-                    io.HINTSTS.INTSTS = io.irq1s.pop_irq(io.results_out);
-                    dbgloglog_bus(PS1D_CDROM_IRQ_ASSERT, DBGLS_INFO, "IRQ assert: %d num_left:%d", io.HINTSTS.INTSTS, total_irqs_len());
-                }
-                recalc_HSTS();
+            if ((val & 7) == 7) {
+                if (irq.ready.flag) irq.ready.flag = false;
+                else if (irq.complete.flag) irq.complete.flag = false;
+                else if (irq.ack.flag) irq.ack.flag = false;
+                else if (irq.end.flag) irq.end.flag = false;
+                else if (irq.error.flag) irq.error.flag = false;
             }
-            if (old != io.HINTSTS.u) update_IRQs();
-            //printf("\n(CDROM) HCLRCTL write %02x. new HINTSTS %02x", val, io.HINTSTS.u);
-            if (val & 0x80) {
-                //printf("\n(CDROM) Reset decoder");
-                reset_decoder();
-            }
-            if (val & 0x40) {
-                //printf("\n(CDROM) Clear parameter stack");
-                io.PARAMETER.reset();
-                recalc_HSTS();
-            }
-             if (val & 0x20) {
-                 printf("\n(CDROM) Clear sound map XA-ADPCM buffer");
-                 // Clear sound map XA-ADPCM buffer...!?!?!
-             }
+            if (val & 8) irq.end.flag = false;
+            if (val & 0x10) irq.error.flag = false;
+            if (val & 040) io.param.reset();
+            update_IRQs();
+            flush_deferred_IRQs();
             return;
         }
         case 2: // ATV1 L->R

@@ -10,84 +10,27 @@
 namespace PS1 { struct core; }
 namespace PS1::CDROM {
 
-struct FIFO {
+struct FIFO16 {
     void reset();
-    void push(u32 val);
+    void push(u8 val);
     u8 pop();
     u8 entries[16]{};
     u8 head{}, tail{}, len{};
 };
 
-struct FIFO_RESULTS_BUF {
-    u8 data[16]{};
-    u32 tail{};
-    u32 head{};
-    u32 len{};
-    void reset() { len = 0; head = tail = 0; }
-    void push(u8 val) {
-        if (len >= 16) {
-            printf("\n(CD FIFO RESULTS BUF) attempt to push to full!");
-            return;
-        }
-        data[tail] = val;
-        tail = (tail + 1) & 15;
-        len++;
-    }
-    u8 pop() {
-        u8 v = data[head];
-        if (len == 0) return v;
-        head = (head + 1) & 15;
-        len--;
-        return v;
-    }
-    void copy(const FIFO_RESULTS_BUF &other) {
-        memcpy(data, other.data, sizeof(other.data));
-        tail = other.tail;
-        head = other.head;
-        len = other.len;
-    }
+struct SECTOR_FIFO {
+    u32 len{}, head{}, tail{};
+    u8 data[0x930]{};
+    void push(u8 *ptr, u32 num);
+    u8 pop();
+    void clear();
 };
 
-struct FIFO_IRQ_ENTRY {
-    u8 val{};
-    FIFO_RESULTS_BUF results{};
-};
-
-struct FIFO_IRQ {
-    void reset();
-    void push_irq(u32 val, FIFO_RESULTS_BUF &inbuf);
-    u8 pop_irq(FIFO_RESULTS_BUF &outbuf);
-
-    FIFO_IRQ_ENTRY entries[16]{};
-    u8 head{}, tail{}, len{};
-
-    u32 cur_IRQ_val{};
-};
-
-
-struct DATA_BUF {
-    u8 data[0x930];
-    u8 *ptr{};
-    u32 pos{};
-    i32 len{};
-    u32 read_byte() {
-        u8 v;
-        if (len == 0) v = 0;
-        else if (pos >= len) v = ptr[len-1];
-        else {
-            v = ptr[pos];
-            pos++;
-        }
-        return v;
-    }
-    void clear() { ptr = data; len = 0; pos = 0; }
-};
 
 struct IO {
-    FIFO PARAMETER{};
-    DATA_BUF RDDATA{};
-    FIFO_IRQ irq1s{}, irqnot1s{};
-    FIFO_RESULTS_BUF results_in{}, results_out{};
+    SECTOR_FIFO buffered_data{};
+    FIFO16 param{};
+    FIFO16 response{};
 
     i32 L_L{}, L_R{}, R_L{}, R_R{};
     struct {
@@ -233,26 +176,6 @@ struct DECODER {
 };
 }
 
-struct BUGGED_SECTOR_BUFFER_BUF {
-    u8 data[0x930];
-    u32 len{};
-};
-
-struct BUGGED_SECTOR_BUFFER {
-    u32 pos{};
-    i32 old{-1}, latest{-1};
-    BUGGED_SECTOR_BUFFER_BUF bufs[8];
-    BUGGED_SECTOR_BUFFER_BUF *push();
-    BUGGED_SECTOR_BUFFER_BUF *pop();
-    void reset();
-    u32 len();
-};
-
-struct SECTOR_BUFFER {
-    u32 head{}, tail{}, len{};
-    u8 bufs[8][0x930];
-};
-
 struct core {
     explicit core(PS1::core *parent) : bus(parent) {}
     PS1::core *bus;
@@ -280,6 +203,26 @@ struct core {
     cvec_ptr<physical_io_device> pio_ptr{};
     JSM_DISC_DRIVE *dd{};
 
+    struct IRQSTRUCT {
+        struct IRQSRC { bool enable{}; bool flag{}; };
+        IRQSRC ready{}, complete{}, ack{}, end{}, error{};
+
+        [[nodiscard]] bool pending() const {
+            return ready.flag | complete.flag | ack.flag | end.flag | error.flag;
+        }
+
+        [[nodiscard]] bool any_can_fire() const {
+            return (ready.flag & ready.enable) | (complete.flag & complete.enable) | (ack.flag & ack.enable) | (end.flag & end.enable) | (error.flag & error.enable);
+        }
+
+        struct DEFERREDSTRUCT {
+            struct DEFERREDSTRUCTITEM {
+                u8 kind{};
+                FIFO16 data{};
+            } ready{}, complete{}, ack{};
+        } deferred{};
+    } irq{};
+
     IO io{};
 
     struct {
@@ -295,7 +238,6 @@ struct core {
         u64 sched_id{};
     } read{};
 
-    [[nodiscard]] u32 total_irqs_len() const { return io.irq1s.len + io.irqnot1s.len; }
     void latch_seek();
     struct {
         u8 session{};
@@ -329,8 +271,6 @@ struct core {
         u8 amm{}, ass{}, asect{};
     } head{};
 
-    BUGGED_SECTOR_BUFFER sector_buf{};
-
     struct {
         u8 subcmd{};
         u32 counterlo{}, counterhi{};
@@ -348,7 +288,10 @@ struct core {
         } filter{};
         XA::DECODER decoder{};
 
-        SECTOR_BUFFER sector_buf{};
+        struct {
+            u32 head{}, tail{}, len{};
+            u8 bufs[8][0x930];
+        } sector_buf;
     } xa{};
     i64 speed_changed{};
 
@@ -365,6 +308,8 @@ private:
     void reset(); // TODO: CALL THIS
     void recalc_HSTS();
     void schedule_CMD();
+    void flush_deferred_IRQs();
+    bool deliver_deferred(IRQSTRUCT::DEFERREDSTRUCT::DEFERREDSTRUCTITEM &item);
     void schedule_finish(u64 clock);
     void schedule_read(u64 clock);
     void schedule_step_3(u64 clock);
@@ -372,9 +317,8 @@ private:
     void cancel_CMD();
     void reset_decoder();
     void finish_CMD(bool do_stat_irq, u32 irq_num);
-    void queue_interrupt(u32 lvl);
-    void result(u32 val);
-    void result_string(const char *s);
+    void result(u32 lvl, std::initializer_list<u8> rdata);
+    void result_error(u8 code);
     void stat_irq();
     void cmd_setfilter();
     void cmd_setloc();

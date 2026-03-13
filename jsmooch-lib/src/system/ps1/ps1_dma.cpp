@@ -149,7 +149,7 @@ bool DMA_channel::can_dreq() {
                 return bus->mdec.can_dreq_out();
                 break;
             case 3:
-                return bus->cdrom.io.HSTS.DRQSTS;
+                return bus->cdrom.io.HCHPCTL.BFRD && bus->cdrom.io.buffered_data.len > 0;
                 break;
             default:
                 printf("\nWARN DREQ FOR CH %d???", num);;
