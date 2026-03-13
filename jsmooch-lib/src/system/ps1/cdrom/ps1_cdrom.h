@@ -19,10 +19,10 @@ struct FIFO16 {
 };
 
 struct SECTOR_FIFO {
-    u32 len{}, head{}, tail{};
+    u32 pos{}, len{};
     u8 data[0x930]{};
     void push(u8 *ptr, u32 num);
-    u8 pop();
+    u32 pop();
     void clear();
 };
 
@@ -46,8 +46,8 @@ struct IO {
             u8 id_error : 1; // 1=getID denied
             u8 shell_open : 1; // is/was open
             u8 read : 1; // reading data sectors
-            u8 seek : 1;
-            u8 play : 1; // palying
+            u8 seek : 1; // seeking
+            u8 play : 1; // playing
         };
         u8 u;
     } stat;

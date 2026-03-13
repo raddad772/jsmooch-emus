@@ -26,28 +26,19 @@ static u32 constexpr masksz[5] = {0, 0xFF, 0xFFFF, 0, 0xFFFFFFFF };
     // no old, latest: old = latest, latest = this
     // old, latest: latest = this
 void SECTOR_FIFO::push(u8 *ptr, u32 num) {
-    for (u32 i = 0; i < num; i++) {
-        if (len >= 0x930) {
-            printf("\nOVERFLOW SECTOR FIFO!?");
-            return;
-        }
-        data[tail] = ptr[i];
-        tail = (tail + 1) % 0x930;
-        len++;
-    }
+    memcpy(data, ptr, num);
+    len = num;
+    pos = 0;
 }
 
-u8 SECTOR_FIFO::pop() {
-    u32 p = head;
-    if (len) {
-        head = (head + 1) % 0x930;
-        len--;
-    }
+u32 SECTOR_FIFO::pop() {
+    u32 p = pos;
+    if (pos < len) pos++;
     return data[p];
 }
 
 void SECTOR_FIFO::clear() {
-    head = tail = len = 0;
+    pos = len = 0;
 }
 
 void FIFO16::reset() {
@@ -120,10 +111,13 @@ u32 core::read_01(u8 sz, bool has_effect) {
 
 u32 core::read_02(u8 sz, bool has_effect) {
     u8 v = io.buffered_data.pop();
-    if (sz == 2) v |= io.buffered_data.pop() << 8;
+    if (sz >= 2) v |= io.buffered_data.pop() << 8;
     if (sz == 4) {
         v |= io.buffered_data.pop() << 16;
         v |= io.buffered_data.pop() << 24;
+    }
+    if (io.buffered_data.pos >= io.buffered_data.len) {
+        dbgloglog_busn(PS1D_CDROM_RDDATA_FINISH, DBGLS_TRACE, "RDDATA FIFO emptied!");
     }
     return v;
 }
@@ -227,7 +221,7 @@ void core::cmd_start(u64 key, u64 clock) {
             u32 e = (io.param.head + i) & 15;
             ptr += snprintf(ptr, sizeof(cmdstr) - (ptr - cmdstr), " %02x", int(io.param.entries[e]));
         }
-        dbgloglog_bus(PS1D_CDROM_CMD, DBGLS_INFO, "Exec cmd %02x: %s", io.CMD, cmdstr);
+        dbgloglog_bus(PS1D_CDROM_CMD, DBGLS_INFO, "CMD %02x: %s", io.CMD, cmdstr);
     }
 
     /*if ((cmd != 0x1B) && (cmd != 0x06)) {
@@ -447,7 +441,7 @@ void core::cmd_setloc() {
     u32 mm = io.param.pop();
     u32 ss = io.param.pop();
     u32 ff = io.param.pop();
-    printf("\n(CDROM) CMD SetLoc %02x:%02x:%02x", mm, ss, ff);
+    //printf("\n(CDROM) CMD SetLoc %02x:%02x:%02x", mm, ss, ff);
     if (((mm & 0x0F) > 0x09) || (mm > 0x99) || ((ss & 0x0F) > 0x09) || (ss >= 0x60) || ((ff & 0x0F) > 0x09) || (ff >= 0x75)){
         printf("\nBAD SETLOC!");
         result_error(INVALID_ARG);
@@ -459,7 +453,6 @@ void core::cmd_setloc() {
     seek.waiting.amm = decode_bcd(mm);
     seek.waiting.ass = decode_bcd(ss);
     seek.waiting.asect = decode_bcd(ff);
-    printf("\nACTUAL TIME %02d:%02d:%02d", seek.waiting.amm, seek.waiting.ass, seek.waiting.asect);
     seek.needs_seek = true;
     dbgloglog_bus(PS1D_CDROM_SETLOC, DBGLS_INFO, "(Cmd) SetLoc %02d:%02d:%02d", seek.waiting.amm, seek.waiting.ass, seek.waiting.asect);
     finish_CMD(false, 0);
@@ -555,11 +548,13 @@ void core::do_cmd_read(u64 clock) {
 void core::cmd_getid(u64 clock) {
     //printf("\n(CDROM) CMD GetID");
     if (io.stat.shell_open) {
+        printf("\nGetID not ready!");
         result_error(NOT_READY);
         finish_CMD(false, 0);
         return;
     }
     if (motor.spinning_up) {
+        printf("\nGetID spinning up!");
         result_error(NOT_READY);
         finish_CMD(false, 0);
         return;
@@ -571,11 +566,13 @@ void core::cmd_getid(u64 clock) {
 
 void core::cmd_getid_finish() {
     if (!disk.inserted) {
-        result(3, {0x08, 0x40, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00});
+        printf("\nGetID NO DISC!");
+        result(5, {0x40, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00});
         finish_CMD(false, 0);
         return;
     }
-    result(2, {0x02, 0x00, 0x20, 0x00, 'S', 'C', 'E', 'A'});
+    printf("\nGetID SCEA!");
+    result(2, {io.stat.u, 0x00, 0x20,0x00, 'S', 'C', 'E', 'A'});
     finish_CMD(false, 0);
 }
 
@@ -695,7 +692,7 @@ void core::read_sector() {
         }
         if (io.MODE.xa_filter && ((subheader & 0x44) == 0x44)) return;
     }
-    printf("\nMODE:%d SUBHEADER:%02x", mode, subheader);
+    //printf("\nMODE:%d SUBHEADER:%02x", mode, subheader);
     dbgloglog_bus(PS1D_CDROM_SECTOR_READS, DBGLS_INFO, "(READ) Read sector %02d:%02d:%02d  raw_sector:%d  LBA:%d  mode:%d  form:%d  subheader:%02x", head.amm, head.ass, head.asect, io.MODE.sector_size, get_cur_LBA(), mode, form, subheader);
     io.buffered_data.clear();
     /*
@@ -1082,15 +1079,17 @@ void core::cmd_demute() {
 
 void core::cmd_init(u64 clock) {
     //printf("\n(CDROM) CMD Init");
-    stat_irq();
     io.MODE.u = 0x20;
+    io.stat.read = 0;
     io.stat.motor_fullspeed = 1;
+    io.stat.shell_open = !disk.inserted;
+    result(2, {io.stat.u});
     schedule_finish(clock + UKN_TIME);
 }
 
 void core::cmd_setmode() {
     u8 mode = io.param.pop();
-    printf("\n(CDROM) CMD SETMODE %02x", mode);
+    //printf("\n(CDROM) CMD SETMODE %02x", mode);
     dbgloglog_bus(PS1D_CDROM_READ, DBGLS_INFO, "(Cmd) SetMode %02x", mode);
     //io.latch.MODE_sector_size = (mode >> 5) & 1;
     if (!(mode & 0x10)) {
@@ -1248,6 +1247,7 @@ void core::result(u32 level, std::initializer_list<u8> rdata) {
     //    and there are no in-process commands
 
     if (!irq.pending()) {
+        dbgloglog_bus(PS1D_CDROM_IRQ_ASSERT, DBGLS_TRACE, "IRQ Assert %d", level);
         io.response.reset();
         for (auto & n : rdata) io.response.push(n);
         switch (level) {
@@ -1267,6 +1267,7 @@ void core::result(u32 level, std::initializer_list<u8> rdata) {
         update_IRQs();
         return;
     }
+    dbgloglog_bus(PS1D_CDROM_IRQ_ASSERT, DBGLS_TRACE, "IRQ Queue %d", level);
     switch (level) {
         case 1: // Ready data only happens if there isn't already one
             if (irq.deferred.ready.kind == 0) {
@@ -1394,10 +1395,6 @@ void core::write_02(u32 val, u8 sz) {
     }
 }
 
-    void flush_deferred_IRQs() {
-    // TODO: this
-}
-
 bool core::deliver_deferred(IRQSTRUCT::DEFERREDSTRUCT::DEFERREDSTRUCTITEM &item) {
     if (item.kind == 0) return false;
     io.response.reset();
@@ -1414,6 +1411,7 @@ bool core::deliver_deferred(IRQSTRUCT::DEFERREDSTRUCT::DEFERREDSTRUCTITEM &item)
         case 4: irq.end.flag = true; break;
         case 5: irq.error.flag = true; break;
     }
+    dbgloglog_bus(PS1D_CDROM_IRQ_ASSERT, DBGLS_TRACE, "IRQ Deferred Assert %d", t);
 
     update_IRQs();
     return true;
