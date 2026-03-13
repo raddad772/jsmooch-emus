@@ -76,6 +76,7 @@ u32 core::mainbus_read(u32 addr, u8 sz, bool has_effect) {
             recalc_HSTS();
             u32 v = io.HSTS.u | (io.HSTS.u << 8) | (io.HSTS.u << 16) | (io.HSTS.u << 24);
             dbgloglog_bus(PS1D_CDROM_REGRW, DBGLS_INFO, "READ HSTS %02x", io.HSTS.u);
+            dbg_printf("\nHSTS %02x", io.HSTS.u);
             return v & masksz[sz];
         }
         case 0x1F801801: return read_01(sz, has_effect);

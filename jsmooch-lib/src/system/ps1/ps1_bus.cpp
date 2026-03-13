@@ -149,11 +149,12 @@ u32 core::mainbus_read(u32 addr, u8 sz, bool has_effect)
     if (addr < 0x00800000) {
         return cR[sz](mem.MRAM, addr & 0x1FFFFF);
     }
-    dbgloglog(PS1D_BUS_REGAREA, DBGLS_TRACE, "MMIO READ: %08x(%d)", addr, sz);
     // 1F800000 1024kb of scratchpad
     if ((addr >= 0x1F800000) && (addr < 0x1F800400)) {
         return cR[sz](mem.scratchpad, addr & 0x3FF);
     }
+    if ((addr >= 0x1F801800) && (addr < 0x1FC00000)) dbgloglog(PS1D_BUS_REGAREA, DBGLS_TRACE, "MMIO READ: %08x(%d)", addr, sz);
+
     if ((addr >= 0x1F801800) && (addr < 0x1F801804)) {
         return cdrom.mainbus_read(addr, sz, has_effect);
     }
