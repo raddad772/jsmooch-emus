@@ -22,7 +22,7 @@
 #ifdef LYCODER
 #define DBG_LOG_TO_FILE // log debug to file
 #endif
-#define DBG_LOG_TO_FILE // log debug to file
+//#define DBG_LOG_TO_FILE // log debug to file
 //#define DISABLE_BREAK
 
 //#define DO_LAST_TRACES   // keeps last X traces, slows down emulation

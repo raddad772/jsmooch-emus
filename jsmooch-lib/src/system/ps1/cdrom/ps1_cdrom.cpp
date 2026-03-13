@@ -18,6 +18,8 @@ static u32 constexpr masksz[5] = {0, 0xFF, 0xFFFF, 0, 0xFFFFFFFF };
 #define CYCLES_PER_SEC 33868800
 #define ONEFRAME 564480
 
+#define cd_dbg_printf(...)
+
 #define UKN_TIME ONEFRAME
 #define TIME_IN_SEC static_cast<double>(bus->clock.master_cycle_count) / 33868800.0
 
@@ -76,7 +78,7 @@ u32 core::mainbus_read(u32 addr, u8 sz, bool has_effect) {
             recalc_HSTS();
             u32 v = io.HSTS.u | (io.HSTS.u << 8) | (io.HSTS.u << 16) | (io.HSTS.u << 24);
             dbgloglog_bus(PS1D_CDROM_REGRW, DBGLS_INFO, "READ HSTS %02x", io.HSTS.u);
-            dbg_printf("\nHSTS %02x", io.HSTS.u);
+            cd_dbg_printf("\nHSTS %02x", io.HSTS.u);
             return v & masksz[sz];
         }
         case 0x1F801801: return read_01(sz, has_effect);
@@ -106,7 +108,7 @@ void core::mainbus_write(u32 addr, u32 val, u8 sz) {
 u32 core::read_01(u8 sz, bool has_effect) {
     // RESULT
     u8 v = io.response.pop();
-    dbg_printf("\nRESULT %02x", v);
+    cd_dbg_printf("\nRESULT %02x", v);
     dbgloglog_bus(PS1D_CDROM_RESULT, DBGLS_INFO, "POP RESULT %02x", v);
     return v;
 }
@@ -121,7 +123,7 @@ u32 core::read_02(u8 sz, bool has_effect) {
     if (io.buffered_data.pos >= io.buffered_data.len) {
         dbgloglog_busn(PS1D_CDROM_RDDATA_FINISH, DBGLS_TRACE, "RDDATA FIFO emptied!");
     }
-    dbg_printf("\nRD@%d: %08x", io.buffered_data.pos - 4, v);
+    cd_dbg_printf("\nRD@%d: %08x", io.buffered_data.pos - 4, v);
     return v;
 }
 
@@ -160,7 +162,7 @@ u32 core::read_03(u8 sz, bool has_effect) {
 void core::recalc_HSTS() {
     io.HSTS.ADPBUSY = 0;
     io.HSTS.PRMEMPT = io.param.len == 0;
-    io.HSTS.PRMWRDY = io.param.len == 16;
+    io.HSTS.PRMWRDY = io.param.len != 16;
     io.HSTS.RSLRRDY = io.response.len > 0;
     io.HSTS.DRQSTS = io.HCHPCTL.BFRD && io.buffered_data.len > 0;
 }
@@ -186,7 +188,7 @@ void core::cmd_start(u64 key, u64 clock) {
     u32 cmd = io.CMD;
     if ((cmd >= 0x20) && (cmd <= 0x4F)) cmd = 0;
     if (cmd >= 0x60) cmd = 0;
-    dbg_printf("\nCMD %02x", cmd);
+    cd_dbg_printf("\nCMD %02x", cmd);
     //printif(ps1.cdrom.cmd, "\n(CDROM) EXEC CMD %02x", io.CMD);
     if (bus->dbg.dvptr->ids_enabled[PS1D_CDROM_CMD]) {
         char cmdstr[256];
@@ -707,7 +709,7 @@ void core::read_sector() {
     //   len = 0x800
     // }
     */
-    dbg_printf("\nRead sector %02d:%02d:%02d", head.amm, head.ass, head.asect);
+    cd_dbg_printf("\nRead sector %02d:%02d:%02d", head.amm, head.ass, head.asect);
     if (io.MODE.sector_size == 0) {
         io.buffered_data.push(ptr + 24, 0x800);
     }
@@ -1252,8 +1254,8 @@ void core::result(u32 level, std::initializer_list<u8> rdata) {
     //    and there are no in-process commands
 
     if (!irq.pending()) {
-        dbg_printf("\nAssert IRQ %d", level);
-        for (auto & n : rdata) dbg_printf(" %02x", n);
+        cd_dbg_printf("\nAssert IRQ %d", level);
+        for (auto & n : rdata) cd_dbg_printf(" %02x", n);
         dbgloglog_bus(PS1D_CDROM_IRQ_ASSERT, DBGLS_TRACE, "IRQ Assert %d", level);
         io.response.reset();
         for (auto & n : rdata) io.response.push(n);
