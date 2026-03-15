@@ -72,6 +72,7 @@ struct core : jsm_system {
     u64 calculate_timer1_hblank(u32 diff);
     void timers_write(u32 addr, u8 sz, u32 val);
     void setup_dotclock();
+    void kernel_call_hook();
     void dotclock_change();
     void set_irq(IRQ from, u32 level);
     void schedule_frame(u64 start_clock, u32 is_first);
@@ -150,6 +151,7 @@ struct core : jsm_system {
             DBG_WAVEFORM2_BRANCH(cd, 2)
             DBG_WAVEFORM2_BRANCH(reverb, 8)
         DBG_WAVEFORM2_END1
+        DBG_MEMORY_VIEW
     DBG_END
 
 public:

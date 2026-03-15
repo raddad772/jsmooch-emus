@@ -440,10 +440,17 @@ void core::check_IRQ()
 void core::after_ins() {
     regs.PC = regs.PC_next;
     regs.PC_next += 4;
-
-    if ((regs.PC == 0xA0 && regs.R[9] == 0x3C) || (regs.PC == 0xB0 && regs.R[9] == 0x3D)) {
-        if (regs.R[9] == 0x3D) {
-            add_to_console(regs.R[4]);
+    /*if (regs.PC == 0x80060d58) {
+        dbg_break("point!", 0);
+    }*/
+    if (regs.PC < 0xC4) { // for easy prediction, will almost always be false!
+        if ((regs.PC == 0xA0) || (regs.PC == 0xB0) || (regs.PC == 0xC0)) {
+            if (khook) khook(khook_ptr);
+            if ((regs.PC == 0xA0 && regs.R[9] == 0x3C) || (regs.PC == 0xB0 && regs.R[9] == 0x3D)) {
+                if (regs.R[9] == 0x3D) {
+                    add_to_console(regs.R[4]);
+                }
+            }
         }
     }
 

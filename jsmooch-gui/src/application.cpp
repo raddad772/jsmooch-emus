@@ -208,7 +208,7 @@ static void render_emu_window(full_system &fsys, ImGuiIO& io, u32 frame_multi)
 #define SOURCE_LIST_VIEW_DEFAULT_ENABLE 0
 #define IMAGE_VIEW_DEFAULT_ENABLE 0
 #define DBGLOG_VIEW_DEFAULT_ENABLE 0
-#define TRACE_VIEW_DEFAULT_ENABLE 0
+#define TRACE_VIEW_DEFAULT_ENABLE 1
 #define CONSOLE_VIEW_DEFAULT_ENABLE 0
 #define WAVEFORM_VIEW_DEFAULT_ENABLE 0
 

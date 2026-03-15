@@ -155,7 +155,7 @@ void MDEC::convert_yuv(u32 *out, i16 *luma, u32 bx, u32 by) {
 
 
 bool MDEC::can_dreq_in() const {
-    return (io.num_remaining_param_words > 0) || (fifo_in.len < (MDEC_NUMHWORDS_IN-128)) && io.stat.data_in_req;
+    return fifo_in.len == 0 && io.stat.data_in_req;
 }
 
 bool MDEC::can_dreq_out() const {
@@ -298,8 +298,12 @@ void MDEC::do_decode() {
         }
     }
 }
-void MDEC::write_data(u32 val) {
+
+    void MDEC::write_data(u32 val) {
     printf("\nMDEC WRITE %08x MODE:%d", val, io.mode);
+    if (val == 0xf7ffffff) {
+        dbg_break("YOHEY", bus->clock.master_cycle_count);
+    }
     switch (io.mode) {
         case MM_Idle:
             switch (val >> 29) {
@@ -371,6 +375,8 @@ void MDEC::write_data(u32 val) {
                 printf("\nFINISH SCALE TABLE! OFFSET:%d", io.offset);
                 io.mode = MM_Idle;
             }
+            // Pause before we can decode a frame!
+            //do_pause();
             break;
     }
 }

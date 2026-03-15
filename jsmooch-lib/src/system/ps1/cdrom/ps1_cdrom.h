@@ -187,6 +187,7 @@ struct core {
     void remove_disc();
     void open_drive();
     void close_drive();
+    void dbg_irq(u32 num);
 
     struct {
         u32 spinning_up{};

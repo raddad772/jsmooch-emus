@@ -11,9 +11,8 @@
 namespace PS1 {
 void DMA_channel::do_linked_list()
 {
-    if (num==0) printf("\nMDEC IN LL!");
     //printf("\nDo linked list CH%d", num);
-    u32 addr = base_addr & 0x1FFFFC;
+    u32 addr = base_addr & 0xFFFFFC;
     dbgloglog_bus(PS1D_DMA_CH0+num, DBGLS_INFO, "CH:%d LINKED LIST  DEST:%08x  IE:%d", num, addr, (bus->dma.irq.IE >> num) & 1);
     if (direction == D_to_ram) {
         printf("\nInvalid DMA direction for linked list mode: to RAM");
@@ -41,7 +40,7 @@ void DMA_channel::do_linked_list()
         if ((header & 0x800000) != 0)
             break;
 
-        addr = header & 0x1FFFFC;
+        addr = header & 0xFFFFFC;
         if (lnum == 1) printf("\n(DMA) warning: infinite linked list terminating");
     }
     if (num == 3) printf("\nDMA Finish transfer of %d", 65536 - lnum);
@@ -74,11 +73,14 @@ void DMA_channel::do_single_block_request()
         enable = 0;
         return;
     }
+    if (num == 0) {
+        printf("\n\nDMA0 start. block_count:%d. trigger:%d FIFO count:%d", block_count, trigger, bus->cdrom.io.buffered_data.len);
+    }
     dbgloglog_bus(PS1D_DMA_CH0+num, DBGLS_INFO, "CH:%d SINGLE BLOCKDRQ  DIR:%d DEST:%08x  LEN:%d bytes BLOCK_COUNT:%d IE:%d", num, direction, base_addr, copies*4, block_count, (bus->dma.irq.IE >> num) & 1);
     //printf("\nDMA ch:%d direction:%d copies:%d base_addr:%05x", num, direction, copies, base_addr);
 
     while (copies > 0) {
-        u32 cur_addr = base_addr & 0x1FFFFC;
+        u32 cur_addr = base_addr & 0x1FFFFFFC;
         u32 src_word = 0;
         switch(direction) {
             case D_from_ram:
@@ -127,7 +129,7 @@ void DMA_channel::do_single_block_request()
                 printf("\nUnsupported direction %d", direction);
                 break;
         }
-        base_addr = (base_addr + mstep) & 0xFFFFFFFF;
+        base_addr = (base_addr + mstep) & 0xFFFFFF;
         copies--;
     }
     block_count--;
@@ -184,7 +186,7 @@ void DMA_channel::do_block()
     //printf("\nDMA ch:%d direction:%d copies:%d base_addr:%05x", num, direction, copies, base_addr);
 
     while (copies > 0) {
-        u32 cur_addr = addr & 0x1FFFFC;
+        u32 cur_addr = addr & 0xFFFFFC;
         u32 src_word = 0;
         switch(direction) {
             case D_from_ram:
@@ -233,7 +235,7 @@ void DMA_channel::do_block()
                 printf("\nUnsupported direction %d", direction);
                 break;
         }
-        addr = (addr + mstep) & 0xFFFFFFFF;
+        addr = (addr + mstep) & 0xFFFFFF;
         copies--;
     }
     bus->dma.complete_transfer(num);
@@ -327,7 +329,7 @@ u32 DMA::read(u32 addr, u32 sz)
     // 1f8010F0
     if (sz < 4) sz = 4;
     u32 l3 = addr & 3;
-    addr &= 0xFFFFFFFC;
+    addr &= 0xFFFFFC;
     u32 ch_num = ((addr - 0x80) & 0x70) >> 4;
     u32 reg = (addr & 0x0F);
     i64 v = -1;
@@ -386,11 +388,12 @@ void DMA::reset() {
 
 void DMA::write(u32 addr, u32 sz, u32 val)
 {
-    //printf("\nWR DMA addr:%04x sz:%d val:%04x", addr, sz, val);
+    printf("\nWR DMA addr:%04x sz:%d val:%04x", addr, sz, val);
     const u32 l3 = addr & 3;
     addr &= 0x1FFFFFFC; // 32-bit read/writes only, force-align (and shift after)
     u32 ch_num = ((addr - 0x80) & 0x70) >> 4;
     u32 reg = (addr & 0x0F);
+    printf("\nDMA CH%d REG%d VAL%08x", ch_num, reg, val);
     u32 ch_activated = 0;
     val <<= (l3 * 8);
     if (sz < 4) sz = 4;

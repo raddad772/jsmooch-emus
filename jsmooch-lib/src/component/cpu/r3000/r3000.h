@@ -121,10 +121,11 @@ struct core {
 
     OPCODE decode_table[0x7F]{};
 
-    void *fetch_ins_ptr{}, *read_ptr{}, *write_ptr{}, *peek_ins_ptr{}, *update_sr_ptr{};
+    void *fetch_ins_ptr{}, *read_ptr{}, *write_ptr{}, *peek_ins_ptr{}, *update_sr_ptr{}, *khook_ptr{};
     u32 (*fetch_ins)(void *ptr, u32 addr){};
     u32 (*peek_ins)(void *ptr, u32 addr);
     u32 (*read)(void *ptr, u32 addr, u8 sz){};
+    void (*khook)(void *ptr);
     void (*write)(void *ptr, u32 addr, u8 sz, u32 val){};
     void (*update_sr)(void *ptr, core *mcore, u32 val){};
     DBG_START

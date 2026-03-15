@@ -44,6 +44,8 @@ enum PS1_DBLOG_CATEGORIES {
     PS1D_SIO0_XCHG,
     PS1D_SIO0_ACK,
     PS1D_SIO0_IRQ,
+
+    PS1D_GENERAL_KERNAL_FUNCS
 };
 
 #define dbgloglog(r_cat, r_severity, r_format, ...) if (dbg.dvptr->ids_enabled[r_cat]) dbg.dvptr->add_printf(r_cat, clock.master_cycle_count+clock.waitstates, r_severity, r_format, __VA_ARGS__)

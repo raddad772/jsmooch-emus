@@ -77,7 +77,12 @@ u32 core::mainbus_read(u32 addr, u8 sz, bool has_effect) {
         case 0x1F801800: {
             recalc_HSTS();
             u32 v = io.HSTS.u | (io.HSTS.u << 8) | (io.HSTS.u << 16) | (io.HSTS.u << 24);
-            dbgloglog_bus(PS1D_CDROM_REGRW, DBGLS_INFO, "READ HSTS %02x", io.HSTS.u);
+            dbgloglog_bus(PS1D_CDROM_REGRW, DBGLS_INFO, "READ HSTS %02x: %s %s %s %s %s", io.HSTS.u,
+                io.HSTS.PRMEMPT ? " PRMEMPT" : "",
+                io.HSTS.PRMWRDY ? " PRMWRDY" : "",
+                io.HSTS.RSLRRDY ? " RSLRRDY" : "",
+                io.HSTS.DRQSTS ? " DRQSTS" : "",
+                io.HSTS.BUSYSTS ? " BUSYSTS" : "");
             cd_dbg_printf("\nHSTS %02x", io.HSTS.u);
             return v & masksz[sz];
         }
@@ -171,6 +176,7 @@ void core::write_CMD(u32 val) {
     // TODO: this
     if (io.HSTS.BUSYSTS) {
         printf("\n(CDROM) WARN IGNORE CMD %02x FOR CURRENT %02x", val, io.CMD);
+        dbgloglog_bus(PS1D_CDROM_CMD, DBGLS_INFO, "(CMD) Ignore CMD %02x FOR CURRENT %02x", val, io.CMD);
         //cancel_CMD();
         return;
     }
@@ -358,7 +364,7 @@ void core::cmd_finish(u64 key, u64 clock) {
             if (read.still_sched) bus->scheduler.delete_if_exist(read.sched_id);
             finish_CMD(true, 2);
             return;
-        case 0x09:
+        case 0x09: // finish Pause
             io.stat.read = 0;
             io.stat.play = 0;
             finish_CMD(true, 2);
@@ -740,6 +746,7 @@ void core::next_sector() {
             }
         }
     }
+    //if ((head.amm == 9) && (head.ass == 39) && (head.asect == 50)) dbg_break("SECTOR 09:39:50!", 0);
 }
 
 void core::get_CD_audio(i16 &left, i16 &right) {
@@ -1244,7 +1251,18 @@ void core::schedule_CMD() {
     NOGOHERE;
 #undef STD
 }
+void core::dbg_irq(u32 num) {
+    char iostr[500];
+    char *ptr = iostr;
+    *ptr = 0;
 
+    for (u32 i = 0; i < io.response.len; i++) {
+        u32 p = (i + io.response.head) & 15;
+        snprintf(ptr, sizeof(iostr) - (ptr - iostr), " %02x", io.response.entries[p]);
+    }
+    dbgloglog_bus(PS1D_CDROM_IRQ_ASSERT, DBGLS_TRACE, "IRQ %d {%s}", num, iostr);
+
+}
 void core::result(u32 level, std::initializer_list<u8> rdata) {
     //printf("\n(CDROM) QUEUE INT %d", level);
     // if there's no IRQ, AND
@@ -1254,11 +1272,11 @@ void core::result(u32 level, std::initializer_list<u8> rdata) {
     //    and there are no in-process commands
 
     if (!irq.pending()) {
-        cd_dbg_printf("\nAssert IRQ %d", level);
+
         for (auto & n : rdata) cd_dbg_printf(" %02x", n);
-        dbgloglog_bus(PS1D_CDROM_IRQ_ASSERT, DBGLS_TRACE, "IRQ Assert %d", level);
         io.response.reset();
         for (auto & n : rdata) io.response.push(n);
+        dbg_irq(level);
         switch (level) {
             case 1:
                 irq.ready.flag = true; break;
@@ -1409,6 +1427,7 @@ bool core::deliver_deferred(IRQSTRUCT::DEFERREDSTRUCT::DEFERREDSTRUCTITEM &item)
     io.response.reset();
     for (u32 i = 0; i < item.data.len; i++) io.response.push(item.data.pop());
     item.data.reset();
+    dbg_irq(item.kind);
 
     u8 t = item.kind;
     item.kind = 0;
@@ -1420,7 +1439,7 @@ bool core::deliver_deferred(IRQSTRUCT::DEFERREDSTRUCT::DEFERREDSTRUCTITEM &item)
         case 4: irq.end.flag = true; break;
         case 5: irq.error.flag = true; break;
     }
-    dbgloglog_bus(PS1D_CDROM_IRQ_ASSERT, DBGLS_TRACE, "IRQ Deferred Assert %d", t);
+
 
     update_IRQs();
     return true;
